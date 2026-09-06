@@ -1,0 +1,18 @@
+{
+  "network": "testnet",
+  "master_account_address": "0xYOUR_MASTER_ACCOUNT_ADDRESS",
+  "wallet_file": "data/agent_wallet.enc",
+  "risk": {
+    "max_leverage": 10,
+    "max_position_pct_of_capital": 0.2,
+    "kelly_fraction": 0.25,
+    "kelly_min_edge": 0.02,
+    "kelly_max_size_multiplier": 2.0,
+    "daily_loss_breaker_pct": 0.1,
+    "require_stop_loss": true
+  },
+  "notify": {
+    "vault_path": "../Claude-Brain/Projects/Trade-Journal.md"
+  },
+  "paper_starting_capital": 250.0
+}

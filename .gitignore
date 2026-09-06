@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------------------
+# SECRETS AND KEY MATERIAL - never commit, under any circumstances
+# ---------------------------------------------------------------------------
+# The encrypted agent wallet. It is AES-encrypted and password-protected, but an
+# encrypted key in a public repo is a key someone can attack offline, forever,
+# with no rate limit. There is no version of this that belongs in git.
+wallet/data/
+*.enc
+*.key
+*.pem
+.env
+.env.*
+
+# config/settings.json holds the real master account address (and would hold any
+# future account-specific values). settings.example.json is the one that ships.
+config/settings.json
+
+# ---------------------------------------------------------------------------
+# RUNTIME STATE - the bot's live memory, not source
+# ---------------------------------------------------------------------------
+# Open positions, adaptive shadow-eval history, last bar seen, run logs. These
+# change every hour and are machine-specific; committing them would produce a
+# constant diff and, worse, would let a `git checkout` silently roll the bot's
+# position state backwards.
+data/
+!data/.gitkeep
+
+# ---------------------------------------------------------------------------
+# GENERATED / CACHED
+# ---------------------------------------------------------------------------
+# ~19MB of cached Hyperliquid candles and funding history. Re-fetchable in
+# minutes via research/hl_data.py, and large enough to make the repo unpleasant.
+research/data/
+dashboard.html
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+venv/
+.venv/
+
+# ---------------------------------------------------------------------------
+# EDITOR / OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

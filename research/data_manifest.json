@@ -1,0 +1,110 @@
+{
+ "BTC_1d": {
+  "n": 2201,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 913,
+  "first": "2020-08-27",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "BTC_4h": {
+  "n": 5000,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 0,
+  "first": "2024-05-24",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "BTC_funding": {
+  "n": 28521,
+  "first": "2023-05-12",
+  "last": "2026-09-05"
+ },
+ "ETH_1d": {
+  "n": 2201,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 913,
+  "first": "2020-08-27",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "ETH_4h": {
+  "n": 5000,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 0,
+  "first": "2024-05-24",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "ETH_funding": {
+  "n": 28522,
+  "first": "2023-05-12",
+  "last": "2026-09-05"
+ },
+ "SOL_1d": {
+  "n": 2183,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 901,
+  "first": "2020-09-14",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "SOL_4h": {
+  "n": 5000,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 0,
+  "first": "2024-05-24",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "SOL_funding": {
+  "n": 28522,
+  "first": "2023-05-12",
+  "last": "2026-09-05"
+ },
+ "HYPE_1d": {
+  "n": 640,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 0,
+  "first": "2024-12-05",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "HYPE_4h": {
+  "n": 3833,
+  "cov": 100.0,
+  "dupes": 0,
+  "ohlc_viol": 0,
+  "bad_px": 0,
+  "zeroV": 0,
+  "first": "2024-12-05",
+  "last": "2026-09-05",
+  "missing": 0
+ },
+ "HYPE_funding": {
+  "n": 15330,
+  "first": "2024-12-05",
+  "last": "2026-09-05"
+ }
+}

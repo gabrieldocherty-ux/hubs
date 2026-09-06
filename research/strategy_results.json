@@ -1,0 +1,1323 @@
+{
+ "generated": "2026-09-06T23:12:37.909387Z",
+ "cost_model": {
+  "taker_fee": 0.00045,
+  "slippage": 0.0005,
+  "round_trip": 0.0019
+ },
+ "window": "tradeable 2023-06-08 onward, real Hyperliquid funding",
+ "strategies": [
+  {
+   "id": "B1",
+   "family": "daily",
+   "label": "Perp-Spot Basis Dislocation",
+   "status": "VALIDATED",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "pct": 0.9,
+    "win": 180,
+    "atr_mult": 2.5,
+    "max_hold": 7,
+    "min_hist": 60
+   },
+   "hypothesis": "The perp is where leverage lives and spot is where unlevered ownership lives. A perp trading rich to spot means leveraged buyers are bidding for exposure faster than anyone will buy the underlying; that premium is the price of impatience, paid by the weakest holders in the market, and it unwinds.",
+   "note": "The ONLY strategy here that is independent of the others - same-side overlap with forced-flow is 0.35-0.59, at or below the ~0.50 of unrelated strategies. All 15 of 15 perturbations positive on both train and test. But it has the shortest history of anything shipped (spot data starts 2025), does NOT work on SOL, and its most recent half-year is negative.",
+   "n": 178,
+   "win_rate": 0.5449438202247191,
+   "expectancy": 0.016773564659090155,
+   "trimmed": 0.013892612494550607,
+   "median": 0.008620743526438712,
+   "train": 0.013366039247204581,
+   "test": 0.020854181510360524,
+   "train_n": 97,
+   "test_n": 81,
+   "acct_cagr": 0.43296299900138946,
+   "acct_dd": -0.15563957905246964,
+   "avg_days_held": 4.185393258426966,
+   "trades_per_year": 112.28756476683938,
+   "profit_factor": 1.7401244963256859,
+   "avg_funding": 0.00036304017651638465,
+   "years": [
+    {
+     "year": 2025,
+     "exp": 0.01630044170403031,
+     "n": 91
+    },
+    {
+     "year": 2026,
+     "exp": 0.01726844039369298,
+     "n": 87
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 39,
+     "win_rate": 0.6153846153846154,
+     "expectancy": 0.01730761794799763,
+     "trimmed": 0.015582923799177046,
+     "acct_cagr": 0.10002779115911031
+    },
+    "ETH": {
+     "n": 40,
+     "win_rate": 0.5,
+     "expectancy": 0.011200502210588647,
+     "trimmed": 0.00625608543127524,
+     "acct_cagr": 0.06681072231403973
+    },
+    "SOL": {
+     "n": 44,
+     "win_rate": 0.45454545454545453,
+     "expectancy": 0.0021506797694265615,
+     "trimmed": -0.0008971614425635627,
+     "acct_cagr": 0.011560722709244464
+    },
+    "HYPE": {
+     "n": 55,
+     "win_rate": 0.6,
+     "expectancy": 0.03214631656486953,
+     "trimmed": 0.03156136218717901,
+     "acct_cagr": 0.24052991286019254
+    }
+   }
+  },
+  {
+   "id": "S3",
+   "family": "daily",
+   "label": "Forced-Flow Continuation",
+   "hypothesis": "Liquidation engines on a leveraged venue are forced, price-insensitive sellers; flow that is forced rather than informed overshoots and continues.",
+   "status": "VALIDATED",
+   "note": "Best sample of anything tested (n=202). All 4 coins and 4/4 years positive.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "vol_mult": 1.5,
+    "hold": 10,
+    "atr_mult": 2.5
+   },
+   "n": 202,
+   "win_rate": 0.5495049504950495,
+   "expectancy": 0.01797918901837471,
+   "trimmed": 0.014903142565251144,
+   "median": 0.013261176690027911,
+   "train": 0.019477413742546766,
+   "test": 0.015597395867126817,
+   "train_n": 124,
+   "test_n": 78,
+   "acct_cagr": 0.24298779525963266,
+   "acct_dd": -0.15069807924286965,
+   "avg_days_held": 10.074257425742575,
+   "trades_per_year": 65.64101423487544,
+   "profit_factor": 1.4849510558254206,
+   "avg_funding": -0.0013810186768821548,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.008530464453397292,
+     "n": 27
+    },
+    {
+     "year": 2024,
+     "exp": 0.020499680817430747,
+     "n": 60
+    },
+    {
+     "year": 2025,
+     "exp": 0.009599161540014285,
+     "n": 78
+    },
+    {
+     "year": 2026,
+     "exp": 0.0384529241162974,
+     "n": 37
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 58,
+     "win_rate": 0.4482758620689655,
+     "expectancy": 0.01011211012275778,
+     "trimmed": 0.007743518838273431,
+     "acct_cagr": 0.03632107895883108
+    },
+    "ETH": {
+     "n": 63,
+     "win_rate": 0.6031746031746031,
+     "expectancy": 0.021116985968540454,
+     "trimmed": 0.018601609612186112,
+     "acct_cagr": 0.0858440250846475
+    },
+    "SOL": {
+     "n": 55,
+     "win_rate": 0.5818181818181818,
+     "expectancy": 0.010956419834103408,
+     "trimmed": 0.010046939007214421,
+     "acct_cagr": 0.032704217020262494
+    },
+    "HYPE": {
+     "n": 26,
+     "win_rate": 0.5769230769230769,
+     "expectancy": 0.04278156106530781,
+     "trimmed": 0.03498596570250514,
+     "acct_cagr": 0.13957229115395142
+    }
+   }
+  },
+  {
+   "id": "D1",
+   "family": "daily",
+   "label": "Range-Break Cascade",
+   "hypothesis": "Same cascade mechanism, but requiring BOTH a range break and an outsized daily range as evidence of forced flow. Higher conviction, lower frequency.",
+   "status": "VALIDATED",
+   "note": "Win rate rises monotonically with filter strength (52->74%); replicates on 2020-23 data.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "n": 20,
+    "atr_mult": 2.5,
+    "max_hold": 10,
+    "atr_ratio": 2.0
+   },
+   "n": 74,
+   "win_rate": 0.6486486486486487,
+   "expectancy": 0.03507596848975866,
+   "trimmed": 0.0315862721495425,
+   "median": 0.014675461601821494,
+   "train": 0.02048522553280147,
+   "test": 0.059046474776188344,
+   "train_n": 46,
+   "test_n": 28,
+   "acct_cagr": 0.17465899726396472,
+   "acct_dd": -0.09425653747679032,
+   "avg_days_held": 10.175675675675675,
+   "trades_per_year": 24.04670818505338,
+   "profit_factor": 2.1742627453482495,
+   "avg_funding": -0.0045740802518423095,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.029995610166799132,
+     "n": 14
+    },
+    {
+     "year": 2024,
+     "exp": 0.03540913445953225,
+     "n": 18
+    },
+    {
+     "year": 2025,
+     "exp": 0.003986629066233186,
+     "n": 26
+    },
+    {
+     "year": 2026,
+     "exp": 0.08966664686958191,
+     "n": 16
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 22,
+     "win_rate": 0.7272727272727273,
+     "expectancy": 0.028729915329226065,
+     "trimmed": 0.028303341068317577,
+     "acct_cagr": 0.040723324297064156
+    },
+    "ETH": {
+     "n": 27,
+     "win_rate": 0.5185185185185185,
+     "expectancy": 0.013964945959288806,
+     "trimmed": 0.008951030110152925,
+     "acct_cagr": 0.023158461543615783
+    },
+    "SOL": {
+     "n": 19,
+     "win_rate": 0.631578947368421,
+     "expectancy": 0.051998997886454706,
+     "trimmed": 0.04833847144557991,
+     "acct_cagr": 0.06189580317653842
+    },
+    "HYPE": {
+     "n": 6,
+     "win_rate": 1.0,
+     "expectancy": 0.09975483837595524,
+     "trimmed": 0.09975483837595524,
+     "acct_cagr": 0.07679116889819104
+    }
+   }
+  },
+  {
+   "id": "LIVE",
+   "family": "macro",
+   "label": "SMA(20,60) 4h [currently live]",
+   "hypothesis": "Trend following: under-reaction to slowly-diffusing information plus trend-follower flows.",
+   "status": "CUT",
+   "note": "CUT 2026-09-05 on cost efficiency. Pays 30.9%/yr in execution cost (163 trades/yr) for a NEGATIVE trimmed expectancy of -0.78% - the +0.55% mean is entirely tail. Also correlates +0.44 to +0.45 with the daily sleeve, so it was not diversifying while it paid that.",
+   "interval": "4h",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "fast": 20,
+    "slow": 60,
+    "stop_pct": 0.03
+   },
+   "n": 367,
+   "win_rate": 0.2970027247956403,
+   "expectancy": 0.005514167352820662,
+   "trimmed": -0.007800783066748716,
+   "median": -0.031417014870932215,
+   "train": 0.0015258698448352849,
+   "test": 0.011092570403205439,
+   "train_n": 214,
+   "test_n": 153,
+   "acct_cagr": 0.17152417326212044,
+   "acct_dd": -0.2691181444671246,
+   "avg_days_held": 5.511353315168037,
+   "trades_per_year": 162.87575941676792,
+   "profit_factor": 1.2570278222679674,
+   "avg_funding": -0.000680882925551765,
+   "years": [
+    {
+     "year": 2024,
+     "exp": -0.004181603058773024,
+     "n": 77
+    },
+    {
+     "year": 2025,
+     "exp": 0.002404172770525864,
+     "n": 182
+    },
+    {
+     "year": 2026,
+     "exp": 0.01766780934976851,
+     "n": 108
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 97,
+     "win_rate": 0.35051546391752575,
+     "expectancy": 0.004248781536524484,
+     "trimmed": -0.003837689928805329,
+     "acct_cagr": 0.03411519837132482
+    },
+    "ETH": {
+     "n": 104,
+     "win_rate": 0.2980769230769231,
+     "expectancy": 0.004896852370217146,
+     "trimmed": -0.008208823025421138,
+     "acct_cagr": 0.04044598828154977
+    },
+    "SOL": {
+     "n": 94,
+     "win_rate": 0.3191489361702128,
+     "expectancy": 0.008130950388050345,
+     "trimmed": -0.0017666823975698437,
+     "acct_cagr": 0.06514285334768699
+    },
+    "HYPE": {
+     "n": 72,
+     "win_rate": 0.19444444444444445,
+     "expectancy": 0.004694244811985992,
+     "trimmed": -0.015328540965945105,
+     "acct_cagr": 0.029228663451797088
+    }
+   }
+  },
+  {
+   "id": "M3",
+   "family": "macro",
+   "label": "Donchian 55/20 daily",
+   "hypothesis": "Turtle-style long-range breakout; range breaks force slower participants to reprice.",
+   "status": "VALIDATED",
+   "note": "Promoted to the MACRO sleeve, replacing the cut SMA. Cheapest to run of anything here (3.1%/yr cost drag vs the SMA 30.9%) and uncorrelated with the daily sleeve. Still CONDITIONAL on substance: edge decayed (train +49% vs test +2.2%), n=49, and recent years are +2.2-2.8%, not the headline +12.85%.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "entry_n": 55,
+    "exit_n": 20,
+    "atr_mult": 3.0
+   },
+   "n": 49,
+   "win_rate": 0.4897959183673469,
+   "expectancy": 0.12851224896786237,
+   "trimmed": 0.018159789455235168,
+   "median": -0.013135394652569484,
+   "train": 0.2748457734835935,
+   "test": 0.009277525288377662,
+   "train_n": 22,
+   "test_n": 27,
+   "acct_cagr": 0.3604407827633991,
+   "acct_dd": -0.1250969443025773,
+   "avg_days_held": 44.08163265306123,
+   "trades_per_year": 16.28503184713376,
+   "profit_factor": 3.3630826351104197,
+   "avg_funding": -0.01930005616670614,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 1.309065231797025,
+     "n": 4
+    },
+    {
+     "year": 2024,
+     "exp": 0.028263382101087496,
+     "n": 8
+    },
+    {
+     "year": 2025,
+     "exp": 0.02263798229222021,
+     "n": 20
+    },
+    {
+     "year": 2026,
+     "exp": 0.022468974681414747,
+     "n": 17
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 14,
+     "win_rate": 0.5714285714285714,
+     "expectancy": 0.031143464683550705,
+     "trimmed": 0.02108038781867051,
+     "acct_cagr": 0.0283751610970715
+    },
+    "ETH": {
+     "n": 12,
+     "win_rate": 0.5833333333333334,
+     "expectancy": 0.08006816151536854,
+     "trimmed": 0.07091588446811992,
+     "acct_cagr": 0.06267717683258911
+    },
+    "SOL": {
+     "n": 15,
+     "win_rate": 0.3333333333333333,
+     "expectancy": 0.26941210447487635,
+     "trimmed": -0.05100083826284344,
+     "acct_cagr": 0.18389992754781903
+    },
+    "HYPE": {
+     "n": 8,
+     "win_rate": 0.5,
+     "expectancy": 0.1073865235684972,
+     "trimmed": 0.1073865235684972,
+     "acct_cagr": 0.10476292664094244
+    }
+   }
+  },
+  {
+   "id": "M1",
+   "family": "macro",
+   "label": "TSMOM 120d",
+   "hypothesis": "Time-series momentum, the most documented futures anomaly (Moskowitz/Ooi/Pedersen).",
+   "status": "CUT",
+   "note": "CUT 2026-09-05: trimmed expectancy -0.26%, i.e. no edge outside the tail. Also 0.73-1.00 correlated with every other trend variant. M3 Donchian is the same bet with a positive trimmed edge and a tenth of the turnover.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "look": 120,
+    "atr_mult": 4.0
+   },
+   "n": 100,
+   "win_rate": 0.33,
+   "expectancy": 0.02777133077561268,
+   "trimmed": -0.0025711681971840594,
+   "median": -0.016795932777693024,
+   "train": 0.019581432917789732,
+   "test": 0.04991438794676358,
+   "train_n": 73,
+   "test_n": 27,
+   "acct_cagr": 0.17047181541215606,
+   "acct_dd": -0.42221822937312525,
+   "avg_days_held": 35.87,
+   "trades_per_year": 35.323984526112184,
+   "profit_factor": 1.6342573849624926,
+   "avg_funding": -0.00965309641815788,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.9573252638326726,
+     "n": 3
+    },
+    {
+     "year": 2024,
+     "exp": -0.029048808899184486,
+     "n": 33
+    },
+    {
+     "year": 2025,
+     "exp": 0.0007220332832203436,
+     "n": 51
+    },
+    {
+     "year": 2026,
+     "exp": 0.06361109863785375,
+     "n": 13
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 32,
+     "win_rate": 0.25,
+     "expectancy": 0.012905021495804166,
+     "trimmed": 0.0018010062357329928,
+     "acct_cagr": 0.026260538783582144
+    },
+    "ETH": {
+     "n": 26,
+     "win_rate": 0.4230769230769231,
+     "expectancy": 0.015457854229867384,
+     "trimmed": 0.00444574459296421,
+     "acct_cagr": 0.024044560444698604
+    },
+    "SOL": {
+     "n": 30,
+     "win_rate": 0.3333333333333333,
+     "expectancy": 0.03920957178912262,
+     "trimmed": -0.009612221797360657,
+     "acct_cagr": 0.06333137158662994
+    },
+    "HYPE": {
+     "n": 12,
+     "win_rate": 0.3333333333333333,
+     "expectancy": 0.0654984188371086,
+     "trimmed": 0.006717110713038138,
+     "acct_cagr": 0.10289800778650937
+    }
+   }
+  },
+  {
+   "id": "M5",
+   "family": "macro",
+   "label": "Funding-Regime Trend",
+   "hypothesis": "Funding is the revealed-preference price of leveraged exposure; its multi-week sign identifies the macro regime.",
+   "status": "CONDITIONAL",
+   "note": "Survives the cost cut (trimmed +0.60%, 6% cost share) but the margin is thin and it overlaps the trend family. Not promoted; kept as a candidate.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "fund_n": 14,
+    "trend_n": 50,
+    "atr_mult": 4.0
+   },
+   "n": 133,
+   "win_rate": 0.2706766917293233,
+   "expectancy": 0.03232861160785952,
+   "trimmed": 0.0060062942476847535,
+   "median": -0.020876591559827525,
+   "train": 0.059036026844383915,
+   "test": 0.004388546437341649,
+   "train_n": 68,
+   "test_n": 65,
+   "acct_cagr": 0.27727513151975236,
+   "acct_dd": -0.27331348924121085,
+   "avg_days_held": 16.86466165413534,
+   "trades_per_year": 44.404250457038394,
+   "profit_factor": 1.8201681504670941,
+   "avg_funding": -0.009564661168060476,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.21221734887461904,
+     "n": 9
+    },
+    {
+     "year": 2024,
+     "exp": 0.02476953964166637,
+     "n": 35
+    },
+    {
+     "year": 2025,
+     "exp": 0.014707828726810354,
+     "n": 48
+    },
+    {
+     "year": 2026,
+     "exp": 0.019922915551915183,
+     "n": 41
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 41,
+     "win_rate": 0.24390243902439024,
+     "expectancy": 0.025249019349944276,
+     "trimmed": 0.007999188449022105,
+     "acct_cagr": 0.066837957538878
+    },
+    "ETH": {
+     "n": 30,
+     "win_rate": 0.3,
+     "expectancy": 0.03156808775904749,
+     "trimmed": 0.020988616309182535,
+     "acct_cagr": 0.058906293731369797
+    },
+    "SOL": {
+     "n": 48,
+     "win_rate": 0.2708333333333333,
+     "expectancy": 0.012980182157614026,
+     "trimmed": -0.01689359770853753,
+     "acct_cagr": 0.025256397333513148
+    },
+    "HYPE": {
+     "n": 14,
+     "win_rate": 0.2857142857142857,
+     "expectancy": 0.12102886958290722,
+     "trimmed": 0.026309246128028003,
+     "acct_cagr": 0.21529674606981652
+    }
+   }
+  },
+  {
+   "id": "M2",
+   "family": "macro",
+   "label": "Golden Cross 50/200",
+   "hypothesis": "Classic long-horizon regime filter; validated on 55 years of Nasdaq in prior work.",
+   "status": "REJECTED",
+   "note": "Fails on crypto: -4.29%/trade pooled, negative on BTC/ETH/SOL. Crypto cycles are far faster than equities, so a 200d filter enters near tops.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "fast": 50,
+    "slow": 200,
+    "atr_mult": 4.0
+   },
+   "n": 35,
+   "win_rate": 0.3142857142857143,
+   "expectancy": -0.04294194490044697,
+   "trimmed": -0.06798520693865553,
+   "median": -0.09065911598171639,
+   "train": -0.1227486252083357,
+   "test": 0.22640560113867753,
+   "train_n": 27,
+   "test_n": 8,
+   "acct_cagr": -0.12439066523197628,
+   "acct_dd": -0.5271960479780268,
+   "avg_days_held": 95.62857142857143,
+   "trades_per_year": 13.125,
+   "profit_factor": 0.6315926224043001,
+   "avg_funding": -0.017470055261930417,
+   "years": [
+    {
+     "year": 2024,
+     "exp": -0.09630389275845054,
+     "n": 11
+    },
+    {
+     "year": 2025,
+     "exp": -0.08203484461759236,
+     "n": 21
+    },
+    {
+     "year": 2026,
+     "exp": 0.42636882859891734,
+     "n": 3
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 10,
+     "win_rate": 0.3,
+     "expectancy": -0.038781402483364785,
+     "trimmed": -0.05425012378870998,
+     "acct_cagr": -0.030136936837147577
+    },
+    "ETH": {
+     "n": 10,
+     "win_rate": 0.3,
+     "expectancy": -0.06899457859981827,
+     "trimmed": -0.07774247864535988,
+     "acct_cagr": -0.05282364260446981
+    },
+    "SOL": {
+     "n": 12,
+     "win_rate": 0.3333333333333333,
+     "expectancy": -0.11975460698152653,
+     "trimmed": -0.11098034175032193,
+     "acct_cagr": -0.10683382246183815
+    },
+    "HYPE": {
+     "n": 3,
+     "win_rate": 0.3333333333333333,
+     "expectancy": 0.33728234103150173,
+     "trimmed": 0.33728234103150173,
+     "acct_cagr": 0.15906776636299513
+    }
+   }
+  },
+  {
+   "id": "D3",
+   "family": "daily",
+   "label": "Funding-Crowding Fade",
+   "hypothesis": "Extreme funding marks crowded positioning by holders who bleed hourly; the unwind is directional.",
+   "status": "REJECTED",
+   "note": "Kills the vault's prior 'most promising' lead. Negative in its ORIGINAL 4h short-only form too, including on the ETH/SOL it supposedly held on.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "fund_n": 3,
+    "pct": 0.9,
+    "pct_win": 180,
+    "atr_mult": 3.0,
+    "max_hold": 10
+   },
+   "n": 165,
+   "win_rate": 0.4666666666666667,
+   "expectancy": -0.006170929701751395,
+   "trimmed": -0.0066949369370836505,
+   "median": -0.005494826946225298,
+   "train": -0.005508201422257348,
+   "test": -0.006985906369777857,
+   "train_n": 91,
+   "test_n": 74,
+   "acct_cagr": -0.08529962225692422,
+   "acct_dd": -0.46134592393434276,
+   "avg_days_held": 8.018181818181818,
+   "trades_per_year": 61.24618902439025,
+   "profit_factor": 0.8583512963031901,
+   "avg_funding": 0.002097752636871482,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.06300689696032995,
+     "n": 3
+    },
+    {
+     "year": 2024,
+     "exp": -0.00297408202133705,
+     "n": 51
+    },
+    {
+     "year": 2025,
+     "exp": -0.016560005076830465,
+     "n": 57
+    },
+    {
+     "year": 2026,
+     "exp": -0.002067141096341552,
+     "n": 54
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 47,
+     "win_rate": 0.3829787234042553,
+     "expectancy": -0.011633240632072401,
+     "trimmed": -0.011677579747955585,
+     "acct_cagr": -0.04138035166807719
+    },
+    "ETH": {
+     "n": 52,
+     "win_rate": 0.4423076923076923,
+     "expectancy": -0.0030391747315293544,
+     "trimmed": -0.004435990235601736,
+     "acct_cagr": -0.016485335875643825
+    },
+    "SOL": {
+     "n": 47,
+     "win_rate": 0.5319148936170213,
+     "expectancy": -0.014182632455215128,
+     "trimmed": -0.0150142151620759,
+     "acct_cagr": -0.053483571183964296
+    },
+    "HYPE": {
+     "n": 19,
+     "win_rate": 0.5789473684210527,
+     "expectancy": 0.01858840633437156,
+     "trimmed": 0.022464102725943954,
+     "acct_cagr": 0.05690597785682994
+    }
+   }
+  },
+  {
+   "id": "D2",
+   "family": "daily",
+   "label": "Capitulation Reversion",
+   "hypothesis": "Cascades overshoot; liquidity providers absorbing forced flow get paid for it.",
+   "status": "REJECTED",
+   "note": "train +1.17% / test -1.27% - the sign-flip signature of noise.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "z": 2.0,
+    "vol_n": 60,
+    "hold": 5,
+    "atr_mult": 2.5,
+    "vol_mult": 1.5
+   },
+   "n": 62,
+   "win_rate": 0.532258064516129,
+   "expectancy": -0.0013118078388926126,
+   "trimmed": -0.0024048201379877486,
+   "median": 0.01026444246079753,
+   "train": 0.01169263006412925,
+   "test": -0.012739950238517877,
+   "train_n": 29,
+   "test_n": 33,
+   "acct_cagr": -0.008890990123778808,
+   "acct_dd": -0.18688203007386758,
+   "avg_days_held": 5.32258064516129,
+   "trades_per_year": 20.699725776965266,
+   "profit_factor": 0.9644742547819397,
+   "avg_funding": -0.0010063407466816632,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.023387132336866765,
+     "n": 3
+    },
+    {
+     "year": 2024,
+     "exp": 0.023469900135149144,
+     "n": 17
+    },
+    {
+     "year": 2025,
+     "exp": 0.006038526476024997,
+     "n": 24
+    },
+    {
+     "year": 2026,
+     "exp": -0.03863369004133764,
+     "n": 18
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 23,
+     "win_rate": 0.5217391304347826,
+     "expectancy": 0.0028389230708807146,
+     "trimmed": 0.0029997883686661677,
+     "acct_cagr": 0.003562708809658144
+    },
+    "ETH": {
+     "n": 20,
+     "win_rate": 0.55,
+     "expectancy": -0.016055426357074465,
+     "trimmed": -0.015082157399385981,
+     "acct_cagr": -0.02215303622567144
+    },
+    "SOL": {
+     "n": 15,
+     "win_rate": 0.5333333333333333,
+     "expectancy": 0.0013498053356652852,
+     "trimmed": -0.0031648836124736346,
+     "acct_cagr": 0.00023342844396823104
+    },
+    "HYPE": {
+     "n": 4,
+     "win_rate": 0.5,
+     "expectancy": 0.03855853261622793,
+     "trimmed": 0.03855853261622793,
+     "acct_cagr": 0.019479906197721775
+    }
+   }
+  },
+  {
+   "id": "D4",
+   "family": "daily",
+   "label": "Volatility Squeeze",
+   "hypothesis": "Vol clusters; a compression is a coiled spring and the expansion is mechanically amplified.",
+   "status": "REJECTED",
+   "note": "Inconclusive: n=53, train +0.05% - not enough evidence either way.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "vol_n": 20,
+    "pct": 0.3,
+    "n": 20,
+    "atr_mult": 2.5,
+    "max_hold": 10
+   },
+   "n": 53,
+   "win_rate": 0.4716981132075472,
+   "expectancy": 0.009110221155651885,
+   "trimmed": 0.001586373264044864,
+   "median": -0.01252892482378333,
+   "train": 0.0004965229208473237,
+   "test": 0.016801023151013107,
+   "train_n": 25,
+   "test_n": 28,
+   "acct_cagr": 0.03510777247110908,
+   "acct_dd": -0.14506709451925098,
+   "avg_days_held": 9.547169811320755,
+   "trades_per_year": 21.41399336283186,
+   "profit_factor": 1.2626590965830102,
+   "avg_funding": -0.0010699193595292073,
+   "years": [
+    {
+     "year": 2024,
+     "exp": 0.004714526673613389,
+     "n": 11
+    },
+    {
+     "year": 2025,
+     "exp": -0.014057825803082284,
+     "n": 22
+    },
+    {
+     "year": 2026,
+     "exp": 0.03701270477538064,
+     "n": 20
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 18,
+     "win_rate": 0.3888888888888889,
+     "expectancy": -0.011531944202095343,
+     "trimmed": -0.01297463513559641,
+     "acct_cagr": -0.01726988817646269
+    },
+    "ETH": {
+     "n": 12,
+     "win_rate": 0.6666666666666666,
+     "expectancy": 0.028866661812067238,
+     "trimmed": 0.029372213506580543,
+     "acct_cagr": 0.02747433264706256
+    },
+    "SOL": {
+     "n": 17,
+     "win_rate": 0.4117647058823529,
+     "expectancy": 0.014813600666725697,
+     "trimmed": 0.002424125237038016,
+     "acct_cagr": 0.01889542896430685
+    },
+    "HYPE": {
+     "n": 6,
+     "win_rate": 0.5,
+     "expectancy": 0.01536426063468708,
+     "trimmed": 0.01536426063468708,
+     "acct_cagr": 0.015487940317147286
+    }
+   }
+  },
+  {
+   "id": "D5",
+   "family": "daily",
+   "label": "BTC Lead-Lag",
+   "hypothesis": "Information enters crypto through BTC first; alts are slower, higher-beta claims on it.",
+   "status": "REJECTED",
+   "note": "Negative on every alt (-1.18% pooled, n=311). Predicted to be arbitraged away; it is.",
+   "interval": "1d",
+   "coins": [
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "look": 3,
+    "thresh": 1.0,
+    "hold": 3,
+    "atr_mult": 2.5
+   },
+   "n": 311,
+   "win_rate": 0.4405144694533762,
+   "expectancy": -0.011805815721330007,
+   "trimmed": -0.012670718251925535,
+   "median": -0.010215557100806842,
+   "train": -0.019962079515677855,
+   "test": -0.0028229035694469205,
+   "train_n": 163,
+   "test_n": 148,
+   "acct_cagr": -0.23243863112046148,
+   "acct_dd": -0.6932080063008955,
+   "avg_days_held": 3.8135048231511255,
+   "trades_per_year": 103.83249542961609,
+   "profit_factor": 0.710657652172596,
+   "avg_funding": -0.0007129615695185102,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.01954669512903979,
+     "n": 22
+    },
+    {
+     "year": 2024,
+     "exp": -0.013339560871287025,
+     "n": 90
+    },
+    {
+     "year": 2025,
+     "exp": -0.024088741701362125,
+     "n": 116
+    },
+    {
+     "year": 2026,
+     "exp": -0.0012865236915502885,
+     "n": 83
+    }
+   ],
+   "per_coin": {
+    "ETH": {
+     "n": 123,
+     "win_rate": 0.4715447154471545,
+     "expectancy": -0.007868359293259092,
+     "trimmed": -0.010544888223164286,
+     "acct_cagr": -0.06717203718980924
+    },
+    "SOL": {
+     "n": 123,
+     "win_rate": 0.42276422764227645,
+     "expectancy": -0.007519908781363687,
+     "trimmed": -0.010799102676661674,
+     "acct_cagr": -0.0668193341985136
+    },
+    "HYPE": {
+     "n": 65,
+     "win_rate": 0.4153846153846154,
+     "expectancy": -0.027366949479308192,
+     "trimmed": -0.02416888538082581,
+     "acct_cagr": -0.22180246730817033
+    }
+   }
+  },
+  {
+   "id": "S5",
+   "family": "daily",
+   "label": "RSI(2) Reversal",
+   "hypothesis": "The most widely published short-horizon reversal system.",
+   "status": "REJECTED",
+   "note": "-0.94%/trade on n=899. Large sample, unambiguous. Fame implies arbitrage.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "lo": 10,
+    "hi": 90,
+    "hold": 2,
+    "atr_mult": 2.5
+   },
+   "n": 899,
+   "win_rate": 0.4771968854282536,
+   "expectancy": -0.009428748138549206,
+   "trimmed": -0.008506247772188245,
+   "median": -0.002756053551578076,
+   "train": -0.009033258417742593,
+   "test": -0.009908985656671527,
+   "train_n": 493,
+   "test_n": 406,
+   "acct_cagr": -0.4384292690791468,
+   "acct_dd": -0.8388850638050585,
+   "avg_days_held": 2.8298109010011125,
+   "trades_per_year": 292.13500889679716,
+   "profit_factor": 0.6792771078201992,
+   "avg_funding": 0.0003207691407933017,
+   "years": [
+    {
+     "year": 2023,
+     "exp": -0.009688531273129719,
+     "n": 105
+    },
+    {
+     "year": 2024,
+     "exp": -0.00930757475148102,
+     "n": 247
+    },
+    {
+     "year": 2025,
+     "exp": -0.007180011865578768,
+     "n": 315
+    },
+    {
+     "year": 2026,
+     "exp": -0.01249342280863789,
+     "n": 232
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 259,
+     "win_rate": 0.5212355212355212,
+     "expectancy": -0.004431603949258295,
+     "trimmed": -0.0038463351942284734,
+     "acct_cagr": -0.07466332576513568
+    },
+    "ETH": {
+     "n": 259,
+     "win_rate": 0.47104247104247104,
+     "expectancy": -0.007796625278157913,
+     "trimmed": -0.007638300977337629,
+     "acct_cagr": -0.12801824175411203
+    },
+    "SOL": {
+     "n": 259,
+     "win_rate": 0.444015444015444,
+     "expectancy": -0.013856698914143352,
+     "trimmed": -0.012599491741215293,
+     "acct_cagr": -0.2166291598114718
+    },
+    "HYPE": {
+     "n": 122,
+     "win_rate": 0.4672131147540984,
+     "expectancy": -0.014102034326982085,
+     "trimmed": -0.013727132228966007,
+     "acct_cagr": -0.20516619755794197
+    }
+   }
+  },
+  {
+   "id": "M6",
+   "family": "macro",
+   "label": "Cross-Sectional Momentum",
+   "hypothesis": "Capital rotates within crypto; long the strongest and short the weakest is market-neutral.",
+   "status": "REJECTED",
+   "note": "Negative trimmed expectancy at every lookback. Four coins is too little breadth.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {},
+   "skip_metrics": true
+  },
+  {
+   "id": "M7",
+   "family": "macro",
+   "label": "Cross-Sectional Funding Carry",
+   "hypothesis": "Short the highest-funding perp and long the lowest to collect the spread as real cash flow.",
+   "status": "REJECTED",
+   "note": "Failed exactly as its own hypothesis predicted: median trade +0.03% (the carry IS collected) but -1.80% mean. Up by the stairs, down by the elevator.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {},
+   "skip_metrics": true
+  },
+  {
+   "id": "S2",
+   "family": "daily",
+   "label": "Session / Time-of-Day",
+   "hypothesis": "Institutional flow concentrates in US hours, retail in Asia hours.",
+   "status": "REJECTED",
+   "note": "All six UTC slots negative by roughly the cost of trading. No session effect exists.",
+   "interval": "4h",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "slot": 16,
+    "hold": 1,
+    "atr_mult": 4.0
+   },
+   "n": 3098,
+   "win_rate": 0.4625564880568108,
+   "expectancy": -0.0008627569656924944,
+   "trimmed": -0.000686875365225801,
+   "median": -0.0011123506126204023,
+   "train": -0.0008220247526157413,
+   "test": -0.0009176220223973938,
+   "train_n": 1778,
+   "test_n": 1320,
+   "acct_cagr": -0.22273442765755969,
+   "acct_dd": -0.4753485065192742,
+   "avg_days_held": 0.3316117925543508,
+   "trades_per_year": 1374.6238104879528,
+   "profit_factor": 0.8922138893571262,
+   "avg_funding": -0.00010155670673181904,
+   "years": [
+    {
+     "year": 2024,
+     "exp": -7.24017468011499e-05,
+     "n": 650
+    },
+    {
+     "year": 2025,
+     "exp": -0.0009885692707077734,
+     "n": 1460
+    },
+    {
+     "year": 2026,
+     "exp": -0.0011968105354870954,
+     "n": 988
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 823,
+     "win_rate": 0.41919805589307413,
+     "expectancy": -0.0015397764818506428,
+     "trimmed": -0.0013990832206416605,
+     "acct_cagr": -0.10754200980867379
+    },
+    "ETH": {
+     "n": 823,
+     "win_rate": 0.46051032806804376,
+     "expectancy": -0.0012979094184541531,
+     "trimmed": -0.0009710707638375883,
+     "acct_cagr": -0.09298808906881628
+    },
+    "SOL": {
+     "n": 823,
+     "win_rate": 0.4848116646415553,
+     "expectancy": -0.0009508162095060575,
+     "trimmed": -0.00029633033603810774,
+     "acct_cagr": -0.07108596572365633
+    },
+    "HYPE": {
+     "n": 629,
+     "win_rate": 0.492845786963434,
+     "expectancy": 0.0007076568468346302,
+     "trimmed": 0.0005012024572136992,
+     "acct_cagr": 0.0443502000090914
+    }
+   }
+  },
+  {
+   "id": "S1",
+   "family": "daily",
+   "label": "Short-Term Reversal",
+   "hypothesis": "Pure mean reversion without a volume gate, to isolate whether D2 failed on the gate or the premise.",
+   "status": "REJECTED",
+   "note": "1 of 12 configurations positive. Third independent rejection of mean reversion here.",
+   "interval": "1d",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "params": {
+    "look": 2,
+    "z": 1.5,
+    "hold": 3,
+    "atr_mult": 2.5
+   },
+   "n": 137,
+   "win_rate": 0.4744525547445255,
+   "expectancy": -0.005290254457703914,
+   "trimmed": -0.0065288083881855224,
+   "median": -0.002980475386466214,
+   "train": -1.5519003047421524e-06,
+   "test": -0.011687878519073882,
+   "train_n": 75,
+   "test_n": 62,
+   "acct_cagr": -0.05334160016812628,
+   "acct_dd": -0.2322253942509383,
+   "avg_days_held": 3.72992700729927,
+   "trades_per_year": 45.73971663619744,
+   "profit_factor": 0.8372932889683087,
+   "avg_funding": -0.000737852199305257,
+   "years": [
+    {
+     "year": 2023,
+     "exp": 0.03197388664552309,
+     "n": 8
+    },
+    {
+     "year": 2024,
+     "exp": -0.0027284302570952496,
+     "n": 39
+    },
+    {
+     "year": 2025,
+     "exp": 0.0027218681083971312,
+     "n": 58
+    },
+    {
+     "year": 2026,
+     "exp": -0.03225048512906064,
+     "n": 32
+    }
+   ],
+   "per_coin": {
+    "BTC": {
+     "n": 43,
+     "win_rate": 0.46511627906976744,
+     "expectancy": -0.011284431887419977,
+     "trimmed": -0.011412154439045334,
+     "acct_cagr": -0.032705173395397025
+    },
+    "ETH": {
+     "n": 43,
+     "win_rate": 0.46511627906976744,
+     "expectancy": -0.018596404369484,
+     "trimmed": -0.017578943342298474,
+     "acct_cagr": -0.05361269485847808
+    },
+    "SOL": {
+     "n": 37,
+     "win_rate": 0.43243243243243246,
+     "expectancy": -0.009599226725229053,
+     "trimmed": -0.008793203991723167,
+     "acct_cagr": -0.025533500765750783
+    },
+    "HYPE": {
+     "n": 14,
+     "win_rate": 0.6428571428571429,
+     "expectancy": 0.06537732051249358,
+     "trimmed": 0.05472787509486891,
+     "acct_cagr": 0.12566522293511384
+    }
+   }
+  }
+ ]
+}
