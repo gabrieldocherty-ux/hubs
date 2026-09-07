@@ -273,6 +273,23 @@ def _sleeve_exposure(client, state, sleeve: str) -> float:
     return total
 
 
+def _net_exposure(client, coins) -> float:
+    """Signed notional across the whole book: longs positive, shorts negative.
+
+    Computed from the client's real positions rather than a running counter, so
+    it cannot drift out of sync. This is what the correlation rail acts on -
+    gross exposure cannot tell four aligned bets from four offsetting ones.
+    """
+    net = 0.0
+    for coin in coins:
+        pos = client.get_position(coin)
+        if not pos:
+            continue
+        notional = pos["size"] * pos["entry_price"]
+        net += notional if pos["is_long"] else -notional
+    return net
+
+
 def _record_close(trade, coin, kelly, breaker, capital, settings) -> None:
     """Everything that must happen when a position closes, in one place.
 
@@ -405,7 +422,8 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
                 sleeve = getattr(s["strategy"], "sleeve", "daily")
                 result = executor.try_execute(
                     signal, args.base_size_usd, sleeve=sleeve,
-                    sleeve_exposure_usd=_sleeve_exposure(client, state, sleeve))
+                    sleeve_exposure_usd=_sleeve_exposure(client, state, sleeve),
+                    net_exposure_usd=_net_exposure(client, coins))
                 s["position_bars_held"] = 0
                 print(f"[{coin}] {result}")
                 if args.mode != "paper":

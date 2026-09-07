@@ -16,6 +16,7 @@ class RiskConfig:
     kelly_max_size_multiplier: float
     daily_loss_breaker_pct: float
     require_stop_loss: bool
+    max_net_exposure_pct: float = 0.50
 
 
 @dataclass
@@ -53,7 +54,8 @@ def get_settings() -> Settings:
         network=data["network"],
         master_account_address=data["master_account_address"],
         wallet_file=data["wallet_file"],
-        risk=RiskConfig(**data["risk"]),
+        risk=RiskConfig(**{k: v for k, v in data["risk"].items()
+                          if not k.startswith("_")}),
         vault_journal_path=data.get("notify", {}).get("vault_path", ""),
         paper_starting_capital=data.get("paper_starting_capital", 250.0),
         base_size_usd=float(data.get("base_size_usd", 16.25)),

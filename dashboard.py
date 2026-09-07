@@ -529,12 +529,14 @@ def build(d):
         '<span>stop-loss <b>{}</b></span><span>max leverage <b>{}x</b></span>'
         '<span>max position <b>{:.0f}%</b> of capital</span>'
         '<span>daily loss breaker <b>{:.0f}%</b></span>'
+        '<span>net one-way exposure <b>{:.0f}%</b></span>'
         '<span>Kelly fraction <b>{}</b></span>'
         '<span>modelled round trip <b>{:.3f}%</b></span>').format(
             "required" if risk.get("require_stop_loss") else "NOT REQUIRED",
             risk.get("max_leverage", "?"),
             float(risk.get("max_position_pct_of_capital", 0)) * 100,
             float(risk.get("daily_loss_breaker_pct", 0)) * 100,
+            float(risk.get("max_net_exposure_pct", 0)) * 100,
             risk.get("kelly_fraction", "?"),
             float(cost.get("round_trip", 0)) * 100)
 

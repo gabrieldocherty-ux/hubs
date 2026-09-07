@@ -175,3 +175,87 @@ def _bare_parts():
     return (config,
             KellySizer(kelly_fraction=0.25, min_edge=0.02, max_size_multiplier=2.0),
             CircuitBreaker(daily_loss_limit_pct=0.10))
+
+
+# --------------------------------------------------------------------------
+# Net directional exposure. Every other rail is blind to correlation: it caps
+# each trade and each family, so four aligned positions and four offsetting
+# ones look identical - though the first is 4x one bet. On a venue where the
+# majors move together, that distinction is the whole risk.
+# --------------------------------------------------------------------------
+
+def make_net_rm(cap=0.50):
+    config = RiskConfig(
+        max_leverage=10, max_position_pct_of_capital=0.20, kelly_fraction=0.25,
+        kelly_min_edge=0.02, kelly_max_size_multiplier=2.0,
+        daily_loss_breaker_pct=0.10, require_stop_loss=True,
+        max_net_exposure_pct=cap)
+    return RiskManager(
+        config,
+        KellySizer(kelly_fraction=0.25, min_edge=0.02, max_size_multiplier=2.0),
+        CircuitBreaker(daily_loss_limit_pct=0.10))
+
+
+def test_adding_to_a_one_sided_book_is_capped():
+    """$1000 capital, 50% cap = $500 net. Already $480 long, so a new $100 long
+    may only take the remaining $20."""
+    rm = make_net_rm()
+    approved = rm.approve_trade(
+        TradeRequest("BTC", True, 50000, 48500, None, 100),
+        account_capital=1000, current_total_exposure_usd=480, net_exposure_usd=480)
+    assert approved.size_usd == 20
+
+
+def test_full_one_sided_book_rejects_outright():
+    rm = make_net_rm()
+    try:
+        rm.approve_trade(
+            TradeRequest("BTC", True, 50000, 48500, None, 100),
+            account_capital=1000, current_total_exposure_usd=500, net_exposure_usd=500)
+        assert False, "should have rejected - book is at its net cap and leaning long"
+    except RiskRejection as e:
+        assert "net directional" in str(e)
+
+
+def test_offsetting_trade_is_always_allowed():
+    """The rail must never block a trade that REDUCES the imbalance - otherwise
+    a leaning book could not be hedged back toward neutral."""
+    rm = make_net_rm()
+    approved = rm.approve_trade(
+        TradeRequest("BTC", False, 50000, 51500, None, 100),   # short against a long book
+        account_capital=1000, current_total_exposure_usd=600, net_exposure_usd=600)
+    assert approved.size_usd == 100
+
+
+def test_short_side_is_capped_symmetrically():
+    rm = make_net_rm()
+    approved = rm.approve_trade(
+        TradeRequest("BTC", False, 50000, 51500, None, 100),
+        account_capital=1000, current_total_exposure_usd=480, net_exposure_usd=-480)
+    assert approved.size_usd == 20
+
+
+def test_balanced_book_is_not_restricted():
+    """Four positions offsetting each other are not one bet, and must not be
+    treated as though they were."""
+    rm = make_net_rm()
+    approved = rm.approve_trade(
+        TradeRequest("BTC", True, 50000, 48500, None, 100),
+        account_capital=1000, current_total_exposure_usd=800, net_exposure_usd=0)
+    assert approved.size_usd == 100
+
+
+def test_cap_disabled_when_unset():
+    """Older configs without the field must keep working unchanged."""
+    config = RiskConfig(
+        max_leverage=10, max_position_pct_of_capital=0.20, kelly_fraction=0.25,
+        kelly_min_edge=0.02, kelly_max_size_multiplier=2.0,
+        daily_loss_breaker_pct=0.10, require_stop_loss=True,
+        max_net_exposure_pct=0.0)
+    rm = RiskManager(config,
+                     KellySizer(kelly_fraction=0.25, min_edge=0.02, max_size_multiplier=2.0),
+                     CircuitBreaker(daily_loss_limit_pct=0.10))
+    approved = rm.approve_trade(
+        TradeRequest("BTC", True, 50000, 48500, None, 100),
+        account_capital=1000, current_total_exposure_usd=900, net_exposure_usd=900)
+    assert approved.size_usd == 100

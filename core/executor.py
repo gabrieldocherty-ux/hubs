@@ -20,7 +20,8 @@ class Executor:
         self.dry_run = dry_run  # True for --mode paper: everything runs except the real order call
 
     def try_execute(self, signal: Signal, base_size_usd: float,
-                    sleeve: str = "daily", sleeve_exposure_usd: float = 0.0) -> Optional[str]:
+                    sleeve: str = "daily", sleeve_exposure_usd: float = 0.0,
+                    net_exposure_usd: float = 0.0) -> Optional[str]:
         """`sleeve` is the strategy family this signal belongs to ("daily" or
         "macro"), and `sleeve_exposure_usd` is the notional that family already
         has open. Both are needed for the risk manager to enforce the
@@ -41,7 +42,8 @@ class Executor:
         try:
             approved = self.risk_manager.approve_trade(
                 request, account_capital, current_exposure,
-                sleeve_exposure_usd=sleeve_exposure_usd)
+                sleeve_exposure_usd=sleeve_exposure_usd,
+                net_exposure_usd=net_exposure_usd)
         except RiskRejection as e:
             return f"REJECTED: {e}"
 

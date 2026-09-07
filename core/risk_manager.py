@@ -59,6 +59,7 @@ class RiskManager:
         account_capital: float,
         current_total_exposure_usd: float,
         sleeve_exposure_usd: float = 0.0,
+        net_exposure_usd: float = 0.0,
     ) -> ApprovedTrade:
         # 1. Circuit breaker - absolute veto, checked first
         if not self.breaker.can_trade(account_capital):
@@ -85,6 +86,31 @@ class RiskManager:
                     "{} sleeve is at its {:.0%} allocation "
                     "(${:.2f} of ${:.2f} used)".format(
                         request.sleeve, sleeve_weight, sleeve_exposure_usd, sleeve_cap))
+
+        # 3c. NET DIRECTIONAL exposure. Every other rail here is blind to
+        # correlation: it caps each trade and each family, so four positions all
+        # long and four positions offsetting each other look identical - even
+        # though the first is 4x one bet. On a venue where the majors move
+        # together that is the difference between a normal day and a breaker
+        # trip. Measured 2026-09-07: the book reached 58% net one-way, where a
+        # correlated gap day costs ~9.4% of capital against a 10% daily breaker.
+        net_cap_pct = getattr(self.config, "max_net_exposure_pct", None)
+        if net_cap_pct:
+            signed = size_usd if request.is_buy else -size_usd
+            projected = net_exposure_usd + signed
+            cap = account_capital * net_cap_pct
+            # only block when the trade makes the imbalance WORSE - a trade that
+            # offsets an existing lean should always be allowed through
+            if abs(projected) > cap and abs(projected) > abs(net_exposure_usd):
+                room = max(0.0, cap - abs(net_exposure_usd))
+                if room < MIN_ORDER_USD:
+                    raise RiskRejection(
+                        "net directional exposure would reach ${:.2f} against a "
+                        "${:.2f} cap ({:.0%} of capital) - the book is already "
+                        "leaning {} and this adds to it".format(
+                            abs(projected), cap, net_cap_pct,
+                            "long" if net_exposure_usd > 0 else "short"))
+                size_usd = min(size_usd, room)
 
         if current_total_exposure_usd + size_usd > account_capital * 1.0:
             # Never let total exposure across positions exceed 1x capital at
