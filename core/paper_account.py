@@ -49,6 +49,23 @@ class PaperTradingClient:
     def _persist(self) -> None:
         save_json(self.state_file, self._open)
 
+    def asset_max_leverage(self, coin: str):
+        """The VENUE's leverage cap for this coin, cached after the first call.
+
+        The risk manager needs it because Hyperliquid's maintenance margin is
+        half the initial margin AT MAX LEVERAGE - so the maintenance rate is a
+        property of the asset (1.25% for BTC at 40x, 5% for HYPE at 10x), and
+        the liquidation price cannot be computed without it.
+        """
+        if not hasattr(self, "_lev_cache"):
+            try:
+                meta = self.info.meta()
+                self._lev_cache = {u["name"]: u.get("maxLeverage")
+                                   for u in meta.get("universe", [])}
+            except Exception:
+                self._lev_cache = {}
+        return self._lev_cache.get(coin)
+
     def mid_price(self, coin: str) -> float:
         return float(self.info.all_mids()[coin])
 

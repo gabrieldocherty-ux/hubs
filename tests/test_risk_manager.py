@@ -268,10 +268,17 @@ def test_cap_disabled_when_unset():
 # came first and the mandatory stop would never have fired on a live position.
 # --------------------------------------------------------------------------
 
-def liquidation_distance(leverage, maintenance_fraction=0.5):
-    """Roughly how far price must move against the position before the exchange
-    force-closes it."""
-    return maintenance_fraction / leverage
+def liquidation_distance(leverage, asset_max_leverage=10, maintenance_fraction=0.5):
+    """How far price must move against the position before the exchange
+    force-closes it.
+
+    Hyperliquid sets maintenance margin at half the initial margin AT THE ASSET
+    MAX LEVERAGE, so the maintenance RATE is a property of the coin, not of the
+    leverage chosen:
+        maintenance_rate     = maintenance_fraction / asset_max_leverage
+        liquidation_distance = 1/leverage - maintenance_rate
+    """
+    return 1.0 / leverage - maintenance_fraction / asset_max_leverage
 
 
 def test_stop_always_sits_inside_liquidation():
@@ -293,11 +300,10 @@ def test_liquidation_keeps_a_two_times_buffer_where_physically_possible():
     """Not merely inside liquidation - comfortably inside, so a gap through the
     stop still exits near a chosen price instead of being force-closed.
 
-    There is a hard limit: at 1x leverage liquidation sits ~50% away, so a stop
-    wider than 25% cannot have a 2x buffer no matter what. That is physics, not
-    a bug - and the right behaviour there is to pin leverage at its minimum,
-    which is what is asserted. HYPE's 99th-percentile stop is 44.5%, so this
-    case is real rather than hypothetical.
+    There is still a hard floor: at 1x leverage on a 10x-max asset, liquidation
+    sits at 1/1 - 0.05 = 95% away, so a stop wider than 47.5% cannot have a 2x
+    buffer at any leverage. That is physics, not a bug - and the right behaviour
+    there is to pin leverage at its minimum, which is what is asserted.
     """
     rm = make_risk_manager()
     for stop_pct in (0.05, 0.10, 0.20, 0.30, 0.45):

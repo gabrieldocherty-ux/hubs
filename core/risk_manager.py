@@ -22,6 +22,7 @@ class TradeRequest:
     take_profit_price: Optional[float]
     base_size_usd: float          # fallback size before Kelly/ceilings applied
     sleeve: str = "daily"         # which strategy family this belongs to
+    asset_max_leverage: Optional[int] = None   # the VENUE's cap for this coin
 
 
 @dataclass
@@ -41,10 +42,26 @@ class RiskRejection(Exception):
 
 MIN_ORDER_USD = 10.0   # Hyperliquid rejects anything smaller
 
-# Maintenance margin as a fraction of initial margin. Hyperliquid uses roughly
-# half; this is the conservative direction (assuming a LOWER maintenance
-# requirement would put liquidation further away and permit more leverage).
+# Hyperliquid sets maintenance margin at "half of the initial margin at max
+# leverage" - verified against the docs and the venue's own margin tables. The
+# critical word is AT MAX LEVERAGE: the maintenance rate is a property of the
+# ASSET, not of the leverage the trader picks.
+#
+#     maintenance_rate = MAINTENANCE_FRACTION / asset_max_leverage
+#
+# which on 2026-09-07 gives 1.25% for BTC (40x), 2.00% for ETH (25x), 2.50% for
+# SOL (20x) and 5.00% for HYPE (10x).
+#
+# An earlier version of this file modelled liquidation as MAINTENANCE_FRACTION/L,
+# treating maintenance as half of the CHOSEN margin. That was wrong, though wrong
+# in the safe direction - it put liquidation nearer than it really is and so used
+# less leverage than necessary, tying up $146 of a $250 account in margin at full
+# book instead of $75.
 MAINTENANCE_FRACTION = 0.5
+# Fallback when the venue's cap for a coin is unknown. 10x is the most
+# conservative assumption among the coins traded here, since a LOWER max leverage
+# implies a HIGHER maintenance rate and therefore nearer liquidation.
+DEFAULT_ASSET_MAX_LEVERAGE = 10
 # How much further away liquidation must sit than the stop. 2x means a gap
 # straight through the stop still exits near a chosen price rather than being
 # force-closed by the exchange.
@@ -164,10 +181,18 @@ class RiskManager:
         # leverage changes only how much margin is posted and therefore how far
         # away the forced-liquidation price sits - never how much a move earns
         # or loses. Lower is strictly safer and gives up no return.
+        # Liquidation happens when equity falls below the maintenance requirement:
+        #     margin posted (notional/L) + PnL  <  maintenance_rate * notional
+        # so the adverse move that liquidates is
+        #     liquidation_distance = 1/L - maintenance_rate
+        # Requiring that to be at least LIQUIDATION_BUFFER times the stop gives
+        #     L <= 1 / (buffer * stop_distance + maintenance_rate)
         stop_distance_pct = abs(request.entry_price - request.stop_loss_price) / request.entry_price
-        safe_leverage = int(MAINTENANCE_FRACTION /
-                            (LIQUIDATION_BUFFER * max(stop_distance_pct, 0.001)))
-        leverage = max(1, min(safe_leverage, self.config.max_leverage))
+        asset_lev = request.asset_max_leverage or DEFAULT_ASSET_MAX_LEVERAGE
+        maintenance_rate = MAINTENANCE_FRACTION / max(1, asset_lev)
+        denom = LIQUIDATION_BUFFER * max(stop_distance_pct, 0.001) + maintenance_rate
+        safe_leverage = int(1.0 / denom) if denom > 0 else 1
+        leverage = max(1, min(safe_leverage, self.config.max_leverage, asset_lev))
 
         return ApprovedTrade(
             coin=request.coin,

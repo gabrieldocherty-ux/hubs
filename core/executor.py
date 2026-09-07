@@ -37,6 +37,8 @@ class Executor:
             take_profit_price=signal.take_profit_price,
             base_size_usd=base_size_usd,
             sleeve=sleeve,
+            asset_max_leverage=(self.client.asset_max_leverage(signal.coin)
+                                if hasattr(self.client, "asset_max_leverage") else None),
         )
 
         try:
