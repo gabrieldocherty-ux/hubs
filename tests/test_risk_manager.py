@@ -259,3 +259,80 @@ def test_cap_disabled_when_unset():
         TradeRequest("BTC", True, 50000, 48500, None, 100),
         account_capital=1000, current_total_exposure_usd=900, net_exposure_usd=900)
     assert approved.size_usd == 100
+
+
+# --------------------------------------------------------------------------
+# Leverage must keep the STOP inside the liquidation price. The old formula
+# (leverage = 1/stop_distance) put the stop one full unit of initial margin
+# away, but liquidation happens at partial margin loss - so liquidation always
+# came first and the mandatory stop would never have fired on a live position.
+# --------------------------------------------------------------------------
+
+def liquidation_distance(leverage, maintenance_fraction=0.5):
+    """Roughly how far price must move against the position before the exchange
+    force-closes it."""
+    return maintenance_fraction / leverage
+
+
+def test_stop_always_sits_inside_liquidation():
+    """The property that matters, checked across the real range of stop widths
+    seen on these coins (BTC ~8% up to HYPE ~45% at the 99th percentile)."""
+    rm = make_risk_manager()
+    for stop_pct in (0.02, 0.05, 0.08, 0.12, 0.15, 0.20, 0.30, 0.45):
+        entry = 100.0
+        approved = rm.approve_trade(
+            TradeRequest("BTC", True, entry, entry * (1 - stop_pct), None, 100),
+            account_capital=1000, current_total_exposure_usd=0)
+        liq = liquidation_distance(approved.leverage)
+        assert liq > stop_pct, (
+            "stop {:.1%} sits beyond liquidation {:.1%} at {}x leverage".format(
+                stop_pct, liq, approved.leverage))
+
+
+def test_liquidation_keeps_a_two_times_buffer_where_physically_possible():
+    """Not merely inside liquidation - comfortably inside, so a gap through the
+    stop still exits near a chosen price instead of being force-closed.
+
+    There is a hard limit: at 1x leverage liquidation sits ~50% away, so a stop
+    wider than 25% cannot have a 2x buffer no matter what. That is physics, not
+    a bug - and the right behaviour there is to pin leverage at its minimum,
+    which is what is asserted. HYPE's 99th-percentile stop is 44.5%, so this
+    case is real rather than hypothetical.
+    """
+    rm = make_risk_manager()
+    for stop_pct in (0.05, 0.10, 0.20, 0.30, 0.45):
+        entry = 100.0
+        approved = rm.approve_trade(
+            TradeRequest("BTC", True, entry, entry * (1 - stop_pct), None, 100),
+            account_capital=1000, current_total_exposure_usd=0)
+        liq = liquidation_distance(approved.leverage)
+        if liq >= 2 * stop_pct * 0.999:
+            continue
+        assert approved.leverage == 1, (
+            "no 2x buffer available at stop {:.0%}, so leverage must be pinned to "
+            "1x, got {}x".format(stop_pct, approved.leverage))
+        assert liq > stop_pct, (
+            "even at 1x the stop {:.0%} sits beyond liquidation {:.0%} - this "
+            "stop is too wide to protect at any leverage".format(stop_pct, liq))
+
+
+def test_wider_stops_get_lower_leverage():
+    """A wider stop needs liquidation further away, which means less leverage.
+    The old formula did the opposite of this."""
+    rm = make_risk_manager()
+    levs = []
+    for stop_pct in (0.03, 0.08, 0.15, 0.30):
+        approved = rm.approve_trade(
+            TradeRequest("BTC", True, 100.0, 100.0 * (1 - stop_pct), None, 100),
+            account_capital=1000, current_total_exposure_usd=0)
+        levs.append(approved.leverage)
+    assert levs == sorted(levs, reverse=True), levs
+
+
+def test_leverage_never_below_one_or_above_the_ceiling():
+    rm = make_risk_manager(max_leverage=10)
+    for stop_pct in (0.001, 0.01, 0.50, 0.90):
+        approved = rm.approve_trade(
+            TradeRequest("BTC", True, 100.0, 100.0 * (1 - stop_pct), None, 100),
+            account_capital=1000, current_total_exposure_usd=0)
+        assert 1 <= approved.leverage <= 10
