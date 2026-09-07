@@ -108,6 +108,32 @@ def main():
         rc = 1
         print("CYCLE FAILED:\n" + traceback.format_exc())
 
+    # Snapshot open interest / premium / book depth. Hyperliquid serves none of
+    # these historically, so every cycle that does not run this is a row that
+    # can never be recovered. Cheap now, and the only route to a positioning
+    # dataset later.
+    try:
+        from core import oi_collector
+        got = oi_collector.collect()
+        st = oi_collector.stats()
+        print("OI snapshot: {} rows written | history {} rows / {:.2f} days".format(
+            len(got), st["rows"], st["days"]))
+    except Exception:
+        print("OI collection failed (non-fatal):\n" + traceback.format_exc())
+
+    # Record what changed this hour. Runs in Python, not in a Claude prompt, so
+    # the record has no hole in it for every hour the app happened to be closed.
+    try:
+        from core import change_log
+        summary = change_log.record(cycle_note="rc={}".format(rc))
+        print("CHANGE SUMMARY: " + change_log.headline(summary))
+        if summary["material"]:
+            print("  material events this cycle:")
+            for e in summary["events"]:
+                print("    - " + e["text"])
+    except Exception:
+        print("change tracking failed:\n" + traceback.format_exc())
+
     # Refresh the board even if the cycle failed - a stale board that silently
     # stops updating is worse than one that shows the failure.
     try:
