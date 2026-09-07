@@ -79,27 +79,36 @@ class PaperTradingClient:
     def total_position_notional(self) -> float:
         return sum(p["size"] * p["entry_price"] for p in self._open.values())
 
-    def get_position(self, coin: str) -> Optional[dict]:
-        return self._open.get(coin)
+    @staticmethod
+    def _key(coin: str, book: str = "") -> str:
+        """Positions are namespaced by BOOK so several strategies can run against
+        one shared account without colliding. Without this, two strategies both
+        holding BTC would overwrite each other's position and the second exit
+        would close a position the first strategy still thought it owned."""
+        return "{}|{}".format(book, coin) if book else coin
+
+    def get_position(self, coin: str, book: str = "") -> Optional[dict]:
+        return self._open.get(self._key(coin, book))
 
     def open_paper_position(self, coin, is_long, size, entry_price, stop_loss_price,
-                            take_profit_price, sleeve="daily"):
+                            take_profit_price, sleeve="daily", book=""):
         # `sleeve` is recorded on the position so exposure can be attributed to a
         # strategy family after the fact - the dashboard and the risk manager both
         # need to know which allocation a live position is consuming, and inferring
         # it later from whichever strategy happens to be running is guesswork.
-        self._open[coin] = {
+        self._open[self._key(coin, book)] = {
             "size": size, "is_long": is_long, "entry_price": entry_price,
             "stop_loss_price": stop_loss_price, "take_profit_price": take_profit_price,
-            "sleeve": sleeve,
+            "sleeve": sleeve, "book": book, "coin": coin,
         }
         self._persist()
 
-    def check_paper_exit(self, coin: str, current_price: float) -> Optional[str]:
+    def check_paper_exit(self, coin: str, current_price: float,
+                         book: str = "") -> Optional[str]:
         """Returns 'stop_loss' / 'take_profit' if the simulated position should
         close at current_price, else None. Caller is responsible for actually
         closing it (removing from self._open) once logged."""
-        pos = self._open.get(coin)
+        pos = self._open.get(self._key(coin, book))
         if pos is None:
             return None
         if pos["is_long"]:
@@ -114,6 +123,6 @@ class PaperTradingClient:
                 return "take_profit"
         return None
 
-    def close_paper_position(self, coin: str):
-        self._open.pop(coin, None)
+    def close_paper_position(self, coin: str, book: str = ""):
+        self._open.pop(self._key(coin, book), None)
         self._persist()

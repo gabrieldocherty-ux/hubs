@@ -55,6 +55,10 @@ SPOT_PAIR = {"BTC": "@142", "ETH": "@151", "SOL": "@156", "HYPE": "@107"}
 CYCLE_STATE_FILE = "data/bot_cycle_state.json"
 
 
+def _cycle_state_file(book: str) -> str:
+    return f"data/bot_cycle_state_{book}.json" if book else CYCLE_STATE_FILE
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["paper", "testnet", "live"], default="paper")
@@ -81,6 +85,10 @@ def main():
                              "sleeve). All of these need --bar-interval 1d. Note adaptive_trend "
                              "was CUT on cost efficiency 2026-09-05 - it pays 30.9%/yr in "
                              "execution cost for a negative trimmed expectancy.")
+    parser.add_argument("--book", default="",
+                        help="namespace for this strategy's positions and state, so "
+                             "several strategies can share one paper account without "
+                             "colliding on the same coin.")
     parser.add_argument("--once", action="store_true", help="run a single check-and-act cycle and exit, instead of looping - for scheduler-driven invocation")
     args = parser.parse_args()
 
@@ -134,11 +142,12 @@ def main():
     # args.interval (the poll cadence) stays frequent for stop-loss checking
     # and price freshness, decoupled from the bar the SMA is computed over.
     bar_ms = BAR_MS[args.bar_interval]
-    cycle_state = load_json(CYCLE_STATE_FILE, {})
+    cycle_state = load_json(_cycle_state_file(args.book), {})
     state = {}
     for coin in coins:
         now_ms = int(time.time() * 1000)
-        adaptive_state_path = f"data/adaptive_state_{coin}.json"
+        _bk = f"_{args.book}" if args.book else ""
+        adaptive_state_path = f"data/adaptive_state{_bk}_{coin}.json"
         strategy_obj = _build_strategy(args.strategy, adaptive_state_path)
         # Some strategies need a longer warm-up than the 4h default: the daily
         # ones compute a 20-day channel and ATR, and the basis one needs enough
@@ -196,17 +205,17 @@ def main():
 
     if args.once:
         _run_cycle(coins, state, client, breaker, kelly, executor, settings, args)
-        _save_cycle_state(coins, state)
+        _save_cycle_state(coins, state, args.book)
         return
 
     try:
         while True:
             _run_cycle(coins, state, client, breaker, kelly, executor, settings, args)
-            _save_cycle_state(coins, state)  # save every pass too, not just at exit - a crash shouldn't lose state
+            _save_cycle_state(coins, state, args.book)  # save every pass too, not just at exit - a crash shouldn't lose state
             time.sleep(args.interval)
     except KeyboardInterrupt:
         print("Stopped by user.")
-        _save_cycle_state(coins, state)
+        _save_cycle_state(coins, state, args.book)
 
 
 def _to_bar(candle) -> dict:
@@ -243,7 +252,7 @@ def _build_strategy(name: str, adaptive_state_path: str):
     raise SystemExit("Unknown --strategy {!r}".format(name))
 
 
-def _save_cycle_state(coins, state) -> None:
+def _save_cycle_state(coins, state, book="") -> None:
     cycle_state = {
         coin: {
             "last_bar_time": state[coin]["last_bar_time"],
@@ -252,7 +261,7 @@ def _save_cycle_state(coins, state) -> None:
         }
         for coin in coins
     }
-    save_json(CYCLE_STATE_FILE, cycle_state)
+    save_json(_cycle_state_file(book), cycle_state)
     for coin in coins:
         s = state[coin]
         if hasattr(s["strategy"], "save"):
@@ -353,9 +362,9 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
 
             closed_trade = None
             if args.mode == "paper":
-                exit_reason = client.check_paper_exit(coin, price)
+                exit_reason = client.check_paper_exit(coin, price, book=args.book)
                 if exit_reason is not None:
-                    pos = client.get_position(coin)
+                    pos = client.get_position(coin, book=args.book)
                     direction = "long" if pos["is_long"] else "short"
                     exit_price = pos["take_profit_price"] if exit_reason == "take_profit" else pos["stop_loss_price"]
                     closed_trade = make_trade(
@@ -364,9 +373,9 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
                         entry=pos["entry_price"], exit_price=exit_price,
                         size_usd=pos["size"] * pos["entry_price"], reason=exit_reason,
                     )
-                    client.close_paper_position(coin)
+                    client.close_paper_position(coin, book=args.book)
             else:
-                current_position = client.get_position(coin)
+                current_position = client.get_position(coin, book=args.book)
                 if s["last_open_position"] is not None and current_position is None:
                     direction = "long" if s["last_open_position"]["is_long"] else "short"
                     closed_trade = make_trade(
@@ -396,7 +405,7 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
             # reverting. Without it a strategy validated with those exits would
             # behave differently live than it did in the backtest, which would
             # make its validation meaningless.
-            open_pos = client.get_position(coin)
+            open_pos = client.get_position(coin, book=args.book)
             if (open_pos is not None and closed_trade is None and bar_updated
                     and hasattr(s["strategy"], "should_exit")):
                 why = s["strategy"].should_exit(
@@ -411,7 +420,7 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
                             entry=open_pos["entry_price"], exit_price=price,
                             size_usd=open_pos["size"] * open_pos["entry_price"], reason=why,
                         )
-                        client.close_paper_position(coin)
+                        client.close_paper_position(coin, book=args.book)
                         _record_close(closed_trade, coin, kelly, breaker, capital, settings)
                         closed_trade = None
                         s["position_bars_held"] = 0
@@ -426,7 +435,8 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
                 result = executor.try_execute(
                     signal, args.base_size_usd, sleeve=sleeve,
                     sleeve_exposure_usd=_sleeve_exposure(client, state, sleeve),
-                    net_exposure_usd=_net_exposure(client, coins))
+                    net_exposure_usd=_net_exposure(client, coins),
+                    book=args.book)
                 s["position_bars_held"] = 0
                 print(f"[{coin}] {result}")
                 if args.mode != "paper":

@@ -89,24 +89,51 @@ def main():
     started = datetime.now(timezone.utc)
     print("\n===== cycle start {} =====".format(started.isoformat(timespec="seconds")))
 
+    # THE BOOK. Every validated strategy runs against the same shared paper
+    # account on LIVE mainnet prices, each in its own `book` namespace so two
+    # strategies holding the same coin cannot overwrite each other's position.
+    #
+    # Running only one strategy - which is what this did until 2026-09-07 - meant
+    # everything the research validated sat idle while the one strategy that
+    # FAILED the cost cut was the only thing trading.
+    #
+    # B1 basis deliberately excludes SOL: it does not work there (trimmed -0.09%).
+    # adaptive_trend stays listed only so the open SOL position it already holds
+    # can be managed to its exit; it was cut on cost efficiency.
+    BOOK = [
+        ("forced_flow", "1d", "BTC,ETH,SOL,HYPE", "s3"),
+        ("range_break", "1d", "BTC,ETH,SOL,HYPE", "d1"),
+        ("basis", "1d", "BTC,ETH,HYPE", "b1"),
+        ("donchian", "1d", "BTC,ETH,SOL,HYPE", "m3"),
+        ("adaptive_trend", "4h", "BTC,ETH,SOL", ""),
+    ]
+
     rc = 0
-    try:
-        import main as bot
-        # Base size comes from config/settings.json so the return target lives in
-        # one place, not hardcoded in a scheduler script nobody re-reads.
-        import json
-        cfg = json.loads((ROOT / "config" / "settings.json").read_text())
-        base = str(cfg.get("base_size_usd", 12.5))
-        sys.argv = ["main.py", "--mode", "paper", "--coins", "BTC,ETH,SOL",
-                    "--bar-interval", "4h", "--once", "--base-size-usd", base]
-        bot.main()
-    except SystemExit as e:
-        rc = int(e.code or 0)
-        if rc:
-            print("bot exited with code {}".format(rc))
-    except Exception:
-        rc = 1
-        print("CYCLE FAILED:\n" + traceback.format_exc())
+    import json
+    cfg = json.loads((ROOT / "config" / "settings.json").read_text())
+    base = str(cfg.get("base_size_usd", 16.25))
+    import main as bot
+
+    for strategy, interval, coins, book in BOOK:
+        label = book or strategy
+        print("\n--- {} ({} on {} bars) ---".format(label, strategy, interval))
+        try:
+            sys.argv = ["main.py", "--mode", "paper", "--coins", coins,
+                        "--bar-interval", interval, "--once",
+                        "--base-size-usd", base, "--strategy", strategy]
+            if book:
+                sys.argv += ["--book", book]
+            bot.main()
+        except SystemExit as e:
+            code = int(e.code or 0)
+            if code:
+                rc = code
+                print("{} exited with code {}".format(label, code))
+        except Exception:
+            # One strategy failing must not stop the rest of the book - a data
+            # hiccup on one coin should not silently halt everything else.
+            rc = 1
+            print("{} FAILED:\n{}".format(label, traceback.format_exc()))
 
     # Snapshot open interest / premium / book depth. Hyperliquid serves none of
     # these historically, so every cycle that does not run this is a row that

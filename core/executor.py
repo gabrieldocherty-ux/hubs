@@ -21,7 +21,7 @@ class Executor:
 
     def try_execute(self, signal: Signal, base_size_usd: float,
                     sleeve: str = "daily", sleeve_exposure_usd: float = 0.0,
-                    net_exposure_usd: float = 0.0) -> Optional[str]:
+                    net_exposure_usd: float = 0.0, book: str = "") -> Optional[str]:
         """`sleeve` is the strategy family this signal belongs to ("daily" or
         "macro"), and `sleeve_exposure_usd` is the notional that family already
         has open. Both are needed for the risk manager to enforce the
@@ -56,7 +56,7 @@ class Executor:
                 self.client.open_paper_position(
                     approved.coin, approved.is_buy, approved.size_usd / approved.entry_price,
                     approved.entry_price, approved.stop_loss_price, approved.take_profit_price,
-                    sleeve=sleeve,
+                    sleeve=sleeve, book=book,
                 )
             return f"PAPER TRADE (simulated, not sent to exchange): {approved}"
 
