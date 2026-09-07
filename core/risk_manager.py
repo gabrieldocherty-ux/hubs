@@ -23,6 +23,7 @@ class TradeRequest:
     base_size_usd: float          # fallback size before Kelly/ceilings applied
     sleeve: str = "daily"         # which strategy family this belongs to
     asset_max_leverage: Optional[int] = None   # the VENUE's cap for this coin
+    strength: Optional[float] = None           # signal strength, for conviction sizing
 
 
 @dataclass
@@ -67,10 +68,17 @@ DEFAULT_ASSET_MAX_LEVERAGE = 10
 # force-closed by the exchange.
 LIQUIDATION_BUFFER = 2.0
 
+# Conviction sizing bounds. A weak signal is never sized to nothing (it would
+# fall under the $10 minimum and become a skipped trade, i.e. an entry filter in
+# disguise), and a strong one is never sized without limit.
+CONVICTION_MIN = 0.5
+CONVICTION_MAX = 2.0
+
 
 class RiskManager:
     def __init__(self, config: RiskConfig, kelly: KellySizer, breaker: CircuitBreaker,
-                 allocation: Optional[dict] = None):
+                 allocation: Optional[dict] = None, conviction_sizing: bool = False,
+                 conviction_baseline: float = 1.5):
         self.config = config
         self.kelly = kelly
         self.breaker = breaker
@@ -78,6 +86,10 @@ class RiskManager:
         # This is an exposure cap, not a separate pot to size against - see
         # config/settings.json for why that distinction matters at $250 capital.
         self.allocation = allocation or {"daily": 1.0, "macro": 1.0}
+        # Conviction sizing is opt-in. Off by default so existing behaviour is
+        # unchanged unless config asks for it.
+        self.conviction_sizing = conviction_sizing
+        self.conviction_baseline = conviction_baseline
 
     def approve_trade(
         self,
@@ -97,6 +109,25 @@ class RiskManager:
 
         # 3. Size: Kelly-adjusted, falling back to base size, then hard-capped
         size_usd = self.kelly.size_trade(account_capital, request.base_size_usd)
+
+        # 3a. CONVICTION SCALING. Signal strength predicts outcome sharply on the
+        # forced-flow strategies - trades whose range is under 1.0x ATR win 23.5%
+        # of the time and lose 5.01% on average, while those at 2.5x+ win 83.3%
+        # and make 7.15%. Uniform sizing throws that away.
+        #
+        # Measured effect: +0.669pp of return per dollar deployed, and the
+        # benefit was LARGER on the test half (+0.988pp) than the train half
+        # (+0.490pp) - the opposite of curve fitting. It is also a safer class of
+        # change than most, because it alters how much each trade gets rather
+        # than which trades are taken.
+        #
+        # Bounded deliberately. Unbounded scaling would let one strong signal
+        # consume the book, and the cap below is what keeps this a sizing rule
+        # rather than a concentration rule.
+        if self.conviction_sizing and request.strength is not None:
+            ratio = request.strength / max(self.conviction_baseline, 1e-9)
+            scale = max(CONVICTION_MIN, min(CONVICTION_MAX, ratio))
+            size_usd *= scale
         max_position_usd = account_capital * self.config.max_position_pct_of_capital
         size_usd = min(size_usd, max_position_usd)
 

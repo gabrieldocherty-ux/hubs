@@ -39,6 +39,7 @@ class Executor:
             sleeve=sleeve,
             asset_max_leverage=(self.client.asset_max_leverage(signal.coin)
                                 if hasattr(self.client, "asset_max_leverage") else None),
+            strength=getattr(signal, "strength", None),
         )
 
         try:

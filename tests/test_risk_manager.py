@@ -342,3 +342,69 @@ def test_leverage_never_below_one_or_above_the_ceiling():
             TradeRequest("BTC", True, 100.0, 100.0 * (1 - stop_pct), None, 100),
             account_capital=1000, current_total_exposure_usd=0)
         assert 1 <= approved.leverage <= 10
+
+
+# --------------------------------------------------------------------------
+# Conviction sizing. Scales position size by signal strength, bounded. The
+# bounds are load-bearing: without a floor a weak signal sizes under the $10
+# minimum and gets SKIPPED, which silently turns a sizing rule into an entry
+# filter; without a ceiling one strong signal can consume the book.
+# --------------------------------------------------------------------------
+
+def make_conviction_rm(baseline=1.5):
+    config = RiskConfig(
+        max_leverage=10, max_position_pct_of_capital=0.20, kelly_fraction=0.25,
+        kelly_min_edge=0.02, kelly_max_size_multiplier=2.0,
+        daily_loss_breaker_pct=0.10, require_stop_loss=True)
+    return RiskManager(
+        config, KellySizer(kelly_fraction=0.25, min_edge=0.02, max_size_multiplier=2.0),
+        CircuitBreaker(daily_loss_limit_pct=0.10),
+        conviction_sizing=True, conviction_baseline=baseline)
+
+
+def _sized(rm, strength, base=100.0, capital=10000):
+    return rm.approve_trade(
+        TradeRequest("BTC", True, 50000, 48500, None, base, strength=strength),
+        account_capital=capital, current_total_exposure_usd=0).size_usd
+
+
+def test_stronger_signals_get_more_size():
+    rm = make_conviction_rm()
+    sizes = [_sized(rm, s) for s in (1.0, 1.5, 2.0, 2.5)]
+    assert sizes == sorted(sizes), sizes
+    assert sizes[0] < sizes[-1]
+
+
+def test_average_strength_gets_the_base_size():
+    """A baseline-strength signal must be unchanged, or the whole book is
+    silently resized when this is switched on."""
+    rm = make_conviction_rm(baseline=1.5)
+    assert abs(_sized(rm, 1.5) - 100.0) < 0.01
+
+
+def test_scaling_is_bounded_at_both_ends():
+    rm = make_conviction_rm(baseline=1.5)
+    assert abs(_sized(rm, 0.01) - 50.0) < 0.01, "floor must hold at 0.5x"
+    assert abs(_sized(rm, 99.0) - 200.0) < 0.01, "ceiling must hold at 2.0x"
+
+
+def test_missing_strength_is_sized_normally():
+    """A strategy that does not report strength must not be penalised."""
+    rm = make_conviction_rm()
+    assert abs(_sized(rm, None) - 100.0) < 0.01
+
+
+def test_disabled_by_default():
+    """Switching this on is a deliberate act, not a side effect of an upgrade."""
+    rm = make_risk_manager()
+    approved = rm.approve_trade(
+        TradeRequest("BTC", True, 50000, 48500, None, 100, strength=3.0),
+        account_capital=10000, current_total_exposure_usd=0)
+    assert abs(approved.size_usd - 100.0) < 0.01
+
+
+def test_conviction_never_breaches_the_position_cap():
+    """A 2x scale-up must still be caught by the 20%-of-capital rail."""
+    rm = make_conviction_rm()
+    size = _sized(rm, 5.0, base=200.0, capital=1000)
+    assert size <= 200.0, "20% of $1000 is $200"

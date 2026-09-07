@@ -117,7 +117,10 @@ def main():
         max_size_multiplier=settings.risk.kelly_max_size_multiplier,
     )
     breaker = CircuitBreaker(daily_loss_limit_pct=settings.risk.daily_loss_breaker_pct)
-    risk_manager = RiskManager(settings.risk, kelly, breaker, allocation=settings.allocation)
+    risk_manager = RiskManager(
+        settings.risk, kelly, breaker, allocation=settings.allocation,
+        conviction_sizing=getattr(settings.risk, "conviction_sizing", False),
+        conviction_baseline=getattr(settings.risk, "conviction_baseline", 1.5))
     executor = Executor(
         client, risk_manager, settings.vault_journal_path, dry_run=(args.mode == "paper")
     )

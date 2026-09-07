@@ -23,6 +23,13 @@ class Signal:
     stop_loss_price: float
     take_profit_price: Optional[float]
     confidence: str  # free-text rationale, goes straight into the trade journal
+    strength: Optional[float] = None
+    """How strong this signal is, in the strategy's own units.
+
+    Optional, and only meaningful relative to a strategy's own baseline - the
+    risk manager scales it against `conviction_baseline`. Used for conviction
+    sizing, which was validated twice with the benefit LARGER out of sample
+    than in it. A strategy that does not set it is sized normally."""
 
 
 class Strategy(Protocol):

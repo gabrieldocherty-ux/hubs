@@ -17,6 +17,8 @@ class RiskConfig:
     daily_loss_breaker_pct: float
     require_stop_loss: bool
     max_net_exposure_pct: float = 0.50
+    conviction_sizing: bool = False
+    conviction_baseline: float = 1.5
 
 
 @dataclass

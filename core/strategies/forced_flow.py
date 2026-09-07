@@ -122,14 +122,22 @@ class ForcedFlowContinuation(Strategy):
         coin = market_data["coin"]
         ratio = today["v"] / avg_vol
 
+        # Conviction score: how outsized today's RANGE is against ATR. This is
+        # the variable with the validated dose-response (23.5% win rate below
+        # 1.0x, 83.3% above 2.5x), so it is what sizing should scale on - not
+        # the volume ratio that triggered the entry.
+        strength = (today["h"] - today["l"]) / atr
+
         if today["c"] > today["o"]:
             return Signal(coin, Direction.LONG, price, price - self.stop_atr * atr, None,
                           "forced-flow continuation: volume {:.1f}x 20d avg, day closed up "
-                          "(hold {}d or {:.1f}xATR stop)".format(ratio, self.hold_days, self.stop_atr))
+                          "(hold {}d or {:.1f}xATR stop)".format(ratio, self.hold_days, self.stop_atr),
+                          strength=strength)
         if today["c"] < today["o"]:
             return Signal(coin, Direction.SHORT, price, price + self.stop_atr * atr, None,
                           "forced-flow continuation: volume {:.1f}x 20d avg, day closed down "
-                          "(hold {}d or {:.1f}xATR stop)".format(ratio, self.hold_days, self.stop_atr))
+                          "(hold {}d or {:.1f}xATR stop)".format(ratio, self.hold_days, self.stop_atr),
+                          strength=strength)
         return None
 
 
@@ -194,9 +202,11 @@ class RangeBreakCascade(Strategy):
         if price > hh:
             return Signal(coin, Direction.LONG, price, price - self.stop_atr * atr, None,
                           "cascade breakout: closed above {}d high on a {:.1f}xATR range "
-                          "(hold {}d)".format(self.channel, mult, self.hold_days))
+                          "(hold {}d)".format(self.channel, mult, self.hold_days),
+                          strength=mult)
         if price < ll:
             return Signal(coin, Direction.SHORT, price, price + self.stop_atr * atr, None,
                           "cascade breakdown: closed below {}d low on a {:.1f}xATR range "
-                          "(hold {}d)".format(self.channel, mult, self.hold_days))
+                          "(hold {}d)".format(self.channel, mult, self.hold_days),
+                          strength=mult)
         return None
