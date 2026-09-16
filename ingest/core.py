@@ -113,10 +113,33 @@ class Store:
         self._last_flush = time.time()
         self._lock = threading.Lock()
         self.written = 0
+        # Newest tick per symbol, maintained as ticks arrive.
+        #
+        # WHY THIS EXISTS. latest() answered "the most recent tick per symbol"
+        # with a window function over the WHOLE ticks table. At 3.7M rows that
+        # took 18.4 SECONDS per call, while the panel calls it on every page
+        # load - and it gets slower every hour the stream runs, because the
+        # query scans history to find the present. The answer is already
+        # passing through add(); keeping it costs one dict write per tick and
+        # turns the read into a lookup that does not grow with the table.
+        self._last = {}
+        # Baseline taken once at open, so stats() is arithmetic afterwards.
+        # These four aggregates cost ~0.00s on 3.7M rows; it is the flush they
+        # used to sit behind that was expensive.
+        b = self.con.execute(
+            'SELECT count(*), count(DISTINCT symbol), min(ts), max(ts) FROM ticks'
+        ).fetchone()
+        self._base_rows, self._base_symbols = b[0] or 0, b[1] or 0
+        self._base_first, self._base_last = b[2], b[3]
 
     def add(self, tick: Tick):
         with self._lock:
             self._buf.append([getattr(tick, c) for c in COLS])
+            # Guard on ts: a late-arriving tick must not overwrite a newer one.
+            prev = self._last.get(tick.symbol)
+            if prev is None or (tick.ts or 0) >= (prev[6] or 0):
+                self._last[tick.symbol] = (tick.symbol, tick.venue, tick.kind,
+                                           tick.last, tick.bid, tick.ask, tick.ts)
             due = (len(self._buf) >= self.batch_size
                    or time.time() - self._last_flush >= self.max_age)
         if due:
@@ -135,14 +158,47 @@ class Store:
         self.written += len(rows)
         return len(rows)
 
-    def stats(self):
-        self.flush()
-        row = self.con.execute(
-            'SELECT count(*), count(DISTINCT symbol), min(ts), max(ts) FROM ticks'
-        ).fetchone()
-        return {'rows': row[0], 'symbols': row[1], 'first': row[2], 'last': row[3]}
+    def stats(self, exact=False):
+        """Store summary. Does NOT flush, and that is the point.
+
+        This is called on every panel page load. The old version flushed first,
+        which forced a write - and therefore a wait on the writer's lock and on
+        DuckDB index maintenance - just to answer a question about counts. The
+        panel became slower the longer the stream ran, which is precisely
+        backwards for a live view.
+
+        The counters here are maintained as ticks pass through, so the answer is
+        arithmetic rather than a query. Pass exact=True for the authoritative
+        numbers when a caller genuinely needs them.
+        """
+        if exact:
+            self.flush()
+            row = self.con.execute(
+                'SELECT count(*), count(DISTINCT symbol), min(ts), max(ts) FROM ticks'
+            ).fetchone()
+            return {'rows': row[0], 'symbols': row[1], 'first': row[2],
+                    'last': row[3]}
+        with self._lock:
+            pending = len(self._buf)
+            last_ts = max((v[6] for v in self._last.values() if v[6]), default=None)
+            symbols = len(self._last)
+        return {'rows': self._base_rows + self.written + pending,
+                'symbols': symbols or self._base_symbols,
+                'first': self._base_first,
+                'last': last_ts or self._base_last}
 
     def latest(self, limit=20):
+        """Newest tick per symbol.
+
+        Served from the in-memory map when the stream is live. The SQL path is
+        kept for the standalone case - a panel opened against a database with no
+        feed attached has an empty map and still needs an answer - but it is the
+        slow path and is only correct to use when nothing is arriving.
+        """
+        with self._lock:
+            cached = sorted(self._last.values()) if self._last else None
+        if cached is not None:
+            return cached[:limit]
         self.flush()
         return self.con.execute(
             'SELECT symbol, venue, kind, last, bid, ask, ts FROM ticks '
