@@ -1,0 +1,93 @@
+[
+  {
+    "provider": "hyperliquid",
+    "symbol": "BTC",
+    "kind": "perp",
+    "enabled": true,
+    "note": "the existing research universe"
+  },
+  {
+    "provider": "hyperliquid",
+    "symbol": "ETH",
+    "kind": "perp",
+    "enabled": true,
+    "note": ""
+  },
+  {
+    "provider": "hyperliquid",
+    "symbol": "SOL",
+    "kind": "perp",
+    "enabled": true,
+    "note": ""
+  },
+  {
+    "provider": "hyperliquid",
+    "symbol": "HYPE",
+    "kind": "perp",
+    "enabled": true,
+    "note": ""
+  },
+  {
+    "provider": "binance",
+    "symbol": "BTCUSDT",
+    "kind": "crypto",
+    "enabled": true,
+    "note": "cross-venue reference"
+  },
+  {
+    "provider": "binance",
+    "symbol": "ETHUSDT",
+    "kind": "crypto",
+    "enabled": true,
+    "note": ""
+  },
+  {
+    "provider": "yahoo",
+    "symbol": "VFV.TO",
+    "kind": "equity",
+    "enabled": true,
+    "note": "validated vol-managed sleeve"
+  },
+  {
+    "provider": "yahoo",
+    "symbol": "XIU.TO",
+    "kind": "equity",
+    "enabled": true,
+    "note": "validated trend sleeve"
+  },
+  {
+    "provider": "coinbase",
+    "symbol": "BTC-USD",
+    "kind": "crypto",
+    "enabled": true,
+    "note": "independent source 2"
+  },
+  {
+    "provider": "coinbase",
+    "symbol": "ETH-USD",
+    "kind": "crypto",
+    "enabled": true,
+    "note": ""
+  },
+  {
+    "provider": "kraken",
+    "symbol": "BTC/USD",
+    "kind": "crypto",
+    "enabled": true,
+    "note": "independent source 3"
+  },
+  {
+    "provider": "kraken",
+    "symbol": "ETH/USD",
+    "kind": "crypto",
+    "enabled": true,
+    "note": ""
+  },
+  {
+    "provider": "kraken",
+    "symbol": "SOL/USD",
+    "kind": "crypto",
+    "enabled": true,
+    "note": "HOT RELOAD AUDIT PROBE"
+  }
+]

@@ -1,0 +1,529 @@
+{
+ "registered_at": "2026-09-10T00:57:26+00:00",
+ "generated_by": "research/degradation.py",
+ "seed": 20260907,
+ "cost_per_trade": 0.0019,
+ "position_fraction": 0.065,
+ "note": "Pre-registered BEFORE any live trade existed (data/trade_log.jsonl did not exist at registration). Thresholds and responses are fixed here so that no judgement is exercised after seeing a bad run. Re-registering these numbers after live data arrives defeats the entire purpose of the file: it is the same act as retuning the strategy, one level up.",
+ "strategies": {
+  "forced_flow": {
+   "label": "S3 ForcedFlowContinuation",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "variants": [
+    "forced_flow_continuation"
+   ],
+   "sleeve": "daily",
+   "n_backtest_trades": 202,
+   "mean": 0.017979,
+   "stdev": 0.118218,
+   "median": 0.013261,
+   "win_rate": 0.5495,
+   "trades_per_year": 65.35,
+   "horizon_trades": 131,
+   "cost_per_trade": 0.0019,
+   "rungs": {
+    "half": {
+     "alpha": 0.2,
+     "c": 1.7653,
+     "min_trades": 10
+    },
+    "paused": {
+     "alpha": 0.05,
+     "c": 2.3659,
+     "min_trades": 20
+    },
+    "retired": {
+     "alpha": 0.01,
+     "c": 2.9068,
+     "min_trades": 30
+    }
+   },
+   "hysteresis": 0.5,
+   "recover_trades": 5,
+   "drawdown_profile": {
+    "bootstrap_paths": 5000,
+    "block_len": 5,
+    "worst_run": {
+     "5": {
+      "iid": {
+       "p50": -0.49878,
+       "p90": -0.65554,
+       "p95": -0.70648,
+       "p99": -0.79819
+      },
+      "block": {
+       "p50": -0.47617,
+       "p90": -0.59581,
+       "p95": -0.63269,
+       "p99": -0.70009
+      }
+     },
+     "10": {
+      "iid": {
+       "p50": -0.59672,
+       "p90": -0.84759,
+       "p95": -0.9308,
+       "p99": -1.09113
+      },
+      "block": {
+       "p50": -0.6132,
+       "p90": -0.78156,
+       "p95": -0.83345,
+       "p99": -0.93466
+      }
+     },
+     "20": {
+      "iid": {
+       "p50": -0.6054,
+       "p90": -1.00384,
+       "p95": -1.13187,
+       "p99": -1.38858
+      },
+      "block": {
+       "p50": -0.65723,
+       "p90": -1.02703,
+       "p95": -1.12429,
+       "p99": -1.29665
+      }
+     },
+     "30": {
+      "iid": {
+       "p50": -0.50709,
+       "p90": -1.06023,
+       "p95": -1.21474,
+       "p99": -1.5411
+      },
+      "block": {
+       "p50": -0.57059,
+       "p90": -1.10025,
+       "p95": -1.25596,
+       "p99": -1.52273
+      }
+     }
+    },
+    "max_drawdown": {
+     "iid": {
+      "p50": -0.80079,
+      "p90": -1.33153,
+      "p95": -1.53523,
+      "p99": -2.01941
+     },
+     "block": {
+      "p50": -0.84702,
+      "p90": -1.36969,
+      "p95": -1.59435,
+      "p99": -2.00659
+     }
+    },
+    "longest_losing_streak": {
+     "iid": {
+      "p50": 5,
+      "p90": 8,
+      "p95": 9,
+      "p99": 11
+     },
+     "block": {
+      "p50": 6,
+      "p90": 9,
+      "p95": 10,
+      "p99": 13
+     }
+    }
+   }
+  },
+  "range_break": {
+   "label": "D1 RangeBreakCascade",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "variants": [
+    "range_break_cascade"
+   ],
+   "sleeve": "daily",
+   "n_backtest_trades": 74,
+   "mean": 0.035076,
+   "stdev": 0.123087,
+   "median": 0.014675,
+   "win_rate": 0.6486,
+   "trades_per_year": 23.94,
+   "horizon_trades": 60,
+   "cost_per_trade": 0.0019,
+   "rungs": {
+    "half": {
+     "alpha": 0.2,
+     "c": 1.6051,
+     "min_trades": 10
+    },
+    "paused": {
+     "alpha": 0.05,
+     "c": 2.1622,
+     "min_trades": 20
+    },
+    "retired": {
+     "alpha": 0.01,
+     "c": 2.6776,
+     "min_trades": 30
+    }
+   },
+   "hysteresis": 0.5,
+   "recover_trades": 5,
+   "drawdown_profile": {
+    "bootstrap_paths": 5000,
+    "block_len": 5,
+    "worst_run": {
+     "5": {
+      "iid": {
+       "p50": -0.34069,
+       "p90": -0.5214,
+       "p95": -0.57445,
+       "p99": -0.69225
+      },
+      "block": {
+       "p50": -0.41044,
+       "p90": -0.53244,
+       "p95": -0.57059,
+       "p99": -0.62652
+      }
+     },
+     "10": {
+      "iid": {
+       "p50": -0.29917,
+       "p90": -0.60295,
+       "p95": -0.69591,
+       "p99": -0.84202
+      },
+      "block": {
+       "p50": -0.38927,
+       "p90": -0.67046,
+       "p95": -0.74757,
+       "p99": -0.8776
+      }
+     },
+     "20": {
+      "iid": {
+       "p50": -0.00946,
+       "p90": -0.5278,
+       "p95": -0.67715,
+       "p99": -0.97046
+      },
+      "block": {
+       "p50": -0.08875,
+       "p90": -0.66215,
+       "p95": -0.82092,
+       "p99": -1.07683
+      }
+     },
+     "30": {
+      "iid": {
+       "p50": 0.39669,
+       "p90": -0.31855,
+       "p95": -0.51898,
+       "p99": -0.89622
+      },
+      "block": {
+       "p50": 0.33045,
+       "p90": -0.45766,
+       "p95": -0.66832,
+       "p99": -1.0645
+      }
+     }
+    },
+    "max_drawdown": {
+     "iid": {
+      "p50": -0.43294,
+      "p90": -0.74336,
+      "p95": -0.85682,
+      "p99": -1.14476
+     },
+     "block": {
+      "p50": -0.51468,
+      "p90": -0.85952,
+      "p95": -0.99107,
+      "p99": -1.29756
+     }
+    },
+    "longest_losing_streak": {
+     "iid": {
+      "p50": 3,
+      "p90": 5,
+      "p95": 6,
+      "p99": 7
+     },
+     "block": {
+      "p50": 4,
+      "p90": 6,
+      "p95": 7,
+      "p99": 8
+     }
+    }
+   }
+  },
+  "basis": {
+   "label": "B1 BasisDislocation (BTC/ETH/HYPE)",
+   "coins": [
+    "BTC",
+    "ETH",
+    "HYPE"
+   ],
+   "variants": [
+    "basis_dislocation"
+   ],
+   "sleeve": "daily",
+   "n_backtest_trades": 134,
+   "mean": 0.021464,
+   "stdev": 0.087147,
+   "median": 0.012785,
+   "win_rate": 0.5746,
+   "trades_per_year": 83.81,
+   "horizon_trades": 168,
+   "cost_per_trade": 0.0019,
+   "rungs": {
+    "half": {
+     "alpha": 0.2,
+     "c": 1.7754,
+     "min_trades": 10
+    },
+    "paused": {
+     "alpha": 0.05,
+     "c": 2.3974,
+     "min_trades": 20
+    },
+    "retired": {
+     "alpha": 0.01,
+     "c": 2.9295,
+     "min_trades": 30
+    }
+   },
+   "hysteresis": 0.5,
+   "recover_trades": 5,
+   "drawdown_profile": {
+    "bootstrap_paths": 5000,
+    "block_len": 5,
+    "worst_run": {
+     "5": {
+      "iid": {
+       "p50": -0.33821,
+       "p90": -0.46866,
+       "p95": -0.51142,
+       "p99": -0.60183
+      },
+      "block": {
+       "p50": -0.34073,
+       "p90": -0.44516,
+       "p95": -0.48783,
+       "p99": -0.59641
+      }
+     },
+     "10": {
+      "iid": {
+       "p50": -0.36898,
+       "p90": -0.55698,
+       "p95": -0.62566,
+       "p99": -0.75837
+      },
+      "block": {
+       "p50": -0.40676,
+       "p90": -0.56156,
+       "p95": -0.60496,
+       "p99": -0.69029
+      }
+     },
+     "20": {
+      "iid": {
+       "p50": -0.30883,
+       "p90": -0.60494,
+       "p95": -0.70244,
+       "p99": -0.87722
+      },
+      "block": {
+       "p50": -0.38195,
+       "p90": -0.65681,
+       "p95": -0.72957,
+       "p99": -0.88314
+      }
+     },
+     "30": {
+      "iid": {
+       "p50": -0.18046,
+       "p90": -0.57699,
+       "p95": -0.68867,
+       "p99": -0.92057
+      },
+      "block": {
+       "p50": -0.27044,
+       "p90": -0.65187,
+       "p95": -0.75379,
+       "p99": -0.95474
+      }
+     }
+    },
+    "max_drawdown": {
+     "iid": {
+      "p50": -0.46279,
+      "p90": -0.74646,
+      "p95": -0.85582,
+      "p99": -1.10833
+     },
+     "block": {
+      "p50": -0.51947,
+      "p90": -0.80686,
+      "p95": -0.9145,
+      "p99": -1.17266
+     }
+    },
+    "longest_losing_streak": {
+     "iid": {
+      "p50": 5,
+      "p90": 7,
+      "p95": 8,
+      "p99": 11
+     },
+     "block": {
+      "p50": 6,
+      "p90": 8,
+      "p95": 9,
+      "p99": 11
+     }
+    }
+   }
+  },
+  "donchian": {
+   "label": "M3 DonchianBreakout",
+   "coins": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "HYPE"
+   ],
+   "variants": [
+    "donchian_breakout"
+   ],
+   "sleeve": "macro",
+   "n_backtest_trades": 49,
+   "mean": 0.127578,
+   "stdev": 0.715487,
+   "median": -0.013135,
+   "win_rate": 0.4898,
+   "trades_per_year": 16.21,
+   "horizon_trades": 60,
+   "cost_per_trade": 0.0019,
+   "rungs": {
+    "half": {
+     "alpha": 0.2,
+     "c": 1.1655,
+     "min_trades": 10
+    },
+    "paused": {
+     "alpha": 0.05,
+     "c": 1.4192,
+     "min_trades": 20
+    },
+    "retired": {
+     "alpha": 0.01,
+     "c": 1.5937,
+     "min_trades": 30
+    }
+   },
+   "hysteresis": 0.5,
+   "recover_trades": 5,
+   "drawdown_profile": {
+    "bootstrap_paths": 5000,
+    "block_len": 5,
+    "worst_run": {
+     "5": {
+      "iid": {
+       "p50": -0.55331,
+       "p90": -0.72519,
+       "p95": -0.77148,
+       "p99": -0.84526
+      },
+      "block": {
+       "p50": -0.49846,
+       "p90": -0.65058,
+       "p95": -0.69162,
+       "p99": -0.76173
+      }
+     },
+     "10": {
+      "iid": {
+       "p50": -0.63732,
+       "p90": -0.97802,
+       "p95": -1.07932,
+       "p99": -1.28235
+      },
+      "block": {
+       "p50": -0.50685,
+       "p90": -0.80877,
+       "p95": -0.88466,
+       "p99": -1.02417
+      }
+     },
+     "20": {
+      "iid": {
+       "p50": -0.40297,
+       "p90": -1.12883,
+       "p95": -1.31781,
+       "p99": -1.63448
+      },
+      "block": {
+       "p50": -0.27185,
+       "p90": -0.82674,
+       "p95": -0.974,
+       "p99": -1.2682
+      }
+     },
+     "30": {
+      "iid": {
+       "p50": 0.20885,
+       "p90": -0.96981,
+       "p95": -1.24017,
+       "p99": -1.76457
+      },
+      "block": {
+       "p50": 0.21154,
+       "p90": -0.67209,
+       "p95": -0.89931,
+       "p99": -1.32011
+      }
+     }
+    },
+    "max_drawdown": {
+     "iid": {
+      "p50": -0.81354,
+      "p90": -1.38725,
+      "p95": -1.61297,
+      "p99": -2.1062
+     },
+     "block": {
+      "p50": -0.66579,
+      "p90": -1.05528,
+      "p95": -1.21145,
+      "p99": -1.52452
+     }
+    },
+    "longest_losing_streak": {
+     "iid": {
+      "p50": 5,
+      "p90": 8,
+      "p95": 9,
+      "p99": 11
+     },
+     "block": {
+      "p50": 4,
+      "p90": 6,
+      "p95": 6,
+      "p99": 7
+     }
+    }
+   }
+  }
+ }
+}
