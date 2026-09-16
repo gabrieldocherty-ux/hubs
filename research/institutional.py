@@ -128,6 +128,130 @@ def expected_max_sharpe(n_trials, sr_variance):
     return math.sqrt(sr_variance) * ((1 - EULER) * a + EULER * b)
 
 
+def trial_sr_variance(config_returns):
+    """Var of the Sharpe estimates ACROSS the trials actually run.
+
+    This is the quantity Bailey & Lopez de Prado's SR0 requires, and it is NOT the
+    sampling variance of one Sharpe. WHICH WAY the substitution errs was measured
+    rather than assumed, because the answer is not one-directional. Sweeping grid
+    correlation (`load`, the weight on a shared factor) against how much the
+    configurations genuinely differ in true performance, as the ratio
+    across-trial Var / single-SR fallback Var:
+
+        true-mean dispersion        load 0.8   load 0.3   load 0.0
+        0      identical configs        0.18       0.59       0.94
+        0.0002 mild                     0.47       1.47       2.33
+        0.0008 large                    4.89      15.15      24.49
+        0.0020 extreme                 28.09      78.57     115.84
+
+    Below 1 the fallback OVERSTATES the spread, raising the SR0 hurdle and making
+    DSR too harsh - safe. Above 1 it UNDERSTATES, and DSR comes out flattering.
+    The crossover sits at very little genuine dispersion, so a grid whose members
+    differ in real quality lands in the flattering half, sometimes by 100x.
+
+    The two grids this repo published on sit in the SAFE corner: supplying the
+    true across-trial variance LOWERED the SR0 hurdle (0.456 -> 0.112 on the
+    vol-managed grid), i.e. the fallback had been too harsh, so the published DSR
+    figures are understated rather than inflated. That is why the fallback remains
+    the default: the direction it errs in on these grids is the direction that
+    does not flatter. Pass the whole grid you searched to get the correct number.
+    """
+    srs = []
+    for r in config_returns.values():
+        if len(r) < 2:
+            continue
+        sd = st.pstdev(r)
+        if sd > 0:
+            srs.append(st.mean(r) / sd)
+    return st.variance(srs) if len(srs) > 1 else None
+
+
+def _cscv_draw(n_configs, n_obs, n_splits, seed):
+    """One pure-noise CSCV draw, via per-block sums.
+
+    Mathematically identical to running pbo() on simulated noise - Sharpe on a
+    union of blocks is recoverable from each block's sum and sum of squares - but
+    the combination loop stops touching raw observations, so cost no longer scales
+    with n_obs. Verified against pbo() on matched seeds: both returned 0.5806.
+    """
+    import random as _r
+    rng = _r.Random(seed)
+    size = n_obs // n_splits
+    S = [[0.0] * n_splits for _ in range(n_configs)]
+    Q = [[0.0] * n_splits for _ in range(n_configs)]
+    for c in range(n_configs):
+        for b in range(n_splits):
+            acc = sq = 0.0
+            for _ in range(size):
+                x = rng.gauss(0.0, 0.01)
+                acc += x
+                sq += x * x
+            S[c][b] = acc
+            Q[c][b] = sq
+    n = size * (n_splits // 2)
+
+    def sr_of(c, idx):
+        acc = sum(S[c][b] for b in idx)
+        sq = sum(Q[c][b] for b in idx)
+        v = sq / n - (acc / n) ** 2
+        return (acc / n) / math.sqrt(v) if v > 0 else 0.0
+
+    worse = tot = 0
+    for tr in itertools.combinations(range(n_splits), n_splits // 2):
+        te = tuple(i for i in range(n_splits) if i not in tr)
+        ins = [sr_of(c, tr) for c in range(n_configs)]
+        best = max(range(n_configs), key=lambda c: ins[c])
+        out = [sr_of(c, te) for c in range(n_configs)]
+        order = sorted(range(n_configs), key=lambda c: out[c])
+        if order.index(best) / max(1, n_configs - 1) < 0.5:
+            worse += 1
+        tot += 1
+    return worse / tot if tot else None
+
+
+def pbo_null(n_configs, n_obs, n_splits=10, draws=400, seed=70000):
+    """The null DISTRIBUTION of PBO for one shape, not a point estimate.
+
+    WHY THIS RETURNS A DISTRIBUTION. The previous version averaged SIX draws and
+    returned a single number, and the per-draw spread is sd ~ 0.22 - so its answer
+    carried a standard error near 0.09. Seeded at 0 by default, those six draws
+    returned 0.593, and that number was reported as "the null" and used to claim
+    published results sat far below it. It was noise. Six draws cannot measure a
+    mean to better than a tenth, and this function now refuses to pretend
+    otherwise: 400 draws by default, and the spread is returned alongside the
+    mean so it cannot be quoted without it.
+
+    Returns a dict: mean, sd, median, p01/p05/p10/p25, draws, values.
+    """
+    vals = [v for v in (_cscv_draw(n_configs, n_obs, n_splits, seed + d)
+                        for d in range(draws)) if v is not None]
+    if len(vals) < 2:
+        return None
+    vals.sort()
+    q = lambda f: vals[min(len(vals) - 1, int(len(vals) * f))]
+    return {'mean': st.mean(vals), 'sd': st.stdev(vals), 'median': q(0.5),
+            'p01': q(0.01), 'p05': q(0.05), 'p10': q(0.10), 'p25': q(0.25),
+            'draws': len(vals), 'values': vals}
+
+
+def pbo_pvalue(observed, n_configs, n_obs, n_splits=10, draws=400, seed=70000,
+               null=None):
+    """P(a no-edge grid of this shape produces a PBO at least this low).
+
+    THIS IS THE NUMBER TO QUOTE, not a raw PBO and not its distance from 0.5. A
+    PBO of 0.10 sounds decisive and is not: the null's own sd is ~0.22, so a
+    no-edge grid lands below 0.15 about five times in a hundred by luck alone.
+    """
+    nd = null or pbo_null(n_configs, n_obs, n_splits, draws, seed)
+    if not nd:
+        return None
+    below = sum(1 for v in nd['values'] if v <= observed)
+    return {'p_value': (below + 1) / (nd['draws'] + 1),
+            'null_mean': nd['mean'], 'null_sd': nd['sd'],
+            'sd_below_null': (nd['mean'] - observed) / nd['sd'] if nd['sd'] else None,
+            'draws': nd['draws']}
+
+
 def deflated_sharpe(returns, n_trials, periods=TRADING_DAYS, sr_variance=None):
     """Probability the true Sharpe is positive, after deflating for the number of
     trials, the sample length, and the shape of the return distribution.
@@ -142,8 +266,11 @@ def deflated_sharpe(returns, n_trials, periods=TRADING_DAYS, sr_variance=None):
         return 0.0, 0.0, 0.0
     sr = st.mean(returns) / sd                      # per period, NOT annualised
     g3, g4 = skew(returns), kurtosis(returns)
-    # Variance of the Sharpe estimates across trials. Without a real spread of
-    # trial results, the standard fallback is the sampling variance of one SR.
+    # The CORRECT input is the spread of Sharpes across the trials actually run -
+    # use trial_sr_variance() and pass it. Falling back to the sampling variance
+    # of a SINGLE Sharpe is a different quantity, not an approximation of the same
+    # one, and it is called out here because no caller in this repo was passing
+    # the real thing.
     if sr_variance is None:
         sr_variance = (1 - g3 * sr + ((g4 - 1) / 4.0) * sr ** 2) / (T - 1)
     sr0 = expected_max_sharpe(n_trials, sr_variance)
@@ -155,22 +282,63 @@ def deflated_sharpe(returns, n_trials, periods=TRADING_DAYS, sr_variance=None):
 
 
 # --------------------------------------------------------------------- 2. PBO
-def pbo(config_returns, n_splits=10, max_combos=2000):
+MIN_BLOCK = 20        # observations per block; a Sharpe from fewer is noise
+
+
+def pbo(config_returns, n_splits=10, max_combos=2000, min_block=MIN_BLOCK):
     """Probability of Backtest Overfitting via combinatorially symmetric CV.
 
-    config_returns: {name: [per-period returns]} - every configuration you tried,
-    aligned on the same clock. Needs at least 2 configs to mean anything; the more
-    of the real search you pass in, the more honest the answer.
+    THE NULL IS 0.5. THE PROBLEM IS THE SPREAD, NOT THE CENTRE. Pooled over
+    2,400 pure-noise universes (20 configs, T=1,000, 10 splits) this estimator
+    returns 0.4991 +/- 0.0041 - dead on 0.5, and the out-of-sample rank of the
+    in-sample winner is flat across all 20 rank buckets (4.7-5.4% each against
+    5.0% uniform). Six independent seed blocks of 400 all sit within 1.5 standard
+    errors of 0.5.
+
+    TWO WRONG EXPLANATIONS WERE COMMITTED TO THIS DOCSTRING BEFORE THAT MEASUREMENT,
+    and both are recorded because the way they failed is the lesson. The first
+    claimed the null was ~0.60 and that this was inherent to scoring complementary
+    splits. The second, after a scaling probe appeared to show decay with sample
+    length, claimed it was a finite-sample artefact that vanished as T grew. Both
+    rested on 6-to-48-draw samples of a statistic whose per-draw sd is 0.22, which
+    gives a standard error of 0.03-0.09 - far too coarse to separate 0.60 from
+    0.50. The readings that looked like a consistent 0.59-0.60 bias came from the
+    first few seeds: range(12) happens to average 0.597, range(6) 0.593. Three
+    small overlapping samples were read as three independent confirmations.
+
+    SO THE REAL CAUTION IS THE OPPOSITE OF THE ONE PREVIOUSLY WRITTEN HERE. The
+    centre needs no correction. What needs respecting is that ONE PBO number, from
+    ONE dataset, carries roughly +/-0.22 of noise. A PBO of 0.10 is not proof of
+    anything on its own - a no-edge grid of the same shape lands at or below 0.147
+    five times in a hundred. Quote pbo_pvalue(), which states how often pure noise
+    beats the number you measured, rather than the raw PBO or its distance from
+    0.5. Measured that way, the two strategies this repo published came out at
+    p = 0.026 (vol-managed, PBO 0.103) and p = 0.059 (trend, PBO 0.131) - the
+    second does not clear 5%.
+
+    ONE BIAS IS REAL, and it is a different one. For an ODD number of configs the
+    rank grid i/(n-1) puts one value exactly on 0.5, and the strict `rank < 0.5`
+    test does not count it, so the null becomes (n-1)/(2n) - 0.333 on a 3-config
+    grid, not 0.5. Use an even-sized grid, or read against pbo_null() for the
+    shape you actually ran.
+
+    pbo_null() simulates INDEPENDENT noise while a real parameter grid holds
+    correlated variants of one strategy, so it calibrates the shape effect, not
+    the correlation effect.
+
+    GUARDS. This previously accepted three observations, silently built blocks of
+    one, computed a "Sharpe" from a single number, and returned 1.0 - a confident
+    answer from nothing. Blocks must now hold at least min_block observations.
     """
     names = list(config_returns)
     if len(names) < 2:
         return None
     T = min(len(v) for v in config_returns.values())
-    if T < n_splits * 4:
-        n_splits = max(2, T // 4)
     if n_splits % 2:
         n_splits -= 1
-    if n_splits < 2:
+    while n_splits >= 2 and T // n_splits < min_block:
+        n_splits -= 2
+    if n_splits < 2 or T // max(1, n_splits) < min_block:
         return None
     size = T // n_splits
     blocks = [list(range(i * size, (i + 1) * size)) for i in range(n_splits)]

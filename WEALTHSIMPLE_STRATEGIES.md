@@ -5,6 +5,40 @@ years of adjusted daily data.
 
 ---
 
+> # ⚠️ CORRECTION — HOW PBO WAS BEING READ (2026-09-16)
+>
+> **No strategy is withdrawn by this.** What changes is how strong the PBO
+> evidence was claimed to be, in the direction of *less* strong.
+>
+> PBO numbers here were previously read against a "null" of ~0.60, computed by
+> `pbo_null()` from **six** simulated draws. The per-draw spread of that statistic
+> is sd ≈ 0.22, so six draws carry a standard error near 0.09 — far too coarse to
+> locate the null at all. Pooled over 2,400 draws the null is **0.4991 ± 0.0041**,
+> i.e. exactly 0.5, and the rank histogram behind it is flat. Two different
+> explanations for the phantom 0.60 bias were written into `institutional.py`
+> before it was measured properly; both are wrong and both are kept in that
+> docstring so the mistake stays legible.
+>
+> The consequence is that "PBO 10.3% versus a null of 0.62" overstated the case.
+> The honest statement is a p-value — how often pure noise beats the measured
+> number — and `pbo_pvalue()` now produces it:
+>
+> | | PBO | p-value | reads as |
+> |---|---|---|---|
+> | vol-managed VFV | 10.3% | **0.030** | clears 5%, not 1% |
+> | trend XIU | 13.1% | **0.057** | **does not clear 5%** |
+> | vol-managed HQU | 37.3% | 0.33 | no evidence |
+>
+> The trend result's overfitting check is therefore **marginal, not passed**. Its
+> alpha t-statistic of 3.22 is separate evidence and still stands; the PBO gate
+> simply does not add the support it was credited with.
+>
+> The general lesson is the one the withdrawn strategy already taught, in a new
+> place: a number computed from too few draws is not a weak measurement, it is an
+> unknown quantity that happens to have printed.
+
+---
+
 > # ⚠️ CORRECTION — THE OVERNIGHT STRATEGY IS WITHDRAWN
 >
 > **Everything in the next section is wrong and should not be traded.** It is kept
@@ -114,7 +148,12 @@ quality is irrelevant.
 | Sharpe | **1.33** | 1.11 |
 | max drawdown | **−13.0%** | −27.4% |
 | alpha | **+3.52%/yr, t = 2.78** | — |
-| PBO | **10.3%** | — |
+| PBO | **10.3%** (p = 0.030) | — |
+
+The PBO line means: a grid of this shape with **no edge at all** produces a
+number this low about 3 times in 100. That is a real but not overwhelming
+result, and it is weaker than the bare "10.3%" makes it sound — see the PBO
+correction at the top of this file.
 
 ---
 
@@ -123,7 +162,10 @@ quality is irrelevant.
 **Vol-managed HQU (2× Nasdaq 100), 15% target: +29.32%/yr, maxDD −46.7%.**
 
 But **alpha t = 1.82 — below the 2.0 bar.** It does not demonstrably beat holding
-HQU. It's leveraged beta harvested safely, not proven alpha. PBO 37.3%.
+HQU. It's leveraged beta harvested safely, not proven alpha. **PBO 37.3%,
+p = 0.33** — that is not weak evidence, it is no evidence: a grid with no
+edge scores at least that well a third of the time. The PBO agrees with the
+alpha t-stat here rather than rescuing it.
 
 Note what the overlay does to the *instrument*: buy-and-hold HQU returned +7.42%
 with a **−95.8%** drawdown. The vol overlay turns the same fund into +29.3% at

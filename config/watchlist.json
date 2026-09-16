@@ -82,12 +82,5 @@
     "kind": "crypto",
     "enabled": true,
     "note": ""
-  },
-  {
-    "provider": "kraken",
-    "symbol": "SOL/USD",
-    "kind": "crypto",
-    "enabled": true,
-    "note": "HOT RELOAD AUDIT PROBE"
   }
 ]

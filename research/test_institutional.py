@@ -302,34 +302,57 @@ def test_deflated_sharpe_guards():
     assert inst.deflated_sharpe([0.01] * 50, 10) == (0.0, 0.0, 0.0)      # zero sd
 
 
-def test_dsr_fallback_variance_is_not_the_across_trial_variance():
-    """DEFECT PROBE. B&LdP's SR0 needs Var[{SRhat_n}] - the spread of Sharpes
-    ACROSS the trials actually run. institutional.py substitutes the sampling
-    variance of a SINGLE Sharpe when sr_variance is None, and no caller in this
-    repo ever passes sr_variance. Measure how far apart those two quantities are
-    on a realistic grid of correlated-but-not-identical configurations.
+def test_dsr_fallback_variance_direction_depends_on_grid_dispersion():
+    """The sr_variance=None fallback substitutes the sampling variance of a SINGLE
+    Sharpe for the spread of Sharpes ACROSS trials. An earlier version of this
+    test asserted the fallback always UNDERSTATES the real spread. It does not -
+    which way it errs depends on whether the configurations differ in genuine
+    quality, and the earlier test happened to construct the one case where the
+    direction reverses (every config with the same true mean).
+
+    Ratio = across-trial Var / fallback Var. Below 1 the fallback is too harsh
+    and DSR comes out understated (safe); above 1 DSR comes out flattering.
     """
+    def ratio(load, disp, T=750, NCFG=12, reps=24):
+        out = []
+        for rep in range(reps):
+            rng = random.Random(9000 + rep)
+            common = [rng.gauss(0.0004, 0.010) for _ in range(T)]
+            cfgs = []
+            for _ in range(NCFG):
+                mu = rng.gauss(0.0, disp)
+                idio = [rng.gauss(mu, 0.004) for _ in range(T)]
+                cfgs.append([load * common[i] + idio[i] for i in range(T)])
+            srs = [st.mean(c) / st.pstdev(c) for c in cfgs]
+            best = max(srs)
+            ref = cfgs[srs.index(best)]
+            single = (1 - inst.skew(ref) * best
+                      + ((inst.kurtosis(ref) - 1) / 4) * best ** 2) / (T - 1)
+            out.append(st.variance(srs) / single)
+        return st.median(out)
+
+    tight = ratio(0.8, 0.0)        # correlated grid, no genuine dispersion
+    spread = ratio(0.0, 0.0020)    # independent configs of genuinely different quality
+    print('    [sr_variance] identical configs, correlated grid: ratio {:.2f}'.format(tight))
+    print('    [sr_variance] dispersed configs, independent:     ratio {:.1f}'.format(spread))
+    assert tight < 1.0, 'expected the fallback to be too harsh here, got {:.2f}'.format(tight)
+    assert spread > 5.0, 'expected the fallback to flatter here, got {:.1f}'.format(spread)
+
+    # And the consequence for DSR, in the safe corner the real grids occupy.
     rng = random.Random(77)
     T, NCFG = 750, 12
     common = [rng.gauss(0.0004, 0.010) for _ in range(T)]
-    cfgs = []
-    for _ in range(NCFG):                     # configs share a factor, differ in tilt
-        idio = [rng.gauss(0.0, 0.004) for _ in range(T)]
-        cfgs.append([0.8 * common[i] + idio[i] for i in range(T)])
+    cfgs = [[0.8 * common[i] + g[i] for i in range(T)]
+            for g in ([[rng.gauss(0.0, 0.004) for _ in range(T)] for _ in range(NCFG)])]
     srs = [st.mean(c) / st.pstdev(c) for c in cfgs]
-    across = st.variance(srs)
     ref = cfgs[srs.index(max(srs))]
-    single = (1 - inst.skew(ref) * max(srs)
-              + ((inst.kurtosis(ref) - 1) / 4) * max(srs) ** 2) / (T - 1)
-    dsr_default, _, sr0_default = inst.deflated_sharpe(ref, NCFG)
-    dsr_true, _, sr0_true = inst.deflated_sharpe(ref, NCFG, sr_variance=across)
-    print('    [sr_variance] across-trial {:.3e} vs single-SR fallback {:.3e}'
-          '  ratio {:.1f}x'.format(across, single, across / single))
-    print('    [sr_variance] SR0 hurdle {:.2f} -> {:.2f} ann;  DSR {:.3f} -> {:.3f}'
-          .format(sr0_default, sr0_true, dsr_default, dsr_true))
-    assert across > single, 'expected the real trial spread to exceed the fallback'
-    assert sr0_true > sr0_default
-    assert dsr_true <= dsr_default
+    across = inst.trial_sr_variance({str(i): c for i, c in enumerate(cfgs)})
+    dsr_fb, _, sr0_fb = inst.deflated_sharpe(ref, NCFG)
+    dsr_tr, _, sr0_tr = inst.deflated_sharpe(ref, NCFG, sr_variance=across)
+    print('    [sr_variance] SR0 hurdle {:.2f} -> {:.2f};  DSR {:.3f} -> {:.3f}'
+          .format(sr0_fb, sr0_tr, dsr_fb, dsr_tr))
+    assert sr0_tr < sr0_fb, 'true across-trial variance should lower the hurdle here'
+    assert dsr_tr >= dsr_fb, 'so DSR should rise: the fallback was the harsh one'
 
 
 # ================================================================ 2.  PBO
@@ -341,13 +364,54 @@ def _pbo_null(n_cfg, T, seed, n_splits=10):
 
 def test_pbo_on_pure_noise_is_about_one_half():
     """Configurations with no edge and no relationship to each other: the
-    in-sample winner is a coin flip out of sample, so PBO must sit at ~0.5.
-    Averaged over independent universes to kill the sampling noise."""
-    vals = [_pbo_null(20, 1000, seed) for seed in range(12)]
-    m = st.mean(vals)
-    print('    [pbo null, 20 configs] mean {:.3f}  range {:.3f}-{:.3f}'.format(
-        m, min(vals), max(vals)))
-    assert 0.42 < m < 0.58, 'pure-noise PBO came out at {:.3f}, not ~0.5'.format(m)
+    in-sample winner is a coin flip out of sample, so PBO must sit at 0.5.
+
+    THIS TEST WAS PREVIOUSLY UNDERPOWERED AND THAT CAUSED A REAL ERROR. It drew
+    12 universes and demanded the mean fall in 0.42-0.58. Per-universe sd is 0.22,
+    so 12 draws carry a standard error of 0.06 and the check was flaky by
+    construction - it happened to draw 0.597 and was read as evidence that the
+    null was really ~0.60, which was then written into institutional.py twice with
+    two different wrong explanations. 400 draws put the standard error near 0.011.
+    """
+    nd = inst.pbo_null(20, 1000, draws=400)
+    se = nd['sd'] / math.sqrt(nd['draws'])
+    print('    [pbo null] mean {:.4f}  sd {:.3f}  se {:.4f}  z vs 0.5 = {:+.1f}'
+          .format(nd['mean'], nd['sd'], se, (nd['mean'] - 0.5) / se))
+    assert abs(nd['mean'] - 0.5) < 4 * se, (
+        'pure-noise PBO centred at {:.4f}, not 0.5'.format(nd['mean']))
+    assert nd['sd'] > 0.15, (
+        'a single PBO is supposed to be noisy; sd came out {:.3f}'.format(nd['sd']))
+
+
+def test_pbo_null_engine_matches_the_real_pbo():
+    """pbo_null uses a block-sum shortcut instead of calling pbo(). If the two
+    ever diverge, every null and p-value in this repo is measuring the wrong
+    estimator. Same seeds, same draw order, so they must agree exactly."""
+    T, NCFG, SEEDS = 1000, 20, 8
+    slow = []
+    for seed in range(1000, 1000 + SEEDS):
+        rng = random.Random(seed)
+        slow.append(inst.pbo({'c{}'.format(i): [rng.gauss(0, 0.01) for _ in range(T)]
+                              for i in range(NCFG)}))
+    fast = [inst._cscv_draw(NCFG, T, 10, seed) for seed in range(1000, 1000 + SEEDS)]
+    print('    [engine] pbo() mean {:.4f}   _cscv_draw() mean {:.4f}'
+          .format(st.mean(slow), st.mean(fast)))
+    for a, b in zip(slow, fast):
+        assert abs(a - b) < 1e-9, (a, b)
+
+
+def test_pbo_pvalue_is_what_should_be_quoted():
+    """A low PBO is much weaker evidence than it looks, because the null's own sd
+    is ~0.22. This pins the published results to honest p-values."""
+    nd = inst.pbo_null(12, 3471, draws=300)
+    r = inst.pbo_pvalue(0.103, 12, 3471, null=nd)
+    print('    [published] vol-managed PBO 0.103 -> p = {:.3f} ({:.1f} sd below null)'
+          .format(r['p_value'], r['sd_below_null']))
+    assert 0.01 < r['p_value'] < 0.08, r
+    # A PBO sitting at the null must not read as evidence of anything.
+    mid = inst.pbo_pvalue(nd['median'], 12, 3471, null=nd)
+    print('    [control]   PBO at the null median -> p = {:.2f}'.format(mid['p_value']))
+    assert mid['p_value'] > 0.4, mid
 
 
 def test_pbo_rank_normalisation_biases_small_grids_low():
