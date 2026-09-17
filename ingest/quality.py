@@ -609,23 +609,61 @@ def check_timestamps(con, since_ms, now_ms, skew_warn_s=SKEW_WARN_S,
     diffing makes the interval non-negative by construction - the defect becomes
     mathematically invisible. So the scan walks rowid, which is the order the
     rows were actually written.
+
+    A VENUE CLOCK OFFSET IS NOT A CORRUPT TIMESTAMP, and conflating them made
+    this check cry wolf on every run. Pointed at the live stream it raised FAIL
+    on four hyperliquid symbols for a venue timestamp "in the future". The cause
+    was mundane: median(ts - venue_ts) is -7.2s, meaning hyperliquid's clock runs
+    about seven seconds AHEAD of this machine's, so the newest tick's venue
+    timestamp is always ~7.2s beyond now - and the tolerance was 5s. The check
+    was re-reporting the offset printed on its own output line, as a failure.
+
+    An earlier version of this note blamed a race instead: run_all() captures
+    now_ms once and the sweeps before this one take time, so on a live stream
+    arriving ticks can look like they came from the future. That race is REAL
+    and the clock is re-read below to close it - but it was not what produced
+    those FAILs, and the first explanation is kept here because guessing at a
+    cause that fit, without measuring, is the mistake worth remembering.
+
+    A monitor that invents failures on a live system is worse than one that
+    cannot run at all, because this one gets believed.
     """
     out = []
+    now_ms = max(now_ms, int(time.time() * 1000))
     future_cut = now_ms + future_tol_s * 1000
+    # A venue timestamp is judged against THAT VENUE'S OWN median skew, not
+    # against the receiver clock. A venue whose clock sits consistently ahead of
+    # ours is a CLOCK OFFSET, which the skew columns on this very line already
+    # report; counting it again as "timestamps in the future" states one fact
+    # twice and promotes it to FAIL. What this check should catch is a timestamp
+    # in the future BEYOND that venue's normal offset - a corrupt frame, not a
+    # clock. The receiver check keeps the plain cut, because that clock is ours
+    # and a receiver timestamp in the future is unambiguous.
     rows = con.execute("""
-        SELECT venue, symbol, count(*) AS n,
-               count(venue_ts) AS with_vts,
-               median(ts - venue_ts) AS med_skew,
-               min(ts - venue_ts) AS min_skew,
-               max(ts - venue_ts) AS max_skew,
-               sum(CASE WHEN ts > ? THEN 1 ELSE 0 END) AS fut_ts,
-               sum(CASE WHEN venue_ts > ? THEN 1 ELSE 0 END) AS fut_vts,
-               max(ts) AS max_ts
-        FROM ticks WHERE ts >= ? GROUP BY 1, 2 ORDER BY 1, 2
-    """, [future_cut, future_cut, since_ms]).fetchall()
+        WITH base AS (
+            SELECT venue, symbol, kind, ts, venue_ts FROM ticks WHERE ts >= ?
+        ), sk AS (
+            SELECT venue, symbol, median(ts - venue_ts) AS med_skew
+            FROM base WHERE venue_ts IS NOT NULL GROUP BY 1, 2
+        )
+        SELECT b.venue, b.symbol, count(*) AS n,
+               min(b.kind) AS kind,
+               count(b.venue_ts) AS with_vts,
+               median(b.ts - b.venue_ts) AS med_skew,
+               min(b.ts - b.venue_ts) AS min_skew,
+               max(b.ts - b.venue_ts) AS max_skew,
+               sum(CASE WHEN b.ts > ? THEN 1 ELSE 0 END) AS fut_ts,
+               sum(CASE WHEN b.venue_ts > ? - coalesce(s.med_skew, 0)
+                        THEN 1 ELSE 0 END) AS fut_vts,
+               max(b.ts) AS max_ts
+        FROM base b LEFT JOIN sk s
+          ON s.venue = b.venue AND s.symbol = b.symbol
+        GROUP BY 1, 2 ORDER BY 1, 2
+    """, [since_ms, future_cut, future_cut]).fetchall()
 
-    for (venue, symbol, n, with_vts, med, mn, mx, fut_ts, fut_vts,
+    for (venue, symbol, n, kind, with_vts, med, mn, mx, fut_ts, fut_vts,
          max_ts) in rows:
+        open_always = (kind or '') in ALWAYS_OPEN
         sev, bits = OK, []
         if fut_ts or fut_vts:
             sev = FAIL
@@ -640,10 +678,21 @@ def check_timestamps(con, since_ms, now_ms, skew_warn_s=SKEW_WARN_S,
         else:
             if abs(med or 0) > skew_warn_s * 1000:
                 sev = max(sev, WARN, key=_RANK.get)
-                bits.append('receiver clock {} {} the venue (median) - this data '
-                            'was already old on arrival'.format(
-                                _dur(abs(med)),
-                                'AHEAD OF' if med > 0 else 'BEHIND'))
+                # A venue print that is hours old on an instrument whose market
+                # CLOSES is the market being shut, not a clock disagreeing. The
+                # frozen check already makes this distinction; calling it a
+                # clock problem every evening trains the reader to ignore the
+                # line, which is how a real one gets missed.
+                if med > 0 and not open_always:
+                    bits.append('newest venue print is {} old (median) '
+                                '[market can close - expected outside trading '
+                                'hours; only a concern DURING a session]'
+                                .format(_dur(abs(med))))
+                else:
+                    bits.append('receiver clock {} {} the venue (median) - this '
+                                'data was already old on arrival'.format(
+                                    _dur(abs(med)),
+                                    'AHEAD OF' if med > 0 else 'BEHIND'))
             else:
                 bits.append('venue skew median {}{}, range {} to {}'.format(
                     '+' if (med or 0) >= 0 else '-', _dur(abs(med or 0)),
