@@ -293,7 +293,7 @@ def check_coverage(con, since_ms, now_ms, markets=None):
 
 
 # ------------------------------------------------------------------ 2 staleness
-def check_staleness(con, since_ms, now_ms,
+def check_staleness(con, since_ms, now_ms, markets=None,
                     warn_s=STALE_WARN_S, fail_s=STALE_FAIL_S,
                     frozen_warn_s=FROZEN_WARN_S, frozen_fail_s=FROZEN_FAIL_S):
     """Age of the newest tick, plus the longest run of one identical price.
@@ -301,19 +301,41 @@ def check_staleness(con, since_ms, now_ms,
     Age alone misses the nastier case: a socket that keeps delivering frames
     carrying a value that never changes. The run is measured in wall clock
     because tick counts are meaningless across feeds of different cadence.
+
+    A SYMBOL THAT WAS REMOVED FROM THE WATCHLIST IS NOT A BROKEN FEED. Its last
+    tick recedes further into the past every hour and it would FAIL forever,
+    which means the monitor reports BROKEN permanently over data nobody asked
+    for - and a monitor that is always red is one nobody reads. kraken:SOL/USD
+    was exactly this: removed from the watchlist, 15.6h stale, correctly noted
+    by the coverage check as off-watchlist and simultaneously FAILed here. Only
+    symbols currently on the watchlist can raise staleness above INFO; the rest
+    are reported as history, which is what they are.
     """
     out = []
+    watched = None
+    if markets is not None:
+        watched = {(m.provider, m.symbol) for m in markets if m.enabled}
+    else:
+        try:
+            watched = {(m.provider, m.symbol) for m in core.load() if m.enabled}
+        except Exception:
+            watched = None
     rows = con.execute(
         'SELECT venue, symbol, any_value(kind), max(ts), count(*) '
         'FROM ticks GROUP BY 1, 2 ORDER BY 1, 2').fetchall()
     for venue, symbol, kind, last_ts, n in rows:
+        on_watchlist = watched is None or (venue, symbol) in watched
         age = now_ms - last_ts
         sev = FAIL if age > fail_s * 1000 else (
             WARN if age > warn_s * 1000 else OK)
+        msg = 'newest tick {} old'.format(_dur(age))
+        if not on_watchlist:
+            sev = min(sev, INFO, key=_RANK.get)
+            msg += ' [not on the watchlist - historical data, not a live feed]'
         out.append(Finding(
-            'staleness', _scope(venue, symbol), sev,
-            'newest tick {} old'.format(_dur(age)),
-            {'age_ms': age, 'rows': n, 'kind': kind}))
+            'staleness', _scope(venue, symbol), sev, msg,
+            {'age_ms': age, 'rows': n, 'kind': kind,
+             'on_watchlist': on_watchlist}))
 
     # Gaps-and-islands: consecutive rows sharing a price form one run.
     runs = con.execute("""
@@ -985,7 +1007,7 @@ def run_all(con=None, path=None, window_h=24.0, now_ms=None, markets=None,
                             'database - nothing has ever been ingested')]
         f = []
         f += check_coverage(con, since_ms, now_ms, markets=markets)
-        f += check_staleness(con, since_ms, now_ms)
+        f += check_staleness(con, since_ms, now_ms, markets=markets)
         f += check_gaps(con, since_ms, now_ms)
         f += check_quotes(con, since_ms)
         f += check_outliers(con, since_ms)
