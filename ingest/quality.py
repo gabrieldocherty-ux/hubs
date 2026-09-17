@@ -105,9 +105,19 @@ READ-ONLY BY DEFAULT. data/market.duckdb is single-writer and is normally held b
 the running ingest process. Every connection here is opened read_only=True; this
 module never writes, and must never be the reason the stream cannot.
 
-    python ingest/quality.py                 # last 24h
+AND WHEN THE STREAM IS UP, IT CANNOT OPEN THE FILE AT ALL. DuckDB refuses even a
+read-only handle while another process holds the write lock, which meant this
+monitor only worked against a STOPPED system - the one time its answer does not
+matter. A data-quality alarm you have to halt ingestion to hear is not an alarm.
+So the CLI now falls back to the panel, which runs run_all() in the process that
+already owns the store (divergence.py solves the same problem the same way), and
+run_all() accepts that Store directly. Nothing about the checks changes; only who
+executes them.
+
+    python ingest/quality.py                 # last 24h, live or stopped
     python ingest/quality.py --window 6      # last 6h
     python ingest/quality.py --all --json    # whole history, machine readable
+    python ingest/quality.py --port 8788     # panel to fall back to
 
 Exit code is 0 when nothing is broken and 1 when a FAIL is raised, so it can be
 wired into a scheduled task.
@@ -987,6 +997,22 @@ def report(findings=None, window_h=24.0, path=None, con=None, verbose=False):
     return findings
 
 
+def run_via_api(port=8788, window_h=24.0):
+    """Ask the panel to run the checks in the process that owns the database.
+
+    DuckDB allows one writer. When the stream is up, `quality.py` cannot open
+    the file at all - so without this the monitor only worked against a STOPPED
+    system, which is the one time its answer does not matter. divergence.py
+    solves the same problem the same way.
+    """
+    import urllib.request
+    url = 'http://127.0.0.1:{}/api/quality?window={}'.format(port, window_h)
+    with urllib.request.urlopen(url, timeout=120) as r:
+        d = json.loads(r.read())
+    return [Finding(f['check'], f['scope'], f['severity'], f['detail'],
+                    f.get('metrics') or {}) for f in d['findings']]
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description='Data quality monitor for the tick '
                                             'and options store.')
@@ -996,9 +1022,19 @@ def main(argv=None):
     p.add_argument('--all', action='store_true', help='whole history')
     p.add_argument('--json', action='store_true', help='machine-readable output')
     p.add_argument('--verbose', action='store_true', help='show passing checks')
+    p.add_argument('--port', type=int, default=8788,
+                   help='panel port to fall back to when the stream holds the '
+                        'database (default 8788)')
     a = p.parse_args(argv)
     window = 0 if a.all else a.window
-    findings = run_all(path=a.db, window_h=window)
+    try:
+        findings = run_all(path=a.db, window_h=window)
+    except duckdb.IOException:
+        # The stream is running and owns the write lock. Route through the panel
+        # rather than reporting a database error as if it were a data problem.
+        print('(database is held by the running ingest process - asking the '
+              'panel on port {} to run the checks in-process)\n'.format(a.port))
+        findings = run_via_api(port=a.port, window_h=window)
     if a.json:
         print(json.dumps({'summary': summary(findings),
                           'findings': [f.to_dict() for f in findings]},

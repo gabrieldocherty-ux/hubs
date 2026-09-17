@@ -28,6 +28,14 @@ import core  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 STRATS = HERE / 'strategies.json'
+
+
+def _dumps(obj):
+    """json.dumps that will not die on a date. Quality findings carry expiry
+    dates and timestamps in their detail dicts, and a serializer that raises
+    turns a monitoring endpoint into a 500 at exactly the moment it has
+    something to report."""
+    return json.dumps(obj, default=str)
 ORDERS = ROOT / 'data' / 'paper_orders.jsonl'
 
 
@@ -100,6 +108,33 @@ async def api_divergence(request):
                               'warn_bps': divergence.WARN_BPS})
 
 
+async def api_quality(request):
+    """Data quality, served in-process for the same reason divergence is.
+
+    THE MONITOR COULD NOT MONITOR THE RUNNING SYSTEM, which is the only time it
+    matters. DuckDB allows one writer, the ingest process holds it, and
+    `python ingest/quality.py` therefore refused to open the database at all
+    whenever the stream was up - so the checks could only be run against a
+    STOPPED system. That is backwards: a data-quality alarm you have to halt
+    ingestion to hear is not an alarm.
+
+    run_all() already accepts the shared Store, so this costs nothing but a
+    route. ?window=<hours> narrows the lookback; the default is 24h and the
+    full options and outlier sweeps are the expensive part, so keep it modest
+    if calling this often.
+    """
+    import quality
+    try:
+        window = float(request.query.get('window', 24.0))
+    except (TypeError, ValueError):
+        window = 24.0
+    findings = quality.run_all(con=store(), window_h=window)
+    return web.json_response({
+        'summary': quality.summary(findings),
+        'window_h': window,
+        'findings': [f.to_dict() for f in findings]}, dumps=_dumps)
+
+
 async def api_strategies(request):
     return web.json_response(json.loads(STRATS.read_text()))
 
@@ -167,6 +202,7 @@ def build_app():
         web.post('/api/markets/toggle', api_toggle),
         web.get('/api/strategies', api_strategies),
         web.get('/api/divergence', api_divergence),
+        web.get('/api/quality', api_quality),
         web.get('/api/history', api_history),
         web.get('/api/orders', api_orders),
         web.post('/api/orders', api_order),
