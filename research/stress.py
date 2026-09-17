@@ -358,21 +358,33 @@ def _mean_break_supf(x):
     return best, at
 
 
-def _stationary_bootstrap(x, mean_block, rng):
-    """Politis & Romano. Block lengths are geometric, so the resampled series is
-    stationary - unlike fixed blocks, which put a seam at a predictable period and
-    can create artefacts at exactly the horizon being tested."""
-    n = len(x)
+def _stationary_bootstrap_idx(n, mean_block, rng):
+    """Politis & Romano, returning INDICES rather than values.
+
+    Indices matter because a bar is more than its return. A rule keyed on volume
+    or on the high-low range - which is most of this project's crypto book - needs
+    the rest of the bar to travel with the return that was drawn, or the synthetic
+    market has returns from one day and volume from another and the rule is being
+    tested against something that never existed.
+
+    Block lengths are geometric, so the resampled series is stationary - unlike
+    fixed blocks, which put a seam at a predictable period and can manufacture an
+    artefact at exactly the horizon being tested.
+    """
     p = 1.0 / max(1, mean_block)
     out = []
     i = rng.randrange(n)
     while len(out) < n:
-        out.append(x[i])
+        out.append(i)
         if rng.random() < p:
             i = rng.randrange(n)
         else:
             i = (i + 1) % n
     return out
+
+
+def _stationary_bootstrap(x, mean_block, rng):
+    return [x[i] for i in _stationary_bootstrap_idx(len(x), mean_block, rng)]
 
 
 def structural_break(rets, bench=None, draws=400, mean_block=21, seed=11):
@@ -523,7 +535,8 @@ def path_stress(weight_fn, market, mean_blocks=(5, 21, 63), draws=200, seed=17):
     for mb in mean_blocks:
         sharpes, cagrs = [], []
         for _ in range(draws):
-            path = _stationary_bootstrap(rets, mb, rng)
+            idx = _stationary_bootstrap_idx(len(rets), mb, rng)
+            path = [rets[i] for i in idx]
             # The synthetic bars MUST start one period before the first return,
             # matching the real convention where ret[i] = c[i+1]/c[i] - 1 and a
             # weight computed from c[i] is applied to ret[i].
@@ -541,8 +554,35 @@ def path_stress(weight_fn, market, mean_blocks=(5, 21, 63), draws=200, seed=17):
             for r in path:
                 eq *= (1 + r)
                 px.append(eq)
-            synth = {'ret': path, 'rt': market['rt'],
-                     'bars': [{'c': p, 'o': p, 'h': p, 'l': p} for p in px],
+            src = market.get('bars') or []
+            synth_bars = []
+            for k, p in enumerate(px):
+                # Carry the SHAPE of a real bar - its high/low spread around the
+                # close, its volume, its timestamp spacing - from whichever bar
+                # supplied this period's return. A rule reading volume or range
+                # then sees a coherent bar rather than a flat one.
+                b = {'c': p, 'o': p, 'h': p, 'l': p}
+                j = idx[k] if k < len(idx) else (idx[-1] if idx else None)
+                s = src[j] if (j is not None and j < len(src)) else None
+                if s:
+                    c0 = s.get('c') or p
+                    if c0:
+                        for f in ('o', 'h', 'l'):
+                            if s.get(f):
+                                b[f] = p * (s[f] / c0)
+                    if s.get('v') is not None:
+                        b['v'] = s['v']
+                # Timestamps come from a synthetic clock, NOT from the sampled
+                # bar: they must be strictly increasing and unique, because
+                # callers key trades by timestamp and a resampled series repeats
+                # source bars. Spacing is taken from the real series.
+                if src and src[0].get('t') is not None:
+                    step = 86_400_000
+                    if len(src) > 1 and src[1].get('t') is not None:
+                        step = max(1, src[1]['t'] - src[0]['t'])
+                    b['t'] = src[0]['t'] + k * step
+                synth_bars.append(b)
+            synth = {'ret': path, 'rt': market['rt'], 'bars': synth_bars,
                      'dates': market.get('dates')}
             w, rr = _align(weight_fn(synth), path)
             r = eng.run(w, rr, market['rt'])
@@ -716,8 +756,22 @@ def full_report(name, weight_fn, market, grid=None, build_fn=None, quick=False):
     d1 = next((r for r in ex if r['delay'] == 1 and r['mult'] == 1), None)
     if d0 and d1 and d0['cagr']:
         keep = d1['cagr'] / d0['cagr']
-        P('     one-day delay retains {:.0%} of CAGR   {}'.format(
-            keep, '<- MICROSTRUCTURE-DEPENDENT' if keep < 0.5 else '<- robust to timing'))
+        # Three tiers, not two. A binary pass/fail at 50% called a rule that lost
+        # 42% of its CAGR to a one-day delay "robust to timing", which is not a
+        # fair description of anything.
+        tag = ('<- MICROSTRUCTURE-DEPENDENT' if keep < 0.5 else
+               '<- TIMING-SENSITIVE, the edge is partly in the entry bar'
+               if keep < 0.85 else '<- robust to timing')
+        P('     one-day delay retains {:.0%} of CAGR   {}'.format(keep, tag))
+        # A LATER entry beating the original is a red flag for the mechanism, not
+        # a bonus: if the stated edge is a cascade that decays within days, it
+        # cannot be larger two days after the signal.
+        best = max((r for r in ex if r['mult'] == 1), key=lambda r: r['cagr'])
+        if best['delay'] > 0 and d0['cagr'] > 0 and best['cagr'] > d0['cagr'] * 1.1:
+            P('     NOTE: acting {}d late scores HIGHER ({:+.2%} vs {:+.2%}). The '
+              'entry bar is not\n           where the edge lives, which '
+              'contradicts a decay-within-days mechanism.'
+              .format(best['delay'], best['cagr'], d0['cagr']))
     P('')
 
     P('  2. LIQUIDITY  - vol-scaled impact and size caps')
