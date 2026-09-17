@@ -611,7 +611,8 @@ def failure_analysis(weight_fn, market, top=5):
 
 
 # ============================================================== 9. ARBITRAGE
-def arb_stress(spread_series, entry_z=2.0, max_hold=20, decouple_frac=0.1, seed=5):
+def arb_stress(spread_series, entry_z=2.0, max_hold=20, decouple_frac=0.1,
+               window=60, seed=5):
     """Stress specific to convergence trades, where the risk is NOT volatility.
 
     A relative-value position does not lose because the spread moved. It loses
@@ -626,23 +627,39 @@ def arb_stress(spread_series, entry_z=2.0, max_hold=20, decouple_frac=0.1, seed=
                   This is the actual tail: not a big move, a permanent one.
       LEG RISK    the unconverged rate IS the leg-risk proxy here - those are the
                   episodes left carrying exposure the strategy never intended.
+
+    THE Z-SCORE IS TRAILING, AND THE FIRST VERSION OF THIS FUNCTION GOT THAT
+    WRONG. It standardised against the mean and standard deviation of the WHOLE
+    series, which is lookahead of the plainest kind - the threshold for "this is
+    dislocated today" was computed using data from months later. It also does not
+    work: on a drifting spread the full-sample sd is dominated by the drift, so
+    almost nothing clears the threshold. Tested on constructed series it found 82
+    entries in a mean-reverting spread, FOUR in a random walk, and ZERO in a
+    trending one - not because those spreads never dislocate, but because the
+    yardstick was wrong. A basis drifts, which is exactly the case it was worst
+    at. Statistics are now measured over the trailing `window` only, which is
+    also how B1 itself defines a dislocation.
     """
     rng = random.Random(seed)
-    if len(spread_series) < 100:
+    if len(spread_series) < max(100, window + 20):
         return None
-    m, sd = st.mean(spread_series), st.pstdev(spread_series)
-    if sd <= 0:
+    z = [None] * len(spread_series)
+    for i in range(window, len(spread_series)):
+        w = spread_series[i - window:i]          # strictly BEFORE i
+        sd = st.pstdev(w)
+        if sd > 0:
+            z[i] = (spread_series[i] - st.mean(w)) / sd
+    if not any(v is not None for v in z):
         return None
-    z = [(x - m) / sd for x in spread_series]
     entries, converged, horizons = 0, 0, []
-    i = 0
+    i = window
     while i < len(z) - 1:
-        if abs(z[i]) >= entry_z:
+        if z[i] is not None and abs(z[i]) >= entry_z:
             entries += 1
             sign = 1 if z[i] > 0 else -1
             hit = None
             for k in range(1, min(max_hold, len(z) - i)):
-                if sign * z[i + k] <= 0.5:
+                if z[i + k] is not None and sign * z[i + k] <= 0.5:
                     hit = k
                     break
             if hit:
