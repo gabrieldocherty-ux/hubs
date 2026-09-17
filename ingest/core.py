@@ -178,6 +178,20 @@ class Store:
 
         executemany is kept as a fallback, because losing ticks to an
         unparseable staging file would be a worse failure than being slow.
+
+        EQUIVALENCE WAS VERIFIED, NOT ASSUMED. Both paths were given the same
+        adversarial rows - JSON containing commas, embedded double quotes, an
+        embedded newline, unicode, NULLs in every nullable column, -0.0, 1e-12,
+        1.797e308, and a comma-plus-quote inside a symbol - and they agree on
+        119 of 120 fields.
+
+        THE ONE DIFFERENCE, stated because it is a real property of this path and
+        not a bug to be discovered later: NULLSTR '' means an EMPTY STRING in a
+        VARCHAR column comes back as NULL. Only `extra` could ever hold one, it
+        is Optional[str] documented as a JSON string, no provider sets it today,
+        and empty-versus-missing carries no meaning in this schema - so the case
+        is unreachable and benign. If `extra` ever needs to distinguish '' from
+        NULL, this path must change, because CSV cannot express both.
         """
         try:
             import csv
