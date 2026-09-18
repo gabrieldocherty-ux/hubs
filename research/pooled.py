@@ -108,7 +108,26 @@ def position_series(bars, strategy_fn, params, coin, fund, warmup, **kw):
 
 
 def overlap(s1, s2):
-    """Fraction of bars where both are in the market AND on the same side."""
+    """Fraction of CO-INVESTED bars on the same side. NOT a correlation.
+
+    READ THE SECOND RETURN VALUE. It is the denominator, and ignoring it is how
+    this function came to support a claim it cannot support. "S3 and D1 are
+    0.85-1.00 correlated with each other - one bet at two frequencies, not
+    diversification" was written on this statistic. S3/D1 does score 0.94 - on
+    14% of bars. D1/M3 scores a perfect 1.00 on 11.7%. Two strategies that are
+    almost never in the market together can score 1.00 off a handful of bars,
+    and this number cannot tell you that has happened unless you look at n.
+
+    What it measures: given both are positioned, do they agree on direction.
+    That is a useful question about signal agreement.
+
+    What it does NOT measure, and must not be used for: whether holding both
+    reduces portfolio risk. The actual P&L correlations for those same pairs are
+    +0.50 and +0.46, and for the sleeve-level question the right tool already
+    exists - research/tail_correlation.py builds a daily mark-to-market series
+    for the whole book with the live rails applied, which is what an account
+    actually experiences. Use that for any allocation decision.
+    """
     both = [(a, b) for a, b in zip(s1, s2) if a != 0 and b != 0]
     if not both:
         return None, 0
