@@ -149,12 +149,30 @@ def trial_sr_variance(config_returns):
     The crossover sits at very little genuine dispersion, so a grid whose members
     differ in real quality lands in the flattering half, sometimes by 100x.
 
-    The two grids this repo published on sit in the SAFE corner: supplying the
-    true across-trial variance LOWERED the SR0 hurdle (0.456 -> 0.112 on the
-    vol-managed grid), i.e. the fallback had been too harsh, so the published DSR
-    figures are understated rather than inflated. That is why the fallback remains
-    the default: the direction it errs in on these grids is the direction that
-    does not flatter. Pass the whole grid you searched to get the correct number.
+    THE TABLE ABOVE IS NOT REPRODUCIBLE FROM WHAT IS WRITTEN, and that is a
+    defect in this docstring rather than in the finding. It does not state its
+    generator - in particular whether the shared factor was normalised out of
+    total variance - so an independent sweep reproduces the SHAPE (ratio below 1
+    only for near-identical configs, crossover at very little dispersion, past
+    100x at high dispersion) but not the magnitudes, and finds a much weaker
+    dependence on load. Treat the columns as illustrative of the direction, not
+    as measurements to be quoted.
+
+    "THE PUBLISHED GRIDS SIT IN THE SAFE CORNER" IS TRUE OF THE GRIDS AS
+    PUBLISHED AND FALSE OF THE SEARCH AS PERFORMED. Per instrument it holds and
+    reproduces exactly: the vol-managed 12-config grid gives an across/fallback
+    ratio of 0.06 and lowers SR0 from 0.456 to 0.112; the trend 10-config grid
+    gives 0.26 (0.319 -> 0.161). But those grids were each run over SIX
+    instruments, and pooling the trials that were actually searched brings
+    cross-instrument dispersion in:
+
+        vol-managed, 72 cells   ratio 0.06 -> 0.47   still safe
+        trend,       60 cells   ratio 0.26 -> 1.16   NO LONGER SAFE
+
+    Above 1 the fallback understates the spread and DSR comes out flattering -
+    the exact failure this docstring warns about. So the safe-corner claim must
+    be checked against the trial set you actually searched, not the grid you
+    happen to be holding. Pass that whole set.
     """
     srs = []
     for r in config_returns.values():
@@ -257,6 +275,33 @@ def deflated_sharpe(returns, n_trials, periods=TRADING_DAYS, sr_variance=None):
     trials, the sample length, and the shape of the return distribution.
 
     Returns (DSR, observed annual SR, the SR0 hurdle) all annualised for reading.
+
+    FEED THIS THE ACTIVE RETURN, NOT THE TOTAL RETURN, FOR ANY LONG/FLAT RULE.
+    This is the single easiest way to get a meaningless pass out of this function
+    and this repo walked into it. DSR asks "is the true Sharpe positive". For a
+    rule that is long a rising market part of the time, beta answers that for
+    free, and the answer has nothing to do with the signal. Measured on this
+    repo's own book:
+
+        series                              DSR n=1    n=72    n=204
+        VFV.TO BUY AND HOLD (no strategy)    1.0000  0.9508   0.9020
+        vol-managed VFV, total return        1.0000  0.9928   0.9815
+        trend XIU, total return              1.0000  0.9743   0.9440
+        vol-managed VFV, ACTIVE return       0.9963  0.6060   0.4641
+        trend XIU, ACTIVE return             0.9993  0.7866   0.6684
+
+    DOING NOTHING SCORES 0.9508 at an honest trial count. Both published
+    strategies cleared 0.95 on total return and both FAIL on the active return -
+    the part the signal actually added. The total-return figures were not
+    evidence of skill; they were evidence the market went up.
+
+    Use attribution() to get beta, subtract beta * benchmark, and deflate that.
+
+    AND NOTE THE TRIAL COUNT BARELY MATTERS ANYWAY. SR0 grows like sqrt(2 ln n),
+    so moving 12 -> 72 trials shifts the hurdle 0.46 -> 0.66. DSR is structurally
+    insensitive to exactly the correction people reach for it to make. When the
+    question is "did this survive the search", a bootstrap max-statistic null over
+    the whole search is the number to quote, not this one.
     """
     T = len(returns)
     if T < 10:

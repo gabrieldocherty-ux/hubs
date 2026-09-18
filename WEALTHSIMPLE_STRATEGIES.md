@@ -5,6 +5,55 @@ years of adjusted daily data.
 
 ---
 
+> # ⚠️ CORRECTION — THE WHOLE SEARCH, NOT THE WINNING CELL (2026-09-18)
+>
+> Both strategies below were selected as the best of a search across **six
+> instruments** (VFV, XIU, ZQQ, XIC, ZEB, HXT) — 72 instrument×config cells for
+> vol-managed, 60 for trend. Every number originally quoted was computed as though
+> the winning cell were the only thing ever tried.
+>
+> **Two independent tests were run against that, and both change the conclusions.**
+>
+> **1. The Deflated Sharpe figures were measuring beta, not skill.** DSR asks
+> whether the true Sharpe is positive. For a long/flat rule in a market that rose,
+> beta answers that for free:
+>
+> | series | DSR n=1 | n=72 | n=204 |
+> |---|---|---|---|
+> | **VFV.TO buy and hold — no strategy at all** | 1.0000 | **0.9508** | 0.9020 |
+> | vol-managed VFV, total return | 1.0000 | 0.9928 | 0.9815 |
+> | trend XIU, total return | 1.0000 | 0.9743 | 0.9440 |
+> | **vol-managed VFV, ACTIVE return** (beta 0.59 removed) | 0.9963 | **0.6060** | 0.4641 |
+> | **trend XIU, ACTIVE return** (beta 0.33 removed) | 0.9993 | **0.7866** | 0.6684 |
+>
+> **Doing nothing clears 0.95 at an honest trial count.** Both strategies passed on
+> total return and **both fail on the active return** — the only part the signal
+> added. The DSR numbers previously quoted were not evidence of skill.
+>
+> **2. A bootstrap max-statistic null over the entire search.** The date index is
+> resampled once per draw and the *same* resampled sequence applied to all six
+> instruments, so every drawn day brings its whole cross-section and contemporaneous
+> correlation is preserved by construction rather than approximated (verified: 15
+> pairwise correlations reproduce with mean absolute bias 0.0064). The full search is
+> re-run on each null universe and the best cell recorded. Block length is swept
+> because it decides what the null still contains — at 21 days a month of volatility
+> clustering survives, which is part of the vol-managed mechanism itself.
+>
+> | search | p (iid days) | p (week blocks) | p (month blocks) |
+> |---|---|---|---|
+> | vol-managed, best of 72 | **0.055** | 0.279 | 0.481 |
+> | trend, published XIU cell | 0.013 | **0.067** | 0.339 |
+> | trend, best cell (**ZEB.TO** SMA100 x1) | **0.0005** | **0.0040** | 0.067 |
+>
+> Note also that the six instruments are worth about **1.45 independent bets**
+> (participation ratio of their correlation matrix; 2.42 for the 60 trend return
+> streams). Feeding "72 trials" into a formula that assumes independence is wrong in
+> both directions at once, which is why the bootstrap is the number to quote.
+>
+> **What this does to each strategy is set out in its own section below.**
+
+---
+
 > # ⚠️ CORRECTION — HOW PBO WAS BEING READ (2026-09-16)
 >
 > **No strategy is withdrawn by this.** What changes is how strong the PBO
@@ -137,7 +186,7 @@ t=0.26 under a bad fill; gated it holds at **t=6.84**.
 
 ---
 
-## Supporting sleeve — vol-managed VFV (daily)
+## ~~Supporting sleeve — vol-managed VFV~~ *(UNPROVEN after the search — do not size it on the numbers below)*
 
 Weight = 10% vol target ÷ trailing 20-day vol. **~2 trades/year**, so execution
 quality is irrelevant.
@@ -147,13 +196,82 @@ quality is irrelevant.
 | CAGR | +14.05% | +17.50% |
 | Sharpe | **1.33** | 1.11 |
 | max drawdown | **−13.0%** | −27.4% |
-| alpha | **+3.52%/yr, t = 2.78** | — |
-| PBO | **10.3%** (p = 0.030) | — |
+| alpha | +3.52%/yr, t = 2.78 | — |
+| PBO | 10.3% (p = 0.030) | — |
+| **family-wise p over the 72-cell search** | **0.055 / 0.279 / 0.481** | — |
+| **DSR on the ACTIVE return, n=72** | **0.606** | — |
 
-The PBO line means: a grid of this shape with **no edge at all** produces a
-number this low about 3 times in 100. That is a real but not overwhelming
-result, and it is weaker than the bare "10.3%" makes it sound — see the PBO
-correction at the top of this file.
+**The drawdown reduction is real and is not in dispute** — −13.0% against −27.4%
+is a mechanical consequence of scaling exposure down when volatility is high, and
+it does not require an edge to be true. **The alpha claim does not survive the
+search.**
+
+This cell is simultaneously the best of all 72 by alpha t *and* by Sharpe, so no
+adjustment here is optional. Against the max-statistic null it lands at **p = 0.055
+under the most generous null and 0.28–0.48 under any null that keeps volatility
+clustering in the market** — and clustering is the mechanism this strategy trades,
+so those are the relevant ones. **Zero of the 72 cells clear 5% family-wise under
+any null.** Across all 72, median alpha t is +1.86 and the maximum is +2.78:
+**nothing in the grid reaches t = 3.**
+
+The chosen cell is the *corner* of the grid — shortest lookback, lowest target — on
+the instrument with the **shortest history and the strongest bull run**, with a
+clean monotone decay away from that corner on 5 of 6 instruments. And HXT.TO, which
+is the same underlying as XIU through a different wrapper (r = 0.994), returns
+t = 0.88 where XIU returns 2.22. That is the shape of a search artefact, and it is
+the second time a number on VFV specifically has been inflated this way — the first
+was the withdrawn overnight strategy.
+
+**Recommended statement: keep the volatility overlay if you want the drawdown
+profile, and claim no alpha for it.**
+
+---
+
+## Trend on Canadian equity — the one thing that survived the whole search
+
+Long while the close is above its own N-day average, cash below. This was never
+written up here before; it is now the strongest result in the book, and the reason
+is that it survives the correction that killed the other two.
+
+**The FAMILY clears, at every block length.** The breadth test — the mean alpha t
+across *all* 60 cells, which a single lucky maximum cannot move — gives observed
+**+1.986** against a null mean of −0.152 / +0.114 / +0.652, for **p = 0.0005 /
+0.0040 / 0.0370**. That is the test the vol-managed family fails (p = 0.007 /
+0.137 / 0.271 — it clears only when volatility clustering is removed from the
+null, i.e. only when the null is stripped of the thing it trades).
+
+**It is a Canadian-equity effect and it is clean about it:**
+
+| symbol | years | SMA100×3 alpha t | best cell | best t | cells t>2 |
+|---|---|---|---|---|---|
+| **ZEB.TO** (CA banks) | 16.3 | 4.17 | SMA100 ×1 | **4.45** | **10/10** |
+| XIC.TO (TSX composite) | 24.9 | 3.47 | SMA100 ×3 | 3.47 | 9/10 |
+| XIU.TO (TSX 60) | 24.9 | **3.22** | SMA100 ×3 | 3.22 | 5/10 |
+| HXT.TO (TSX 60, swap) | 15.8 | 2.43 | SMA100 ×3 | 2.43 | 3/10 |
+| VFV.TO (S&P 500) | 13.8 | 1.67 | SMA50 ×1 | 1.84 | 0/10 |
+| ZQQ.TO (Nasdaq 100) | 16.6 | 0.06 | SMA150 ×1 | 1.55 | 0/10 |
+
+**4/4 Canadian instruments positive, 0/2 US-exposure instruments.** But XIU, XIC
+and HXT are 0.97–0.99 correlated — that is one market three ways. The honest count
+is about **two distinguishable Canadian bets** (broad index, banks), both positive,
+and two US bets, both null.
+
+**ZEB is the result, not XIU.** All ten of its configs return alpha t = 3.15–4.45 —
+the only grid-wide robustness anywhere in this book — and its best cell survives the
+whole-search correction at **p = 0.0005 / 0.0040 / 0.067**. The XIU cell previously
+headlined ranks **11th of 60 by alpha t and 23rd of 60 by Sharpe**, and after the
+60-cell search sits at **p = 0.013 / 0.067 / 0.339**. Two independent gates now land
+just the wrong side of 5% on that specific cell: the family-wise p of 0.067 here,
+and the PBO p of 0.057 from the correction above.
+
+**Do not quote the XIU cell on its own.** Quote the family, and if a single
+instrument is to be traded, it is ZEB.
+
+**Two things to check before putting money on ZEB trend**, neither of which has been
+done: whether the edge is concentrated in avoiding the 2008 bank drawdown and March
+2020 — 16.3 years is only two or three effective trend events — and whether HXT
+returning t = 2.43 where XIU returns 3.22 on a 0.994-correlated underlying is a
+wrapper artefact of exactly the kind that killed the overnight strategy.
 
 ---
 
@@ -233,11 +351,28 @@ frequent trading in a $1,000 account is legal here (it is not in the US).
 
 ## Recommended allocation
 
-**60% gated overnight VFV / 40% vol-managed VFV.**
+**⚠️ THE ALLOCATION THIS SECTION USED TO RECOMMEND NO LONGER EXISTS.** It was
+*"60% gated overnight VFV / 40% vol-managed VFV"*, expecting $150–$200/year on
+$1,000. **60% of that is the withdrawn overnight strategy** and the other **40% is
+the vol-managed sleeve whose alpha does not survive the search**. Both legs are
+gone; the sentence is kept above so the change is legible rather than silent.
 
-Expected **$150–$200/year on $1,000** with a max drawdown under 10%. If you want
-maximum CAGR and can accept a −47% drawdown, substitute vol-managed HQU for the
-daily sleeve.
+**What the evidence currently supports:**
+
+- **Trend on Canadian equity — the only alpha claim left standing.** Family-wise
+  p = 0.0005–0.0040 on the breadth test, 4/4 Canadian instruments positive, ZEB.TO
+  grid-wide robust at alpha t = 3.15–4.45. Trade the family, and prefer ZEB to the
+  XIU cell that was previously headlined.
+- **The volatility overlay, for drawdown shape only.** −13.0% against −27.4% is a
+  mechanical consequence of scaling exposure down in high volatility and does not
+  require an edge. **Claim no alpha for it.**
+- Everything else in this file is withdrawn, rejected, or unproven.
+
+**No specific percentage split is recommended here.** The previous one was derived
+from two things that no longer stand, and re-deriving it is a decision that should
+be made deliberately rather than inherited from a stale line in a document. What
+can be said: the expected return is **lower than the $150–$200/year previously
+quoted**, because the strategy contributing most of it has been withdrawn.
 
 ## What was rejected
 
