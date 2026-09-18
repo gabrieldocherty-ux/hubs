@@ -192,6 +192,16 @@ def liquidity_stress(weight_fn, market, participation_caps=(0.5, 0.25, 0.1)):
     not bind. It is included because the same strategy at $100,000 on a thin TSX
     listing is a different strategy, and because a rule that only works at full
     size is fragile in a way that a rule degrading gracefully is not.
+
+    THE CAP IS SYMMETRIC, AND THE FIRST VERSION WAS NOT. It was `min(x, cap)`,
+    which is correct only while weights live in [0, 1] - the TSX account cannot
+    short, so nothing there ever exposed it. Every crypto strategy in this repo
+    is long/short, and on a weight of -1 `min(-1, 0.5)` returns -1: the "cap"
+    halved the longs, left the shorts at full size, and handed back a DIFFERENT,
+    net-short strategy labelled as a size-constrained version of the original.
+    On M3/BTC that turned +5.94% into -0.10% and was read as a size fragility
+    that does not exist. Any long/short liquidity row produced before this fix -
+    including the published D1 run - is measuring that artefact, not a cap.
     """
     rets, rt = market['ret'], market['rt']
     w0, rr = _align(weight_fn(market), rets)
@@ -201,7 +211,7 @@ def liquidity_stress(weight_fn, market, participation_caps=(0.5, 0.25, 0.1)):
     rows.append(dict(_stats(run_with_costs(w0, rr, imp), rets),
                      label='vol-scaled impact', mean_cost_bp=st.mean(imp) * 1e4))
     for cap in participation_caps:
-        wc = [min(x, cap) for x in w0]
+        wc = [max(-cap, min(x, cap)) for x in w0]
         rows.append(dict(_stats(run_with_costs(wc, rr, imp), rets),
                          label='impact + {:.0%} size cap'.format(cap)))
     return rows
@@ -754,7 +764,13 @@ def full_report(name, weight_fn, market, grid=None, build_fn=None, quick=False):
         'never (>40x)' if be == float('inf') else '{:.1f}x'.format(be)))
     d0 = next((r for r in ex if r['delay'] == 0 and r['mult'] == 1), None)
     d1 = next((r for r in ex if r['delay'] == 1 and r['mult'] == 1), None)
-    if d0 and d1 and d0['cagr']:
+    if d0 and d1 and d0['cagr'] <= 0:
+        # A retention RATIO is meaningless once the denominator is negative: on
+        # M3/HYPE it printed "retains 259% of CAGR <- robust to timing" while
+        # both figures were losses, and the delayed one was the bigger loss.
+        P('     baseline CAGR is {:+.2%}; a delay-retention ratio would be '
+          'meaningless, read the rows'.format(d0['cagr']))
+    elif d0 and d1 and d0['cagr']:
         keep = d1['cagr'] / d0['cagr']
         # Three tiers, not two. A binary pass/fail at 50% called a rule that lost
         # 42% of its CAGR to a one-day delay "robust to timing", which is not a

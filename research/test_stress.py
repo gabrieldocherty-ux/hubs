@@ -15,8 +15,13 @@ reading it, and each one silently flattering:
   3. arb_stress standardised the spread against the mean and standard deviation
      of the WHOLE series - lookahead, and useless on a drifting spread, which is
      the only kind it would ever be pointed at.
+  4. liquidity_stress capped size with `min(x, cap)`, which only caps a weight
+     series that never goes short. Every crypto strategy here is long/short, so
+     the "cap" halved the longs, left the shorts at full size, and returned a
+     net-short strategy labelled as a smaller version of the original. It read
+     as a size fragility that does not exist.
 
-All three are pinned here. A test that would have caught the bug is worth more
+All four are pinned here. A test that would have caught the bug is worth more
 than the fix.
 
     python -m pytest research/test_stress.py -q
@@ -188,6 +193,30 @@ def test_execution_delay_destroys_a_microstructure_edge_but_not_a_real_one():
     keep = d1['cagr'] / d0['cagr'] if d0['cagr'] else 0
     print('    always-invested retains {:.0%} of CAGR after a 1-day delay'.format(keep))
     assert keep > 0.8, 'a persistent-exposure rule should barely notice a delay'
+
+
+def test_size_cap_is_symmetric_for_a_long_short_rule():
+    """A size cap must SHRINK a position, never flip the book's net direction.
+
+    `min(x, cap)` leaves a -1 short untouched while halving a +1 long, which
+    turns the capped run into a different, net-short strategy. The invariant that
+    catches it: scaling every weight by a constant scales every return by that
+    constant, so the capped Sharpe must match the uncapped one and the capped
+    drawdown must be strictly shallower. Under the old asymmetric cap neither
+    held.
+    """
+    rng = random.Random(21)
+    rets = [rng.gauss(0.0005, 0.02) for _ in range(900)]
+    m = {'ret': rets, 'rt': 0.0019, 'bars': None, 'dates': list(range(len(rets)))}
+    # alternating long/short blocks, so a long-only cap cannot be a no-op
+    flip = lambda mk: [1.0 if (i // 30) % 2 == 0 else -1.0 for i in range(len(mk['ret']))]
+    rows = {r['label']: r for r in stress.liquidity_stress(flip, m)}
+    imp = rows['vol-scaled impact']
+    half = rows['impact + 50% size cap']
+    print('    impact Sharpe {:.3f} / maxDD {:.1%}   half-size Sharpe {:.3f} / maxDD {:.1%}'
+          .format(imp['sharpe'], imp['mdd'], half['sharpe'], half['mdd']))
+    assert abs(half['sharpe'] - imp['sharpe']) < 1e-6, 'a pure size scale cannot change Sharpe'
+    assert half['mdd'] > imp['mdd'], 'half size must draw down less'
 
 
 def test_regimes_are_labelled_from_the_market_only():

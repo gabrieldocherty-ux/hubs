@@ -21,9 +21,36 @@ WHAT THE WEIGHT SERIES DOES AND DOES NOT CAPTURE. It carries direction and timin
 faithfully. It does NOT carry the ATR stop, because a stop is an intrabar event
 and a daily weight series has no intrabar. Trades therefore exit on the bar the
 backtest exited, which is right, but a stop-out inside a bar is applied at that
-bar's close rather than at the stop price. For B1 in particular the recorded
-stop-outs are the worst trades, so the weight-series P&L is MILDER than the real
-one - stated here rather than discovered later.
+bar's close rather than at the stop price.
+
+THE BIGGER LIMITATION, MEASURED - READ THIS BEFORE QUOTING ANY LEVEL FROM A
+STRESS RUN. `engine.backtest` fills at bar i+1's OPEN and explicitly never at the
+close of the bar that produced the signal. This adapter applies w[i] to
+close(i+1)/close(i). So the proxy is close-to-close while the strategy is
+open-to-open, and the two differ by the entry and exit gaps. That is not a
+rounding error here:
+
+    summed gross, trade record vs weight proxy, all four coins
+      S3   +429.5%  ->  +323.2%    -24.8%
+      D1   +307.5%  ->  +190.0%    -38.2%
+      M3   +729.4%  ->  +254.5%    -65.1%   (SOL alone -77.5%)
+
+The proxy captures barely a third of M3's gross. So:
+
+  LEVEL claims taken from a stress run on this adapter - annual returns, CAGR,
+  "it lost money in 2025" - are statements about the PROXY and must not be
+  attributed to the strategy. An M3 verdict was drafted on exactly that basis
+  and had to be withdrawn: the proxy's 2025/2026 losses do not appear in the
+  trade record, which compounds to +1.36% and +51.54%.
+
+  SHAPE findings - is the payoff front- or back-loaded, does a delay hurt, how
+  fat is the tail, is there a structural break - remain informative, because
+  they ask about the behaviour of the market after a signal rather than about
+  the fill. They are weaker evidence the larger the divergence, and for M3 at
+  -65.1% they are weak indeed.
+
+The honest fix is an adapter that marks open-to-open. That is not built yet, and
+until it is, this file measures a proxy and says so.
 
 ANNUALISATION. inst.TRADING_DAYS is 252 and crypto trades 365 days a year, so
 every CAGR and Sharpe below is on the equity book's clock, not the calendar's.
@@ -118,9 +145,25 @@ def basis_market_for(coin):
     spot, _ = hl_data.get_candles(SPOT[coin], '1d', 1200)
     basis = build_basis(mk['bars'], spot)
     first = next((i for i, b in enumerate(basis) if b is not None), 0)
+
+    # TRIM TO THE ERA B1 COULD ACTUALLY TRADE. HL spot history starts long after
+    # the perp's: the first valid basis is bar 616 (BTC), 657 (ETH), 701 (SOL),
+    # 0 (HYPE) of 1189. Leaving those bars in leaves the weight series pinned at
+    # zero for HALF the sample, which does not merely add nothing - it halves the
+    # measured CAGR, drags the Sharpe toward zero, and hands the structural-break
+    # test a first half that is identically flat (BTC's read "+0.00% -> +26.13%",
+    # which is a statement about missing data, not about a changing edge).
+    # Slicing bars and basis together preserves alignment, so the rule sees
+    # exactly the same inputs; trade-count parity is asserted in verify_baselines.
+    bars = mk['bars'][first:]
+    basis = basis[first:]
+    mk['bars'] = bars
+    mk['ret'] = _returns(bars)
+    mk['dates'] = [b['t'] for b in bars[1:]]
     mk['basis'] = basis
-    mk['warmup'] = first + B1P.get('min_hist', 60)
-    mk['first_basis_idx'] = first
+    mk['warmup'] = B1P.get('min_hist', 60)
+    mk['first_basis_idx'] = 0
+    mk['trimmed_bars'] = first
     _basis_cache[coin] = mk
     return mk
 
@@ -212,10 +255,9 @@ def basis_arb_stress(coin, settings):
     mk = basis_market_for(coin)
     raw = mk['basis']
     valid = [x for x in raw if x is not None]
-    interior = raw[mk['first_basis_idx']:]
-    holes = sum(1 for x in interior if x is None)
-    print('  {:<5} basis obs {:<5} (first valid at bar {}, {} interior gaps dropped)'
-          .format(coin, len(valid), mk['first_basis_idx'], holes))
+    holes = sum(1 for x in raw if x is None)
+    print('  {:<5} basis obs {:<5} ({} pre-spot bars trimmed, {} interior gaps dropped)'
+          .format(coin, len(valid), mk['trimmed_bars'], holes))
     for label, kw in settings:
         r = stress.arb_stress(valid, **kw)
         if r is None:
@@ -300,7 +342,10 @@ def b1_report(coin, quick):
         'never (>40x)' if be == float('inf') else '{:.1f}x'.format(be)))
     d0 = next((r for r in ex if r['delay'] == 0 and r['mult'] == 1), None)
     d1 = next((r for r in ex if r['delay'] == 1 and r['mult'] == 1), None)
-    if d0 and d1 and d0['cagr']:
+    if d0 and d1 and d0['cagr'] <= 0:
+        print('     baseline CAGR is {:+.2%}; a delay-retention ratio would be '
+              'meaningless, read the rows'.format(d0['cagr']))
+    elif d0 and d1 and d0['cagr']:
         keep = d1['cagr'] / d0['cagr']
         tag = ('<- MICROSTRUCTURE-DEPENDENT' if keep < 0.5 else
                '<- TIMING-SENSITIVE' if keep < 0.85 else '<- robust to timing')
