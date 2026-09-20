@@ -23,34 +23,22 @@ and a daily weight series has no intrabar. Trades therefore exit on the bar the
 backtest exited, which is right, but a stop-out inside a bar is applied at that
 bar's close rather than at the stop price.
 
-THE BIGGER LIMITATION, MEASURED - READ THIS BEFORE QUOTING ANY LEVEL FROM A
-STRESS RUN. `engine.backtest` fills at bar i+1's OPEN and explicitly never at the
-close of the bar that produced the signal. This adapter applies w[i] to
-close(i+1)/close(i). So the proxy is close-to-close while the strategy is
-open-to-open, and the two differ by the entry and exit gaps. That is not a
-rounding error here:
+THE FILL CONVENTION IS NOW HANDLED - see `_returns` for the measurement and for
+the two wrong explanations that preceded it. In short: this adapter used to
+reconstruct close(a) -> close(b) while a trade actually spans open(a) -> open(b),
+which understated summed gross by 24.8% (S3), 38.2% (D1) and 65.1% (M3). An M3
+verdict was drafted on that basis and withdrawn. Open-to-open alignment brings
+the divergence to +26.0% / +13.7% / -13.0%.
 
-    summed gross, trade record vs weight proxy, all four coins
-      S3   +429.5%  ->  +323.2%    -24.8%
-      D1   +307.5%  ->  +190.0%    -38.2%
-      M3   +729.4%  ->  +254.5%    -65.1%   (SOL alone -77.5%)
+WHAT REMAINS, AND IT IS THE ONE THING A DAILY WEIGHT SERIES CANNOT FIX. A stopped
+trade exits at the STOP PRICE partway through a bar; this series exits at that
+bar's open and so never takes the adverse intrabar move. The residual divergence
+above is that, and it flatters strategies that stop out often. B1 is the case to
+watch - its stop-outs are its worst trades.
 
-The proxy captures barely a third of M3's gross. So:
-
-  LEVEL claims taken from a stress run on this adapter - annual returns, CAGR,
-  "it lost money in 2025" - are statements about the PROXY and must not be
-  attributed to the strategy. An M3 verdict was drafted on exactly that basis
-  and had to be withdrawn: the proxy's 2025/2026 losses do not appear in the
-  trade record, which compounds to +1.36% and +51.54%.
-
-  SHAPE findings - is the payoff front- or back-loaded, does a delay hurt, how
-  fat is the tail, is there a structural break - remain informative, because
-  they ask about the behaviour of the market after a signal rather than about
-  the fill. They are weaker evidence the larger the divergence, and for M3 at
-  -65.1% they are weak indeed.
-
-The honest fix is an adapter that marks open-to-open. That is not built yet, and
-until it is, this file measures a proxy and says so.
+So LEVEL claims from a stress run here are now much closer to the strategy than
+they were, but they are still not the strategy, and the direction of the error is
+known: too kind to anything that uses its stop.
 
 ANNUALISATION. inst.TRADING_DAYS is 252 and crypto trades 365 days a year, so
 every CAGR and Sharpe below is on the equity book's clock, not the calendar's.
@@ -116,7 +104,42 @@ SPOT = {'BTC': '@142', 'ETH': '@151', 'SOL': '@156', 'HYPE': '@107'}
 
 
 def _returns(bars):
-    return [bars[i + 1]['c'] / bars[i]['c'] - 1 for i in range(len(bars) - 1)]
+    """OPEN-to-open, and the alignment is the whole point.
+
+    engine.backtest fills at an open, and it records entry_t / exit_t as the
+    bars those FILLS happened on - verified directly against the trade log:
+    entry_price equals bars[a]['o'] to the cent, exit_price equals bars[b]['o'].
+    A trade therefore spans open(a) -> open(b), and pooled.position_series marks
+    exactly range(a, b). So the return a held weight earns over bar k is
+
+        open(k+1) / open(k) - 1
+
+    and the product over the held bars telescopes to open(b)/open(a), which is
+    the trade's own gross.
+
+    THIS WAS CLOSE-TO-CLOSE AND IT WAS BADLY WRONG. Reconstructing close(a) ->
+    close(b) shifts both ends by one bar's intrabar move: on the first BTC D1
+    trade the real result is -1.85% and the close-to-close version reads +6.40%.
+    Across the book it understated summed gross by 24.8% (S3), 38.2% (D1) and
+    65.1% (M3), and an M3 verdict was drafted and had to be withdrawn on the
+    strength of it.
+
+    Two wrong explanations were committed before this was measured - first that
+    the fill convention could not be represented at all, then that the gap was
+    arithmetic-vs-geometric summation. The first open-to-open attempt was itself
+    off by one bar (open(k+2)/open(k+1)) and reproduced the close-to-close
+    answer, which is what made the convention look innocent. Corrected:
+
+        summed gross vs the trade record      S3      D1      M3
+        close-to-close (old)               -24.8%  -38.2%  -65.1%
+        open-to-open, aligned (now)        +26.0%  +13.7%  -13.0%
+
+    The residual is the INTRABAR STOP FILL and cannot be removed here: a stopped
+    trade exits at the stop price partway through a bar, while this series exits
+    at that bar's open, so it never takes the adverse intrabar move. That is the
+    limitation to state - not the fill convention, which is now handled.
+    """
+    return [bars[k + 1]['o'] / bars[k]['o'] - 1 for k in range(len(bars) - 1)]
 
 
 def market_for(coin, extended=False):
