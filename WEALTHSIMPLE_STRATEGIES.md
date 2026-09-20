@@ -5,6 +5,56 @@ years of adjusted daily data.
 
 ---
 
+> # ⚠️ CORRECTION — NOTHING IN THIS BOOK BEATS BUY AND HOLD (2026-09-20)
+>
+> **Not one strategy in this file has ever produced more money than simply owning
+> the thing it trades.** Best cell per instrument, terminal wealth as a share of
+> buy-and-hold over the full sample:
+>
+> | instrument | best cell | strategy CAGR | buy & hold | **terminal wealth** | alpha t |
+> |---|---|---|---|---|---|
+> | ZEB.TO | SMA100 ×1 | +12.85% | +13.51% | **91.0%** | 4.45 |
+> | XIC.TO | SMA100 ×3 | +8.60% | +9.20% | **87.1%** | 3.47 |
+> | XIU.TO | SMA100 ×3 | +8.35% | +9.35% | **79.4%** | 3.22 |
+> | HXT.TO | SMA100 ×3 | +7.44% | +10.07% | **68.3%** | 2.43 |
+> | VFV.TO | SMA50 ×1 | +11.12% | +17.50% | **46.3%** | 1.84 |
+> | ZQQ.TO | SMA150 ×1 | +13.24% | +17.89% | **51.4%** | 1.55 |
+>
+> **0 of 60 cells beat buy-and-hold in money.** And look at the ordering: the
+> HIGHER the alpha t-statistic, the CLOSER to buy-and-hold — ZEB at t=4.45 keeps
+> 91%, ZQQ at t=1.55 keeps 51%. **The t-statistic is measuring how little damage
+> the low-beta drag did, not money earned.**
+>
+> **WHY ALPHA SAID OTHERWISE.** These are long/flat rules, so they are under-exposed
+> to a market that rose. Decomposed exactly on ZEB:
+> `alpha = (w̄ − β)·E[x] + Cov(w, x) − costs = +5.19% + 3.02% − 0.10% = +8.11%/yr`.
+> **64% of the "alpha" is the low-beta term** — being out of a rising market, which
+> alpha-versus-benchmark rewards and a bank account does not. This is the same trap
+> as the DSR correction above, in a second place: a statistic that answers "did the
+> signal add value relative to beta" cannot be read as "did this make money."
+>
+> **WHAT IS GENUINELY REAL, and it survives every test.** The variance timing is not
+> an artefact. A shuffled-timing null — same 119 switches, same block lengths, same
+> exposure, only the alignment with the market destroyed — returns beta 0.682 ≈
+> exposure, against an observed beta of **0.314**, p = 0.0010. ZEB max drawdown is
+> **−14.4% against −39.7%**, Sharpe **1.41 against 0.88**. The rule really does know
+> when variance is coming. It just cannot convert that into money **unlevered**: you
+> cannot lever a 0.31-beta portfolio back to 1 in a Wealthsimple account, and
+> unlevered the trade costs about **0.66pp/yr of CAGR**.
+>
+> **And the alpha is two crashes.** 79% of every dollar ZEB trend ever earned over
+> buy-and-hold comes from **2 of 7** drawdown episodes (COVID 45.3%, 2022–24 33.9%).
+> Remove all seven and alpha is **+0.68%/yr, t = 0.55**, with the Sharpe advantage
+> going **negative** (−0.112). Outside drawdowns the rule bleeds continuously. Its
+> honest sample size is **7 drawdown episodes, 2 of them load-bearing** — not 4,110
+> daily observations. Per-decision it is worse: of its 60 exit decisions, **18% win**,
+> t = **−0.60**.
+>
+> **So the whole book is reclassified from alpha to risk overlay.** See the trend
+> section and the allocation section for what that leaves.
+
+---
+
 > # ⚠️ CORRECTION — THE WHOLE SEARCH, NOT THE WINNING CELL (2026-09-18)
 >
 > Both strategies below were selected as the best of a search across **six
@@ -227,7 +277,7 @@ profile, and claim no alpha for it.**
 
 ---
 
-## Trend on Canadian equity — the one thing that survived the whole search
+## ~~Trend on Canadian equity — the one thing that survived the whole search~~ *(RECLASSIFIED — a risk overlay, not an alpha edge)*
 
 Long while the close is above its own N-day average, cash below. This was never
 written up here before; it is now the strongest result in the book, and the reason
@@ -267,11 +317,20 @@ and the PBO p of 0.057 from the correction above.
 **Do not quote the XIU cell on its own.** Quote the family, and if a single
 instrument is to be traded, it is ZEB.
 
-**Two things to check before putting money on ZEB trend**, neither of which has been
-done: whether the edge is concentrated in avoiding the 2008 bank drawdown and March
-2020 — 16.3 years is only two or three effective trend events — and whether HXT
-returning t = 2.43 where XIU returns 3.22 on a 0.994-correlated underlying is a
-wrapper artefact of exactly the kind that killed the overnight strategy.
+**BOTH OF THE CHECKS FLAGGED HERE HAVE NOW BEEN RUN, AND THE FIRST ONE CHANGES THE
+VERDICT.** ZEB's history starts 2010-04-20, so it never reaches 2008 — but COVID and
+2022–24 alone are **79% of every dollar of outperformance**, and with all seven
+drawdown episodes removed alpha is +0.68%/yr at t = 0.55. More decisively, **ZEB
+trend ends at 91.0% of buy-and-hold**: it has never made money against the thing it
+trades, and neither has any of the other 59 cells. See the correction at the top of
+this file.
+
+**What ZEB trend actually is: a drawdown-reduction overlay.** −14.4% max drawdown
+against −39.7%, Sharpe 1.41 against 0.88, and the variance timing is genuine
+(shuffled-timing null p = 0.0010). Whether that is worth −0.66pp/yr of CAGR is a
+preference, not an edge — and it is the honest question to ask about it. For a
+long-horizon $1,000 account the answer is probably no. For someone who would sell
+at −40%, it may be yes.
 
 ---
 
@@ -357,15 +416,20 @@ $1,000. **60% of that is the withdrawn overnight strategy** and the other **40% 
 the vol-managed sleeve whose alpha does not survive the search**. Both legs are
 gone; the sentence is kept above so the change is legible rather than silent.
 
-**What the evidence currently supports:**
+**What the evidence currently supports — and it is no longer an alpha claim:**
 
-- **Trend on Canadian equity — the only alpha claim left standing.** Family-wise
-  p = 0.0005–0.0040 on the breadth test, 4/4 Canadian instruments positive, ZEB.TO
-  grid-wide robust at alpha t = 3.15–4.45. Trade the family, and prefer ZEB to the
-  XIU cell that was previously headlined.
-- **The volatility overlay, for drawdown shape only.** −13.0% against −27.4% is a
-  mechanical consequence of scaling exposure down in high volatility and does not
-  require an edge. **Claim no alpha for it.**
+- **There is no strategy in this book that beats buy-and-hold in money.** 0 of 60
+  trend cells and, separately, a vol-managed sleeve that does not survive its own
+  search. The alpha t-statistics were rewarding low beta in a rising market.
+- **Two genuine RISK OVERLAYS remain**, and they should be described as such:
+  trend-on-Canadian-equity (ZEB: −14.4% max drawdown vs −39.7%, Sharpe 1.41 vs 0.88,
+  costing ~0.66pp/yr of CAGR) and the volatility overlay on VFV (−13.0% vs −27.4%).
+  Both genuinely halve drawdown. **Neither adds money.**
+- **The honest question is therefore a preference, not a backtest**: is roughly
+  halving your worst drawdown worth giving up 0.7–6pp/yr of compounding? On a
+  long-horizon $1,000 account the arithmetic says no. If a −40% drawdown would make
+  you sell at the bottom, it says yes — because the overlay's real product is
+  helping you stay invested.
 - Everything else in this file is withdrawn, rejected, or unproven.
 
 **No specific percentage split is recommended here.** The previous one was derived
