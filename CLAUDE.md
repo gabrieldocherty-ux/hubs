@@ -22,6 +22,32 @@ All validated 2026-09-05 to the same standard as the default (full details, and 
 
 **Cut on cost efficiency 2026-09-06** (`research/cost_efficiency.py` re-runs it): `adaptive_trend` SMA(20,60)/4h and M1 TSMOM. The SMA pays **30.9%/yr of notional in execution cost** (163 trades/yr) for a **negative trimmed expectancy (−0.78%)** — its +0.55% mean is all tail — and correlates +0.44 with the daily sleeve, so it wasn't diversifying either. No verdict changed at the measured 0.100% cost, so the cuts rest on edge, not on an execution assumption. **The hourly task still runs it** — swapping the live default is Gabe's call, see below.
 
+**⚠️ THE GATE EVERY STRATEGY MUST PASS FIRST: does it beat just holding the coin?**
+`research/vs_buyhold.py --common`. This exists because the Wealthsimple book carried
+alpha t-statistics of 2.78, 3.22 and 4.45 and **not one of its 60 cells ever made more
+money than owning the instrument** — the statistic was rewarding low beta in a rising
+market. Ask this before quoting any alpha, DSR, PBO or expectancy number.
+
+**The crypto book passes, conditionally — and the condition is the finding.** Terminal
+wealth as a share of buy-and-hold, all four strategies on matched dates:
+
+| coin (buy & hold) | S3 | D1 | M3 | B1 |
+|---|---|---|---|---|
+| BTC (**−19.0%**) | 136% | 153% | 113% | **228%** |
+| ETH (+22.8%) | 201% | 121% | **72%** | 161% |
+| SOL (**−41.3%**) | 205% | 275% | **93%** | 215% |
+| HYPE (**+532.6%**) | **38%** | **26%** | **16%** | **79%** |
+
+**Where holding lost money these beat it decisively; where holding returned +532% none
+come close.** That is what a near-market-neutral timing book should do, and it is a
+different animal from the equity book, which lost to buy-and-hold in *every* regime
+because it was pure exposure drag. Decomposed as `alpha = (exposure − beta)·E[market] +
+Cov(weight, market)`, the exposure-gap term was **64% of alpha on ZEB** and is **0–12%
+here** — essentially all timing. Drawdowns are uniformly better: −18% to −64% against
+−53% to −76% for holding.
+**The honest expectation to set: this book is insurance against flat and falling
+markets, not a way to outperform a crypto bull run.**
+
 **Two independent bets, three strategies** — this distinction matters more than the count:
 
 - `ForcedFlowContinuation` (S3) — volume spike ≥1.5× its 20d average, follow the day's direction, 10d hold. n=202, 55% win rate, +1.80%/trade, all 4 coins and 4/4 years positive. **⚠️ ITS MECHANISM DOES NOT SURVIVE TESTING — the backtest number is not challenged, the LABEL is.** "Forced flow" predicts the edge arrives at the signal and decays. It does not: days 1–2 average +0.150%/day (t=0.69) against days 3–10 at +0.214%/day, and a cluster bootstrap on entries puts the contrast at +0.066pp, CI straddling zero — **shapeless, not front-loaded**. Three independent cuts: (a) unconditionally, across all 3,943 bars, the next-bar signed return after a ≥1.5×-volume day is **−0.125%** (n=649) and **−0.279%** once bars that also meet D1's condition are removed — volume alone carries *none* of it; (b) inside S3's own 202 entries, the 34 that are secretly D1 signals return **+2.644%** on day 1 (t=3.79) while the 107 bare volume spikes return **−0.484%**; (c) no decay structure at all. **S3's entire positive first day is the 17% of its entries that are D1 signals in disguise.** Whatever it earns, it earns flat across the hold, which is a slow-continuation shape — and since mechanism is this project's primary reason for believing an edge persists, S3 currently has none.
@@ -38,7 +64,7 @@ All validated 2026-09-05 to the same standard as the default (full details, and 
   **TIMING, NOT COST, IS THE BINDING CONSTRAINT.** Break-even round trip is **3.698% — 19.5× the modelled 0.190%** and ~38× measured. But entering ONE BAR LATE cuts expectancy +3.51% → **+2.09%**, win rate 64.9% → **50.0%**, and the median trade from +1.47% to +0.16%; **93% of that loss is literally the entry bar**, which alone is 39% of the eleven-day gross. A worse fill inside the right bar is survivable; the wrong bar is not.
   **CAVEAT, stated because it is load-bearing:** day-1 magnitude is concentrated — SOL supplies 52% and HYPE 32%, and **BTC+ETH day-1 alone is +0.380%, t=1.01, not significant**. The front-loading *shape* does replicate on BTC+ETH (contrast −0.869pp); the *size* rests on SOL. HYPE has 6 trades — quote no HYPE number.
 - **S3 and D1 overlap heavily, but NOT for the reason recorded.** The 0.85–1.00 figure is `pooled.overlap`, which is the fraction of CO-INVESTED bars on the same side and is not a correlation (it scores 0.94 on just 14% of bars; their actual P&L correlation is +0.50 — see the vault). And the direction of the dependence runs one way: **S3's only working component is the subset of its entries that are D1 signals**, so D1 is the strategy and S3 is a noisier wrapper around it, not two expressions of one bet. Both daily-bar only; the mechanism did **not** replicate at 4h.
-- `DonchianBreakout` (M3, `--strategy donchian`, sleeve **macro**) — 55/20 channel break, ~44d holds. The macro replacement for the cut SMA: **3.1%/yr cost drag vs the SMA's 30.9%**, trimmed +1.82%. **It is NOT the diversifier it was recorded as** — see the allocation section below; on a daily mark-to-market series it runs **+0.44** with the daily sleeve, not −0.04 to −0.06. Still **CONDITIONAL** on substance — edge decayed (train +49% vs test +2.2%), n=49, recent years are +2.2–2.8%, not the +12.85% headline.
+- `DonchianBreakout` (M3, `--strategy donchian`, sleeve **macro**) — 55/20 channel break, ~44d holds. The macro replacement for the cut SMA: **3.1%/yr cost drag vs the SMA's 30.9%**, trimmed +1.82%. **It is NOT the diversifier it was recorded as** — see the allocation section below; on a daily mark-to-market series it runs **+0.44** with the daily sleeve, not −0.04 to −0.06. Still **CONDITIONAL** on substance — edge decayed (train +49% vs test +2.2%), n=49, recent years are +2.2–2.8%, not the +12.85% headline. **M3 now has FOUR independent strikes and is the weakest thing in the book:** (1) the diversification claim does not reproduce (+0.44, not −0.04 to −0.06); (2) the "still positive recently" defence is per-trade MEANS — the same 2025 trades have a −5.40% median and 6 wins in 18; (3) a one-day delay costs 50–63% of CAGR, impossible for a 44-day hold and evidence its P&L sits in the entry bar; (4) **its SHORT side loses money on three of four coins** (−27.8%, −27.0%, −38.4%), so its longs are carrying a losing short book, and it is the only strategy here that fails the buy-and-hold gate on ETH and SOL as well as HYPE. Retiring it is Gabe's call, but nothing currently argues for keeping it.
 - `BasisDislocation` (B1, `--strategy basis`) — **a DIRECTIONAL perp trade whose entry is triggered by the perp/spot basis. It is not a convergence trade, and describing it as "fades the premium" was wrong.** `core/strategies/basis_dislocation.py` emits a single `Signal(coin, Direction.SHORT|LONG, …)`: one perp leg, no spot leg, no hedge. The basis is only the trigger, so the P&L is the perp price move — regressing trade P&L on the signed spot move over the hold gives **R² = 0.982, beta 1.03**. The convergence component it is named after is worth **+0.07–0.10%/trade against a 0.190% modelled round trip**, so there is no version of this that pays as relative value (a genuine paired trade would pay 0.380%). Its 0.35–0.59 overlap with the rest is real, but it comes from **when it flips side**, not from being market-neutral — and exposure swings 0–100% short with no cap, which is the risk worth watching. n=178, 54.5% win rate, +1.68%/trade, **15/15 parameter perturbations positive on both train and test**, survives 4× costs. Needs spot data (fetched automatically). **Does not work on SOL** — run it on BTC/ETH/HYPE. Caveats: shortest history here (spot starts 2025), and see the vault for why its negative 2026H2 is a directional regime rather than decay.
 
 ## Monitoring
