@@ -98,14 +98,24 @@ def main():
     # FAILED the cost cut was the only thing trading.
     #
     # B1 basis deliberately excludes SOL: it does not work there (trimmed -0.09%).
-    # adaptive_trend stays listed only so the open SOL position it already holds
-    # can be managed to its exit; it was cut on cost efficiency.
+    #
+    # adaptive_trend is WOUND DOWN, not deleted. It was cut on cost efficiency
+    # 2026-09-06 - 30.9%/yr of notional in execution cost for a NEGATIVE trimmed
+    # expectancy of -0.78%, the only member of this book with one - and it went on
+    # opening new positions for three weeks afterwards, producing one of the four
+    # closed paper trades (SOL long, -$0.49, stopped out).
+    #
+    # It is not simply removed because it still HOLDS positions: data/paper_positions.json
+    # shows SOL and BTC in the "" book namespace, which is this strategy's. Deleting
+    # the line would strand them - nothing would check their stops again. --exit-only
+    # keeps the stop, the target and the strategy's own exits running while refusing
+    # every new entry, so the wind-down is safe. Remove the line once it is flat.
     BOOK = [
-        ("forced_flow", "1d", "BTC,ETH,SOL,HYPE", "s3"),
-        ("range_break", "1d", "BTC,ETH,SOL,HYPE", "d1"),
-        ("basis", "1d", "BTC,ETH,HYPE", "b1"),
-        ("donchian", "1d", "BTC,ETH,SOL,HYPE", "m3"),
-        ("adaptive_trend", "4h", "BTC,ETH,SOL", ""),
+        ("forced_flow", "1d", "BTC,ETH,SOL,HYPE", "s3", []),
+        ("range_break", "1d", "BTC,ETH,SOL,HYPE", "d1", []),
+        ("basis", "1d", "BTC,ETH,HYPE", "b1", []),
+        ("donchian", "1d", "BTC,ETH,SOL,HYPE", "m3", []),
+        ("adaptive_trend", "4h", "BTC,ETH,SOL", "", ["--exit-only"]),
     ]
 
     rc = 0
@@ -114,7 +124,7 @@ def main():
     base = str(cfg.get("base_size_usd", 16.25))
     import main as bot
 
-    for strategy, interval, coins, book in BOOK:
+    for strategy, interval, coins, book, extra in BOOK:
         label = book or strategy
         print("\n--- {} ({} on {} bars) ---".format(label, strategy, interval))
         try:
@@ -123,6 +133,7 @@ def main():
                         "--base-size-usd", base, "--strategy", strategy]
             if book:
                 sys.argv += ["--book", book]
+            sys.argv += list(extra)
             bot.main()
         except SystemExit as e:
             code = int(e.code or 0)

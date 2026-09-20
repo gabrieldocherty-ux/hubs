@@ -89,6 +89,10 @@ def main():
                         help="namespace for this strategy's positions and state, so "
                              "several strategies can share one paper account without "
                              "colliding on the same coin.")
+    parser.add_argument("--exit-only", action="store_true",
+                        help="manage existing positions to their exit but open no "
+                             "NEW ones. For winding a cut strategy down without "
+                             "stranding the positions it already holds.")
     parser.add_argument("--once", action="store_true", help="run a single check-and-act cycle and exit, instead of looping - for scheduler-driven invocation")
     args = parser.parse_args()
 
@@ -429,7 +433,17 @@ def _run_cycle(coins, state, client, breaker, kelly, executor, settings, args):
                               f"signal-exits are not wired to an order yet - leaving the "
                               f"exchange-side stop/target to manage this position")
 
+            # EXIT-ONLY. Everything above this line - the stop, the target, and the
+            # strategy's own signal-driven exit - still runs; only NEW ENTRIES are
+            # suppressed. This exists so a strategy that has been cut can be wound
+            # down without stranding the positions it already holds, which is the
+            # one thing that makes removing it from the book unsafe: delete the
+            # line and nothing checks those stops again.
             signal = s["strategy"].evaluate(market_data) if bar_updated else None
+            if signal is not None and getattr(args, "exit_only", False):
+                print(f"[{coin}] signal suppressed (--exit-only): managing existing "
+                      f"positions to exit, no new entries")
+                signal = None
             if signal is not None:
                 sleeve = getattr(s["strategy"], "sleeve", "daily")
                 result = executor.try_execute(
