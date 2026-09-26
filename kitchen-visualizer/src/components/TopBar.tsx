@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
-import { CubeIcon, Download, Logo, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron } from './Icons';
+import { WallsIcon, CubeIcon, Download, Logo, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
 import { estimateCsv } from '../lib/csv';
 import { getProduct } from '../data/catalog';
@@ -38,11 +38,12 @@ export function TopBar() {
     ['plan', 'Plan', <PlanIcon key="p" />],
     ['split', 'Split', <SplitIcon key="s" />],
     ['3d', '3D', <CubeIcon key="c" />],
+    ['walls', 'Walls', <WallsIcon key="w" />],
   ];
 
   const exportPng = async (kind: 'plan' | 'scene') => {
     setMenu(false);
-    const needs = kind === 'plan' ? viewMode !== '3d' : viewMode !== 'plan';
+    const needs = kind === 'plan' ? viewMode === 'plan' || viewMode === 'split' : viewMode === '3d' || viewMode === 'split';
     if (!needs) {
       setUI({ viewMode: 'split' });
       await new Promise((r) => setTimeout(r, 900));

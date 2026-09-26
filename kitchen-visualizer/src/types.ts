@@ -111,5 +111,5 @@ export interface DesignDoc {
   items: PlacedItem[];
 }
 
-export type ViewMode = 'plan' | 'split' | '3d';
+export type ViewMode = 'plan' | 'split' | '3d' | 'walls';
 export type PlanStyle = 'rendered' | 'drafting';

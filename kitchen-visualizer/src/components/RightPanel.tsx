@@ -173,7 +173,7 @@ function Summary() {
           <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
           <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
           <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
-          <dt><kbd>1 2 3</kbd></dt><dd>Plan · Split · 3D</dd>
+          <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
         </dl>
       </div>
     </div>

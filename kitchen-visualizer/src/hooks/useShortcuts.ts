@@ -43,6 +43,7 @@ export function useShortcuts() {
       if (e.key === '1') return s.setUI({ viewMode: 'plan' });
       if (e.key === '2') return s.setUI({ viewMode: 'split' });
       if (e.key === '3') return s.setUI({ viewMode: '3d' });
+      if (e.key === '4') return s.setUI({ viewMode: 'walls' });
       if (e.key === 'Escape') return s.select(null);
       if (!id) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {

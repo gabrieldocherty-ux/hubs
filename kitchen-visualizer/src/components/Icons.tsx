@@ -76,6 +76,10 @@ export const SplitIcon = (p: P) => (
   <svg {...base(p)}><rect x="3" y="4" width="18" height="16" rx="1.5" /><path d="M12 4v16" /></svg>
 );
 
+export const WallsIcon = (p: P) => (
+  <svg {...base(p)}><path d="M3 20h18" /><rect x="4" y="12" width="7" height="8" /><rect x="13" y="12" width="7" height="8" /><rect x="4" y="4" width="16" height="5" /></svg>
+);
+
 /** Brand mark: a door-swing arc inside a plan square. */
 export const Logo = (p: P) => (
   <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden {...p}>

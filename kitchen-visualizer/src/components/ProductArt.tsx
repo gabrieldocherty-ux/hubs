@@ -16,7 +16,16 @@ interface Props {
 }
 
 /** Front-elevation drawing of a product, tinted with the kitchen's current finishes. */
-export const ProductArt = memo(function ProductArt({ product, finish, surfaces, width, className }: Props) {
+export interface ArtResult {
+  nodes: ReactNode[];
+  /** Drawing height in inches; the drawing's bottom edge is at y = H. */
+  H: number;
+  w: number;
+  color: string;
+}
+
+/** Draws a product's front elevation in inch units, origin at its top-left. */
+export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'className' | 'mirrored'>): ArtResult {
   const cab = byId(CABINET_FINISHES, surfaces.cabinetFinishId);
   const list = product.finishes === 'cabinet' ? CABINET_FINISHES : product.finishes;
   const f = finish ?? (product.finishes === 'cabinet' ? cab : list[0]);
@@ -349,22 +358,36 @@ export const ProductArt = memo(function ProductArt({ product, finish, surfaces, 
     }
   }
 
+  return { nodes, H, w, color };
+}
+
+export function SteelGradient({ color }: { color: string }) {
+  return (
+    <linearGradient id={`steel-${color.slice(1)}`} x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stopColor={shade(color, -0.12)} />
+      <stop offset="0.45" stopColor={shade(color, 0.2)} />
+      <stop offset="1" stopColor={shade(color, -0.08)} />
+    </linearGradient>
+  );
+}
+
+const FLOATING = new Set(['pendant', 'hood', 'wall', 'shelf', 'microwave', 'rug']);
+
+export const ProductArt = memo(function ProductArt({ product, finish, surfaces, width, className }: Props) {
+  const { nodes, H, w, color } = drawArt({ product, finish, surfaces, width });
+  const k = product.kind;
+  const opening = k === 'window' || k === 'door';
   const pad = Math.max(w, H) * 0.08 + 2;
-  const vb = `${-pad - (k === 'window' || k === 'door' ? 4 : 0)} ${-pad} ${w + pad * 2 + (k === 'window' || k === 'door' ? 8 : 0)} ${H + pad * 2}`;
-  const gradId = `steel-${color.slice(1)}`;
+  const vb = `${-pad - (opening ? 4 : 0)} ${-pad} ${w + pad * 2 + (opening ? 8 : 0)} ${H + pad * 2}`;
   return (
     <svg className={className} viewBox={vb} preserveAspectRatio="xMidYMid meet" aria-hidden>
       <defs>
-        <linearGradient id={gradId} x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stopColor={shade(color, -0.12)} />
-          <stop offset="0.45" stopColor={shade(color, 0.2)} />
-          <stop offset="1" stopColor={shade(color, -0.08)} />
-        </linearGradient>
+        <SteelGradient color={color} />
       </defs>
-      <g strokeWidth={0.8} vectorEffect="non-scaling-stroke" style={{ strokeLinejoin: 'round' }}>
+      <g strokeWidth={0.8} style={{ strokeLinejoin: 'round' }}>
         {nodes}
       </g>
-      <line x1={-pad} y1={H} x2={w + pad} y2={H} stroke={INK} strokeOpacity={k === 'pendant' || k === 'hood' || k === 'wall' || k === 'shelf' || k === 'microwave' || k === 'rug' ? 0 : 0.35} strokeWidth={0.6} />
+      <line x1={-pad} y1={H} x2={w + pad} y2={H} stroke={INK} strokeOpacity={FLOATING.has(k) ? 0 : 0.35} strokeWidth={0.6} />
     </svg>
   );
 });

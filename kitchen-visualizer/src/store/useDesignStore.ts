@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DesignDoc, PlacedItem, PlanStyle, Room, Rotation, Surfaces, ViewMode } from '../types';
+import type { DesignDoc, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
 import { getProduct, isOpening, itemWidth, snapsToWall } from '../data/catalog';
 import { CABINET_FINISHES } from '../data/finishes';
 import { buildTemplate, type TemplateId } from '../data/templates';
@@ -108,19 +108,22 @@ function updateItem(doc: DesignDoc, id: string, fn: (it: PlacedItem) => PlacedIt
   return { ...doc, items: doc.items.map((it) => (it.id === id ? fn(it) : it)) };
 }
 
-/** Finds a sensible first home for a new product so a click-to-add never lands on top of something. */
-function findFreeSpot(productId: string, doc: DesignDoc): { x: number; y: number; rotation: Rotation } {
-  const product = getProduct(productId)!;
-  const w = product.widthIn;
-  const d = product.depthIn;
-  const { room } = doc;
-  const others = resolveAll(doc.items);
+function collider(product: Product, w: number, others: Resolved[]) {
   const z0 = product.elevationIn;
   const z1 = z0 + product.heightIn;
-  const collides = (x: number, y: number, rotation: Rotation) => {
-    const box = footprint(x, y, rotation, w, d);
+  return (x: number, y: number, rotation: Rotation) => {
+    const box = footprint(x, y, rotation, w, product.depthIn);
     return others.some((o) => boxesOverlap(o.box, box) && overlap1D(z0, z1, o.z0, o.z1) > 0.25);
   };
+}
+
+/** Finds a sensible first home for a new product so a click-to-add never lands on top of something. */
+function findFreeSpot(productId: string, doc: DesignDoc, width?: number): { x: number; y: number; rotation: Rotation } {
+  const product = getProduct(productId)!;
+  const w = width ?? product.widthIn;
+  const d = product.depthIn;
+  const { room } = doc;
+  const collides = collider(product, w, resolveAll(doc.items));
 
   if (isOpening(product) || snapsToWall(product)) {
     for (const wall of WALLS) {
@@ -133,17 +136,22 @@ function findFreeSpot(productId: string, doc: DesignDoc): { x: number; y: number
       }
     }
   }
-  const cx = room.widthIn / 2;
-  const cy = room.lengthIn / 2;
-  for (let r = 0; r < Math.max(room.widthIn, room.lengthIn); r += 6) {
-    for (let a = 0; a < 16; a++) {
-      const x = clamp(cx + Math.cos((a / 16) * Math.PI * 2) * r, w / 2, room.widthIn - w / 2);
-      const y = clamp(cy + Math.sin((a / 16) * Math.PI * 2) * r, d / 2, room.lengthIn - d / 2);
-      if (!collides(x, y, 0)) return { x, y, rotation: 0 };
-      if (r === 0) break;
+  return spiralFrom(room.widthIn / 2, room.lengthIn / 2, 0, w, d, room, collides) ?? { x: room.widthIn / 2, y: room.lengthIn / 2, rotation: 0 };
+}
+
+function spiralFrom(cx: number, cy: number, rotation: Rotation, w: number, d: number, room: Room, collides: (x: number, y: number, r: Rotation) => boolean) {
+  const swap = rotation === 90 || rotation === 270;
+  const hx = (swap ? d : w) / 2;
+  const hy = (swap ? w : d) / 2;
+  for (let r = 0; r < Math.max(room.widthIn, room.lengthIn); r += 4) {
+    const steps = r === 0 ? 1 : 24;
+    for (let a = 0; a < steps; a++) {
+      const x = clamp(cx + Math.cos((a / steps) * Math.PI * 2) * r, hx, room.widthIn - hx);
+      const y = clamp(cy + Math.sin((a / steps) * Math.PI * 2) * r, hy, room.lengthIn - hy);
+      if (!collides(x, y, rotation)) return { x, y, rotation };
     }
   }
-  return { x: cx, y: cy, rotation: 0 };
+  return null;
 }
 
 export const useDesignStore = create<State>()(
@@ -314,14 +322,35 @@ export const useDesignStore = create<State>()(
           if (!it || !r) return;
           const newId = makeId();
           const others = resolveAll(doc.items);
+          const collides = collider(r.product, r.w, others);
           const wall = flushWall(r, doc.room);
-          let x = it.x;
-          let y = it.y;
-          if (wall === 'north' || wall === 'south') x += r.w;
-          else if (wall === 'east' || wall === 'west') y += r.w;
-          else x += r.box.maxX - r.box.minX + 6;
-          const snap = snapItem({ id: newId, x, y, rotation: it.rotation }, r.product, r.w, doc.room, others);
-          const copy: PlacedItem = { ...it, id: newId, x: snap.x, y: snap.y, rotation: snap.rotation };
+          let spot: { x: number; y: number; rotation: Rotation } | null = null;
+          if (wall) {
+            // Walk outward along the same wall, right side first, until the copy fits.
+            const len = wallLength(wall, doc.room);
+            const [start, end] = alongWall(wall, r.box);
+            const inset = isOpening(r.product) ? 0 : r.d / 2;
+            for (let k = 0; k < len && !spot; k += 3) {
+              for (const along of [end + r.w / 2 + k, start - r.w / 2 - k]) {
+                if (along < r.w / 2 || along > len - r.w / 2) continue;
+                const p = placeOnWall(wall, along, inset, doc.room);
+                if (!collides(p.x, p.y, it.rotation)) {
+                  spot = { ...p, rotation: it.rotation };
+                  break;
+                }
+              }
+            }
+          } else {
+            const step = r.box.maxX - r.box.minX + 2;
+            spot = !collides(it.x + step, it.y, it.rotation) && it.x + step + (r.box.maxX - r.box.minX) / 2 <= doc.room.widthIn
+              ? { x: it.x + step, y: it.y, rotation: it.rotation }
+              : spiralFrom(it.x, it.y, it.rotation, r.w, r.d, doc.room, collides);
+          }
+          if (!spot) {
+            get().toast('No free space left for another one.', 'warn');
+            return;
+          }
+          const copy: PlacedItem = { ...it, id: newId, x: spot.x, y: spot.y, rotation: spot.rotation };
           commit((d) => ({ ...d, items: [...d.items, copy] }), { selectedId: newId });
         },
 

@@ -108,8 +108,8 @@ export function RoomPanel() {
 
       <section className="room-section">
         <header>
-          <h4>Start from a layout</h4>
-          <span className="sub">Replaces the current plan · undoable</span>
+          <h4>Layouts</h4>
+          <span className="sub">Ctrl+Z to undo</span>
         </header>
         <div className="templates">
           {TEMPLATES.map((t) => {

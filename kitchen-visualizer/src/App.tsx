@@ -4,6 +4,7 @@ import { LeftPanel } from './components/LeftPanel';
 import { RightPanel } from './components/RightPanel';
 import { PlanView } from './components/plan/PlanView';
 import { Toasts } from './components/Toasts';
+import { ElevationsView } from './components/ElevationsView';
 import { useDesignStore } from './store/useDesignStore';
 import { useShortcuts } from './hooks/useShortcuts';
 
@@ -18,12 +19,17 @@ export default function App() {
       <div className="workspace">
         <LeftPanel />
         <main className={`stage stage--${viewMode}`}>
-          {viewMode !== '3d' && (
+          {viewMode === 'walls' && (
+            <section className="stage-pane" aria-label="Wall elevations">
+              <ElevationsView />
+            </section>
+          )}
+          {(viewMode === 'plan' || viewMode === 'split') && (
             <section className="stage-pane" aria-label="Floor plan">
               <PlanView />
             </section>
           )}
-          {viewMode !== 'plan' && (
+          {(viewMode === '3d' || viewMode === 'split') && (
             <section className="stage-pane" aria-label="3D view">
               <Suspense fallback={<div className="scene-loading">Building your kitchen in 3D…</div>}>
                 <SceneView />

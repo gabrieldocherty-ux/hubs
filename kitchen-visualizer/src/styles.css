@@ -773,13 +773,11 @@ kbd {
 }
 
 .template {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 10px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   text-align: left;
-  padding: 8px;
+  padding: 9px 10px 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--card);
@@ -792,8 +790,8 @@ kbd {
 }
 
 .template svg {
-  grid-row: 1 / 3;
-  width: 52px;
+  width: 46px;
+  margin-bottom: 4px;
 }
 
 .template-name {
@@ -804,18 +802,18 @@ kbd {
 .template-blurb {
   font-size: 11px;
   color: var(--ink-3);
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .swatches {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 6px;
 }
 
 .swatch {
-  width: 30px;
-  height: 30px;
+  width: 27px;
+  height: 27px;
   border-radius: 50%;
   border: 2px solid var(--card);
   box-shadow: 0 0 0 1px var(--line-2);
@@ -1637,6 +1635,85 @@ kbd {
   margin: 0;
   font-size: 11.5px;
   color: var(--ink-3);
+  font-style: italic;
+}
+
+/* ─── Elevations ────────────────────────────────────────── */
+
+.elev-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+.elev-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  flex-wrap: wrap;
+}
+
+.elev-bar .count {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  opacity: 0.6;
+  margin-left: 3px;
+}
+
+.elev-caption {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.elev-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.elev-actions .btn {
+  padding: 6px 11px;
+  font-size: 12.5px;
+}
+
+.elev-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 0 18px 18px;
+}
+
+.elev-canvas svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fbf9f4;
+  box-shadow: var(--shadow-sm);
+}
+
+.elev-item {
+  cursor: pointer;
+}
+
+.elev-item:hover {
+  filter: brightness(1.04) drop-shadow(0 0 1px rgba(194, 84, 45, 0.6));
+}
+
+.elev-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
   font-style: italic;
 }
 
