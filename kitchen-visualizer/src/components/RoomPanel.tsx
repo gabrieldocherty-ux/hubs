@@ -135,7 +135,7 @@ export function RoomPanel() {
             <button
               key={f.id}
               className={f.id === surfaces.cabinetFinishId ? 'swatch on' : 'swatch'}
-              style={f.material === 'wood' ? { backgroundImage: `url(${patternDataUrl({ type: 'wood', base: f.hex })})`, backgroundSize: '120%' } : { background: f.hex }}
+              style={f.material === 'wood' ? { backgroundImage: `url(${patternDataUrl({ type: 'wood', base: f.hex }, 48, 6)})`, backgroundSize: 'cover' } : { background: f.hex }}
               title={f.name}
               aria-label={f.name}
               aria-pressed={f.id === surfaces.cabinetFinishId}

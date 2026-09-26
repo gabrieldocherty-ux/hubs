@@ -98,7 +98,7 @@ function presetFor(preset: CameraPreset, room: Room, aspect: number): { pos: THR
   const cz = L / 2;
   switch (preset) {
     case 'eye':
-      return { pos: new THREE.Vector3(cx + W * 0.18, 5.4, L - 1.4), target: new THREE.Vector3(cx - W * 0.1, 3.9, L * 0.15) };
+      return { pos: new THREE.Vector3(W - 1.2, 4.9, L - 1.2), target: new THREE.Vector3(W * 0.3, 3.2, L * 0.18) };
     case 'top': {
       const target = new THREE.Vector3(cx, 0, cz);
       const d = fitDistance(Math.hypot(W, L) / 2, aspect);

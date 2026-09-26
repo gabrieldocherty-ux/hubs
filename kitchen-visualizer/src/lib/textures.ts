@@ -36,12 +36,18 @@ export function getPattern(spec: PatternSpec): TextureInfo {
   return info;
 }
 
-export function patternDataUrl(spec: PatternSpec): string {
+/** A small cropped JPEG of the texture, cheap enough for dozens of swatches. */
+export function patternDataUrl(spec: PatternSpec, px = 96, cropIn = 20): string {
   const info = getPattern(spec);
-  let url = urlCache.get(info.key);
+  const key = `${info.key}|${px}|${cropIn}`;
+  let url = urlCache.get(key);
   if (!url) {
-    url = info.canvas.toDataURL('image/png');
-    urlCache.set(info.key, url);
+    const src = Math.min(info.canvas.width, info.canvas.height, cropIn * info.pxPerIn);
+    const c = document.createElement('canvas');
+    c.width = c.height = px;
+    c.getContext('2d')!.drawImage(info.canvas, 0, 0, src, src, 0, 0, px, px);
+    url = c.toDataURL('image/jpeg', 0.86);
+    urlCache.set(key, url);
   }
   return url;
 }
@@ -293,12 +299,13 @@ function marble(base: string, vein: string, intensity: number, key: string, rand
     for (const v of veins) {
       const path = new Path2D();
       v.pts.forEach(([px, py], i) => (i === 0 ? path.moveTo(px, py) : path.lineTo(px, py)));
-      ctx.save();
-      ctx.filter = 'blur(4px)';
-      ctx.strokeStyle = rgba(vein, v.a * 0.35);
-      ctx.lineWidth = v.w * 5;
-      ctx.stroke(path);
-      ctx.restore();
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      for (const [mult, alpha] of [[7, 0.06], [4, 0.1], [2.2, 0.16]]) {
+        ctx.strokeStyle = rgba(vein, v.a * alpha);
+        ctx.lineWidth = v.w * mult;
+        ctx.stroke(path);
+      }
       ctx.strokeStyle = rgba(vein, v.a);
       ctx.lineWidth = v.w;
       ctx.lineJoin = 'round';

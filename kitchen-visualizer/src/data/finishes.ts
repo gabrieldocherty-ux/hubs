@@ -78,7 +78,7 @@ export const COUNTERTOPS: SurfaceOption[] = [
     name: 'Nero Marquina',
     brand: 'Petrastone',
     hex: '#232221',
-    pattern: { type: 'marble', base: '#232221', vein: '#d9d4cc', intensity: 0.8 },
+    pattern: { type: 'marble', base: '#232221', vein: '#b9b2a8', intensity: 0.5 },
     price: 110,
     unit: 'sq ft',
     gloss: 0.85,
