@@ -21,6 +21,9 @@ npm run build      # static site in dist/
   cabinet finish, door style (shaker / slab / fluted), hardware, countertop,
   backsplash, flooring and wall paint, all with procedurally generated textures
   (marble, terrazzo, herringbone, zellige, subway…). No image assets.
+- **Style presets.** Eight curated looks (Modern Farmhouse, Moody Green, Japandi,
+  Mid-Century, Parisian…) that set every finish plus an island accent in one
+  undoable click.
 - **One-click layouts.** One-wall, galley, L-shape, U-shape and L + island,
   filled with real cabinet widths for your room size.
 - **Architectural plan (2D).** Drag products in; backs snap to walls
@@ -32,6 +35,9 @@ npm run build      # static site in dist/
   and door openings, countertops and tile with continuous world-space texture
   mapping, lit pendants, and camera presets (overview, eye level, elevation, top).
   Plan, 3D, or both side by side.
+- **Wall elevations.** Each wall drawn head-on, like a drawing set: cabinets,
+  appliances, windows and doors at true height, backsplash tile to scale, and
+  dimension strings. Export as SVG or PNG for a contractor.
 - **Design checks**, live, based on NKBA planning guidelines: collisions, work
   aisles (36″ minimum, 42″ recommended), the sink–cooktop–fridge work triangle,
   hood coverage, landing counter beside the range and fridge, dishwasher-to-sink
@@ -41,7 +47,7 @@ npm run build      # static site in dist/
 - **Export.** Floor plan PNG, 3D render PNG, shopping list CSV, and a
   `.kitchen.json` project file you can re-import. Work autosaves in the browser.
 - **Keyboard.** `R` rotate · `Del` remove · arrows nudge 1″ (Shift 6″) ·
-  `Ctrl/⌘+D` duplicate · `Ctrl/⌘+Z` undo · `1/2/3` plan/split/3D · `F` flip hinge.
+  `Ctrl/⌘+D` duplicate · `Ctrl/⌘+Z` undo · `1–4` plan/split/3D/walls · `F` flip hinge.
 
 Brand names and prices are invented placeholders. Swap `src/data/catalog.ts`
 and `src/data/finishes.ts` for a real, licensed product feed.

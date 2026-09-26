@@ -5,6 +5,7 @@ import type { DesignDoc, PlacedItem, PlanStyle, Product, Room, Rotation, Surface
 import { getProduct, isOpening, itemWidth, snapsToWall } from '../data/catalog';
 import { CABINET_FINISHES } from '../data/finishes';
 import { buildTemplate, type TemplateId } from '../data/templates';
+import type { StylePreset } from '../data/styles';
 import {
   alongWall,
   boxesOverlap,
@@ -57,6 +58,7 @@ interface State {
   setName: (name: string) => void;
   setRoom: (room: Partial<Room>) => void;
   setSurfaces: (s: Partial<Surfaces>) => void;
+  applyStyle: (preset: StylePreset) => void;
   addItem: (productId: string, at?: { x: number; y: number }) => void;
   beginDrag: (id: string) => void;
   dragTo: (id: string, x: number, y: number) => void;
@@ -219,6 +221,18 @@ export const useDesignStore = create<State>()(
               });
             }
             return { ...doc, surfaces, items };
+          }),
+
+        applyStyle: (preset) =>
+          commit((doc) => {
+            const cabIdx = Math.max(0, CABINET_FINISHES.findIndex((f) => f.id === preset.surfaces.cabinetFinishId));
+            const islandIdx = Math.max(0, CABINET_FINISHES.findIndex((f) => f.id === preset.island));
+            const items = doc.items.map((it) => {
+              const p = getProduct(it.productId);
+              if (p?.finishes !== 'cabinet') return it;
+              return { ...it, finishIndex: p.kind === 'island' ? islandIdx : cabIdx };
+            });
+            return { ...doc, surfaces: { ...preset.surfaces }, items };
           }),
 
         addItem: (productId, at) => {

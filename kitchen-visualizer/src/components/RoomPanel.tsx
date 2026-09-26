@@ -5,6 +5,8 @@ import { BACKSPLASHES, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HAR
 import { patternDataUrl } from '../lib/textures';
 import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
+import { STYLE_PRESETS } from '../data/styles';
+import { byId, resolveBacksplash } from '../data/finishes';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
   const run = '#2a2622';
@@ -103,6 +105,45 @@ export function RoomPanel() {
           <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={72} max={480} onCommit={(v) => setRoom({ widthIn: v })} />
           <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={72} max={480} onCommit={(v) => setRoom({ lengthIn: v })} />
           <FeetInchesInput label="Ceiling" valueIn={room.ceilingIn} min={90} max={144} onCommit={(v) => setRoom({ ceilingIn: v })} />
+        </div>
+      </section>
+
+      <section className="room-section">
+        <header>
+          <h4>Style presets</h4>
+          <span className="sub">Whole-kitchen looks</span>
+        </header>
+        <div className="presets">
+          {STYLE_PRESETS.map((p) => {
+            const active = (Object.keys(p.surfaces) as (keyof Surfaces)[]).every((k) => p.surfaces[k] === surfaces[k]);
+            const cab = byId(CABINET_FINISHES, p.surfaces.cabinetFinishId);
+            const strip = [
+              cab.material === 'wood' ? `url(${patternDataUrl({ type: 'wood', base: cab.hex }, 48, 6)})` : cab.hex,
+              `url(${patternDataUrl(byId(COUNTERTOPS, p.surfaces.countertopId).pattern)})`,
+              `url(${patternDataUrl(resolveBacksplash(p.surfaces.backsplashId, p.surfaces.countertopId).pattern)})`,
+              `url(${patternDataUrl(byId(FLOORING, p.surfaces.flooringId).pattern)})`,
+              byId(PAINTS, p.surfaces.paintId).hex,
+            ];
+            return (
+              <button
+                key={p.id}
+                className={active ? 'preset on' : 'preset'}
+                aria-pressed={active}
+                onClick={() => {
+                  useDesignStore.getState().applyStyle(p);
+                  useDesignStore.getState().toast(`${p.name} applied. Ctrl+Z to go back.`, 'ok');
+                }}
+              >
+                <span className="preset-strip">
+                  {strip.map((bg, i) => (
+                    <i key={i} style={{ background: bg, backgroundSize: 'cover' }} />
+                  ))}
+                </span>
+                <b>{p.name}</b>
+                <small>{p.blurb}</small>
+              </button>
+            );
+          })}
         </div>
       </section>
 
