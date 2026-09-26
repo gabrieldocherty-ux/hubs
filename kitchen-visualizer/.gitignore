@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.local
 tsconfig.tsbuildinfo
+.smoke/
+
+# The repo root ignores data/ (bot runtime state); the app catalog must ship.
+!src/data/
