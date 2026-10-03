@@ -6,7 +6,7 @@ import { patternDataUrl } from '../lib/textures';
 import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
 import { STYLE_PRESETS } from '../data/styles';
-import { byId, resolveBacksplash } from '../data/finishes';
+import { PresetStrip } from './PresetStrip';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
   const run = '#2a2622';
@@ -116,14 +116,6 @@ export function RoomPanel() {
         <div className="presets">
           {STYLE_PRESETS.map((p) => {
             const active = (Object.keys(p.surfaces) as (keyof Surfaces)[]).every((k) => p.surfaces[k] === surfaces[k]);
-            const cab = byId(CABINET_FINISHES, p.surfaces.cabinetFinishId);
-            const strip = [
-              cab.material === 'wood' ? `url(${patternDataUrl({ type: 'wood', base: cab.hex }, 48, 6)})` : cab.hex,
-              `url(${patternDataUrl(byId(COUNTERTOPS, p.surfaces.countertopId).pattern)})`,
-              `url(${patternDataUrl(resolveBacksplash(p.surfaces.backsplashId, p.surfaces.countertopId).pattern)})`,
-              `url(${patternDataUrl(byId(FLOORING, p.surfaces.flooringId).pattern)})`,
-              byId(PAINTS, p.surfaces.paintId).hex,
-            ];
             return (
               <button
                 key={p.id}
@@ -134,11 +126,7 @@ export function RoomPanel() {
                   useDesignStore.getState().toast(`${p.name} applied. Ctrl+Z to go back.`, 'ok');
                 }}
               >
-                <span className="preset-strip">
-                  {strip.map((bg, i) => (
-                    <i key={i} style={{ background: bg, backgroundSize: 'cover' }} />
-                  ))}
-                </span>
+                <PresetStrip preset={p} />
                 <b>{p.name}</b>
                 <small>{p.blurb}</small>
               </button>

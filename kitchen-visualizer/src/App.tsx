@@ -1,45 +1,38 @@
-import { lazy, Suspense } from 'react';
-import { TopBar } from './components/TopBar';
-import { LeftPanel } from './components/LeftPanel';
-import { RightPanel } from './components/RightPanel';
-import { PlanView } from './components/plan/PlanView';
-import { Toasts } from './components/Toasts';
-import { ElevationsView } from './components/ElevationsView';
-import { useDesignStore } from './store/useDesignStore';
-import { useShortcuts } from './hooks/useShortcuts';
-
-const SceneView = lazy(() => import('./components/three/SceneView').then((m) => ({ default: m.SceneView })));
+import { useEffect } from 'react';
+import { navigate, useRoute } from './lib/router';
+import { useSession } from './store/useSession';
+import { AuthScreen } from './screens/AuthScreen';
+import { HomeScreen } from './screens/HomeScreen';
+import { SetupWizard } from './screens/SetupWizard';
+import { KitchenEditor, LocalEditor } from './screens/Editor';
 
 export default function App() {
-  const viewMode = useDesignStore((s) => s.ui.viewMode);
-  useShortcuts();
-  return (
-    <div className="app">
-      <TopBar />
-      <div className="workspace">
-        <LeftPanel />
-        <main className={`stage stage--${viewMode}`}>
-          {viewMode === 'walls' && (
-            <section className="stage-pane" aria-label="Wall elevations">
-              <ElevationsView />
-            </section>
-          )}
-          {(viewMode === 'plan' || viewMode === 'split') && (
-            <section className="stage-pane" aria-label="Floor plan">
-              <PlanView />
-            </section>
-          )}
-          {(viewMode === '3d' || viewMode === 'split') && (
-            <section className="stage-pane" aria-label="3D view">
-              <Suspense fallback={<div className="scene-loading">Building your kitchen in 3D…</div>}>
-                <SceneView />
-              </Suspense>
-            </section>
-          )}
-        </main>
-        <RightPanel />
-      </div>
-      <Toasts />
-    </div>
-  );
+  const route = useRoute();
+  const status = useSession((s) => s.status);
+  const init = useSession((s) => s.init);
+
+  useEffect(() => {
+    void init();
+  }, [init]);
+
+  const needsAccount = route.name === 'home' || route.name === 'new' || route.name === 'kitchen';
+  const authPage = route.name === 'signin' || route.name === 'signup';
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (status !== 'signedIn' && needsAccount) navigate({ name: 'signin' }, true);
+    if (status === 'signedIn' && authPage) navigate({ name: 'home' }, true);
+  }, [status, needsAccount, authPage]);
+
+  if (route.name === 'local') return <LocalEditor />;
+  if (status === 'loading') return <div className="screen-msg">Loading…</div>;
+  if (status !== 'signedIn') return <AuthScreen mode={route.name === 'signup' ? 'signup' : 'signin'} />;
+  switch (route.name) {
+    case 'new':
+      return <SetupWizard />;
+    case 'kitchen':
+      return <KitchenEditor key={route.id} id={route.id} />;
+    default:
+      return <HomeScreen />;
+  }
 }

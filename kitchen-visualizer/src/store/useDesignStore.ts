@@ -75,6 +75,8 @@ interface State {
   applyTemplate: (id: TemplateId) => void;
   clearItems: () => void;
   importDoc: (doc: DesignDoc) => void;
+  /** Opens a different kitchen: replaces the document and clears undo history and selection. */
+  loadDoc: (doc: DesignDoc) => void;
   undo: () => void;
   redo: () => void;
   select: (id: string | null) => void;
@@ -98,7 +100,40 @@ const DEFAULT_SURFACES: Surfaces = {
   paintId: 'chalk',
 };
 
-function initialDoc(): DesignDoc {
+export function sanitizeDoc(doc: DesignDoc): DesignDoc {
+  const base = initialDoc();
+  return {
+    ...base,
+    ...doc,
+    room: { ...base.room, ...doc.room },
+    surfaces: { ...base.surfaces, ...doc.surfaces },
+    items: (doc.items ?? []).filter((i) => getProduct(i.productId)),
+  };
+}
+
+const LOCAL_DRAFT = 'mise-local-draft';
+
+/** The design kept on this device for people using Mise without an account. */
+export function loadLocalDraft(): DesignDoc | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_DRAFT);
+    return raw ? (JSON.parse(raw) as DesignDoc) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLocalDraft(doc: DesignDoc) {
+  try {
+    localStorage.setItem(LOCAL_DRAFT, JSON.stringify(doc));
+  } catch {
+    // Storage full or blocked: the in-memory design still works for this visit.
+  }
+}
+
+export { DEFAULT_ROOM, DEFAULT_SURFACES };
+
+export function initialDoc(): DesignDoc {
   const { items } = buildTemplate('l-island', DEFAULT_ROOM, DEFAULT_SURFACES);
   return { name: 'Untitled Kitchen', room: DEFAULT_ROOM, surfaces: DEFAULT_SURFACES, items };
 }
@@ -393,7 +428,9 @@ export const useDesignStore = create<State>()(
 
         clearItems: () => commit((doc) => ({ ...doc, items: [] }), { selectedId: null }),
 
-        importDoc: (incoming) => commit(() => incoming, { selectedId: null }),
+        importDoc: (incoming) => commit(() => sanitizeDoc(incoming), { selectedId: null }),
+
+        loadDoc: (doc) => set({ doc: sanitizeDoc(doc), past: [], future: [], selectedId: null, hoverId: null, dragging: false }),
 
         undo: () => {
           const { past, doc, future } = get();
@@ -429,18 +466,13 @@ export const useDesignStore = create<State>()(
       name: 'mise-kitchen-v1',
       version: 1,
       partialize: (s) => ({
-        doc: s.doc,
         ui: { ...s.ui, leftTab: 'products' as LeftTab, rightTab: 'details' as RightTab },
       }),
       merge: (persisted, current) => {
-        const p = persisted as Partial<State> | undefined;
-        if (!p?.doc || !Array.isArray(p.doc.items)) return current;
-        const items = p.doc.items.filter((i) => getProduct(i.productId));
-        return {
-          ...current,
-          doc: { ...current.doc, ...p.doc, surfaces: { ...current.doc.surfaces, ...p.doc.surfaces }, items },
-          ui: { ...current.ui, ...(p.ui ?? {}) },
-        };
+        const p = persisted as (Partial<State> & { doc?: DesignDoc }) | undefined;
+        // Before accounts existed the open design lived in this key; carry it over as the on-device draft.
+        if (p?.doc && !loadLocalDraft()) saveLocalDraft(p.doc);
+        return { ...current, ui: { ...current.ui, ...(p?.ui ?? {}) } };
       },
     },
   ),

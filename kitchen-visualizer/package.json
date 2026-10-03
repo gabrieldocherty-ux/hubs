@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "api": "node --no-warnings server/index.mjs",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node --no-warnings server/index.mjs --prod"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",
@@ -25,5 +27,8 @@
     "@vitejs/plugin-react": "^4.3.1",
     "typescript": "^5.5.4",
     "vite": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=22.5"
   }
 }

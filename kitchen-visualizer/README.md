@@ -6,9 +6,40 @@ against real kitchen-planning guidelines, price it, and walk through it in 3D.
 ```bash
 cd kitchen-visualizer
 npm install
-npm run dev        # then open the printed URL
-npm run build      # static site in dist/
+npm run api        # terminal 1: accounts + saved kitchens (Node 22.5+)
+npm run dev        # terminal 2: the app, proxies /api to the server
+
+npm run build && npm start   # production: one process serves the app and the API
 ```
+
+Without the API running, the sign-in page offers **Design on this device**,
+which keeps the kitchen in that browser only.
+
+## Accounts and day-to-day use
+
+- **Sign up / sign in / sign out**, with sessions that last 30 days and renew
+  while in use. Account settings change your name or password (changing the
+  password signs out your other devices).
+- **My kitchens:** every saved kitchen as a card with a live mini plan, client,
+  room size, piece count, estimate and when it was last edited. Rename,
+  duplicate or delete (with confirmation); search appears once you have a few.
+- **New kitchen setup:** four steps — name and client, room size (with common
+  sizes), starting layout previewed for your exact room, and a style preset —
+  then straight into the editor.
+- **Autosave:** changes save about a second after you stop (never mid-drag),
+  with a status chip in the top bar. `Ctrl/⌘+S` saves immediately; failed saves
+  retry when you're back online, and leaving the page flushes pending work. If
+  the same kitchen was saved from another window first, your version is kept
+  and you're told.
+
+The server (`server/index.mjs`) has no dependencies: Node's `http`, `crypto`
+and built-in `node:sqlite`. Passwords are salted scrypt hashes; sessions are
+random tokens stored only as SHA-256 hashes and sent as httpOnly, SameSite=Lax
+cookies (Secure in production). Writes require a custom `X-Mise` header, which
+blocks cross-site request forgery; failed logins are throttled per IP and
+email; every project query is scoped to its owner. Data lives in
+`server/data/mise.db` (set `DB_PATH` and `PORT` to change). Behind HTTPS in
+production — put it behind a TLS-terminating proxy.
 
 ## What it does
 

@@ -6,6 +6,29 @@ import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporte
 import { estimateCsv } from '../lib/csv';
 import { getProduct } from '../data/catalog';
 import type { DesignDoc, ViewMode } from '../types';
+import { useSession, timeAgo } from '../store/useSession';
+import { AccountMenu } from './AccountMenu';
+import { Check } from './Icons';
+
+function SaveStatus() {
+  const projectId = useSession((s) => s.projectId);
+  const state = useSession((s) => s.saveState);
+  const lastSavedAt = useSession((s) => s.lastSavedAt);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => tick((n) => n + 1), 30_000);
+    return () => window.clearInterval(t);
+  }, []);
+  if (!projectId) return <span className="save-chip local" title="Saved in this browser only. Sign in to keep it in your account.">On this device</span>;
+  const label =
+    state === 'saving' ? 'Saving…' : state === 'unsaved' ? 'Unsaved changes' : state === 'error' ? 'Offline, retrying' : lastSavedAt ? `Saved ${timeAgo(lastSavedAt)}` : 'Saved';
+  return (
+    <span className={`save-chip ${state}`} role="status" aria-live="polite" title="Your work saves automatically. Ctrl+S saves now.">
+      {state === 'saved' && <Check width={13} height={13} />}
+      {label}
+    </span>
+  );
+}
 
 function isDoc(v: unknown): v is DesignDoc {
   const d = v as DesignDoc;
@@ -19,6 +42,7 @@ export function TopBar() {
   const canRedo = useDesignStore((s) => s.future.length > 0);
   const { setName, setUI, undo, redo, toast, importDoc } = useDesignStore.getState();
   const est = useEstimate();
+  const signedIn = useSession((s) => s.status === 'signedIn' && !!s.projectId);
   const [menu, setMenu] = useState(false);
   const [draft, setDraft] = useState(name);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -69,8 +93,17 @@ export function TopBar() {
   return (
     <header className="topbar">
       <div className="brand">
-        <Logo />
-        <span className="wordmark">Mise</span>
+        {signedIn ? (
+          <a className="back-link" href="#/" title="Back to my kitchens">
+            <Logo />
+            <span className="back-label">Kitchens</span>
+          </a>
+        ) : (
+          <>
+            <Logo />
+            <span className="wordmark">Mise</span>
+          </>
+        )}
         <span className="divider" />
         <input
           className="project-name"
@@ -93,6 +126,7 @@ export function TopBar() {
       </div>
 
       <div className="actions">
+        <SaveStatus />
         <button className="icon-btn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo /></button>
         <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><Redo /></button>
         <button className="total-chip" onClick={() => setUI({ rightTab: 'estimate' })} title="Open the estimate">
@@ -149,6 +183,7 @@ export function TopBar() {
             }}
           />
         </div>
+        <AccountMenu />
       </div>
     </header>
   );
