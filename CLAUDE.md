@@ -10,6 +10,12 @@ If you're starting a brand-new chat and want the fast version instead of reading
 
 ## What's actually running right now
 
+> **HALTED 2026-10-03 at Gabe's request: market testing is off. Nothing below is currently running.** Do not re-enable either job, or restart trading or strategy research, unless Gabe asks.
+> - `HyperliquidPaperBot` (Windows task) is **disabled**, not deleted. Its last cycle ran 2026-10-03 00:24. Resume with `schtasks /change /tn HyperliquidPaperBot /enable`.
+> - The Claude scheduled task `hyperliquid-hourly-brief` is **paused**. Re-enable it from the scheduled-tasks list.
+> - Gabe chose a hard stop over winding down with `--exit-only`, so **3 open paper positions are frozen and nobody is checking their stops**: SOL long @ 111.74 (stop 108.39), BTC long @ 81,123 (stop 78,689), b1 ETH short @ 2,665.10 (stop 2,885.21). The book stood at 6 closed trades and $248.51 equity. On resume, the first cycle will check those stops against the current price, not the price at the moment they were crossed.
+> - `research/poly_daemon.py` (Polymarket data recorder, places no trades) was **left running**. It is not part of the bot.
+
 - Mode: **paper** (simulated fills, starting capital $250, no wallet, no real orders — see `core/paper_account.py`). Paper mode reads **mainnet** market data by default (`--market-data`), because testnet is a separate thin market — HYPE traded at $22.87 there vs $83.93 on mainnet on 2026-09-05. No orders are placed in paper mode regardless of which one it reads.
 - Strategy: `AdaptiveTrendStrategy` (`core/adaptive_optimizer.py`), shadow-evaluating SMA(10,30)/(20,60)/(30,90) crossover on 4h bars, defaulting to the researched (20,60). Validated via walk-forward + funding-adjusted + quarterly backtests — see the vault log for the actual numbers, don't take "validated" on faith. **Its honest profile: 32% win rate, median trade −3.13% (the modal outcome is hitting the 3% stop), all profit in the tail.** That's a normal trend-following shape, not a bug, but expect ~2 losing trades in 3.
 - Coins: BTC, ETH, SOL. HYPE is the validated 4th coin by sustained liquidity (median $365M/day over 90d, ahead of SOL) but is **not** in the live basket yet.
