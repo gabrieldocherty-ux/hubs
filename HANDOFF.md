@@ -1,5 +1,7 @@
 # Handoff: Hyperliquid Trading Bot — start here in a new chat
 
+> **As of 2026-10-03 this project is halted** at Gabe's request (see `HALTED` and `CLAUDE.md`), and the active work is the kitchen visualizer. For that, read `kitchen-visualizer/HANDOFF.md` instead. The rest of this file describes the trading bot as it was before the halt.
+
 Paste this whole file as your first message in a new Claude Code session started in this directory. It's a snapshot of everything decided and built so far, so a fresh session doesn't have to rediscover it. The vault (`../Claude-Brain/Projects/Crypto-Trading.md`) has the full blow-by-blow with every backtest number; this is the compressed version.
 
 ## What this is

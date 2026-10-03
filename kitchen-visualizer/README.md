@@ -6,7 +6,7 @@ against real kitchen-planning guidelines, price it, and walk through it in 3D.
 ```bash
 cd kitchen-visualizer
 npm install
-npm run api        # terminal 1: accounts + saved kitchens (Node 22.5+)
+npm run api        # terminal 1: accounts + saved kitchens (Node 22.13+)
 npm run dev        # terminal 2: the app, proxies /api to the server
 
 npm run build && npm start   # production: one process serves the app and the API
