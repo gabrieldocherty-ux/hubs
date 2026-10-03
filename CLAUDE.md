@@ -10,6 +10,8 @@ If you're starting a brand-new chat and want the fast version instead of reading
 
 ## What's actually running right now
 
+**HALTED (2026-10-03, Gabe's request): all market testing is stopped.** The `HALTED` file at the repo root makes `scheduled_cycle.py` exit without running a cycle; Gabe should also run `install_scheduler.bat remove` on his PC. Do not resume paper trading or strategy research unless he asks.
+
 - Mode: **paper** (simulated fills, starting capital $250, no wallet, no real orders — see `core/paper_account.py`). Paper mode reads **mainnet** market data by default (`--market-data`), because testnet is a separate thin market — HYPE traded at $22.87 there vs $83.93 on mainnet on 2026-09-05. No orders are placed in paper mode regardless of which one it reads.
 - Strategy: `AdaptiveTrendStrategy` (`core/adaptive_optimizer.py`), shadow-evaluating SMA(10,30)/(20,60)/(30,90) crossover on 4h bars, defaulting to the researched (20,60). Validated via walk-forward + funding-adjusted + quarterly backtests — see the vault log for the actual numbers, don't take "validated" on faith. **Its honest profile: 32% win rate, median trade −3.13% (the modal outcome is hitting the 3% stop), all profit in the tail.** That's a normal trend-following shape, not a bug, but expect ~2 losing trades in 3.
 - Coins: BTC, ETH, SOL. HYPE is the validated 4th coin by sustained liquidity (median $365M/day over 90d, ahead of SOL) but is **not** in the live basket yet.

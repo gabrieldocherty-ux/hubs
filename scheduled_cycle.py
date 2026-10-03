@@ -66,6 +66,15 @@ def main():
     LOG.parent.mkdir(parents=True, exist_ok=True)
     rotate_if_large()
 
+    # Kill switch: a HALTED file at the repo root stops every scheduled cycle
+    # without touching Task Scheduler. Delete the file to resume.
+    halt = ROOT / "HALTED"
+    if halt.exists():
+        with open(LOG, "a", encoding="utf-8", errors="replace") as fh:
+            fh.write("{} halted: {} present, no cycle run\n".format(
+                datetime.now(timezone.utc).isoformat(), halt.name))
+        return 0
+
     real_out, real_err = sys.stdout, sys.stderr
     fh = open(LOG, "a", encoding="utf-8", errors="replace")
     tee = Tee(fh, real_out)

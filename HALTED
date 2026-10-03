@@ -1,0 +1,6 @@
+Market testing stopped at Gabe's request on 2026-10-03.
+
+While this file exists, scheduled_cycle.py logs "halted" and exits without
+running a paper-trading cycle. Delete this file to resume.
+
+To remove the hourly Windows task entirely:  install_scheduler.bat remove
