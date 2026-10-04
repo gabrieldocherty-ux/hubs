@@ -276,12 +276,11 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
   return (
     <group>
       <Toe w={w} d={d} />
-      {/* The carcass is open above 24in so a 9in bowl, its drain and strainer basket all clear it. */}
-      <Box size={[w, 20, d - 0.1]} pos={[0, 14, 0]} mat={body} />
-      <Box size={[0.75, 10.5, d - 0.1]} pos={[-w / 2 + 0.375, 29.25, 0]} mat={body} />
-      <Box size={[0.75, 10.5, d - 0.1]} pos={[w / 2 - 0.375, 29.25, 0]} mat={body} />
-      <Box size={[w, 10.5, 0.75]} pos={[0, 29.25, -d / 2 + 0.375]} mat={body} />
-      {!farm && <Box size={[w, 10.5, 0.75]} pos={[0, 29.25, d / 2 - 0.4]} mat={body} />}
+      <Box size={[w, 21, d - 0.1]} pos={[0, 14.5, 0]} mat={body} />
+      <Box size={[0.75, 9.5, d - 0.1]} pos={[-w / 2 + 0.375, 29.75, 0]} mat={body} />
+      <Box size={[0.75, 9.5, d - 0.1]} pos={[w / 2 - 0.375, 29.75, 0]} mat={body} />
+      <Box size={[w, 9.5, 0.75]} pos={[0, 29.75, -d / 2 + 0.375]} mat={body} />
+      {!farm && <Box size={[w, 9.5, 0.75]} pos={[0, 29.75, d / 2 - 0.4]} mat={body} />}
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} />
       ))}
