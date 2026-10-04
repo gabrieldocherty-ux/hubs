@@ -8,7 +8,8 @@
     "api": "node --no-warnings server/index.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "start": "node --no-warnings server/index.mjs --prod"
+    "start": "node --no-warnings server/index.mjs --prod",
+    "deploy:local": "npm run build && node scripts/deploy-local.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",
