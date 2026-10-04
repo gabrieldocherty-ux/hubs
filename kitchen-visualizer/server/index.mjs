@@ -4,7 +4,7 @@
 //   npm run api                 # dev, pairs with `npm run dev` (Vite proxies /api)
 //   npm start                   # production: also serves the built app from dist/
 //
-// Env: PORT (8787), DB_PATH (server/data/mise.db), NODE_ENV.
+// Env: PORT (8787), HOST (all interfaces), DB_PATH (server/data/mise.db), NODE_ENV.
 
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -15,6 +15,7 @@ import { DatabaseSync } from 'node:sqlite';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
+const HOST = process.env.HOST || undefined;
 const PROD = process.env.NODE_ENV === 'production' || process.argv.includes('--prod');
 const DB_PATH = process.env.DB_PATH || path.join(HERE, 'data', 'mise.db');
 const DIST = path.join(HERE, '..', 'dist');
@@ -84,9 +85,22 @@ function createSession(userId) {
   return { token, expires };
 }
 
-function sessionCookie(token, expires) {
+// Secure follows the request, not the mode: a Secure cookie sent over plain
+// http to anything but localhost is silently dropped, which would break sign-in
+// on a home server. X-Forwarded-Proto is trusted only from a loopback proxy
+// (e.g. `tailscale serve`), never from a remote client.
+function isLoopback(addr = '') {
+  return addr === '127.0.0.1' || addr === '::1' || addr === '::ffff:127.0.0.1';
+}
+function secureAttr(req) {
+  const https = req.socket.encrypted
+    || (isLoopback(req.socket.remoteAddress) && req.headers['x-forwarded-proto'] === 'https');
+  return https ? '; Secure' : '';
+}
+
+function sessionCookie(req, token, expires) {
   const maxAge = Math.max(0, Math.floor((expires - Date.now()) / 1000));
-  return `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${PROD ? '; Secure' : ''}`;
+  return `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${secureAttr(req)}`;
 }
 
 function readCookie(req, name) {
@@ -112,7 +126,7 @@ function currentUser(req, res) {
   if (row.expires_at - Date.now() < (SESSION_DAYS / 2) * 86_400_000) {
     const expires = Date.now() + SESSION_DAYS * 86_400_000;
     db.prepare('UPDATE sessions SET expires_at = ? WHERE token_hash = ?').run(expires, sha256(token));
-    res.setHeader('Set-Cookie', sessionCookie(token, expires));
+    res.setHeader('Set-Cookie', sessionCookie(req, token, expires));
   }
   return { id: row.id, email: row.email, name: row.name };
 }
@@ -227,7 +241,7 @@ async function api(req, res, url) {
     const id = crypto.randomUUID();
     db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(id, email, name, hashPassword(password), Date.now());
     const s = createSession(id);
-    res.setHeader('Set-Cookie', sessionCookie(s.token, s.expires));
+    res.setHeader('Set-Cookie', sessionCookie(req, s.token, s.expires));
     return send(res, 201, { user: { id, email, name } });
   }
 
@@ -246,14 +260,14 @@ async function api(req, res, url) {
     }
     failures.delete(key);
     const s = createSession(user.id);
-    res.setHeader('Set-Cookie', sessionCookie(s.token, s.expires));
+    res.setHeader('Set-Cookie', sessionCookie(req, s.token, s.expires));
     return send(res, 200, { user: { id: user.id, email: user.email, name: user.name } });
   }
 
   if (p === '/api/auth/logout' && method === 'POST') {
     const token = readCookie(req, COOKIE);
     if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(sha256(token));
-    res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${PROD ? '; Secure' : ''}`);
+    res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureAttr(req)}`);
     return send(res, 200, { ok: true });
   }
 
@@ -386,4 +400,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`Mise API listening on http://localhost:${PORT}${PROD ? ' (serving dist/)' : ''}`));
+server.listen(PORT, HOST, () => console.log(`Mise API listening on http://${HOST || "localhost"}:${PORT}${PROD ? ' (serving dist/)' : ''}`));
