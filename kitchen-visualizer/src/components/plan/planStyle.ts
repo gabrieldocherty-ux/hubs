@@ -9,6 +9,8 @@ export const ACCENT = '#c2542d';
 export const BAD = '#c43d2f';
 export const WARN = '#c98a1b';
 export const OK = '#3f7d52';
+/** Snap guides and neighbour distances while dragging: a cool blue that reads against warm floors and the accent. */
+export const GUIDE = '#2a72b5';
 export const FONT_MONO = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
 export const FONT_SANS = '"Instrument Sans", system-ui, -apple-system, sans-serif';
 export const WALL_T = 5;

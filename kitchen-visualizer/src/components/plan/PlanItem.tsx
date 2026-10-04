@@ -1,20 +1,16 @@
 import { memo, useMemo, type ReactNode } from 'react';
 import { Circle, Ellipse, Group, Line, Rect, Shape, Text } from 'react-konva';
-import type Konva from 'konva';
 import type { PlacedItem, PlanStyle, Surfaces } from '../../types';
-import { resolve } from '../../lib/geometry';
+import { resolve, type DragResult } from '../../lib/geometry';
 import { resolveFinish, cabinetFinish } from '../../lib/finish';
 import { productCode } from '../../data/catalog';
 import { farmhouseSink } from '../../lib/fronts';
 import { COUNTERTOPS, byId } from '../../data/finishes';
 import { hashString, luminance, mulberry32, shade } from '../../lib/color';
 import { ACCENT, BAD, FONT_MONO, INK, INK_SOFT, PAPER, WALL_T, patternFill } from './planStyle';
+import { itemLocalBox } from './planHit';
 
-export interface DragResult {
-  x: number;
-  y: number;
-  rotation: number;
-}
+export type { DragResult };
 
 interface Props {
   item: PlacedItem;
@@ -24,15 +20,8 @@ interface Props {
   style: PlanStyle;
   k: number;
   surfaces: Surfaces;
-  onSelect: (id: string) => void;
-  onHover: (id: string | null) => void;
-  onDragStart: (id: string) => void;
-  onDragMove: (id: string, x: number, y: number) => DragResult | null;
-  onDragEnd: (id: string) => void;
   /** Bumps when the catalog registry changes, so `resolve` re-runs for the same item. */
   catalogVersion: number;
-  /** View-only plans (share links) can be looked at but not dragged. */
-  readOnly?: boolean;
 }
 
 const hair = { stroke: INK, strokeWidth: 1, strokeScaleEnabled: false } as const;
@@ -418,48 +407,13 @@ export const PlanItem = memo(function PlanItem(p: Props) {
   }
 
   const highlight = p.problem ? BAD : p.selected ? ACCENT : p.hovered ? INK_SOFT : null;
-  const box = product.kind === 'window' || product.kind === 'door' ? { x: x0, y: -WALL_T, w, h: WALL_T + (product.kind === 'door' ? 4 : 1.5) } : { x: x0, y: y0, w, h: d };
+  // Same box the plan hit-tests against (planHit.itemLocalBox), so what you see is what you grab.
+  const lb = itemLocalBox(r);
+  const box = { x: lb.x, y: lb.y, w: lb.w, h: lb.h };
   const round = product.kind === 'stool' || (product.kind === 'table' && product.variant === 'round') || (product.kind === 'pendant' && product.variant !== 'linear');
 
   return (
-    <Group
-      x={item.x}
-      y={item.y}
-      rotation={item.rotation}
-      draggable={!p.readOnly}
-      onMouseDown={(e: Konva.KonvaEventObject<MouseEvent>) => {
-        e.cancelBubble = true;
-      }}
-      onClick={() => p.onSelect(item.id)}
-      onTap={() => p.onSelect(item.id)}
-      onMouseEnter={(e) => {
-        p.onHover(item.id);
-        const c = e.target.getStage()?.container();
-        if (c) c.style.cursor = 'grab';
-      }}
-      onMouseLeave={(e) => {
-        p.onHover(null);
-        const c = e.target.getStage()?.container();
-        if (c) c.style.cursor = '';
-      }}
-      onDragStart={(e) => {
-        e.cancelBubble = true;
-        p.onDragStart(item.id);
-      }}
-      onDragMove={(e) => {
-        e.cancelBubble = true;
-        const node = e.target;
-        const res = p.onDragMove(item.id, node.x(), node.y());
-        if (res) {
-          node.position({ x: res.x, y: res.y });
-          node.rotation(res.rotation);
-        }
-      }}
-      onDragEnd={(e) => {
-        e.cancelBubble = true;
-        p.onDragEnd(item.id);
-      }}
-    >
+    <Group x={item.x} y={item.y} rotation={item.rotation} name="item" id={item.id}>
       {nodes}
       {p.problem && (
         <Rect x={box.x} y={box.y} width={box.w} height={box.h} fill={BAD} opacity={0.14} listening={false} />

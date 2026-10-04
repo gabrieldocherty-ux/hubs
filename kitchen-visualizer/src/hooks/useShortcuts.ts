@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
+import { usePlacement } from '../lib/interaction';
+import { isCompact, useMobileUI } from '../components/MobileState';
 
 function typing(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -37,6 +39,7 @@ export function useShortcuts() {
       if (e.key === '/') {
         e.preventDefault();
         s.setUI({ leftTab: 'products' });
+        if (isCompact()) useMobileUI.getState().openSheet('catalog');
         requestAnimationFrame(() => document.getElementById('catalog-search')?.focus());
         return;
       }
@@ -44,7 +47,12 @@ export function useShortcuts() {
       if (e.key === '2') return s.setUI({ viewMode: 'split' });
       if (e.key === '3') return s.setUI({ viewMode: '3d' });
       if (e.key === '4') return s.setUI({ viewMode: 'walls' });
-      if (e.key === 'Escape') return s.select(null);
+      if (e.key === 'Escape') {
+        // One thing at a time: a product waiting to be placed, then an open sheet, then the selection.
+        if (usePlacement.getState().armedProductId) return usePlacement.getState().disarm();
+        if (useMobileUI.getState().sheet) return useMobileUI.getState().closeSheet();
+        return s.select(null);
+      }
       if (!id) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();

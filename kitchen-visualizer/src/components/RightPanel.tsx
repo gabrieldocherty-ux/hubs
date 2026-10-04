@@ -134,7 +134,7 @@ function Inspector() {
   );
 }
 
-function Summary({ view, showPrices }: { view: boolean; showPrices: boolean }) {
+function Summary({ view, showPrices, compact }: { view: boolean; showPrices: boolean; compact: boolean }) {
   const room = useDesignStore((s) => s.doc.room);
   const items = useDesignStore((s) => s.doc.items);
   const est = useEstimate();
@@ -169,23 +169,35 @@ function Summary({ view, showPrices }: { view: boolean; showPrices: boolean }) {
           </dl>
         </div>
       ) : (
-        <div className="tips">
-          <span className="mini-label">Tips</span>
+      <div className="tips">
+        <span className="mini-label">Tips</span>
+        {compact ? (
           <ul>
-            <li>Drag products onto the plan. Backs snap to walls and edges click together.</li>
-            <li>Click a piece to change its width, finish or exact position.</li>
+            <li>Tap <b>Add</b>, pick a product, then tap the plan where it goes. Or hold a product and drag it in.</li>
+            <li>Drag a piece with one finger to move it. Backs snap to walls and edges click together.</li>
+            <li>Tap a piece for Rotate, Duplicate and Delete; Details has width, finish and exact position.</li>
+          </ul>
+        ) : (
+          <ul>
+            <li>Drag products onto the plan or the 3D floor. Backs snap to walls and edges click together.</li>
+            <li>Click a piece to rotate, duplicate or delete it, or to change its width, finish or exact position.</li>
             <li>Room & Finishes swaps counters, tile, floors and paint across the whole kitchen.</li>
           </ul>
-          <span className="mini-label">Shortcuts</span>
-          <dl className="shortcuts">
-            <dt><kbd>R</kbd></dt><dd>Rotate</dd>
-            <dt><kbd>⌫</kbd></dt><dd>Delete</dd>
-            <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
-            <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
-            <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
-            <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
-          </dl>
-        </div>
+        )}
+        {!compact && (
+          <>
+            <span className="mini-label">Shortcuts</span>
+            <dl className="shortcuts">
+              <dt><kbd>R</kbd></dt><dd>Rotate</dd>
+              <dt><kbd>⌫</kbd></dt><dd>Delete</dd>
+              <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
+              <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
+              <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
+              <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
+            </dl>
+          </>
+        )}
+      </div>
       )}
     </div>
   );
@@ -255,8 +267,10 @@ function EstimatePanel() {
   );
 }
 
-export function RightPanel({ mode = 'edit', showPrices = true }: { mode?: 'edit' | 'view'; showPrices?: boolean }) {
+export function RightPanel({ mode = 'edit', showPrices = true, variant = 'panel' }: { mode?: 'edit' | 'view'; showPrices?: boolean; variant?: 'panel' | 'sheet' }) {
   const view = mode === 'view';
+  /** The details column on a desktop; with variant="sheet" the same tabs inside the phone layout's Details sheet. */
+  const compact = variant === 'sheet';
   const storedTab = useDesignStore((s) => s.ui.rightTab);
   // View mode shows the summary and (with prices) the estimate only: no inspector, no checks.
   const tab = view ? (storedTab === 'estimate' && showPrices ? 'estimate' : 'details') : storedTab;
@@ -267,7 +281,7 @@ export function RightPanel({ mode = 'edit', showPrices = true }: { mode?: 'edit'
   const issues = report.checks.filter((c) => c.level === 'bad' || c.level === 'warn').length;
   const hasBad = report.checks.some((c) => c.level === 'bad');
   return (
-    <aside className="panel right-panel">
+    <aside className={compact ? 'panel right-panel right-panel--sheet' : 'panel right-panel'}>
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'details'} className={tab === 'details' ? 'on' : ''} onClick={() => setUI({ rightTab: 'details' })}>
           {selectedId && !view ? 'Selected' : 'Overview'}
@@ -284,7 +298,7 @@ export function RightPanel({ mode = 'edit', showPrices = true }: { mode?: 'edit'
         )}
       </div>
       <div className="panel-scroll">
-        {tab === 'details' && (selectedId && !view ? <Inspector /> : <Summary view={view} showPrices={showPrices} />)}
+        {tab === 'details' && (selectedId && !view ? <Inspector /> : <Summary view={view} showPrices={showPrices} compact={compact} />)}
         {tab === 'checks' && <ChecksPanel />}
         {tab === 'estimate' && showPrices && <EstimatePanel />}
       </div>

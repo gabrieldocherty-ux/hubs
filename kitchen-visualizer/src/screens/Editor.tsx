@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { TopBar } from '../components/TopBar';
 import { LeftPanel } from '../components/LeftPanel';
 import { RightPanel } from '../components/RightPanel';
@@ -6,16 +6,33 @@ import { PlanView } from '../components/plan/PlanView';
 import { Toasts } from '../components/Toasts';
 import { ElevationsView } from '../components/ElevationsView';
 import { ConflictDialog } from '../components/ConflictDialog';
+import { SelectionToolbar } from '../components/SelectionToolbar';
+import { MobileBar, MobileSheets, PlacementBanner, usePlacementTaps, type CompactView } from '../components/MobileShell';
+import { isCompact, useCompact, useMobileUI } from '../components/MobileState';
 import { initialDoc, loadLocalDraft, useDesignStore } from '../store/useDesignStore';
 import { useSession } from '../store/useSession';
 import { catalogReady, useCatalog } from '../store/useCatalog';
 import { useShortcuts } from '../hooks/useShortcuts';
 import { useAutosave } from '../hooks/useAutosave';
+import { usePlacement } from '../lib/interaction';
 import { api, ApiError } from '../lib/api';
 import { navigate } from '../lib/router';
 import { getProduct } from '../data/catalog';
+import type { ViewMode } from '../types';
 
 const SceneView = lazy(() => import('../components/three/SceneView').then((m) => ({ default: m.SceneView })));
+
+/** Brings the inspector into view on a desktop (it lives in the right column) and makes it blink once. */
+function revealInspector() {
+  requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>('.right-panel');
+    if (!el) return;
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  });
+}
 
 export interface WorkspaceProps {
   projectId: string | null;
@@ -33,43 +50,63 @@ export interface WorkspaceProps {
 
 export function Workspace({ projectId, mode, showPrices = true, banner }: WorkspaceProps) {
   const viewMode = useDesignStore((s) => s.ui.viewMode);
+  const placing = usePlacement((s) => s.armedProductId !== null);
+  const compact = useCompact();
   const view = mode === 'view';
   const prices = !view || showPrices;
   useShortcuts();
   useAutosave(view ? null : projectId, !view);
+  usePlacementTaps();
+
+  // A phone has room for one view at a time: Split shows the plan.
+  const shown: ViewMode = compact && viewMode === 'split' ? 'plan' : viewMode;
 
   useEffect(() => {
     // The store's readOnly flag is what guards every mutating action; keep it in step with the mode.
     if (useDesignStore.getState().readOnly !== view) useDesignStore.setState({ readOnly: view });
   }, [view]);
 
+  useEffect(() => {
+    if (!compact) useMobileUI.getState().closeSheet();
+  }, [compact]);
+
+  const onDetails = useCallback(() => {
+    useDesignStore.getState().setUI({ rightTab: 'details' });
+    if (isCompact()) useMobileUI.getState().openSheet('details');
+    else revealInspector();
+  }, []);
+
   return (
-    <div className={`app${banner ? ' app--banner' : ''}${view ? ' app--view' : ''}`}>
+    <div className={`app${banner ? ' app--banner' : ''}${view ? ' app--view' : ''}${compact ? ' app--compact' : ''}${placing ? ' is-placing' : ''}`}>
       {banner}
-      <TopBar mode={mode} showPrices={prices} projectId={view ? null : projectId} />
+      <TopBar mode={mode} showPrices={prices} projectId={view ? null : projectId} compact={compact} />
       <div className={`workspace${view ? ' workspace--view' : ''}`}>
-        {!view && <LeftPanel />}
-        <main className={`stage stage--${viewMode}`}>
-          {viewMode === 'walls' && (
+        {!view && !compact && <LeftPanel />}
+        <main className={`stage stage--${shown}`}>
+          {shown === 'walls' && (
             <section className="stage-pane" aria-label="Wall elevations">
               <ElevationsView />
             </section>
           )}
-          {(viewMode === 'plan' || viewMode === 'split') && (
+          {(shown === 'plan' || shown === 'split') && (
             <section className="stage-pane" aria-label="Floor plan">
               <PlanView />
             </section>
           )}
-          {(viewMode === '3d' || viewMode === 'split') && (
+          {(shown === '3d' || shown === 'split') && (
             <section className="stage-pane" aria-label="3D view">
               <Suspense fallback={<div className="scene-loading">Building your kitchen in 3D…</div>}>
                 <SceneView />
               </Suspense>
             </section>
           )}
+          <PlacementBanner compact={compact} />
         </main>
-        <RightPanel mode={mode} showPrices={prices} />
+        {!compact && <RightPanel mode={mode} showPrices={prices} />}
       </div>
+      {compact && <MobileSheets />}
+      {compact && <MobileBar view={shown as CompactView} />}
+      {!view && <SelectionToolbar compact={compact} onDetails={onDetails} />}
       <Toasts />
       {!view && <ConflictDialog />}
     </div>

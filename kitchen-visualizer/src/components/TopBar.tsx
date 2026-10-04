@@ -51,9 +51,11 @@ export interface TopBarProps {
   showPrices?: boolean;
   /** The saved project, for the Share slot; null in device-only and view mode. */
   projectId?: string | null;
+  /** The phone layout: the view switch moves to the bottom bar and Export shrinks to an icon. */
+  compact?: boolean;
 }
 
-export function TopBar({ mode = 'edit', showPrices = true, projectId = null }: TopBarProps) {
+export function TopBar({ mode = 'edit', showPrices = true, projectId = null, compact = false }: TopBarProps) {
   const view = mode === 'view';
   const name = useDesignStore((s) => s.doc.name);
   const viewMode = useDesignStore((s) => s.ui.viewMode);
@@ -71,11 +73,12 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null }: T
   useEffect(() => setDraft(name), [name]);
   useEffect(() => {
     if (!menu) return;
-    const close = (e: MouseEvent) => {
+    // pointerdown, not mousedown: a tap on the canvas sends no mouse events on a touch screen.
+    const close = (e: PointerEvent) => {
       if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
     };
-    window.addEventListener('mousedown', close);
-    return () => window.removeEventListener('mousedown', close);
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
   }, [menu]);
 
   const views: [ViewMode, string, JSX.Element][] = [
@@ -143,14 +146,16 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null }: T
         )}
       </div>
 
-      <div className="views" role="tablist" aria-label="View">
-        {views.map(([id, label, icon]) => (
-          <button key={id} role="tab" aria-selected={viewMode === id} className={viewMode === id ? 'on' : ''} onClick={() => setUI({ viewMode: id })}>
-            {icon}
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
+      {!compact && (
+        <div className="views" role="tablist" aria-label="View">
+          {views.map(([id, label, icon]) => (
+            <button key={id} role="tab" aria-selected={viewMode === id} className={viewMode === id ? 'on' : ''} onClick={() => setUI({ viewMode: id })}>
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="actions">
         {view ? (
@@ -158,8 +163,8 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null }: T
         ) : (
           <>
             <SaveStatus />
-            <button className="icon-btn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo /></button>
-            <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><Redo /></button>
+            <button className="icon-btn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo width={compact ? 20 : 16} height={compact ? 20 : 16} /></button>
+            <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><Redo width={compact ? 20 : 16} height={compact ? 20 : 16} /></button>
           </>
         )}
         {showPrices && (
@@ -171,9 +176,15 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null }: T
         <RenderButton />
         {!view && <ShareButton projectId={projectId} />}
         <div className="menu-wrap" ref={menuRef}>
-          <button className="btn primary" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
-            <Download /> Export <Chevron width={14} height={14} />
-          </button>
+          {compact ? (
+            <button className="icon-btn export-btn" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label="Export" title="Export">
+              <Download width={20} height={20} />
+            </button>
+          ) : (
+            <button className="btn primary" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
+              <Download /> Export <Chevron width={14} height={14} />
+            </button>
+          )}
           {menu && (
             <div className="menu" role="menu">
               <button role="menuitem" onClick={() => exportPng('plan')}>

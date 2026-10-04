@@ -123,6 +123,13 @@ export interface SnapResult {
   wall: Wall | null;
 }
 
+/**
+ * Where a dragged item actually landed after snapping: footprint centre in room
+ * inches (same convention as `PlacedItem.x/y`), the rotation the snap chose (backs
+ * auto-turn to face into the room) and the wall it is flush against, if any.
+ */
+export type DragResult = SnapResult;
+
 const WALL_SNAP = 16;
 const EDGE_SNAP = 6;
 
