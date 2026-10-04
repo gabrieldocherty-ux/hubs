@@ -24,6 +24,7 @@ import {
 } from '../lib/geometry';
 import { defaultFinishIndex } from '../lib/finish';
 import { makeId } from '../lib/id';
+import { qaExpose } from '../lib/qa';
 
 export interface Toast {
   id: number;
@@ -477,6 +478,8 @@ export const useDesignStore = create<State>()(
     },
   ),
 );
+
+qaExpose({ store: useDesignStore });
 
 export function useSelected(): Resolved | null {
   const item = useDesignStore((s) => s.doc.items.find((i) => i.id === s.selectedId) ?? null);
