@@ -6,8 +6,9 @@
 // Env: MISE_HOME (target folder), MISE_PORT (8790), MISE_HOST (127.0.0.1).
 //
 // Layout of MISE_HOME:
-//   app\            replaced on every deploy (dist\ + server\ code)
+//   app\            replaced on every deploy (dist\, server\ code, src\data\kinds.json)
 //   data\mise.db    the database: kept across deploys
+//   data\uploads\   uploaded models and images: kept across deploys
 //   logs\           server.log
 //   run-server.cmd  supervisor loop: restarts the server if it exits
 //   start-server.cmd / stop-server.cmd / start-hidden.vbs
@@ -24,6 +25,8 @@ const PORT = String(process.env.MISE_PORT || '8790');
 const HOST = process.env.MISE_HOST || '127.0.0.1';
 const APP = path.join(HOME, 'app');
 const DEPLOYING = path.join(HOME, 'deploying');
+/** Files outside server/ that the server imports at runtime (kept at the same relative path). */
+const RUNTIME_FILES = ['src/data/kinds.json'];
 
 if (process.platform !== 'win32') {
   console.error('deploy-local is written for the Windows home server. Use `npm start` elsewhere.');
@@ -129,6 +132,11 @@ try {
   copyTree(path.join(ROOT, 'dist'), path.join(staging, 'dist'));
   copyTree(path.join(ROOT, 'server'), path.join(staging, 'server'),
     (src) => /[\\/]server[\\/](data|test)([\\/]|$)/.test(src));
+  // Files outside server/ that the server imports at runtime, at the same relative paths.
+  for (const rel of RUNTIME_FILES) {
+    fs.mkdirSync(path.dirname(path.join(staging, rel)), { recursive: true });
+    fs.copyFileSync(path.join(ROOT, rel), path.join(staging, rel));
+  }
   fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(staging, 'package.json'));
   let head = 'unknown';
   try { head = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim(); } catch {}
