@@ -28,6 +28,7 @@ import { makeId } from '../lib/id';
 import { prepareDocForSave, sanitizeDoc, withFinishIds } from '../lib/doc';
 import { track } from '../lib/track';
 import { useCatalog, useCatalogVersion } from './useCatalog';
+import { qaExpose } from '../lib/qa';
 
 export interface Toast {
   id: number;
@@ -493,6 +494,8 @@ export const useDesignStore = create<State>()(
     },
   ),
 );
+
+qaExpose({ store: useDesignStore });
 
 export function useSelected(): Resolved | null {
   const item = useDesignStore((s) => s.doc.items.find((i) => i.id === s.selectedId) ?? null);

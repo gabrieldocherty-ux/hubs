@@ -58,6 +58,37 @@ export function finishMaterial(f: Finish): THREE.Material {
   });
 }
 
+/** Warm white of glazed fireclay. */
+export const FIRECLAY = '#f2efe8';
+
+/**
+ * What a sink bowl is made of. Glazed fireclay gets a hard, glossy clear-coat so its rolled edges
+ * catch the room's light, and a near-white glaze is pulled a touch warm, toward real fireclay rather
+ * than paper white. Matte glazes and composite stay soft; steel and copper keep their metal finish.
+ * Every variant reads the occlusion that the sink geometry bakes into its vertex colours.
+ */
+export function sinkMaterial(f: Finish): THREE.Material {
+  return cached(`sink:${f.id}:${f.hex}:${f.material}`, () => {
+    switch (f.material) {
+      case 'ceramic': {
+        const lum = luminance(f.hex);
+        if (lum < 0.2) return new THREE.MeshPhysicalMaterial({ color: f.hex, roughness: 0.55, clearcoat: 0.35, clearcoatRoughness: 0.45, vertexColors: true });
+        const color = new THREE.Color(f.hex);
+        if (lum > 0.8) color.lerp(new THREE.Color(FIRECLAY), 0.75);
+        return new THREE.MeshPhysicalMaterial({ color, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.07, vertexColors: true });
+      }
+      case 'stone':
+        // Granite composite: one even, faintly lustrous colour, not a veined countertop slab.
+        return new THREE.MeshPhysicalMaterial({ color: f.hex, roughness: 0.62, clearcoat: 0.2, clearcoatRoughness: 0.5, vertexColors: true });
+      default: {
+        const m = (finishMaterial(f) as THREE.MeshStandardMaterial).clone();
+        m.vertexColors = true;
+        return m;
+      }
+    }
+  });
+}
+
 export function surfaceMaterial(key: string, spec: PatternSpec, gloss: number): { mat: THREE.Material; tileIn: number } {
   const { tex, tileIn } = texFor(spec);
   const mat = cached(`surface:${key}:${JSON.stringify(spec)}`, () =>

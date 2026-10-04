@@ -12,6 +12,7 @@ import { getProduct, isOpening } from '../../data/catalog';
 import { resolve } from '../../lib/geometry';
 import { resolveFinish, cabinetFinish } from '../../lib/finish';
 import { registerExporter } from '../../lib/exporters';
+import { qaExpose } from '../../lib/qa';
 import { hardwareMaterial, surfaceMaterial } from './materials';
 import { renderModel } from './models';
 import { Room3D } from './Room3D';
@@ -124,7 +125,7 @@ function presetFor(preset: CameraPreset, room: Room, aspect: number): { pos: THR
 
 function CameraRig({ room }: { room: Room }) {
   const controls = useRef<OrbitControlsImpl>(null);
-  const { camera, size } = useThree();
+  const { camera, size, gl } = useThree();
   const request = useDesignStore((s) => s.cameraRequest);
   const anim = useRef<{ p0: THREE.Vector3; p1: THREE.Vector3; t0: THREE.Vector3; t1: THREE.Vector3; t: number } | null>(null);
   const first = useRef(true);
@@ -152,6 +153,8 @@ function CameraRig({ room }: { room: Room }) {
   useEffect(() => {
     if (request) go(request.preset);
   }, [request?.nonce]);
+
+  useEffect(() => qaExpose({ camera, controls: controls.current, gl }), [camera, gl]);
 
   useFrame((_, dt) => {
     const a = anim.current;
