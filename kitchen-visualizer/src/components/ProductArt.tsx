@@ -101,6 +101,7 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
       nodes.push(countertop(-0.8, w + 0.8));
       if (farm) {
         const ax = (w - farm.bw) / 2;
+        nodes.push(<rect key="reveal" x={ax} y={Y(farm.apronY0 + 0.1)} width={farm.bw} height={farm.apronY0 - farm.doorTop + 0.3} fill="#2a2622" />);
         nodes.push(<rect key="apron" x={ax} y={Y(farm.rimY)} width={farm.bw} height={farm.apronH} rx={0.5} fill={color} stroke={INK} />);
         // The rolled lip along the top of the apron.
         nodes.push(<line key="lip" x1={ax + 0.6} y1={Y(farm.rimY - 0.45)} x2={ax + farm.bw - 0.6} y2={Y(farm.rimY - 0.45)} stroke={INK} strokeOpacity={0.3} strokeWidth={0.5} />);
