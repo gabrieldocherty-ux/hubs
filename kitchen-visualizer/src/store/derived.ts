@@ -1,12 +1,17 @@
 import { useMemo } from 'react';
 import { useDesignStore } from './useDesignStore';
+import { useCatalogVersion } from './useCatalog';
 import { resolveAll } from '../lib/geometry';
 import { runChecks } from '../lib/checks';
 import { buildEstimate } from '../lib/estimate';
 
+// The catalog version is a dependency everywhere: when a server product (or its snapshot) loads,
+// the same items resolve to different products, sizes and prices.
+
 export function useResolvedItems() {
   const items = useDesignStore((s) => s.doc.items);
-  return useMemo(() => resolveAll(items), [items]);
+  const catalogVersion = useCatalogVersion();
+  return useMemo(() => resolveAll(items), [items, catalogVersion]);
 }
 
 export function useReport() {
@@ -17,5 +22,6 @@ export function useReport() {
 
 export function useEstimate() {
   const doc = useDesignStore((s) => s.doc);
-  return useMemo(() => buildEstimate(doc), [doc]);
+  const catalogVersion = useCatalogVersion();
+  return useMemo(() => buildEstimate(doc), [doc, catalogVersion]);
 }

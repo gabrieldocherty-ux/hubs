@@ -349,10 +349,11 @@ function WineModel({ r, finish, ctx }: ModelProps) {
 function RangeModel({ r, finish }: ModelProps) {
   const { w, d, product } = r;
   const body = finishMaterial(finish);
-  const aurelle = product.brand === 'Aurelle';
-  const pro = product.brand === 'Halvard Pro';
-  const trim = aurelle ? M.brass() : luminance(finish.hex) < 0.1 ? M.steel() : finish.material === 'metal' ? M.steel() : M.chrome();
-  const knobMat = aurelle ? M.brass() : luminance(finish.hex) < 0.1 ? M.steel() : M.darkSteel();
+  // Look flags are product data (they used to be keyed off the built-in brand names).
+  const brass = product.flags?.trim === 'brass';
+  const backguard = !!product.flags?.backguard;
+  const trim = brass ? M.brass() : product.flags?.trim === 'steel' ? M.steel() : luminance(finish.hex) < 0.1 ? M.steel() : finish.material === 'metal' ? M.steel() : M.chrome();
+  const knobMat = brass ? M.brass() : luminance(finish.hex) < 0.1 ? M.steel() : M.darkSteel();
   const v = product.variant;
   const induction = v === 'induction';
   const griddle = v === 'griddle';
@@ -414,7 +415,7 @@ function RangeModel({ r, finish }: ModelProps) {
             </group>
           ))}
       {griddle && <Box size={[w - 2 - cookW - 1.5, 0.7, zTop1 - zTop0 - 1]} pos={[w / 2 - 1 - (w - 2 - cookW - 1.5) / 2, topY + 0.35, (zTop0 + zTop1) / 2]} mat={M.steel()} />}
-      {(pro || aurelle) && <Box size={[w, 3.5, 1.4]} pos={[0, topY + 1.75, -d / 2 + 0.7]} mat={body} />}
+      {backguard && <Box size={[w, 3.5, 1.4]} pos={[0, topY + 1.75, -d / 2 + 0.7]} mat={body} />}
     </group>
   );
 }
@@ -785,7 +786,15 @@ function PlantModel({ r, finish }: ModelProps) {
   );
 }
 
+/** A product that isn't available (unpublished, or not loaded yet): a translucent box that holds its place. */
+function MissingModel({ r }: ModelProps) {
+  const h = Math.max(1, r.z1 - r.z0);
+  const mat = cached('missing-product', () => new THREE.MeshStandardMaterial({ color: '#d9d4cb', roughness: 0.9, transparent: true, opacity: 0.6 }));
+  return <Box size={[r.w, h, r.d]} pos={[0, r.z0 + h / 2, 0]} mat={mat} />;
+}
+
 export function renderModel(p: ModelProps): JSX.Element | null {
+  if (p.r.product.source === 'missing') return <MissingModel {...p} />;
   switch (p.r.product.kind) {
     case 'base':
       return <BaseModel {...p} />;

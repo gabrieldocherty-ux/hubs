@@ -2,9 +2,10 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DesignDoc, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
-import { getProduct, isOpening, itemWidth, snapsToWall } from '../data/catalog';
+import { getProduct, isBuiltin, isOpening, itemWidth, snapsToWall } from '../data/catalog';
 import { CABINET_FINISHES } from '../data/finishes';
 import { buildTemplate, type TemplateId } from '../data/templates';
+import { DEFAULT_KITCHEN_NAME, DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import type { StylePreset } from '../data/styles';
 import {
   alongWall,
@@ -22,8 +23,11 @@ import {
   wallLength,
   type Resolved,
 } from '../lib/geometry';
-import { defaultFinishIndex } from '../lib/finish';
+import { defaultFinishIndex, finishAt, finishById, itemHasFinish } from '../lib/finish';
 import { makeId } from '../lib/id';
+import { prepareDocForSave, sanitizeDoc, withFinishIds } from '../lib/doc';
+import { track } from '../lib/track';
+import { useCatalog, useCatalogVersion } from './useCatalog';
 
 export interface Toast {
   id: number;
@@ -46,6 +50,8 @@ interface UIState {
 
 interface State {
   doc: DesignDoc;
+  /** View-only (share links): every action that changes the kitchen is a no-op. */
+  readOnly: boolean;
   selectedId: string | null;
   hoverId: string | null;
   past: DesignDoc[];
@@ -66,17 +72,21 @@ interface State {
   moveTo: (id: string, x: number, y: number) => void;
   nudge: (id: string, dx: number, dy: number) => void;
   rotate: (id: string, dir: 1 | -1) => void;
-  setFinish: (id: string, finishIndex: number) => void;
+  /** A list position (from the UI) or a finish id. */
+  setFinish: (id: string, finish: number | string) => void;
   setWidth: (id: string, widthIn: number) => void;
   toggleMirror: (id: string) => void;
   duplicate: (id: string) => void;
   remove: (id: string) => void;
-  applyCabinetFinishToAll: (finishIndex: number) => void;
+  /** A position in CABINET_FINISHES or a cabinet finish id. */
+  applyCabinetFinishToAll: (finish: number | string) => void;
   applyTemplate: (id: TemplateId) => void;
   clearItems: () => void;
   importDoc: (doc: DesignDoc) => void;
-  /** Opens a different kitchen: replaces the document and clears undo history and selection. */
+  /** Opens a different kitchen for editing: replaces the document and clears undo history and selection. */
   loadDoc: (doc: DesignDoc) => void;
+  /** Opens a kitchen view-only (share links): registers its products, then loads it read-only. */
+  openReadOnly: (doc: DesignDoc, products?: Product[]) => void;
   undo: () => void;
   redo: () => void;
   select: (id: string | null) => void;
@@ -89,27 +99,7 @@ interface State {
 
 export type CameraPreset = 'overview' | 'eye' | 'top' | 'front';
 
-const DEFAULT_ROOM: Room = { widthIn: 200, lengthIn: 156, ceilingIn: 108 };
-const DEFAULT_SURFACES: Surfaces = {
-  cabinetFinishId: 'warm-white',
-  doorStyle: 'shaker',
-  hardwareId: 'brass',
-  countertopId: 'calacatta',
-  backsplashId: 'zellige-white',
-  flooringId: 'herringbone',
-  paintId: 'chalk',
-};
-
-export function sanitizeDoc(doc: DesignDoc): DesignDoc {
-  const base = initialDoc();
-  return {
-    ...base,
-    ...doc,
-    room: { ...base.room, ...doc.room },
-    surfaces: { ...base.surfaces, ...doc.surfaces },
-    items: (doc.items ?? []).filter((i) => getProduct(i.productId)),
-  };
-}
+export { sanitizeDoc };
 
 const LOCAL_DRAFT = 'mise-local-draft';
 
@@ -125,7 +115,7 @@ export function loadLocalDraft(): DesignDoc | null {
 
 export function saveLocalDraft(doc: DesignDoc) {
   try {
-    localStorage.setItem(LOCAL_DRAFT, JSON.stringify(doc));
+    localStorage.setItem(LOCAL_DRAFT, JSON.stringify(prepareDocForSave(doc)));
   } catch {
     // Storage full or blocked: the in-memory design still works for this visit.
   }
@@ -135,7 +125,7 @@ export { DEFAULT_ROOM, DEFAULT_SURFACES };
 
 export function initialDoc(): DesignDoc {
   const { items } = buildTemplate('l-island', DEFAULT_ROOM, DEFAULT_SURFACES);
-  return { name: 'Untitled Kitchen', room: DEFAULT_ROOM, surfaces: DEFAULT_SURFACES, items };
+  return { name: DEFAULT_KITCHEN_NAME, room: DEFAULT_ROOM, surfaces: DEFAULT_SURFACES, items: withFinishIds(items), version: 2 };
 }
 
 const HISTORY_LIMIT = 120;
@@ -195,7 +185,8 @@ export const useDesignStore = create<State>()(
   persist(
     (set, get) => {
       const commit = (fn: (doc: DesignDoc) => DesignDoc, extra?: Partial<State>) => {
-        const { doc, past } = get();
+        const { doc, past, readOnly } = get();
+        if (readOnly) return;
         const next = fn(doc);
         if (next === doc) return;
         set({ doc: next, past: [...past, doc].slice(-HISTORY_LIMIT), future: [], ...extra });
@@ -203,6 +194,7 @@ export const useDesignStore = create<State>()(
 
       return {
         doc: initialDoc(),
+        readOnly: false,
         selectedId: null,
         hoverId: null,
         past: [],
@@ -247,12 +239,12 @@ export const useDesignStore = create<State>()(
             const surfaces = { ...doc.surfaces, ...patch };
             let items = doc.items;
             if (patch.cabinetFinishId && patch.cabinetFinishId !== doc.surfaces.cabinetFinishId) {
-              const oldIdx = CABINET_FINISHES.findIndex((f) => f.id === doc.surfaces.cabinetFinishId);
-              const newIdx = CABINET_FINISHES.findIndex((f) => f.id === patch.cabinetFinishId);
+              const oldId = doc.surfaces.cabinetFinishId;
+              const newId = patch.cabinetFinishId;
               // Items that followed the old kitchen-wide finish follow the new one; deliberate accents (a navy island) stay.
               items = items.map((it) => {
                 const p = getProduct(it.productId);
-                return p?.finishes === 'cabinet' && it.finishIndex === oldIdx ? { ...it, finishIndex: newIdx } : it;
+                return p?.finishes === 'cabinet' && itemHasFinish(it, p, oldId) ? { ...it, ...finishById(p, newId) } : it;
               });
             }
             return { ...doc, surfaces, items };
@@ -260,19 +252,17 @@ export const useDesignStore = create<State>()(
 
         applyStyle: (preset) =>
           commit((doc) => {
-            const cabIdx = Math.max(0, CABINET_FINISHES.findIndex((f) => f.id === preset.surfaces.cabinetFinishId));
-            const islandIdx = Math.max(0, CABINET_FINISHES.findIndex((f) => f.id === preset.island));
             const items = doc.items.map((it) => {
               const p = getProduct(it.productId);
-              if (p?.finishes !== 'cabinet') return it;
-              return { ...it, finishIndex: p.kind === 'island' ? islandIdx : cabIdx };
+              if (!p || p.finishes !== 'cabinet') return it;
+              return { ...it, ...finishById(p, p.kind === 'island' ? preset.island : preset.surfaces.cabinetFinishId) };
             });
             return { ...doc, surfaces: { ...preset.surfaces }, items };
           }),
 
         addItem: (productId, at) => {
           const product = getProduct(productId);
-          if (!product) return;
+          if (!product || get().readOnly) return;
           const { doc } = get();
           const id = makeId();
           let pos: { x: number; y: number; rotation: Rotation };
@@ -288,19 +278,22 @@ export const useDesignStore = create<State>()(
             x: pos.x,
             y: pos.y,
             rotation: pos.rotation,
-            finishIndex: defaultFinishIndex(product, doc.surfaces),
+            ...finishAt(product, defaultFinishIndex(product, doc.surfaces)),
           };
           commit((d) => ({ ...d, items: [...d.items, item] }), { selectedId: id });
           get().setUI({ rightTab: 'details' });
+          if (!isBuiltin(productId)) track(productId, 'add');
         },
 
         beginDrag: (id) => {
-          const { doc, past } = get();
+          const { doc, past, readOnly } = get();
+          if (readOnly) return;
           set({ past: [...past, doc].slice(-HISTORY_LIMIT), future: [], dragging: true, selectedId: id });
         },
 
         dragTo: (id, x, y) => {
-          const { doc } = get();
+          const { doc, readOnly } = get();
+          if (readOnly) return;
           const it = doc.items.find((i) => i.id === id);
           const product = it && getProduct(it.productId);
           if (!it || !product) return;
@@ -344,7 +337,14 @@ export const useDesignStore = create<State>()(
             }),
           ),
 
-        setFinish: (id, finishIndex) => commit((doc) => updateItem(doc, id, (i) => ({ ...i, finishIndex }))),
+        setFinish: (id, finish) =>
+          commit((doc) =>
+            updateItem(doc, id, (i) => {
+              const p = getProduct(i.productId);
+              if (!p) return i;
+              return { ...i, ...(typeof finish === 'string' ? finishById(p, finish) : finishAt(p, finish)) };
+            }),
+          ),
 
         setWidth: (id, widthIn) =>
           commit((doc) =>
@@ -365,7 +365,8 @@ export const useDesignStore = create<State>()(
         toggleMirror: (id) => commit((doc) => updateItem(doc, id, (i) => ({ ...i, mirrored: !i.mirrored }))),
 
         duplicate: (id) => {
-          const { doc } = get();
+          const { doc, readOnly } = get();
+          if (readOnly) return;
           const it = doc.items.find((i) => i.id === id);
           const r = it && resolve(it);
           if (!it || !r) return;
@@ -408,16 +409,26 @@ export const useDesignStore = create<State>()(
             selectedId: get().selectedId === id ? null : get().selectedId,
           }),
 
-        applyCabinetFinishToAll: (finishIndex) =>
-          commit((doc) => ({
-            ...doc,
-            surfaces: { ...doc.surfaces, cabinetFinishId: CABINET_FINISHES[finishIndex].id },
-            items: doc.items.map((it) => (getProduct(it.productId)?.finishes === 'cabinet' ? { ...it, finishIndex } : it)),
-          })),
+        applyCabinetFinishToAll: (finish) =>
+          commit((doc) => {
+            const cab = CABINET_FINISHES[typeof finish === 'number' ? finish : CABINET_FINISHES.findIndex((f) => f.id === finish)];
+            if (!cab) return doc;
+            return {
+              ...doc,
+              surfaces: { ...doc.surfaces, cabinetFinishId: cab.id },
+              items: doc.items.map((it) => {
+                const p = getProduct(it.productId);
+                return p?.finishes === 'cabinet' ? { ...it, ...finishById(p, cab.id) } : it;
+              }),
+            };
+          }),
 
         applyTemplate: (id) => {
-          const { doc } = get();
-          const { items, note } = buildTemplate(id, doc.room, doc.surfaces);
+          const { doc, readOnly } = get();
+          if (readOnly) return;
+          const built = buildTemplate(id, doc.room, doc.surfaces);
+          const { note } = built;
+          const items = withFinishIds(built.items);
           if (!items.length) {
             get().toast(note ?? 'That layout does not fit this room.', 'warn');
             return;
@@ -430,19 +441,24 @@ export const useDesignStore = create<State>()(
 
         importDoc: (incoming) => commit(() => sanitizeDoc(incoming), { selectedId: null }),
 
-        loadDoc: (doc) => set({ doc: sanitizeDoc(doc), past: [], future: [], selectedId: null, hoverId: null, dragging: false }),
+        loadDoc: (doc) => set({ doc: sanitizeDoc(doc), readOnly: false, past: [], future: [], selectedId: null, hoverId: null, dragging: false }),
+
+        openReadOnly: (doc, products) => {
+          if (products?.length) useCatalog.getState().register(products);
+          set({ doc: sanitizeDoc(doc), readOnly: true, past: [], future: [], selectedId: null, hoverId: null, dragging: false });
+        },
 
         undo: () => {
-          const { past, doc, future } = get();
-          if (!past.length) return;
+          const { past, doc, future, readOnly } = get();
+          if (!past.length || readOnly) return;
           const prev = past[past.length - 1];
           const selectedId = prev.items.some((i) => i.id === get().selectedId) ? get().selectedId : null;
           set({ doc: prev, past: past.slice(0, -1), future: [doc, ...future].slice(0, HISTORY_LIMIT), selectedId });
         },
 
         redo: () => {
-          const { past, doc, future } = get();
-          if (!future.length) return;
+          const { past, doc, future, readOnly } = get();
+          if (!future.length || readOnly) return;
           const next = future[0];
           const selectedId = next.items.some((i) => i.id === get().selectedId) ? get().selectedId : null;
           set({ doc: next, past: [...past, doc].slice(-HISTORY_LIMIT), future: future.slice(1), selectedId });
@@ -480,5 +496,7 @@ export const useDesignStore = create<State>()(
 
 export function useSelected(): Resolved | null {
   const item = useDesignStore((s) => s.doc.items.find((i) => i.id === s.selectedId) ?? null);
-  return useMemo(() => (item ? resolve(item) : null), [item]);
+  // The catalog version is a dependency because it changes what `resolve` returns for the same item.
+  const catalogVersion = useCatalogVersion();
+  return useMemo(() => (item ? resolve(item) : null), [item, catalogVersion]);
 }

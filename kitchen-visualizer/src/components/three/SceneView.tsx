@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { PlacedItem, Room, Surfaces } from '../../types';
 import { useDesignStore, type CameraPreset } from '../../store/useDesignStore';
 import { useReport, useResolvedItems } from '../../store/derived';
+import { useCatalogVersion } from '../../store/useCatalog';
 import { COUNTERTOPS, HARDWARE, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
 import { getProduct, isOpening } from '../../data/catalog';
 import { resolve } from '../../lib/geometry';
@@ -51,10 +52,12 @@ interface ItemProps {
   lightOn: boolean;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
+  /** Bumps when the catalog registry changes, so `resolve` re-runs for the same item. */
+  catalogVersion: number;
 }
 
-const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, lightOn, onSelect, onHover }: ItemProps) {
-  const r = useMemo(() => resolve(item), [item]);
+const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, lightOn, onSelect, onHover, catalogVersion }: ItemProps) {
+  const r = useMemo(() => resolve(item), [item, catalogVersion]);
   if (!r) return null;
   const finish = resolveFinish(item, r.product, surfaces);
   return (
@@ -247,6 +250,7 @@ function Scene() {
   const setUI = useDesignStore((s) => s.setUI);
   const all = useResolvedItems();
   const report = useReport();
+  const catalogVersion = useCatalogVersion();
   const ctx = useSceneCtx(surfaces, room);
   const onSelect = useMemo(
     () => (id: string) => {
@@ -284,6 +288,7 @@ function Scene() {
               lightOn={lightOn}
               onSelect={onSelect}
               onHover={hover}
+              catalogVersion={catalogVersion}
             />
           );
         })}

@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { useDesignStore, useSelected } from '../store/useDesignStore';
 import { useEstimate, useReport } from '../store/derived';
 import { productCode, priceFor, isOpening } from '../data/catalog';
-import { finishList, resolveFinish } from '../lib/finish';
+import { finishList, finishPosition, resolveFinish } from '../lib/finish';
 import { feetInches, inches, money } from '../lib/format';
 import { flushWall } from '../lib/geometry';
 import type { CheckLevel } from '../lib/checks';
 import { ProductArt } from './ProductArt';
 import { Alert, Check, Copy, Download, Flip, Info, RotateCcw, RotateCw, Stop, Trash } from './Icons';
 import { downloadText, slug } from '../lib/exporters';
-import { estimateCsv } from '../lib/csv';
+import { estimateCsv, PLACEHOLDER_PRICES_NOTE, VISUALIZER_DISCLAIMER } from '../lib/csv';
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (v: number) => void }) {
   const [text, setText] = useState(value.toFixed(1).replace(/\.0$/, ''));
@@ -43,6 +43,8 @@ function Inspector() {
   const { product, item, w } = r;
   const finishes = finishList(product);
   const finish = resolveFinish(item, product, surfaces);
+  const at = finishPosition(item, product);
+  const missing = product.source === 'missing';
   const wall = flushWall(r, room);
   const issues = report.checks.filter((c) => c.itemIds.includes(item.id) && (c.level === 'bad' || c.level === 'warn'));
   const flippable = (product.kind === 'door' && product.variant === 'single') || product.kind === 'corner' || (product.kind === 'fridge' && product.variant === 'column');
@@ -57,11 +59,11 @@ function Inspector() {
           <span className="eyebrow">{product.brand}</span>
           <h3>{product.name}</h3>
         </div>
-        <span className="code">{productCode(product, w)}</span>
+        {!missing && <span className="code">{productCode(product, w)}</span>}
       </div>
       <p className="insp-blurb">{product.blurb}</p>
       <div className="insp-price">
-        <span className="mono">{money(priceFor(product, w))}</span>
+        <span className="mono">{missing ? 'Price unavailable' : money(priceFor(product, w))}</span>
         <span className="muted">{inches(w)} W × {inches(product.depthIn)} D × {inches(product.heightIn)} H{product.elevationIn > 0 ? ` · mounted at ${inches(product.elevationIn)}` : ''}</span>
       </div>
 
@@ -95,17 +97,17 @@ function Inspector() {
           {finishes.map((f, i) => (
             <button
               key={f.id}
-              className={i === item.finishIndex ? 'swatch on' : 'swatch'}
+              className={i === at ? 'swatch on' : 'swatch'}
               style={f.material === 'panel' ? { background: 'repeating-linear-gradient(45deg,#cfc8bb 0 4px,#fff 4px 7px)' } : f.material === 'metal' ? { background: `linear-gradient(135deg, ${f.hex}, #fff9 45%, ${f.hex} 62%)` } : { background: f.hex }}
               title={f.name}
               aria-label={f.name}
-              aria-pressed={i === item.finishIndex}
-              onClick={() => setFinish(item.id, i)}
+              aria-pressed={i === at}
+              onClick={() => setFinish(item.id, f.id)}
             />
           ))}
         </div>
         {product.finishes === 'cabinet' && (
-          <button className="link-btn" onClick={() => applyCabinetFinishToAll(item.finishIndex)}>
+          <button className="link-btn" onClick={() => applyCabinetFinishToAll(finishes[at].id)}>
             Use {finish.name} on every cabinet
           </button>
         )}
@@ -132,7 +134,7 @@ function Inspector() {
   );
 }
 
-function Summary() {
+function Summary({ view, showPrices }: { view: boolean; showPrices: boolean }) {
   const room = useDesignStore((s) => s.doc.room);
   const items = useDesignStore((s) => s.doc.items);
   const est = useEstimate();
@@ -148,7 +150,7 @@ function Summary() {
         <div className="summary-stats">
           <div><b className="mono">{Math.round((room.widthIn * room.lengthIn) / 144)}</b><span>sq ft</span></div>
           <div><b className="mono">{items.length}</b><span>pieces</span></div>
-          <div><b className="mono">{money(est.total)}</b><span>estimated</span></div>
+          {showPrices && <div><b className="mono">{money(est.total)}</b><span>estimated</span></div>}
         </div>
       </div>
       <button className="summary-checks" onClick={() => setUI({ rightTab: 'checks' })}>
@@ -159,23 +161,32 @@ function Summary() {
             : `${counts.bad ? `${counts.bad} problem${counts.bad > 1 ? 's' : ''}` : ''}${counts.bad && counts.warn ? ' · ' : ''}${counts.warn ? `${counts.warn} suggestion${counts.warn > 1 ? 's' : ''}` : ''}`}
         </span>
       </button>
-      <div className="tips">
-        <span className="mini-label">Tips</span>
-        <ul>
-          <li>Drag products onto the plan. Backs snap to walls and edges click together.</li>
-          <li>Click a piece to change its width, finish or exact position.</li>
-          <li>Room & Finishes swaps counters, tile, floors and paint across the whole kitchen.</li>
-        </ul>
-        <span className="mini-label">Shortcuts</span>
-        <dl className="shortcuts">
-          <dt><kbd>R</kbd></dt><dd>Rotate</dd>
-          <dt><kbd>⌫</kbd></dt><dd>Delete</dd>
-          <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
-          <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
-          <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
-          <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
-        </dl>
-      </div>
+      {view ? (
+        <div className="tips">
+          <span className="mini-label">Shortcuts</span>
+          <dl className="shortcuts">
+            <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
+          </dl>
+        </div>
+      ) : (
+        <div className="tips">
+          <span className="mini-label">Tips</span>
+          <ul>
+            <li>Drag products onto the plan. Backs snap to walls and edges click together.</li>
+            <li>Click a piece to change its width, finish or exact position.</li>
+            <li>Room & Finishes swaps counters, tile, floors and paint across the whole kitchen.</li>
+          </ul>
+          <span className="mini-label">Shortcuts</span>
+          <dl className="shortcuts">
+            <dt><kbd>R</kbd></dt><dd>Rotate</dd>
+            <dt><kbd>⌫</kbd></dt><dd>Delete</dd>
+            <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
+            <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
+            <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
+            <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
+          </dl>
+        </div>
+      )}
     </div>
   );
 }
@@ -238,13 +249,17 @@ function EstimatePanel() {
       <button className="btn wide" onClick={() => downloadText(estimateCsv(doc, est), `${slug(doc.name)}-shopping-list.csv`, 'text/csv')}>
         <Download /> Download shopping list (CSV)
       </button>
-      <p className="fine">Brand names and prices are placeholders for illustration.</p>
+      {est.hasBuiltin && <p className="fine">{PLACEHOLDER_PRICES_NOTE}</p>}
+      <p className="fine">{VISUALIZER_DISCLAIMER}</p>
     </div>
   );
 }
 
-export function RightPanel() {
-  const tab = useDesignStore((s) => s.ui.rightTab);
+export function RightPanel({ mode = 'edit', showPrices = true }: { mode?: 'edit' | 'view'; showPrices?: boolean }) {
+  const view = mode === 'view';
+  const storedTab = useDesignStore((s) => s.ui.rightTab);
+  // View mode shows the summary and (with prices) the estimate only: no inspector, no checks.
+  const tab = view ? (storedTab === 'estimate' && showPrices ? 'estimate' : 'details') : storedTab;
   const setUI = useDesignStore((s) => s.setUI);
   const selectedId = useDesignStore((s) => s.selectedId);
   const report = useReport();
@@ -255,19 +270,23 @@ export function RightPanel() {
     <aside className="panel right-panel">
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'details'} className={tab === 'details' ? 'on' : ''} onClick={() => setUI({ rightTab: 'details' })}>
-          {selectedId ? 'Selected' : 'Overview'}
+          {selectedId && !view ? 'Selected' : 'Overview'}
         </button>
-        <button role="tab" aria-selected={tab === 'checks'} className={tab === 'checks' ? 'on' : ''} onClick={() => setUI({ rightTab: 'checks' })}>
-          Checks {issues > 0 && <span className={hasBad ? 'badge bad' : 'badge warn'}>{issues}</span>}
-        </button>
-        <button role="tab" aria-selected={tab === 'estimate'} className={tab === 'estimate' ? 'on' : ''} onClick={() => setUI({ rightTab: 'estimate' })}>
-          Estimate <span className="badge plain mono">{est.total >= 1000 ? `$${Math.round(est.total / 1000)}k` : money(est.total)}</span>
-        </button>
+        {!view && (
+          <button role="tab" aria-selected={tab === 'checks'} className={tab === 'checks' ? 'on' : ''} onClick={() => setUI({ rightTab: 'checks' })}>
+            Checks {issues > 0 && <span className={hasBad ? 'badge bad' : 'badge warn'}>{issues}</span>}
+          </button>
+        )}
+        {showPrices && (
+          <button role="tab" aria-selected={tab === 'estimate'} className={tab === 'estimate' ? 'on' : ''} onClick={() => setUI({ rightTab: 'estimate' })}>
+            Estimate <span className="badge plain mono">{est.total >= 1000 ? `$${Math.round(est.total / 1000)}k` : money(est.total)}</span>
+          </button>
+        )}
       </div>
       <div className="panel-scroll">
-        {tab === 'details' && (selectedId ? <Inspector /> : <Summary />)}
+        {tab === 'details' && (selectedId && !view ? <Inspector /> : <Summary view={view} showPrices={showPrices} />)}
         {tab === 'checks' && <ChecksPanel />}
-        {tab === 'estimate' && <EstimatePanel />}
+        {tab === 'estimate' && showPrices && <EstimatePanel />}
       </div>
     </aside>
   );

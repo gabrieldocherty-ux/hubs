@@ -3,6 +3,7 @@ import { Circle, Group, Layer, Line, Rect, Shape, Stage, Text } from 'react-konv
 import type Konva from 'konva';
 import { useDesignStore, useSelected } from '../../store/useDesignStore';
 import { useReport, useResolvedItems } from '../../store/derived';
+import { useCatalogVersion } from '../../store/useCatalog';
 import { FLOORING, byId } from '../../data/finishes';
 import { getProduct } from '../../data/catalog';
 import { feetInches } from '../../lib/format';
@@ -61,6 +62,8 @@ export function PlanView() {
   const endDrag = useDesignStore((s) => s.endDrag);
   const applyTemplate = useDesignStore((s) => s.applyTemplate);
   const all = useResolvedItems();
+  const catalogVersion = useCatalogVersion();
+  const readOnly = useDesignStore((s) => s.readOnly);
   const report = useReport();
   const selected = useSelected();
   const hatch = useMemo(() => hatchCanvas(), []);
@@ -111,15 +114,16 @@ export function PlanView() {
   };
 
   const onDragOver = (e: DragEvent<HTMLDivElement>) => {
-    if (e.dataTransfer.types.includes('application/x-kitchen-product')) {
+    if (!readOnly && e.dataTransfer.types.includes('application/x-kitchen-product')) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     }
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    // Any id the catalog registry resolves (built-in or server product) can be dropped.
     const productId = e.dataTransfer.getData('application/x-kitchen-product');
-    if (!productId || !getProduct(productId)) return;
+    if (readOnly || !productId || !getProduct(productId)) return;
     e.preventDefault();
     const stage = stageRef.current;
     const world = worldRef.current;
@@ -258,6 +262,8 @@ export function PlanView() {
                   onDragStart={beginDrag}
                   onDragMove={onItemDragMove}
                   onDragEnd={endDrag}
+                  catalogVersion={catalogVersion}
+                  readOnly={readOnly}
                 />
               ))}
 
@@ -299,6 +305,8 @@ export function PlanView() {
                   onDragStart={beginDrag}
                   onDragMove={onItemDragMove}
                   onDragEnd={endDrag}
+                  catalogVersion={catalogVersion}
+                  readOnly={readOnly}
                 />
               ))}
 
@@ -392,7 +400,7 @@ export function PlanView() {
         <button aria-label="Zoom in" onClick={() => zoomAt(1.25, size.w / 2, size.h / 2)}>+</button>
       </div>
 
-      {items.length === 0 && (
+      {items.length === 0 && !readOnly && (
         <div className="plan-empty">
           <h3>A blank room, {feetInches(W)} × {feetInches(L)}</h3>
           <p>Start from a proven layout, or drag products in from the catalog.</p>

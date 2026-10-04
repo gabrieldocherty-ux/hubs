@@ -48,6 +48,25 @@ export interface Finish {
   name: string;
   hex: string;
   material: MaterialKind;
+  /** Optional swatch image (brand products). */
+  swatchUrl?: string;
+}
+
+/** Where a product came from. Built-ins are compiled in; the rest come from the server or a saved kitchen. */
+export type ProductSource = 'builtin' | 'brand' | 'custom' | 'snapshot' | 'missing';
+
+/** Look flags that used to be keyed off brand names (brass knobs, pro backguard). */
+export interface ProductFlags {
+  trim?: 'brass' | 'steel';
+  backguard?: boolean;
+}
+
+export interface ProductModel {
+  url: string;
+  fileId?: string;
+  bboxIn?: { w: number; h: number; d: number };
+  triangles?: number;
+  slots?: string[];
 }
 
 export interface Product {
@@ -57,7 +76,7 @@ export interface Product {
   category: CategoryId;
   brand: string;
   name: string;
-  /** Industry-style code. `{w}` is replaced with the chosen width. */
+  /** Industry-style code. `{w}` is replaced with the chosen width. On the wire this is the SKU. */
   code: string;
   widthIn: number;
   depthIn: number;
@@ -69,6 +88,25 @@ export interface Product {
   /** `'cabinet'` means the shared cabinet finish palette. */
   finishes: Finish[] | 'cabinet';
   blurb: string;
+
+  // ── Platform fields (all optional; built-ins leave most of them unset) ──
+  source?: ProductSource;
+  brandId?: string;
+  brandSlug?: string;
+  isDemo?: boolean;
+  sku?: string;
+  skuByWidth?: Record<string, string>;
+  priceByWidth?: Record<string, number>;
+  images?: { url: string; alt?: string }[];
+  thumbnailUrl?: string;
+  buyUrl?: string;
+  specSheetUrl?: string;
+  model?: ProductModel;
+  flags?: ProductFlags;
+  status?: 'draft' | 'submitted' | 'published' | 'rejected' | 'archived';
+  visibility?: 'public' | 'private';
+  revision?: number;
+  updatedAt?: number;
 }
 
 export type Rotation = 0 | 90 | 180 | 270;
@@ -81,7 +119,10 @@ export interface PlacedItem {
   y: number;
   /** Clockwise. At 0 the item's back faces north and its front faces south. */
   rotation: Rotation;
+  /** Position in the product's finish list. Kept for old files; `finishId` wins when both are set. */
   finishIndex: number;
+  /** Stable finish id, so a brand reordering its finishes never changes a saved kitchen. */
+  finishId?: string;
   widthIn?: number;
   mirrored?: boolean;
 }
@@ -109,6 +150,10 @@ export interface DesignDoc {
   room: Room;
   surfaces: Surfaces;
   items: PlacedItem[];
+  /** 2 once the doc carries `finishId`s and product snapshots. Absent on old files. */
+  version?: 2;
+  /** Snapshots of every non-built-in product the kitchen uses, so it still renders after a product is unpublished. */
+  products?: Record<string, Product>;
 }
 
 export type ViewMode = 'plan' | 'split' | '3d' | 'walls';

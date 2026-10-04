@@ -3,6 +3,7 @@ import { api, ApiError, type Project } from '../lib/api';
 import { navigate } from '../lib/router';
 import { greeting, timeAgo, useSession } from '../store/useSession';
 import { useDesignStore } from '../store/useDesignStore';
+import { useCatalog, useCatalogVersion } from '../store/useCatalog';
 import { MiniPlan } from '../components/MiniPlan';
 import { AccountMenu } from '../components/AccountMenu';
 import { Copy, Logo, Plus, Search, Trash } from '../components/Icons';
@@ -19,9 +20,14 @@ export function HomeScreen() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
+  const catalogVersion = useCatalogVersion();
+
   const load = async () => {
     try {
-      setProjects((await api.listProjects()).projects);
+      const list = (await api.listProjects()).projects;
+      // Snapshots let the cards draw and price server products that aren't in the catalog any more.
+      for (const p of list) if (p.doc?.products) useCatalog.getState().registerSnapshots(p.doc.products);
+      setProjects(list);
       setError(null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load your kitchens.');
@@ -37,7 +43,7 @@ export function HomeScreen() {
     return (projects ?? []).filter((p) => !q || `${p.name} ${p.client}`.toLowerCase().includes(q));
   }, [projects, query]);
 
-  const totals = useMemo(() => new Map((projects ?? []).map((p) => [p.id, buildEstimate(p.doc).total])), [projects]);
+  const totals = useMemo(() => new Map((projects ?? []).map((p) => [p.id, buildEstimate(p.doc).total])), [projects, catalogVersion]);
 
   const rename = async (p: Project, name: string) => {
     setRenaming(null);
@@ -94,9 +100,14 @@ export function HomeScreen() {
                   : `${projects.length} kitchen${projects.length > 1 ? 's' : ''} in progress. Pick up where you left off.`}
             </p>
           </div>
-          <button className="btn primary big" onClick={() => navigate({ name: 'new' })}>
-            <Plus /> New kitchen
-          </button>
+          <div className="home-cta">
+            <button className="btn big" onClick={() => navigate({ name: 'generate' })}>
+              Describe your kitchen
+            </button>
+            <button className="btn primary big" onClick={() => navigate({ name: 'new' })}>
+              <Plus /> New kitchen
+            </button>
+          </div>
         </div>
 
         {projects && projects.length > 3 && (

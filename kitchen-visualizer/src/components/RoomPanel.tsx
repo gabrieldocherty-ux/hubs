@@ -1,7 +1,7 @@
 import { useDesignStore } from '../store/useDesignStore';
 import { FeetInchesInput } from './FeetInchesInput';
 import { TEMPLATES, type TemplateId } from '../data/templates';
-import { BACKSPLASHES, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HARDWARE, PAINTS, type SurfaceOption } from '../data/finishes';
+import { BACKSPLASHES, CABINET_BRAND, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HARDWARE, PAINTS, type SurfaceOption } from '../data/finishes';
 import { patternDataUrl } from '../lib/textures';
 import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
@@ -157,7 +157,7 @@ export function RoomPanel() {
       <section className="room-section">
         <header>
           <h4>Cabinetry</h4>
-          <span className="sub">Nordwell · {CABINET_FINISHES.find((f) => f.id === surfaces.cabinetFinishId)?.name}</span>
+          <span className="sub">{CABINET_BRAND} · {CABINET_FINISHES.find((f) => f.id === surfaces.cabinetFinishId)?.name}</span>
         </header>
         <div className="swatches">
           {CABINET_FINISHES.map((f) => (

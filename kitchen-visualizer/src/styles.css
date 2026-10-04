@@ -2745,3 +2745,292 @@ a.btn {
     display: none;
   }
 }
+
+
+/* ─── Platform shell (foundation) ───────────────────────── */
+
+/* Catalog: brand products, facets, badges */
+.chips--brands {
+  padding-top: 0;
+}
+
+.product-card-wrap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.product-card-wrap > .product-card {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-info {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--ink-2);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.product-card-wrap:hover .product-info,
+.product-info:focus-visible {
+  opacity: 1;
+}
+
+.product-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-art .product-thumb {
+  padding: 6px;
+}
+
+.product-badges {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.product-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fbf9f4;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.product-badge.mine {
+  background: var(--accent);
+}
+
+.catalog-foot {
+  margin: 18px 4px 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.catalog-foot a {
+  color: var(--accent);
+}
+
+/* View-only workspace (share links) */
+.workspace--view {
+  grid-template-columns: minmax(0, 1fr) 330px;
+}
+
+.app--banner {
+  grid-template-rows: auto 58px minmax(0, 1fr);
+}
+
+.project-name--static {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.project-name--static:hover {
+  border-color: transparent;
+}
+
+/* Edit-conflict dialog */
+.conflict-body {
+  margin: 0 0 16px;
+  color: var(--ink-2);
+}
+
+.conflict-modal .auth-error {
+  margin-bottom: 12px;
+}
+
+/* Home */
+.home-cta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Placeholder screens */
+.coming-soon {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.coming-soon .screen-msg {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.coming-soon-title {
+  margin: 0;
+  font-family: var(--display);
+  font-style: normal;
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.coming-soon-detail {
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.coming-soon-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Admin */
+.admin {
+  min-height: 100%;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-tabs a {
+  text-decoration: none;
+}
+
+.admin-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+.admin-main h1 {
+  margin: 0 0 18px;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 500;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.admin-big {
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.admin-counts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.admin-counts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-counts dt {
+  color: var(--ink-2);
+  text-transform: capitalize;
+}
+
+.admin-counts dd {
+  margin: 0;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.admin-table th {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-users .home-search {
+  max-width: 520px;
+}
+
+.admin-placeholder {
+  padding: 40px 0;
+  color: var(--ink-2);
+}
+
+.admin-placeholder h2 {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+@media (max-width: 1280px) {
+  .workspace--view {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+@media (max-width: 980px) {
+  .app--banner {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .workspace--view {
+    grid-template-columns: 1fr;
+    grid-template-rows: 58vh auto;
+  }
+  .workspace--view .right-panel {
+    grid-row: 2;
+  }
+  .admin-main {
+    padding: 20px 14px 40px;
+  }
+  .admin-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

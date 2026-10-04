@@ -41,6 +41,12 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
   const nodes: ReactNode[] = [];
   const Y = (fromFloor: number) => H - fromFloor;
 
+  if (product.source === 'missing') {
+    // Not available (yet): a neutral dashed outline at the item's nominal size.
+    nodes.push(<rect key="missing" x={0} y={0} width={w} height={H} fill="#ece7de" stroke={INK} strokeDasharray="3 2" />);
+    return { nodes, H, w, color };
+  }
+
   const front = (fr: FrontSpec, fill: string, key: string, offsetX = 0, st: DoorStyle = style) => {
     const x = offsetX + fr.x - fr.w / 2 + 0.2;
     const y = Y(fr.y + fr.h) + 0.2;
@@ -170,7 +176,8 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
       break;
     }
     case 'range': {
-      const back = product.brand === 'Halvard Pro' || product.brand === 'Aurelle';
+      const back = !!product.flags?.backguard;
+      const brass = product.flags?.trim === 'brass';
       H = back ? 39.5 : 37.5;
       nodes.push(toe);
       nodes.push(<rect key="body" x={0} y={Y(35)} width={w} height={31} fill={steel(color)} stroke={INK} />);
@@ -178,14 +185,14 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
       if (product.variant !== 'induction') nodes.push(<rect key="gr" x={1} y={Y(37.5)} width={w - 2} height={1.5} fill="#1f1f1f" />);
       if (back) nodes.push(<rect key="bg" x={0} y={Y(39.5)} width={w} height={2} fill={steel(color)} stroke={INK} />);
       const knobs = w <= 30 ? 5 : w <= 36 ? 7 : 9;
-      const knob = product.brand === 'Aurelle' ? '#c6a15b' : luminance(color) < 0.12 ? '#c3c6ca' : '#2b2c2e';
+      const knob = brass ? '#c6a15b' : luminance(color) < 0.12 ? '#c3c6ca' : '#2b2c2e';
       for (let i = 0; i < knobs; i++) nodes.push(<circle key={`k${i}`} cx={(w / knobs) * (i + 0.5)} cy={Y(32.6)} r={0.95} fill={knob} stroke={INK} strokeWidth={0.5} />);
       const doors = product.variant === 'griddle' ? [w * 0.6, w * 0.4] : [w];
       let cx = 0;
       doors.forEach((dw, i) => {
         nodes.push(<rect key={`d${i}`} x={cx + 0.3} y={Y(29.9)} width={dw - 0.6} height={25} fill={steel(color)} stroke={INK} />);
         nodes.push(<rect key={`g${i}`} x={cx + 3.5} y={Y(21)} width={dw - 7} height={9.5} fill="#1b1d20" />);
-        nodes.push(<line key={`h${i}`} x1={cx + 2.5} y1={Y(27.6)} x2={cx + dw - 2.5} y2={Y(27.6)} stroke={product.brand === 'Aurelle' ? '#c6a15b' : '#8b8e92'} strokeWidth={1.8} strokeLinecap="round" />);
+        nodes.push(<line key={`h${i}`} x1={cx + 2.5} y1={Y(27.6)} x2={cx + dw - 2.5} y2={Y(27.6)} stroke={brass ? '#c6a15b' : '#8b8e92'} strokeWidth={1.8} strokeLinecap="round" />);
         cx += dw;
       });
       break;
@@ -374,6 +381,14 @@ export function SteelGradient({ color }: { color: string }) {
 const FLOATING = new Set(['pendant', 'hood', 'wall', 'shelf', 'microwave', 'rug']);
 
 export const ProductArt = memo(function ProductArt({ product, finish, surfaces, width, className }: Props) {
+  // Brand products with photography show their thumbnail; everything else is drawn.
+  if (product.thumbnailUrl) {
+    return <img className={`product-thumb${className ? ` ${className}` : ''}`} src={product.thumbnailUrl} alt="" loading="lazy" draggable={false} />;
+  }
+  return <DrawnArt product={product} finish={finish} surfaces={surfaces} width={width} className={className} />;
+});
+
+function DrawnArt({ product, finish, surfaces, width, className }: Props) {
   const { nodes, H, w, color } = drawArt({ product, finish, surfaces, width });
   const k = product.kind;
   const opening = k === 'window' || k === 'door';
@@ -390,4 +405,4 @@ export const ProductArt = memo(function ProductArt({ product, finish, surfaces, 
       <line x1={-pad} y1={H} x2={w + pad} y2={H} stroke={INK} strokeOpacity={FLOATING.has(k) ? 0 : 0.35} strokeWidth={0.6} />
     </svg>
   );
-});
+}

@@ -4,22 +4,32 @@ import { useEstimate } from '../store/derived';
 import { WallsIcon, CubeIcon, Download, Logo, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
 import { estimateCsv } from '../lib/csv';
-import { getProduct } from '../data/catalog';
+import { prepareDocForSave } from '../lib/doc';
 import type { DesignDoc, ViewMode } from '../types';
 import { useSession, timeAgo } from '../store/useSession';
 import { AccountMenu } from './AccountMenu';
 import { Check } from './Icons';
+import { RenderButton } from '../features/viewer';
+import { ShareButton } from '../features/share';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
   const state = useSession((s) => s.saveState);
   const lastSavedAt = useSession((s) => s.lastSavedAt);
+  const conflict = useSession((s) => s.conflict);
+  const setConflict = useSession((s) => s.setConflict);
   const [, tick] = useState(0);
   useEffect(() => {
     const t = window.setInterval(() => tick((n) => n + 1), 30_000);
     return () => window.clearInterval(t);
   }, []);
   if (!projectId) return <span className="save-chip local" title="Saved in this browser only. Sign in to keep it in your account.">On this device</span>;
+  if (state === 'conflict')
+    return (
+      <button className="save-chip error" onClick={() => conflict && setConflict({ ...conflict, open: true })} title="This kitchen was changed elsewhere. Choose which version to keep.">
+        Not saved · changed elsewhere
+      </button>
+    );
   const label =
     state === 'saving' ? 'Saving…' : state === 'unsaved' ? 'Unsaved changes' : state === 'error' ? 'Offline, retrying' : lastSavedAt ? `Saved ${timeAgo(lastSavedAt)}` : 'Saved';
   return (
@@ -35,7 +45,16 @@ function isDoc(v: unknown): v is DesignDoc {
   return !!d && typeof d === 'object' && !!d.room && typeof d.room.widthIn === 'number' && Array.isArray(d.items) && !!d.surfaces;
 }
 
-export function TopBar() {
+export interface TopBarProps {
+  /** `'view'`: no renaming, undo, import or save status; exports limited to images (and CSV with prices). */
+  mode?: 'edit' | 'view';
+  showPrices?: boolean;
+  /** The saved project, for the Share slot; null in device-only and view mode. */
+  projectId?: string | null;
+}
+
+export function TopBar({ mode = 'edit', showPrices = true, projectId = null }: TopBarProps) {
+  const view = mode === 'view';
   const name = useDesignStore((s) => s.doc.name);
   const viewMode = useDesignStore((s) => s.ui.viewMode);
   const canUndo = useDesignStore((s) => s.past.length > 0);
@@ -43,6 +62,7 @@ export function TopBar() {
   const { setName, setUI, undo, redo, toast, importDoc } = useDesignStore.getState();
   const est = useEstimate();
   const signedIn = useSession((s) => s.status === 'signedIn' && !!s.projectId);
+  const hasUser = useSession((s) => !!s.user);
   const [menu, setMenu] = useState(false);
   const [draft, setDraft] = useState(name);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -83,7 +103,8 @@ export function TopBar() {
       const parsed = JSON.parse(await file.text());
       const doc = parsed.doc ?? parsed;
       if (!isDoc(doc)) throw new Error('bad');
-      importDoc({ ...doc, items: doc.items.filter((i) => getProduct(i.productId)) });
+      // Every item is kept: unknown products become placeholders (and snapshots in the file restore them).
+      importDoc(doc);
       toast(`Opened “${doc.name}”.`, 'ok');
     } catch {
       toast('That file is not a kitchen project.', 'warn');
@@ -105,15 +126,21 @@ export function TopBar() {
           </>
         )}
         <span className="divider" />
-        <input
-          className="project-name"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => draft.trim() && draft !== name ? setName(draft.trim()) : setDraft(name)}
-          onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-          aria-label="Project name"
-          spellCheck={false}
-        />
+        {view ? (
+          <span className="project-name project-name--static" title={name}>
+            {name}
+          </span>
+        ) : (
+          <input
+            className="project-name"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => (draft.trim() && draft !== name ? setName(draft.trim()) : setDraft(name))}
+            onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+            aria-label="Project name"
+            spellCheck={false}
+          />
+        )}
       </div>
 
       <div className="views" role="tablist" aria-label="View">
@@ -126,13 +153,23 @@ export function TopBar() {
       </div>
 
       <div className="actions">
-        <SaveStatus />
-        <button className="icon-btn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo /></button>
-        <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><Redo /></button>
-        <button className="total-chip" onClick={() => setUI({ rightTab: 'estimate' })} title="Open the estimate">
-          <span>Est.</span>
-          <b className="mono">{est.total.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</b>
-        </button>
+        {view ? (
+          <span className="save-chip local" title="You can look around, but not change this kitchen.">View only</span>
+        ) : (
+          <>
+            <SaveStatus />
+            <button className="icon-btn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)" aria-label="Undo"><Undo /></button>
+            <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><Redo /></button>
+          </>
+        )}
+        {showPrices && (
+          <button className="total-chip" onClick={() => setUI({ rightTab: 'estimate' })} title="Open the estimate">
+            <span>Est.</span>
+            <b className="mono">{est.total.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</b>
+          </button>
+        )}
+        <RenderButton />
+        {!view && <ShareButton projectId={projectId} />}
         <div className="menu-wrap" ref={menuRef}>
           <button className="btn primary" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
             <Download /> Export <Chevron width={14} height={14} />
@@ -145,29 +182,36 @@ export function TopBar() {
               <button role="menuitem" onClick={() => exportPng('scene')}>
                 <b>3D render</b><span>PNG of the current camera</span>
               </button>
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setMenu(false);
-                  downloadText(estimateCsv(useDesignStore.getState().doc, est), `${slug(name)}-shopping-list.csv`, 'text/csv');
-                }}
-              >
-                <b>Shopping list</b><span>CSV with every product and surface</span>
-              </button>
-              <button
-                role="menuitem"
-                onClick={() => {
-                  setMenu(false);
-                  downloadText(JSON.stringify({ app: 'mise-kitchen', version: 1, doc: useDesignStore.getState().doc }, null, 2), `${slug(name)}.kitchen.json`, 'application/json');
-                  toast('Project saved. Open it later with Import.', 'ok');
-                }}
-              >
-                <b>Project file</b><span>.kitchen.json to share or reopen</span>
-              </button>
-              <div className="menu-sep" />
-              <button role="menuitem" onClick={() => fileRef.current?.click()}>
-                <b><Upload width={14} height={14} /> Import project…</b><span>Open a .kitchen.json</span>
-              </button>
+              {showPrices && (
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setMenu(false);
+                    downloadText(estimateCsv(useDesignStore.getState().doc, est), `${slug(name)}-shopping-list.csv`, 'text/csv');
+                  }}
+                >
+                  <b>Shopping list</b><span>CSV with every product and surface</span>
+                </button>
+              )}
+              {!view && (
+                <>
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setMenu(false);
+                      const doc = prepareDocForSave(useDesignStore.getState().doc);
+                      downloadText(JSON.stringify({ app: 'mise-kitchen', version: 2, doc }, null, 2), `${slug(name)}.kitchen.json`, 'application/json');
+                      toast('Project saved. Open it later with Import.', 'ok');
+                    }}
+                  >
+                    <b>Project file</b><span>.kitchen.json to share or reopen</span>
+                  </button>
+                  <div className="menu-sep" />
+                  <button role="menuitem" onClick={() => fileRef.current?.click()}>
+                    <b><Upload width={14} height={14} /> Import project…</b><span>Open a .kitchen.json</span>
+                  </button>
+                </>
+              )}
             </div>
           )}
           <input
@@ -183,7 +227,7 @@ export function TopBar() {
             }}
           />
         </div>
-        <AccountMenu />
+        {(!view || hasUser) && <AccountMenu />}
       </div>
     </header>
   );

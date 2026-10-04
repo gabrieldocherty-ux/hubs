@@ -28,6 +28,10 @@ interface Props {
   onDragStart: (id: string) => void;
   onDragMove: (id: string, x: number, y: number) => DragResult | null;
   onDragEnd: (id: string) => void;
+  /** Bumps when the catalog registry changes, so `resolve` re-runs for the same item. */
+  catalogVersion: number;
+  /** View-only plans (share links) can be looked at but not dragged. */
+  readOnly?: boolean;
 }
 
 const hair = { stroke: INK, strokeWidth: 1, strokeScaleEnabled: false } as const;
@@ -41,7 +45,7 @@ function steel(hex: string, w: number) {
 }
 
 export const PlanItem = memo(function PlanItem(p: Props) {
-  const r = useMemo(() => resolve(p.item), [p.item]);
+  const r = useMemo(() => resolve(p.item), [p.item, p.catalogVersion]);
   if (!r) return null;
   const { product, w, d } = r;
   const { item, k, style, surfaces } = p;
@@ -69,7 +73,11 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       <Rect key={key} x={x0 + 0.5} y={atBack ? y0 : d / 2 - 1.4} width={w - 1} height={1.4} fill={finish.hex} opacity={0.95} listening={false} />
     ) : null;
 
-  switch (product.kind) {
+  if (product.source === 'missing') {
+    // A product that isn't available (yet): a neutral dashed box that keeps the item's place.
+    nodes.push(<Rect key="missing" x={x0} y={y0} width={w} height={d} fill={rendered ? '#ece7de' : '#ffffff'} {...hair} dash={dash} />);
+    label = 'Unavailable';
+  } else switch (product.kind) {
     case 'base':
     case 'dishwasher':
     case 'wine': {
@@ -186,7 +194,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       const knobs = Math.max(4, Math.round(w / 6));
       for (let i = 0; i < knobs; i++) {
         const kx = x0 + (w / knobs) * (i + 0.5);
-        nodes.push(<Circle key={`k${i}`} x={kx} y={d / 2 - 1.7} radius={0.9} fill={rendered ? (product.brand === 'Aurelle' ? '#c6a15b' : '#dcdcdc') : '#fff'} stroke={INK} strokeWidth={0.6} strokeScaleEnabled={false} listening={false} />);
+        nodes.push(<Circle key={`k${i}`} x={kx} y={d / 2 - 1.7} radius={0.9} fill={rendered ? (product.flags?.trim === 'brass' ? '#c6a15b' : '#dcdcdc') : '#fff'} stroke={INK} strokeWidth={0.6} strokeScaleEnabled={false} listening={false} />);
       }
       label = null;
       break;
@@ -413,7 +421,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       x={item.x}
       y={item.y}
       rotation={item.rotation}
-      draggable
+      draggable={!p.readOnly}
       onMouseDown={(e: Konva.KonvaEventObject<MouseEvent>) => {
         e.cancelBubble = true;
       }}

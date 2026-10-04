@@ -1,5 +1,5 @@
 import type { DesignDoc, Product } from '../types';
-import { hasCountertop, priceFor, productCode } from '../data/catalog';
+import { hasCountertop, isBuiltin, priceFor, productCode } from '../data/catalog';
 import { BACKSPLASHES, COUNTERTOPS, FLOORING, HARDWARE, PAINTS, byId, resolveBacksplash } from '../data/finishes';
 import { backsplashSegments, resolveAll } from './geometry';
 import { resolveFinish } from './finish';
@@ -12,7 +12,8 @@ export type EstimateGroup =
   | 'Furniture & decor'
   | 'Doors & windows'
   | 'Surfaces'
-  | 'Hardware';
+  | 'Hardware'
+  | 'Other';
 
 export interface EstimateLine {
   key: string;
@@ -23,15 +24,22 @@ export interface EstimateLine {
   unit: string;
   unitPrice: number;
   total: number;
+  /** The product's SKU at this width (product lines only). */
+  sku?: string;
+  /** The brand's buy link, when it has one (product lines only). */
+  buyUrl?: string;
+  productId?: string;
 }
 
 export interface Estimate {
   lines: EstimateLine[];
   groups: { name: EstimateGroup; total: number }[];
   total: number;
+  /** True when a built-in demo product is in the kitchen, so the "placeholder prices" note applies. */
+  hasBuiltin: boolean;
 }
 
-const GROUP_BY_CATEGORY: Record<Product['category'], EstimateGroup> = {
+const GROUP_BY_CATEGORY: Partial<Record<string, EstimateGroup>> = {
   cabinets: 'Cabinetry',
   appliances: 'Appliances',
   sinks: 'Sinks & faucets',
@@ -42,6 +50,7 @@ const GROUP_BY_CATEGORY: Record<Product['category'], EstimateGroup> = {
 };
 
 export function pullCount(p: Product, w: number): number {
+  if (p.source === 'missing') return 0;
   switch (p.kind) {
     case 'base':
       if (p.variant === 'drawers') return 3;
@@ -66,8 +75,10 @@ export function buildEstimate(doc: DesignDoc): Estimate {
   const all = resolveAll(doc.items);
   const map = new Map<string, EstimateLine>();
   let pulls = 0;
+  let hasBuiltin = false;
 
   for (const r of all) {
+    if (isBuiltin(r.product.id)) hasBuiltin = true;
     const finish = resolveFinish(r.item, r.product, doc.surfaces);
     const code = productCode(r.product, r.w);
     const key = `${r.product.id}|${r.w}|${finish.id}`;
@@ -77,15 +88,20 @@ export function buildEstimate(doc: DesignDoc): Estimate {
       line.qty += 1;
       line.total += unitPrice;
     } else {
+      const missing = r.product.source === 'missing';
       map.set(key, {
         key,
-        group: GROUP_BY_CATEGORY[r.product.category],
-        label: `${r.product.brand} ${r.product.name}`,
-        sub: `${code} · ${finish.name}`,
+        // A category this build doesn't know still counts: it lands in "Other", never out of the total.
+        group: GROUP_BY_CATEGORY[r.product.category] ?? 'Other',
+        label: missing ? r.product.name : `${r.product.brand} ${r.product.name}`,
+        sub: missing ? 'Price unavailable until the product is listed again' : `${code} · ${finish.name}`,
         qty: 1,
         unit: 'ea',
         unitPrice,
         total: unitPrice,
+        productId: r.product.id,
+        ...(missing ? {} : { sku: code }),
+        ...(r.product.buyUrl ? { buyUrl: r.product.buyUrl } : {}),
       });
     }
     pulls += pullCount(r.product, r.w);
@@ -128,10 +144,11 @@ export function buildEstimate(doc: DesignDoc): Estimate {
     lines.push({ key: 'hardware', group: 'Hardware', label: `${hw.brand} ${hw.name} pulls`, sub: 'Cabinet pulls and knobs', qty: pulls, unit: 'ea', unitPrice: hw.price, total: pulls * hw.price });
   }
 
-  const order: EstimateGroup[] = ['Cabinetry', 'Appliances', 'Sinks & faucets', 'Surfaces', 'Hardware', 'Lighting', 'Doors & windows', 'Furniture & decor'];
+  const order: EstimateGroup[] = ['Cabinetry', 'Appliances', 'Sinks & faucets', 'Surfaces', 'Hardware', 'Lighting', 'Doors & windows', 'Furniture & decor', 'Other'];
   lines.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || b.total - a.total);
   const groups = order
     .map((name) => ({ name, total: lines.filter((l) => l.group === name).reduce((s, l) => s + l.total, 0) }))
     .filter((g) => g.total > 0);
-  return { lines, groups, total: groups.reduce((s, g) => s + g.total, 0) };
+  // The total is every line, so nothing can fall out of it even if a group were somehow unlisted.
+  return { lines, groups, total: lines.reduce((s, l) => s + l.total, 0), hasBuiltin };
 }

@@ -5,7 +5,8 @@ import { navigate } from '../lib/router';
 import { TEMPLATES, type TemplateId } from '../data/templates';
 import { STYLE_PRESETS, type StylePreset } from '../data/styles';
 import { composeDoc } from '../data/compose';
-import { DEFAULT_ROOM } from '../store/useDesignStore';
+import { DEFAULT_ROOM } from '../data/defaults';
+import { prepareDocForSave } from '../lib/doc';
 import { MiniPlan } from '../components/MiniPlan';
 import { PresetStrip } from '../components/PresetStrip';
 import { FeetInchesInput } from '../components/FeetInchesInput';
@@ -43,7 +44,7 @@ export function SetupWizard() {
     setBusy(true);
     setError(null);
     try {
-      const { project } = await api.createProject(kitchenName, client.trim(), preview);
+      const { project } = await api.createProject(kitchenName, client.trim(), prepareDocForSave(preview));
       navigate({ name: 'kitchen', id: project.id }, true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create the kitchen. Try again.');

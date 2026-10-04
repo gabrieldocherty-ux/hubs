@@ -6,6 +6,9 @@ import type { PatternSpec } from '../lib/textures';
  * Prices are illustrative estimates so the budget view has something to add up.
  */
 
+/** The (fictional) maker of the kitchen-wide cabinet line, shown in Room & Finishes. */
+export const CABINET_BRAND = 'Nordwell';
+
 export const CABINET_FINISHES: Finish[] = [
   { id: 'white-oak', name: 'Rift White Oak', hex: '#c9a57a', material: 'wood' },
   { id: 'walnut', name: 'American Walnut', hex: '#6b4630', material: 'wood' },

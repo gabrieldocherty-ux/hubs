@@ -1,9 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
-import { navigate } from '../lib/router';
+import { navigateHash, safeNext, splitHash, useHashQuery } from '../lib/router';
 import { useSession } from '../store/useSession';
 import { buildTemplate } from '../data/templates';
-import { DEFAULT_ROOM, DEFAULT_SURFACES } from '../store/useDesignStore';
+import { DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { MiniPlan } from '../components/MiniPlan';
 import { Logo } from '../components/Icons';
 
@@ -18,6 +18,8 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
   const [busy, setBusy] = useState(false);
   const offline = status === 'offline';
   const signup = mode === 'signup';
+  const next = useHashQuery().get('next');
+  const keepNext = next ? `?next=${encodeURIComponent(next)}` : '';
 
   const hero = useMemo(() => ({ name: 'Hero', room: DEFAULT_ROOM, surfaces: DEFAULT_SURFACES, items: buildTemplate('l-island', DEFAULT_ROOM, DEFAULT_SURFACES).items }), []);
 
@@ -29,7 +31,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
     try {
       const { user } = signup ? await api.signup(name, email, password) : await api.login(email, password);
       setUser(user);
-      navigate({ name: 'home' }, true);
+      navigateHash(safeNext(splitHash(location.hash).query), true);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again.');
     } finally {
@@ -99,7 +101,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
 
           <p className="auth-switch">
             {signup ? 'Already have an account? ' : 'New to Mise? '}
-            <a href={signup ? '#/signin' : '#/signup'}>{signup ? 'Sign in' : 'Create an account'}</a>
+            <a href={`${signup ? '#/signin' : '#/signup'}${keepNext}`}>{signup ? 'Sign in' : 'Create an account'}</a>
           </p>
 
           <div className="auth-or">
