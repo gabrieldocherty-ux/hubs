@@ -8,6 +8,11 @@ import * as THREE from 'three';
  * written analytically (plan normal × profile normal) so long flat faces such as the apron shade
  * evenly instead of picking up interpolation gradients.
  *
+ * A white glaze under soft room light shades almost flat, so each ring also carries a baked
+ * occlusion term, written as vertex colours: the bowl darkens gently with depth, into the joint
+ * between walls and floor and into the inside corners, which is what lets a white basin read as a
+ * hollow. Materials drawing these meshes need `vertexColors: true` (see `sinkMaterial`).
+ *
  * All units are inches. Geometries are cached by size and shared, so meshes using them must pass
  * `dispose={null}`.
  */
@@ -21,6 +26,20 @@ interface RingPt {
   /** Profile normal: outward (in plan) and up components. */
   nu: number;
   ny: number;
+  /** Baked occlusion, 1 = open to the room. */
+  ao?: number;
+  /** How much the middle of a plan corner darkens beyond `ao` (inside corners are cavities). */
+  cav?: number;
+}
+
+/** Ramp the occlusion of `out[from..]` linearly from (ao0, cav0) to (ao1, cav1). */
+function shadeRun(out: RingPt[], from: number, ao0: number, ao1: number, cav0 = 0, cav1 = cav0) {
+  const n = out.length - from;
+  for (let i = 0; i < n; i++) {
+    const t = n > 1 ? i / (n - 1) : 1;
+    out[from + i].ao = THREE.MathUtils.lerp(ao0, ao1, t);
+    out[from + i].cav = THREE.MathUtils.lerp(cav0, cav1, t);
+  }
 }
 
 /** A cross-section for one point of the perimeter. `front` is 0..1, how squarely that point faces +z. */
@@ -46,12 +65,14 @@ function sweep(profile: ProfileFn, radii: [number, number, number, number], cap:
   const pos: number[] = [];
   const nrm: number[] = [];
   const uv: number[] = [];
+  const col: number[] = [];
   const n = new THREE.Vector3();
-  const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+  const put = (x: number, y: number, z: number, nx: number, ny: number, nz: number, shade: number) => {
     pos.push(x, y, z);
     n.set(nx, ny, nz).normalize();
     nrm.push(n.x, n.y, n.z);
     uv.push(x / 12, (z + y) / 12);
+    col.push(shade, shade, shade);
   };
   for (let i = 0; i < nr; i++) {
     for (let j = 0; j < nc; j++) {
@@ -60,7 +81,9 @@ function sweep(profile: ProfileFn, radii: [number, number, number, number], cap:
       const r = Math.max(0, Math.min(p.r, p.hx, p.hz));
       const cs = Math.cos(th);
       const sn = Math.sin(th);
-      put(CORNERS[c].sx * (p.hx - r) + r * cs, p.y, CORNERS[c].sz * (p.hz - r) + r * sn, p.nu * cs, p.ny, p.nu * sn);
+      const mid = Math.sin(((j % (CORNER_SEGS + 1)) / CORNER_SEGS) * Math.PI); // 1 at the middle of a corner arc
+      const shade = (p.ao ?? 1) * (1 - (p.cav ?? 0) * mid);
+      put(CORNERS[c].sx * (p.hx - r) + r * cs, p.y, CORNERS[c].sz * (p.hz - r) + r * sn, p.nu * cs, p.ny, p.nu * sn, shade);
     }
   }
 
@@ -95,8 +118,9 @@ function sweep(profile: ProfileFn, radii: [number, number, number, number], cap:
     // Flat underside closing the first ring.
     const base = pos.length / 3;
     const y0 = pos[1];
-    for (let j = 0; j < nc; j++) put(pos[j * 3], y0, pos[j * 3 + 2], 0, -1, 0);
-    put(0, y0, 0, 0, -1, 0);
+    const shade = col[0];
+    for (let j = 0; j < nc; j++) put(pos[j * 3], y0, pos[j * 3 + 2], 0, -1, 0, shade);
+    put(0, y0, 0, 0, -1, 0, shade);
     for (let j = 0; j < nc; j++) tri(base + nc, base + j, base + ((j + 1) % nc));
   }
 
@@ -104,6 +128,7 @@ function sweep(profile: ProfileFn, radii: [number, number, number, number], cap:
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   g.setIndex(idx);
   g.computeBoundingSphere();
   return g;
@@ -145,9 +170,11 @@ function interior(out: RingPt[], o: BowlInterior) {
   const uW = o.uTop - o.draft;
   const yW = o.yFloor + o.fillet;
   // Wall leans in slightly; its normal is the arc-end normal so the joint shades smoothly.
-  out.push({ hx: o.hx0 + uW, hz: o.hz0 + uW, r: o.rBottom, y: yW, nu: -1, ny: 0 });
+  out.push({ hx: o.hx0 + uW, hz: o.hz0 + uW, r: o.rBottom, y: yW, nu: -1, ny: 0, ao: SHADE.wallBottom, cav: 0.16 });
   const rAt = (u: number) => Math.max(0.35, o.rBottom + (u - uW));
+  const from = out.length;
   arc(out, o.hx0, o.hz0, uW - o.fillet, yW, o.fillet, 0, -Math.PI / 2, 6, rAt, true);
+  shadeRun(out, from, SHADE.wallBottom - 0.02, SHADE.joint, 0.18, 0.2);
   const uF = uW - o.fillet;
   const hx1 = o.hx0 + uF;
   const hz1 = o.hz0 + uF;
@@ -159,9 +186,14 @@ function interior(out: RingPt[], o: BowlInterior) {
     const e = t * t * (1.6 - 0.6 * t); // flat near the walls, dishing toward the drain
     const de = (2 * 1.6 * t - 3 * 0.6 * t * t) / run; // d(e)/d(distance) for the normal
     const slope = o.fall * de;
-    out.push({ hx: lerp(hx1, o.drainR, t), hz: lerp(hz1, o.drainR, t), r: lerp(r1, o.drainR, t), y: o.yFloor - o.fall * e, nu: -slope, ny: 1 });
+    // The floor brightens toward the middle, which sees most of the opening above it.
+    const ao = lerp(SHADE.joint, SHADE.floor, Math.sqrt(t));
+    out.push({ hx: lerp(hx1, o.drainR, t), hz: lerp(hz1, o.drainR, t), r: lerp(r1, o.drainR, t), y: o.yFloor - o.fall * e, nu: -slope, ny: 1, ao, cav: 0.2 * (1 - t) });
   }
 }
+
+/** Baked occlusion levels shared by every bowl, so all the sinks in a kitchen shade alike. */
+const SHADE = { rimInside: 0.95, wallBottom: 0.74, joint: 0.64, floor: 0.88, apronBottom: 0.84, underside: 0.74 };
 
 export const DRAIN_R = 1.75;
 
@@ -206,14 +238,17 @@ export function farmhouseBowl(s: FarmhouseBowlDims): { geo: THREE.BufferGeometry
       // Softened bottom edge of the apron.
       out.push({ hx: hx0 - bevel, hz: hz0 - bevel, r: rOuter(-bevel), y: 0, nu: 0, ny: -1 });
       arc(out, hx0, hz0, -bevel, bevel, bevel, -Math.PI / 2, 0, 4, rOuter);
-      // Apron face / outer walls.
+      shadeRun(out, 0, SHADE.underside, SHADE.apronBottom);
+      // Apron face / outer walls, a touch darker low down where they see the floor, not the room.
       out.push({ hx: hx0, hz: hz0, r: r0, y: H - lipOut, nu: 1, ny: 0 });
       // Rolled lip over the top and down into the bowl.
-      arc(out, hx0, hz0, -lipOut, H - lipOut, lipOut, 0, Math.PI / 2, 5, rOuter);
+      arc(out, hx0, hz0, -lipOut, H - lipOut, lipOut, 0, Math.PI / 2, 9, rOuter);
       const uIn = -(t - lipIn);
       out.push({ hx: hx0 + uIn, hz: hz0 + uIn, r: rOuter(uIn), y: H, nu: 0, ny: 1 });
       const rTop = Math.max(r0, 1.5);
-      arc(out, hx0, hz0, uIn, H - lipIn, lipIn, Math.PI / 2, Math.PI, 5, (_u, k) => lerp(rOuter(uIn), rTop, k));
+      const from = out.length;
+      arc(out, hx0, hz0, uIn, H - lipIn, lipIn, Math.PI / 2, Math.PI, 9, (_u, k) => lerp(rOuter(uIn), rTop, k));
+      shadeRun(out, from, 1, SHADE.rimInside, 0, 0.08);
       interior(out, { hx0, hz0, uTop: -t, yTop: H - lipIn, rTop, draft: 0.45, rBottom: 2.1, fillet: 1.4, yFloor, fall, drainR: DRAIN_R });
       return out;
     };
@@ -246,6 +281,7 @@ export function undermountBowl(w: number, d: number, depth: number, cornerR: num
       const rr = (u: number) => Math.max(0.05, r0 + u);
       out.push({ hx: hx0 + uEdge, hz: hz0 + uEdge, r: rr(uEdge), y: yt, nu: 0, ny: 1 });
       arc(out, hx0, hz0, uEdge, yt - roll, roll, Math.PI / 2, Math.PI, 3, rr);
+      shadeRun(out, 0, 0.9, SHADE.rimInside, 0, 0.08);
       interior(out, {
         hx0,
         hz0,
