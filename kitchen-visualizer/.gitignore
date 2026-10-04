@@ -7,3 +7,6 @@ tsconfig.tsbuildinfo
 # The repo root ignores data/ (bot runtime state); the app catalog must ship.
 !src/data/
 server/data/
+.qa/
+.build/
+.tmp-tests/
