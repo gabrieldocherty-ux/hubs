@@ -4,8 +4,10 @@ import { RoundedBox } from '@react-three/drei';
 import type { Finish } from '../../types';
 import type { Resolved } from '../../lib/geometry';
 import { hashString, luminance, mulberry32 } from '../../lib/color';
-import { Basin, Box, Counter, Cyl, Faucet, Front, Pull, baseFronts, type FrontSpec, type SceneCtx } from './parts';
-import { M, cached, finishMaterial, rugMaterial } from './materials';
+import { Basin, Box, Counter, Cyl, Drain, Faucet, Front, Pull, baseFronts, type FrontSpec, type SceneCtx } from './parts';
+import { M, cached, finishMaterial, rugMaterial, sinkMaterial } from './materials';
+import { DRAIN_R, farmhouseBowl } from './sinkGeo';
+import { farmhouseFronts, farmhouseSink } from '../../lib/fronts';
 import { boxGeo, canopy } from './geom3d';
 
 export interface ModelProps {
@@ -210,32 +212,37 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
   const { w, d, product } = r;
   const cab = ctx.cabinet;
   const body = finishMaterial(cab);
-  const basinMat = finishMaterial(finish);
+  const basinMat = sinkMaterial(finish);
   const v = product.variant;
   let cutouts: { x0: number; x1: number; z0: number; z1: number }[] = [];
   let basins: JSX.Element | null = null;
   let fronts: FrontSpec[];
+  let stiles: JSX.Element | null = null;
   const farm = v === 'farmhouse';
 
   if (farm) {
-    const bw = w - 3;
-    const zb0 = -d / 2 + 4;
-    const zb1 = d / 2 + 0.9;
-    const mid = (zb0 + zb1) / 2;
-    cutouts = [{ x0: -bw / 2, x1: bw / 2, z0: zb0, z1: d / 2 + 1.5 }];
+    const s = farmhouseSink(w, d);
+    // The counter stops at the sink's sides and back, lapping its rim by a hair so the seam has no gap.
+    const lap = 0.06;
+    cutouts = [{ x0: -s.bw / 2 + lap, x1: s.bw / 2 - lap, z0: s.back + lap, z1: d / 2 + 1.5 }];
+    const bowl = farmhouseBowl({ w: s.bw, d: s.depth, h: s.apronH, wall: s.wall, cornerR: s.cornerR });
     basins = (
-      <group>
-        <Box size={[bw, 10.2, 1.2]} pos={[0, 30.1, zb1 - 0.6]} mat={basinMat} />
-        <Box size={[bw, 10.2, 1.2]} pos={[0, 30.1, zb0 + 0.6]} mat={basinMat} />
-        <Box size={[1.2, 10.2, zb1 - zb0]} pos={[-bw / 2 + 0.6, 30.1, mid]} mat={basinMat} />
-        <Box size={[1.2, 10.2, zb1 - zb0]} pos={[bw / 2 - 0.6, 30.1, mid]} mat={basinMat} />
-        <Box size={[bw, 1.2, zb1 - zb0]} pos={[0, 25.6, mid]} mat={basinMat} />
-        <Cyl r={1.3} h={0.1} pos={[0, 26.26, mid]} mat={M.darkSteel()} />
+      <group position={[0, s.apronY0, (s.front + s.back) / 2]}>
+        <mesh geometry={bowl.geo} material={basinMat} castShadow receiveShadow dispose={null} />
+        <Drain y={bowl.drainY} r={DRAIN_R} />
       </group>
     );
-    fronts = baseFronts(w, 'door-drawer')
-      .filter((f) => f.y < 28)
-      .map((f) => ({ ...f, h: 20.8, pull: f.pull && { ...f.pull, y: 21 } }));
+    fronts = farmhouseFronts(w, s);
+    // Face-frame stiles either side of the apron, flush with the doors, so the apron sits in a frame.
+    const sw = (w - s.bw) / 2;
+    const sy0 = s.doorTop;
+    stiles = (
+      <group>
+        {[-1, 1].map((k) => (
+          <Box key={k} size={[sw, 34.5 - sy0, 0.75]} pos={[k * (w / 2 - sw / 2), (34.5 + sy0) / 2, d / 2 + 0.375]} mat={body} />
+        ))}
+      </group>
+    );
   } else if (v === 'double') {
     const bw = (w - 9) / 2;
     const bd = 16;
@@ -272,6 +279,7 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} />
       ))}
+      {stiles}
       <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 1.5} cutouts={cutouts} />
       {basins}
       <Faucet z={-d / 2 + 2.4} mat={ctx.hwMat} bridge={farm} />

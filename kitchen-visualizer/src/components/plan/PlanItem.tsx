@@ -5,6 +5,7 @@ import type { PlacedItem, PlanStyle, Surfaces } from '../../types';
 import { resolve } from '../../lib/geometry';
 import { resolveFinish, cabinetFinish } from '../../lib/finish';
 import { productCode } from '../../data/catalog';
+import { farmhouseSink } from '../../lib/fronts';
 import { COUNTERTOPS, byId } from '../../data/finishes';
 import { hashString, luminance, mulberry32, shade } from '../../lib/color';
 import { ACCENT, BAD, FONT_MONO, INK, INK_SOFT, PAPER, WALL_T, patternFill } from './planStyle';
@@ -106,10 +107,14 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       nodes.push(finishStrip('strip'));
       const basin = { fill: rendered ? finish.hex : '#fff', stroke: INK, strokeWidth: 0.9, strokeScaleEnabled: false, listening: false } as const;
       const inner = rendered ? { shadowColor: '#000', shadowBlur: 5, shadowOpacity: 0.35, shadowOffsetY: 1.5 } : {};
+      let drainY = y0 + 14;
       if (product.variant === 'farmhouse') {
-        const bw = w - 3;
-        nodes.push(<Rect key="b" x={-bw / 2} y={y0 + 4} width={bw} height={d - 3.5} cornerRadius={2.5} {...basin} {...inner} />);
-        nodes.push(<Rect key="bi" x={-bw / 2 + 1.5} y={y0 + 5.5} width={bw - 3} height={d - 7.5} cornerRadius={2} stroke={INK} strokeWidth={0.6} strokeScaleEnabled={false} opacity={0.4} listening={false} />);
+        // Same proportions as the 3D model: square-ish back corners, rounder apron corners at the front.
+        const s = farmhouseSink(w, d);
+        const t = s.wall;
+        nodes.push(<Rect key="b" x={-s.bw / 2} y={s.back} width={s.bw} height={s.depth} cornerRadius={[0.35, 0.35, s.cornerR, s.cornerR]} {...basin} {...inner} />);
+        nodes.push(<Rect key="bi" x={-s.bw / 2 + t} y={s.back + t} width={s.bw - t * 2} height={s.depth - t * 2} cornerRadius={1.5} stroke={INK} strokeWidth={0.6} strokeScaleEnabled={false} opacity={0.4} listening={false} />);
+        drainY = (s.front + s.back) / 2;
       } else if (product.variant === 'double') {
         const bw = (w - 9) / 2;
         nodes.push(<Rect key="b1" x={-bw - 1.5} y={y0 + 5} width={bw} height={16} cornerRadius={2.5} {...basin} {...inner} />);
@@ -121,7 +126,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
         const bd = product.variant === 'prep' ? 12 : 16;
         nodes.push(<Rect key="b" x={-bw / 2} y={y0 + 5} width={bw} height={bd} cornerRadius={2.5} {...basin} {...inner} />);
       }
-      if (product.variant !== 'double') nodes.push(<Circle key="drain" x={0} y={y0 + 14} radius={1.3} fill={INK} opacity={0.55} listening={false} />);
+      if (product.variant !== 'double') nodes.push(<Circle key="drain" x={0} y={drainY} radius={1.3} fill={INK} opacity={0.55} listening={false} />);
       nodes.push(<Circle key="fa" x={0} y={y0 + 2.4} radius={1.3} fill={INK} listening={false} />);
       nodes.push(<Line key="fs" points={[0, y0 + 2.4, 0, y0 + 8]} stroke={INK} strokeWidth={2} strokeScaleEnabled={false} lineCap="round" listening={false} />);
       label = null;

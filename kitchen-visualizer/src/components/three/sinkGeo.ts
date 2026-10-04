@@ -228,8 +228,9 @@ export function farmhouseBowl(s: FarmhouseBowlDims): { geo: THREE.BufferGeometry
  * counter's underside. A flange runs out under the counter so the cutout's square corners show glaze
  * (or steel), not the cabinet; the bowl itself sits a hair inside the cut edge.
  */
-export function undermountBowl(w: number, d: number, depth: number, cornerR: number): { geo: THREE.BufferGeometry; drainY: number } {
+export function undermountBowl(w: number, d: number, depth: number, cornerR: number): { geo: THREE.BufferGeometry; drainY: number; drainR: number } {
   const fall = 0.25;
+  const drainR = Math.min(DRAIN_R, w / 5, d / 5);
   const yFloor = -depth + fall;
   const geo = memo(`under|${w}|${d}|${depth}|${cornerR}`, () => {
     const hx0 = w / 2;
@@ -256,13 +257,13 @@ export function undermountBowl(w: number, d: number, depth: number, cornerR: num
         fillet: Math.min(cornerR, 1.4),
         yFloor,
         fall,
-        drainR: Math.min(DRAIN_R, w / 5, d / 5),
+        drainR,
       });
       return out;
     };
     return sweep(profile, [cornerR, cornerR, cornerR, cornerR], false);
   });
-  return { geo, drainY: yFloor - fall };
+  return { geo, drainY: yFloor - fall, drainR };
 }
 
 /** Stainless strainer flange: a rolled ring sitting on the floor around the drain opening. */
@@ -288,11 +289,12 @@ export function strainerGeo(drainR: number): THREE.BufferGeometry {
 export function basketGeo(drainR: number): THREE.BufferGeometry {
   return memo(`basket|${drainR}`, () => {
     const R = drainR - 0.17;
+    // Outside-in, so the lathe's faces point up and inward, toward someone looking into the sink.
     const pts = [
-      [0, -0.62],
-      [R * 0.98, -0.62],
-      [R, -0.58],
       [R, -0.5],
+      [R, -0.58],
+      [R * 0.97, -0.62],
+      [0, -0.62],
     ].map(([r, y]) => new THREE.Vector2(r, y));
     return new THREE.LatheGeometry(pts, 32);
   });

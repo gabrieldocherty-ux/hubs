@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from 'react';
 import type { DoorStyle, Finish, Product, Surfaces } from '../types';
-import { baseFronts, type FrontSpec } from '../lib/fronts';
+import { baseFronts, farmhouseFronts, farmhouseSink, type FrontSpec } from '../lib/fronts';
 import { CABINET_FINISHES, COUNTERTOPS, HARDWARE, byId } from '../data/finishes';
 import { luminance, shade } from '../lib/color';
 
@@ -96,12 +96,15 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
       H = 52;
       nodes.push(toe);
       nodes.push(<rect key="body" x={0} y={Y(34.5)} width={w} height={30.5} fill={cab.hex} stroke={INK} />);
-      const farm = product.variant === 'farmhouse';
-      baseFronts(w, 'door-drawer', { falseTop: true })
-        .filter((fr) => !farm || fr.y < 28)
-        .forEach((fr, i) => nodes.push(front(farm ? { ...fr, h: 20.8, pull: fr.pull && { ...fr.pull, y: 21 } } : fr, cab.hex, `f${i}`, w / 2)));
+      const farm = product.variant === 'farmhouse' ? farmhouseSink(w, product.depthIn) : null;
+      (farm ? farmhouseFronts(w, farm) : baseFronts(w, 'door-drawer', { falseTop: true })).forEach((fr, i) => nodes.push(front(fr, cab.hex, `f${i}`, w / 2)));
       nodes.push(countertop(-0.8, w + 0.8));
-      if (farm) nodes.push(<rect key="apron" x={1.5} y={Y(35.8)} width={w - 3} height={10.8} rx={0.8} fill={color} stroke={INK} />);
+      if (farm) {
+        const ax = (w - farm.bw) / 2;
+        nodes.push(<rect key="apron" x={ax} y={Y(farm.rimY)} width={farm.bw} height={farm.apronH} rx={0.5} fill={color} stroke={INK} />);
+        // The rolled lip along the top of the apron.
+        nodes.push(<line key="lip" x1={ax + 0.6} y1={Y(farm.rimY - 0.45)} x2={ax + farm.bw - 0.6} y2={Y(farm.rimY - 0.45)} stroke={INK} strokeOpacity={0.3} strokeWidth={0.5} />);
+      }
       const fx = w / 2;
       nodes.push(
         <path key="faucet" d={`M${fx} ${Y(36)} V${Y(47)} Q${fx} ${Y(51.5)} ${fx + 4.5} ${Y(50.5)} Q${fx + 8.2} ${Y(49.6)} ${fx + 8.4} ${Y(45.5)}`} fill="none" stroke={hw} strokeWidth={2.4} strokeLinecap="round" />,

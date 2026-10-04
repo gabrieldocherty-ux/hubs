@@ -5,7 +5,8 @@ import type { Resolved } from '../../lib/geometry';
 import { boxGeo, scaleUV, worldUVBox } from './geom3d';
 import type { FrontSpec, PullSpec } from '../../lib/fronts';
 export { baseFronts, type FrontSpec, type PullSpec } from '../../lib/fronts';
-import { cached, finishMaterial, flutedMaterial } from './materials';
+import { M, cached, finishMaterial, flutedMaterial } from './materials';
+import { basketGeo, strainerGeo, undermountBowl } from './sinkGeo';
 
 export interface SceneCtx {
   counterMat: THREE.Material;
@@ -170,17 +171,27 @@ export function Faucet({ z, y = 36, mat, bridge = false }: { z: number; y?: numb
   );
 }
 
-/** Open-topped basin hung under a countertop cutout. */
-export function Basin({ cx, cz, w, d, depth = 9, top = 34.5, mat, wall = 0.45 }: { cx: number; cz: number; w: number; d: number; depth?: number; top?: number; mat: THREE.Material; wall?: number }) {
-  const y0 = top - depth;
+/** Stainless strainer ring and basket for a drain of radius `r`, with the drain opening at the origin. */
+export function Drain({ y, r }: { y: number; r: number }) {
+  const basket = cached('drainBasket', () => new THREE.MeshStandardMaterial({ color: '#8d9095', metalness: 0.85, roughness: 0.42 }));
   return (
-    <group>
-      <Box size={[w, wall, d]} pos={[cx, y0 + wall / 2, cz]} mat={mat} />
-      <Box size={[w, depth, wall]} pos={[cx, y0 + depth / 2, cz - d / 2 + wall / 2]} mat={mat} />
-      <Box size={[w, depth, wall]} pos={[cx, y0 + depth / 2, cz + d / 2 - wall / 2]} mat={mat} />
-      <Box size={[wall, depth, d]} pos={[cx - w / 2 + wall / 2, y0 + depth / 2, cz]} mat={mat} />
-      <Box size={[wall, depth, d]} pos={[cx + w / 2 - wall / 2, y0 + depth / 2, cz]} mat={mat} />
-      <Cyl r={1.2} h={0.1} pos={[cx, y0 + wall + 0.06, cz]} mat={cached('drain', () => new THREE.MeshStandardMaterial({ color: '#555', metalness: 0.8, roughness: 0.3 }))} />
+    <group position={[0, y, 0]}>
+      <mesh geometry={strainerGeo(r)} material={M.steel()} receiveShadow dispose={null} />
+      <mesh geometry={basketGeo(r)} material={basket} receiveShadow dispose={null} />
+    </group>
+  );
+}
+
+/**
+ * Soft-cornered bowl hung under a rectangular countertop cutout whose underside is at `top`, with
+ * rounded inside corners, a floor that falls to the drain and a strainer.
+ */
+export function Basin({ cx, cz, w, d, depth = 9, top = 34.5, mat, cornerR = 1.5 }: { cx: number; cz: number; w: number; d: number; depth?: number; top?: number; mat: THREE.Material; cornerR?: number }) {
+  const bowl = undermountBowl(w, d, depth, cornerR);
+  return (
+    <group position={[cx, top, cz]}>
+      <mesh geometry={bowl.geo} material={mat} castShadow receiveShadow dispose={null} />
+      <Drain y={bowl.drainY} r={bowl.drainR} />
     </group>
   );
 }
