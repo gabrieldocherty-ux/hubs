@@ -150,10 +150,8 @@ function arc(out: RingPt[], hx0: number, hz0: number, uc: number, yc: number, ra
 interface BowlInterior {
   hx0: number;
   hz0: number;
-  /** Inner wall at the top of the bowl: offset from the outline (negative = inward), height, plan radius. */
+  /** Where the inner wall starts, below the rim: offset from the outline (negative = inward). */
   uTop: number;
-  yTop: number;
-  rTop: number;
   /** How far the inner wall leans in by the time it reaches the floor. */
   draft: number;
   rBottom: number;
@@ -219,7 +217,7 @@ export interface FarmhouseBowlDims {
 /**
  * Fireclay apron-front sink, origin at the centre of its underside. The front (+z) gets a fully
  * rolled lip; the sides and back, which the counter butts against, keep a crisp rim so the seam is
- * a hairline. The drain opening is at (0, floorAtDrain, 0).
+ * a hairline. The drain opening is at (0, drainY, 0).
  */
 export function farmhouseBowl(s: FarmhouseBowlDims): { geo: THREE.BufferGeometry; drainY: number } {
   const yFloor = 0.95;
@@ -249,7 +247,7 @@ export function farmhouseBowl(s: FarmhouseBowlDims): { geo: THREE.BufferGeometry
       const from = out.length;
       arc(out, hx0, hz0, uIn, H - lipIn, lipIn, Math.PI / 2, Math.PI, 9, (_u, k) => lerp(rOuter(uIn), rTop, k));
       shadeRun(out, from, 1, SHADE.rimInside, 0, 0.08);
-      interior(out, { hx0, hz0, uTop: -t, yTop: H - lipIn, rTop, draft: 0.45, rBottom: 2.1, fillet: 1.4, yFloor, fall, drainR: DRAIN_R });
+      interior(out, { hx0, hz0, uTop: -t, draft: 0.45, rBottom: 2.1, fillet: 1.4, yFloor, fall, drainR: DRAIN_R });
       return out;
     };
     // Rounder corners at the apron, tighter ones at the back where the counter meets them.
@@ -286,8 +284,6 @@ export function undermountBowl(w: number, d: number, depth: number, cornerR: num
         hx0,
         hz0,
         uTop: -reveal,
-        yTop: yt - roll,
-        rTop: rr(-reveal),
         draft: Math.min(0.4, depth * 0.04),
         rBottom: Math.max(rr(-reveal), cornerR * 1.2),
         fillet: Math.min(cornerR, 1.4),

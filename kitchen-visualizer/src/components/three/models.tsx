@@ -217,7 +217,7 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
   let cutouts: { x0: number; x1: number; z0: number; z1: number }[] = [];
   let basins: JSX.Element | null = null;
   let fronts: FrontSpec[];
-  let stiles: JSX.Element | null = null;
+  let apronFrame: JSX.Element | null = null;
   const farm = v === 'farmhouse';
 
   if (farm) {
@@ -240,7 +240,7 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
     // shadow line; lit door tops there would look like a shelf the sink is perched on.
     const gy0 = s.doorTop - 0.14;
     const gy1 = s.apronY0 + 0.1;
-    stiles = (
+    apronFrame = (
       <group>
         {[-1, 1].map((k) => (
           <Box key={k} size={[sw, 34.5 - sy0, 0.75]} pos={[k * (w / 2 - sw / 2), (34.5 + sy0) / 2, d / 2 + 0.375]} mat={body} />
@@ -285,7 +285,7 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} />
       ))}
-      {stiles}
+      {apronFrame}
       <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 1.5} cutouts={cutouts} />
       {basins}
       <Faucet z={-d / 2 + 2.4} mat={ctx.hwMat} bridge={farm} />
