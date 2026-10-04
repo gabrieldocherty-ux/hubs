@@ -315,22 +315,25 @@ export function strainerGeo(drainR: number): THREE.BufferGeometry {
       [R - 0.08, 0.09],
       [R - 0.15, 0.03],
       [R - 0.17, -0.05],
-      [R - 0.17, -0.55],
+      [R - 0.17, -0.38],
     ].map(([r, y]) => new THREE.Vector2(r, y));
     return new THREE.LatheGeometry(pts, 40);
   });
 }
 
-/** The recessed basket inside the strainer ring, with a centre post. */
+/**
+ * The recessed basket inside the strainer ring. Kept shallow (under half an inch) so that a 9in
+ * undermount bowl's basket still clears the top of the sink cabinet's carcass block at 25in.
+ */
 export function basketGeo(drainR: number): THREE.BufferGeometry {
   return memo(`basket|${drainR}`, () => {
     const R = drainR - 0.17;
     // Outside-in, so the lathe's faces point up and inward, toward someone looking into the sink.
     const pts = [
-      [R, -0.5],
-      [R, -0.58],
-      [R * 0.97, -0.62],
-      [0, -0.62],
+      [R, -0.32],
+      [R, -0.38],
+      [R * 0.97, -0.42],
+      [0, -0.42],
     ].map(([r, y]) => new THREE.Vector2(r, y));
     return new THREE.LatheGeometry(pts, 32);
   });

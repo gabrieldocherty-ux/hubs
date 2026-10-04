@@ -276,7 +276,8 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
   return (
     <group>
       <Toe w={w} d={d} />
-      <Box size={[w, 21, d - 0.1]} pos={[0, 14.5, 0]} mat={body} />
+      {/* Under an apron the carcass rises to the door tops, so the gap between the doors stays the cabinet colour up to the shadow reveal. */}
+      <Box size={[w, farm ? 21.6 : 21, d - 0.1]} pos={[0, farm ? 14.8 : 14.5, 0]} mat={body} />
       <Box size={[0.75, 9.5, d - 0.1]} pos={[-w / 2 + 0.375, 29.75, 0]} mat={body} />
       <Box size={[0.75, 9.5, d - 0.1]} pos={[w / 2 - 0.375, 29.75, 0]} mat={body} />
       <Box size={[w, 9.5, 0.75]} pos={[0, 29.75, -d / 2 + 0.375]} mat={body} />
