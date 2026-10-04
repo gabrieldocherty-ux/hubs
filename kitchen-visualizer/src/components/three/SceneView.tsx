@@ -1,4 +1,4 @@
-import { memo, Suspense, useEffect, useMemo, useRef } from 'react';
+import { memo, Suspense, useEffect, useMemo, useRef, useState, type DragEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
@@ -8,6 +8,7 @@ import { useDesignStore, type CameraPreset } from '../../store/useDesignStore';
 import { useReport, useResolvedItems } from '../../store/derived';
 import { COUNTERTOPS, HARDWARE, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
 import { getProduct, isOpening } from '../../data/catalog';
+import { placeAtClient, usePlacement } from '../../lib/interaction';
 import { resolve } from '../../lib/geometry';
 import { resolveFinish, cabinetFinish } from '../../lib/finish';
 import { registerExporter } from '../../lib/exporters';
@@ -16,6 +17,8 @@ import { renderModel } from './models';
 import { Room3D } from './Room3D';
 import { SelectionEdges } from './SelectionEdges';
 import type { SceneCtx } from './parts';
+import { InteractDrag } from './InteractDrag';
+import { InteractOverlay, markActiveView } from './InteractOverlay';
 
 const MAX_LIGHTS = 6;
 const BG = '#efe8dc';
@@ -61,6 +64,8 @@ const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, li
     <group
       position={[item.x, 0, item.y]}
       rotation={[0, (-item.rotation * Math.PI) / 180, 0]}
+      // InteractDrag finds the piece under a press by this tag.
+      userData={{ itemId: item.id }}
       onClick={(e) => {
         e.stopPropagation();
         onSelect(item.id);
@@ -68,11 +73,11 @@ const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, li
       onPointerOver={(e) => {
         e.stopPropagation();
         onHover(item.id);
-        document.body.style.cursor = 'pointer';
+        if (!useDesignStore.getState().dragging) document.body.style.cursor = 'grab';
       }}
       onPointerOut={() => {
         onHover(null);
-        document.body.style.cursor = '';
+        if (!useDesignStore.getState().dragging) document.body.style.cursor = '';
       }}
     >
       {renderModel({ r, finish, ctx, lightOn })}
@@ -237,7 +242,7 @@ function Exporter() {
   return null;
 }
 
-function Scene() {
+function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
   const room = useDesignStore((s) => s.doc.room);
   const surfaces = useDesignStore((s) => s.doc.surfaces);
   const items = useDesignStore((s) => s.doc.items);
@@ -289,16 +294,84 @@ function Scene() {
         })}
       </group>
       <CameraRig room={room} />
+      <InteractDrag containerRef={containerRef} />
+      <InteractOverlay />
       <Exporter />
     </>
+  );
+}
+
+const PRODUCT_MIME = 'application/x-kitchen-product';
+
+/** True on phones and tablets (no mouse), so the hint talks about fingers. */
+function useCoarsePointer(): boolean {
+  const query = '(pointer: coarse)';
+  const [coarse, setCoarse] = useState(() => typeof matchMedia === 'function' && matchMedia(query).matches);
+  useEffect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const m = matchMedia(query);
+    const on = () => setCoarse(m.matches);
+    m.addEventListener('change', on);
+    return () => m.removeEventListener('change', on);
+  }, []);
+  return coarse;
+}
+
+function Hint({ coarse }: { coarse: boolean }) {
+  const armedId = usePlacement((s) => s.armedProductId);
+  const disarm = usePlacement((s) => s.disarm);
+  const dragging = useDesignStore((s) => s.dragging);
+  const armed = armedId ? getProduct(armedId) : undefined;
+  if (armed) {
+    return (
+      <div className="scene-hud scene-hud--bl" role="status" style={{ maxWidth: 'calc(100% - 28px)', pointerEvents: 'auto' }}>
+        <span>
+          {coarse ? 'Tap' : 'Click'} the floor or a wall to place <strong>{armed.name}</strong>
+        </span>
+        <button className="btn" style={{ marginLeft: 8, padding: '3px 10px', fontSize: 12 }} onClick={disarm}>
+          Cancel
+        </button>
+      </div>
+    );
+  }
+  const text = dragging
+    ? coarse
+      ? 'Lift to drop it here'
+      : 'Release to drop · Esc puts it back'
+    : coarse
+      ? 'Drag an item to move it · Drag to orbit · Pinch or two fingers to zoom and pan · Tap to select'
+      : 'Drag an item to move it · Drag empty space to orbit · Scroll to zoom · Right-drag to pan · Click to select';
+  return (
+    <div className="scene-hud scene-hud--bl" style={{ maxWidth: 'calc(100% - 28px)' }}>
+      {text}
+    </div>
   );
 }
 
 export function SceneView() {
   const select = useDesignStore((s) => s.select);
   const requestCamera = useDesignStore((s) => s.requestCamera);
+  const armed = usePlacement((s) => s.armedProductId);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const coarse = useCoarsePointer();
+
+  // Desktop catalog drags (HTML5 drag and drop) can land in 3D too, on the floor or a wall.
+  const onDragOver = (e: DragEvent<HTMLDivElement>) => {
+    if (e.dataTransfer.types.includes(PRODUCT_MIME)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    const productId = e.dataTransfer.getData(PRODUCT_MIME);
+    if (!productId || !getProduct(productId)) return;
+    e.preventDefault();
+    markActiveView('3d');
+    placeAtClient(productId, e.clientX, e.clientY);
+  };
+
   return (
-    <div className="scene-view">
+    <div className="scene-view" ref={wrapRef} onDragOver={onDragOver} onDrop={onDrop} style={armed ? { cursor: 'copy' } : undefined}>
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -309,7 +382,7 @@ export function SceneView() {
         }}
       >
         <Suspense fallback={null}>
-          <Scene />
+          <Scene containerRef={wrapRef} />
         </Suspense>
       </Canvas>
       <div className="scene-hud scene-hud--tl">
@@ -328,7 +401,7 @@ export function SceneView() {
           ))}
         </div>
       </div>
-      <div className="scene-hud scene-hud--bl">Drag to orbit · Scroll to zoom · Right-drag to pan · Click to select</div>
+      <Hint coarse={coarse} />
     </div>
   );
 }

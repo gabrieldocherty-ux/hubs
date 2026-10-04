@@ -132,7 +132,7 @@ function Inspector() {
   );
 }
 
-function Summary() {
+function Summary({ compact }: { compact: boolean }) {
   const room = useDesignStore((s) => s.doc.room);
   const items = useDesignStore((s) => s.doc.items);
   const est = useEstimate();
@@ -161,20 +161,32 @@ function Summary() {
       </button>
       <div className="tips">
         <span className="mini-label">Tips</span>
-        <ul>
-          <li>Drag products onto the plan. Backs snap to walls and edges click together.</li>
-          <li>Click a piece to change its width, finish or exact position.</li>
-          <li>Room & Finishes swaps counters, tile, floors and paint across the whole kitchen.</li>
-        </ul>
-        <span className="mini-label">Shortcuts</span>
-        <dl className="shortcuts">
-          <dt><kbd>R</kbd></dt><dd>Rotate</dd>
-          <dt><kbd>⌫</kbd></dt><dd>Delete</dd>
-          <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
-          <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
-          <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
-          <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
-        </dl>
+        {compact ? (
+          <ul>
+            <li>Tap <b>Add</b>, pick a product, then tap the plan where it goes. Or hold a product and drag it in.</li>
+            <li>Drag a piece with one finger to move it. Backs snap to walls and edges click together.</li>
+            <li>Tap a piece for Rotate, Duplicate and Delete; Details has width, finish and exact position.</li>
+          </ul>
+        ) : (
+          <ul>
+            <li>Drag products onto the plan or the 3D floor. Backs snap to walls and edges click together.</li>
+            <li>Click a piece to rotate, duplicate or delete it, or to change its width, finish or exact position.</li>
+            <li>Room & Finishes swaps counters, tile, floors and paint across the whole kitchen.</li>
+          </ul>
+        )}
+        {!compact && (
+          <>
+            <span className="mini-label">Shortcuts</span>
+            <dl className="shortcuts">
+              <dt><kbd>R</kbd></dt><dd>Rotate</dd>
+              <dt><kbd>⌫</kbd></dt><dd>Delete</dd>
+              <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
+              <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
+              <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
+              <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
+            </dl>
+          </>
+        )}
       </div>
     </div>
   );
@@ -243,7 +255,9 @@ function EstimatePanel() {
   );
 }
 
-export function RightPanel() {
+/** The details column on a desktop; with variant="sheet" the same tabs inside the phone layout's Details sheet. */
+export function RightPanel({ variant = 'panel' }: { variant?: 'panel' | 'sheet' }) {
+  const compact = variant === 'sheet';
   const tab = useDesignStore((s) => s.ui.rightTab);
   const setUI = useDesignStore((s) => s.setUI);
   const selectedId = useDesignStore((s) => s.selectedId);
@@ -252,7 +266,7 @@ export function RightPanel() {
   const issues = report.checks.filter((c) => c.level === 'bad' || c.level === 'warn').length;
   const hasBad = report.checks.some((c) => c.level === 'bad');
   return (
-    <aside className="panel right-panel">
+    <aside className={compact ? 'panel right-panel right-panel--sheet' : 'panel right-panel'}>
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'details'} className={tab === 'details' ? 'on' : ''} onClick={() => setUI({ rightTab: 'details' })}>
           {selectedId ? 'Selected' : 'Overview'}
@@ -265,7 +279,7 @@ export function RightPanel() {
         </button>
       </div>
       <div className="panel-scroll">
-        {tab === 'details' && (selectedId ? <Inspector /> : <Summary />)}
+        {tab === 'details' && (selectedId ? <Inspector /> : <Summary compact={compact} />)}
         {tab === 'checks' && <ChecksPanel />}
         {tab === 'estimate' && <EstimatePanel />}
       </div>
