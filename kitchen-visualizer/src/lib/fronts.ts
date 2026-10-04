@@ -34,3 +34,42 @@ export function baseFronts(w: number, variant: string | undefined, opts: { false
   }
   return fronts;
 }
+
+/**
+ * Proportions of a fireclay apron-front (farmhouse) sink in a base `w` wide and `d` deep, in the
+ * item frame: x along the run, y up from the floor, z toward the room, door faces at z = d/2 + 0.75.
+ * Shared by the 3D model, the plan symbol and the elevation art so the three always agree.
+ */
+export function farmhouseSink(w: number, d: number) {
+  const bw = w - 3; // 33″ bowl in a 36″ base, 30″ in a 33″, 27″ in a 30″
+  const apronH = 10;
+  const rimY = 35.875; // 1/8″ below the 36″ counter top
+  const apronY0 = rimY - apronH;
+  const front = d / 2 + 0.75 + 0.375; // apron face 3/8″ proud of the door faces
+  const depth = Math.min(19.5, d - 4.5); // front to back, leaving the faucet a strip of counter
+  return {
+    bw,
+    apronH,
+    rimY,
+    apronY0,
+    front,
+    back: front - depth,
+    depth,
+    /** Doors stop short of the apron, leaving a shadow reveal under it. */
+    doorTop: apronY0 - 0.25,
+    /** Glaze wall thickness at the rim. */
+    wall: 0.75,
+    /** Plan radius of the apron's vertical corners. */
+    cornerR: 1,
+  };
+}
+
+export type FarmhouseSink = ReturnType<typeof farmhouseSink>;
+
+/** The pair of doors under a farmhouse apron. */
+export function farmhouseFronts(w: number, s: FarmhouseSink): FrontSpec[] {
+  const bottom = 4;
+  return baseFronts(w, 'door-drawer')
+    .filter((f) => f.y < 28)
+    .map((f) => ({ ...f, h: s.doorTop - bottom, pull: f.pull && { ...f.pull, y: s.doorTop - 3.8 } }));
+}
