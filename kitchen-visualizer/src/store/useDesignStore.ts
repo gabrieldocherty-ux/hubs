@@ -20,10 +20,12 @@ import {
   WALL_ROTATION,
   WALLS,
   wallLength,
+  type DragResult,
   type Resolved,
 } from '../lib/geometry';
 import { defaultFinishIndex } from '../lib/finish';
 import { makeId } from '../lib/id';
+import { qaExpose } from '../lib/qa';
 
 export interface Toast {
   id: number;
@@ -59,10 +61,34 @@ interface State {
   setRoom: (room: Partial<Room>) => void;
   setSurfaces: (s: Partial<Surfaces>) => void;
   applyStyle: (preset: StylePreset) => void;
-  addItem: (productId: string, at?: { x: number; y: number }) => void;
-  beginDrag: (id: string) => void;
-  dragTo: (id: string, x: number, y: number) => void;
-  endDrag: () => void;
+  /**
+   * Adds a product and selects it. With `at` (room inches, footprint centre) the
+   * piece is snapped there exactly like a drag; without it, it goes to the first
+   * free spot. Returns the new item's id, or null for an unknown product.
+   */
+  addItem: (productId: string, at?: { x: number; y: number }) => string | null;
+  /*
+   * Drag protocol shared by the 2D plan and the 3D view. Coordinates are ROOM
+   * INCHES of the item's FOOTPRINT CENTRE, i.e. the same numbers as PlacedItem.x/y:
+   * origin at the inside north-west corner, +x east (0..room.widthIn), +y south
+   * (0..room.lengthIn). In 3D world units (feet) that is worldX = x / 12,
+   * worldZ = y / 12 (+Y is up); see worldToRoom/roomToWorld in lib/interaction.
+   *
+   *   dragStart(id)        selects the item and opens a drag. Nothing is recorded yet.
+   *   dragMove(id, x, y)   snaps the proposed centre (walls, neighbours, room bounds)
+   *                        and moves the item live, without touching undo history.
+   *                        Returns where it actually landed, or null for an unknown id.
+   *                        Calling it without dragStart opens the drag implicitly.
+   *   dragEnd(id?)         closes the drag: ONE undo step if anything moved, none for
+   *                        a click that didn't. Returns true when a step was recorded.
+   *   dragCancel()         puts everything back where the drag started, no undo step.
+   *
+   * `dragging` is true between start and end (autosave waits for it to clear).
+   */
+  dragStart: (id: string) => boolean;
+  dragMove: (id: string, x: number, y: number) => DragResult | null;
+  dragEnd: (id?: string) => boolean;
+  dragCancel: () => void;
   moveTo: (id: string, x: number, y: number) => void;
   nudge: (id: string, dx: number, dy: number) => void;
   rotate: (id: string, dir: 1 | -1) => void;
@@ -194,10 +220,19 @@ function spiralFrom(cx: number, cy: number, rotation: Rotation, w: number, d: nu
 export const useDesignStore = create<State>()(
   persist(
     (set, get) => {
+      /** The document as it was when the current drag began; null when no drag is open. */
+      let dragOrigin: DesignDoc | null = null;
+
       const commit = (fn: (doc: DesignDoc) => DesignDoc, extra?: Partial<State>) => {
-        const { doc, past } = get();
+        const { doc } = get();
+        let { past } = get();
         const next = fn(doc);
         if (next === doc) return;
+        // An edit mid-drag (a rotate key, say) first banks the drag so far as its own step.
+        if (dragOrigin) {
+          if (dragOrigin !== doc) past = [...past, dragOrigin];
+          dragOrigin = next;
+        }
         set({ doc: next, past: [...past, doc].slice(-HISTORY_LIMIT), future: [], ...extra });
       };
 
@@ -272,7 +307,7 @@ export const useDesignStore = create<State>()(
 
         addItem: (productId, at) => {
           const product = getProduct(productId);
-          if (!product) return;
+          if (!product) return null;
           const { doc } = get();
           const id = makeId();
           let pos: { x: number; y: number; rotation: Rotation };
@@ -292,25 +327,48 @@ export const useDesignStore = create<State>()(
           };
           commit((d) => ({ ...d, items: [...d.items, item] }), { selectedId: id });
           get().setUI({ rightTab: 'details' });
+          return id;
         },
 
-        beginDrag: (id) => {
-          const { doc, past } = get();
-          set({ past: [...past, doc].slice(-HISTORY_LIMIT), future: [], dragging: true, selectedId: id });
+        dragStart: (id) => {
+          const { doc } = get();
+          if (!doc.items.some((i) => i.id === id)) return false;
+          // A second pointer joining an open drag keeps the original origin: still one step.
+          if (!dragOrigin) dragOrigin = doc;
+          set({ dragging: true, selectedId: id });
+          return true;
         },
 
-        dragTo: (id, x, y) => {
+        dragMove: (id, x, y) => {
+          if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
           const { doc } = get();
           const it = doc.items.find((i) => i.id === id);
           const product = it && getProduct(it.productId);
-          if (!it || !product) return;
+          if (!it || !product) return null;
+          if (!dragOrigin) get().dragStart(id);
           const others: Resolved[] = resolveAll(doc.items.filter((o) => o.id !== id));
           const snap = snapItem({ id, x, y, rotation: it.rotation }, product, itemWidth(it, product), doc.room, others);
-          if (snap.x === it.x && snap.y === it.y && snap.rotation === it.rotation) return;
-          set({ doc: updateItem(doc, id, (i) => ({ ...i, x: snap.x, y: snap.y, rotation: snap.rotation })) });
+          if (snap.x !== it.x || snap.y !== it.y || snap.rotation !== it.rotation) {
+            set({ doc: updateItem(get().doc, id, (i) => ({ ...i, x: snap.x, y: snap.y, rotation: snap.rotation })) });
+          }
+          return snap;
         },
 
-        endDrag: () => set({ dragging: false }),
+        dragEnd: () => {
+          const origin = dragOrigin;
+          dragOrigin = null;
+          const { doc, past } = get();
+          const moved = !!origin && origin !== doc;
+          if (moved) set({ past: [...past, origin].slice(-HISTORY_LIMIT), future: [], dragging: false });
+          else set({ dragging: false });
+          return moved;
+        },
+
+        dragCancel: () => {
+          const origin = dragOrigin;
+          dragOrigin = null;
+          set(origin ? { doc: origin, dragging: false } : { dragging: false });
+        },
 
         moveTo: (id, x, y) => commit((doc) => updateItem(doc, id, (i) => ({ ...i, x, y }))),
 
@@ -430,9 +488,14 @@ export const useDesignStore = create<State>()(
 
         importDoc: (incoming) => commit(() => sanitizeDoc(incoming), { selectedId: null }),
 
-        loadDoc: (doc) => set({ doc: sanitizeDoc(doc), past: [], future: [], selectedId: null, hoverId: null, dragging: false }),
+        loadDoc: (doc) => {
+          dragOrigin = null;
+          set({ doc: sanitizeDoc(doc), past: [], future: [], selectedId: null, hoverId: null, dragging: false });
+        },
 
         undo: () => {
+          // Undo mid-drag closes the drag first, so the step being undone includes it.
+          if (dragOrigin) get().dragEnd();
           const { past, doc, future } = get();
           if (!past.length) return;
           const prev = past[past.length - 1];
@@ -441,6 +504,7 @@ export const useDesignStore = create<State>()(
         },
 
         redo: () => {
+          if (dragOrigin) get().dragEnd();
           const { past, doc, future } = get();
           if (!future.length) return;
           const next = future[0];
@@ -477,6 +541,8 @@ export const useDesignStore = create<State>()(
     },
   ),
 );
+
+qaExpose({ store: useDesignStore });
 
 export function useSelected(): Resolved | null {
   const item = useDesignStore((s) => s.doc.items.find((i) => i.id === s.selectedId) ?? null);

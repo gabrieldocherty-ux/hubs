@@ -8,7 +8,7 @@ import { getProduct } from '../../data/catalog';
 import { feetInches } from '../../lib/format';
 import { registerExporter } from '../../lib/exporters';
 import { ACCENT, BAD, FONT_MONO, INK, OK, PAPER, WALL, WALL_T, WARN, patternFill } from './planStyle';
-import { PlanItem, isOverheadKind, type DragResult } from './PlanItem';
+import { PlanItem, isOverheadKind } from './PlanItem';
 import { SelectionDimensions, WallDimensions } from './Dimensions';
 
 interface View {
@@ -56,9 +56,9 @@ export function PlanView() {
   const hover = useDesignStore((s) => s.hover);
   const setUI = useDesignStore((s) => s.setUI);
   const addItem = useDesignStore((s) => s.addItem);
-  const beginDrag = useDesignStore((s) => s.beginDrag);
-  const dragTo = useDesignStore((s) => s.dragTo);
-  const endDrag = useDesignStore((s) => s.endDrag);
+  const dragStart = useDesignStore((s) => s.dragStart);
+  const dragMove = useDesignStore((s) => s.dragMove);
+  const dragEnd = useDesignStore((s) => s.dragEnd);
   const applyTemplate = useDesignStore((s) => s.applyTemplate);
   const all = useResolvedItems();
   const report = useReport();
@@ -130,14 +130,6 @@ export function PlanView() {
     addItem(productId, { x: pos.x, y: pos.y });
   };
 
-  const onItemDragMove = useCallback(
-    (id: string, x: number, y: number): DragResult | null => {
-      dragTo(id, x, y);
-      const it = useDesignStore.getState().doc.items.find((i) => i.id === id);
-      return it ? { x: it.x, y: it.y, rotation: it.rotation } : null;
-    },
-    [dragTo],
-  );
   const onItemSelect = useCallback(
     (id: string) => {
       select(id);
@@ -255,9 +247,9 @@ export function PlanView() {
                   surfaces={surfaces}
                   onSelect={onItemSelect}
                   onHover={hover}
-                  onDragStart={beginDrag}
-                  onDragMove={onItemDragMove}
-                  onDragEnd={endDrag}
+                  onDragStart={dragStart}
+                  onDragMove={dragMove}
+                  onDragEnd={dragEnd}
                 />
               ))}
 
@@ -296,9 +288,9 @@ export function PlanView() {
                   surfaces={surfaces}
                   onSelect={onItemSelect}
                   onHover={hover}
-                  onDragStart={beginDrag}
-                  onDragMove={onItemDragMove}
-                  onDragEnd={endDrag}
+                  onDragStart={dragStart}
+                  onDragMove={dragMove}
+                  onDragEnd={dragEnd}
                 />
               ))}
 

@@ -2,18 +2,14 @@ import { memo, useMemo, type ReactNode } from 'react';
 import { Circle, Ellipse, Group, Line, Rect, Shape, Text } from 'react-konva';
 import type Konva from 'konva';
 import type { PlacedItem, PlanStyle, Surfaces } from '../../types';
-import { resolve } from '../../lib/geometry';
+import { resolve, type DragResult } from '../../lib/geometry';
 import { resolveFinish, cabinetFinish } from '../../lib/finish';
 import { productCode } from '../../data/catalog';
 import { COUNTERTOPS, byId } from '../../data/finishes';
 import { hashString, luminance, mulberry32, shade } from '../../lib/color';
 import { ACCENT, BAD, FONT_MONO, INK, INK_SOFT, PAPER, WALL_T, patternFill } from './planStyle';
 
-export interface DragResult {
-  x: number;
-  y: number;
-  rotation: number;
-}
+export type { DragResult };
 
 interface Props {
   item: PlacedItem;
