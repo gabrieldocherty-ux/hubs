@@ -1862,7 +1862,9 @@ kbd {
     display: none;
   }
   .workspace {
-    grid-template-columns: 1fr;
+    /* minmax(0, …): a bare 1fr can't shrink below the widest row of catalog chips, which
+       made the whole workspace ~710px wide on a 390px phone and cut the room off. */
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 58vh auto auto;
     overflow-y: auto;
   }
