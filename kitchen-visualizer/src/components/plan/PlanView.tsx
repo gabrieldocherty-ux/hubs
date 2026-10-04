@@ -7,6 +7,7 @@ import { FLOORING, byId } from '../../data/finishes';
 import { getProduct } from '../../data/catalog';
 import { feetInches } from '../../lib/format';
 import { registerExporter } from '../../lib/exporters';
+import { planClientToRoom, registerDropTarget } from '../../lib/interaction';
 import { ACCENT, BAD, FONT_MONO, INK, OK, PAPER, WALL, WALL_T, WARN, patternFill } from './planStyle';
 import { PlanItem, isOverheadKind } from './PlanItem';
 import { SelectionDimensions, WallDimensions } from './Dimensions';
@@ -90,6 +91,17 @@ export function PlanView() {
   useEffect(() => {
     fit();
   }, [fit]);
+
+  // Lets the catalog (touch drag, tap-to-place) drop products here; see lib/interaction.
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    return registerDropTarget('plan', el, (cx, cy) => {
+      const st = stageRef.current;
+      if (!st) return null;
+      return planClientToRoom(cx, cy, st.container().getBoundingClientRect(), { x: st.x(), y: st.y(), scale: st.scaleX() });
+    });
+  }, []);
 
   const zoomAt = (factor: number, px: number, py: number) => {
     setView((v) => {
