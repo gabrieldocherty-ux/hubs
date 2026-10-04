@@ -934,4 +934,153 @@ Packages may add **package-local** types in their own directory but must not red
 
 ## 12. Open questions for Gabe
 
-See PRODUCT_SPEC §15. Every item there is a decision made on his behalf tonight.
+See PRODUCT_SPEC §15. Every item there is a decision made on his behalf tonight. The billing and contractor decisions are in PLANS_AND_CONTRACTORS §7.
+
+---
+
+## 13. Addendum (2026-10-04): billing (G) and contractors (H)
+
+Gabe added paid exports, plans and a Contractor program: [`PLANS_AND_CONTRACTORS.md`](./PLANS_AND_CONTRACTORS.md). **This addendum extends §2–§10.** Where it conflicts with them, the addendum wins. The shape becomes:
+
+```
+F foundation ──┬── A viewer · B brands · C orders · D generate · E share · G billing · H contractors
+               └──▶ I integration
+```
+
+### 13.1 Ownership additions (extends §2)
+
+| Path | Owner |
+|---|---|
+| `src/features/billing/**`, `server/routes/billing.mjs`, `server/billing/**`, `server/db/migrations/billing.mjs`, `server/seed/billing.mjs`, `server/test/billing.test.mjs`, `scripts/qa/routes/billing.mjs`, `docs/handoff/billing.md` | **G billing** |
+| `src/features/contractors/**`, `server/routes/contractors.mjs`, `server/contractors/**`, `server/db/migrations/contractors.mjs`, `server/seed/contractors.mjs`, `server/test/contractors.test.mjs`, `scripts/qa/routes/contractors.mjs`, `docs/handoff/contractors.md` | **H contractors** |
+| `src/data/plans.json` | **F** (frozen; prices and feature bullets, read by server and client) |
+
+### 13.2 Foundation additions (F must deliver these before A–H start)
+- **Schema:** add `'contractor'` to the `products.source` CHECK. Use a new appended step that rebuilds the CHECK safely; never edit an applied step. Add stub migration modules `billing` and `contractors` to `MIGRATION_MODULES` (after `share`), stub route modules to `ROUTE_MODULES`, stub seeds, stub tests (`test.todo`) and stub QA route files.
+- **`src/data/plans.json`:** `[{ id: 'free'|'kitchen_unlock'|'unlimited'|'contractor', name, priceCents, interval: null|'month', bullets: string[] }]` with prices 0 / 500 / 1500 / 4000. The server imports it with a JSON import attribute. `scripts/deploy-local.mjs` must copy it (generalise to every `src/data/*.json` the server imports).
+- **Services (extends §3.2):**
+  - `services.webhooks = { on(kind, handler), dispatch(event) }`, where `kind` is the Stripe `metadata.kind` (`order` | `kitchen_unlock` | `subscription`) or the event type for subscription and invoice events. The Stripe webhook route (package C) verifies and dedupes, then calls `dispatch`. C registers `order`; G registers the rest.
+  - `services.billing = { planOf(userId) → { id, status, periodEnd, cancelAtPeriodEnd }, canExport(userId, projectId) → boolean, register(impl) }`. The default implementation means **free, no exports**, so the paywall is safe by default; G registers the real one.
+  - `services.pricing = { applyForViewer(ownerUserId, products, { viewer }) → Product[], stripDoc(doc, { viewer, ownerUserId }) → doc, register(impl) }`. The default is passthrough for prices, but even the default **strips any `cost`/`margin` fields and `doc.extras[].cost`** for non-owners. H registers the contractor sell-price implementation. E's share route and every server-produced export must call it.
+  - `services.contractors = { brandingFor(userId) → PreparedBy | null, register(impl) }`. The default is null. H registers.
+- **Wire and types (extends §3.4, §3.8):**
+  - `SessionUser.plan: { id: 'free'|'unlimited'|'contractor', status, periodEnd?, cancelAtPeriodEnd? }`, filled from `services.billing.planOf`;
+  - `SharedKitchenWire.preparedBy?: { company, logoUrl?, phone?, email?, website? }` and `SharedKitchenWire.hideDuplicate?: boolean`;
+  - `DesignDoc.extras?: { id, label, amount, cost? }[]` (validated by `validDoc`);
+  - `src/types/platform.ts` gains `PlanId`, `Plan`, `Subscription`, `Entitlements`, `ExportKind`, `PreparedBy`, `PriceBookRow`, `ContractorProfile`.
+- **Router (extends §3.8):** add `{ name: 'billing' }` (`#/account/billing`), `{ name: 'pro'; rest: string }` (`#/pro`, `#/pro/<rest…>`), and `{ name: 'payDemoPlan'; ref: string }` (`#/pay/demo-plan/:ref`). Add `AdminTab` `'billing'`.
+- **Feature surfaces (extends §3.8):**
+  ```ts
+  // billing
+  export const BillingPage: Lazy<{}>; export const DemoPlanPay: Lazy<{ ref: string }>; export const AdminBillingTab: Lazy<{}>;
+  export function useEntitlements(projectId: string | null): { loading: boolean; canExport: boolean; watermark: boolean; plan: PlanId };
+  export function requestExport(projectId: string | null, kind: ExportKind, run: () => Promise<void> | void): Promise<void>; // opens the Unlock dialog when not entitled
+  // ExportKind = 'plan_png' | 'scene_png' | 'csv' | 'json' | 'render' | 'quote'
+  // contractors
+  export const ContractorRoot: Lazy<{ rest: string }>;
+  export function usePriceBook(): { ready: boolean; isContractor: boolean; priceOf(product: Product, widthIn: number): { sell: number; cost?: number } };
+  export function ClientViewToggle(): JSX.Element | null;  // RightPanel estimate slot; null for non-contractors
+  ```
+  The F stubs are: `useEntitlements` → `{ loading:false, canExport:true, watermark:false, plan:'free' }` (so F/A QA can export before G lands; G makes it real); `requestExport` → just calls `run()`; `usePriceBook` → list prices, `isContractor:false`; `ClientViewToggle` → null.
+- **Client wiring (F):**
+  - every Export menu item, and the JSON export, goes through `requestExport(projectId, kind, run)`;
+  - `estimate(doc, { priceOf })` accepts an optional price resolver, and the RightPanel estimate shows cost, markup and margin columns only when `priceOf` returns `cost` **and** the `ClientViewToggle` is on Contractor view;
+  - `doc.extras` lines are listed and totalled;
+  - `AccountMenu` gains *Billing* and *Contractor workspace* (plan `contractor`) or *For contractors*;
+  - `App` gating adds `billing`, `pro`, `payDemoPlan` (account routes) and `admin/billing`.
+
+### 13.3 Changes to existing packages
+- **A viewer:** the studio render reads `useEntitlements(projectId)`. When `watermark` is true, the on-screen preview is watermarked (a repeated diagonal "Mise · Preview" at low opacity plus a corner badge), and *Download* goes through `requestExport(projectId, 'render', …)`. QA: a free user sees the watermark; an entitled user's download has none.
+- **C orders:**
+  - the brief accepts `target: 'contractor'`; deliverables become `source:'contractor'`, `visibility:'private'`, owned by the buyer, landing in their My catalog;
+  - **multi-item requests:** `items[]` (≤ 20) of the same line, each priced per item from `tiers.mjs`, with one checkout, studio delivery per item, and order status `delivered` when all items are delivered;
+  - the Stripe webhook route verifies, dedupes and calls `services.webhooks.dispatch`; C handles only `metadata.kind === 'order'`;
+  - `AdminRevenueTab` stays orders-only; G owns subscription revenue.
+- **E share:**
+  - the pricing page renders the 4 plans from `src/data/plans.json`, with the Contractor pitch line ("Show your customers the exact cabinets you sell, in their kitchen, at your price."), plus custom-model tiers and an FAQ (add "Why are exports paid?", "What does the $5 unlock cover?" and "Can I cancel?");
+  - `GET /api/share/:token` passes products and the doc through `services.pricing` (viewer `null`) and includes `preparedBy` / `hideDuplicate` from `services.contractors`;
+  - `SharedKitchen` renders the "Prepared by" header and a Contact button when present, and hides Duplicate when `hideDuplicate`;
+  - a test proves no `cost`/`margin`/`extras[].cost` appears in the share wire for a contractor-owned kitchen (deep scan, using a registered fake pricing impl).
+
+## 14. Package G: billing
+
+**Goal:** PLANS_AND_CONTRACTORS §1–§3 and §5: the export paywall, the $5 kitchen unlock, the $15 and $40 subscriptions, the studio-render watermark entitlement, Account → Billing, and Admin → Billing.
+
+**Owned paths:** §13.1. **Port:** 8818.
+
+**Tasks**
+- **G-T1 Migration `billing-001`:**
+  - `subscriptions(id, user_id UNIQUE → users, plan CHECK('unlimited','contractor'), status CHECK('active','past_due','canceled','incomplete'), provider, customer_ref, subscription_ref UNIQUE, current_period_end, cancel_at_period_end INT, grace_until, created_at, updated_at)`;
+  - `kitchen_unlocks(project_id PK → projects CASCADE, user_id, provider, payment_ref UNIQUE, amount_cents, created_at)`;
+  - `billing_checkouts(ref PK, user_id, kind CHECK('kitchen_unlock','subscription'), project_id NULL, plan NULL, status, provider, provider_ref NULL, created_at, completed_at NULL)`;
+  - `export_events(id, project_id, user_id, kind, created_at)`.
+- **G-T2 Server (`server/billing/**`, `routes/billing.mjs`):**
+  - `GET /api/billing/plans`;
+  - `GET /api/billing/me` (plan, unlocks, receipts);
+  - `POST /api/billing/checkout {kind:'kitchen_unlock', projectId} | {kind:'subscription', plan}` → `{url}` (Stripe `mode=payment` or `mode=subscription` via `ctx.fetch`, with `metadata.kind` and refs; demo → `#/pay/demo-plan/:ref`);
+  - `POST /api/billing/demo/:ref/complete {outcome}` (refused unless `demoPaymentsAllowed`);
+  - `POST /api/billing/portal` (Stripe billing portal session; demo → `#/account/billing?demo=1`);
+  - `POST /api/billing/change {plan}`, `POST /api/billing/cancel`, `POST /api/billing/resume`;
+  - `POST /api/projects/:id/exports {kind}` → 403 `{error, needs:'unlock'}` unless entitled; otherwise it records the event, returns `{ok:true}` for image kinds, and **returns the file content for `csv` and `json`** (generated on the server from the saved doc, the catalog and `services.pricing`);
+  - `GET /api/admin/billing` (admin: active by plan, MRR, unlocks, churn; demo vs Stripe);
+  - register `services.billing` (`planOf` with grace handling, `canExport`) and the webhook handlers (`kitchen_unlock` checkout completed → unlock; subscription created/updated/deleted; invoice paid → extend; invoice failed → `past_due` + `grace_until` = +7 days; after grace → free). Every handler is idempotent.
+- **G-T3 Client (`src/features/billing/**`):**
+  - the real `useEntitlements` and `requestExport` (the Unlock dialog per PLANS §2, the account-creation step for `#/local` drafts, resume intent through sessionStorage plus the return URL, auto-run of the pending export on return, the toast);
+  - the CSV/JSON exports download the server-produced content;
+  - `BillingPage`, `DemoPlanPay` (DEMO banner, Simulate success / decline / renewal / cancel, no card fields) and `AdminBillingTab`.
+- **G-T4 Tests:**
+  - free user → 403 on every export kind;
+  - a $5 unlock (demo) → that kitchen exports, another kitchen doesn't, and its duplicate doesn't;
+  - unlimited → all of their own kitchens export, but not someone else's;
+  - cancel → still entitled until period end, then not;
+  - `past_due` → entitled through grace, then not;
+  - webhook idempotency (same event twice → one unlock);
+  - Stripe requests built correctly with a mocked fetch (mode, metadata, success/cancel URLs, idempotency key, server-side prices only);
+  - a client-sent price is ignored;
+  - the demo route is refused in production without `DEMO_PAYMENTS`;
+  - the server-generated CSV/JSON match what the client used to produce (golden).
+- **G-T5 QA routes:** a free user clicks Export → Unlock dialog; demo-unlock → the export auto-runs; `#/account/billing` for free, unlimited and contractor; the watermark visible for free and absent after unlock; `#/pay/demo-plan/:ref` (DEMO banner); `#/admin/billing`.
+
+**Acceptance (G):** typecheck, `npm test`, build to `.build/billing`, and `qa --pkg billing --port 8818` all pass with zero console errors and no external requests. No screen renders card fields. Every export path is refused server-side for non-entitled users.
+
+## 15. Package H: contractors
+
+**Goal:** PLANS_AND_CONTRACTORS §4: the Contractor workspace, private catalog (quick add, GLB upload, request modelling), brands carried, price book with cost and markup and CSV import/export, contractor/client estimate views, extra lines, branded shares, quotes and presentation mode, and the lapsed read-only state.
+
+**Owned paths:** §13.1. **Port:** 8819.
+
+**Tasks**
+- **H-T1 Migration `contractors-001`:** `contractor_profiles(user_id PK, company, logo_file_id, phone, email, website, service_area, default_markup_pct, tax_pct, created_at, updated_at)`, `carried_brands(user_id, brand_key /* brand id or 'builtin' */, enabled, pct_off_list NULL, markup_pct NULL, PK(user_id, brand_key))`, `price_book(user_id, product_id, cost_cents NULL, cost_by_width JSON NULL, markup_pct NULL, PK(user_id, product_id))`.
+- **H-T2 Server (`server/contractors/**`, `routes/contractors.mjs`).** Every route requires plan `contractor` via `services.billing.planOf`; lapsed means GET only.
+  - Profile CRUD (logo through the files API).
+  - Contractor products: create (quick add without a model, or with a `modelFileId` from the files API; validated by `services.products.validateSpec`; `source:'contractor'`, private, live on save since it needs no moderation), list, update, archive.
+  - Carried brands.
+  - Price book: get the merged rows (own + carried public + built-ins); PATCH a row; per-brand defaults.
+  - CSV import with preview (`POST …/price-book/import?dryRun=1`, then apply) and CSV export.
+  - Quote data: `GET /api/pro/quotes/:projectId` (owner only).
+  - Register `services.pricing` (sell = cost × (1+markup), with defaults, overrides and per-width; no cost → list price, flagged; strip cost/margin for non-owners) and `services.contractors.brandingFor` (`hideDuplicate: true` for contractor-owned shares).
+- **H-T3 Client (`src/features/contractors/**`, `#/pro/<rest>`):**
+  - setup wizard (PLANS §4.1);
+  - Dashboard;
+  - My catalog: quick-add form with the product type picker from `PRODUCT_TYPES`, widths, door style, finishes and photos; GLB upload with the validation report and a `ProductStage` preview; "Have Mise model it" → `#/orders/new?target=contractor`;
+  - Brands I carry;
+  - Price book: an editable table with CSV import preview and export;
+  - Quotes list plus the printable quote page `#/pro/quote/:projectId` (print CSS; printing goes through `requestExport(projectId, 'quote', () => window.print())`);
+  - Company;
+  - Presentation mode;
+  - the real `usePriceBook` and `ClientViewToggle`;
+  - the read-only lapsed banner.
+
+  The catalog panel ordering ("My catalog first, then brands carried") is applied through a `usePriceBook`-adjacent `useContractorCatalog()` hook exported from the feature index. Request the CatalogPanel hook-up through the handoff note if F's panel doesn't call it.
+- **H-T4 Tests:**
+  - non-contractor → 403 on every `/api/pro` route; lapsed → GET only;
+  - contractor products are invisible to other users and in `/api/catalog` for others;
+  - price math (defaults, per-brand, per-product, per-width, no-cost fallback);
+  - CSV import (matched / new / unmatched; bad rows reported; no partial apply on error);
+  - **costs never leave:** a deep scan of the share wire, the catalog for other users, and server-generated exports for a contractor-owned kitchen;
+  - a quote requires ownership.
+- **H-T5 QA routes:** `#/pro` setup wizard; My catalog quick-add → the product appears in the editor's catalog panel first and renders in plan and 3D; the price book with a CSV import preview; the estimate Contractor/Client toggle; the quote page (screenshot, print layout); a contractor share link (anon) showing "Prepared by …", sell prices and no cost text anywhere in the DOM; lapsed read-only.
+
+**Acceptance (H):** typecheck, `npm test`, build to `.build/contractors`, and `qa --pkg contractors --port 8819` all pass with zero console errors and no external requests. Cost data never appears in any non-owner response or DOM (tests and QA prove it).
+
+**Ports:** G uses 8818 and H uses 8819, and the integration pass moves to 8827 (8828–8829 spare). The `.qa/` output for G and H goes in `.qa/billing` and `.qa/contractors`.

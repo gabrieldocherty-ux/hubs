@@ -22,7 +22,7 @@ There are three audiences, and each has its own entry point:
 | **Brands** (any user with a brand membership) | Self-serve portal, product uploads (GLB + images + finishes + dimensions + price + SKU + buy link), moderation, brand page, analytics | Free during beta. Paid listing plans are planned but not built (§15 Q2) |
 | **Mise staff** (roles `studio`, `admin`) | Moderation queue, custom-model studio queue, orders, revenue overview | n/a |
 
-**Business model (decision):** homeowners use Mise free, brands are the customers, and custom models are a paid service. This is how the kitchen sector already works: IKEA's planner is free and drives product sales [K1]; Roomvo is paid for by manufacturers and gives them view and save analytics [K6]; Marxent and 2020 build or syndicate manufacturer catalogs [K4][K5]. Drafted plans to charge homeowners about $1–2k per plan set [D3], but no kitchen tool charges homeowners that way, so we don't copy that part [R-money].
+**Business model — superseded 2026-10-04 by [PLANS_AND_CONTRACTORS.md](./PLANS_AND_CONTRACTORS.md):** designing is free, but exports are paid ($5 per kitchen, once), with an Unlimited plan ($15/month) and a Contractor program ($40/month). The original decision read: homeowners use Mise free, brands are the customers, and custom models are a paid service. This is how the kitchen sector already works: IKEA's planner is free and drives product sales [K1]; Roomvo is paid for by manufacturers and gives them view and save analytics [K6]; Marxent and 2020 build or syndicate manufacturer catalogs [K4][K5]. Drafted plans to charge homeowners about $1–2k per plan set [D3], but no kitchen tool charges homeowners that way, so we don't copy that part [R-money].
 
 **What "clone Drafted" means here (decision):** we copy Drafted's **UX patterns**: structured inputs, several generated options, regenerating with some choices locked, live 2D↔3D, and share links with permissions [D1][D2]. We do **not** copy its name, brand, copy, visuals or assets.
 
@@ -85,7 +85,7 @@ Mise keeps hash routing. Query strings are now supported inside the hash, and `l
 ### 5.1 Landing and pricing (package: share)
 
 - **Landing** (signed-out `#/` and `#/welcome`): a hero image that is a real Mise render made by the QA script, not stock art; "How it works" in five steps (Describe → Pick from 5 options → Edit in 2D/3D → See the real products → Share); a section for brands; a section for custom models; calls to action (*Describe your kitchen* → `#/generate`, *Start free* → signup, *Try without an account* → `#/local`). The footer carries the visualizer disclaimer (§12).
-- **Pricing:** homeowners are free. Brands are free during beta, up to `BRAND_PRODUCT_LIMIT` published products (default 50); the planned per-product-count tiers are labelled *Planned*, an idea taken from Zakeke's product-count tiers [K7]. Custom-model tiers are read live from `GET /api/orders/tiers`. An FAQ covers demo payments, file formats, turnaround and revisions.
+- **Pricing (superseded, see PLANS_AND_CONTRACTORS §1 and BUILD_PLAN §13.3):** the four plans from `src/data/plans.json` come first. The original copy read: homeowners are free. Brands are free during beta, up to `BRAND_PRODUCT_LIMIT` published products (default 50); the planned per-product-count tiers are labelled *Planned*, an idea taken from Zakeke's product-count tiers [K7]. Custom-model tiers are read live from `GET /api/orders/tiers`. An FAQ covers demo payments, file formats, turnaround and revisions.
 
 ### 5.2 Describe your kitchen: generated layout options (package: generate)
 
@@ -528,7 +528,7 @@ These are new SQLite tables, created through a real migration runner. Today ther
 ## 15. Decisions made for Gabe (please overrule in the morning)
 
 1. **Name:** kept "Mise". Drafted is the UX reference only.
-2. **Money:** free for homeowners; brands free during beta (cap of 50 products); brand plans not built.
+2. **Money (superseded by Gabe, 2026-10-04 — see PLANS_AND_CONTRACTORS.md):** free for homeowners; brands free during beta (cap of 50 products); brand plans not built.
 3. **Custom-model prices:** $129 / $279 / $549, +$39 per extra finish, rush +50%, 2 revisions. These are placeholders.
 4. **Fulfilment:** Mise staff (role `studio`) for now, not a modeller marketplace (that would need Stripe Connect).
 5. **Payments:** Stripe test mode only once keys are set; DEMO otherwise. Going live needs your business entity, tax set-up and terms.
