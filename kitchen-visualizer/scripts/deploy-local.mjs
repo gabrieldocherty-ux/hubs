@@ -3,11 +3,13 @@
 //
 //   npm run deploy:local        # build, copy to %USERPROFILE%\Projects\Mise, restart
 //
-// Env: MISE_HOME (target folder), MISE_PORT (8790), MISE_HOST (127.0.0.1).
+// Env: MISE_HOME (target folder), MISE_PORT (8790), MISE_HOST (127.0.0.1),
+//      MISE_DEMO_PAYMENTS (1; set 0 to refuse the DEMO checkout on this server).
 //
 // Layout of MISE_HOME:
-//   app\            replaced on every deploy (dist\, server\ code, src\data\kinds.json)
+//   app\            replaced on every deploy (dist\, server\ code, src\data\*.json)
 //   data\mise.db    the database: kept across deploys
+//   data\backups\   a copy of the database from before each deploy (the last 5)
 //   data\uploads\   uploaded models and images: kept across deploys
 //   logs\           server.log
 //   run-server.cmd  supervisor loop: restarts the server if it exits
@@ -75,6 +77,12 @@ const copyTree = (from, to, skip = () => false) =>
 // ─── Supervisor scripts (regenerated each deploy so they track this file) ──
 
 const NODE = process.execPath;
+// The home server runs --prod, which refuses the DEMO checkout unless DEMO_PAYMENTS=1. With no
+// Stripe keys that would leave every export locked with no way to pay, so the home server allows
+// the (clearly labelled, moneyless) demo by default. It never replaces real payments: once both
+// Stripe keys are set the server uses Stripe and refuses demo payments regardless. Before taking
+// real customers here, set MISE_DEMO_PAYMENTS=0 and redeploy.
+const DEMO_PAYMENTS = process.env.MISE_DEMO_PAYMENTS === '0' ? '0' : '1';
 const SCRIPTS = {
   'run-server.cmd': `@echo off
 rem Mise home server supervisor. Runs the server and restarts it if it exits.
@@ -85,6 +93,7 @@ cd /d "%~dp0"
 set PORT=${PORT}
 set HOST=${HOST}
 set DB_PATH=%~dp0data\\mise.db
+set DEMO_PAYMENTS=${DEMO_PAYMENTS}
 if not exist logs mkdir logs
 :loop
 if exist stopped exit /b 0
@@ -132,6 +141,18 @@ try {
   else if (portTaken()) {
     console.error(`Port ${PORT} is in use by something other than this Mise install. Set MISE_PORT to a free port.`);
     process.exit(1);
+  }
+
+  // Back up the database before new code (and its migrations) opens it. The server is stopped and
+  // the supervisor waits while DEPLOYING exists, so the copy (with its WAL files) is consistent.
+  const db = path.join(HOME, 'data', 'mise.db');
+  if (fs.existsSync(db)) {
+    const backups = path.join(HOME, 'data', 'backups');
+    const dir = path.join(backups, new Date().toISOString().replace(/[:.]/g, '-'));
+    fs.mkdirSync(dir, { recursive: true });
+    for (const ext of ['', '-wal', '-shm']) if (fs.existsSync(db + ext)) fs.copyFileSync(db + ext, path.join(dir, `mise.db${ext}`));
+    for (const old of fs.readdirSync(backups).sort().slice(0, -5)) fs.rmSync(path.join(backups, old), { recursive: true, force: true });
+    console.log(`Backed up the database to ${dir}`);
   }
 
   const staging = APP + '.new';

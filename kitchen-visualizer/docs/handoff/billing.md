@@ -50,6 +50,12 @@ plan: `docs/BUILD_PLAN.md` §13.2 and §14.
    has demo-only buttons for renewal, failed renewal, ending the period and ending grace.
 7. `vite.config.ts` proxied `/api` to **8787** (bug #8, an F task not yet done); it now uses
    `MISE_API_PORT ?? 8790` and also proxies `/files`.
+8. **The home server (`npm run deploy:local`) allows DEMO payments by default**: `run-server.cmd`
+   sets `DEMO_PAYMENTS=1`. It runs `--prod`, so without Stripe keys every export would otherwise
+   stay locked with no way to unlock it. Stripe still takes over once both keys are set. Set
+   `MISE_DEMO_PAYMENTS=0` and redeploy before real customers use it. Each deploy also copies
+   `data\mise.db` (with its WAL files) to `data\backups\<time>\` before the new migrations run, and
+   keeps the last 5.
 
 ## For the other packages
 
