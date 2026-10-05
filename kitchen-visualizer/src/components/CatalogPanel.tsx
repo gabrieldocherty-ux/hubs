@@ -11,6 +11,7 @@ import { Info, Plus, Search } from './Icons';
 import { money } from '../lib/format';
 import { finishList } from '../lib/finish';
 import { hrefFor } from '../lib/router';
+import { useContractorCatalog, useKitchenPriceOf } from '../features/contractors';
 
 const ALL = 'all';
 
@@ -208,7 +209,9 @@ export function CatalogPanel() {
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<CategoryId | typeof ALL>(ALL);
   const [brand, setBrand] = useState<string>(ALL);
-  const products = useCatalog((s) => s.products);
+  // A contractor sees their own catalog first and only the brands they carry (§4.3).
+  const products = useContractorCatalog(useCatalog((s) => s.products));
+  const priceOf = useKitchenPriceOf();
   const surfaces = useDesignStore((s) => s.doc.surfaces);
   const addItem = useDesignStore((s) => s.addItem);
   const toast = useDesignStore((s) => s.toast);
@@ -236,16 +239,22 @@ export function CatalogPanel() {
     return inCategory.filter(
       (p) =>
         (activeBrand === ALL || p.brand === activeBrand) &&
-        (!q || `${p.name} ${p.brand} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb}`.toLowerCase().includes(q)),
+        (!q || `${p.name} ${p.brand} ${p.line ?? ''} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb}`.toLowerCase().includes(q)),
     );
   }, [inCategory, activeBrand, query]);
 
   const grouped = useMemo(() => {
     if (cat !== ALL || query || activeBrand !== ALL) return [{ id: 'results', label: '', items: results }];
+    // A contractor's own products come first, one group per line ("Smith Shaker: 14 pieces").
+    const own = results.filter((p) => p.source === 'contractor');
+    const lines = new Map<string, Product[]>();
+    for (const p of own) lines.set(p.line || 'My catalog', [...(lines.get(p.line || 'My catalog') ?? []), p]);
+    const mine = [...lines].map(([line, items]) => ({ id: `line:${line}`, label: `${line === 'My catalog' ? line : `My catalog · ${line}`}: ${items.length} piece${items.length === 1 ? '' : 's'}`, items }));
+    const rest = results.filter((p) => p.source !== 'contractor');
     const known = new Set<string>(CATEGORIES.map((c) => c.id));
-    const groups = CATEGORIES.map((c) => ({ id: c.id as string, label: c.label, items: results.filter((p) => p.category === c.id) }));
-    const other = results.filter((p) => !known.has(p.category));
-    return other.length ? [...groups, { id: 'other', label: 'Other', items: other }] : groups;
+    const groups = CATEGORIES.map((c) => ({ id: c.id as string, label: c.label, items: rest.filter((p) => p.category === c.id) }));
+    const other = rest.filter((p) => !known.has(p.category));
+    return [...mine, ...groups, ...(other.length ? [{ id: 'other', label: 'Other', items: other }] : [])];
   }, [results, cat, query, activeBrand]);
 
   const pick = (p: Product) => {
@@ -308,8 +317,10 @@ export function CatalogPanel() {
               <div className="catalog-grid">
                 {g.items.map((p) => {
                   const finishes = finishList(p);
-                  const from = p.widthOptions?.length ? Math.min(...p.widthOptions.map((w) => priceFor(p, w))) : p.price;
+                  const at = (w: number) => (priceOf ? priceOf(p, w).sell : priceFor(p, w));
+                  const from = p.widthOptions?.length ? Math.min(...p.widthOptions.map(at)) : at(p.widthIn);
                   const custom = p.source === 'custom';
+                  const mine = p.source === 'contractor';
                   return (
                     <div key={p.id} className="product-card-wrap">
                       <button
@@ -324,10 +335,11 @@ export function CatalogPanel() {
                         <span className="product-art">
                           <ProductArt product={p} surfaces={surfaces} />
                           <span className="product-add"><Plus width={12} height={12} /></span>
-                          {(p.model || custom) && (
+                          {(p.model || custom || mine) && (
                             <span className="product-badges">
                               {p.model && <span className="product-badge">3D model</span>}
                               {custom && <span className="product-badge mine">Your model</span>}
+                              {mine && <span className="product-badge mine">My catalog</span>}
                             </span>
                           )}
                         </span>

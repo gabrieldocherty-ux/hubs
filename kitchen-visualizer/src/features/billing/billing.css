@@ -1,0 +1,362 @@
+/* Package G (billing): the Unlock dialog, Billing page, DEMO checkout and Admin → Billing. */
+
+/* ─── Unlock dialog ─────────────────────────────────────── */
+
+.unlock .unlock-lede {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 14px;
+  color: var(--ink-2);
+}
+
+.unlock-cards,
+.billing-plans {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.plan-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.plan-option--featured {
+  border-color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.plan-option h4 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.plan-price b {
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.plan-price span,
+.plan-note {
+  color: var(--ink-2);
+}
+
+.plan-note {
+  margin: 0;
+}
+
+.plan-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+}
+
+.plan-bullets li {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  font-size: 12.5px;
+}
+
+.plan-bullets svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--ok);
+}
+
+.plan-option .btn {
+  margin-top: auto;
+}
+
+.unlock-contractor {
+  display: inline-block;
+  margin-top: 14px;
+  font-weight: 600;
+  color: var(--accent-2);
+  text-underline-offset: 3px;
+}
+
+.unlock-save p,
+.unlock-account > p {
+  margin: 4px 0 16px;
+  color: var(--ink-2);
+}
+
+.unlock-error {
+  margin-top: 12px;
+}
+
+.demo-banner {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--warn-soft);
+  color: #7a5212;
+  font-size: 12.5px;
+}
+
+.demo-banner b,
+.demo-pay-banner b {
+  letter-spacing: 0.08em;
+}
+
+/* ─── DEMO checkout ─────────────────────────────────────── */
+
+.demo-pay {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.demo-pay-banner {
+  padding: 10px 20px;
+  background: #f5c542;
+  color: #3b2c06;
+  font-weight: 600;
+  text-align: center;
+}
+
+.demo-pay-main {
+  display: grid;
+  place-items: start center;
+  padding: 48px 16px;
+}
+
+.demo-pay-card {
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.demo-pay-card h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.demo-pay-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demo-pay-amount b {
+  font-family: var(--display);
+  font-size: 40px;
+  font-weight: 500;
+}
+
+.demo-pay-amount span {
+  color: var(--ink-2);
+}
+
+.demo-pay-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ─── Billing page ──────────────────────────────────────── */
+
+.billing {
+  min-height: 100%;
+}
+
+.billing-main {
+  max-width: 920px;
+}
+
+.billing-main section + section {
+  margin-top: 16px;
+}
+
+.demo-chip,
+.demo-tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: #7a5212;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.demo-tag {
+  margin-left: 8px;
+  padding: 1px 7px;
+}
+
+.billing-error {
+  margin-bottom: 16px;
+}
+
+.billing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.billing-current {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.billing-current h2 {
+  margin: 2px 0 4px;
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+}
+
+.billing-status {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--ink-2);
+}
+
+.billing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.billing-h2 {
+  margin: 26px 0 12px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.billing-plans + .fine {
+  margin-top: 12px;
+}
+
+.demo-controls {
+  border-style: dashed;
+  border-color: #d9b45b;
+  background: #fffaf0;
+}
+
+.demo-controls p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.billing-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.billing-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.billing-list a {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.billing-receipts .num {
+  text-align: right;
+}
+
+/* ─── Admin → Billing ───────────────────────────────────── */
+
+.admin-billing h1 {
+  margin: 0 0 4px;
+  font-family: var(--display);
+}
+
+.admin-billing > p {
+  margin: 0 0 16px;
+}
+
+.admin-billing-provider + .admin-billing-provider {
+  margin-top: 14px;
+}
+
+.admin-billing-provider.is-demo {
+  border-style: dashed;
+}
+
+.admin-billing-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.admin-billing-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--paper);
+}
+
+.admin-billing-tile span {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.admin-billing-tile b {
+  font-size: 18px;
+}
+
+@media (max-width: 640px) {
+  .unlock-cards,
+  .billing-plans {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .billing-current {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

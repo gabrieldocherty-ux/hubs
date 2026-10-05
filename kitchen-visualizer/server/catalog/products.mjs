@@ -1,5 +1,6 @@
-// Brand and custom products (ctx.services.products): spec validation, the working copy
-// vs the live copy the catalog serves, and the client wire shape. See BUILD_PLAN §3.3–3.4.
+// Brand, custom and contractor products (ctx.services.products): spec validation, the
+// working copy vs the live copy the catalog serves, and the client wire shape. See
+// BUILD_PLAN §3.3–3.4 and §13.2 (contractor products are private to their owner).
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -7,7 +8,12 @@ import { randomId, FILE_ID_RE, PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { KIND_SET, CATEGORY_SET, MATERIAL_SET, VARIANTS } from './kinds.mjs';
 
 export const STATUSES = ['draft', 'submitted', 'published', 'rejected', 'archived'];
-const SKU_RE = /^[A-Za-z0-9._\-/ ]{0,40}$/;
+export const SOURCES = ['brand', 'custom', 'contractor'];
+/** The door styles a cabinet line can declare (the kitchen-wide style still draws the doors). */
+export const DOOR_STYLES = ['shaker', 'slab', 'fluted'];
+/** Letters, digits, spaces and . _ - /, plus `{w}`, which the client fills with the width ("SSB{w}" → "SSB24"). */
+const SKU_RE = /^(?:[A-Za-z0-9._\-/ ]|\{w\})*$/;
+const skuOk = (s) => s.length <= 40 && SKU_RE.test(s);
 const FINISH_ID_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const VARIANT_RE = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
@@ -70,9 +76,22 @@ export function validateSpec(input, { partial = false } = {}) {
   } else if (!partial) out.blurb = '';
   if (has('sku')) {
     const s = input.sku === null ? '' : typeof input.sku === 'string' ? input.sku.trim() : null;
-    if (s === null || !SKU_RE.test(s)) err('sku', 'Use up to 40 letters, digits, spaces and . _ - /');
+    if (s === null || !skuOk(s)) err('sku', 'Use up to 40 letters, digits, spaces and . _ - / ({w} stands for the width).');
     else out.sku = s;
   } else if (!partial) out.sku = '';
+  if (has('line')) {
+    // A product line or collection ("Smith Shaker"), used to group a contractor's catalog.
+    const s = input.line === null ? '' : typeof input.line === 'string' ? input.line.trim() : null;
+    if (s === null || s.length > 60) err('line', 'Keep the line name to 60 characters or fewer.');
+    else if (s) out.line = s;
+    else if (partial) out.line = null;
+  }
+  if (has('doorStyle')) {
+    if (cleared('doorStyle')) {
+      if (partial) out.doorStyle = null;
+    } else if (!DOOR_STYLES.includes(input.doorStyle)) err('doorStyle', 'Door style is shaker, slab or fluted.');
+    else out.doorStyle = input.doorStyle;
+  }
 
   const widthMap = (field, check, message) => {
     if (!has(field)) return;
@@ -92,7 +111,7 @@ export function validateSpec(input, { partial = false } = {}) {
     }
     out[field] = m;
   };
-  widthMap('skuByWidth', (v) => (typeof v === 'string' && v.trim() && SKU_RE.test(v.trim()) ? v.trim() : undefined), 'Each width needs a valid SKU.');
+  widthMap('skuByWidth', (v) => (typeof v === 'string' && v.trim() && skuOk(v.trim()) && !v.includes('{w}') ? v.trim() : undefined), 'Each width needs a valid SKU.');
 
   const dims = [
     ['widthIn', 1, 240, 'Width'],
@@ -201,7 +220,12 @@ export function fileIdsOf(spec) {
 
 const invalid = (errors) => new HttpError(400, 'Some product details need fixing.', { errors });
 
-export function createProductService({ db, now = Date.now, files, brands }) {
+/**
+ * @param {{ db: any, now?: () => number, files: any, brands: any,
+ *   ownerLabel?: (userId: string) => string | null }} deps
+ *   `ownerLabel` names a contractor's own products (their company), via services.contractors.
+ */
+export function createProductService({ db, now = Date.now, files, brands, ownerLabel = () => null }) {
   const parse = (s) => {
     if (s == null) return null;
     try {
@@ -253,8 +277,10 @@ export function createProductService({ db, now = Date.now, files, brands }) {
      * checked access and file ownership. Returns the ProductRow.
      */
     create({ source, brandId = null, ownerUserId = null, visibility = 'public', spec, status = 'draft' }) {
-      if (source !== 'brand' && source !== 'custom') throw new Error('products.create: source must be brand or custom');
+      if (!SOURCES.includes(source)) throw new Error('products.create: source must be brand, custom or contractor');
       if (source === 'brand' && !brandId) throw new Error('products.create: a brand product needs brandId');
+      // A contractor's catalog is theirs alone: never public, never another brand's.
+      if (source === 'contractor' && (!ownerUserId || brandId || visibility !== 'private')) throw new Error('products.create: a contractor product is private to its owner');
       if (!STATUSES.includes(status)) throw new Error(`products.create: bad status ${status}`);
       if (visibility !== 'public' && visibility !== 'private') throw new Error('products.create: bad visibility');
       const s = fullSpec(spec);
@@ -353,7 +379,15 @@ export function createProductService({ db, now = Date.now, files, brands }) {
         kind: spec.kind,
         ...(spec.variant ? { variant: spec.variant } : {}),
         category: spec.category,
-        brand: brand ? brand.name : row.source === 'custom' ? 'Your model' : 'Unknown brand',
+        brand: brand
+          ? brand.name
+          : row.source === 'custom'
+            ? 'Your model'
+            : row.source === 'contractor'
+              ? ownerLabel(row.ownerUserId) || 'My catalog'
+              : 'Unknown brand',
+        ...(spec.line ? { line: spec.line } : {}),
+        ...(spec.doorStyle ? { doorStyle: spec.doorStyle } : {}),
         name: spec.name,
         code: spec.sku || '',
         widthIn: spec.widthIn,
@@ -385,6 +419,8 @@ export function createProductService({ db, now = Date.now, files, brands }) {
             }
           : {}),
         ...(spec.flags && Object.keys(spec.flags).length ? { flags: spec.flags } : {}),
+        // The working copy is only served to its editors; they need the file ids to edit it.
+        ...(which === 'working' ? { imageFileIds: [...(spec.imageFileIds || [])] } : {}),
         status: row.status,
         visibility: row.visibility,
         revision: row.revision,

@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useDesignStore, useSelected } from '../store/useDesignStore';
 import { useEstimate, useReport } from '../store/derived';
-import { productCode, priceFor, isOpening } from '../data/catalog';
+import { productCode, isOpening } from '../data/catalog';
 import { finishList, finishPosition, resolveFinish } from '../lib/finish';
 import { feetInches, inches, money } from '../lib/format';
 import { flushWall } from '../lib/geometry';
 import type { CheckLevel } from '../lib/checks';
 import { ProductArt } from './ProductArt';
-import { Alert, Check, Copy, Download, Flip, Info, RotateCcw, RotateCw, Stop, Trash } from './Icons';
-import { downloadText, slug } from '../lib/exporters';
-import { estimateCsv, PLACEHOLDER_PRICES_NOTE, VISUALIZER_DISCLAIMER } from '../lib/csv';
+import { Alert, Check, Close, Copy, Download, Flip, Info, Lock, Plus, RotateCcw, RotateCw, Stop, Trash } from './Icons';
+import { downloadText } from '../lib/exporters';
+import { PLACEHOLDER_PRICES_NOTE, VISUALIZER_DISCLAIMER } from '../lib/csv';
+import { makeId } from '../lib/id';
+import { useSession } from '../store/useSession';
+import { requestExport, useEntitlements } from '../features/billing';
+import { ClientViewToggle, useKitchenPriceOf, usePriceBook, useShowCosts } from '../features/contractors';
+import { priceFor } from '../data/catalog';
+import type { EstimateExtra } from '../types';
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (v: number) => void }) {
   const [text, setText] = useState(value.toFixed(1).replace(/\.0$/, ''));
@@ -35,6 +41,7 @@ function NumberField({ label, value, onCommit }: { label: string; value: number;
 
 function Inspector() {
   const r = useSelected();
+  const priceOf = useKitchenPriceOf();
   const surfaces = useDesignStore((s) => s.doc.surfaces);
   const room = useDesignStore((s) => s.doc.room);
   const report = useReport();
@@ -47,6 +54,8 @@ function Inspector() {
   const missing = product.source === 'missing';
   const wall = flushWall(r, room);
   const issues = report.checks.filter((c) => c.itemIds.includes(item.id) && (c.level === 'bad' || c.level === 'warn'));
+  // A contractor sees their sell price here, like their client will.
+  const price = priceOf ? priceOf(product, w).sell : priceFor(product, w);
   const flippable = (product.kind === 'door' && product.variant === 'single') || product.kind === 'corner' || (product.kind === 'fridge' && product.variant === 'column');
 
   return (
@@ -63,7 +72,7 @@ function Inspector() {
       </div>
       <p className="insp-blurb">{product.blurb}</p>
       <div className="insp-price">
-        <span className="mono">{missing ? 'Price unavailable' : money(priceFor(product, w))}</span>
+        <span className="mono">{missing ? 'Price unavailable' : money(price)}</span>
         <span className="muted">{inches(w)} W × {inches(product.depthIn)} D × {inches(product.heightIn)} H{product.elevationIn > 0 ? ` · mounted at ${inches(product.elevationIn)}` : ''}</span>
       </div>
 
@@ -224,16 +233,88 @@ function ChecksPanel() {
   );
 }
 
+const pct = (n: number) => `${Math.round(n * 10) / 10}%`;
+
+/** Labour and service lines a contractor adds to the estimate (installation, demolition, delivery…). */
+function ExtrasEditor({ extras, showCosts }: { extras: EstimateExtra[]; showCosts: boolean }) {
+  const setExtras = useDesignStore((s) => s.setExtras);
+  const readOnly = useDesignStore((s) => s.readOnly);
+  const [label, setLabel] = useState('');
+  const [amount, setAmount] = useState('');
+  const [cost, setCost] = useState('');
+  if (readOnly) return null;
+  const num = (v: string) => {
+    const n = parseFloat(v.replace(/[$,\s]/g, ''));
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+  };
+  const add = () => {
+    const a = num(amount);
+    if (!label.trim() || a === null) return;
+    const c = num(cost);
+    setExtras([...extras, { id: makeId(), label: label.trim(), amount: a, ...(showCosts && c !== null ? { cost: c } : {}) }]);
+    setLabel('');
+    setAmount('');
+    setCost('');
+  };
+  return (
+    <div className="est-extras">
+      <span className="mini-label">Labour & services</span>
+      {extras.map((x) => (
+        <div key={x.id} className={showCosts ? 'est-extra-row' : 'est-extra-row no-cost'}>
+          <span>{x.label}</span>
+          <span className="mono">{money(x.amount)}</span>
+          {showCosts && <span className="mono muted">{typeof x.cost === 'number' ? money(x.cost) : '—'}</span>}
+          <button className="icon-btn" onClick={() => setExtras(extras.filter((e) => e.id !== x.id))} aria-label={`Remove ${x.label}`} title="Remove">
+            <Close width={14} height={14} />
+          </button>
+        </div>
+      ))}
+      <div className={showCosts ? 'est-extra-row' : 'est-extra-row no-cost'}>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Installation, delivery…" aria-label="Labour or service" maxLength={80} onKeyDown={(e) => e.key === 'Enter' && add()} />
+        <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Price" aria-label="Price to the client" inputMode="decimal" onKeyDown={(e) => e.key === 'Enter' && add()} />
+        {showCosts && <input value={cost} onChange={(e) => setCost(e.target.value)} placeholder="Your cost" aria-label="Your cost (private)" inputMode="decimal" onKeyDown={(e) => e.key === 'Enter' && add()} />}
+        <button className="icon-btn" onClick={add} aria-label="Add this labour or service line" title="Add line" disabled={!label.trim() || num(amount) === null}>
+          <Plus width={14} height={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EstimatePanel() {
   const est = useEstimate();
   const doc = useDesignStore((s) => s.doc);
+  const projectId = useSession((s) => s.projectId);
+  const { canExport } = useEntitlements(projectId);
+  const { isContractor } = usePriceBook();
+  const readOnly = useDesignStore((s) => s.readOnly);
+  const showCosts = useShowCosts();
   const max = Math.max(1, ...est.groups.map((g) => g.total));
+  const margin = est.costTotal !== null ? est.costedTotal - est.costTotal : null;
   return (
     <div className="estimate">
+      <ClientViewToggle />
       <div className="est-total">
         <span className="eyebrow">Estimated total</span>
         <b className="mono">{money(est.total)}</b>
-        <span className="muted">Products, surfaces and hardware. Excludes labor, delivery and tax.</span>
+        <span className="muted">{doc.extras?.length ? 'Products, surfaces, hardware, labour and services. Excludes tax.' : 'Products, surfaces and hardware. Excludes labor, delivery and tax.'}</span>
+        {showCosts && (
+          <div className="est-costs" aria-label="Your costs (only you see these)">
+            <div>
+              <span>Your cost</span>
+              <b className="mono">{est.costTotal !== null ? money(est.costTotal) : '—'}</b>
+            </div>
+            <div>
+              <span>Margin</span>
+              <b className="mono">{margin !== null ? money(margin) : '—'}</b>
+            </div>
+            <div>
+              <span>Margin %</span>
+              <b className="mono">{margin !== null && est.costedTotal > 0 ? pct((margin / est.costedTotal) * 100) : '—'}</b>
+            </div>
+          </div>
+        )}
+        {showCosts && est.uncosted > 0 && <span className="fine">{est.uncosted} line{est.uncosted === 1 ? '' : 's'} at list price: no cost entered. Margin covers the lines that have one.</span>}
       </div>
       <div className="est-bars">
         {est.groups.map((g) => (
@@ -250,6 +331,15 @@ function EstimatePanel() {
             <div>
               <b>{l.label}</b>
               <span>{l.sub}</span>
+              {showCosts &&
+                (typeof l.unitCost === 'number' ? (
+                  <span className="est-cost">
+                    Cost {money(l.unitCost)}
+                    {typeof l.markupPct === 'number' ? ` · markup ${pct(l.markupPct)}` : ''} · margin {money((l.unitPrice - l.unitCost) * l.qty)}
+                  </span>
+                ) : (
+                  <span className="est-cost missing">No cost entered: at list price</span>
+                ))}
             </div>
             <div className="mono">
               <span>{l.qty} {l.unit} × {money(l.unitPrice)}</span>
@@ -258,8 +348,16 @@ function EstimatePanel() {
           </div>
         ))}
       </div>
-      <button className="btn wide" onClick={() => downloadText(estimateCsv(doc, est), `${slug(doc.name)}-shopping-list.csv`, 'text/csv')}>
-        <Download /> Download shopping list (CSV)
+      {isContractor && !readOnly && <ExtrasEditor extras={doc.extras ?? []} showCosts={showCosts} />}
+      <button
+        className="btn wide"
+        onClick={() =>
+          void requestExport(projectId, 'csv', (file) => {
+            if (file) downloadText(file.content, file.filename, file.contentType);
+          })
+        }
+      >
+        {canExport ? <Download /> : <Lock />} Download shopping list (CSV)
       </button>
       {est.hasBuiltin && <p className="fine">{PLACEHOLDER_PRICES_NOTE}</p>}
       <p className="fine">{VISUALIZER_DISCLAIMER}</p>

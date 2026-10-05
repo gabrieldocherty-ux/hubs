@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
-import { WallsIcon, CubeIcon, Download, Logo, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron } from './Icons';
+import { WallsIcon, CubeIcon, Download, Logo, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
-import { estimateCsv } from '../lib/csv';
-import { prepareDocForSave } from '../lib/doc';
 import type { DesignDoc, ViewMode } from '../types';
+import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
 import { AccountMenu } from './AccountMenu';
 import { Check } from './Icons';
 import { RenderButton } from '../features/viewer';
 import { ShareButton } from '../features/share';
+import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
+import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
@@ -89,7 +90,6 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   ];
 
   const exportPng = async (kind: 'plan' | 'scene') => {
-    setMenu(false);
     const needs = kind === 'plan' ? viewMode === 'plan' || viewMode === 'split' : viewMode === '3d' || viewMode === 'split';
     if (!needs) {
       setUI({ viewMode: 'split' });
@@ -100,6 +100,29 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
     downloadDataUrl(url, `${slug(name)}-${kind === 'plan' ? 'floor-plan' : '3d'}.png`);
     toast(kind === 'plan' ? 'Floor plan saved as PNG.' : '3D view saved as PNG.', 'ok');
   };
+
+  // Every export goes through the paywall (requestExport): the server records it, and makes the
+  // CSV and the project file itself. After paying, the export the user picked finishes by itself.
+  const saveFile = (done: string) => (file?: ExportFile) => {
+    if (!file) return;
+    downloadText(file.content, file.filename, file.contentType);
+    toast(done, 'ok');
+  };
+  const runners: Partial<Record<ExportKind, ExportRunner>> = {
+    plan_png: () => exportPng('plan'),
+    scene_png: () => exportPng('scene'),
+    csv: saveFile('Shopping list saved as CSV.'),
+    json: saveFile('Project saved. Open it later with Import.'),
+  };
+  const exportProject = view ? null : projectId;
+  const { canExport } = useEntitlements(exportProject);
+  const { isContractor } = usePriceBook();
+  useResumeExport(exportProject, runners);
+  const doExport = (kind: ExportKind) => {
+    setMenu(false);
+    void requestExport(exportProject, kind, runners[kind]!);
+  };
+  const lock = canExport ? null : <Lock width={13} height={13} aria-label="Paid" />;
 
   const onImport = async (file: File) => {
     try {
@@ -175,6 +198,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
         )}
         <RenderButton />
         {!view && <ShareButton projectId={projectId} />}
+        {!view && <PresentButton compact={compact} />}
         <div className="menu-wrap" ref={menuRef}>
           {compact ? (
             <button className="icon-btn export-btn" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label="Export" title="Export">
@@ -187,36 +211,38 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
           )}
           {menu && (
             <div className="menu" role="menu">
-              <button role="menuitem" onClick={() => exportPng('plan')}>
-                <b>Floor plan</b><span>PNG, print-ready with dimensions</span>
+              <button role="menuitem" onClick={() => doExport('plan_png')}>
+                <b>{lock}Floor plan</b><span>PNG, print-ready with dimensions</span>
               </button>
-              <button role="menuitem" onClick={() => exportPng('scene')}>
-                <b>3D render</b><span>PNG of the current camera</span>
+              <button role="menuitem" onClick={() => doExport('scene_png')}>
+                <b>{lock}3D render</b><span>PNG of the current camera</span>
               </button>
               {showPrices && (
-                <button
-                  role="menuitem"
-                  onClick={() => {
-                    setMenu(false);
-                    downloadText(estimateCsv(useDesignStore.getState().doc, est), `${slug(name)}-shopping-list.csv`, 'text/csv');
-                  }}
-                >
-                  <b>Shopping list</b><span>CSV with every product and surface</span>
+                <button role="menuitem" onClick={() => doExport('csv')}>
+                  <b>{lock}Shopping list</b><span>CSV with every product and surface</span>
                 </button>
               )}
               {!view && (
                 <>
-                  <button
-                    role="menuitem"
-                    onClick={() => {
-                      setMenu(false);
-                      const doc = prepareDocForSave(useDesignStore.getState().doc);
-                      downloadText(JSON.stringify({ app: 'mise-kitchen', version: 2, doc }, null, 2), `${slug(name)}.kitchen.json`, 'application/json');
-                      toast('Project saved. Open it later with Import.', 'ok');
-                    }}
-                  >
-                    <b>Project file</b><span>.kitchen.json to share or reopen</span>
+                  <button role="menuitem" onClick={() => doExport('json')}>
+                    <b>{lock}Project file</b><span>.kitchen.json to share or reopen</span>
                   </button>
+                  {isContractor && projectId && (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setMenu(false);
+                        void openQuote(projectId);
+                      }}
+                    >
+                      <b>Quote</b><span>Branded and printable, at your prices</span>
+                    </button>
+                  )}
+                  {!canExport && (
+                    <p className="menu-note">
+                      <Lock width={12} height={12} /> Exports are a paid feature. Pick one to see the options.
+                    </p>
+                  )}
                   <div className="menu-sep" />
                   <button role="menuitem" onClick={() => fileRef.current?.click()}>
                     <b><Upload width={14} height={14} /> Import project…</b><span>Open a .kitchen.json</span>

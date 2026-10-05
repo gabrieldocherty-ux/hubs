@@ -7,6 +7,7 @@ import { AccountMenu } from '../components/AccountMenu';
 import { Logo, Search } from '../components/Icons';
 import { AdminBrandsTab, AdminModerationTab } from '../features/brands';
 import { AdminRevenueTab, AdminStudioTab } from '../features/orders';
+import { AdminBillingTab } from '../features/billing';
 
 const LABELS: Record<AdminTab, string> = {
   overview: 'Overview',
@@ -14,6 +15,7 @@ const LABELS: Record<AdminTab, string> = {
   brands: 'Brands',
   studio: 'Studio',
   revenue: 'Revenue',
+  billing: 'Billing',
   users: 'Users',
 };
 
@@ -70,6 +72,7 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
             {tab === 'brands' && <AdminBrandsTab />}
             {tab === 'studio' && <AdminStudioTab />}
             {tab === 'revenue' && <AdminRevenueTab />}
+            {tab === 'billing' && <AdminBillingTab />}
           </Suspense>
         )}
       </main>

@@ -28,6 +28,12 @@ export function listSteps(modules = MIGRATION_MODULES, keys = MIGRATION_KEYS) {
 /**
  * Brings the database up to date. Returns the ids of the steps it applied (empty when
  * already current).
+ *
+ * A step with `foreignKeys: 'off'` runs with foreign keys disabled, for SQLite's table
+ * rebuild procedure (create new, copy, drop old, rename): with them on, dropping the old
+ * table would cascade-delete the rows that reference it. The pragma only works outside a
+ * transaction, so it is set around the step, and `foreign_key_check` must come back
+ * clean before the step commits.
  */
 export function migrate(db, { modules = MIGRATION_MODULES, keys = MIGRATION_KEYS, now = Date.now } = {}) {
   const steps = listSteps(modules, keys);
@@ -36,10 +42,21 @@ export function migrate(db, { modules = MIGRATION_MODULES, keys = MIGRATION_KEYS
   const ran = [];
   for (const step of steps) {
     if (applied.has(step.id)) continue;
-    tx(db, () => {
-      step.up(db);
-      db.prepare('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)').run(step.id, now());
-    });
+    const fkOff = step.foreignKeys === 'off';
+    const fkWas = fkOff ? db.prepare('PRAGMA foreign_keys').get().foreign_keys : null;
+    if (fkOff) db.exec('PRAGMA foreign_keys = OFF');
+    try {
+      tx(db, () => {
+        step.up(db);
+        if (fkOff) {
+          const broken = db.prepare('PRAGMA foreign_key_check').all();
+          if (broken.length) throw new Error(`Migration "${step.id}" would leave ${broken.length} broken foreign key reference(s).`);
+        }
+        db.prepare('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)').run(step.id, now());
+      });
+    } finally {
+      if (fkOff) db.exec(`PRAGMA foreign_keys = ${fkWas ? 'ON' : 'OFF'}`);
+    }
     ran.push(step.id);
   }
   return ran;

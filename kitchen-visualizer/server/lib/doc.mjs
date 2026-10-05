@@ -10,6 +10,10 @@ export const LIMITS = Object.freeze({
   productBytes: 8 * 1024,
   coord: 2000,
   room: { widthIn: [72, 480], lengthIn: [72, 480], ceilingIn: [90, 144] },
+  /** Extra estimate lines (installation, delivery…): count, label length, amount in USD. */
+  extras: 50,
+  extraLabel: 80,
+  extraAmount: 10_000_000,
 });
 
 const ROTATIONS = new Set([0, 90, 180, 270]);
@@ -84,6 +88,27 @@ function normalizeItem(it, i) {
   return out;
 }
 
+const round2 = (n) => Math.round(n * 100) / 100;
+
+/**
+ * Extra estimate lines: `{ id, label, amount, cost? }`. `amount` is what the client pays;
+ * `cost` is the contractor's private number and is stripped before any share or export.
+ */
+function normalizeExtra(x, i) {
+  const at = `extras[${i}]`;
+  if (!isObj(x)) bad(at, 'An extra estimate line is not valid.');
+  if (typeof x.id !== 'string' || !x.id || x.id.length > 64) bad(`${at}.id`, 'An extra estimate line has no id.');
+  const label = typeof x.label === 'string' ? x.label.trim() : '';
+  if (!label || label.length > LIMITS.extraLabel) bad(`${at}.label`, `Name each extra line (${LIMITS.extraLabel} characters or fewer).`);
+  if (!isNum(x.amount) || x.amount < 0 || x.amount > LIMITS.extraAmount) bad(`${at}.amount`, 'An extra line’s amount must be between $0 and $10,000,000.');
+  const out = { id: x.id, label, amount: round2(x.amount) };
+  if (x.cost !== undefined && x.cost !== null) {
+    if (!isNum(x.cost) || x.cost < 0 || x.cost > LIMITS.extraAmount) bad(`${at}.cost`, 'An extra line’s cost must be between $0 and $10,000,000.');
+    out.cost = round2(x.cost);
+  }
+  return out;
+}
+
 /**
  * Validates and normalises a DesignDoc. Returns `{ ok: true, doc }` or
  * `{ ok: false, field, message }`. `name` is set by the caller.
@@ -125,6 +150,11 @@ export function normalizeDoc(doc) {
         products[key] = cleanSnapshot(p, key);
       }
       out.products = products;
+    }
+    if (doc.extras !== undefined && doc.extras !== null) {
+      if (!Array.isArray(doc.extras)) bad('extras', 'Extra estimate lines are not valid.');
+      if (doc.extras.length > LIMITS.extras) bad('extras', `A kitchen can have at most ${LIMITS.extras} extra estimate lines.`);
+      if (doc.extras.length) out.extras = doc.extras.map(normalizeExtra);
     }
     return { ok: true, doc: out };
   } catch (err) {

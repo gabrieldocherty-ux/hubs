@@ -8,6 +8,19 @@ import type { DesignDoc } from '../types';
 const DEBOUNCE_MS = 1200;
 const RETRY_MS = 6000;
 
+/** The open kitchen's save-now function, while one is mounted. */
+let activeFlush: (() => Promise<void>) | null = null;
+
+/**
+ * Saves the open kitchen now (exports are made from the saved copy on the server). Resolves
+ * true when it is saved, false when it can't be (offline, or changed elsewhere).
+ */
+export async function flushAutosave(): Promise<boolean> {
+  if (activeFlush) await activeFlush();
+  const { projectId, saveState } = useSession.getState();
+  return !!projectId && saveState === 'saved';
+}
+
 /**
  * Keeps the open design saved without a save button: to the account when a project is open, or
  * to this browser in device-only mode. Never saves mid-drag, and does nothing when `enabled` is
@@ -144,7 +157,14 @@ export function useAutosave(projectId: string | null, enabled = true) {
     window.addEventListener('keydown', onKey);
     window.addEventListener('beforeunload', onLeave);
     window.addEventListener('online', onOnline);
+    const mine = async () => {
+      await flush();
+      // A save already in flight: wait for it to land.
+      for (let i = 0; i < 50 && useSession.getState().saveState === 'saving'; i++) await new Promise((r) => setTimeout(r, 100));
+    };
+    activeFlush = mine;
     return () => {
+      if (activeFlush === mine) activeFlush = null;
       disposed = true;
       unsub();
       window.removeEventListener('keydown', onKey);

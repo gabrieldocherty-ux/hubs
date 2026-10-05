@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
  * Hash routing with query strings inside the hash (`#/p/range-30?finish=black-steel`).
  * `location.search` is only read through `pageQuery()` (Stripe's `?session_id=` return).
  */
-export type AdminTab = 'overview' | 'moderation' | 'brands' | 'studio' | 'revenue' | 'users';
-export const ADMIN_TABS: AdminTab[] = ['overview', 'moderation', 'brands', 'studio', 'revenue', 'users'];
+export type AdminTab = 'overview' | 'moderation' | 'brands' | 'studio' | 'revenue' | 'billing' | 'users';
+export const ADMIN_TABS: AdminTab[] = ['overview', 'moderation', 'brands', 'studio', 'revenue', 'billing', 'users'];
 
 export type Route =
   | { name: 'signin' }
@@ -23,7 +23,10 @@ export type Route =
   | { name: 'orders'; rest: string } // #/orders, #/orders/<rest…>
   | { name: 'payDemo'; orderId: string } // #/pay/demo/:orderId
   | { name: 'share'; token: string } // #/s/:token
-  | { name: 'admin'; tab: AdminTab }; // #/admin/:tab
+  | { name: 'admin'; tab: AdminTab } // #/admin/:tab
+  | { name: 'billing' } // #/account/billing
+  | { name: 'pro'; rest: string } // #/pro, #/pro/<rest…> (the Contractor workspace)
+  | { name: 'payDemoPlan'; ref: string }; // #/pay/demo-plan/:ref
 
 const UUID = /^[0-9a-f-]{36}$/;
 /** Product ids, slugs, order ids and share tokens: the server's `:param` alphabet. */
@@ -88,13 +91,18 @@ export function parseRoute(hash: string): Route {
       if (seg.length === 2 && PARAM.test(b)) return { name: 'brandPage', slug: b };
       break;
     case 'brand':
-    case 'orders': {
+    case 'orders':
+    case 'pro': {
       const rest = seg.slice(1).join('/');
       if (!rest || REST.test(rest)) return { name: a, rest };
       break;
     }
+    case 'account':
+      if (seg.length === 2 && b === 'billing') return { name: 'billing' };
+      break;
     case 'pay':
       if (seg.length === 3 && b === 'demo' && PARAM.test(c)) return { name: 'payDemo', orderId: c };
+      if (seg.length === 3 && b === 'demo-plan' && PARAM.test(c)) return { name: 'payDemoPlan', ref: c };
       break;
     case 's':
       if (seg.length === 2 && PARAM.test(b)) return { name: 'share', token: b };
@@ -131,9 +139,14 @@ export function hrefFor(r: Route): string {
       return `#/b/${enc(r.slug)}`;
     case 'brand':
     case 'orders':
+    case 'pro':
       return r.rest ? `#/${r.name}/${r.rest}` : `#/${r.name}`;
+    case 'billing':
+      return '#/account/billing';
     case 'payDemo':
       return `#/pay/demo/${enc(r.orderId)}`;
+    case 'payDemoPlan':
+      return `#/pay/demo-plan/${enc(r.ref)}`;
     case 'share':
       return `#/s/${enc(r.token)}`;
     case 'admin':

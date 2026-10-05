@@ -14,6 +14,7 @@ import { createFileService } from './files/store.mjs';
 import { createBrandService } from './catalog/brands.mjs';
 import { createProductService } from './catalog/products.mjs';
 import { createEventService } from './catalog/events.mjs';
+import { createBillingHooks, createContractorHooks, createPricingHooks, createWebhookService } from './lib/hooks.mjs';
 import { ROUTE_MODULES, ROUTE_MODULE_NAMES } from './routes/index.mjs';
 
 const normalizeIp = (a = '') => (a.startsWith('::ffff:') ? a.slice(7) : a);
@@ -30,7 +31,12 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const auth = createAuthService({ db });
   const files = createFileService({ db, config, now, auth });
   const brands = createBrandService({ db, files });
-  const products = createProductService({ db, now, files, brands });
+  // Seams the billing and contractor packages register into (BUILD_PLAN §13.2).
+  const webhooks = createWebhookService();
+  const billing = createBillingHooks();
+  const pricing = createPricingHooks();
+  const contractors = createContractorHooks();
+  const products = createProductService({ db, now, files, brands, ownerLabel: (userId) => contractors.labelFor(userId) });
   const events = createEventService({ db, now });
 
   /** The client address: the socket, or with TRUST_PROXY=N the Nth X-Forwarded-For hop from the right. */
@@ -52,7 +58,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events },
+    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors },
     /** Foundation internals (sessions, limiter, clientIp). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp },
     /** Periodic housekeeping; index.mjs runs it every 10 minutes. */

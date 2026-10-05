@@ -33,7 +33,8 @@ export interface CatalogState {
   registerMissing(list: Product[]): void;
 }
 
-const RANK: Record<string, number> = { builtin: 4, brand: 3, custom: 3, snapshot: 2, missing: 1 };
+const RANK: Record<string, number> = { builtin: 4, brand: 3, custom: 3, contractor: 3, snapshot: 2, missing: 1 };
+const LIVE_SOURCES = new Set(['brand', 'custom', 'contractor']);
 const rank = (p: Product | undefined) => (p ? RANK[p.source ?? 'brand'] ?? 3 : 0);
 
 let inflight: Promise<void> | null = null;
@@ -81,7 +82,7 @@ export const useCatalog = create<CatalogState>()((set, get) => {
       inflight = api
         .catalog()
         .then(({ products, brands }) => {
-          const live = (Array.isArray(products) ? products : []).map((p) => ({ ...p, source: p.source === 'custom' ? 'custom' : 'brand' }) as Product);
+          const live = (Array.isArray(products) ? products : []).map((p) => ({ ...p, source: LIVE_SOURCES.has(p.source ?? '') ? p.source : 'brand' }) as Product);
           if (force) {
             // A forced reload re-lists exactly what the server serves now; unpublished products
             // drop out of the browse list but stay resolvable for kitchens that use them.
@@ -99,7 +100,7 @@ export const useCatalog = create<CatalogState>()((set, get) => {
       return inflight;
     },
 
-    register: (list) => merge(list.map((p) => (p.source === 'custom' || p.source === 'brand' ? p : { ...p, source: 'brand' as const })), true),
+    register: (list) => merge(list.map((p) => (LIVE_SOURCES.has(p.source ?? '') ? p : { ...p, source: 'brand' as const })), true),
 
     registerSnapshots: (rec) => {
       if (!rec || typeof rec !== 'object') return;

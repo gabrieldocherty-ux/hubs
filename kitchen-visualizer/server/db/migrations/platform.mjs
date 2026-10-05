@@ -1,5 +1,7 @@
 // The platform schema: roles, uploads, brands, products and analytics events.
-// DDL is BUILD_PLAN §3.3, verbatim.
+// platform-001 is BUILD_PLAN §3.3, verbatim. Later steps are appended, never edited:
+//   platform-002  products.source may be 'contractor' (BUILD_PLAN §13.2)
+//   platform-003  webhook_events: Stripe event ids already handled (dedupe)
 
 export const steps = [
   {
@@ -50,6 +52,47 @@ export const steps = [
           type TEXT NOT NULL CHECK (type IN ('view','add','buy_click','render')), user_id TEXT, day TEXT NOT NULL, created_at INTEGER NOT NULL);
         CREATE INDEX product_events_brand_day ON product_events(brand_id, day);
         CREATE INDEX product_events_product_day ON product_events(product_id, day);
+      `);
+    },
+  },
+  {
+    // SQLite can't alter a CHECK constraint, so the table is rebuilt (create, copy, drop,
+    // rename) with foreign keys off; otherwise dropping the old table would cascade-delete
+    // every product_events row. Columns are copied by name, ids and all.
+    id: 'platform-002-contractor-products',
+    foreignKeys: 'off',
+    up(db) {
+      const cols = `id, source, brand_id, owner_user_id, status, visibility, spec, live_spec, kind, category, name, price_cents,
+          revision, review_note, submitted_at, published_at, created_at, updated_at`;
+      db.exec(`
+        CREATE TABLE products_next (
+          id TEXT PRIMARY KEY,
+          source TEXT NOT NULL CHECK (source IN ('brand','custom','contractor')),
+          brand_id TEXT REFERENCES brands(id) ON DELETE CASCADE, owner_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','submitted','published','rejected','archived')),
+          visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public','private')),
+          spec TEXT NOT NULL, live_spec TEXT,
+          kind TEXT NOT NULL, category TEXT NOT NULL, name TEXT NOT NULL, price_cents INTEGER NOT NULL DEFAULT 0,
+          revision INTEGER NOT NULL DEFAULT 1, review_note TEXT NOT NULL DEFAULT '',
+          submitted_at INTEGER, published_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+        INSERT INTO products_next (${cols}) SELECT ${cols} FROM products;
+        DROP TABLE products;
+        ALTER TABLE products_next RENAME TO products;
+        CREATE INDEX products_brand ON products(brand_id);
+        CREATE INDEX products_owner ON products(owner_user_id);
+        CREATE INDEX products_status ON products(status, visibility);
+      `);
+    },
+  },
+  {
+    // Stripe resends events; each id is handled once. No payload is kept: Stripe's copy is
+    // the record, and it carries customer emails we don't need.
+    id: 'platform-003-webhook-events',
+    up(db) {
+      db.exec(`
+        CREATE TABLE webhook_events (
+          provider TEXT NOT NULL, event_id TEXT NOT NULL, type TEXT NOT NULL, received_at INTEGER NOT NULL,
+          PRIMARY KEY (provider, event_id));
       `);
     },
   },

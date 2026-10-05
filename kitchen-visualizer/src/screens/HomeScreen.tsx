@@ -10,6 +10,7 @@ import { Copy, Logo, Plus, Search, Trash } from '../components/Icons';
 import { buildEstimate } from '../lib/estimate';
 import { feetInches, money } from '../lib/format';
 import { Toasts } from '../components/Toasts';
+import { usePriceBook } from '../features/contractors';
 
 export function HomeScreen() {
   const user = useSession((s) => s.user)!;
@@ -43,7 +44,25 @@ export function HomeScreen() {
     return (projects ?? []).filter((p) => !q || `${p.name} ${p.client}`.toLowerCase().includes(q));
   }, [projects, query]);
 
-  const totals = useMemo(() => new Map((projects ?? []).map((p) => [p.id, buildEstimate(p.doc).total])), [projects, catalogVersion]);
+  // A contractor's cards show their sell prices, like their quotes.
+  const { isContractor, priceOf } = usePriceBook();
+  const totals = useMemo(
+    () => new Map((projects ?? []).map((p) => [p.id, buildEstimate(p.doc, isContractor ? { priceOf } : {}).total])),
+    [projects, catalogVersion, isContractor, priceOf],
+  );
+
+  /** Contractors see their kitchens grouped by client, most recently active client first (§4.5). */
+  const sections = useMemo(() => {
+    if (!isContractor) return [{ client: null as string | null, items: shown }];
+    const byClient = new Map<string, Project[]>();
+    for (const p of shown) {
+      const key = p.client.trim();
+      byClient.set(key, [...(byClient.get(key) ?? []), p]);
+    }
+    return [...byClient]
+      .sort(([a, x], [b, y]) => (a === '' ? 1 : b === '' ? -1 : y[0].updatedAt - x[0].updatedAt))
+      .map(([client, items]) => ({ client, items }));
+  }, [shown, isContractor]);
 
   const rename = async (p: Project, name: string) => {
     setRenaming(null);
@@ -123,65 +142,76 @@ export function HomeScreen() {
           </div>
         )}
 
-        <div className="project-grid">
-          <button className="project-card new" onClick={() => navigate({ name: 'new' })}>
-            <span className="new-plus">
-              <Plus width={22} height={22} />
-            </span>
-            <b>Start a new kitchen</b>
-            <span>Room size, layout and style in four quick steps</span>
-          </button>
-
-          {shown.map((p) => (
-            <article key={p.id} className="project-card">
-              <a className="project-thumb" href={`#/k/${p.id}`} aria-label={`Open ${p.name}`}>
-                <MiniPlan doc={p.doc} />
-              </a>
-              <div className="project-body">
-                {renaming === p.id ? (
-                  <input
-                    className="project-rename"
-                    defaultValue={p.name}
-                    autoFocus
-                    onBlur={(e) => rename(p, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                      if (e.key === 'Escape') setRenaming(null);
-                    }}
-                    aria-label="Kitchen name"
-                  />
-                ) : (
-                  <a className="project-name" href={`#/k/${p.id}`} onDoubleClick={(e) => (e.preventDefault(), setRenaming(p.id))}>
-                    {p.name}
-                  </a>
-                )}
-                <span className="project-meta">
-                  {p.client ? `${p.client} · ` : ''}
-                  {feetInches(p.doc.room.widthIn)} × {feetInches(p.doc.room.lengthIn)} · {p.doc.items.length} pieces
-                </span>
-                <span className="project-foot">
-                  <span>Edited {timeAgo(p.updatedAt)}</span>
-                  <b className="mono">{money(totals.get(p.id) ?? 0)}</b>
-                </span>
-              </div>
-              <div className="project-actions">
-                <button onClick={() => setRenaming(p.id)}>Rename</button>
-                <button onClick={() => duplicate(p)} aria-label={`Duplicate ${p.name}`}>
-                  <Copy width={14} height={14} />
+        {sections.map((sec, i) => (
+          <section key={sec.client ?? 'all'} className="home-section" aria-label={sec.client === null ? 'Kitchens' : sec.client || 'No client yet'}>
+            {sec.client !== null && (
+              <h2 className="home-client">
+                {sec.client || 'No client yet'} <span>{sec.items.length} kitchen{sec.items.length === 1 ? '' : 's'}</span>
+              </h2>
+            )}
+            <div className="project-grid">
+              {i === 0 && (
+                <button className="project-card new" onClick={() => navigate({ name: 'new' })}>
+                  <span className="new-plus">
+                    <Plus width={22} height={22} />
+                  </span>
+                  <b>Start a new kitchen</b>
+                  <span>Room size, layout and style in four quick steps</span>
                 </button>
-                {confirmDelete === p.id ? (
-                  <button className="danger solid" onClick={() => remove(p)}>
-                    Delete?
-                  </button>
-                ) : (
-                  <button className="danger" onClick={() => setConfirmDelete(p.id)} aria-label={`Delete ${p.name}`}>
-                    <Trash width={14} height={14} />
-                  </button>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
+              )}
+
+              {sec.items.map((p) => (
+                <article key={p.id} className="project-card">
+                  <a className="project-thumb" href={`#/k/${p.id}`} aria-label={`Open ${p.name}`}>
+                    <MiniPlan doc={p.doc} />
+                  </a>
+                  <div className="project-body">
+                    {renaming === p.id ? (
+                      <input
+                        className="project-rename"
+                        defaultValue={p.name}
+                        autoFocus
+                        onBlur={(e) => rename(p, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                          if (e.key === 'Escape') setRenaming(null);
+                        }}
+                        aria-label="Kitchen name"
+                      />
+                    ) : (
+                      <a className="project-name" href={`#/k/${p.id}`} onDoubleClick={(e) => (e.preventDefault(), setRenaming(p.id))}>
+                        {p.name}
+                      </a>
+                    )}
+                    <span className="project-meta">
+                      {p.client ? `${p.client} · ` : ''}
+                      {feetInches(p.doc.room.widthIn)} × {feetInches(p.doc.room.lengthIn)} · {p.doc.items.length} pieces
+                    </span>
+                    <span className="project-foot">
+                      <span>Edited {timeAgo(p.updatedAt)}</span>
+                      <b className="mono">{money(totals.get(p.id) ?? 0)}</b>
+                    </span>
+                  </div>
+                  <div className="project-actions">
+                    <button onClick={() => setRenaming(p.id)}>Rename</button>
+                    <button onClick={() => duplicate(p)} aria-label={`Duplicate ${p.name}`}>
+                      <Copy width={14} height={14} />
+                    </button>
+                    {confirmDelete === p.id ? (
+                      <button className="danger solid" onClick={() => remove(p)}>
+                        Delete?
+                      </button>
+                    ) : (
+                      <button className="danger" onClick={() => setConfirmDelete(p.id)} aria-label={`Delete ${p.name}`}>
+                        <Trash width={14} height={14} />
+                      </button>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))}
         {projects && query && shown.length === 0 && <p className="empty-note">No kitchens match “{query}”.</p>}
       </main>
       <Toasts />

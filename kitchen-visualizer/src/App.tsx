@@ -11,11 +11,13 @@ import { BrandPage, BrandPortal } from './features/brands';
 import { DemoPay, OrdersRoot } from './features/orders';
 import { GenerateScreen } from './features/generate';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
+import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
+import { ContractorRoot } from './features/contractors';
 
 const AdminScreen = lazy(() => import('./screens/AdminScreen'));
 
 /** Routes that need an account; signed-out visitors are sent to sign in (and brought back after). */
-const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin']);
+const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'pro', 'payDemoPlan']);
 
 const loading = <div className="screen-msg">Loading…</div>;
 
@@ -53,13 +55,24 @@ export default function App() {
   }, [status, needsAccount, authPage]);
 
   // Device-only mode works with no server at all, so it never waits on the session.
-  if (route.name === 'local') return <LocalEditor />;
+  if (route.name === 'local')
+    return (
+      <>
+        <LocalEditor />
+        <BillingHost />
+      </>
+    );
   if (status === 'loading') return loading;
 
   const signedIn = status === 'signedIn';
   if (authPage || (needsAccount && !signedIn)) return <AuthScreen mode={route.name === 'signup' ? 'signup' : 'signin'} />;
 
-  return <Suspense fallback={loading}>{screenFor(route, signedIn)}</Suspense>;
+  return (
+    <>
+      <Suspense fallback={loading}>{screenFor(route, signedIn)}</Suspense>
+      <BillingHost />
+    </>
+  );
 }
 
 function screenFor(route: Route, signedIn: boolean) {
@@ -90,6 +103,12 @@ function screenFor(route: Route, signedIn: boolean) {
       return <SharedKitchen key={route.token} token={route.token} />;
     case 'admin':
       return <AdminScreen tab={route.tab} />;
+    case 'billing':
+      return <BillingPage />;
+    case 'pro':
+      return <ContractorRoot rest={route.rest} />;
+    case 'payDemoPlan':
+      return <DemoPlanPay key={route.ref} checkoutRef={route.ref} />;
     default:
       return signedIn ? <HomeScreen /> : <LandingScreen />;
   }

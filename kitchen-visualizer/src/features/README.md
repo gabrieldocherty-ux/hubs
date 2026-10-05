@@ -11,6 +11,8 @@ with placeholder screens; the package then owns everything inside it.
 | `generate/` | D generate | `GenerateScreen` |
 | `share/` | E share | `LandingScreen`, `PricingScreen`, `SharedKitchen`, `ShareButton` |
 | `marketing/` | E share | the `LandingScreen` and `PricingScreen` modules (re-exported from `share/`) |
+| `billing/` | G billing | `BillingPage`, `DemoPlanPay`, `AdminBillingTab`, `useEntitlements`, `requestExport`, `useResumeExport`, `BillingHost` |
+| `contractors/` | H contractors | `ContractorRoot`, `usePriceBook`, `ClientViewToggle`, `PresentButton`, `useContractorCatalog`, `useKitchenPriceOf`, `setSharedPrices`, `openQuote` |
 
 ## Rules
 
@@ -19,6 +21,9 @@ with placeholder screens; the package then owns everything inside it.
   `src/components/TopBar.tsx`) imports only from `index.ts`.
 - **Every lazy module default-exports its component.** Screens are wrapped in `React.lazy` in
   `index.ts`, so each one is its own chunk and the main bundle stays under budget (675 KB).
+- **Exports go through `requestExport(projectId, kind, run)`** from `src/features/billing`: it
+  checks the paywall, records the export, and opens the Unlock dialog when the account isn't
+  entitled. Never download a kitchen's files directly.
 - **Lazy-load anything that touches three.js.** `RenderButton` and `ShareButton` sit in the
   TopBar and are part of the main chunk: they must not statically import `three`,
   `@react-three/*` or `postprocessing`. Open dialogs with `lazy(() => import('./RenderDialog'))`.

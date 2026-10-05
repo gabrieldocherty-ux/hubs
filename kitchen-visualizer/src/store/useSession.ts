@@ -24,6 +24,8 @@ interface SessionState {
   lastSavedAt: number | null;
   conflict: SaveConflict | null;
   init: () => Promise<void>;
+  /** Re-reads the signed-in user (after a payment changes their plan). Never signs anyone out. */
+  refresh: () => Promise<void>;
   setUser: (user: User) => void;
   signOut: () => Promise<void>;
   openProject: (id: string | null, revision: number) => void;
@@ -31,10 +33,18 @@ interface SessionState {
   setConflict: (conflict: SaveConflict | null) => void;
 }
 
-/** Fills role and brands if an older server leaves them out, so callers can rely on both. */
+const FREE_PLAN: User['plan'] = { id: 'free', status: 'none', periodEnd: null, cancelAtPeriodEnd: false, graceUntil: null, provider: null };
+
+/** Fills role, brands, plan and contractor if an older server leaves them out, so callers can rely on them. */
 function normalizeUser(user: User | null): User | null {
   if (!user) return null;
-  return { ...user, role: user.role ?? 'customer', brands: Array.isArray(user.brands) ? user.brands : [] };
+  return {
+    ...user,
+    role: user.role ?? 'customer',
+    brands: Array.isArray(user.brands) ? user.brands : [],
+    plan: user.plan && typeof user.plan.id === 'string' ? user.plan : FREE_PLAN,
+    contractor: user.contractor ?? null,
+  };
 }
 
 export const useSession = create<SessionState>()((set) => ({
@@ -52,6 +62,15 @@ export const useSession = create<SessionState>()((set) => ({
       set({ user, status: user ? 'signedIn' : 'signedOut' });
     } catch (e) {
       set({ status: isUnreachable(e) ? 'offline' : 'signedOut' });
+    }
+  },
+
+  refresh: async () => {
+    try {
+      const user = normalizeUser((await api.me()).user);
+      if (user) set({ user, status: 'signedIn' });
+    } catch {
+      // Keep what we have; the next load will catch up.
     }
   },
 

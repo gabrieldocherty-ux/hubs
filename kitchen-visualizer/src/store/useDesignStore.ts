@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DesignDoc, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
+import type { DesignDoc, EstimateExtra, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
 import { getProduct, isBuiltin, isOpening, itemWidth, snapsToWall } from '../data/catalog';
 import { CABINET_FINISHES } from '../data/finishes';
 import { buildTemplate, type TemplateId } from '../data/templates';
@@ -26,7 +26,7 @@ import {
 } from '../lib/geometry';
 import { defaultFinishIndex, finishAt, finishById, itemHasFinish } from '../lib/finish';
 import { makeId } from '../lib/id';
-import { prepareDocForSave, sanitizeDoc, withFinishIds } from '../lib/doc';
+import { cleanExtras, prepareDocForSave, sanitizeDoc, withFinishIds } from '../lib/doc';
 import { track } from '../lib/track';
 import { useCatalog, useCatalogVersion } from './useCatalog';
 import { qaExpose } from '../lib/qa';
@@ -66,6 +66,8 @@ interface State {
   setName: (name: string) => void;
   setRoom: (room: Partial<Room>) => void;
   setSurfaces: (s: Partial<Surfaces>) => void;
+  /** Replaces the extra estimate lines (installation, delivery…). An empty list removes them. */
+  setExtras: (extras: EstimateExtra[]) => void;
   applyStyle: (preset: StylePreset) => void;
   /**
    * Adds a product and selects it. With `at` (room inches, footprint centre) the
@@ -283,6 +285,17 @@ export const useDesignStore = create<State>()(
               });
             }
             return { ...doc, surfaces, items };
+          }),
+
+        setExtras: (extras) =>
+          commit((doc) => {
+            const next = cleanExtras(extras);
+            if (!next.length) {
+              if (!doc.extras) return doc;
+              const { extras: _gone, ...rest } = doc;
+              return rest;
+            }
+            return { ...doc, extras: next };
           }),
 
         applyStyle: (preset) =>

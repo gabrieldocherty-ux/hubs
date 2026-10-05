@@ -25,6 +25,144 @@ export interface SessionUser {
   name: string;
   role: Role;
   brands: BrandMembership[];
+  /** The account's plan right now (Free when it has none or it has lapsed). */
+  plan: PlanState;
+  /** Set once the user has set up a contractor company; `active` is false while the plan has lapsed. */
+  contractor: ContractorSummary | null;
+}
+
+// ─── Plans and billing (packages G and H; PLANS_AND_CONTRACTORS.md) ─────
+
+/** Plan ids in `src/data/plans.json`. `kitchen_unlock` is a one-time purchase, not a plan anyone is "on". */
+export type PlanId = 'free' | 'kitchen_unlock' | 'unlimited' | 'contractor';
+/** What an account can be on. */
+export type AccountPlanId = 'free' | 'unlimited' | 'contractor';
+
+/** One entry of `src/data/plans.json`. */
+export interface Plan {
+  id: PlanId;
+  name: string;
+  priceCents: number;
+  interval: null | 'month';
+  tagline: string;
+  bullets: string[];
+}
+
+export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'incomplete';
+
+/** `SessionUser.plan`: the plan in force now. `status: 'none'` means never subscribed. */
+export interface PlanState {
+  id: AccountPlanId;
+  status: SubscriptionStatus | 'none';
+  periodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  /** Set while a failed renewal is being retried; the plan stays on until then. */
+  graceUntil: number | null;
+  provider: 'demo' | 'stripe' | null;
+}
+
+/** A subscription as the Billing page shows it (`GET /api/billing/me`). */
+export interface Subscription {
+  plan: 'unlimited' | 'contractor';
+  status: SubscriptionStatus;
+  provider: 'demo' | 'stripe';
+  currentPeriodEnd: number | null;
+  cancelAtPeriodEnd: boolean;
+  graceUntil: number | null;
+  createdAt: number;
+}
+
+/** What the editor needs to decide whether an export runs or the Unlock dialog opens. */
+export interface Entitlements {
+  plan: AccountPlanId;
+  /** Kitchens unlocked with a one-time $5 payment. */
+  unlockedProjectIds: string[];
+}
+
+/** Every export the paywall covers (PLANS_AND_CONTRACTORS §1). */
+export type ExportKind = 'plan_png' | 'scene_png' | 'csv' | 'json' | 'render' | 'quote';
+
+/** A contractor's branding on what their clients see. */
+export interface PreparedBy {
+  company: string;
+  logoUrl?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+}
+
+/** `SessionUser.contractor`. */
+export interface ContractorSummary {
+  company: string;
+  /** False while the Contractor plan has lapsed: the workspace is then read-only. */
+  active: boolean;
+}
+
+/** A contractor's company profile (`GET /api/pro/profile`). */
+export interface ContractorProfile {
+  company: string;
+  logoFileId: string | null;
+  logoUrl: string | null;
+  phone: string;
+  email: string;
+  website: string;
+  serviceArea: string;
+  defaultMarkupPct: number;
+  taxPct: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+/** Brand-level price settings, keyed by 'builtin', a brand id, 'own', or 'line:<name>'. */
+export interface PriceBookBrand {
+  enabled: boolean;
+  /** For public brands: the contractor's discount off list, used as their cost. */
+  pctOffList: number | null;
+  markupPct: number | null;
+}
+
+/** Product-level price settings. Costs are in cents. */
+export interface PriceBookEntry {
+  costCents: number | null;
+  costByWidth: Record<string, number> | null;
+  markupPct: number | null;
+}
+
+/** Everything needed to price a kitchen for its contractor. Never sent to anyone else. */
+export interface PriceBookData {
+  defaultMarkupPct: number;
+  taxPct: number;
+  brands: Record<string, PriceBookBrand>;
+  rows: Record<string, PriceBookEntry>;
+}
+
+/** A price at a width: what the client pays, and (for the contractor) what it costs them. */
+export interface PriceQuote {
+  sell: number;
+  list: number;
+  cost?: number;
+  markupPct?: number;
+  /** No cost entered: the list price is used as the sell price. */
+  noCost?: boolean;
+}
+
+/** One row of the price book table (`GET /api/pro/price-book`). */
+export interface PriceBookRow {
+  productId: string;
+  name: string;
+  brand: string;
+  brandKey: string;
+  line: string | null;
+  sku: string;
+  category: string;
+  source: 'builtin' | 'brand' | 'contractor' | 'custom';
+  widthIn: number;
+  widthOptions: number[] | null;
+  /** List price at the default width (0 when a contractor product has none). */
+  list: number;
+  costCents: number | null;
+  costByWidth: Record<string, number> | null;
+  markupPct: number | null;
 }
 
 // ─── Brands ──────────────────────────────────────────────────────────────
@@ -127,6 +265,10 @@ export interface ProductSpecInput {
   buyUrl?: string;
   specSheetUrl?: string;
   flags?: { trim?: 'brass' | 'steel'; backguard?: boolean };
+  /** A product line or collection (contractor catalogs group by it). */
+  line?: string;
+  /** The door style a cabinet line is sold in. */
+  doorStyle?: 'shaker' | 'slab' | 'fluted';
 }
 
 /** `GET /api/catalog` → products (wire `Product`), brands and a version string. */
@@ -235,11 +377,20 @@ export interface ShareLink {
   createdAt: number;
 }
 
-/** `GET /api/share/:token`. Never carries `client`, emails or user ids. */
+/** `GET /api/share/:token`. Never carries `client`, emails, user ids, costs or margins. */
 export interface SharedKitchenWire {
   kitchen: { name: string; doc: DesignDoc; updatedAt: number; sharedBy: string };
   products: Product[];
   showPrices: boolean;
+  /** A contractor's branding ("Prepared by Smith Kitchens"). */
+  preparedBy?: PreparedBy;
+  /** True for contractor shares: clients stay with the contractor. */
+  hideDuplicate?: boolean;
+  /**
+   * The contractor's sell prices for every product in the kitchen, built-ins included (they are
+   * priced in the browser). Absent for non-contractor shares, which use list prices.
+   */
+  prices?: Record<string, { price: number; priceByWidth?: Record<string, number> }>;
 }
 
 // ─── Generate (package D) ────────────────────────────────────────────────

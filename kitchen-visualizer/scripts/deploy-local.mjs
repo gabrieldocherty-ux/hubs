@@ -25,14 +25,21 @@ const PORT = String(process.env.MISE_PORT || '8790');
 const HOST = process.env.MISE_HOST || '127.0.0.1';
 const APP = path.join(HOME, 'app');
 const DEPLOYING = path.join(HOME, 'deploying');
-/** Files outside server/ that the server imports at runtime (kept at the same relative path). */
-const RUNTIME_FILES = ['src/data/kinds.json'];
+/**
+ * Files outside server/ that the server imports at runtime (kept at the same relative path):
+ * every JSON file in src/data/ (kinds.json, plans.json…), so a new shared data file ships
+ * without editing this list. server/generated/ (the export kit) travels with server/.
+ */
+const RUNTIME_FILES = fs
+  .readdirSync(path.join(ROOT, 'src', 'data'))
+  .filter((f) => f.endsWith('.json'))
+  .map((f) => `src/data/${f}`);
 
 if (process.platform !== 'win32') {
   console.error('deploy-local is written for the Windows home server. Use `npm start` elsewhere.');
   process.exit(1);
 }
-if (!fs.existsSync(path.join(ROOT, 'dist', 'index.html'))) {
+if (!fs.existsSync(path.join(ROOT, 'dist', 'index.html')) || !fs.existsSync(path.join(ROOT, 'server', 'generated', 'export-kit.mjs'))) {
   console.error('No build found. Run `npm run build` first (or use `npm run deploy:local`).');
   process.exit(1);
 }

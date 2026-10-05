@@ -989,6 +989,15 @@ F foundation ──┬── A viewer · B brands · C orders · D generate · E
   - `AccountMenu` gains *Billing* and *Contractor workspace* (plan `contractor`) or *For contractors*;
   - `App` gating adds `billing`, `pro`, `payDemoPlan` (account routes) and `admin/billing`.
 
+### 13.2a As built (2026-10-05)
+
+§13.2 and packages G and H landed together; `docs/handoff/billing.md` and `docs/handoff/contractors.md` have the details. Contract changes the other packages must follow:
+- **The Stripe webhook route is the foundation's** (`server/routes/webhooks.mjs`: verify, dedupe in `webhook_events`, then `services.webhooks.dispatch` inside the same transaction). Package C registers `services.webhooks.on('order', handler)` with a synchronous handler and does not add its own route.
+- **`DemoPlanPay` takes `{ checkoutRef }`**: React reserves the planned `ref` prop.
+- **`services.pricing`** also has `sellPricesFor(ownerId, doc)` and the server-internal `priceBookFor(ownerId)`. **`SharedKitchenWire.prices`** carries the sharer's sell prices for every product in the doc (built-ins included); the share page passes it to `setSharedPrices()` from `src/features/contractors`.
+- **Products** may have `line` and `doorStyle`; SKUs may contain `{w}`; the working copy carries `imageFileIds`.
+- **Exports:** the server makes the CSV and the project file with the export kit (`scripts/build-kit.mjs` → `server/generated/export-kit.mjs`).
+
 ### 13.3 Changes to existing packages
 - **A viewer:** the studio render reads `useEntitlements(projectId)`. When `watermark` is true, the on-screen preview is watermarked (a repeated diagonal "Mise · Preview" at low opacity plus a corner badge), and *Download* goes through `requestExport(projectId, 'render', …)`. QA: a free user sees the watermark; an entitled user's download has none.
 - **C orders:**

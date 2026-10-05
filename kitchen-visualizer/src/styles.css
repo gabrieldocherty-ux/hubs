@@ -323,6 +323,20 @@ kbd {
   color: var(--ink-3);
 }
 
+/* Exports are paid (package G): a lock on each item and a note under them. */
+.menu b svg {
+  color: var(--ink-3);
+}
+
+.menu-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 10px 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
 .menu-sep {
   height: 1px;
   background: var(--line);
@@ -2151,6 +2165,22 @@ kbd {
   gap: 8px;
 }
 
+/* Explanatory copy at the top of a dialog. */
+.dialog-copy {
+  margin: 4px 0 16px;
+  color: var(--ink-2);
+}
+
+/* Wider dialogs (the Unlock dialog's plan cards, contractor forms); they scroll on short screens. */
+.modal--wide {
+  width: min(760px, 100%);
+}
+
+.modal-backdrop > .modal {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
 /* ─── Sign in ───────────────────────────────────────────── */
 
 .auth {
@@ -2354,6 +2384,28 @@ a.btn {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
+}
+
+/* A contractor's kitchens, grouped by client. */
+.home-section + .home-section {
+  margin-top: 28px;
+}
+
+.home-client {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.home-client span {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-3);
 }
 
 .project-card {

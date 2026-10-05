@@ -24,15 +24,17 @@ after(async () => {
   await t?.close();
 });
 
-test('signup → 201 with role and brands, an httpOnly SameSite=Lax cookie, no Secure over http', async () => {
+test('signup → 201 with role, brands and plan, an httpOnly SameSite=Lax cookie, no Secure over http', async () => {
   const a = t.agent();
   const r = await a.post('/api/auth/signup', { name: '  Ada  ', email: 'ADA@Example.com', password: 'password123' });
   assert.equal(r.status, 201);
-  assert.deepEqual(Object.keys(r.body.user).sort(), ['brands', 'email', 'id', 'name', 'role']);
+  assert.deepEqual(Object.keys(r.body.user).sort(), ['brands', 'contractor', 'email', 'id', 'name', 'plan', 'role']);
   assert.equal(r.body.user.email, 'ada@example.com');
   assert.equal(r.body.user.name, 'Ada');
   assert.equal(r.body.user.role, 'customer');
   assert.deepEqual(r.body.user.brands, []);
+  assert.equal(r.body.user.plan.id, 'free', 'a new account is on the Free plan');
+  assert.equal(r.body.user.contractor, null);
   const cookie = r.headers.get('set-cookie');
   assert.match(cookie, /^mise_session=[A-Za-z0-9_-]{43}; HttpOnly; SameSite=Lax; Path=\/; Max-Age=(2591999|2592000)$/);
   const me = await a.get('/api/auth/me');

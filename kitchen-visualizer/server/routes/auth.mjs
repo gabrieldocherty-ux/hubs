@@ -18,8 +18,20 @@ export default function routes(ctx) {
   const { db, config, services } = ctx;
   const { sessions, limiter } = ctx.internal;
 
-  /** `{ id, email, name, role, brands }`: the shape every auth response returns. */
-  const userWire = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role || 'customer', brands: services.auth.membershipsOf(u.id) });
+  /**
+   * `{ id, email, name, role, brands, plan, contractor }`: the shape every auth response
+   * returns. `plan` comes from services.billing (Free until package G registers);
+   * `contractor` is `{ company, active }` once the user has set up a contractor company.
+   */
+  const userWire = (u) => ({
+    id: u.id,
+    email: u.email,
+    name: u.name,
+    role: u.role || 'customer',
+    brands: services.auth.membershipsOf(u.id),
+    plan: services.billing.planOf(u.id),
+    contractor: services.contractors.summaryFor(u.id),
+  });
 
   /** ADMIN_EMAILS promotes on signup and login. Returns the (possibly updated) role. */
   const promote = (user) => {

@@ -53,6 +53,20 @@ export function AccountMenu() {
           <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'orders', rest: '' }))}>
             <b>My orders</b>
           </button>
+          <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'billing' }))}>
+            <b>Billing</b>
+            <span>{user.plan.id === 'free' ? 'Free plan' : `${user.plan.id === 'contractor' ? 'Contractor' : 'Unlimited'} plan`}</span>
+          </button>
+          {user.plan.id === 'contractor' || user.contractor ? (
+            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'pro', rest: '' }))}>
+              <b>Contractor workspace</b>
+              {user.contractor && <span>{user.contractor.company}{user.contractor.active ? '' : ' · plan lapsed'}</span>}
+            </button>
+          ) : (
+            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'pro', rest: '' }))}>
+              <b>For contractors</b>
+            </button>
+          )}
           {user.brands.length > 0 ? (
             <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'brand', rest: '' }))}>
               <b>Brand portal</b>

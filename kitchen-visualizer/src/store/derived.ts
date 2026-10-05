@@ -4,6 +4,7 @@ import { useCatalogVersion } from './useCatalog';
 import { resolveAll } from '../lib/geometry';
 import { runChecks } from '../lib/checks';
 import { buildEstimate } from '../lib/estimate';
+import { useKitchenPriceOf } from '../features/contractors';
 
 // The catalog version is a dependency everywhere: when a server product (or its snapshot) loads,
 // the same items resolve to different products, sizes and prices.
@@ -20,8 +21,13 @@ export function useReport() {
   return useMemo(() => runChecks(all, room), [all, room]);
 }
 
+/**
+ * The kitchen's estimate: at a contractor's sell prices (with their costs) in their own kitchens,
+ * at the sharer's sell prices on a shared kitchen, at list prices otherwise.
+ */
 export function useEstimate() {
   const doc = useDesignStore((s) => s.doc);
   const catalogVersion = useCatalogVersion();
-  return useMemo(() => buildEstimate(doc), [doc, catalogVersion]);
+  const priceOf = useKitchenPriceOf();
+  return useMemo(() => buildEstimate(doc, priceOf ? { priceOf } : {}), [doc, catalogVersion, priceOf]);
 }

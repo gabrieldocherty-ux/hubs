@@ -1,4 +1,4 @@
-import type { DesignDoc, PlacedItem, Product, Room, Rotation, Surfaces } from '../types';
+import type { DesignDoc, EstimateExtra, PlacedItem, Product, Room, Rotation, Surfaces } from '../types';
 import { DEFAULT_KITCHEN_NAME, DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { getProduct, isBuiltin, isProductIdShape, missingProduct } from '../data/catalog';
 import { useCatalog } from '../store/useCatalog';
@@ -70,6 +70,26 @@ function cleanItems(raw: unknown): PlacedItem[] {
   return out;
 }
 
+/** Same limits as the server's `normalizeExtra` (server/lib/doc.mjs). Invalid lines are dropped. */
+export function cleanExtras(raw: unknown): EstimateExtra[] {
+  if (!Array.isArray(raw)) return [];
+  const out: EstimateExtra[] = [];
+  for (const x of raw as Partial<EstimateExtra>[]) {
+    if (out.length >= 50) break;
+    if (!x || typeof x !== 'object') continue;
+    const label = typeof x.label === 'string' ? x.label.trim().slice(0, 80) : '';
+    if (!label || typeof x.amount !== 'number' || !Number.isFinite(x.amount) || x.amount < 0 || x.amount > 10_000_000) continue;
+    const line: EstimateExtra = {
+      id: typeof x.id === 'string' && x.id && x.id.length <= 64 ? x.id : `x-${out.length}-${Math.random().toString(36).slice(2, 8)}`,
+      label,
+      amount: Math.round(x.amount * 100) / 100,
+    };
+    if (typeof x.cost === 'number' && Number.isFinite(x.cost) && x.cost >= 0 && x.cost <= 10_000_000) line.cost = Math.round(x.cost * 100) / 100;
+    out.push(line);
+  }
+  return out;
+}
+
 /**
  * Gives every item a stable `finishId` (filled from the legacy `finishIndex` on old docs) and
  * re-syncs `finishIndex` to wherever that id sits now. Items whose product is unknown or only a
@@ -112,12 +132,14 @@ export function sanitizeDoc(doc: DesignDoc): DesignDoc {
   const items = cleanItems(d.items);
   const unknown = [...new Set(items.map((i) => i.productId).filter((id) => !getProduct(id)))];
   if (unknown.length) catalog.registerMissing(unknown.map(missingProduct));
+  const extras = cleanExtras(d.extras);
   return {
     name: typeof d.name === 'string' && d.name.trim() ? d.name : DEFAULT_KITCHEN_NAME,
     room: cleanRoom(d.room),
     surfaces: cleanSurfaces(d.surfaces),
     items: withFinishIds(items),
     version: 2,
+    ...(extras.length ? { extras } : {}),
   };
 }
 

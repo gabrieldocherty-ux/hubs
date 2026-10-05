@@ -1,0 +1,53 @@
+[
+  {
+    "id": "free",
+    "name": "Free",
+    "priceCents": 0,
+    "interval": null,
+    "tagline": "For anyone designing a kitchen",
+    "bullets": [
+      "Design, save and share kitchens without limits",
+      "Every view: plan, 3D, side by side and wall elevations",
+      "Studio renders preview with a watermark",
+      "Exports are locked"
+    ]
+  },
+  {
+    "id": "kitchen_unlock",
+    "name": "Kitchen unlock",
+    "priceCents": 500,
+    "interval": null,
+    "tagline": "One kitchen, every export, forever",
+    "bullets": [
+      "Every export for this kitchen, forever",
+      "Including re-exports after you change it",
+      "Floor plan, 3D image, shopping list and project file",
+      "Studio renders of this kitchen without a watermark"
+    ]
+  },
+  {
+    "id": "unlimited",
+    "name": "Unlimited",
+    "priceCents": 1500,
+    "interval": "month",
+    "tagline": "For designers and frequent users",
+    "bullets": [
+      "Every export of every kitchen you own",
+      "No watermarks",
+      "Cancel anytime; you keep access to the end of the month you paid for"
+    ]
+  },
+  {
+    "id": "contractor",
+    "name": "Contractor",
+    "priceCents": 4000,
+    "interval": "month",
+    "tagline": "Show your customers the exact cabinets you sell, in their kitchen, at your price.",
+    "bullets": [
+      "Everything in Unlimited",
+      "Your own private catalog: quick-add a line, upload models, or have us model them",
+      "A price book with your cost and markup; clients only ever see your sell price",
+      "Branded quotes, client and contractor estimate views, and presentation mode"
+    ]
+  }
+]

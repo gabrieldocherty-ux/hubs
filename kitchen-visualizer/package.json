@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "api": "node --no-warnings server/index.mjs",
-    "build": "tsc -b && vite build",
-    "test": "node scripts/test.mjs",
+    "api": "node scripts/build-kit.mjs && node --no-warnings server/index.mjs",
+    "build": "node scripts/build-kit.mjs && tsc -b && vite build",
+    "build:kit": "node scripts/build-kit.mjs --verbose",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run test:ts && npm run test:server",
+    "test:ts": "node scripts/test.mjs",
+    "test:server": "node scripts/build-kit.mjs && node --no-warnings --test \"server/test/*.test.mjs\"",
     "preview": "vite preview",
     "start": "node --no-warnings server/index.mjs --prod",
     "deploy:local": "npm run build && node scripts/deploy-local.mjs"

@@ -10,3 +10,5 @@ server/data/
 .qa/
 .build/
 .tmp-tests/
+# Built from src/lib/exportKit.ts by scripts/build-kit.mjs (npm run build / api / test).
+server/generated/

@@ -52,8 +52,11 @@ export interface Finish {
   swatchUrl?: string;
 }
 
-/** Where a product came from. Built-ins are compiled in; the rest come from the server or a saved kitchen. */
-export type ProductSource = 'builtin' | 'brand' | 'custom' | 'snapshot' | 'missing';
+/**
+ * Where a product came from. Built-ins are compiled in; the rest come from the server or a saved
+ * kitchen. `contractor` products are a contractor's private catalog (only they see them).
+ */
+export type ProductSource = 'builtin' | 'brand' | 'custom' | 'contractor' | 'snapshot' | 'missing';
 
 /** Look flags that used to be keyed off brand names (brass knobs, pro backguard). */
 export interface ProductFlags {
@@ -107,6 +110,12 @@ export interface Product {
   visibility?: 'public' | 'private';
   revision?: number;
   updatedAt?: number;
+  /** Uploaded image ids, on the working copy its editors get (brand portal, My catalog). */
+  imageFileIds?: string[];
+  /** A product line or collection ("Smith Shaker"); groups a contractor's catalog. */
+  line?: string;
+  /** The door style a cabinet line is sold in. The kitchen-wide style still draws the doors. */
+  doorStyle?: DoorStyle;
 }
 
 export type Rotation = 0 | 90 | 180 | 270;
@@ -145,6 +154,18 @@ export interface Surfaces {
   paintId: string;
 }
 
+/**
+ * An extra estimate line: labour or a service such as installation, demolition or delivery.
+ * `amount` is what the client pays; `cost` is the contractor's own number and never leaves their
+ * account (the server strips it from shares and exports).
+ */
+export interface EstimateExtra {
+  id: string;
+  label: string;
+  amount: number;
+  cost?: number;
+}
+
 export interface DesignDoc {
   name: string;
   room: Room;
@@ -154,6 +175,8 @@ export interface DesignDoc {
   version?: 2;
   /** Snapshots of every non-built-in product the kitchen uses, so it still renders after a product is unpublished. */
   products?: Record<string, Product>;
+  /** Extra estimate lines (installation, delivery…). */
+  extras?: EstimateExtra[];
 }
 
 export type ViewMode = 'plan' | 'split' | '3d' | 'walls';

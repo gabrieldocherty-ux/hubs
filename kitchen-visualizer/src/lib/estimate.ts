@@ -1,4 +1,5 @@
 import type { DesignDoc, Product } from '../types';
+import type { PriceQuote } from '../types/platform';
 import { hasCountertop, isBuiltin, priceFor, productCode } from '../data/catalog';
 import { BACKSPLASHES, COUNTERTOPS, FLOORING, HARDWARE, PAINTS, byId, resolveBacksplash } from '../data/finishes';
 import { backsplashSegments, resolveAll } from './geometry';
@@ -13,7 +14,8 @@ export type EstimateGroup =
   | 'Doors & windows'
   | 'Surfaces'
   | 'Hardware'
-  | 'Other';
+  | 'Other'
+  | 'Services';
 
 export interface EstimateLine {
   key: string;
@@ -29,6 +31,12 @@ export interface EstimateLine {
   /** The brand's buy link, when it has one (product lines only). */
   buyUrl?: string;
   productId?: string;
+  /** A contractor's cost per unit, when they entered one. Only ever shown in Contractor view. */
+  unitCost?: number;
+  /** The markup that produced `unitPrice` from `unitCost`, in percent. */
+  markupPct?: number;
+  /** An extra line (installation, delivery…) rather than a product or surface. */
+  extraId?: string;
 }
 
 export interface Estimate {
@@ -37,6 +45,20 @@ export interface Estimate {
   total: number;
   /** True when a built-in demo product is in the kitchen, so the "placeholder prices" note applies. */
   hasBuiltin: boolean;
+  /** Sum of the known costs (null when no line has one). */
+  costTotal: number | null;
+  /** The sell total of the lines that have a cost, so margin = costedTotal - costTotal. */
+  costedTotal: number;
+  /** Lines priced at list because no cost was entered. */
+  uncosted: number;
+}
+
+export interface EstimateOptions {
+  /**
+   * A contractor's prices (`usePriceBook().priceOf`): the sell price, and their cost when known.
+   * Without it every product is at its list price.
+   */
+  priceOf?: (product: Product, widthIn: number) => PriceQuote;
 }
 
 const GROUP_BY_CATEGORY: Partial<Record<string, EstimateGroup>> = {
@@ -71,7 +93,7 @@ export function pullCount(p: Product, w: number): number {
   }
 }
 
-export function buildEstimate(doc: DesignDoc): Estimate {
+export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estimate {
   const all = resolveAll(doc.items);
   const map = new Map<string, EstimateLine>();
   let pulls = 0;
@@ -82,13 +104,14 @@ export function buildEstimate(doc: DesignDoc): Estimate {
     const finish = resolveFinish(r.item, r.product, doc.surfaces);
     const code = productCode(r.product, r.w);
     const key = `${r.product.id}|${r.w}|${finish.id}`;
-    const unitPrice = priceFor(r.product, r.w);
+    const missing = r.product.source === 'missing';
+    const quote = opts.priceOf && !missing ? opts.priceOf(r.product, r.w) : null;
+    const unitPrice = quote ? quote.sell : priceFor(r.product, r.w);
     const line = map.get(key);
     if (line) {
       line.qty += 1;
       line.total += unitPrice;
     } else {
-      const missing = r.product.source === 'missing';
       map.set(key, {
         key,
         // A category this build doesn't know still counts: it lands in "Other", never out of the total.
@@ -102,6 +125,7 @@ export function buildEstimate(doc: DesignDoc): Estimate {
         productId: r.product.id,
         ...(missing ? {} : { sku: code }),
         ...(r.product.buyUrl ? { buyUrl: r.product.buyUrl } : {}),
+        ...(quote && typeof quote.cost === 'number' ? { unitCost: quote.cost, markupPct: quote.markupPct } : {}),
       });
     }
     pulls += pullCount(r.product, r.w);
@@ -144,11 +168,39 @@ export function buildEstimate(doc: DesignDoc): Estimate {
     lines.push({ key: 'hardware', group: 'Hardware', label: `${hw.brand} ${hw.name} pulls`, sub: 'Cabinet pulls and knobs', qty: pulls, unit: 'ea', unitPrice: hw.price, total: pulls * hw.price });
   }
 
-  const order: EstimateGroup[] = ['Cabinetry', 'Appliances', 'Sinks & faucets', 'Surfaces', 'Hardware', 'Lighting', 'Doors & windows', 'Furniture & decor', 'Other'];
-  lines.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || b.total - a.total);
+  // Labour and services the contractor added, in the order they were entered.
+  for (const x of doc.extras ?? []) {
+    if (!x || typeof x.amount !== 'number' || !Number.isFinite(x.amount)) continue;
+    lines.push({
+      key: `extra|${x.id}`,
+      group: 'Services',
+      label: x.label,
+      sub: 'Labour & services',
+      qty: 1,
+      unit: 'job',
+      unitPrice: x.amount,
+      total: x.amount,
+      extraId: x.id,
+      ...(typeof x.cost === 'number' && Number.isFinite(x.cost) ? { unitCost: x.cost } : {}),
+    });
+  }
+
+  const order: EstimateGroup[] = ['Cabinetry', 'Appliances', 'Sinks & faucets', 'Surfaces', 'Hardware', 'Lighting', 'Doors & windows', 'Furniture & decor', 'Other', 'Services'];
+  // Stable within a group: extras keep their entered order, everything else is by total.
+  lines.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || (a.extraId || b.extraId ? 0 : b.total - a.total));
   const groups = order
     .map((name) => ({ name, total: lines.filter((l) => l.group === name).reduce((s, l) => s + l.total, 0) }))
     .filter((g) => g.total > 0);
+  const costed = lines.filter((l) => typeof l.unitCost === 'number');
+  const costTotal = costed.length ? costed.reduce((s, l) => s + (l.unitCost as number) * l.qty, 0) : null;
   // The total is every line, so nothing can fall out of it even if a group were somehow unlisted.
-  return { lines, groups, total: lines.reduce((s, l) => s + l.total, 0), hasBuiltin };
+  return {
+    lines,
+    groups,
+    total: lines.reduce((s, l) => s + l.total, 0),
+    hasBuiltin,
+    costTotal,
+    costedTotal: costed.reduce((s, l) => s + l.total, 0),
+    uncosted: lines.length - costed.length,
+  };
 }

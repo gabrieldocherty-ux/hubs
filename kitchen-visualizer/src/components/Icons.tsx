@@ -89,3 +89,9 @@ export const Logo = (p: P) => (
     <circle cx="23" cy="23" r="2.2" fill="#c2542d" />
   </svg>
 );
+export const Lock = (p: P) => (
+  <svg {...base(p)}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+);
+export const Present = (p: P) => (
+  <svg {...base(p)}><rect x="3" y="4" width="18" height="12" rx="1.5" /><path d="M12 16v4" /><path d="M8 20h8" /></svg>
+);
