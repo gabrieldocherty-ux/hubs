@@ -104,8 +104,8 @@ export function Workspace({ projectId, mode, showPrices = true, banner }: Worksp
         </main>
         {!compact && <RightPanel mode={mode} showPrices={prices} />}
       </div>
-      {compact && <MobileSheets />}
-      {compact && <MobileBar view={shown as CompactView} />}
+      {compact && <MobileSheets mode={mode} showPrices={prices} />}
+      {compact && <MobileBar view={shown as CompactView} readOnly={view} />}
       {!view && <SelectionToolbar compact={compact} onDetails={onDetails} />}
       <Toasts />
       {!view && <ConflictDialog />}

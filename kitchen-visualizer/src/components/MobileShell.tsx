@@ -25,7 +25,7 @@ const Swatches = (p: SVGProps<SVGSVGElement>) => (
 export type CompactView = Exclude<ViewMode, 'split'>;
 
 /** The phone layout's bottom bar: which view fills the screen, and the three sheets. */
-export function MobileBar({ view }: { view: CompactView }) {
+export function MobileBar({ view, readOnly = false }: { view: CompactView; readOnly?: boolean }) {
   const setUI = useDesignStore((s) => s.setUI);
   const hasSelection = useDesignStore((s) => s.selectedId !== null);
   const sheet = useMobileUI((s) => s.sheet);
@@ -38,11 +38,13 @@ export function MobileBar({ view }: { view: CompactView }) {
     ['3d', '3D', CubeIcon],
     ['walls', 'Walls', WallsIcon],
   ];
-  const sheets: [SheetId, string, JSX.Element, JSX.Element | null][] = [
-    ['catalog', 'Add', <Plus key="i" width={20} height={20} />, null],
-    ['room', 'Room', <Swatches key="i" />, null],
-    ['details', hasSelection ? 'Item' : 'Details', <Info key="i" width={20} height={20} />, issues > 0 ? <i key="b" className="mbar-badge">{issues}</i> : null],
-  ];
+  const sheets: [SheetId, string, JSX.Element, JSX.Element | null][] = readOnly
+    ? [['details', 'Details', <Info key="i" width={20} height={20} />, null]]
+    : [
+        ['catalog', 'Add', <Plus key="i" width={20} height={20} />, null],
+        ['room', 'Room', <Swatches key="i" />, null],
+        ['details', hasSelection ? 'Item' : 'Details', <Info key="i" width={20} height={20} />, issues > 0 ? <i key="b" className="mbar-badge">{issues}</i> : null],
+      ];
 
   return (
     <nav className="mbar" aria-label="Editor">
@@ -77,21 +79,27 @@ export function MobileBar({ view }: { view: CompactView }) {
 }
 
 /** Catalog, Room & finishes and Details, each in its own sheet. */
-export function MobileSheets() {
+/** In view mode (share links) only the read-only Details sheet exists: nothing to add or restyle. */
+export function MobileSheets({ mode = 'edit', showPrices = true }: { mode?: 'edit' | 'view'; showPrices?: boolean }) {
   const sheet = useMobileUI((s) => s.sheet);
   const close = useMobileUI((s) => s.closeSheet);
+  const view = mode === 'view';
   return (
     <>
-      <Sheet title="Add products" open={sheet === 'catalog'} onClose={close} className="sheet--catalog">
-        <CatalogPanel />
-      </Sheet>
-      <Sheet title="Room & finishes" open={sheet === 'room'} onClose={close}>
-        <div className="panel-scroll">
-          <RoomPanel />
-        </div>
-      </Sheet>
+      {!view && (
+        <Sheet title="Add products" open={sheet === 'catalog'} onClose={close} className="sheet--catalog">
+          <CatalogPanel />
+        </Sheet>
+      )}
+      {!view && (
+        <Sheet title="Room & finishes" open={sheet === 'room'} onClose={close}>
+          <div className="panel-scroll">
+            <RoomPanel />
+          </div>
+        </Sheet>
+      )}
       <Sheet title="Details" open={sheet === 'details'} onClose={close}>
-        <RightPanel variant="sheet" />
+        <RightPanel variant="sheet" mode={mode} showPrices={showPrices} />
       </Sheet>
     </>
   );
