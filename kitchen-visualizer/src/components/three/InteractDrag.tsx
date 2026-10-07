@@ -310,7 +310,10 @@ export function InteractDrag({ containerRef }: { containerRef: RefObject<HTMLDiv
     function onLostCapture(e: PointerEvent) {
       const p = press.current;
       // A normal release ends the press before capture goes; anything else ends the drag where it is.
-      if (p && e.pointerId === p.pointerId && p.state === 'dragging') endDrag(true);
+      // Only OUR capture counts: a finger is implicitly captured to the <canvas> it landed on, and
+      // moving that capture to the wrapper fires the canvas's lostpointercapture, which bubbles up
+      // here. Treating that as "capture lost" ended every touch drag after its first few pixels.
+      if (p && e.pointerId === p.pointerId && p.state === 'dragging' && e.target === p.captured) endDrag(true);
     }
 
     function onBlur() {
@@ -415,8 +418,21 @@ export function InteractDrag({ containerRef }: { containerRef: RefObject<HTMLDiv
     });
     const unregister = registerDropTarget('3d', container, toRoom);
     syncControls();
-    // Headless checks (only with ?qa): read the camera / controls, and the 3D toRoom.
-    qaExpose({ scene3d: { get, toRoom, pick } });
+    // Headless checks (only with ?qa): read the camera / controls, the 3D toRoom, and where
+    // a room point (inches, plus a height in inches) is on screen.
+    const toClient = (xIn: number, yIn: number, zIn = 0) => {
+      const { camera } = get();
+      camera.updateMatrixWorld();
+      const v = new THREE.Vector3(xIn / 12, zIn / 12, yIn / 12).project(camera);
+      const r = canvasRect();
+      return { x: r.left + ((v.x + 1) / 2) * r.width, y: r.top + ((1 - v.y) / 2) * r.height };
+    };
+    const cameraState = () => {
+      const { camera } = get();
+      const c = controls();
+      return { position: camera.position.toArray(), target: c ? c.target.toArray() : null, enabled: c ? c.enabled : null };
+    };
+    qaExpose({ scene3d: { get, toRoom, pick, toClient, cameraState } });
 
     return () => {
       if (press.current?.state === 'dragging') endDrag(true);
