@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import type { PlacedItem, Room, Surfaces } from '../../types';
 import { useDesignStore, type CameraPreset } from '../../store/useDesignStore';
 import { useReport, useResolvedItems } from '../../store/derived';
-import { useCatalogVersion } from '../../store/useCatalog';
+import { useCatalog, useCatalogVersion } from '../../store/useCatalog';
 import { getProduct, isOpening } from '../../data/catalog';
 import { placeAtClient, usePlacement } from '../../lib/interaction';
 import { resolve } from '../../lib/geometry';
@@ -287,7 +287,8 @@ function Stills({ room }: { room: Room }) {
       return c.toDataURL('image/png');
     });
     const q = useRoomQuality.getState();
-    qaSet({ viewer: { renderStill: render, maxSide, setToneMap: q.setToneMap, setQuality: q.setQuality } });
+    // `catalog` lets QA register a product with a broken model URL (the fallback check).
+    qaSet({ viewer: { renderStill: render, maxSide, setToneMap: q.setToneMap, setQuality: q.setQuality, catalog: useCatalog } });
     return () => {
       registerStillRenderer(null);
       registerExporter('scene', undefined);
