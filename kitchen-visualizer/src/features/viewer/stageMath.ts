@@ -51,6 +51,23 @@ export function stageFrame(p: StageDims): StageFrame {
   };
 }
 
+/** How far the dimension lines sit out from the product, and their end-tick half length (inches). */
+export function dimOffsets(w: number, d: number): { off: number; tick: number } {
+  const off = Math.max(2.5, Math.min(Math.max(w, d) * 0.09, 6));
+  return { off, tick: Math.max(1.2, off * 0.5) };
+}
+
+/**
+ * The frame with its camera box widened on x and z by the room the dimension lines and their
+ * labels need, so toggling the dimensions never pushes a label off the edge (and never reframes).
+ */
+export function framedForDims(frame: StageFrame, w: number, d: number): StageFrame {
+  const { off, tick } = dimOffsets(w, d);
+  const pad = off + tick * 1.6;
+  const { min, max } = frame.box;
+  return { ...frame, box: { min: [min[0] - pad, min[1], min[2] - pad], max: [max[0] + pad, max[1], max[2] + pad] } };
+}
+
 /**
  * Camera distance from the centre of a sphere of `radius` so it fits a perspective camera with
  * vertical field of view `fovDeg` at `aspect` (width / height), with `margin` (1 = touching).

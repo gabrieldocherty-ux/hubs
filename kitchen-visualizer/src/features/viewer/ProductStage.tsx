@@ -39,7 +39,7 @@ import { OpeningModel } from '../../components/three/Room3D';
 import { GltfModel, slotMaterials } from '../../components/three/gltf';
 import type { SceneCtx } from '../../components/three/parts';
 import { QaStats, qaSet } from '../../components/three/qaStats';
-import { dimText, fitDistance, stageCamera, stageFrame, type StageFrame } from './stageMath';
+import { dimOffsets, dimText, fitDistance, framedForDims, stageCamera, stageFrame, type StageFrame } from './stageMath';
 import './viewer.css';
 
 const FOV = 30;
@@ -177,8 +177,7 @@ function Dimensions({ frame, w, d, h }: { frame: StageFrame; w: number; d: numbe
   const group = useRef<THREE.Group>(null);
   const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
-  const off = Math.max(2.5, Math.min(Math.max(w, d) * 0.09, 6));
-  const tick = Math.max(1.2, off * 0.5);
+  const { off, tick } = dimOffsets(w, d);
   const y = frame.bottom + 0.3;
   const x0 = -w / 2;
   const x1 = w / 2;
@@ -335,6 +334,7 @@ function StillHook({ radius, onStill }: { radius: number; onStill?: (r: StageSti
     onStill?.(render);
     qaSet({
       stage: {
+        get,
         renderStill: async (size: number) => {
           const c = await render(size);
           return { width: c.width, height: c.height };
@@ -379,14 +379,16 @@ function StageScene({ product, finishId, widthIn, showDims, autoRotate, onReady,
     () => stageFrame({ w: r.w, d: product.depthIn, h: product.heightIn, elevationIn: product.elevationIn, kind: product.kind }),
     [r.w, product.depthIn, product.heightIn, product.elevationIn, product.kind],
   );
+  const camFrame = useMemo(() => framedForDims(frame, r.w, product.depthIn), [frame, r.w, product.depthIn]);
   const ctx = useMemo(() => makeSceneCtx(DEFAULT_SURFACES, { ceilingIn: frame.ceilingIn }), [frame.ceilingIn]);
   const url = (product.source !== 'missing' && product.model?.url) || null;
   const [model, setModel] = useState<{ url: string | null; ok: boolean } | null>(null);
   const modelReady = model !== null && model.url === url;
   const [spin, setSpin] = useState(() => autoRotate && !prefersReducedMotion());
   const content = useRef<THREE.Group>(null);
+  // Stills leave the dimension lines out, so they frame the product alone (tighter).
   const { min, max } = frame.box;
-  const radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 24;
+  const stillRadius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 24;
   const span = Math.max(r.w, product.depthIn) / 12;
 
   useEffect(() => setSpin(autoRotate && !prefersReducedMotion()), [autoRotate]);
@@ -407,7 +409,9 @@ function StageScene({ product, finishId, widthIn, showDims, autoRotate, onReady,
         // Drawn once; again when the model arrives or the size changes.
         key={`${product.id}:${r.w}:${modelReady ? String(model?.ok) : 'loading'}`}
         frames={1}
-        position={[0, 0.002, 0]}
+        // Just under the floor: drei blurs on a plane at y = 0 seen from the shadow camera, so the
+        // camera must sit below it (at +0.002 the blur pass was clipped and the shadow came out empty).
+        position={[0, -0.02, 0]}
         scale={Math.max(2, span * 2.4)}
         far={Math.max(1, (frame.top + 4) / 12)}
         blur={2.6}
@@ -416,8 +420,8 @@ function StageScene({ product, finishId, widthIn, showDims, autoRotate, onReady,
         color="#3a3127"
       />
       <GlassUpgrade root={content} />
-      <CameraRig frame={frame} autoRotate={spin} onInteract={() => setSpin(false)} />
-      <StillHook radius={radius} onStill={onStill} />
+      <CameraRig frame={camFrame} autoRotate={spin} onInteract={() => setSpin(false)} />
+      <StillHook radius={stillRadius} onStill={onStill} />
       <ReadySignal key={url ?? product.id} ready={modelReady} onReady={onReady} />
       {QA && <QaStats name="stage" />}
     </>
