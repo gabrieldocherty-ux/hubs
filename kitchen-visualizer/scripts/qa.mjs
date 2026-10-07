@@ -857,6 +857,8 @@ export async function main(argv = process.argv.slice(2)) {
   let ok = false;
   try {
     console.log(`QA ${opts.pkg} on http://127.0.0.1:${port}, serving ${path.relative(ROOT, dist) || '.'}${opts.keep ? `, temp ${tmp}` : ''}`);
+    // The server imports the export kit generated from src/lib/exportKit.ts (gitignored).
+    if (!fs.existsSync(path.join(ROOT, 'server', 'generated', 'export-kit.mjs'))) await runNode(['scripts/build-kit.mjs'], { env, logFile });
     const seedOut = await runNode(['server/seed/index.mjs'], { env, logFile });
     for (const line of seedOut.split(/\r?\n/)) if (/^seed /.test(line)) console.log(`  ${line}`);
     const serverErr = [];
