@@ -14,6 +14,8 @@
     "test:server": "node scripts/build-kit.mjs && node --no-warnings --test \"server/test/*.test.mjs\"",
     "preview": "vite preview",
     "start": "node --no-warnings server/index.mjs --prod",
+    "seed": "node --no-warnings server/seed/index.mjs",
+    "qa": "node scripts/qa.mjs",
     "deploy:local": "npm run build && node scripts/deploy-local.mjs"
   },
   "dependencies": {
