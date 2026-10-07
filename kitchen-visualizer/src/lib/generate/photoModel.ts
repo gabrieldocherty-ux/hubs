@@ -586,35 +586,55 @@ function runSlots(seg: Segment, room: Room, notes: string[]): Slot[] {
 function islandSpec(model: PhotoModel, room: Room, segments: Segment[], fixed: FixedSpec[], widthCap: number | null, notes: string[]): IslandSpec | null {
   const isl = model.island;
   if (!isl) return null;
-  const depthOf = (wall: Wall) => {
+  const island = getProduct('island');
+  if (!island) return null;
+  const corners = fixed.filter((f) => f.productId === 'corner');
+  /** How far a wall's cabinets reach into the room: the runs, and (when `withCorners`) any 36″ corner cabinet on it. */
+  const depthOf = (wall: Wall, withCorners: boolean) => {
     let d = 0;
     for (const s of segments) if (s.wall === wall) d = Math.max(d, 24, ...s.anchors.map((a) => a.depth));
-    if (fixed.some((f) => f.productId === 'corner')) {
-      for (const f of fixed) {
-        if (f.productId !== 'corner') continue;
+    if (withCorners) {
+      for (const f of corners) {
         const touches = (wall === 'north' && f.y < 30) || (wall === 'south' && f.y > room.lengthIn - 30) || (wall === 'west' && f.x < 30) || (wall === 'east' && f.x > room.widthIn - 30);
         if (touches) d = Math.max(d, 36);
       }
     }
     return d;
   };
-  const x0 = depthOf('west');
-  const x1 = room.widthIn - depthOf('east');
-  const y0 = depthOf('north');
-  const y1 = room.lengthIn - depthOf('south');
-  const fw = x1 - x0;
-  const fl = y1 - y0;
-  const rotation: 0 | 90 = fw >= fl ? 0 : 90;
-  const long = rotation === 0 ? fw : fl;
-  const short = rotation === 0 ? fl : fw;
-  const island = getProduct('island');
-  if (!island) return null;
   const sizes = (island.widthOptions ?? [island.widthIn]).slice().sort((a, b) => b - a);
-  for (const clear of [42, 37]) {
-    if (short < island.depthIn + clear * 2) continue;
+
+  /** The island between the runs with `clear` walkways, or null when it doesn't fit. */
+  const fit = (withCorners: boolean, clear: number) => {
+    const x0 = depthOf('west', withCorners);
+    const x1 = room.widthIn - depthOf('east', withCorners);
+    const y0 = depthOf('north', withCorners);
+    const y1 = room.lengthIn - depthOf('south', withCorners);
+    const fw = x1 - x0;
+    const fl = y1 - y0;
+    const rotation: 0 | 90 = fw >= fl ? 0 : 90;
+    const long = rotation === 0 ? fw : fl;
+    const short = rotation === 0 ? fl : fw;
+    if (short < island.depthIn + clear * 2) return null;
     const want = Math.min(snapTo(sizes, isl.widthIn), widthCap ?? Infinity);
     const width = sizes.find((w) => w <= want && w <= long - clear * 2);
-    if (!width) continue;
+    if (!width) return null;
+    const x = (x0 + x1) / 2;
+    const y = (y0 + y1) / 2;
+    // Measured from the runs alone, the island must still keep a full walkway from the corner
+    // cabinets (36″ squares in the room's corners), diagonally included.
+    if (!withCorners) {
+      const hx = (rotation === 0 ? width : island.depthIn) / 2;
+      const hy = (rotation === 0 ? island.depthIn : width) / 2;
+      const gap = (f: FixedSpec) => Math.hypot(Math.max(0, Math.abs(f.x - x) - hx - 18), Math.max(0, Math.abs(f.y - y) - hy - 18));
+      if (corners.some((f) => gap(f) < clear)) return null;
+    }
+    return { x, y, width, rotation };
+  };
+
+  for (const clear of [42, 37]) {
+    const at = fit(false, clear) ?? fit(true, clear);
+    if (!at) continue;
+    const { x, y, width, rotation } = at;
     if (width + 6 < isl.widthIn) notes.push(`The island is drawn ${width}″ long so walkways stay at least ${clear === 42 ? 42 : 36}″.`);
     if (Math.abs(isl.depthIn - island.depthIn) > 6) notes.push(`The island is drawn ${island.depthIn}″ deep (the depth Mise has); yours looks about ${Math.round(isl.depthIn)}″.`);
     const maxSeats = Math.floor(width / 20);
@@ -622,8 +642,8 @@ function islandSpec(model: PhotoModel, room: Room, segments: Segment[], fixed: F
     const runLen = (w: Wall) => segments.filter((s) => s.wall === w).reduce((n, s) => n + s.end - s.start, 0);
     const seatSide: Wall = rotation === 0 ? (runLen('south') > runLen('north') ? 'north' : 'south') : runLen('east') > runLen('west') ? 'west' : 'east';
     return {
-      x: (x0 + x1) / 2,
-      y: (y0 + y1) / 2,
+      x,
+      y,
       widthIn: width,
       rotation,
       seats: Math.min(isl.seats, maxSeats),

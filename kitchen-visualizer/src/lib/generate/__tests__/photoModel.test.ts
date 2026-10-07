@@ -336,6 +336,31 @@ test('an island is placed with clear walkways, or left out with a note', () => {
   assert.deepEqual(bads(r.doc), []);
 });
 
+test('corner cabinets only narrow the island space where they are: a 14½ ft U still fits one', () => {
+  // A U-shape 174″ wide with corner cabinets at both north corners: 116″ between the range and
+  // fridge fronts leaves 37″ walkways around Mise's 42″-deep island running north-south. The
+  // corner squares sit beyond the island's end, so they mustn't count as 36″-deep runs along the
+  // whole of the side walls (which left the island out).
+  const u = model({
+    room: { widthIn: 174, lengthIn: 180, ceilingIn: 102 },
+    runs: [
+      { wall: 'north', startIn: 0, endIn: 174, upper: true },
+      { wall: 'west', startIn: 0, endIn: 132, upper: true },
+      { wall: 'east', startIn: 0, endIn: 96, upper: false },
+    ],
+    appliances: [
+      { kind: 'sink', wall: 'north', offsetIn: 58, widthIn: 33 },
+      { kind: 'range', wall: 'west', offsetIn: 60, widthIn: 30 },
+      { kind: 'fridge', wall: 'east', offsetIn: 60, widthIn: 36 },
+    ],
+    island: { widthIn: 72, depthIn: 36, seats: 3, pendants: false },
+  });
+  const { doc } = buildFromPhotoModel(u);
+  assert.ok(doc.items.some((i) => kindOf(i) === 'corner'), 'the U has corner cabinets');
+  assert.equal(doc.items.filter((i) => kindOf(i) === 'island').length, 1);
+  assert.deepEqual(bads(doc), []);
+});
+
 test('island appliances are reported, not silently dropped', () => {
   const m = model({
     room: { widthIn: 240, lengthIn: 200, ceilingIn: 108 },
