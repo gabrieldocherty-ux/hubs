@@ -193,6 +193,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
   const built = useMemo(() => buildFromPhotoModel(model), [model]);
   const toCheck = useMemo(() => uncheckedKeys(model), [model]);
   const notes = useMemo(() => [...new Set([...warnings, ...built.notes])], [warnings, built.notes]);
+  const islandLeftOut = !!model.island && !built.doc.items.some((i) => i.productId === 'island');
   const viewer = useMemo(() => photos.map((p) => ({ id: p.id, url: p.url, name: p.name })), [photos]);
   const kitchenName = name.trim() || 'My kitchen';
   const busy = phase.kind !== 'idle';
@@ -483,7 +484,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
                 </ul>
               </details>
             )}
-            <SpaceForm model={model} onChange={setModel} units={units} onUnits={setUnits} name={name} onName={setName} focusKey={focusKey} onFocusKey={setFocusKey} seenFromPhotos={source === 'analysis'} />
+            <SpaceForm model={model} onChange={setModel} units={units} onUnits={setUnits} name={name} onName={setName} focusKey={focusKey} onFocusKey={setFocusKey} seenFromPhotos={source === 'analysis'} islandLeftOut={islandLeftOut} />
           </div>
         </main>
       )}

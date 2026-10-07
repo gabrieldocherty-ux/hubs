@@ -104,10 +104,12 @@ export interface SpaceFormProps {
   onFocusKey: (k: string | null) => void;
   /** The analyser's cabinet colour, when it saw one. */
   seenFromPhotos: boolean;
+  /** The model has an island but the built kitchen doesn't (no room for walkways). */
+  islandLeftOut?: boolean;
 }
 
 /** The editable form on "Check the space". */
-export function SpaceForm({ model, onChange, units, onUnits, name, onName, focusKey, onFocusKey, seenFromPhotos }: SpaceFormProps) {
+export function SpaceForm({ model, onChange, units, onUnits, name, onName, focusKey, onFocusKey, seenFromPhotos, islandLeftOut = false }: SpaceFormProps) {
   const [tapeWall, setTapeWall] = useState<PhotoWall>('north');
   const [tapeIn, setTapeIn] = useState<number | null>(null);
   const [scaled, setScaled] = useState<string | null>(null);
@@ -321,6 +323,11 @@ export function SpaceForm({ model, onChange, units, onUnits, name, onName, focus
               Pendant lights
             </label>
           </div>
+        )}
+        {model.island && islandLeftOut && (
+          <p className="gen-hint warn" role="status">
+            It doesn’t fit with 36″ walkways all round, so the kitchen is built without it. Check the room size, or make the island smaller.
+          </p>
         )}
       </Section>
 

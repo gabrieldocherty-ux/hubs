@@ -49,6 +49,12 @@
   font-weight: 600;
 }
 
+.gen-hint.warn {
+  margin: 10px 0 0;
+  color: var(--warn, #9a5b13);
+  font-weight: 600;
+}
+
 /* ─── Step 1: add photos ─────────────────────────────────── */
 
 .gen-main--photos {
