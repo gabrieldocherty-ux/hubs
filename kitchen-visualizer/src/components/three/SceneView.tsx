@@ -18,7 +18,7 @@ import { Room3D } from './Room3D';
 import { SelectionEdges } from './SelectionEdges';
 import type { SceneCtx } from './parts';
 import { useSceneCtx } from './sceneCtx';
-import { assignPendantLights, MAX_LIGHTS } from './lightPool';
+import { assignPendantLights, MAX_LIGHTS, PENDANT_COLOR } from './lightPool';
 import { FrameGovernor, QaStats, RoomEffects, qaSet } from './roomEffects';
 import { renderRoomStill, roomMaxSide, studioBusy } from './roomStill';
 import { modelsSettled } from './gltf';
@@ -35,23 +35,28 @@ const BG = '#efe8dc';
  * The room's light palette: the direct lights and the Lightformer environment (its backdrop
  * colour is the diffuse fill every surface picks up). With `?qa`, localStorage
  * `mise.qa.roomLight` (JSON) may override any key for tone-mapping A/B tests.
+ *
+ * Tuned for Neutral tone mapping (docs/handoff/viewer.md, "Tone mapping"): the old palette was
+ * warm enough that only ACES's desaturated highlights hid it. Under Neutral it turned Warm Linen
+ * cabinets cream (ΔE 12 from the swatch); these near-white lights bring that to ΔE 5.
  */
 const ROOM_LIGHT = (() => {
   const base = {
-    hemiSky: '#fff4e6',
-    hemiGround: '#b7a58c',
+    hemiSky: '#fbf9f6',
+    hemiGround: '#a9a297',
     hemi: 0.6,
     ambient: 0.14,
-    sun: '#fff1dd',
+    sun: '#fff8f0',
     sunI: 2.3,
-    fill: '#dfe9f5',
+    fill: '#e8eef6',
     fillI: 0.45,
-    point: '#ffe6c4',
-    pointI: 14,
-    envBg: '#b9b0a3',
-    key: '#fff3e2',
-    side: '#e9f0ff',
-    top: '#fff8ee',
+    point: '#fff1e0',
+    pointI: 10,
+    pendant: PENDANT_COLOR,
+    envBg: '#b5b2ad',
+    key: '#fffaf3',
+    side: '#eff3fa',
+    top: '#fffcf7',
   };
   if (!QA) return base;
   try {
@@ -225,7 +230,7 @@ function PendantLightPool({ items, catalogVersion }: { items: PlacedItem[]; cata
   return (
     <>
       {slots.map((s, i) => (
-        <pointLight key={i} position={s.pos} intensity={s.intensity} distance={16} decay={2} color="#ffcf8f" />
+        <pointLight key={i} position={s.pos} intensity={s.intensity} distance={16} decay={2} color={ROOM_LIGHT.pendant} />
       ))}
     </>
   );

@@ -28,9 +28,15 @@ export interface LightSlot {
   intensity: number;
 }
 
-/** Intensity of one pendant's light (a linear pendant is a long bar of bulbs). */
+/** A soft warm white (about 3500 K): warm enough to read as a lamp, not enough to tint the island. */
+export const PENDANT_COLOR = '#ffe4c4';
+
+/**
+ * Intensity of one pendant's light (a linear pendant is a long bar of bulbs). Halved from 16 / 26
+ * with the move to Neutral tone mapping, which no longer squashes the pool of light on the island.
+ */
 export function pendantIntensity(variant?: string): number {
-  return variant === 'linear' ? 26 : 16;
+  return variant === 'linear' ? 13 : 8;
 }
 
 /**
