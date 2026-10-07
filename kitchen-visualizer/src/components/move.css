@@ -42,6 +42,16 @@
   overscroll-behavior: none;
 }
 
+/* While the editor is open, a sideways swipe that starts on a bar (anything that isn't the
+   canvas) must not run the browser's swipe-back: in Edge with touch, a swipe right across
+   the top or bottom bar left the editor for the previous page. The same rule stops Android's
+   pull-to-refresh reloading the editor from a pull on the top bar. It only takes effect on the
+   root (html), so it is scoped with :has() to pages showing the editor. */
+html:has(.app),
+html:has(.app) body {
+  overscroll-behavior: none;
+}
+
 /* Toasts sit above the bottom bar, not behind it. */
 .app--compact .toasts {
   bottom: calc(var(--mbar-h) + var(--safe-b) + 12px);
@@ -343,7 +353,7 @@
 /* A phone on its side: sheets come in from the right as a panel above the bar. */
 @media (max-height: 520px) {
   .app--compact {
-    --mbar-h: 54px;
+    --mbar-h: 60px;
   }
 
   .mbar {
@@ -361,7 +371,7 @@
   }
 
   .mbar-views button {
-    min-height: 40px;
+    min-height: 44px;
   }
 
   .sheet,
@@ -370,7 +380,7 @@
     left: auto;
     right: 0;
     top: 0;
-    bottom: calc(var(--mbar-h, 54px) + var(--safe-b, 0px));
+    bottom: calc(var(--mbar-h, 60px) + var(--safe-b, 0px));
     width: min(400px, 58vw);
     height: auto;
     max-height: none;
@@ -392,7 +402,7 @@
   }
 
   .sheet-backdrop {
-    bottom: calc(var(--mbar-h, 54px) + var(--safe-b, 0px));
+    bottom: calc(var(--mbar-h, 60px) + var(--safe-b, 0px));
   }
 }
 
