@@ -12,6 +12,7 @@ import { Sheet } from './Sheet';
 import { CubeIcon, Info, PlanIcon, Plus, WallsIcon } from './Icons';
 import { isTap } from './MobileGeometry';
 import { useMobileUI, type SheetId } from './MobileState';
+import './move.css';
 
 const Swatches = (p: SVGProps<SVGSVGElement>) => (
   <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinejoin="round" aria-hidden {...p}>
@@ -86,6 +87,8 @@ export function MobileSheets({ mode = 'edit', showPrices = true }: { mode?: 'edi
   const view = mode === 'view';
   return (
     <>
+      {/* A tap outside the open sheet closes it (and never reaches the canvas underneath). */}
+      <div className={`sheet-backdrop${sheet ? ' is-open' : ''}`} onClick={close} aria-hidden />
       {!view && (
         <Sheet title="Add products" open={sheet === 'catalog'} onClose={close} className="sheet--catalog">
           <CatalogPanel />
@@ -128,7 +131,7 @@ export function PlacementBanner({ compact }: { compact: boolean }) {
 }
 
 /** Taps on these never place a product, even over a view (HUD buttons, the toolbar, sheets…). */
-const UI_TARGET = 'button, a, input, select, textarea, label, [role="toolbar"], .plan-hud, .scene-hud, .place-banner, .sheet, .mbar, .topbar';
+const UI_TARGET = 'button, a, input, select, textarea, label, [role="toolbar"], .plan-hud, .scene-hud, .place-banner, .sheet, .sheet-backdrop, .mbar, .topbar';
 /** How long a view gets to consume the tap itself before this fallback places the product. */
 const VIEW_GRACE_MS = 180;
 

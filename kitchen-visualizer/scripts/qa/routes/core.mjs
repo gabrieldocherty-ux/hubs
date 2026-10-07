@@ -70,12 +70,6 @@ async function phoneShell({ evaluate }) {
   if (problems.length) throw new Error(problems.join('; '));
 }
 
-const PHONE_SHELL_BUG =
-  'The phone editor shell is unstyled: .mbar, .sheet and .sheet-* (MobileShell.tsx, Sheet.tsx) have no CSS anywhere in src/, so the Add/Room/Details sheets render inline under the plan. Owner: foundation styles (src/styles.css); see docs/handoff/qa.md.';
-
-const SEL_TOOLBAR_BUG =
-  'The floating selection toolbar is unstyled: .sel-toolbar, .sel-toolbar--<side> and .sel-toolbar-sep (SelectionToolbar.tsx) have no CSS, so selecting anything on desktop adds a static row of Rotate/Duplicate/Delete/Details text under the whole workspace. Owner: foundation styles (src/styles.css); see docs/handoff/qa.md.';
-
 /** Clicks a top-bar view tab (Plan, Split, 3D, Walls) by its label. */
 async function viewTab({ evaluate, click }, label) {
   const ok = await evaluate((l) => {
@@ -195,7 +189,6 @@ export default [
     as: 'anon',
     viewport: 'phone',
     waitFor: ['.plan-view canvas'],
-    knownIssue: PHONE_SHELL_BUG,
     check: async (h) => {
       await noSideScroll(h);
       await phoneShell(h);
@@ -289,7 +282,6 @@ export default [
   {
     name: 'kitchen-selection-toolbar',
     as: 'customer',
-    knownIssue: SEL_TOOLBAR_BUG,
     setup: async ({ me }) => newKitchen(me, 'QA Selection Kitchen'),
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
@@ -315,7 +307,6 @@ export default [
     viewport: 'phone',
     setup: async ({ me }) => newKitchen(me, 'QA Phone Kitchen'),
     waitFor: ['.topbar', '.plan-view canvas'],
-    knownIssue: PHONE_SHELL_BUG,
     check: async (h) => {
       await noSideScroll(h);
       await phoneShell(h);

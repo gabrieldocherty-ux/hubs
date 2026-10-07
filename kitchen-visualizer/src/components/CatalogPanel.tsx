@@ -26,7 +26,7 @@ function brandFacets(list: Product[]): string[] {
   return [...server, ...[...builtin].filter((b) => !server.includes(b)).sort((a, b) => a.localeCompare(b))];
 }
 
-import { CATALOG_DRAG_CLASS, isCompact, useMobileUI } from './MobileState';
+import { CATALOG_DRAG_CLASS, isCompact, useCompact, useMobileUI } from './MobileState';
 
 /*
  * Catalog → room by pointer, so the same gesture works with a mouse, a finger or a pen
@@ -217,6 +217,7 @@ export function CatalogPanel() {
   const toast = useDesignStore((s) => s.toast);
   const searchRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const compact = useCompact();
 
   // Once a touch press has become a drag, the list must not scroll under the finger.
   // A permanent non-passive listener keeps the browser asking before it scrolls.
@@ -307,7 +308,9 @@ export function CatalogPanel() {
           ))}
         </div>
       )}
-      <p className="catalog-hint">Tap a product, then tap the room. Or hold one and drag it in.</p>
+      <p className="catalog-hint">
+        {compact ? 'Tap a product, then tap the room. Or hold one and drag it in.' : 'Click a product to add it, or drag it onto the plan or the 3D floor.'}
+      </p>
       <div className="catalog-scroll">
         {results.length === 0 && <p className="empty-note">Nothing matches{query ? ` “${query}”` : ''}. Try “range”, “brass” or “island”.</p>}
         {grouped.map((g) =>

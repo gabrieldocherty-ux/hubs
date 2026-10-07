@@ -1,0 +1,722 @@
+/*
+ * Moving and placing things: the phone editor shell (bottom bar, bottom sheets, the
+ * tap-to-place banner), the floating selection toolbar, and the catalog drag ghost.
+ * Imported by MobileShell.tsx and SelectionToolbar.tsx; owned by the `move` package.
+ *
+ * Bundle order: this file is emitted BEFORE src/styles.css (main.tsx imports App first),
+ * so anything that overrides a styles.css rule is written with a higher specificity
+ * (usually an `.app--compact` / `.app` prefix) instead of relying on order.
+ *
+ * Tokens come from src/styles.css (:root): --paper, --panel, --card, --ink, --line,
+ * --accent, --shadow… No new colours beyond translucent inks of the same palette.
+ */
+
+/* ─── Phone layout: a full-screen canvas over a fixed bottom bar ─────────────── */
+
+.app--compact {
+  /* Bottom bar height, without the home-indicator inset (added where it matters). */
+  --mbar-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --sheet-gap: 56px;
+  /* dvh where supported, so the browser's own toolbars never hide the bar. */
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* styles.css (max-width: 980px) stacks the panels under a 58vh stage and scrolls the
+   workspace; the phone layout has no panels, only the stage, and nothing scrolls. */
+.app--compact .workspace {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  padding-bottom: calc(var(--mbar-h) + var(--safe-b));
+}
+
+.app--compact .stage {
+  grid-row: 1;
+}
+
+/* The page itself never scrolls or rubber-bands under the canvas. */
+.app--compact,
+.app--compact .workspace {
+  overscroll-behavior: none;
+}
+
+/* Toasts sit above the bottom bar, not behind it. */
+.app--compact .toasts {
+  bottom: calc(var(--mbar-h) + var(--safe-b) + 12px);
+}
+
+/* Finger-sized HUD controls on the canvas. */
+.app--compact .plan-hud--br button {
+  min-width: 40px;
+  height: 36px;
+}
+
+/* ─── Bottom bar ─────────────────────────────────────────────────────────────── */
+
+.mbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: calc(var(--mbar-h, 64px) + var(--safe-b, 0px));
+  padding: 6px max(10px, env(safe-area-inset-left, 0px)) calc(6px + var(--safe-b, 0px)) max(10px, env(safe-area-inset-right, 0px));
+  background: rgba(251, 249, 244, 0.97);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -10px 24px -18px rgba(33, 30, 26, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.mbar-views,
+.mbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mbar-views {
+  padding: 3px;
+  background: var(--paper-2);
+  border-radius: 13px;
+}
+
+.mbar button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink-2);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mbar-views button {
+  min-height: 46px;
+}
+
+.mbar button svg {
+  flex: none;
+}
+
+.mbar-views button.on {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.mbar-actions button:active,
+.mbar-views button:active {
+  background: var(--paper-2);
+}
+
+.mbar-actions button.on {
+  background: var(--ink);
+  color: #fbf9f4;
+}
+
+/* "Add" is the one action people come here for. */
+.mbar-actions button[aria-label='Add products'] {
+  color: var(--accent);
+}
+
+.mbar-actions button[aria-label='Add products'].on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.mbar-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--warn);
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--panel);
+}
+
+/* ─── Bottom sheets ──────────────────────────────────────────────────────────── */
+
+/*
+ * Sheet.tsx contract: closed = off-screen, invisible, inert. Open at half height
+ * (54vh, which is what the component assumes); dragging the handle sets an inline
+ * height/transform and adds .is-dragging (no transitions then). "Full" is the
+ * computed max-height, which the component reads back with getComputedStyle.
+ */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--mbar-h, 64px) + var(--safe-b, 0px));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  height: 54vh;
+  max-height: calc(100vh - var(--mbar-h, 64px) - var(--safe-b, 0px) - var(--sheet-gap, 56px));
+  max-height: calc(100dvh - var(--mbar-h, 64px) - var(--safe-b, 0px) - var(--sheet-gap, 56px));
+  background: var(--panel);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -18px 40px -18px rgba(33, 30, 26, 0.45), 0 -1px 0 var(--line);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  transform: translateY(calc(100% + var(--mbar-h, 64px) + 24px));
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 0.8, 0.24, 1),
+    height 0.3s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.2s,
+    visibility 0s linear 0.3s;
+}
+
+.sheet.is-open {
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 0.8, 0.24, 1),
+    height 0.3s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.2s,
+    visibility 0s;
+}
+
+.sheet--full {
+  height: calc(100vh - var(--mbar-h, 64px) - var(--safe-b, 0px) - var(--sheet-gap, 56px));
+  height: calc(100dvh - var(--mbar-h, 64px) - var(--safe-b, 0px) - var(--sheet-gap, 56px));
+}
+
+.sheet.is-dragging {
+  transition: none;
+}
+
+.sheet-head {
+  flex: none;
+  padding: 8px 10px 4px 18px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sheet.is-dragging .sheet-head {
+  cursor: grabbing;
+}
+
+.sheet-handle {
+  display: block;
+  width: 40px;
+  height: 5px;
+  margin: 0 auto 4px;
+  border-radius: 3px;
+  background: var(--line-2);
+}
+
+.sheet-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.sheet-title h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sheet-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--ink-2);
+}
+
+.sheet-close:active {
+  background: var(--paper-2);
+}
+
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+
+.sheet-body > .panel-scroll,
+.sheet-body > .catalog,
+.sheet-body > .right-panel {
+  flex: 1;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.sheet-body .catalog-scroll,
+.sheet-body .panel-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* The desktop columns' borders and backgrounds don't belong inside a sheet. */
+.sheet-body > .right-panel {
+  border: 0;
+  background: transparent;
+}
+
+.sheet-body .catalog-search {
+  height: 44px;
+  font-size: 16px; /* 16px stops iOS zooming the page when the field gets focus. */
+}
+
+.sheet-body .chip {
+  padding: 8px 13px;
+}
+
+.sheet--catalog .catalog-grid {
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+}
+
+/* A tap outside an open sheet closes it; a light veil so the room still reads behind. */
+.sheet-backdrop {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: calc(var(--mbar-h, 64px) + var(--safe-b, 0px));
+  z-index: 35;
+  background: rgba(33, 30, 26, 0.24);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s, visibility 0s linear 0.25s;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s, visibility 0s;
+}
+
+/* Tablets: a centred sheet rather than a 820px-wide slab. */
+@media (min-width: 640px) {
+  .sheet {
+    left: calc(50% - 330px);
+    right: calc(50% - 330px);
+  }
+}
+
+/* A phone on its side: sheets come in from the right as a panel above the bar. */
+@media (max-height: 520px) {
+  .app--compact {
+    --mbar-h: 54px;
+  }
+
+  .mbar {
+    gap: 12px;
+    padding-top: 4px;
+    padding-bottom: calc(4px + var(--safe-b, 0px));
+  }
+
+  .mbar button {
+    flex-direction: row;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+
+  .mbar-views button {
+    min-height: 40px;
+  }
+
+  .sheet,
+  .sheet--half,
+  .sheet--full {
+    left: auto;
+    right: 0;
+    top: 0;
+    bottom: calc(var(--mbar-h, 54px) + var(--safe-b, 0px));
+    width: min(400px, 58vw);
+    height: auto;
+    max-height: none;
+    border-radius: 16px 0 0 16px;
+    box-shadow: -18px 0 40px -18px rgba(33, 30, 26, 0.45), -1px 0 0 var(--line);
+    transform: translateX(calc(100% + 24px));
+  }
+
+  .sheet.is-open {
+    transform: none;
+  }
+
+  .sheet-head {
+    padding-top: 4px;
+  }
+
+  .sheet-handle {
+    display: none;
+  }
+
+  .sheet-backdrop {
+    bottom: calc(var(--mbar-h, 54px) + var(--safe-b, 0px));
+  }
+}
+
+/* ─── Tap-to-place banner (floats over the canvas) ───────────────────────────── */
+
+.place-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 5px 5px 5px 6px;
+  background: var(--ink);
+  color: #fbf9f4;
+  border-radius: 999px;
+  box-shadow: 0 12px 28px -12px rgba(33, 30, 26, 0.6), 0 2px 6px rgba(33, 30, 26, 0.18);
+  transform: translateX(-50%);
+  animation: place-banner-in 0.18s ease-out;
+}
+
+@keyframes place-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
+.place-banner-art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  padding: 3px;
+  border-radius: 50%;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.place-banner-art svg,
+.place-banner-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.place-banner-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.place-banner-text b {
+  font-weight: 600;
+}
+
+.place-banner-cancel {
+  flex: none;
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 999px;
+  background: rgba(251, 249, 244, 0.16);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.place-banner-cancel:hover,
+.place-banner-cancel:active {
+  background: rgba(251, 249, 244, 0.26);
+}
+
+.app--compact .place-banner-cancel {
+  min-height: 44px;
+}
+
+/* While a product waits to be placed, the canvas HUD steps aside for the banner, and the
+   3D view's own placing hint (SceneView) would only repeat it. */
+.app.is-placing .plan-hud--tl,
+.app.is-placing .scene-hud--tl,
+.app.is-placing .scene-hud--bl[role='status'] {
+  visibility: hidden;
+}
+
+.app.is-placing .plan-view,
+.app.is-placing .scene-view {
+  cursor: crosshair;
+}
+
+/* ─── Floating selection toolbar ─────────────────────────────────────────────── */
+
+/* SelectionToolbar.tsx sets left/top in client px (it measures itself and keeps inside
+   the canvas), so it is fixed, out of the page flow, and never wider than its buttons. */
+.sel-toolbar {
+  position: fixed;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px -12px rgba(33, 30, 26, 0.4), 0 2px 6px rgba(33, 30, 26, 0.08);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  animation: sel-toolbar-in 0.14s ease-out;
+}
+
+@keyframes sel-toolbar-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+}
+
+.sel-toolbar--below {
+  animation-name: sel-toolbar-in-below;
+}
+
+@keyframes sel-toolbar-in-below {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.sel-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--ink-2);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sel-toolbar button:hover,
+.sel-toolbar button:active {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.sel-toolbar button.danger:hover,
+.sel-toolbar button.danger:active {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+/* Icon buttons: the words stay for screen readers (aria-label) and tooltips (title). */
+.sel-toolbar button span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sel-toolbar-sep {
+  display: block;
+  width: 1px;
+  height: 22px;
+  margin: 0 3px;
+  background: var(--line);
+}
+
+.app--compact .sel-toolbar {
+  padding: 3px;
+  border-radius: 14px;
+}
+
+.app--compact .sel-toolbar button {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+/* ─── Catalog → room drag ────────────────────────────────────────────────────── */
+
+.catalog-hint {
+  margin: -2px 14px 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.drag-ghost-pin {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 5px rgba(194, 84, 45, 0.22);
+}
+
+.drag-ghost-card {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: max-content;
+  max-width: 250px;
+  padding: 6px 12px 6px 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 16px 32px -14px rgba(33, 30, 26, 0.5), 0 2px 6px rgba(33, 30, 26, 0.1);
+  transform: rotate(-1.5deg);
+}
+
+/* Under a finger the card rides above the touch point, where it can be seen. */
+.drag-ghost.touch .drag-ghost-card {
+  left: 0;
+  top: -92px;
+  transform: translateX(-50%);
+}
+
+.drag-ghost-art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.drag-ghost-art svg,
+.drag-ghost-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.drag-ghost-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.drag-ghost-text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drag-ghost.over .drag-ghost-card {
+  border-color: var(--accent);
+}
+
+.drag-ghost.over .drag-ghost-text span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The view under a dragged product says "drop here". */
+.plan-view.is-drop-over::after,
+.scene-view.is-drop-over::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 7;
+  border: 2px dashed var(--accent);
+  border-radius: 12px;
+  background: rgba(194, 84, 45, 0.05);
+  pointer-events: none;
+}
+
+/* While a product is dragged out of the catalog: the open sheet ducks out of the way
+   (so the whole room is a target), the veil lifts, and the toolbar hides. */
+body.is-catalog-dragging {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.is-catalog-dragging .sheet.is-open {
+  transform: translateY(calc(100% - 30px));
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+body.is-catalog-dragging .sheet-backdrop {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.is-catalog-dragging .sel-toolbar {
+  visibility: hidden;
+}
+
+@media (max-height: 520px) {
+  body.is-catalog-dragging .sheet.is-open {
+    transform: translateX(calc(100% - 30px));
+  }
+}

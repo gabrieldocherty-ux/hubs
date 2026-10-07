@@ -5,6 +5,7 @@ import { useOverlay, usePlacement, type ScreenRect } from '../lib/interaction';
 import { Copy, RotateCw, Trash } from './Icons';
 import { dockToolbar, intersectRects, placeToolbar } from './MobileGeometry';
 import { useMobileUI } from './MobileState';
+import './move.css';
 
 const Sliders = (p: SVGProps<SVGSVGElement>) => (
   <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" aria-hidden {...p}>
