@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import type { Room } from '../../types';
 import { capSize, useRoomQuality, type StillOptions } from '../../features/viewer/studio';
 import { roomEffects, toneMode } from './roomEffects';
-import { presetFor } from './cameraPresets';
+import { presetFor, stillFov } from './cameraPresets';
 import { applyCutaway } from './Room3D';
 
 /** The longest side this GPU can render offscreen, capped at 4096 (PRODUCT_SPEC §5.5). */
@@ -63,6 +63,7 @@ export async function renderRoomStill(get: () => RootState, o: StillOptions, roo
     pos: camera.position.clone(),
     quat: camera.quaternion.clone(),
     aspect: camera.aspect,
+    fov: camera.fov,
     target: controls?.target.clone() ?? null,
     pixelRatio: gl.getPixelRatio(),
     samples: composer.multisampling,
@@ -74,7 +75,8 @@ export async function renderRoomStill(get: () => RootState, o: StillOptions, roo
   out.width = w;
   out.height = h;
   try {
-    // Camera: the current view (widened or narrowed to the target aspect) or a preset.
+    // Camera: the current view (reframed for the image's aspect, see stillFov) or a preset.
+    if (o.camera === 'current') camera.fov = stillFov(saved.fov, saved.aspect, w / h);
     camera.aspect = w / h;
     if (o.camera !== 'current') {
       const { pos, target } = presetFor(o.camera, room, w / h);
@@ -108,6 +110,7 @@ export async function renderRoomStill(get: () => RootState, o: StillOptions, roo
     camera.position.copy(saved.pos);
     camera.quaternion.copy(saved.quat);
     camera.aspect = saved.aspect;
+    camera.fov = saved.fov;
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
     if (controls && saved.target) controls.target.copy(saved.target);

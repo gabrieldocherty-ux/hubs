@@ -41,3 +41,17 @@ export function presetFor(preset: CameraPreset, room: Room, aspect: number): { p
     }
   }
 }
+
+/**
+ * The vertical field of view (degrees) for a still of the *current* view at another aspect ratio.
+ * Whatever spanned the narrower side of the view on screen spans the narrower side of the image:
+ * a landscape view rendered landscape keeps its FOV, but a tall, narrow pane (split view, a phone)
+ * rendered at 16:9 zooms in instead of shrinking the kitchen into the middle of a wide frame.
+ */
+export function stillFov(fovDeg: number, screenAspect: number, imageAspect: number): number {
+  const v0 = THREE.MathUtils.degToRad(fovDeg);
+  const h0 = 2 * Math.atan(Math.tan(v0 / 2) * screenAspect);
+  const lim = Math.min(v0, h0);
+  const v1 = imageAspect >= 1 ? lim : 2 * Math.atan(Math.tan(lim / 2) / imageAspect);
+  return THREE.MathUtils.radToDeg(v1);
+}

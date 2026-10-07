@@ -82,3 +82,17 @@ test('the watermark grid covers every corner of the image whatever the rotation'
     assert.ok(ry >= Math.min(...ys) && ry <= Math.max(...ys), `corner y ${ry}`);
   }
 });
+
+test('stillFov: a landscape view keeps its FOV; a narrow pane zooms in so the kitchen fills the frame', async () => {
+  const { stillFov } = await import('../../../components/three/cameraPresets');
+  const deg = (r: number) => (r * 180) / Math.PI;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  assert.ok(Math.abs(stillFov(38, 1.6, 16 / 9) - 38) < 1e-9);
+  // Split view: a 396 × 842 pane. Its horizontal FOV becomes the image's vertical FOV.
+  const h0 = deg(2 * Math.atan(Math.tan(rad(19)) * (396 / 842)));
+  assert.ok(Math.abs(stillFov(38, 396 / 842, 16 / 9) - h0) < 1e-9);
+  assert.ok(stillFov(38, 396 / 842, 16 / 9) < 20);
+  // A portrait image keeps the narrow side's angle across its width.
+  const v = stillFov(38, 0.5, 9 / 16);
+  assert.ok(Math.abs(deg(2 * Math.atan(Math.tan(rad(v) / 2) * (9 / 16))) - deg(2 * Math.atan(Math.tan(rad(19)) * 0.5))) < 1e-9);
+});

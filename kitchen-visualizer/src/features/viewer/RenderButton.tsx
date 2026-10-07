@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type SVGProps } from 'react';
 import { useSession } from '../../store/useSession';
 import { useDesignStore } from '../../store/useDesignStore';
-import { useCompact } from '../../components/MobileState';
+import { useCompact, useMedia } from '../../components/MobileState';
 import { loadEntitlements, useEntitlements } from '../billing';
 // The paid-export intent is billing's; it isn't on billing's public index (see docs/handoff/viewer.md).
 import { clearIntent, peekIntent } from '../billing/entitlements';
@@ -60,6 +60,9 @@ export function RenderButton(): JSX.Element | null {
   const projectId = useSession((s) => s.projectId);
   const open = useStudio((s) => s.open);
   const compact = useCompact();
+  // The TopBar's right side is crowded below ~1200 px (save state, undo, estimate, share, export):
+  // there the button is an icon with a tooltip, like the phone layout's.
+  const iconOnly = useMedia('(max-width: 1199px)') || compact;
   useResumeRender(readOnly ? null : projectId);
   // Leaving the editor closes the dialog.
   useEffect(() => () => closeStudioRender(), []);
@@ -70,14 +73,16 @@ export function RenderButton(): JSX.Element | null {
     <>
       <button
         type="button"
-        className={compact ? 'icon-btn studio-btn' : 'btn studio-btn'}
+        className={iconOnly ? 'icon-btn studio-btn' : 'btn studio-btn'}
+        // Inline: this button is in the main chunk, where the viewer's stylesheet isn't loaded.
+        style={{ whiteSpace: 'nowrap' }}
         onClick={() => openStudioRender()}
         aria-haspopup="dialog"
         aria-label="Studio render"
         title="Studio render: a high-resolution image of this kitchen"
       >
         <StudioIcon width={compact ? 20 : 16} height={compact ? 20 : 16} />
-        {!compact && <span>Studio render</span>}
+        {!iconOnly && <span>Render</span>}
       </button>
       {open && (
         <Suspense fallback={null}>
