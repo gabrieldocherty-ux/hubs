@@ -40,6 +40,21 @@ export function Sheet({ title, open, onClose, className = '', children }: { titl
     ref.current?.toggleAttribute('inert', !open);
   }, [open]);
 
+  // The head is `touch-action: none`, but the browser still builds a scroll gesture from the
+  // finger and, after a quick flick, a fling. The fling has nothing to scroll, yet the next tap
+  // only stops it: a flick-to-close followed by a tap on the bar within ~1-2 s did nothing.
+  // Cancelling the head's touchmove while it is being dragged keeps the touches ours (no
+  // scroll, no fling), as the plan canvas does. Native and non-passive: React's is passive.
+  useEffect(() => {
+    const head = ref.current?.querySelector<HTMLElement>('.sheet-head');
+    if (!head) return;
+    const onTouchMove = (e: TouchEvent) => {
+      if (gesture.current && e.cancelable) e.preventDefault();
+    };
+    head.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => head.removeEventListener('touchmove', onTouchMove);
+  }, []);
+
   const onDown = (e: ReactPointerEvent<HTMLElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
