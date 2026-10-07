@@ -46,6 +46,8 @@ export interface RoleSlot {
 /** A fixed stretch of the run filled with standard base cabinets (photo runs between appliances). */
 export interface GapSlot {
   gap: number;
+  /** Where inches the cabinet sizes can't cover go. Default: away from a range, else first. */
+  spareAt?: 'start' | 'end';
 }
 
 /** `'flex'` shares whatever length is left in the run with the other flex slots. */
@@ -332,7 +334,7 @@ export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: stri
       const used = chunk.reduce((a, c) => a + c.width, 0);
       const spare = s.gap - used;
       // Leftover space sits away from a range (so it keeps its landing), else at the run's start side.
-      const spareFirst = side !== 'start';
+      const spareFirst = s.spareAt ? s.spareAt === 'start' : side !== 'start';
       if (spare > 0 && spareFirst) seq.push({ id: null, width: spare });
       seq.push(...fillIds(chunk));
       if (spare > 0 && !spareFirst) seq.push({ id: null, width: spare });
