@@ -428,7 +428,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
             )}
             {photos.length > 0 && (
               <div className={`gen-pane gen-pane--photo${pane === 'photo' ? ' on' : ''}`}>
-                <PhotoCarousel photos={viewer} index={shown} onIndex={setShown} onOpen={setLightbox} caption={(i) => (i === 0 ? 'Photo 1 · faces north' : `Photo ${i + 1}`)} />
+                <PhotoCarousel photos={viewer} index={shown} onIndex={setShown} onOpen={setLightbox} fit="contain" caption={(i) => (i === 0 ? 'Photo 1 · faces north' : `Photo ${i + 1}`)} />
               </div>
             )}
             <div className={`gen-pane gen-pane--plan${pane === 'plan' || !photos.length ? ' on' : ''}`}>

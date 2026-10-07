@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Room } from '../types';
 import { api, ApiError } from '../lib/api';
-import { navigate } from '../lib/router';
+import { hrefFor, navigate } from '../lib/router';
 import { TEMPLATES, type TemplateId } from '../data/templates';
 import { STYLE_PRESETS, type StylePreset } from '../data/styles';
 import { composeDoc } from '../data/compose';
@@ -13,6 +13,8 @@ import { FeetInchesInput } from '../components/FeetInchesInput';
 import { AccountMenu } from '../components/AccountMenu';
 import { Check, Logo } from '../components/Icons';
 import { feetInches } from '../lib/format';
+import { CameraIcon } from '../features/generate/icons';
+import '../features/generate/generate.css';
 
 const STEPS = ['Basics', 'Room', 'Layout', 'Style'] as const;
 
@@ -79,7 +81,19 @@ export function SetupWizard() {
           {step === 0 && (
             <>
               <h1>Let’s set up a new kitchen.</h1>
-              <p className="wizard-sub">Give it a name you’ll recognise on your projects page.</p>
+              <a className="gen-wiz-photo" href={hrefFor({ name: 'generate' })}>
+                <span className="gen-wiz-photo-icon" aria-hidden>
+                  <CameraIcon width={22} height={22} />
+                </span>
+                <span className="gen-wiz-photo-text">
+                  <b>Start from a photo of my kitchen</b>
+                  <span>Already have a kitchen? Add photos of it and Mise models the space for you to redesign.</span>
+                </span>
+                <span className="gen-wiz-photo-go" aria-hidden>
+                  →
+                </span>
+              </a>
+              <p className="wizard-sub">Or set it up step by step. Give it a name you’ll recognise on your projects page.</p>
               <label className="field">
                 <span>Kitchen name</span>
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Maple Street Remodel" autoFocus maxLength={120} />

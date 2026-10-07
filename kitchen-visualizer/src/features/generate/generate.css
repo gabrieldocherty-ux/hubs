@@ -1263,3 +1263,58 @@
     width: min(280px, calc(100vw - 24px));
   }
 }
+
+/* ─── Setup wizard: "Start from a photo" entry ───────────── */
+
+.gen-wiz-photo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  margin: 14px 0 22px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.gen-wiz-photo:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.gen-wiz-photo-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent-2);
+}
+
+.gen-wiz-photo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gen-wiz-photo-text b {
+  font-size: 15px;
+}
+
+.gen-wiz-photo-text span {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.gen-wiz-photo-go {
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--ink-3);
+}

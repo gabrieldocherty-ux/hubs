@@ -169,7 +169,7 @@ export function SpacePlan({
             const key = `appliances.${i}`;
             const width = a.widthIn ?? APPLIANCE_WIDTHS[a.kind].def;
             const up = overhead(a.kind);
-            const p = at(a.wall, a.offsetIn + width / 2, up ? fs * 0.75 : 14);
+            const p = at(a.wall, a.offsetIn + width / 2, up ? fs * 0.72 : 14);
             const text = SHORT[a.kind];
             const size = up ? fs * 0.8 : fs;
             const w = text.length * size * 0.6 + size * 0.9;
@@ -177,10 +177,13 @@ export function SpacePlan({
             const cls = `gen-h gen-h-app${up ? ' up' : ''}${needsCheck(model, key) ? ' check' : ''}${focusKey === key ? ' on' : ''}`;
             return (
               <g key={key} className={cls} {...handleProps('appliances', i, a.wall, a.offsetIn, width, KIND_LABEL[a.kind])}>
-                <rect x={p.x - w / 2} y={p.y - h / 2} width={w} height={h} rx={h / 2} />
-                <text x={p.x} y={p.y} fontSize={size} dominantBaseline="central" textAnchor="middle">
-                  {text}
-                </text>
+                {/* Labels run along their wall, so a hood never sits on top of its range's label. */}
+                <g transform={horizontal(a.wall) ? undefined : `rotate(-90 ${p.x} ${p.y})`}>
+                  <rect x={p.x - w / 2} y={p.y - h / 2} width={w} height={h} rx={h / 2} />
+                  <text x={p.x} y={p.y} fontSize={size} dominantBaseline="central" textAnchor="middle">
+                    {text}
+                  </text>
+                </g>
               </g>
             );
           })}

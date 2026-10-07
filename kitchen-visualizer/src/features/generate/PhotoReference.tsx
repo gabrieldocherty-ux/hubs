@@ -5,7 +5,7 @@ import { Close } from '../../components/Icons';
 import { generateApi } from './api';
 import { LOCAL_KITCHEN_KEY, deletePhotos, loadPhotos } from './photos';
 import { Lightbox, PhotoCarousel, type ViewerPhoto } from './PhotoViewer';
-import { CameraIcon } from './AddPhotos';
+import { CameraIcon } from './icons';
 import './generate.css';
 
 const POS_KEY = 'mise-photo-ref';
