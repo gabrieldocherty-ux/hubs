@@ -122,7 +122,7 @@ that space modelled in Mise to redesign. There is no free-text box and no text p
 
 ## Verified, and how
 
-- `npx tsc --noEmit -p tsconfig.json`: clean. `npm test`: TS 103/103, server 82 passed +
+- `npx tsc --noEmit -p tsconfig.json`: clean. `npm test`: TS 103/103, server 83 passed +
   1 pre-existing skip (no real `mise.db` to copy). `npm run build`: OK.
 - QA routes run with a stand-in runner (the real `scripts/qa.mjs` isn't on this branch) against
   the built app on port 8815 with a temp DB, headless Edge over CDP, desktop 1440×900 and phone
