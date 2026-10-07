@@ -44,7 +44,8 @@ function label(r: Resolved) {
   return r.product.name.replace(/ \d+″$/, '');
 }
 
-function frontCenter(r: Resolved): [number, number] {
+/** The middle of an item's front face: where a cook stands to use it. */
+export function frontCenter(r: Resolved): [number, number] {
   const [fx, fy] = frontVector(r.item.rotation);
   return [r.item.x + (fx * r.d) / 2, r.item.y + (fy * r.d) / 2];
 }
@@ -146,23 +147,14 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
     });
   }
 
-  // Work triangle between the sink, the cooktop and the fridge.
-  const sink = all.find((r) => r.product.kind === 'sink' && r.product.variant !== 'prep') ?? all.find((r) => r.product.kind === 'sink');
-  const cook = all.find((r) => r.product.kind === 'range') ?? all.find((r) => r.product.kind === 'oven-tower');
-  const fridge = all.find((r) => r.product.kind === 'fridge');
+  // Work triangle between the sink, the cooktop and the fridge: the best of every combination,
+  // so a second sink or fridge never makes a good kitchen look bad because of list order.
+  const best = bestTriangle(all, room);
   let triangle: Triangle | null = null;
-  if (sink && cook && fridge) {
+  if (best) {
+    const { sink, cook, fridge, legs, total, oneWall, ok } = best;
     const pts = [frontCenter(sink), frontCenter(cook), frontCenter(fridge)];
-    const legs = [0, 1, 2].map((i) => {
-      const [x0, y0] = pts[i];
-      const [x1, y1] = pts[(i + 1) % 3];
-      return Math.hypot(x1 - x0, y1 - y0);
-    });
-    const total = legs.reduce((s, l) => s + l, 0);
-    const walls = [sink, cook, fridge].map((r) => flushWall(r, room));
-    const oneWall = walls[0] !== null && walls.every((w) => w === walls[0]);
     const sorted = [...legs].sort((a, b) => a - b);
-    const ok = oneWall ? sorted[0] >= 36 && sorted[1] >= 36 && total <= 312 : legs.every((l) => l >= 48 && l <= 108) && total <= 312;
     triangle = { points: pts, legs, total, ok };
     const names = ['sink → cooktop', 'cooktop → fridge', 'fridge → sink'];
     const legText = legs.map((l, i) => `${names[i]} ${feetInches(l)}`).join(' · ');
@@ -189,6 +181,9 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
       });
     }
   } else {
+    const sink = all.some((r) => r.product.kind === 'sink');
+    const cook = all.some((r) => r.product.kind === 'range' || r.product.kind === 'oven-tower');
+    const fridge = all.some((r) => r.product.kind === 'fridge');
     const missing = [!sink && 'a sink', !cook && 'a range', !fridge && 'a fridge'].filter(Boolean).join(', ');
     checks.push({
       id: 'triangle-missing',
@@ -200,13 +195,9 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
   }
 
   for (const range of all.filter((r) => r.product.kind === 'range')) {
-    const vent = all.find(
-      (o) =>
-        (o.product.kind === 'hood' || o.product.kind === 'microwave') &&
-        overlap1D(range.box.minX, range.box.maxX, o.box.minX, o.box.maxX) > range.w * 0.5 - 0.1 &&
-        overlap1D(range.box.minY, range.box.maxY, o.box.minY, o.box.maxY) > 0,
-    );
-    if (!vent) {
+    const cover = hoodCoverage(range, all);
+    const vent = cover?.vent;
+    if (!cover || !vent) {
       checks.push({
         id: `vent-${range.item.id}`,
         level: 'warn',
@@ -222,6 +213,14 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
         detail: `A ${vent.w}″ hood over a ${range.w}″ range lets smoke escape at the edges. Match or exceed the range width.`,
         itemIds: [range.item.id, vent.item.id],
       });
+    } else if (cover.covered + 0.5 < range.w) {
+      checks.push({
+        id: `vent-offset-${range.item.id}`,
+        level: 'warn',
+        title: `Hood is off-centre over the ${label(range)}`,
+        detail: `It covers ${feetInches(cover.covered)} of the ${feetInches(range.w)} cooktop. Slide it along the wall until it spans the whole range.`,
+        itemIds: [range.item.id, vent.item.id],
+      });
     } else {
       checks.push({
         id: `vent-ok-${range.item.id}`,
@@ -231,15 +230,29 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
         itemIds: [range.item.id, vent.item.id],
       });
     }
-    const sides = landingSides(range, all, room);
-    if (sides < 2) {
+    const land = landingWidths(range, all, room);
+    if (!land) {
       checks.push({
         id: `landing-range-${range.item.id}`,
-        level: 'warn',
-        title: `${label(range)} is missing counter on ${sides === 0 ? 'both sides' : 'one side'}`,
-        detail: 'Leave at least 12″ of counter on one side and 15″ on the other to set down hot pans.',
+        level: 'info',
+        title: `${label(range)} isn’t against a wall`,
+        detail: 'Its landing counter can’t be measured. Leave at least 12″ of counter on one side and 15″ on the other.',
         itemIds: [range.item.id],
       });
+    } else {
+      const small = Math.min(land.start, land.end);
+      const big = Math.max(land.start, land.end);
+      if (small < 12 || big < 15) {
+        const what =
+          big < 1 ? 'no counter on either side' : small < 1 ? `counter on one side only (${feetInches(big)})` : `only ${feetInches(small)} and ${feetInches(big)} of counter beside it`;
+        checks.push({
+          id: `landing-range-${range.item.id}`,
+          level: 'warn',
+          title: `${label(range)} has ${what}`,
+          detail: 'Leave at least 12″ of counter on one side and 15″ on the other to set down hot pans.',
+          itemIds: [range.item.id],
+        });
+      }
     }
   }
 
@@ -259,9 +272,18 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
   }
 
   for (const f of all.filter((r) => r.product.kind === 'fridge')) {
-    if (landingSides(f, all, room) === 0) {
-      const island = all.find((r) => r.product.kind === 'island' && boxGap(r.box, f.box) <= 48);
-      if (island) continue;
+    const island = all.find((r) => r.product.kind === 'island' && boxGap(r.box, f.box) <= 48);
+    if (island) continue;
+    const land = landingWidths(f, all, room);
+    if (!land) {
+      checks.push({
+        id: `landing-fridge-${f.item.id}`,
+        level: 'info',
+        title: 'The fridge isn’t against a wall',
+        detail: 'Its landing counter can’t be measured. Keep at least 15″ of counter beside it, or an island within 48″.',
+        itemIds: [f.item.id],
+      });
+    } else if (Math.max(land.start, land.end) < 15) {
       checks.push({
         id: `landing-fridge-${f.item.id}`,
         level: 'warn',
@@ -292,24 +314,114 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
   return { checks, problemIds, triangle, tightAisles };
 }
 
-/** How many sides (0–2) of an item on a wall have countertop directly beside it. */
-function landingSides(r: Resolved, all: Resolved[], room: Room): number {
-  const wall = flushWall(r, room);
-  if (!wall) return 2;
-  const [s, e] = alongWall(wall, r.box);
-  let left = false;
-  let right = false;
-  for (const o of all) {
-    if (o === r || !hasCountertop(o.product)) continue;
-    if (flushWall(o, room) !== wall && o.product.kind !== 'corner') continue;
-    const [os, oe] = alongWall(wall, o.box);
-    if (Math.abs(oe - s) <= 1.5 && oe - os >= 9) left = true;
-    if (Math.abs(os - e) <= 1.5 && oe - os >= 9) right = true;
-  }
-  return Number(left) + Number(right);
+/** An item's extent along its own wall axis: x when it faces north/south, y when east/west. */
+export function alongAxis(r: Resolved): [number, number] {
+  return r.item.rotation === 90 || r.item.rotation === 270 ? [r.box.minY, r.box.maxY] : [r.box.minX, r.box.maxX];
 }
 
-interface FacingGap {
+/** An item's extent across its wall axis (depth into the room). */
+export function acrossAxis(r: Resolved): [number, number] {
+  return r.item.rotation === 90 || r.item.rotation === 270 ? [r.box.minX, r.box.maxX] : [r.box.minY, r.box.maxY];
+}
+
+/**
+ * The hood (or over-the-range microwave) above a range, and how many inches of the cooktop it
+ * covers, measured along the range's own wall axis (x on north/south walls, y on east/west; the
+ * old check always used x, so it passed hoods that missed a range on an east or west wall).
+ * A vent counts once it covers at least half the cooktop; null when nothing does.
+ */
+export function hoodCoverage(range: Resolved, all: Resolved[]): { vent: Resolved; covered: number } | null {
+  const swap = range.item.rotation === 90 || range.item.rotation === 270;
+  const [r0, r1] = alongAxis(range);
+  const [c0, c1] = acrossAxis(range);
+  let best: { vent: Resolved; covered: number } | null = null;
+  for (const o of all) {
+    if (o === range || (o.product.kind !== 'hood' && o.product.kind !== 'microwave')) continue;
+    if (o.z0 < range.z1 - 0.5) continue;
+    const [o0, o1] = swap ? [o.box.minY, o.box.maxY] : [o.box.minX, o.box.maxX];
+    const [p0, p1] = swap ? [o.box.minX, o.box.maxX] : [o.box.minY, o.box.maxY];
+    if (overlap1D(c0, c1, p0, p1) <= 0) continue;
+    const covered = Math.max(0, overlap1D(r0, r1, o0, o1));
+    if (covered <= range.w * 0.5 - 0.1) continue;
+    if (!best || covered > best.covered) best = { vent: o, covered };
+  }
+  return best;
+}
+
+/**
+ * Inches of continuous countertop on each side of an item on a wall (`start` is towards the
+ * wall's west/north end). Walks across touching counter pieces on the same wall (and corner
+ * cabinets), stops at a gap, a tall unit or a sink, and caps at 48″. Null when the item isn't
+ * flush to a wall, so callers report that instead of passing it.
+ */
+export function landingWidths(r: Resolved, all: Resolved[], room: Room): { start: number; end: number } | null {
+  const wall = flushWall(r, room);
+  if (!wall) return null;
+  const counters = all
+    .filter((o) => o !== r && hasCountertop(o.product) && o.product.kind !== 'island' && (flushWall(o, room) === wall || o.product.kind === 'corner'))
+    .map((o) => ({ o, span: alongWall(wall, o.box) }));
+  const [s, e] = alongWall(wall, r.box);
+  const walk = (edge: number, dir: -1 | 1) => {
+    let total = 0;
+    let at = edge;
+    const seen = new Set<Resolved>();
+    while (total < 48) {
+      const next = counters.find(({ o, span: [os, oe] }) => !seen.has(o) && oe - os > 1 && (dir < 0 ? Math.abs(oe - at) <= 1.5 : Math.abs(os - at) <= 1.5));
+      if (!next || next.o.product.kind === 'sink') break;
+      seen.add(next.o);
+      total += next.span[1] - next.span[0];
+      at = dir < 0 ? next.span[0] : next.span[1];
+    }
+    return Math.min(48, total);
+  };
+  return { start: walk(s, -1), end: walk(e, 1) };
+}
+
+export interface TriangleChoice {
+  sink: Resolved;
+  cook: Resolved;
+  fridge: Resolved;
+  /** sink → cooktop, cooktop → fridge, fridge → sink. */
+  legs: number[];
+  total: number;
+  oneWall: boolean;
+  ok: boolean;
+}
+
+/**
+ * The best sink / cooktop / fridge triangle among every combination in the kitchen: a passing
+ * triangle beats a failing one, then the shortest total wins. Prep sinks and oven towers only
+ * stand in when there is no main sink or range. Independent of item order.
+ */
+export function bestTriangle(all: Resolved[], room: Room): TriangleChoice | null {
+  const mainSinks = all.filter((r) => r.product.kind === 'sink' && r.product.variant !== 'prep');
+  const sinks = mainSinks.length ? mainSinks : all.filter((r) => r.product.kind === 'sink');
+  const ranges = all.filter((r) => r.product.kind === 'range');
+  const cooks = ranges.length ? ranges : all.filter((r) => r.product.kind === 'oven-tower');
+  const fridges = all.filter((r) => r.product.kind === 'fridge');
+  let best: TriangleChoice | null = null;
+  for (const sink of sinks) {
+    for (const cook of cooks) {
+      for (const fridge of fridges) {
+        const pts = [frontCenter(sink), frontCenter(cook), frontCenter(fridge)];
+        const legs = [0, 1, 2].map((i) => {
+          const [x0, y0] = pts[i];
+          const [x1, y1] = pts[(i + 1) % 3];
+          return Math.hypot(x1 - x0, y1 - y0);
+        });
+        const total = legs.reduce((s, l) => s + l, 0);
+        const walls = [sink, cook, fridge].map((r) => flushWall(r, room));
+        const oneWall = walls[0] !== null && walls.every((w) => w === walls[0]);
+        const sorted = [...legs].sort((a, b) => a - b);
+        const ok = oneWall ? sorted[0] >= 36 && sorted[1] >= 36 && total <= 312 : legs.every((l) => l >= 48 && l <= 108) && total <= 312;
+        if (!best || (ok && !best.ok) || (ok === best.ok && total < best.total - 1e-6)) best = { sink, cook, fridge, legs, total, oneWall, ok };
+      }
+    }
+  }
+  return best;
+}
+
+export interface FacingGap {
   gap: number;
   p0: [number, number];
   p1: [number, number];
@@ -317,7 +429,7 @@ interface FacingGap {
   zone: AABB;
 }
 
-function facingGap(a: Resolved, b: Resolved): FacingGap | null {
+export function facingGap(a: Resolved, b: Resolved): FacingGap | null {
   const A = a.box;
   const B = b.box;
   const ox = overlap1D(A.minX, A.maxX, B.minX, B.maxX);
