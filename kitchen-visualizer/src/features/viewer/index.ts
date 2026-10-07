@@ -22,4 +22,4 @@ export const ProductStage: LazyExoticComponent<ComponentType<ProductStageProps>>
  * three or drei. `openStudioRender` opens the dialog from elsewhere (e.g. after an unlock).
  */
 export { RenderButton } from './RenderButton';
-export { openStudioRender } from './studio';
+export { openStudioRender } from './studioDialog';

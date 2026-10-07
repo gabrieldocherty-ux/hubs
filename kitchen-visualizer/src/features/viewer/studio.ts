@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 
 /**
- * The seam between the room's 3D view and the Studio render dialog. Plain TypeScript (no three):
- * the TopBar's RenderButton lives in the main chunk and imports this.
+ * The seam between the room's 3D view and the Studio render dialog. Plain TypeScript (no three),
+ * loaded only by the lazy 3D view and the lazy dialog; the TopBar's RenderButton (main chunk)
+ * imports just the small open/close store in studioDialog.ts.
  *
  * The 3D view registers a still renderer while it is mounted; the dialog asks it for an
  * offscreen render at any size. Room quality settings (Fast/High, tone mapping) live here too,
@@ -178,17 +179,12 @@ export function renderFilename(kitchenSlug: string, width: number, height: numbe
   return `${kitchenSlug || 'kitchen'}-render-${width}x${height}.png`;
 }
 
-interface StudioState {
-  open: boolean;
-  /** Download as soon as a render is ready (the resume after paying for an unlock). */
-  autoDownload: boolean;
+interface StudioPrefsState {
   prefs: StudioPrefs;
   setPrefs(p: Partial<StudioPrefs>): void;
 }
 
-export const useStudio = create<StudioState>()((set, get) => ({
-  open: false,
-  autoDownload: false,
+export const useStudioPrefs = create<StudioPrefsState>()((set, get) => ({
   prefs: readPrefs(),
   setPrefs: (p) => {
     const prefs = { ...get().prefs, ...p };
@@ -196,12 +192,3 @@ export const useStudio = create<StudioState>()((set, get) => ({
     set({ prefs });
   },
 }));
-
-/** Opens the Studio render dialog (from the TopBar, or after an unlock to finish the download). */
-export function openStudioRender(opts: { autoDownload?: boolean } = {}) {
-  useStudio.setState({ open: true, autoDownload: !!opts.autoDownload });
-}
-
-export function closeStudioRender() {
-  useStudio.setState({ open: false, autoDownload: false });
-}

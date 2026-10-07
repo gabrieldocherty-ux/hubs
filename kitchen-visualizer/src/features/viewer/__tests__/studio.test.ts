@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { capSize, DEFAULT_STUDIO_PREFS, parsePrefs, renderFilename, stillOptionsFor, STUDIO_SIZES, useStudio } from '../studio';
+import { capSize, DEFAULT_STUDIO_PREFS, parsePrefs, renderFilename, stillOptionsFor, STUDIO_SIZES, useStudioPrefs } from '../studio';
 import { previewSize, watermarkGrid } from '../watermark';
 
 test('the three studio sizes are 1080p, 1440p and 4K', () => {
@@ -45,8 +45,8 @@ test('stillOptionsFor maps prefs to the exact pixel size', () => {
 });
 
 test('setPrefs remembers the choice on this device', () => {
-  useStudio.getState().setPrefs({ size: '1440', camera: 'overview' });
-  assert.equal(useStudio.getState().prefs.size, '1440');
+  useStudioPrefs.getState().setPrefs({ size: '1440', camera: 'overview' });
+  assert.equal(useStudioPrefs.getState().prefs.size, '1440');
   assert.deepEqual(parsePrefs(localStorage.getItem('mise.studio.prefs')), { ...DEFAULT_STUDIO_PREFS, size: '1440', camera: 'overview' });
 });
 

@@ -22,17 +22,8 @@ import { slug } from '../../lib/exporters';
 import { QA } from '../../lib/qa';
 import { useDesignStore } from '../../store/useDesignStore';
 import { requestExport, useEntitlements } from '../billing';
-import {
-  STUDIO_SIZES,
-  capSize,
-  closeStudioRender,
-  renderFilename,
-  stillOptionsFor,
-  useStudio,
-  waitForStillRenderer,
-  type StudioCamera,
-  type StudioPrefs,
-} from './studio';
+import { STUDIO_SIZES, capSize, renderFilename, stillOptionsFor, useStudioPrefs, waitForStillRenderer, type StudioCamera, type StudioPrefs } from './studio';
+import { closeStudioRender, useStudio } from './studioDialog';
 import { drawWatermark, previewSize } from './watermark';
 import './viewer.css';
 
@@ -110,8 +101,8 @@ function Seg<T extends string>({ label, value, options, onChange }: { label: str
 }
 
 export default function RenderDialog({ projectId }: { projectId: string | null }) {
-  const prefs = useStudio((s) => s.prefs);
-  const setPrefs = useStudio((s) => s.setPrefs);
+  const prefs = useStudioPrefs((s) => s.prefs);
+  const setPrefs = useStudioPrefs((s) => s.setPrefs);
   const name = useDesignStore((s) => s.doc.name);
   const { watermark, loading } = useEntitlements(projectId);
   const [status, setStatus] = useState<'idle' | 'preparing' | 'rendering' | 'done' | 'error'>('idle');
@@ -135,7 +126,7 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
   const render = async (): Promise<Rendered | null> => {
     if (running.current) return null;
     running.current = true;
-    const p: StudioPrefs = useStudio.getState().prefs;
+    const p: StudioPrefs = useStudioPrefs.getState().prefs;
     const o = stillOptionsFor(p);
     setError('');
     setStatus('preparing');

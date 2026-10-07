@@ -5,7 +5,7 @@ import { useCompact } from '../../components/MobileState';
 import { loadEntitlements, useEntitlements } from '../billing';
 // The paid-export intent is billing's; it isn't on billing's public index (see docs/handoff/viewer.md).
 import { clearIntent, peekIntent } from '../billing/entitlements';
-import { closeStudioRender, openStudioRender, useStudio } from './studio';
+import { closeStudioRender, openStudioRender, useStudio } from './studioDialog';
 
 /**
  * The TopBar's "Studio render" slot (BUILD_PLAN §3.8, A-T8). Lives in the main chunk, so it
