@@ -8,6 +8,7 @@ import { FLOORING, byId } from '../../data/finishes';
 import { getProduct } from '../../data/catalog';
 import { feetInches } from '../../lib/format';
 import { registerExporter } from '../../lib/exporters';
+import { qaExpose } from '../../lib/qa';
 import { clamp, type Resolved } from '../../lib/geometry';
 import { placeAt, planClientToRoom, planRoomToClient, registerDropTarget, useOverlay, usePlacement } from '../../lib/interaction';
 import { ACCENT, BAD, FONT_MONO, INK, OK, PAPER, WALL, WALL_T, WARN, patternFill } from './planStyle';
@@ -102,6 +103,25 @@ export function PlanView() {
   selectedRef.current = selected;
 
   usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRef });
+
+  // Headless checks (only with ?qa): where a room point is on screen, and the stage transform.
+  useEffect(() => {
+    const rect = () => stageRef.current?.container().getBoundingClientRect() ?? null;
+    qaExpose({
+      plan: {
+        view: () => ({ ...viewRef.current }),
+        toClient: (x: number, y: number) => {
+          const c = rect();
+          return c ? planRoomToClient({ x, y }, c, viewRef.current) : null;
+        },
+        toRoom: (cx: number, cy: number) => {
+          const c = rect();
+          return c ? planClientToRoom(cx, cy, c, viewRef.current) : null;
+        },
+      },
+    });
+    return () => qaExpose({ plan: undefined });
+  }, []);
 
   const k = 1 / view.scale;
   const rendered = ui.planStyle === 'rendered';
