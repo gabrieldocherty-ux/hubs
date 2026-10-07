@@ -1141,6 +1141,11 @@
     gap: 0;
   }
 
+  /* The account button ("Sign in to save") stays one line, so the bar keeps its height. */
+  .gen-bar > .btn {
+    white-space: nowrap;
+  }
+
   .gen-main--photos {
     padding: 20px 16px 16px;
   }
@@ -1317,4 +1322,15 @@
   margin-left: auto;
   font-size: 20px;
   color: var(--ink-3);
+}
+
+@media (max-width: 480px) {
+  .gen-bar .wordmark {
+    display: none;
+  }
+
+  .gen-bar > .btn {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
 }
