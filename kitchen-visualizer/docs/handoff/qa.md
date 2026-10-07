@@ -78,8 +78,9 @@ Owned: `scripts/qa.mjs`, `scripts/qa-shot.mjs`, `scripts/qa/routes/core.mjs`,
 `node scripts/qa.mjs --pkg core --port 8811` on `dist/` built from this branch, Edge 154, GPU
 (ANGLE D3D11): **PASS: 35 passed, 5 known issues, 0 failed** (about 55 s). Every screenshot was
 looked at. The five known issues are real app bugs outside these owned paths, listed below.
-`npx tsc --noEmit -p tsconfig.json`, `npm test` and `npm run build` results are in the session
-report.
+Same commit: `npx tsc --noEmit -p tsconfig.json` clean; `npm test` 59/59 TS tests and 71/72 server
+tests pass (1 skipped: the real-`mise.db` upgrade test, which needs `MISE_UPGRADE_DB`);
+`npm run build` succeeds (Vite's usual >500 kB chunk warning for `index` and `SceneView`).
 
 ## Requests for the integration pass (files I don't own)
 
