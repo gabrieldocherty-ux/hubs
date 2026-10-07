@@ -1,6 +1,7 @@
 // Core QA routes (BUILD_PLAN F-T12): the device planner, landing, home, new kitchen, an opened
-// kitchen, Billing, the Contractor workspace, Admin, and the export paywall, at desktop and
-// phone sizes. Run: node scripts/qa.mjs --pkg core --port 8811
+// kitchen, Billing, the Contractor workspace, Admin, the export paywall and a demo plan payment,
+// at desktop and phone sizes, plus a render smoke of every other routed screen.
+// Run: node scripts/qa.mjs --pkg core --port 8811
 //
 // Selectors and texts here belong to foundation screens. Feature packages keep their own
 // routes in scripts/qa/routes/<key>.mjs; the landing check deliberately looks only for the
@@ -81,6 +82,28 @@ async function viewTab({ evaluate, click }, label) {
   }, label);
   if (!ok) throw new Error(`no "${label}" view tab`);
   await click(`[data-qa-tab="${label}"]`);
+}
+
+/**
+ * Every routed screen renders something real: no blank page (a render crash unmounts the whole
+ * app, and the console error that comes with it already fails the route), no sideways scroll.
+ * Deliberately text-agnostic, so a feature package can replace its placeholder without
+ * touching this file; packages check their own screens in scripts/qa/routes/<key>.mjs.
+ */
+async function rendersSomething(h) {
+  await h.waitUntil(() => (document.querySelector('#root')?.innerText ?? '').trim().length >= 10, 10_000, 'the screen showing some text').catch(() => {});
+  await h.sleep(500); // a lazy screen's chunk, then its first fetch
+  const r = await h.evaluate(() => ({ text: (document.querySelector('#root')?.innerText ?? '').trim().length, hash: location.hash }));
+  if (r.text < 10) throw new Error(`the screen is blank (${r.text} characters of text at ${r.hash})`);
+  await noSideScroll(h);
+}
+
+/** The seeded demo range (server/seed/core.mjs), as /api/catalog lists it. */
+async function demoProduct(api) {
+  const r = await api.get('/api/catalog');
+  const p = (r.body?.products ?? []).find((x) => x.name === 'Sample Gas Range 30″ (Demo)');
+  if (!p) throw new Error('the seeded demo range is not in /api/catalog');
+  return p;
 }
 
 /** Opens Export and picks a menu item by its bold label. */
@@ -347,4 +370,54 @@ export default [
     expectText: ['Overview', 'Users'],
     check: noSideScroll,
   },
+
+  // ── Paying for a plan (demo checkout, end to end in the browser) ─────────
+  {
+    name: 'pay-demo-plan-unlimited',
+    as: 'fresh',
+    setup: async ({ me }) => {
+      const k = await newKitchen(me, 'QA Unlimited Kitchen');
+      const c = await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
+      if (c.status >= 300 || !c.body?.ref) throw new Error(`starting the Unlimited demo checkout failed (${c.status}): ${c.body?.error ?? c.text}`);
+      return { path: `#/pay/demo-plan/${c.body.ref}`, projectId: k.projectId };
+    },
+    waitFor: ['.demo-pay-card', '.demo-pay-actions .btn.primary'],
+    expectText: ['Checkout · Demo', 'Mise never sees or stores card details'],
+    check: async (h) => {
+      // No card fields, ever: payments are demo or Stripe-hosted.
+      const cardish = await h.evaluate(() => [...document.querySelectorAll('input')].filter((i) => /card|cc-|cvc|cvv|expir/i.test(`${i.name} ${i.id} ${i.autocomplete} ${i.placeholder}`)).length);
+      if (cardish) throw new Error(`${cardish} card-like input(s) on the demo payment page`);
+      await noSideScroll(h);
+      await h.shot('checkout');
+      await h.click('.demo-pay-actions .btn.primary');
+      // Success goes back to where the checkout started (Billing, by default) on the new plan.
+      await h.waitUntil(() => !location.hash.startsWith('#/pay/'), 15_000, 'returning from the demo checkout');
+      await h.waitFor('.billing-current');
+      await h.waitForText(['Unlimited', 'Renews on']);
+      const me = await h.me.get('/api/auth/me');
+      const plan = me.body?.user?.plan?.id;
+      if (plan !== 'unlimited') throw new Error(`after a successful demo payment the plan is "${plan}", expected "unlimited"`);
+      const r = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
+      if (r.status !== 200) throw new Error(`an Unlimited user's CSV export returned ${r.status}: ${r.body?.error ?? r.text.slice(0, 200)}`);
+    },
+  },
+
+  // ── Every other routed screen renders (smoke; packages own the details) ──
+  ...[
+    { name: 'screen-signup-phone', path: '#/signup', as: 'anon', viewport: 'phone', waitFor: ['input[type="password"]'] },
+    { name: 'screen-welcome', path: '#/welcome', as: 'anon' },
+    { name: 'screen-welcome-phone', path: '#/welcome', as: 'anon', viewport: 'phone' },
+    { name: 'screen-pricing', path: '#/pricing', as: 'anon' },
+    { name: 'screen-pricing-phone', path: '#/pricing', as: 'anon', viewport: 'phone' },
+    { name: 'screen-generate', path: '#/generate', as: 'customer' },
+    {
+      name: 'screen-product-demo',
+      as: 'anon',
+      setup: async ({ api }) => ({ path: `#/p/${(await demoProduct(api)).id}` }),
+    },
+    { name: 'screen-brand-page-demo', path: '#/b/mise-sample-co-demo', as: 'anon' },
+    { name: 'screen-brand-portal', path: '#/brand', as: 'brand' },
+    { name: 'screen-orders', path: '#/orders', as: 'customer' },
+    ...['moderation', 'brands', 'studio', 'revenue', 'billing', 'users'].map((tab) => ({ name: `admin-${tab}`, path: `#/admin/${tab}`, as: 'admin' })),
+  ].map((r) => ({ waitFor: ['#root *'], ...r, check: rendersSomething })),
 ];
