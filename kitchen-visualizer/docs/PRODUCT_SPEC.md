@@ -250,6 +250,8 @@ This is the "realistic product viewer" in the brief, and it is the product's vis
 
 ## 6. Brand features (package: brands)
 
+> **Superseded 2026-10-06 by [BRAND_PAGE.md](./BRAND_PAGE.md):** there is no separate brand account or outside brand portal. The brand page is a tab of the Contractor account (a contractor's company is the brand); partner brands are admin-created only. The editor, moderation, brand page and analytics below are reused there.
+
 ### 6.1 Onboarding
 1. Any signed-in user can choose **List your products** (account menu → `#/brand/join`). They enter the brand name, website (https) and a short description. This creates a brand with status `pending`, with the caller as `owner`. Each user may create at most 3 brands.
 2. An admin approves, rejects or suspends the brand. A **Verified** badge is a separate manual admin action, given only once the admin is satisfied the account really represents the brand, for example an email on the brand's domain [R-trust]. Unverified brands show no badge. Seeded demo brands show **Demo**.

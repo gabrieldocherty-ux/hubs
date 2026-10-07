@@ -1093,3 +1093,32 @@ F foundation ──┬── A viewer · B brands · C orders · D generate · E
 **Acceptance (H):** typecheck, `npm test`, build to `.build/contractors`, and `qa --pkg contractors --port 8819` all pass with zero console errors and no external requests. Cost data never appears in any non-owner response or DOM (tests and QA prove it).
 
 **Ports:** G uses 8818 and H uses 8819, and the integration pass moves to 8827 (8828–8829 spare). The `.qa/` output for G and H goes in `.qa/billing` and `.qa/contractors`.
+
+---
+
+## 16. Package B2: brand page inside the Contractor account (2026-10-06)
+
+**Spec:** [`BRAND_PAGE.md`](./BRAND_PAGE.md). It replaces §6 as a standalone portal and runs after the A–E integration. It reuses package B's server pieces: brands/products services, product editor, GLB report, moderation, brand page and analytics.
+
+**Owned:** `src/features/brands/**`, `server/brands/**`, `server/routes/brands.mjs`, `server/db/migrations/brands.mjs` (append steps only), `server/seed/brands.mjs`, `server/test/brands.test.mjs`, `scripts/qa/routes/brands.mjs`. It also owns the Brand-page wiring inside `src/features/contractors/**` (nav tab, dashboard card, My-catalog publish toggles) and the router redirects for `#/brand`.
+
+**Tasks:**
+- Migration: the `brands` columns from BRAND_PAGE §10, plus the `leads` table and the new event types.
+- `#/pro/brand` tab with Overview / Products / Leads / Settings. Setup comes from the company profile, then submit for review, preview, and the price-display and contact settings.
+- Publish toggles with a readiness checklist. Edits to a live product keep the live version public until approved. Instant unpublish. A 50-product cap.
+- Public `#/b/:slug` with the Verified contractor badge, products by line, *Try in my kitchen*, and *Contact / Request a quote* leading to the lead form (consent, optional attached kitchen as a share link, honeypot, IP rate limit).
+- Leads inbox with statuses, notes, tel/mailto and a new-lead badge.
+- Analytics for 7/30/90 days.
+- Lapse hides everything and renewal restores it with no re-review.
+- Admin moderation of brand pages and products, Brands of kind contractor/partner, and partner brands created by admins only.
+- `#/brand*` redirects.
+- Remove every "List your products" / brand-join entry point for non-contractors.
+- **Tests:**
+  - only the contractor sees their leads; admins see counts only;
+  - no cost or margin in any public wire, deep-scanned across the brand page, catalog, product page and lead responses;
+  - lapse/renew hides and restores without re-review;
+  - the readiness gate;
+  - a moderation round trip;
+  - lead spam limits;
+  - redirects.
+- QA at desktop and phone sizes.

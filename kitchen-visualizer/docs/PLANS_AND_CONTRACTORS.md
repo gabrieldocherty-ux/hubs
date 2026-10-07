@@ -117,6 +117,9 @@ One table of everything they sell: their own products plus the public products t
    It is printable or saveable as PDF from the browser. It's an export, and contractors are always entitled.
 3. **Presentation mode:** full screen, Client view forced and costs hidden, for showing a customer on a laptop or TV.
 
+### 4.6b Brand page (added 2026-10-06)
+A small tab of the workspace that publishes chosen My-catalog products as the contractor's public brand page, with a Verified contractor badge, a lead form and a leads inbox. Full design in [BRAND_PAGE.md](./BRAND_PAGE.md).
+
 ### 4.7 If the contractor plan lapses
 - **Shares keep working** at the last sell prices, so clients are never broken.
 - Kitchens and catalog data are **kept**, but My catalog, the price book, quotes and the workspace become **read-only** with a "Renew to keep selling" banner, until they resubscribe.
