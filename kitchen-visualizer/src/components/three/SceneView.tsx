@@ -31,6 +31,36 @@ import '../../features/viewer/viewer.css';
 export { MAX_LIGHTS };
 const BG = '#efe8dc';
 
+/**
+ * The room's light palette: the direct lights and the Lightformer environment (its backdrop
+ * colour is the diffuse fill every surface picks up). With `?qa`, localStorage
+ * `mise.qa.roomLight` (JSON) may override any key for tone-mapping A/B tests.
+ */
+const ROOM_LIGHT = (() => {
+  const base = {
+    hemiSky: '#fff4e6',
+    hemiGround: '#b7a58c',
+    hemi: 0.6,
+    ambient: 0.14,
+    sun: '#fff1dd',
+    sunI: 2.3,
+    fill: '#dfe9f5',
+    fillI: 0.45,
+    point: '#ffe6c4',
+    pointI: 14,
+    envBg: '#b9b0a3',
+    key: '#fff3e2',
+    side: '#e9f0ff',
+    top: '#fff8ee',
+  };
+  if (!QA) return base;
+  try {
+    return { ...base, ...JSON.parse(localStorage.getItem('mise.qa.roomLight') || '{}') } as typeof base;
+  } catch {
+    return base;
+  }
+})();
+
 interface ItemProps {
   item: PlacedItem;
   surfaces: Surfaces;
@@ -159,20 +189,20 @@ function Lights({ room }: { room: Room }) {
   }, [W, L, span, gl]);
   return (
     <>
-      <hemisphereLight args={['#fff4e6', '#b7a58c', 0.6]} />
-      <ambientLight intensity={0.14} />
+      <hemisphereLight args={[ROOM_LIGHT.hemiSky, ROOM_LIGHT.hemiGround, ROOM_LIGHT.hemi]} />
+      <ambientLight intensity={ROOM_LIGHT.ambient} />
       <directionalLight
         ref={sun}
         position={[W / 2 - span * 0.35, H + span * 1.1, L / 2 + span * 0.75]}
-        intensity={2.3}
-        color="#fff1dd"
+        intensity={ROOM_LIGHT.sunI}
+        color={ROOM_LIGHT.sun}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.025}
       />
-      <directionalLight position={[W / 2 + span, H * 0.6, L / 2 - span * 0.2]} intensity={0.45} color="#dfe9f5" />
-      <pointLight position={[W / 2, H - 0.8, L / 2]} intensity={14} distance={span * 2.2} decay={1.6} color="#ffe6c4" />
+      <directionalLight position={[W / 2 + span, H * 0.6, L / 2 - span * 0.2]} intensity={ROOM_LIGHT.fillI} color={ROOM_LIGHT.fill} />
+      <pointLight position={[W / 2, H - 0.8, L / 2]} intensity={ROOM_LIGHT.pointI} distance={span * 2.2} decay={1.6} color={ROOM_LIGHT.point} />
     </>
   );
 }
@@ -285,11 +315,11 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
     <>
       <Lights room={room} />
       <Environment resolution={256} frames={1}>
-        <color attach="background" args={['#b9b0a3']} />
-        <Lightformer form="rect" intensity={2.2} position={[0, 6, 9]} scale={[14, 5, 1]} color="#fff3e2" />
-        <Lightformer form="rect" intensity={1.2} position={[-9, 4, 0]} rotation-y={Math.PI / 2} scale={[10, 4, 1]} color="#e9f0ff" />
+        <color attach="background" args={[ROOM_LIGHT.envBg]} />
+        <Lightformer form="rect" intensity={2.2} position={[0, 6, 9]} scale={[14, 5, 1]} color={ROOM_LIGHT.key} />
+        <Lightformer form="rect" intensity={1.2} position={[-9, 4, 0]} rotation-y={Math.PI / 2} scale={[10, 4, 1]} color={ROOM_LIGHT.side} />
         <Lightformer form="rect" intensity={1.4} position={[9, 4, -2]} rotation-y={-Math.PI / 2} scale={[10, 4, 1]} color="#fff" />
-        <Lightformer form="circle" intensity={2.5} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={6} color="#fff8ee" />
+        <Lightformer form="circle" intensity={2.5} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={6} color={ROOM_LIGHT.top} />
       </Environment>
       <group scale={1 / 12}>
         <Room3D room={room} all={all} surfaces={surfaces} ctx={ctx} selectedId={selectedId} problemIds={report.problemIds} onSelect={onSelect} onHover={hover} />
