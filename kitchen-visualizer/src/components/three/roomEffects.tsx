@@ -8,14 +8,13 @@
  *  - `FrameGovernor`: drei's PerformanceMonitor counts frames per time window, which reads a
  *    demand-driven canvas (no frames while idle) as a slow device. This one only measures runs
  *    of consecutive frames (an orbit, a drag) and steps down DPR, then AO, when they're slow.
- *  - `QaStats`: with `?qa`, `window.__miseQa = { frames, calls, programs, triangles }`.
+ *  - `QaStats` (qaStats.tsx, re-exported): with `?qa`, `window.__miseQa = { frames, calls, programs, triangles }`.
  */
 import { memo, useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing';
 import { ToneMappingMode, type EffectComposer as EffectComposerImpl, type ToneMappingEffect } from 'postprocessing';
 import * as THREE from 'three';
-import { QA } from '../../lib/qa';
 import { useRoomQuality, type ToneMap } from '../../features/viewer/studio';
 
 /** The N8AO pass (typed loosely: n8ao ships no types for the pass object). */
@@ -125,45 +124,4 @@ export function FrameGovernor({ busy }: { busy?: () => boolean }) {
   return null;
 }
 
-interface QaWindow {
-  __miseQa?: Record<string, unknown>;
-}
-
-/** Merges values into `window.__miseQa` (only with `?qa` in the page URL). */
-export function qaSet(values: Record<string, unknown>) {
-  if (!QA) return;
-  const w = window as unknown as QaWindow;
-  w.__miseQa = Object.assign(w.__miseQa ?? {}, values);
-}
-
-/**
- * Frame and draw statistics for headless checks. Counts every rendered frame; `calls`,
- * `triangles` are the totals of the last frame (all composer passes), `programs` the number of
- * compiled shader programs. Mounted only with `?qa`.
- */
-export function QaStats({ name }: { name: string }) {
-  const gl = useThree((s) => s.gl);
-  const frames = useRef(0);
-  useEffect(() => {
-    gl.info.autoReset = false;
-    gl.info.reset();
-    qaSet({ canvas: name, frames: 0 });
-    return () => {
-      gl.info.autoReset = true;
-    };
-  }, [gl, name]);
-  // Runs first in each frame: publish the previous frame's totals, then start counting afresh.
-  useFrame(() => {
-    frames.current++;
-    qaSet({
-      canvas: name,
-      frames: frames.current,
-      calls: gl.info.render.calls,
-      triangles: gl.info.render.triangles,
-      programs: gl.info.programs?.length ?? 0,
-      lastFrameAt: performance.now(),
-    });
-    gl.info.reset();
-  }, -1000);
-  return null;
-}
+export { QaStats, qaSet } from './qaStats';
