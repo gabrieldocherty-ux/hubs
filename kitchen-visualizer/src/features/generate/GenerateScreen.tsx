@@ -122,10 +122,14 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
   useEffect(() => {
     let live = true;
     (async () => {
-      const qa = location.search.includes('qa') ? query.get('qaPhotos') : null;
-      if (qa) {
-        const list = await qaPhotos(qa);
+      // QA only: `qaPhotos` (see qa.ts) and `qaStep=space` start a fresh, known state, ignoring the draft.
+      const qaOn = location.search.includes('qa');
+      const qa = qaOn ? query.get('qaPhotos') : null;
+      const qaStep = qaOn ? query.get('qaStep') : null;
+      if (qa || qaStep) {
+        const list = qa ? await qaPhotos(qa) : [];
         if (live && list.length) setPhotos(list.map(withUrl));
+        if (live && qaStep === 'space') setStep('space');
       } else if (from && signedIn) {
         try {
           const [{ project }, refs] = await Promise.all([api.getProject(from), generateApi.photosOf(from).catch(() => ({ files: [] }))]);
