@@ -94,6 +94,63 @@ export function canopy(wb: number, db: number, wt: number, dt: number, h: number
   return g;
 }
 
+/**
+ * The texture coordinates of a point on a box face, in tiles, for a grained material (wood) or
+ * any texture with a real-world size. The texture's v axis is its grain.
+ *
+ *  - Faces are mapped at real scale (inches / tile), not stretched 0..1 per face, so a 3″ rail and
+ *    a 30″ door show the same grain width (BUILD_PLAN bug 17).
+ *  - Grain direction: a vertical face runs it vertically (stiles, door panels, cabinet sides) unless
+ *    the face is at least twice as wide as it is tall (rails, drawer fronts, toe-kicks), which run it
+ *    horizontally; a horizontal face runs it along its longer side (shelves, tops).
+ *
+ * `n` is the face normal, `p` the point (both in the box's frame, centred), `size` the box size
+ * and `tile` the texture's [width, height] in inches.
+ */
+export function grainUV(n: [number, number, number], p: [number, number, number], size: [number, number, number], tile: [number, number]): [number, number] {
+  const ax = Math.abs(n[0]);
+  const ay = Math.abs(n[1]);
+  const az = Math.abs(n[2]);
+  let a: number; // across the face
+  let b: number; // along the face
+  let alongB: boolean; // the grain runs along b
+  if (ay >= ax && ay >= az) {
+    // Top or bottom: x across, z along; the grain follows the longer side.
+    a = p[0];
+    b = p[2];
+    alongB = size[2] > size[0];
+  } else {
+    // A side (normal ±x: z across) or the front/back (normal ±z: x across); y is up.
+    a = ax >= az ? p[2] : p[0];
+    b = p[1];
+    const across = ax >= az ? size[2] : size[0];
+    alongB = !(across >= 2 * size[1]);
+  }
+  return alongB ? [a / tile[0], b / tile[1]] : [b / tile[0], a / tile[1]];
+}
+
+const grainCache = new Map<string, THREE.BoxGeometry>();
+
+/** A shared box with real-scale, grain-aware UVs (see grainUV). */
+export function grainBoxGeo(w: number, h: number, d: number, tile: [number, number]): THREE.BoxGeometry {
+  const key = `${w.toFixed(3)}|${h.toFixed(3)}|${d.toFixed(3)}|${tile[0]}x${tile[1]}`;
+  let g = grainCache.get(key);
+  if (!g) {
+    g = new THREE.BoxGeometry(w, h, d);
+    const pos = g.getAttribute('position') as THREE.BufferAttribute;
+    const nrm = g.getAttribute('normal') as THREE.BufferAttribute;
+    const uv = g.getAttribute('uv') as THREE.BufferAttribute;
+    const size: [number, number, number] = [w, h, d];
+    for (let i = 0; i < pos.count; i++) {
+      const [u, v] = grainUV([nrm.getX(i), nrm.getY(i), nrm.getZ(i)], [pos.getX(i), pos.getY(i), pos.getZ(i)], size, tile);
+      uv.setXY(i, u, v);
+    }
+    uv.needsUpdate = true;
+    grainCache.set(key, g);
+  }
+  return g;
+}
+
 const boxCache = new Map<string, THREE.BoxGeometry>();
 
 /** Shared unit-free box geometry keyed by size, so repeated doors and legs don't allocate. */

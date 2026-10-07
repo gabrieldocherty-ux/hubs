@@ -224,7 +224,8 @@ function GltfInner({ url, target, slots, fallback, shadowMinIn = 8, onReady }: G
 
   if (!built) return <>{fallback}</>;
   return (
-    <group position={built.fit.offset} scale={built.fit.scale}>
+    // userData.gltf lets QA tell a loaded model from its procedural stand-in.
+    <group position={built.fit.offset} scale={built.fit.scale} userData={{ gltf: url }}>
       <primitive object={built.root} />
     </group>
   );

@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { DoorStyle, Finish } from '../../types';
 import type { Resolved } from '../../lib/geometry';
-import { boxGeo, scaleUV, worldUVBox } from './geom3d';
+import { boxGeo, grainBoxGeo, scaleUV, worldUVBox } from './geom3d';
 import type { FrontSpec, PullSpec } from '../../lib/fronts';
 export { baseFronts, type FrontSpec, type PullSpec } from '../../lib/fronts';
 import { M, cached, finishMaterial, flutedMaterial } from './materials';
@@ -37,7 +37,10 @@ export function isLargePart(a: number, b: number, c: number): boolean {
 
 export function Box({ size, pos, mat, rot, cast, receive = true }: { size: V3; pos: V3; mat: THREE.Material; rot?: V3; cast?: boolean; receive?: boolean }) {
   const casts = cast ?? isLargePart(size[0], size[1], size[2]);
-  return <mesh geometry={boxGeo(size[0], size[1], size[2])} position={pos} rotation={rot} material={mat} castShadow={casts} receiveShadow={receive} dispose={null} />;
+  // A grained finish (wood) is mapped at real scale with its grain along the part (geom3d grainUV).
+  const tile = mat.userData.tileIn as [number, number] | undefined;
+  const geo = tile ? grainBoxGeo(size[0], size[1], size[2], tile) : boxGeo(size[0], size[1], size[2]);
+  return <mesh geometry={geo} position={pos} rotation={rot} material={mat} castShadow={casts} receiveShadow={receive} dispose={null} />;
 }
 
 const cylCache = new Map<string, THREE.CylinderGeometry>();

@@ -32,8 +32,12 @@ export function cached<T extends THREE.Material>(key: string, make: () => T): T 
 export function finishMaterial(f: Finish): THREE.Material {
   return cached(`finish:${f.id}:${f.hex}:${f.material}`, () => {
     switch (f.material) {
-      case 'wood':
-        return new THREE.MeshStandardMaterial({ map: texFor({ type: 'wood', base: f.hex }).tex, roughness: 0.62 });
+      case 'wood': {
+        const m = new THREE.MeshStandardMaterial({ map: texFor({ type: 'wood', base: f.hex }).tex, roughness: 0.62 });
+        // The wood canvas is 12″ × 24″ with its grain along the height; Box maps it at that size.
+        m.userData.tileIn = [12, 24];
+        return m;
+      }
       case 'metal': {
         const dark = luminance(f.hex) < 0.1;
         return new THREE.MeshStandardMaterial({ color: f.hex, metalness: 0.9, roughness: dark ? 0.38 : 0.28, envMapIntensity: 1.1 });
