@@ -51,7 +51,8 @@ function qaStudio(values: Record<string, unknown>) {
   if (!QA) return;
   const w = window as unknown as { __miseQa?: Record<string, unknown> };
   const prev = (w.__miseQa?.studio as Record<string, unknown> | undefined) ?? {};
-  w.__miseQa = { ...(w.__miseQa ?? {}), studio: { ...prev, ...values } };
+  // In place: the canvas stats on this object are live getters (qaStats.tsx) that a copy would freeze.
+  w.__miseQa = Object.assign(w.__miseQa ?? {}, { studio: { ...prev, ...values } });
 }
 
 /** Shows the 3D view if it isn't on screen (split view on a desktop, 3D on a phone). */

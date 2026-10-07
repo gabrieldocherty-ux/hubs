@@ -21,8 +21,10 @@ export function qaSet(values: Record<string, unknown>) {
 
 /**
  * Frame and draw statistics for headless checks. Counts every rendered frame; `calls`,
- * `triangles` are the totals of the last frame (all composer passes), `programs` the number of
- * compiled shader programs. Mounted only with `?qa`.
+ * `triangles` are the totals of the last complete frame (all composer passes), `programs` the
+ * number of compiled shader programs. They are live getters on the renderer's counters: a
+ * demand-driven canvas goes idle right after a frame, so a value copied at the start of each frame
+ * would stay one frame stale for as long as it idles. Mounted only with `?qa`.
  */
 export function QaStats({ name }: { name: string }) {
   const gl = useThree((s) => s.gl);
@@ -31,21 +33,22 @@ export function QaStats({ name }: { name: string }) {
     gl.info.autoReset = false;
     gl.info.reset();
     qaSet({ canvas: name, frames: 0 });
+    const w = window as unknown as QaWindow;
+    const q = (w.__miseQa ??= {});
+    const live: [string, () => number][] = [
+      ['calls', () => gl.info.render.calls],
+      ['triangles', () => gl.info.render.triangles],
+      ['programs', () => gl.info.programs?.length ?? 0],
+    ];
+    for (const [k, get] of live) Object.defineProperty(q, k, { get, configurable: true, enumerable: true });
     return () => {
       gl.info.autoReset = true;
     };
   }, [gl, name]);
-  // Runs first in each frame: publish the previous frame's totals, then start counting afresh.
+  // Runs first in each frame: count it, then start the frame's totals afresh.
   useFrame(() => {
     frames.current++;
-    qaSet({
-      canvas: name,
-      frames: frames.current,
-      calls: gl.info.render.calls,
-      triangles: gl.info.render.triangles,
-      programs: gl.info.programs?.length ?? 0,
-      lastFrameAt: performance.now(),
-    });
+    qaSet({ canvas: name, frames: frames.current, lastFrameAt: performance.now() });
     gl.info.reset();
   }, -1000);
   return null;

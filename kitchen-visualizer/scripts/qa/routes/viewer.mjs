@@ -68,9 +68,9 @@ async function dimsMatch({ evaluate }, want) {
   const problems = [];
   for (const [k, inches] of Object.entries(want)) {
     const row = got.find((g) => g.k === k);
-    const cm = (inches * 2.54).toFixed(1);
+    const cm = row ? Number(/([\d.]+)\s*cm/.exec(row.v)?.[1]) : NaN;
     if (!row) problems.push(`no ${k} row`);
-    else if (!row.v.includes(cm)) problems.push(`${k} shows "${row.v}", expected ${inches}″ (${cm} cm)`);
+    else if (!(Math.abs(cm - inches * 2.54) < 0.06)) problems.push(`${k} shows "${row.v}", expected ${inches}″ (${(inches * 2.54).toFixed(1)} cm)`);
   }
   if (problems.length) throw new Error(problems.join('; '));
 }
@@ -82,7 +82,19 @@ async function show3d(h) {
     s.select(null);
     s.setUI({ viewMode: '3d' });
   });
-  await h.waitUntil(() => window.__miseQa?.canvas === 'room' && (window.__miseQa?.frames ?? 0) > 2 && !!window.__miseQa?.viewer?.renderStill, 20_000, 'the room canvas drawing');
+  try {
+    await h.waitUntil(() => window.__miseQa?.canvas === 'room' && (window.__miseQa?.frames ?? 0) > 0 && !!window.__miseQa?.viewer?.renderStill, 20_000, 'the room canvas drawing');
+  } catch (err) {
+    const st = await h.evaluate(() => ({
+      canvas: window.__miseQa?.canvas ?? null,
+      frames: window.__miseQa?.frames ?? null,
+      still: !!window.__miseQa?.viewer?.renderStill,
+      mode: window.__miseQA?.store?.getState().ui.viewMode ?? null,
+      sceneCanvas: !!document.querySelector('.scene-view canvas'),
+      visible: document.visibilityState,
+    }));
+    throw new Error(`${err.message}: ${JSON.stringify(st)}`);
+  }
 }
 
 /**
