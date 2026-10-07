@@ -14,13 +14,15 @@
 //   --swiftshader      software WebGL instead of the GPU
 //   --chrome           Chrome instead of Edge
 //   --keep             keep the temp database, uploads and server log (the path is printed)
+//   --strict-external  fail on the KNOWN_EXTERNAL requests too (they are always blocked)
 //   --list             print the routes and exit
 //
 // What it does: makes a temp DB + upload dir, runs the seeds (server/seed/index.mjs), starts
 // `server/index.mjs --prod` with PAYMENTS=demo DEMO_PAYMENTS=1 and ADMIN_EMAILS for the demo
 // admin, logs in the users the routes ask for, and opens each route in its own clean browser
 // context at http://127.0.0.1:<port>/?qa=1#<path>. A route fails on a console error, an
-// uncaught exception, any request to a non-local host (blocked, never sent), a 5xx, a missing
+// uncaught exception, any request to a non-local host (blocked, never sent; the few the app is
+// known to make are listed in KNOWN_EXTERNAL and reported without failing), a 5xx, a missing
 // static asset, a waitFor/expectText that never appears, or a check that throws.
 // Screenshots go to .qa/<pkg>/<name>.png and results to .qa/<pkg>/report.json. The browser and
 // server process trees are always killed (by PID) and the temp dir removed, pass or fail.
@@ -69,10 +71,24 @@ const DEMO_EMAIL = { customer: 'demo-customer@mise.test', brand: 'demo-brand@mis
 const CONTRACTOR_EMAIL = 'qa-contractor@mise.test';
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
 
+/**
+ * Non-local requests the app is known to make today, outside any package's control. They are
+ * still blocked (never sent) and listed in every report, but they don't fail a route unless
+ * --strict-external is passed. An entry that no route requests any more fails the run, so it
+ * gets deleted the moment the app is fixed. Keep this list short and every `why` specific.
+ */
+export const KNOWN_EXTERNAL = Object.freeze([
+  {
+    id: 'google-fonts',
+    match: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
+    why: 'index.html loads Fraunces, Instrument Sans and JetBrains Mono from Google Fonts at runtime. Self-host them (docs/handoff/qa.md); until then QA screenshots use fallback fonts.',
+  },
+]);
+
 // ─── arguments ────────────────────────────────────────────────────────────────
 
 export function parseArgs(argv) {
-  const o = { pkg: null, port: null, dist: null, only: null, timeout: 20_000, swiftshader: false, chrome: false, keep: false, list: false };
+  const o = { pkg: null, port: null, dist: null, only: null, timeout: 20_000, swiftshader: false, chrome: false, keep: false, list: false, strictExternal: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const [flag, inline] = a.includes('=') ? [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)] : [a, undefined];
@@ -106,6 +122,9 @@ export function parseArgs(argv) {
       case '--keep':
       case '--list':
         o[flag.slice(2)] = true;
+        break;
+      case '--strict-external':
+        o.strictExternal = true;
         break;
       case '--help':
       case '-h':
@@ -739,7 +758,11 @@ async function runRoute(env, pkg, route, outDir) {
       }
       for (const url of ev.external) {
         res.external.push(url);
-        res.failures.push(`request to a non-local host (blocked): ${url.slice(0, 200)}`);
+        const known = env.strictExternal ? null : KNOWN_EXTERNAL.find((k) => k.match.test(url));
+        if (known) {
+          env.knownExternalSeen.set(known.id, (env.knownExternalSeen.get(known.id) ?? new Set()).add(`${pkg}/${route.name}`));
+          res.warnings.push(`known external request (blocked, ${known.id}): ${url.slice(0, 200)}`);
+        } else res.failures.push(`request to a non-local host (blocked): ${url.slice(0, 200)}`);
       }
       for (const r of ev.responses) {
         if (!isLocalUrl(r.url)) continue;
@@ -774,7 +797,7 @@ const HELP = fs
   .readFileSync(fileURLToPath(import.meta.url), 'utf8')
   .split(/\r?\n/)
   .filter((l) => l.startsWith('//'))
-  .slice(0, 19)
+  .slice(0, 20)
   .map((l) => l.replace(/^\/\/ ?/, ''))
   .join('\n');
 
@@ -841,7 +864,21 @@ export async function main(argv = process.argv.slice(2)) {
     browser = await launchBrowser({ chrome: opts.chrome, swiftshader: opts.swiftshader });
     console.log(`  ${browser.version}${opts.swiftshader ? ' (SwiftShader)' : ''}`);
     const users = new Users({ base: server.base, dbPath: env.DB_PATH, password });
-    const runEnv = { cdp: browser.cdp, users, base: server.base, timeout: opts.timeout, serverErr, renderer: null };
+    const runEnv = {
+      cdp: browser.cdp,
+      users,
+      base: server.base,
+      timeout: opts.timeout,
+      serverErr,
+      renderer: null,
+      strictExternal: opts.strictExternal,
+      /** KNOWN_EXTERNAL id → the routes that requested it. */
+      knownExternalSeen: new Map(),
+    };
+    const knownExternalReport = (pkg) =>
+      KNOWN_EXTERNAL.filter((k) => runEnv.knownExternalSeen.has(k.id))
+        .map((k) => ({ id: k.id, why: k.why, routes: [...runEnv.knownExternalSeen.get(k.id)].filter((r) => !pkg || r.startsWith(`${pkg}/`)).map((r) => r.slice(r.indexOf('/') + 1)) }))
+        .filter((k) => k.routes.length);
 
     for (const f of plan) {
       const outDir = path.join(QA_DIR, f.pkg);
@@ -874,14 +911,21 @@ export async function main(argv = process.argv.slice(2)) {
           known: pkgResults.filter((r) => r.status === 'known').length,
           fail: pkgResults.filter((r) => r.status === 'fail').length,
         },
+        strictExternal: opts.strictExternal,
+        knownExternal: knownExternalReport(f.pkg),
         routes: pkgResults,
       };
       fs.writeFileSync(path.join(outDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
       results.push(report);
     }
-    ok = !interrupted && results.every((r) => r.ok);
     const all = results.flatMap((r) => r.routes);
     const n = (s) => all.filter((r) => r.status === s).length;
+    // Every page loads index.html, so a KNOWN_EXTERNAL entry nothing requested is stale.
+    const loadedAny = all.some((r) => r.screenshots.length);
+    const stale = opts.strictExternal || interrupted || !loadedAny ? [] : KNOWN_EXTERNAL.filter((k) => !runEnv.knownExternalSeen.has(k.id));
+    for (const k of knownExternalReport(null)) console.log(`\nKnown external request "${k.id}" (blocked, not failing; --strict-external fails it) on ${k.routes.length} route${k.routes.length === 1 ? '' : 's'}: ${k.why}`);
+    for (const k of stale) console.log(`\nFAIL: no route requested the KNOWN_EXTERNAL entry "${k.id}" any more. The app is fixed: delete that entry from scripts/qa.mjs.`);
+    ok = !interrupted && !stale.length && results.every((r) => r.ok);
     console.log(`\n${ok ? 'PASS' : 'FAIL'}: ${n('pass')} passed, ${n('known')} known issue${n('known') === 1 ? '' : 's'}, ${n('fail')} failed. Reports: ${results.map((r) => `.qa/${r.pkg}/report.json`).join(', ')}`);
     if (!ok && all.some((r) => r.failures.some((x) => /^HTTP 5/.test(x)))) console.log(`\nServer log (last lines):\n${tail(logFile)}`);
   } finally {
