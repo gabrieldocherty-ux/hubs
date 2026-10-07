@@ -1174,6 +1174,12 @@
     box-shadow: 0 6px 12px -10px rgba(33, 30, 26, 0.35);
   }
 
+  /* Jumping to a field ("Check this") lands it below the sticky plan, not under it. */
+  .gen-sec,
+  .gen-row {
+    scroll-margin-top: calc(70px + min(max(42vh, 280px), 420px));
+  }
+
   .gen-compare-tabs {
     display: flex;
     gap: 4px;

@@ -5,7 +5,7 @@ import { startTestServer, sampleDoc } from './helpers.mjs';
 import { makeJpeg, makePng } from './fixtures/images.mjs';
 import { makeGlb } from './fixtures/glb.mjs';
 import { analyzePhotos, buildRequest, parseAnswer, API_URL } from '../llm/anthropic.mjs';
-import { clampPhotoModel } from '../llm/photoModel.mjs';
+import { clampPhotoModel, photoModelJsonSchema } from '../llm/photoModel.mjs';
 
 const KEY = 'sk-ant-test-0123456789abcdef-SECRET';
 const LLM = { ANTHROPIC_API_KEY: KEY, MISE_LLM_MODEL: 'claude-opus-5-5' };
@@ -260,6 +260,25 @@ test('the request body follows the Messages API shape', () => {
   assert.ok(!('thinking' in body) && !('temperature' in body), 'no settings that some models reject');
   // The schema accepts what the clamp accepts.
   assert.ok(clampPhotoModel(ANSWER));
+});
+
+test('the answer schema stays inside what structured outputs accept', () => {
+  // No numeric, string or array constraints (the clamp enforces ranges instead); every object
+  // closed with additionalProperties:false and every property required.
+  const bad = [];
+  const walk = (o, p) => {
+    if (!o || typeof o !== 'object') return;
+    if (Array.isArray(o)) return o.forEach((x, i) => walk(x, `${p}[${i}]`));
+    for (const k of ['minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf', 'minLength', 'maxLength', 'pattern', 'minItems', 'maxItems', 'uniqueItems']) if (k in o) bad.push(`${p}.${k}`);
+    if (o.type === 'object') {
+      if (o.additionalProperties !== false) bad.push(`${p}: additionalProperties`);
+      const req = new Set(o.required ?? []);
+      for (const k of Object.keys(o.properties ?? {})) if (!req.has(k)) bad.push(`${p}.${k}: not required`);
+    }
+    for (const [k, v] of Object.entries(o)) walk(v, `${p}.${k}`);
+  };
+  walk(photoModelJsonSchema(), '$');
+  assert.deepEqual(bad, []);
 });
 
 test('reference photos attach to a kitchen: owner only, own uploads only', async () => {
