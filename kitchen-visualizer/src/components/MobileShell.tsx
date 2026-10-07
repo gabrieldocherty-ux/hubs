@@ -121,7 +121,8 @@ export function PlacementBanner({ compact }: { compact: boolean }) {
         <ProductArt product={product} surfaces={surfaces} />
       </span>
       <span className="place-banner-text">
-        {compact ? 'Tap' : 'Click'} the plan or floor to place <b>{product.name}</b>
+        {/* Short on a phone, so the product's name isn't the part cut off. */}
+        {compact ? 'Tap to place' : 'Click the plan or floor to place'} <b>{product.name}</b>
       </span>
       <button className="place-banner-cancel" onClick={disarm}>
         Cancel

@@ -316,6 +316,26 @@ html:has(.app) body {
   padding: 8px 13px;
 }
 
+/* The search field's clear button: the browser's default is a bright blue cross; draw it in the
+   app's ink instead, with a finger-sized hit area. */
+.catalog-search input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0 2px 0 6px;
+  border-radius: 50%;
+  background: var(--ink-3)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M7.5 7.5l7 7m0-7l-7 7' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / 22px 22px no-repeat;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.catalog-search input::-webkit-search-cancel-button:hover {
+  opacity: 1;
+}
+
 .sheet--catalog .catalog-grid {
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
 }
