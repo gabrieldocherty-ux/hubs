@@ -73,6 +73,9 @@ async function phoneShell({ evaluate }) {
 const PHONE_SHELL_BUG =
   'The phone editor shell is unstyled: .mbar, .sheet and .sheet-* (MobileShell.tsx, Sheet.tsx) have no CSS anywhere in src/, so the Add/Room/Details sheets render inline under the plan. Owner: foundation styles (src/styles.css); see docs/handoff/qa.md.';
 
+const SEL_TOOLBAR_BUG =
+  'The floating selection toolbar is unstyled: .sel-toolbar, .sel-toolbar--<side> and .sel-toolbar-sep (SelectionToolbar.tsx) have no CSS, so selecting anything on desktop adds a static row of Rotate/Duplicate/Delete/Details text under the whole workspace. Owner: foundation styles (src/styles.css); see docs/handoff/qa.md.';
+
 /** Clicks a top-bar view tab (Plan, Split, 3D, Walls) by its label. */
 async function viewTab({ evaluate, click }, label) {
   const ok = await evaluate((l) => {
@@ -260,6 +263,29 @@ export default [
       await h.waitForText('Saved', 10_000).catch(() => h.note('no "Saved" chip text seen'));
       await h.sleep(1200);
       await noSideScroll(h);
+    },
+  },
+  {
+    name: 'kitchen-selection-toolbar',
+    as: 'customer',
+    knownIssue: SEL_TOOLBAR_BUG,
+    setup: async ({ me }) => newKitchen(me, 'QA Selection Kitchen'),
+    waitFor: ['.topbar', '.plan-view canvas'],
+    check: async (h) => {
+      // Select the range through the store (exposed only with ?qa), as a click on it would.
+      await h.waitUntil(() => !!window.__miseQA?.store, 10_000, 'window.__miseQA.store');
+      await h.evaluate(() => window.__miseQA.store.getState().select('qa-range'));
+      await h.waitFor('.sel-toolbar');
+      await h.sleep(300);
+      const t = await h.evaluate(() => {
+        const el = document.querySelector('.sel-toolbar');
+        const s = getComputedStyle(el);
+        const b = el.getBoundingClientRect();
+        return { position: s.position, h: Math.round(b.height), w: Math.round(b.width), top: Math.round(b.top), left: Math.round(b.left) };
+      });
+      h.note(`selection toolbar ${t.w}×${t.h} at ${t.left},${t.top} (${t.position})`);
+      if (t.position !== 'absolute' && t.position !== 'fixed') throw new Error(`the selection toolbar is not floating (position: ${t.position}); it is ${t.w}×${t.h}px in the page flow`);
+      if (t.h > 90) throw new Error(`the selection toolbar is ${t.h}px tall`);
     },
   },
   {
