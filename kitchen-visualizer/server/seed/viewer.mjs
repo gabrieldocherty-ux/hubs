@@ -279,7 +279,10 @@ const PRODUCTS = [
 /** @param {{ db: import('node:sqlite').DatabaseSync, config: any, services: any, now?: () => number, forceDemo?: boolean }} ctx */
 export async function seed(ctx) {
   const { db, config, services } = ctx;
-  if (config?.PROD && !ctx.forceDemo) return { skipped: 'production (pass --force-demo)' };
+  // The seed runner (server/seed/index.mjs) refuses production itself unless --force-demo, and
+  // then calls every module with `demo` (what the core seed made) but no `forceDemo`. Called any
+  // other way in production, this seed needs `forceDemo`.
+  if (config?.PROD && !ctx.forceDemo && !ctx.demo) return { skipped: 'production (pass --force-demo)' };
   const now = ctx.now ?? Date.now;
   const created = [];
 

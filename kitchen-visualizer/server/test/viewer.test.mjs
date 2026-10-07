@@ -115,6 +115,9 @@ test('the viewer seed makes one fictional demo brand with two published GLB prod
 test('the seed skips production unless forced', async () => {
   const r = await seed({ ...seedCtx(), config: { ...t.config, PROD: true } });
   assert.match(r.skipped, /production/);
+  // Through the seed runner with --force-demo: it guards production itself and passes `demo`.
+  const viaRunner = await seed({ ...seedCtx(), config: { ...t.config, PROD: true }, demo: { users: {} } });
+  assert.equal(viaRunner.skipped, undefined);
 });
 
 test('the product page’s view and buy_click events are recorded with the brand; built-ins are a no-op', async () => {
