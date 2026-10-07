@@ -79,6 +79,15 @@ export function loadModel(url: string): Entry {
   return e;
 }
 
+/** Resolves once no model is loading (a studio render waits for the GLBs before it draws). Never rejects. */
+export async function modelsSettled(): Promise<void> {
+  for (;;) {
+    const pending = [...cache.values()].filter((e) => e.status === 'loading').map((e) => e.promise);
+    if (!pending.length) return;
+    await Promise.all(pending);
+  }
+}
+
 function disposeScene(root: THREE.Object3D) {
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;

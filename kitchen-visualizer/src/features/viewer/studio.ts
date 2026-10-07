@@ -122,13 +122,80 @@ export const useRoomQuality = create<QualityState>()((set) => ({
 
 // ── the dialog ───────────────────────────────────────────────────────────
 
+/** The Studio render sizes (PRODUCT_SPEC §5.5); the long side is capped per GPU at render time. */
+export const STUDIO_SIZES = [
+  { id: '1080', label: '1080p', width: 1920, height: 1080 },
+  { id: '1440', label: '1440p', width: 2560, height: 1440 },
+  { id: '4k', label: '4K', width: 3840, height: 2160 },
+] as const;
+export type StudioSize = (typeof STUDIO_SIZES)[number]['id'];
+
+/** What the dialog renders with; remembered on this device (it survives the trip to checkout). */
+export interface StudioPrefs {
+  camera: StudioCamera;
+  size: StudioSize;
+  quality: StudioQuality;
+  toneMap: Exclude<ToneMap, 'aces'>;
+}
+
+const P_KEY = 'mise.studio.prefs';
+export const DEFAULT_STUDIO_PREFS: StudioPrefs = { camera: 'current', size: '1080', quality: 'high', toneMap: 'neutral' };
+
+/** Reads saved prefs, keeping only known values (anything else falls back to the default). */
+export function parsePrefs(raw: string | null): StudioPrefs {
+  let v: Partial<Record<keyof StudioPrefs, unknown>> = {};
+  try {
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && typeof parsed === 'object') v = parsed;
+  } catch {
+    /* corrupt: defaults */
+  }
+  const pick = <T extends string>(x: unknown, allowed: readonly T[], d: T): T => (allowed.includes(x as T) ? (x as T) : d);
+  return {
+    camera: pick(v.camera, ['current', 'overview', 'eye', 'front'] as const, DEFAULT_STUDIO_PREFS.camera),
+    size: pick(v.size, STUDIO_SIZES.map((s) => s.id), DEFAULT_STUDIO_PREFS.size),
+    quality: pick(v.quality, ['high', 'fast'] as const, DEFAULT_STUDIO_PREFS.quality),
+    toneMap: pick(v.toneMap, ['neutral', 'agx'] as const, DEFAULT_STUDIO_PREFS.toneMap),
+  };
+}
+
+function readPrefs(): StudioPrefs {
+  try {
+    return parsePrefs(localStorage.getItem(P_KEY));
+  } catch {
+    return { ...DEFAULT_STUDIO_PREFS };
+  }
+}
+
+/** The pixel size and full options for a set of prefs. */
+export function stillOptionsFor(p: StudioPrefs): StillOptions {
+  const s = STUDIO_SIZES.find((x) => x.id === p.size) ?? STUDIO_SIZES[0];
+  return { width: s.width, height: s.height, camera: p.camera, quality: p.quality, toneMap: p.toneMap };
+}
+
+/** `<kitchen>-render-<w>x<h>.png` (BUILD_PLAN A-T8). */
+export function renderFilename(kitchenSlug: string, width: number, height: number): string {
+  return `${kitchenSlug || 'kitchen'}-render-${width}x${height}.png`;
+}
+
 interface StudioState {
   open: boolean;
   /** Download as soon as a render is ready (the resume after paying for an unlock). */
   autoDownload: boolean;
+  prefs: StudioPrefs;
+  setPrefs(p: Partial<StudioPrefs>): void;
 }
 
-export const useStudio = create<StudioState>()(() => ({ open: false, autoDownload: false }));
+export const useStudio = create<StudioState>()((set, get) => ({
+  open: false,
+  autoDownload: false,
+  prefs: readPrefs(),
+  setPrefs: (p) => {
+    const prefs = { ...get().prefs, ...p };
+    write(P_KEY, JSON.stringify(prefs));
+    set({ prefs });
+  },
+}));
 
 /** Opens the Studio render dialog (from the TopBar, or after an unlock to finish the download). */
 export function openStudioRender(opts: { autoDownload?: boolean } = {}) {

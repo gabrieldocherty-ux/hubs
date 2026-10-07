@@ -17,7 +17,9 @@ export interface ProductStageProps {
 export const ProductPage: LazyExoticComponent<ComponentType<{ id: string; finish?: string }>> = lazy(() => import('./ProductPage'));
 export const ProductStage: LazyExoticComponent<ComponentType<ProductStageProps>> = lazy(() => import('./ProductStage'));
 
-/** TopBar slot for the studio render dialog. Placeholder: renders nothing until package A lands. */
-export function RenderButton(): JSX.Element | null {
-  return null;
-}
+/**
+ * TopBar slot: the "Studio render" button and its lazy dialog (RenderButton.tsx). Main chunk, no
+ * three or drei. `openStudioRender` opens the dialog from elsewhere (e.g. after an unlock).
+ */
+export { RenderButton } from './RenderButton';
+export { openStudioRender } from './studio';

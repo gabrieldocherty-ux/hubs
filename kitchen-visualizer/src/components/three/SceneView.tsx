@@ -21,6 +21,7 @@ import { useSceneCtx } from './sceneCtx';
 import { assignPendantLights, MAX_LIGHTS } from './lightPool';
 import { FrameGovernor, QaStats, RoomEffects, qaSet } from './roomEffects';
 import { renderRoomStill, roomMaxSide, studioBusy } from './roomStill';
+import { modelsSettled } from './gltf';
 import { presetFor, FOV } from './cameraPresets';
 import { InteractDrag } from './InteractDrag';
 import { InteractOverlay, markActiveView } from './InteractOverlay';
@@ -220,8 +221,30 @@ function Stills({ room }: { room: Room }) {
   const get = useThree((s) => s.get);
   const roomRef = useRef(room);
   roomRef.current = room;
+  const frames = useRef(0);
+  useFrame(() => {
+    frames.current++;
+  });
   useEffect(() => {
-    const render = (o: StillOptions) => renderRoomStill(get, o, roomRef.current, BG);
+    // Waits until the view has drawn `n` more frames (each step also gives up after 100 ms, so a
+    // background tab, where requestAnimationFrame pauses, can't hang a render).
+    const drawn = async (n: number) => {
+      const target = frames.current + n;
+      for (let i = 0; i < 40 && frames.current < target; i++) {
+        get().invalidate();
+        await new Promise((r) => {
+          requestAnimationFrame(() => r(null));
+          setTimeout(r, 100);
+        });
+      }
+    };
+    const render = async (o: StillOptions) => {
+      // GLBs still loading show their procedural stand-in: wait for them (up to 8 s), then let the
+      // view draw twice so the swap (and, on a fresh mount, the environment map) is in the frame.
+      await Promise.race([modelsSettled(), new Promise((r) => setTimeout(r, 8000))]);
+      await drawn(2);
+      return renderRoomStill(get, o, roomRef.current, BG);
+    };
     const maxSide = roomMaxSide(get().gl);
     registerStillRenderer({ render, maxSide });
     registerExporter('scene', async () => {
