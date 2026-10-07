@@ -22,13 +22,13 @@ async function demoGlb(api, kind) {
   return p;
 }
 
-/** A one-wall kitchen with an island, built from built-in products. */
+/** A one-wall kitchen with an island, built from built-in products, on the default surfaces. */
 function kitchenDoc(name) {
   const n = (id, productId, x, y, extra = {}) => ({ id, productId, x, y, rotation: 0, finishIndex: 0, ...extra });
   return {
     name,
     room: { widthIn: 200, lengthIn: 156, ceilingIn: 108 },
-    surfaces: { cabinetFinishId: 'white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'marble', backsplashId: 'subway', flooringId: 'oak', paintId: 'white' },
+    surfaces: { cabinetFinishId: 'warm-white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'calacatta', backsplashId: 'zellige-white', flooringId: 'herringbone', paintId: 'chalk' },
     items: [
       n('qa-fridge', 'fridge-36', 18, 15),
       n('qa-base-1', 'base', 48, 12),

@@ -128,9 +128,9 @@ Lightformers, and there are no drei presets, `<Stage>`, `useKTX2` or `useDetectG
 
    | chunk | before | after |
    |---|---|---|
-   | room 3D total | 258.7 KB (`SceneView`, no postprocessing) | **382.3 KB** (shared 256.8 + `SceneView` 125.5, with postprocessing and N8AO) — budget 400 KB, met |
-   | product page | (stub) | `ProductPage` 4.3 + `ProductStage` 13.7 + shared 256.8 |
-   | `RenderDialog` (lazy) | – | 3.4 KB |
+   | room 3D total | 258.7 KB (`SceneView`, no postprocessing) | **382.5 KB** (shared 256.9 + `SceneView` 125.6, with postprocessing and N8AO): budget 400 KB, met |
+   | product page | (stub) | `ProductPage` 4.3 + `ProductStage` 13.7 + shared 256.9 |
+   | `RenderDialog` (lazy) | – | 3.3 KB |
    | main `index-*.js` | 213.2 KB | **214.0 KB (+0.8 KB)** |
 
    The main chunk does grow by 0.8 KB: that is the `RenderButton` itself (the TopBar slot, which
@@ -225,8 +225,10 @@ dialog; ACES remains only for this comparison.** Reasoning:
 - N8AO logs a D3D compiler warning (`X3595: gradient instruction used in a loop`) once per page on
   Windows/ANGLE. It is a `console.warn` from the shader compiler, harmless; QA reports it as a
   warning, not a failure.
-- The QA kitchen doc in `core.mjs` (and copied in `viewer.mjs`) uses `cabinetFinishId: 'white'`,
-  which is not a finish id, so those kitchens render with the fallback wood finish. Harmless for
-  the checks; worth fixing in both files (`'warm-white'`).
+- The QA kitchen doc in `scripts/qa/routes/core.mjs` (mise/qa) uses surface ids that don't exist
+  (`cabinetFinishId: 'white'`, `countertopId: 'marble'`, `backsplashId: 'subway'`,
+  `flooringId: 'oak'`, `paintId: 'white'`), so those kitchens render with fallback finishes (wood
+  cabinets). Harmless for its checks; the defaults are `warm-white`, `calacatta`,
+  `zellige-white`, `herringbone`, `chalk`. `viewer.mjs` uses those.
 - The light palette and pendant intensities changed, so room screenshots taken before this branch
   will look warmer than the same kitchen now. That is the intended fix, not a regression.
