@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Room, Surfaces } from '../../types';
 import { alongWall, backsplashSegments, flushWall, WALLS, type Resolved, type Wall } from '../../lib/geometry';
@@ -13,6 +13,13 @@ import { boxGeo, worldUVBox } from './geom3d';
 import { SelectionEdges } from './SelectionEdges';
 
 const T = 5;
+
+let activeCutaway: ((cameraPos: THREE.Vector3) => boolean) | null = null;
+
+/** Applies the mounted room's wall cut-away for a camera at `cameraPos` (feet). For offscreen renders. */
+export function applyCutaway(cameraPos: THREE.Vector3): boolean {
+  return activeCutaway ? activeCutaway(cameraPos) : false;
+}
 
 interface Props {
   room: Room;
@@ -138,14 +145,38 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   );
 
   const groups = useRef<Record<Wall, THREE.Group | null>>({ north: null, east: null, south: null, west: null });
-  const camLocal = useMemo(() => new THREE.Vector3(), []);
+  const gl = useThree((s) => s.gl);
+  // The cut-away: walls between the camera and the room hide. Run every frame (cheap) and by the
+  // studio render for its own camera. Hiding a wall changes what casts shadows, and the shadow
+  // map only updates on demand, so a change marks it dirty.
+  const cutaway = useMemo(() => {
+    const camLocal = new THREE.Vector3();
+    return (cameraPos: THREE.Vector3) => {
+      camLocal.copy(cameraPos).multiplyScalar(12);
+      const g = groups.current;
+      let changed = false;
+      const set = (grp: THREE.Group | null, v: boolean) => {
+        if (grp && grp.visible !== v) {
+          grp.visible = v;
+          changed = true;
+        }
+      };
+      set(g.north, camLocal.z > 0);
+      set(g.south, camLocal.z < L);
+      set(g.west, camLocal.x > 0);
+      set(g.east, camLocal.x < W);
+      if (changed) gl.shadowMap.needsUpdate = true;
+      return changed;
+    };
+  }, [W, L, gl]);
+  useEffect(() => {
+    activeCutaway = cutaway;
+    return () => {
+      if (activeCutaway === cutaway) activeCutaway = null;
+    };
+  }, [cutaway]);
   useFrame(({ camera }) => {
-    camLocal.copy(camera.position).multiplyScalar(12);
-    const g = groups.current;
-    if (g.north) g.north.visible = camLocal.z > 0;
-    if (g.south) g.south.visible = camLocal.z < L;
-    if (g.west) g.west.visible = camLocal.x > 0;
-    if (g.east) g.east.visible = camLocal.x < W;
+    cutaway(camera.position);
   });
 
   return (
@@ -210,7 +241,15 @@ function Casing({ w, h, y0, mat }: { w: number; h: number; y0: number; mat: THRE
   );
 }
 
-function WindowModel({ r, surfaces }: { r: Resolved; surfaces: Surfaces }) {
+/**
+ * A window or door on its own (the product page): `bare` leaves out the view beyond the opening,
+ * which only makes sense set into a wall.
+ */
+export function OpeningModel({ r, surfaces, ctx, bare = false }: { r: Resolved; surfaces: Surfaces; ctx: SceneCtx; bare?: boolean }) {
+  return r.product.kind === 'window' ? <WindowModel r={r} surfaces={surfaces} bare={bare} /> : <DoorModel r={r} surfaces={surfaces} ctx={ctx} bare={bare} />;
+}
+
+function WindowModel({ r, surfaces, bare = false }: { r: Resolved; surfaces: Surfaces; bare?: boolean }) {
   const { w, product, item } = r;
   const y0 = product.elevationIn;
   const h = product.heightIn;
@@ -238,14 +277,16 @@ function WindowModel({ r, surfaces }: { r: Resolved; surfaces: Surfaces }) {
         <Box key={i} size={[mw, mh, 1.2]} pos={[x, y, zc]} mat={frame} />
       ))}
       <mesh geometry={boxGeo(w - 3, h - 3, 0.15)} position={[0, y0 + h / 2, zc - 0.2]} material={M.clearGlass()} dispose={null} />
-      <mesh position={[0, y0 + h / 2, -T - 40]} material={skyMaterial()}>
-        <planeGeometry args={[w + 90, h + 70]} />
-      </mesh>
+      {!bare && (
+        <mesh position={[0, y0 + h / 2, -T - 40]} material={skyMaterial()}>
+          <planeGeometry args={[w + 90, h + 70]} />
+        </mesh>
+      )}
     </group>
   );
 }
 
-function DoorModel({ r, surfaces, ctx }: { r: Resolved; surfaces: Surfaces; ctx: SceneCtx }) {
+function DoorModel({ r, surfaces, ctx, bare = false }: { r: Resolved; surfaces: Surfaces; ctx: SceneCtx; bare?: boolean }) {
   const { w, product, item } = r;
   const h = product.heightIn;
   const f = resolveFinish(item, product, surfaces);
@@ -281,9 +322,11 @@ function DoorModel({ r, surfaces, ctx }: { r: Resolved; surfaces: Surfaces; ctx:
       <Casing w={w} h={h} y0={0} mat={frame} />
       <Box size={[w, 0.5, T]} pos={[0, 0.25, -T / 2]} mat={finishMaterial({ id: 'oak', name: 'oak', hex: '#b88e61', material: 'wood' })} />
       {leaves}
-      <mesh position={[0, h / 2 + 6, -T - 44]} material={beyond}>
-        <planeGeometry args={[w + 70, h + 40]} />
-      </mesh>
+      {!bare && (
+        <mesh position={[0, h / 2 + 6, -T - 44]} material={beyond}>
+          <planeGeometry args={[w + 70, h + 40]} />
+        </mesh>
+      )}
     </group>
   );
 }

@@ -7,45 +7,28 @@ import type { PlacedItem, Room, Surfaces } from '../../types';
 import { useDesignStore, type CameraPreset } from '../../store/useDesignStore';
 import { useReport, useResolvedItems } from '../../store/derived';
 import { useCatalogVersion } from '../../store/useCatalog';
-import { COUNTERTOPS, HARDWARE, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
 import { getProduct, isOpening } from '../../data/catalog';
 import { placeAtClient, usePlacement } from '../../lib/interaction';
 import { resolve } from '../../lib/geometry';
-import { resolveFinish, cabinetFinish } from '../../lib/finish';
+import { resolveFinish } from '../../lib/finish';
 import { registerExporter } from '../../lib/exporters';
-import { qaExpose } from '../../lib/qa';
-import { hardwareMaterial, surfaceMaterial } from './materials';
+import { QA, qaExpose } from '../../lib/qa';
 import { renderModel } from './models';
 import { Room3D } from './Room3D';
 import { SelectionEdges } from './SelectionEdges';
 import type { SceneCtx } from './parts';
+import { useSceneCtx } from './sceneCtx';
+import { assignPendantLights, MAX_LIGHTS } from './lightPool';
+import { FrameGovernor, QaStats, RoomEffects, qaSet } from './roomEffects';
+import { renderRoomStill, roomMaxSide, studioBusy } from './roomStill';
+import { presetFor, FOV } from './cameraPresets';
 import { InteractDrag } from './InteractDrag';
 import { InteractOverlay, markActiveView } from './InteractOverlay';
+import { registerStillRenderer, useRoomQuality, type StillOptions } from '../../features/viewer/studio';
+import '../../features/viewer/viewer.css';
 
-const MAX_LIGHTS = 6;
+export { MAX_LIGHTS };
 const BG = '#efe8dc';
-
-function useSceneCtx(surfaces: Surfaces, room: Room): SceneCtx {
-  return useMemo(() => {
-    const ct = byId(COUNTERTOPS, surfaces.countertopId);
-    const counter = surfaceMaterial(`counter:${ct.id}`, ct.pattern, ct.gloss);
-    const bs = resolveBacksplash(surfaces.backsplashId, surfaces.countertopId);
-    const splash = surfaceMaterial(`splash:${bs.id}:${ct.id}`, bs.pattern, bs.gloss);
-    const hw = byId(HARDWARE, surfaces.hardwareId);
-    return {
-      counterMat: counter.mat,
-      counterTile: counter.tileIn,
-      counterIsStone: ct.pattern.type !== 'wood',
-      splashMat: splash.mat,
-      splashTile: splash.tileIn,
-      cabinet: cabinetFinish(surfaces),
-      doorStyle: surfaces.doorStyle,
-      hwMat: hardwareMaterial(hw.hex, hw.roughness),
-      ceiling: room.ceilingIn,
-      paintHex: byId(PAINTS, surfaces.paintId).hex,
-    };
-  }, [surfaces, room.ceilingIn]);
-}
 
 interface ItemProps {
   item: PlacedItem;
@@ -53,14 +36,13 @@ interface ItemProps {
   ctx: SceneCtx;
   selected: boolean;
   problem: boolean;
-  lightOn: boolean;
   onSelect: (id: string) => void;
   onHover: (id: string | null) => void;
   /** Bumps when the catalog registry changes, so `resolve` re-runs for the same item. */
   catalogVersion: number;
 }
 
-const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, lightOn, onSelect, onHover, catalogVersion }: ItemProps) {
+const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, onSelect, onHover, catalogVersion }: ItemProps) {
   const r = useMemo(() => resolve(item), [item, catalogVersion]);
   if (!r) return null;
   const finish = resolveFinish(item, r.product, surfaces);
@@ -84,53 +66,15 @@ const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, li
         if (!useDesignStore.getState().dragging) document.body.style.cursor = '';
       }}
     >
-      {renderModel({ r, finish, ctx, lightOn })}
+      {renderModel({ r, finish, ctx })}
       {(selected || problem) && <SelectionEdges w={r.w} d={r.d} y0={r.z0} h={Math.max(1, r.z1 - r.z0)} problem={problem} />}
     </group>
   );
 });
 
-const FOV = 38;
-
-/** Pulls the camera back along `dir` until a sphere of `radius` fits the narrower of the two fields of view. */
-function fitDistance(radius: number, aspect: number): number {
-  const v = THREE.MathUtils.degToRad(FOV) / 2;
-  const h = Math.atan(Math.tan(v) * aspect);
-  return (radius / Math.sin(Math.min(v, h))) * 0.92;
-}
-
-function presetFor(preset: CameraPreset, room: Room, aspect: number): { pos: THREE.Vector3; target: THREE.Vector3 } {
-  const W = room.widthIn / 12;
-  const L = room.lengthIn / 12;
-  const H = room.ceilingIn / 12;
-  const cx = W / 2;
-  const cz = L / 2;
-  switch (preset) {
-    case 'eye':
-      return { pos: new THREE.Vector3(W - 1.2, 4.9, L - 1.2), target: new THREE.Vector3(W * 0.3, 3.2, L * 0.18) };
-    case 'top': {
-      const target = new THREE.Vector3(cx, 0, cz);
-      const d = fitDistance(Math.hypot(W, L) / 2, aspect);
-      return { pos: target.clone().add(new THREE.Vector3(0, d, 0.01)), target };
-    }
-    case 'front': {
-      const target = new THREE.Vector3(cx, H * 0.45, 0);
-      const d = fitDistance(Math.hypot(W, H) / 2 + 1, aspect);
-      return { pos: new THREE.Vector3(cx, H * 0.5, d), target };
-    }
-    case 'overview':
-    default: {
-      const target = new THREE.Vector3(cx, 2.4, cz);
-      const dir = new THREE.Vector3(0.55, 0.78, 0.9).normalize();
-      const d = fitDistance(Math.hypot(W, L, H * 0.6) / 2, aspect);
-      return { pos: target.clone().addScaledVector(dir, d), target };
-    }
-  }
-}
-
 function CameraRig({ room }: { room: Room }) {
   const controls = useRef<OrbitControlsImpl>(null);
-  const { camera, size, gl } = useThree();
+  const { camera, size, gl, invalidate } = useThree();
   const request = useDesignStore((s) => s.cameraRequest);
   const anim = useRef<{ p0: THREE.Vector3; p1: THREE.Vector3; t0: THREE.Vector3; t1: THREE.Vector3; t: number } | null>(null);
   const first = useRef(true);
@@ -145,9 +89,12 @@ function CameraRig({ room }: { room: Room }) {
       c.target.copy(target);
       c.update();
       anim.current = null;
+      invalidate();
       return;
     }
     anim.current = { p0: camera.position.clone(), p1: pos, t0: c.target.clone(), t1: target, t: 0 };
+    // The canvas only renders on demand: start the tween's frames.
+    invalidate();
   };
 
   useEffect(() => {
@@ -165,12 +112,14 @@ function CameraRig({ room }: { room: Room }) {
     const a = anim.current;
     const c = controls.current;
     if (!a || !c) return;
-    a.t = Math.min(1, a.t + dt / 0.95);
+    // The first frame after an idle gap reports a long dt; cap the step so the tween still eases.
+    a.t = Math.min(1, a.t + Math.min(dt, 1 / 20) / 0.95);
     const e = a.t < 0.5 ? 4 * a.t * a.t * a.t : 1 - Math.pow(-2 * a.t + 2, 3) / 2;
     camera.position.lerpVectors(a.p0, a.p1, e);
     c.target.lerpVectors(a.t0, a.t1, e);
     c.update();
     if (a.t >= 1) anim.current = null;
+    else invalidate();
   });
 
   return (
@@ -193,6 +142,7 @@ function Lights({ room }: { room: Room }) {
   const H = room.ceilingIn / 12;
   const span = Math.max(W, L);
   const sun = useRef<THREE.DirectionalLight>(null);
+  const gl = useThree((s) => s.gl);
   useEffect(() => {
     const s = sun.current;
     if (!s) return;
@@ -204,7 +154,8 @@ function Lights({ room }: { room: Room }) {
     cam.near = 1;
     cam.far = span * 5;
     cam.updateProjectionMatrix();
-  }, [W, L, span]);
+    gl.shadowMap.needsUpdate = true;
+  }, [W, L, span, gl]);
   return (
     <>
       <hemisphereLight args={['#fff4e6', '#b7a58c', 0.6]} />
@@ -225,26 +176,65 @@ function Lights({ room }: { room: Room }) {
   );
 }
 
-function Exporter() {
-  const { gl, scene, camera } = useThree();
+/**
+ * The pendant lights: a fixed pool of MAX_LIGHTS point lights, mounted once. Pendants get a
+ * light in the kitchen's item order; spare lights sit at intensity 0. Adding or removing a
+ * pendant only moves a light or changes its intensity, so no material ever recompiles.
+ * Lives inside the room's inch-scaled group, like the pendants themselves.
+ */
+function PendantLightPool({ items, catalogVersion }: { items: PlacedItem[]; catalogVersion: number }) {
+  const slots = useMemo(() => {
+    const pendants = [];
+    for (const it of items) {
+      const p = getProduct(it.productId);
+      if (p?.kind === 'pendant' && p.source !== 'missing') pendants.push({ id: it.id, x: it.x, y: it.y, elevationIn: p.elevationIn, variant: p.variant });
+    }
+    return assignPendantLights(pendants, MAX_LIGHTS);
+  }, [items, catalogVersion]);
+  return (
+    <>
+      {slots.map((s, i) => (
+        <pointLight key={i} position={s.pos} intensity={s.intensity} distance={16} decay={2} color="#ffcf8f" />
+      ))}
+    </>
+  );
+}
+
+/** The shadow map renders only when something that casts or receives shadows changes. */
+function ShadowSync({ deps }: { deps: unknown[] }) {
+  const gl = useThree((s) => s.gl);
+  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
+    gl.shadowMap.needsUpdate = true;
+    invalidate();
+  }, deps);
+  return null;
+}
+
+/**
+ * Registers the offscreen still renderer (the Studio render dialog) and the TopBar's 3D PNG
+ * export, which now uses the same path: a fixed 1920 × 1080 landscape image whatever the size of
+ * the canvas on screen (it used to be half width from split view).
+ */
+function Stills({ room }: { room: Room }) {
+  const get = useThree((s) => s.get);
+  const roomRef = useRef(room);
+  roomRef.current = room;
+  useEffect(() => {
+    const render = (o: StillOptions) => renderRoomStill(get, o, roomRef.current, BG);
+    const maxSide = roomMaxSide(get().gl);
+    registerStillRenderer({ render, maxSide });
     registerExporter('scene', async () => {
-      gl.render(scene, camera);
-      const src = gl.domElement;
-      const c = document.createElement('canvas');
-      c.width = src.width;
-      c.height = src.height;
-      const ctx = c.getContext('2d')!;
-      const g = ctx.createRadialGradient(c.width / 2, c.height * 0.45, 0, c.width / 2, c.height * 0.45, Math.max(c.width, c.height) * 0.75);
-      g.addColorStop(0, '#f7f2ea');
-      g.addColorStop(1, BG);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, c.width, c.height);
-      ctx.drawImage(src, 0, 0);
+      const c = await render({ width: 1920, height: 1080, camera: 'current', quality: 'high', toneMap: useRoomQuality.getState().toneMap });
       return c.toDataURL('image/png');
     });
-    return () => registerExporter('scene', undefined);
-  }, [gl, scene, camera]);
+    const q = useRoomQuality.getState();
+    qaSet({ viewer: { renderStill: render, maxSide, setToneMap: q.setToneMap, setQuality: q.setQuality } });
+    return () => {
+      registerStillRenderer(null);
+      registerExporter('scene', undefined);
+    };
+  }, [get]);
   return null;
 }
 
@@ -268,7 +258,6 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
     [select, setUI],
   );
 
-  let lights = 0;
   return (
     <>
       <Lights room={room} />
@@ -284,7 +273,6 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
         {items.map((it) => {
           const p = getProduct(it.productId);
           if (!p || isOpening(p)) return null;
-          const lightOn = p.kind === 'pendant' && lights++ < MAX_LIGHTS;
           return (
             <Item3D
               key={it.id}
@@ -293,18 +281,22 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
               ctx={ctx}
               selected={it.id === selectedId}
               problem={report.problemIds.has(it.id)}
-              lightOn={lightOn}
               onSelect={onSelect}
               onHover={hover}
               catalogVersion={catalogVersion}
             />
           );
         })}
+        <PendantLightPool items={items} catalogVersion={catalogVersion} />
       </group>
+      <ShadowSync deps={[items, surfaces, room, catalogVersion]} />
       <CameraRig room={room} />
       <InteractDrag containerRef={containerRef} />
       <InteractOverlay />
-      <Exporter />
+      <Stills room={room} />
+      <RoomEffects />
+      <FrameGovernor busy={studioBusy} />
+      {QA && <QaStats name="room" />}
     </>
   );
 }
@@ -356,6 +348,36 @@ function Hint({ coarse }: { coarse: boolean }) {
   );
 }
 
+/** Fast / High room quality (ambient occlusion off or on), remembered on this device. */
+function QualityToggle() {
+  const quality = useRoomQuality((s) => s.quality);
+  const setQuality = useRoomQuality((s) => s.setQuality);
+  const degraded = useRoomQuality((s) => s.degraded);
+  return (
+    <div className="scene-hud viewer-hud--tr">
+      <div className="seg" role="group" aria-label="3D quality">
+        {(
+          [
+            ['fast', 'Fast'],
+            ['high', 'High'],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            className={quality === id ? 'on' : ''}
+            aria-pressed={quality === id}
+            onClick={() => setQuality(id)}
+            title={id === 'high' ? 'Soft contact shadows between everything (slower on older laptops)' : 'Quicker on older laptops'}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {degraded > 0 && quality === 'high' && <span className="viewer-hud-note">Lowered for speed</span>}
+    </div>
+  );
+}
+
 export function SceneView() {
   const select = useDesignStore((s) => s.select);
   const requestCamera = useDesignStore((s) => s.requestCamera);
@@ -382,9 +404,17 @@ export function SceneView() {
     <div className="scene-view" ref={wrapRef} onDragOver={onDragOver} onDrop={onDrop} style={armed ? { cursor: 'copy' } : undefined}>
       <Canvas
         shadows
-        dpr={[1, 2]}
-        gl={{ preserveDrawingBuffer: true, antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.02 }}
+        // Renders only when something changes (a store update, the camera, a tween): idle costs nothing.
+        frameloop="demand"
+        dpr={[1, 1.5]}
+        // Antialiasing comes from the composer's MSAA. The drawing buffer isn't preserved: stills
+        // copy the canvas in the same task that renders it.
+        gl={{ antialias: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' }}
         camera={{ fov: FOV, near: 0.2, far: 600, position: [20, 18, 30] }}
+        onCreated={({ gl }) => {
+          gl.shadowMap.autoUpdate = false;
+          gl.shadowMap.needsUpdate = true;
+        }}
         onPointerMissed={(e) => {
           if (e.type === 'click') select(null);
         }}
@@ -409,6 +439,7 @@ export function SceneView() {
           ))}
         </div>
       </div>
+      <QualityToggle />
       <Hint coarse={coarse} />
     </div>
   );

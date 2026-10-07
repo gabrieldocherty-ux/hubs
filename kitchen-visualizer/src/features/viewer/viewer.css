@@ -1,0 +1,27 @@
+/* Package A (viewer): room HUD additions, the product page, the product stage and the studio
+   render dialog. Tokens come from src/styles.css. */
+
+/* ─── Room 3D HUD ───────────────────────────────────────── */
+
+.viewer-hud--tr {
+  top: 12px;
+  right: 12px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.viewer-hud-note {
+  font-size: 11px;
+  color: var(--ink-3);
+  background: rgba(251, 249, 244, 0.85);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+/* Phones: the camera presets need the whole top row. */
+@media (max-width: 600px) {
+  .viewer-hud--tr {
+    display: none;
+  }
+}

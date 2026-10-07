@@ -23,8 +23,21 @@ export interface SceneCtx {
 
 type V3 = [number, number, number];
 
-export function Box({ size, pos, mat, rot, cast = true, receive = true }: { size: V3; pos: V3; mat: THREE.Material; rot?: V3; cast?: boolean; receive?: boolean }) {
-  return <mesh geometry={boxGeo(size[0], size[1], size[2])} position={pos} rotation={rot} material={mat} castShadow={cast} receiveShadow={receive} dispose={null} />;
+/**
+ * Only large parts cast shadows (a cabinet body, a door, a counter), not pulls, knobs, rails or
+ * legs: every caster is drawn again into the shadow map, and small ones add nothing you can see.
+ * Inches; the largest side must reach `MIN_CASTER_IN` and the part must not be a thin sliver.
+ */
+export const MIN_CASTER_IN = 10;
+
+export function isLargePart(a: number, b: number, c: number): boolean {
+  const s = [Math.abs(a), Math.abs(b), Math.abs(c)].sort((x, y) => y - x);
+  return s[0] >= MIN_CASTER_IN && s[1] >= 3 && s[0] * s[1] * s[2] >= 120;
+}
+
+export function Box({ size, pos, mat, rot, cast, receive = true }: { size: V3; pos: V3; mat: THREE.Material; rot?: V3; cast?: boolean; receive?: boolean }) {
+  const casts = cast ?? isLargePart(size[0], size[1], size[2]);
+  return <mesh geometry={boxGeo(size[0], size[1], size[2])} position={pos} rotation={rot} material={mat} castShadow={casts} receiveShadow={receive} dispose={null} />;
 }
 
 const cylCache = new Map<string, THREE.CylinderGeometry>();
@@ -38,8 +51,10 @@ export function cylGeo(rt: number, rb: number, h: number, seg = 16, open = false
   return g;
 }
 
-export function Cyl({ r, rb, h, pos, mat, rot, seg = 16, cast = true }: { r: number; rb?: number; h: number; pos: V3; mat: THREE.Material; rot?: V3; seg?: number; cast?: boolean }) {
-  return <mesh geometry={cylGeo(r, rb ?? r, h, seg)} position={pos} rotation={rot} material={mat} castShadow={cast} receiveShadow dispose={null} />;
+export function Cyl({ r, rb, h, pos, mat, rot, seg = 16, cast }: { r: number; rb?: number; h: number; pos: V3; mat: THREE.Material; rot?: V3; seg?: number; cast?: boolean }) {
+  const dia = 2 * Math.max(r, rb ?? r);
+  const casts = cast ?? isLargePart(dia, dia, h);
+  return <mesh geometry={cylGeo(r, rb ?? r, h, seg)} position={pos} rotation={rot} material={mat} castShadow={casts} receiveShadow dispose={null} />;
 }
 
 
@@ -164,7 +179,7 @@ export function Faucet({ z, y = 36, mat, bridge = false }: { z: number; y?: numb
   return (
     <group position={[0, y, z]}>
       <Cyl r={1.1} h={1.4} pos={[0, 0.7, 0]} mat={mat} />
-      <mesh geometry={faucetGeo(bridge)} material={mat} castShadow dispose={null} position={[0, 1.2, 0]} />
+      <mesh geometry={faucetGeo(bridge)} material={mat} dispose={null} position={[0, 1.2, 0]} />
       <Box size={[0.5, 0.5, 3]} pos={[2, 4, 0.8]} rot={[-0.4, 0, 0]} mat={mat} />
       {bridge && <Box size={[0.5, 0.5, 3]} pos={[-2, 4, 0.8]} rot={[-0.4, 0, 0]} mat={mat} />}
     </group>
