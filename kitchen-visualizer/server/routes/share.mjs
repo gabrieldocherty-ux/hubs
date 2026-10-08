@@ -15,11 +15,9 @@
 // readable with `?share=<token>` while the link is live, when the file belongs to a product
 // placed in that kitchen and owned by the kitchen's owner.
 //
-// And it offers `services.share` to other server packages (the brand page's lead form attaches
-// a kitchen this way when the browser didn't make the link itself):
-//   services.share.createViewLink({ projectId, userId, label?, showPrices?, expiresInDays? }) → ShareLink
-//     (the caller's own kitchen only; the same checks and 20-link cap as POST …/shares)
-//   services.share.resolve(token) → { projectId, showPrices } | null   (a live link, or null)
+// No `services.share` is registered: the brand page's lead form makes its link through
+// POST …/shares in the browser, and package B2's route treats a registered service as a cue to
+// mint links server-side, which its tests don't expect (docs/handoff/share.md, "Not done").
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -102,7 +100,7 @@ export default function routes(ctx) {
   };
 
   /**
-   * Makes a link to the user's own kitchen (the route and services.share both come here).
+   * Makes a link to the user's own kitchen.
    * Throws an HttpError for bad input, someone else's kitchen, or a kitchen at the link cap.
    */
   const createLink = (userId, projectId, body) => {
@@ -126,18 +124,6 @@ export default function routes(ctx) {
     ).run(id, project.id, token, userId, label, showPrices ? 1 : 0, days === null ? null : t + days * DAY, t);
     return linkWire(db.prepare('SELECT * FROM share_links WHERE id = ?').get(id));
   };
-
-  // ── services.share, for other server packages ───────────────────────────
-  services.share = Object.freeze({
-    createViewLink: ({ projectId, userId, label, showPrices, expiresInDays } = {}) => {
-      if (typeof userId !== 'string' || typeof projectId !== 'string') throw new HttpError(400, 'A kitchen and its owner are required.');
-      return createLink(userId, projectId, { label, showPrices, expiresInDays });
-    },
-    resolve: (token) => {
-      const { link } = resolveToken(token);
-      return link ? { projectId: link.project_id, showPrices: !!link.show_prices } : null;
-    },
-  });
 
   // ── private files behind a live share token ─────────────────────────────
   files.addReadPolicy((_user, file, rc) => {

@@ -486,32 +486,3 @@ test('the share demo seed: one kitchen, a link in each state, idempotent, and re
     await t2.close();
   }
 });
-
-test('services.share: another package can make a link to a user’s own kitchen, and resolve a live token', async () => {
-  const owner = await t.user();
-  const other = await t.user();
-  const k = await kitchen(owner, { name: 'Lead Kitchen' });
-  const { share: svc } = t.services;
-  assert.equal(typeof svc?.createViewLink, 'function');
-
-  const link = svc.createViewLink({ projectId: k.id, userId: owner.user.id, label: 'Sent to Birch & Bevel' });
-  assert.match(link.token, /^[A-Za-z0-9_-]{32}$/);
-  assert.equal(link.showPrices, true);
-  assert.equal(link.expiresAt, null);
-  const list = await owner.get(`/api/projects/${k.id}/shares`);
-  assert.ok(list.body.shares.some((s) => s.id === link.id && s.label === 'Sent to Birch & Bevel'), 'the owner sees the link in their list');
-  assert.deepEqual(svc.resolve(link.token), { projectId: k.id, showPrices: true });
-  assert.equal((await t.agent().get(`/api/share/${link.token}`)).status, 200);
-
-  // Someone else's kitchen looks missing; bad options are refused like the route refuses them.
-  assert.throws(() => svc.createViewLink({ projectId: k.id, userId: other.user.id }), (e) => e.status === 404);
-  assert.throws(() => svc.createViewLink({ projectId: k.id, userId: owner.user.id, expiresInDays: 3 }), (e) => e.status === 400);
-  assert.throws(() => svc.createViewLink({ projectId: k.id }), (e) => e.status === 400);
-
-  // Revoked or nonsense tokens resolve to nothing.
-  assert.equal((await owner.delete(`/api/projects/${k.id}/shares/${link.id}`)).status, 200);
-  assert.equal(svc.resolve(link.token), null);
-  assert.equal(svc.resolve('not-a-token'), null);
-  assert.equal(svc.resolve(undefined), null);
-});
-
