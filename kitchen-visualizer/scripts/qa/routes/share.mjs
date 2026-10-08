@@ -147,8 +147,24 @@ async function phoneTour(h, sections) {
   }
 }
 
+/**
+ * A finger tap: touchStart, 50 ms, touchEnd, so the browser makes the click a button needs. (The
+ * runner's h.tap uses Input.synthesizeTapGesture, which under Edge's touch emulation never
+ * delivers a click to a button; package move found the same, see docs/handoff/move.md.)
+ */
+async function fingerTap(h, selector) {
+  const r = await h.rectOf(selector, { scroll: true });
+  if (!(r.w > 0 && r.h > 0)) throw new Error(`tap: ${selector} has no size (hidden?)`);
+  await h.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.cx, y: r.cy, id: 1 }] });
+  await h.sleep(50);
+  await h.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
 /** Pixels of an element, for "nothing moved" comparisons. */
-async function grab({ send, rectOf }, selector) {
+async function grab({ send, rectOf, sleep }, selector) {
+  // Park the mouse outside the element first: hover outlines are not moves.
+  await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 2, y: 2 });
+  await sleep(400);
   const r = await rectOf(selector);
   return (await send('Page.captureScreenshot', { format: 'png', clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } })).data;
 }
@@ -193,7 +209,7 @@ export default [
     waitMs: 300,
     check: async (h) => {
       await landingContent(h);
-      await phoneTour(h, ['#how', '#contractors', '#brands', '.mk-footer']);
+      await phoneTour(h, ['#how', '#contractors', '#brands', '.mk-foot']);
       await h.evaluate(() => window.scrollTo(0, 0));
     },
   },
@@ -312,7 +328,7 @@ export default [
     waitFor: ['.share-btn'],
     waitMs: 800,
     check: async (h) => {
-      await h.tap('.share-btn');
+      await fingerTap(h, '.share-btn');
       await h.waitFor('.share-dialog .share-link');
       await h.sleep(300);
       const r = await h.evaluate(() => {
