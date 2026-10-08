@@ -439,6 +439,35 @@ async function drag3dWallPiece(h, input, id, face, toX) {
   return { before, after };
 }
 
+/**
+ * In 3D: the wall cabinet dragged off the north wall and onto the west wall, released over the
+ * west wall's face at y 60. It must go onto the west wall facing into the room (rotation 270, back
+ * flush at x 6), end under the pointer (the release point picks it), keep its camera and take one
+ * undo step.
+ */
+async function drag3dWallCorner(h, input) {
+  const before = await state(h);
+  const cam0 = await camera(h);
+  const a = before.items['mv-wall'];
+  const from = await scenePt(h, { x: a.x, y: a.y + WALL_FACE.front }, WALL_FACE.z);
+  if ((await pick3d(h, from)) !== 'mv-wall') throw new Error('3D corner: the wall cabinet is not under its own face point');
+  const to = await scenePt(h, { x: 0, y: 60 }, WALL_FACE.z);
+  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 24 });
+  else await h.touchDrag(from, to, { steps: 24 });
+  await h.sleep(350);
+  const after = await state(h);
+  const cam1 = await camera(h);
+  const b = after.items['mv-wall'];
+  const under = await pick3d(h, to);
+  h.note(`${input} 3D drag of mv-wall round the corner: ${fmt(a)} → ${fmt(b)}; the release point picks ${under}; camera moved ${cameraMoved(cam0, cam1).toFixed(4)}`);
+  if (b.rotation !== 270 || Math.abs(b.x - 6) > 0.01) throw new Error(`${input} 3D corner: the wall cabinet is at ${fmt(b)}, not on the west wall facing the room (x 6 @270°)`);
+  if (!(b.y > 40 && b.y < 80)) throw new Error(`${input} 3D corner: the wall cabinet landed at y ${b.y.toFixed(1)}, the pointer was at y 60`);
+  if (under !== 'mv-wall') throw new Error(`${input} 3D corner: the cabinet is not under the pointer (${under} is)`);
+  if (cameraMoved(cam0, cam1) > 1e-3) throw new Error(`${input} 3D corner: the camera orbited`);
+  if (after.past !== before.past + 1) throw new Error(`${input} 3D corner: ${after.past - before.past} undo steps for one drag`);
+  return { before, after };
+}
+
 /** The wall cabinet's door face (6″ in front of its centre, half way up) and the window's glass. */
 const WALL_FACE = { front: 6, z: 54 + 15 };
 const WINDOW_FACE = { front: 0, z: 42 + 21 };
@@ -782,6 +811,9 @@ export default [
       const w = await drag3dWallPiece(h, 'mouse', 'mv-wall', WALL_FACE, 127);
       await h.shot('wall-cabinet');
       await undoRestores(h, w.before, 'key');
+      const corner = await drag3dWallCorner(h, 'mouse');
+      await h.shot('corner');
+      await undoRestores(h, corner.before, 'key');
       const win = await drag3dWallPiece(h, 'mouse', 'mv-window', WINDOW_FACE, 90);
       await h.shot('window');
       await undoRestores(h, win.before, 'key');
@@ -1019,6 +1051,9 @@ export default [
       const w = await drag3dWallPiece(h, 'touch', 'mv-wall', WALL_FACE, 127);
       await h.shot('wall-cabinet');
       await undoRestores(h, w.before, 'tap');
+      const corner = await drag3dWallCorner(h, 'touch');
+      await h.shot('corner');
+      await undoRestores(h, corner.before, 'tap');
       const win = await drag3dWallPiece(h, 'touch', 'mv-window', WINDOW_FACE, 90);
       await undoRestores(h, win.before, 'tap');
       await pageStill(h, '3D wall-piece drags');
