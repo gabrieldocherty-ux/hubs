@@ -3,7 +3,10 @@
 //
 // Needs the orders seed (server/seed/orders.mjs): demo-customer@mise.test owns four DEMO
 // orders with fixed ids, one per state below. Checks only use `evaluate` (a JS expression run in
-// the page, awaited), so they work whatever else the runner's context provides.
+// the page, awaited), so they work whatever else the runner's context provides. expectText avoids
+// text under `text-transform: uppercase` (eyebrows, banners' bold lead), so innerText and
+// textContent both match. That another user gets a 404 for an order is a server test
+// (orders.test.mjs), not a route here: the browser logs the 404 as a console error.
 
 const DELIVERED = 'o_demoseedorder00000000003';
 const PHONE = { w: 390, h: 844, mobile: true };
@@ -63,7 +66,7 @@ export default [
     as: 'customer',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-wizard',
-    expectText: ['Request a model', 'What should we model?', 'Demo payments – no real money'],
+    expectText: ['Request a model', 'What should we model?', 'no card details are collected'],
   },
   {
     name: 'orders-new-steps',
@@ -71,7 +74,7 @@ export default [
     as: 'customer',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-wizard',
-    expectText: ['Starting from', 'Gas Range'],
+    expectText: ['Gas Range', 'Don’t use it'],
     check: async ({ evaluate }) => {
       // what → size → photos (optional with a catalog product) → notes → tier → review
       for (const [label, heading] of [
@@ -140,15 +143,6 @@ export default [
       if (await evaluate('document.documentElement.scrollWidth > window.innerWidth + 1')) throw new Error('the order page scrolls sideways on a phone');
     },
   },
-  {
-    name: 'orders-other-user-404',
-    path: `#/orders/${DELIVERED}`,
-    as: 'brand',
-    viewport: { w: 1440, h: 900 },
-    waitFor: '.screen-msg',
-    expectText: ['That order does not exist.'],
-  },
-
   // ── DEMO checkout ─────────────────────────────────────────────────────
   {
     name: 'pay-demo',
@@ -228,6 +222,6 @@ export default [
     as: 'admin',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-kpis',
-    expectText: ['Revenue', 'Demo', 'Gross (demo)', 'By tier', 'By day'],
+    expectText: ['Revenue', 'Custom-model orders only', 'simulated orders, not money', 'Simple', 'Table view'],
   },
 ];

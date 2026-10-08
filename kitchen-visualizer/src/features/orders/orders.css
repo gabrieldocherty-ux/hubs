@@ -269,6 +269,9 @@
 }
 
 .ord-row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 13px;
 }
 
@@ -793,6 +796,25 @@
   flex-wrap: wrap;
 }
 
+/* The product stage is package A's; keep whatever it draws inside our frame. */
+.ord-stage {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.ord-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.ord-id {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
 .ord-stage-wait {
   display: grid;
   place-items: center;
@@ -981,6 +1003,10 @@
 
 .ord-pay-card > p {
   margin: 0;
+}
+
+.ord-pay-card > p.muted {
+  margin-bottom: 6px;
 }
 
 .ord-pay-actions {

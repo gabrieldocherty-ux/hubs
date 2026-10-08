@@ -155,9 +155,11 @@ export function OrderPage({ id }: { id: string }) {
           <div className="ord-deliverables">
             {deliverables.map((p) => (
               <article key={p.id} className="ord-card ord-deliverable">
-                <Suspense fallback={<div className="ord-stage-wait">Loading the model…</div>}>
-                  <ProductStage product={p} height={320} showDims />
-                </Suspense>
+                <div className="ord-stage">
+                  <Suspense fallback={<div className="ord-stage-wait">Loading the model…</div>}>
+                    <ProductStage product={p} height={320} showDims />
+                  </Suspense>
+                </div>
                 <div className="ord-deliverable-foot">
                   <div>
                     <b>{p.name}</b>

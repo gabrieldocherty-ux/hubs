@@ -222,8 +222,9 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
   const head = o ? (
     <>
       <span className="eyebrow">
-        {o.target === 'brand' ? `Brand order · ${o.brandName ?? ''}` : o.target === 'contractor' ? 'Contractor order' : 'Customer order'} · {o.id}
+        {o.target === 'brand' ? `Brand order · ${o.brandName ?? ''}` : o.target === 'contractor' ? 'Contractor order' : 'Customer order'}
       </span>
+      <span className="ord-id mono">{o.id}</span>
       <h2>{o.title}</h2>
       <div className="ord-head-meta">
         <StatusPill status={o.status} label={STUDIO_STATUS_LABEL[o.status]} />
@@ -320,9 +321,11 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
           {delivered && (
             <section>
               <h3>Delivered: {delivered.product.name}</h3>
-              <Suspense fallback={<div className="ord-stage-wait">Loading the preview…</div>}>
-                <ProductStage product={delivered.product} height={280} showDims />
-              </Suspense>
+              <div className="ord-stage">
+                <Suspense fallback={<div className="ord-stage-wait">Loading the preview…</div>}>
+                  <ProductStage product={delivered.product} height={280} showDims />
+                </Suspense>
+              </div>
               {delivered.report.warnings.length > 0 && <Report report={delivered.report} />}
             </section>
           )}
@@ -332,9 +335,11 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
               <h3>Delivered model{data.deliverables.length > 1 ? 's' : ''}</h3>
               {data.deliverables.map((p) => (
                 <div key={p.id} className="ord-deliverable">
-                  <Suspense fallback={<div className="ord-stage-wait">Loading the preview…</div>}>
-                    <ProductStage product={p} height={240} />
-                  </Suspense>
+                  <div className="ord-stage">
+                    <Suspense fallback={<div className="ord-stage-wait">Loading the preview…</div>}>
+                      <ProductStage product={p} height={240} />
+                    </Suspense>
+                  </div>
                   <p className="fine">
                     {p.name} · {p.status ?? ''} · {p.visibility ?? ''}
                   </p>

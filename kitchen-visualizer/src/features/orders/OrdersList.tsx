@@ -84,9 +84,9 @@ export function OrdersList() {
                     </div>
                     <div className="ord-row-side">
                       <StatusPill status={o.status} />
-                      <span className="ord-row-meta mono">
-                        {dollars(o.amountCents)}
-                        {o.provider === 'demo' ? ' · demo' : ''}
+                      <span className="ord-row-meta">
+                        {o.provider === 'demo' && <span className="ord-tag">Demo</span>}
+                        <span className="mono">{dollars(o.amountCents)}</span>
                       </span>
                       <span className="ord-row-when">{whenText(o)}</span>
                     </div>
