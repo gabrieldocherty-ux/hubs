@@ -103,6 +103,16 @@ export default function routes(ctx) {
     ofOwner: (userId) => pages.ofOwner(userId),
     summaryFor: (userId) => pages.summary(pages.ofOwner(userId)),
     syncVisibilityDue: () => pages.syncVisibilityDue(),
+    /**
+     * Re-projects a contractor's live products after a My-catalog or price-book write: new prices
+     * go straight to the page, content edits go back to review (the live version stays public).
+     * Package H can call it after its writes; until then it runs when the Brand page tab or the
+     * moderation queue is opened, and every 10 minutes from ctx.maintenance.
+     */
+    syncOwner: async (userId) => {
+      const b = pages.ofOwner(userId);
+      if (b) await pages.syncBrand(b);
+    },
   };
   void loadKit().catch(() => {});
 

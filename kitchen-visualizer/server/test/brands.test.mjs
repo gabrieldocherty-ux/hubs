@@ -325,6 +325,32 @@ test('moderation round trip: submitted → approved (public fields, public files
   assert.ok(!(await anon.get('/api/catalog')).body.products.some((x) => x.id === copyId));
 });
 
+test('services.brandPages.syncOwner: a new cost reaches the live page at once; a content edit goes back to review', async () => {
+  const c = await contractor();
+  const page = await livePage(c);
+  const p = await ownProduct(c, { cost: { costCents: 10000 } });
+  const { product } = await publish(c, p.id);
+  await admin.post(`/api/admin/products/${product.listing.copyId}/approve`);
+  const anon = t.agent();
+  const priceOf = async () => (await anon.get(`/api/brands/by-slug/${page.slug}`)).body.products.find((x) => x.id === product.listing.copyId)?.price;
+  const before = await priceOf();
+  assert.ok(before > 0);
+  const me = (await c.get('/api/auth/me')).body.user;
+  // A cost change in the price book (package H's table), then H's hook call.
+  t.db.prepare('UPDATE price_book SET cost_cents = cost_cents * 2 WHERE user_id = ? AND product_id = ?').run(me.id, p.id);
+  await t.services.brandPages.syncOwner(me.id);
+  assert.ok((await priceOf()) > before, 'the new sell price is live without review');
+  assert.equal(t.services.products.get(product.listing.copyId).status, 'published');
+  // A content edit: back to review, the live version stays public.
+  const w = (await c.get(`/api/catalog/products/${p.id}?working=1`)).body.product;
+  assert.equal((await c.patch(`/api/pro/products/${p.id}`, { spec: { name: 'Shaker Base II' }, revision: w.revision })).status, 200);
+  await t.services.brandPages.syncOwner(me.id);
+  assert.equal(t.services.products.get(product.listing.copyId).status, 'submitted');
+  const pub = (await anon.get(`/api/brands/by-slug/${page.slug}`)).body.products.find((x) => x.id === product.listing.copyId);
+  assert.equal(pub.name, 'Shaker Base', 'the approved name stays public until the edit is approved');
+  await t.services.brandPages.syncOwner('nobody');
+});
+
 test('price display: From $X, Show prices (per width) or Price on request', async () => {
   const c = await contractor();
   const page = await livePage(c, { priceDisplay: 'show' });
