@@ -18,7 +18,24 @@ const FALLBACK_TIERS: ModelTier[] = [
   { id: 'complex', name: 'Complex', for: 'Modular or multi-part products, pro ranges, chandeliers', priceCents: 54900, businessDays: 15, revisions: 2 },
 ];
 
-type Tiers = { live: true; tiers: ModelTier[] } | { live: false; tiers: ModelTier[] } | null;
+/** The add-ons package C publishes next to its tiers (`GET /api/orders/tiers`). */
+interface TierExtras {
+  includedFinishes: number;
+  extraFinishCents: number;
+  rushPct: number;
+}
+
+type Tiers = { live: true; tiers: ModelTier[]; extras: TierExtras | null } | { live: false; tiers: ModelTier[] } | null;
+
+const FALLBACK_EXTRAS: TierExtras = { includedFinishes: 2, extraFinishCents: 3900, rushPct: 50 };
+
+function readExtras(r: unknown): TierExtras | null {
+  const x = r as Partial<TierExtras> | null;
+  const n = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+  return x && n(x.includedFinishes) && n(x.extraFinishCents) && n(x.rushPct)
+    ? { includedFinishes: x.includedFinishes!, extraFinishCents: x.extraFinishCents!, rushPct: x.rushPct! }
+    : null;
+}
 
 function isTier(t: unknown): t is ModelTier {
   const x = t as ModelTier;
@@ -34,7 +51,7 @@ function useTiers(): Tiers {
       .then((r) => {
         const list = Array.isArray(r) ? r : (r as { tiers?: unknown })?.tiers;
         const ok = Array.isArray(list) ? list.filter(isTier) : [];
-        if (live) setTiers(ok.length ? { live: true, tiers: ok } : { live: false, tiers: FALLBACK_TIERS });
+        if (live) setTiers(ok.length ? { live: true, tiers: ok, extras: Array.isArray(r) ? null : readExtras(r) } : { live: false, tiers: FALLBACK_TIERS });
       })
       .catch(() => live && setTiers({ live: false, tiers: FALLBACK_TIERS }));
     return () => {
@@ -213,11 +230,7 @@ function CustomModels({ tiers }: { tiers: Tiers }) {
               </div>
             ))}
           </div>
-          <p className="mk-tiers-note">
-            {tiers.live
-              ? 'Extra finishes and rush delivery are priced on the order form, which always shows the exact amount before you pay.'
-              : 'Published list prices: +$39 per extra finish beyond two; rush delivery is +50% for half the turnaround. The order form always shows the exact amount before you pay.'}
-          </p>
+          <p className="mk-tiers-note">{tiersNote(tiers)}</p>
           <div className="mk-center">
             <a className="btn big" href="#/orders/new">
               Request a model
@@ -227,6 +240,17 @@ function CustomModels({ tiers }: { tiers: Tiers }) {
       )}
     </section>
   );
+}
+
+const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
+
+function tiersNote(t: NonNullable<Tiers>): string {
+  const exact = 'The order form always shows the exact amount before you pay.';
+  const e = t.live ? t.extras : FALLBACK_EXTRAS;
+  if (!e) return `Extra finishes and rush delivery are priced on the order form. ${exact}`;
+  const included = NUMBER_WORDS[e.includedFinishes] ?? String(e.includedFinishes);
+  const addOns = `+${dollars(e.extraFinishCents)} per extra finish beyond ${included}; rush delivery is +${e.rushPct}% for half the turnaround.`;
+  return t.live ? `${addOns} ${exact}` : `Published list prices: ${addOns} ${exact}`;
 }
 
 const FAQ: { q: string; a: string }[] = [

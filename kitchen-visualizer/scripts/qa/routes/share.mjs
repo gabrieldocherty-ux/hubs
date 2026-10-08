@@ -241,6 +241,9 @@ export default [
       if (n !== 4) throw new Error(`expected the 4 plans from src/data/plans.json, found ${n} plan cards`);
       const tiers = await h.evaluate(() => document.querySelectorAll('.mk-tiers .mk-tier').length);
       if (tiers < 1) throw new Error('no custom-model tiers (neither GET /api/orders/tiers nor the fallback)');
+      const tierNote = await h.evaluate(() => document.querySelector('.mk-tiers-note')?.textContent ?? '');
+      h.note(`tiers: ${tierNote}`);
+      if (!/exact amount before you pay/.test(tierNote)) throw new Error(`the custom-model note lost its "exact amount" promise: ${tierNote}`);
       const ctas = await h.evaluate(() => [...document.querySelectorAll('.mk-plan-cta a')].map((a) => a.getAttribute('href')));
       if (ctas.some((href) => !href || !href.startsWith('#/'))) throw new Error(`a plan button goes nowhere: ${JSON.stringify(ctas)}`);
       // No card fields anywhere: payments are Stripe-hosted (or demo).
