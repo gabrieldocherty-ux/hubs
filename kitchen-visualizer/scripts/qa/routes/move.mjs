@@ -174,6 +174,59 @@ async function showView(h, label) {
 
 const mouse = (h, type, p, buttons = 0) => h.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'left', buttons, clickCount: 1 });
 const touch = (h, type, points) => h.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, i) => ({ x: p.x, y: p.y, id: i + 1 })) });
+/**
+ * A pen (stylus): CDP mouse events with pointerType 'pen', which Chromium delivers as pen pointer
+ * events (pointerType "pen", a click after a press and release). The pen route checks the app
+ * really saw "pen", so this can't silently test a mouse instead.
+ */
+const pen = (h, type, p, buttons = 0) => h.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'left', buttons, clickCount: 1, pointerType: 'pen' });
+const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+/** {x, y} of a point or a rectOf result. */
+const ptOf = (t) => (t && typeof t.cx === 'number' ? { x: t.cx, y: t.cy } : t);
+
+/** Pen down, (optionally held), moved in `steps`, lifted. */
+async function penDrag(h, from, to, { steps = 12, stepMs = 16, holdMs = 0 } = {}) {
+  const a = ptOf(from);
+  const b = ptOf(to);
+  await pen(h, 'mouseMoved', a);
+  await pen(h, 'mousePressed', a, 1);
+  if (holdMs) await h.sleep(holdMs);
+  for (let i = 1; i <= steps; i++) {
+    await pen(h, 'mouseMoved', lerp(a, b, i / steps), 1);
+    await h.sleep(stepMs);
+  }
+  await pen(h, 'mouseReleased', b);
+}
+
+/** A pen tap, lifted `wobble` px to the right of where it landed (a hand-held tap rarely lifts exactly where it landed). */
+async function penTap(h, target, wobble = 0) {
+  let p = ptOf(target);
+  if (typeof target === 'string') {
+    const r = await h.rectOf(target, { scroll: true });
+    if (!(r.w > 0 && r.h > 0)) throw new Error(`pen tap: ${target} has no size (hidden?)`);
+    p = { x: r.cx, y: r.cy };
+  }
+  await pen(h, 'mouseMoved', p);
+  await pen(h, 'mousePressed', p, 1);
+  await h.sleep(40);
+  const q = { x: p.x + wobble, y: p.y };
+  if (wobble) await pen(h, 'mouseMoved', q, 1);
+  await pen(h, 'mouseReleased', q);
+}
+
+/** One press-move-release with `input`: 'mouse', 'touch' (one finger) or 'pen'. */
+function drag(h, input, from, to, opts = {}) {
+  if (input === 'mouse') return h.mouseDrag(from, to, opts);
+  if (input === 'pen') return penDrag(h, from, to, opts);
+  return h.touchDrag(from, to, opts);
+}
+
+/** A click, a finger tap or a pen tap on a selector, a rect or a point. */
+function press(h, input, target) {
+  if (input === 'mouse') return h.click(target);
+  if (input === 'pen') return penTap(h, target);
+  return tap(h, target);
+}
 
 /** Two fingers that move together by (dx, dy): a two-finger pan. */
 async function twoFingerPan(h, a, b, dx, dy, steps = 12) {
@@ -238,8 +291,7 @@ async function planDragIsland(h, input, dx = 90, dy = 60) {
   const v = await planView(h);
   const from = await planPt(h, ISLAND);
   const to = { x: from.x + dx, y: from.y + dy };
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
-  else await h.touchDrag(from, to, { steps: 16 });
+  await drag(h, input, from, to, { steps: 16 });
   await h.sleep(120);
   const after = await state(h);
   const a = before.items['mv-island'];
@@ -262,8 +314,7 @@ async function planDragSnap(h, input) {
   const before = await state(h);
   const from = await planPt(h, { x: 48, y: 12 });
   const to = await planPt(h, { x: 160, y: 20 });
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 24 });
-  else await h.touchDrag(from, to, { steps: 24 });
+  await drag(h, input, from, to, { steps: 24 });
   await h.sleep(120);
   const after = await state(h);
   const b = after.items['mv-base'];
@@ -278,6 +329,7 @@ async function planDragSnap(h, input) {
 async function undoRestores(h, before, how) {
   if (how === 'key') await h.key('z', { modifiers: ['ctrl'] });
   else if (how === 'tap') await tap(h, '.topbar button[aria-label="Undo"]');
+  else if (how === 'pen') await penTap(h, '.topbar button[aria-label="Undo"]');
   else await h.click('.topbar button[aria-label="Undo"]');
   await h.sleep(120);
   const now = await state(h);
@@ -290,14 +342,39 @@ async function tapSelects(h, input, p = ISLAND, id = 'mv-island') {
   await h.evaluate(() => window.__mise.store.getState().select(null));
   const before = await state(h);
   const c = await planPt(h, p);
-  if (input === 'mouse') await h.click(c);
-  else await tap(h, c);
+  await press(h, input, c);
   await h.sleep(150);
   const after = await state(h);
   sameItems(before, after, `${input} tap`);
   if (after.past !== before.past) throw new Error(`${input} tap: a tap added an undo step`);
   if (after.selectedId !== id) throw new Error(`${input} tap on ${id}: selected ${after.selectedId}`);
 }
+
+/**
+ * A pen tap on the island that lifts `wobble` px from where it landed selects it and moves nothing,
+ * in the plan or in 3D: a hand-held stylus rarely lifts exactly where it touched down.
+ */
+async function penTapWobble(h, view, wobble) {
+  await h.evaluate(() => window.__mise.store.getState().select(null));
+  const before = await state(h);
+  const at = view === 'plan' ? await planPt(h, ISLAND) : await scenePt(h, before.items['mv-island'], ISLAND.top);
+  await penTap(h, at, wobble);
+  await h.sleep(view === 'plan' ? 150 : 350);
+  const after = await state(h);
+  const what = `pen tap on the island in ${view === 'plan' ? 'the plan' : '3D'}, lifted ${wobble}px off`;
+  h.note(`${what}: selected ${after.selectedId}, island ${fmt(before.items['mv-island'])} → ${fmt(after.items['mv-island'])}, ${after.past - before.past} undo steps`);
+  sameItems(before, after, what);
+  if (after.past !== before.past) throw new Error(`${what}: it added an undo step (taken as a drag)`);
+  if (after.selectedId !== 'mv-island') throw new Error(`${what}: selected ${after.selectedId}`);
+}
+
+/** Records the pointerType of every press the page sees from now on. */
+const watchPointerTypes = (h) =>
+  h.evaluate(() => {
+    window.__qaPointerTypes = new Set();
+    window.addEventListener('pointerdown', (e) => window.__qaPointerTypes.add(e.pointerType), true);
+  });
+const pointerTypesSeen = (h) => h.evaluate(() => [...(window.__qaPointerTypes ?? [])].sort().join(', '));
 
 /** The floating toolbar is next to the selected piece (above, or below when there's no room), and on screen. */
 async function toolbarNextToSelection(h, what) {
@@ -341,22 +418,21 @@ async function toolbarNextToSelection(h, what) {
 
 /** Rotate, Duplicate and Delete on the toolbar each do their one thing. */
 async function toolbarActions(h, input, id = 'mv-island') {
-  const press = (sel) => (input === 'mouse' ? h.click(sel) : tap(h, sel));
   const s0 = await state(h);
   const r0 = s0.items[id].rotation;
-  await press('.sel-toolbar button[aria-label="Rotate 90 degrees"]');
+  await press(h, input, '.sel-toolbar button[aria-label="Rotate 90 degrees"]');
   await h.sleep(150);
   const s1 = await state(h);
   if (s1.items[id].rotation !== (r0 + 90) % 360) throw new Error(`toolbar Rotate: ${id} is at ${s1.items[id].rotation}°, was ${r0}°`);
   await h.waitFor('.sel-toolbar', 3000);
-  await press('.sel-toolbar button[aria-label="Duplicate"]');
+  await press(h, input, '.sel-toolbar button[aria-label="Duplicate"]');
   await h.sleep(150);
   const s2 = await state(h);
   if (s2.count !== s1.count + 1) throw new Error(`toolbar Duplicate: ${s2.count} items, was ${s1.count}`);
   const copy = s2.selectedId;
   if (!copy || copy === id || s2.items[copy]?.productId !== s1.items[id].productId) throw new Error(`toolbar Duplicate: the copy is not selected (${copy})`);
   await h.waitFor('.sel-toolbar', 3000);
-  await press('.sel-toolbar button[aria-label="Delete"]');
+  await press(h, input, '.sel-toolbar button[aria-label="Delete"]');
   await h.sleep(150);
   const s3 = await state(h);
   if (s3.count !== s1.count || s3.items[copy]) throw new Error(`toolbar Delete: ${s3.count} items (want ${s1.count}), copy ${s3.items[copy] ? 'still there' : 'gone'}`);
@@ -368,11 +444,12 @@ async function toolbarActions(h, input, id = 'mv-island') {
 async function toolbarHidesDuringDrag(h, input, at = null) {
   const from = at ?? (await planPt(h, ISLAND));
   const mid = { x: from.x + 30, y: from.y + 18 };
-  if (input === 'mouse') {
-    await mouse(h, 'mouseMoved', from);
-    await mouse(h, 'mousePressed', from, 1);
-    await mouse(h, 'mouseMoved', { x: from.x + 10, y: from.y + 6 }, 1);
-    await mouse(h, 'mouseMoved', mid, 1);
+  if (input === 'mouse' || input === 'pen') {
+    const send = input === 'pen' ? pen : mouse;
+    await send(h, 'mouseMoved', from);
+    await send(h, 'mousePressed', from, 1);
+    await send(h, 'mouseMoved', { x: from.x + 10, y: from.y + 6 }, 1);
+    await send(h, 'mouseMoved', mid, 1);
   } else {
     await touch(h, 'touchStart', [from]);
     await touch(h, 'touchMove', [{ x: from.x + 10, y: from.y + 6 }]);
@@ -381,6 +458,7 @@ async function toolbarHidesDuringDrag(h, input, at = null) {
   await h.sleep(120);
   const during = await h.evaluate(() => ({ bar: !!document.querySelector('.sel-toolbar'), dragging: window.__mise.store.getState().dragging }));
   if (input === 'mouse') await mouse(h, 'mouseReleased', mid);
+  else if (input === 'pen') await pen(h, 'mouseReleased', mid);
   else await touch(h, 'touchEnd', []);
   await h.sleep(150);
   if (!during.dragging) throw new Error(`${input}: pressing the island and moving 35px did not start a drag`);
@@ -418,8 +496,7 @@ async function drag3dItem(h, input, dx = 110, dy = 30) {
   const hit = await pick3d(h, from);
   if (hit !== 'mv-island') throw new Error(`3D: the island's top (${from.x.toFixed(0)},${from.y.toFixed(0)}) picks ${hit}, not the island`);
   const to = { x: from.x + dx, y: from.y + dy };
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
-  else await h.touchDrag(from, to, { steps: 16 });
+  await drag(h, input, from, to, { steps: 16 });
   await h.sleep(350);
   const after = await state(h);
   const cam1 = await camera(h);
@@ -455,8 +532,7 @@ async function drag3dWallPiece(h, input, id, face, toX) {
   const hit = await pick3d(h, from);
   if (hit !== id) throw new Error(`3D: ${id}'s face (${from.x.toFixed(0)},${from.y.toFixed(0)}) picks ${hit}, not ${id}`);
   const to = await scenePt(h, { x: toX, y: a.y + face.front }, face.z);
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
-  else await h.touchDrag(from, to, { steps: 16 });
+  await drag(h, input, from, to, { steps: 16 });
   await h.sleep(350);
   const after = await state(h);
   const cam1 = await camera(h);
@@ -489,8 +565,7 @@ async function drag3dWallCorner(h, input) {
   const from = await scenePt(h, { x: a.x, y: a.y + WALL_FACE.front }, WALL_FACE.z);
   if ((await pick3d(h, from)) !== 'mv-wall') throw new Error('3D corner: the wall cabinet is not under its own face point');
   const to = await scenePt(h, { x: 0, y: 60 }, WALL_FACE.z);
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 24 });
-  else await h.touchDrag(from, to, { steps: 24 });
+  await drag(h, input, from, to, { steps: 24 });
   await h.sleep(350);
   const after = await state(h);
   const cam1 = await camera(h);
@@ -523,8 +598,7 @@ async function drag3dDoorway(h, input, id, toY, z = 40) {
   const hit = await pick3d(h, from);
   if (hit !== id) throw new Error(`3D: a press in the middle of ${id} (${from.x.toFixed(0)},${from.y.toFixed(0)}) picks ${hit}, not the doorway`);
   const to = await scenePt(h, { x: a.x, y: toY }, z);
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
-  else await h.touchDrag(from, to, { steps: 16 });
+  await drag(h, input, from, to, { steps: 16 });
   await h.sleep(350);
   const after = await state(h);
   const cam1 = await camera(h);
@@ -550,8 +624,7 @@ async function orbit3d(h, input) {
   const hit = await pick3d(h, from);
   if (hit) throw new Error(`3D: empty floor at (${EMPTY_B.x}, ${EMPTY_B.y}) picks ${hit}`);
   const to = { x: from.x - 140, y: from.y + 10 };
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
-  else await h.touchDrag(from, to, { steps: 16 });
+  await drag(h, input, from, to, { steps: 16 });
   await h.sleep(400);
   const after = await state(h);
   const cam1 = await camera(h);
@@ -610,8 +683,7 @@ async function panEmpty(h, input) {
   const v0 = await planView(h);
   const from = await planPt(h, EMPTY_A);
   const to = { x: from.x + 70, y: from.y - 40 };
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 12 });
-  else await h.touchDrag(from, to, { steps: 12 });
+  await drag(h, input, from, to, { steps: 12 });
   await h.sleep(150);
   const v1 = await planView(h);
   const after = await state(h);
@@ -636,8 +708,7 @@ async function catalogDrop(h, input, card, view, p) {
   if (!expect || expect.id !== (view === 'plan' ? 'plan' : '3d')) throw new Error(`catalog drop: (${to.x.toFixed(0)},${to.y.toFixed(0)}) is over ${expect?.id ?? 'nothing'}, not the ${view}`);
   const from = await h.rectOf(card);
   if (!(from.w > 0)) throw new Error(`catalog drop: ${card} is not visible`);
-  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 20 });
-  else await h.touchDrag(from, to, { steps: 20, holdMs: 380 });
+  await drag(h, input, from, to, input === 'mouse' ? { steps: 20 } : { steps: 20, holdMs: 380 });
   await h.sleep(250);
   const after = await state(h);
   const n = added(before, after);
@@ -678,11 +749,11 @@ async function sheetGone(h, what) {
 
 /** Search the catalog (desktop panel or the phone sheet) so `productId`'s card is first. */
 async function searchCatalog(h, text, input) {
-  if (input === 'mouse') await h.click('#catalog-search');
-  else await tap(h, '#catalog-search');
+  await press(h, input, '#catalog-search');
   await h.evaluate(() => {
     const el = document.getElementById('catalog-search');
     el.focus();
+    el.select(); // the search keeps its text between openings: replace it, don't append to it
   });
   await h.type(text);
   await h.sleep(200);
@@ -1436,6 +1507,64 @@ export default [
       await sheetGone(h, 'tablet catalog drag onto 3D');
       await h.shot('dropped-3d');
       await pageStill(h, 'tablet 3D');
+    },
+  },
+
+  // ── Tablet, pen (820×1180) ──────────────────────────────────────────────
+  {
+    ...LOCAL,
+    name: 'move-tablet-pen',
+    viewport: 'tablet',
+    timeoutMs: 60_000,
+    check: async (h) => {
+      // A stylus (Apple Pencil, Surface pen) on a tablet: the same gestures as a finger, with pen
+      // pointer events, plus a tap that lifts a few px from where it landed.
+      await start(h, 'plan');
+      await watchPointerTypes(h);
+      await tapSelects(h, 'pen');
+      const seen = await pointerTypesSeen(h);
+      if (seen !== 'pen') throw new Error(`the pen's presses reached the app as "${seen}", not "pen": this route would test the wrong input`);
+      await penTapWobble(h, 'plan', 5);
+      const d = await planDragIsland(h, 'pen', 80, 50);
+      await undoRestores(h, d.before, 'pen');
+      const sn = await planDragSnap(h, 'pen');
+      await undoRestores(h, sn.before, 'pen');
+      await panEmpty(h, 'pen');
+      await tapSelects(h, 'pen');
+      await toolbarNextToSelection(h, 'tablet plan, pen');
+      const t0 = await state(h);
+      await toolbarHidesDuringDrag(h, 'pen');
+      await undoRestores(h, t0, 'pen');
+      await toolbarActions(h, 'pen');
+      await openSheet(h, ADD, '.sheet--catalog');
+      await searchCatalog(h, 'stool', 'pen');
+      const card = '.sheet .product-card[data-product="stool"]';
+      await h.waitFor(card, 4000);
+      await catalogDrop(h, 'pen', card, 'plan', EMPTY_B);
+      await sheetGone(h, 'pen catalog drag onto the plan');
+
+      // 3D, in the kitchen with a wall cabinet on the north wall.
+      await start(h, 'plan', wallDoc());
+      await showView(h, '3D');
+      await penTapWobble(h, '3d', 0);
+      await penTapWobble(h, '3d', 5);
+      const r = await toolbarNextToSelection(h, 'tablet 3D, pen');
+      if (r.source !== '3d') throw new Error(`tablet 3D, pen: the toolbar follows the ${r.source} view, not 3D`);
+      const t1 = await state(h);
+      await toolbarHidesDuringDrag(h, 'pen', await scenePt(h, t1.items['mv-island'], ISLAND.top));
+      await undoRestores(h, t1, 'pen');
+      const d3 = await drag3dItem(h, 'pen', 70, 25);
+      await undoRestores(h, d3.before, 'pen');
+      const w = await drag3dWallPiece(h, 'pen', 'mv-wall', WALL_FACE, 127);
+      await undoRestores(h, w.before, 'pen');
+      await openSheet(h, ADD, '.sheet--catalog');
+      await searchCatalog(h, 'stool', 'pen');
+      await h.waitFor(card, 4000);
+      await catalogDrop(h, 'pen', card, '3d', EMPTY_A);
+      await sheetGone(h, 'pen catalog drag onto 3D');
+      await h.shot('pen-3d');
+      await orbit3d(h, 'pen');
+      await pageStill(h, 'tablet pen');
     },
   },
 ];

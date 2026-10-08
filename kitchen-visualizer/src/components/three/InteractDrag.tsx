@@ -34,8 +34,11 @@ const ACCENT = '#c2542d';
 const BAD = '#d8412f';
 /** Room3D's wall thickness, inches. */
 const WALL_T = 5;
-/** How far (client px) a press must travel before it becomes a drag rather than a click. */
-const THRESHOLD = { mouse: 4, touch: 9 } as const;
+/**
+ * How far (client px) a press must travel before it becomes a drag rather than a click. A pen
+ * gets more than a mouse (a hand-held stylus wobbles as it lifts), as in the plan (usePlanGestures).
+ */
+const THRESHOLD = { mouse: 4, pen: 6, touch: 9 } as const;
 /** Kinds the overlap check ignores, as in lib/geometry findOverlaps. */
 const SOFT = new Set(['rug', 'stool', 'chair']);
 
@@ -43,7 +46,7 @@ type Mode = { kind: 'plane'; h: number } | { kind: 'surface' };
 
 interface Press {
   pointerId: number;
-  pointerType: string;
+  pointerType: keyof typeof THRESHOLD;
   x0: number;
   y0: number;
   x: number;
@@ -300,7 +303,7 @@ export function InteractDrag({ containerRef }: { containerRef: RefObject<HTMLDiv
       p.x = e.clientX;
       p.y = e.clientY;
       if (p.state === 'pending') {
-        const limit = p.pointerType === 'touch' ? THRESHOLD.touch : THRESHOLD.mouse;
+        const limit = THRESHOLD[p.pointerType];
         if (Math.hypot(p.x - p.x0, p.y - p.y0) < limit) return;
         if (!p.itemId) {
           p.state = 'camera';
@@ -406,7 +409,7 @@ export function InteractDrag({ containerRef }: { containerRef: RefObject<HTMLDiv
       const hit = pick(e.clientX, e.clientY);
       press.current = {
         pointerId: e.pointerId,
-        pointerType: e.pointerType === 'touch' ? 'touch' : 'mouse',
+        pointerType: e.pointerType === 'touch' || e.pointerType === 'pen' ? e.pointerType : 'mouse',
         x0: e.clientX,
         y0: e.clientY,
         x: e.clientX,
