@@ -777,11 +777,12 @@ export default [
     timeoutMs: 40_000,
     check: async (h) => {
       await start(h, '3d', wallDoc());
-      // x 127 and x 40 are clear of every edge the pieces could snap to (6″ edge snap).
+      // x 127 is clear of every edge the cabinet could snap to (6″ edge snap); the window at x 90
+      // stays clear of the fridge and the cabinet (no collision in Checks).
       const w = await drag3dWallPiece(h, 'mouse', 'mv-wall', WALL_FACE, 127);
       await h.shot('wall-cabinet');
       await undoRestores(h, w.before, 'key');
-      const win = await drag3dWallPiece(h, 'mouse', 'mv-window', WINDOW_FACE, 40);
+      const win = await drag3dWallPiece(h, 'mouse', 'mv-window', WINDOW_FACE, 90);
       await h.shot('window');
       await undoRestores(h, win.before, 'key');
     },
@@ -1018,7 +1019,7 @@ export default [
       const w = await drag3dWallPiece(h, 'touch', 'mv-wall', WALL_FACE, 127);
       await h.shot('wall-cabinet');
       await undoRestores(h, w.before, 'tap');
-      const win = await drag3dWallPiece(h, 'touch', 'mv-window', WINDOW_FACE, 40);
+      const win = await drag3dWallPiece(h, 'touch', 'mv-window', WINDOW_FACE, 90);
       await undoRestores(h, win.before, 'tap');
       await pageStill(h, '3D wall-piece drags');
     },
