@@ -373,6 +373,28 @@ async function toolbarHidesDuringDrag(h, input, at = null) {
   await h.waitFor('.sel-toolbar', 3000);
 }
 
+/**
+ * In 3D with a finger: a tap on the island's top selects it and moves nothing; the toolbar comes up
+ * next to it (following the 3D view), gets out of the way while the island is dragged, and is back
+ * beside it afterwards. The drag is undone so the kitchen is as it was.
+ */
+async function toolbar3dTouch(h, what) {
+  await h.evaluate(() => window.__mise.store.getState().select(null));
+  const before = await state(h);
+  await tap(h, await scenePt(h, before.items['mv-island'], ISLAND.top));
+  await h.sleep(350);
+  const after = await state(h);
+  sameItems(before, after, `${what}: 3D tap`);
+  if (after.past !== before.past) throw new Error(`${what}: a tap on the island in 3D added an undo step`);
+  if (after.selectedId !== 'mv-island') throw new Error(`${what}: a tap on the island in 3D selected ${after.selectedId}`);
+  const r = await toolbarNextToSelection(h, `${what}, island`);
+  if (r.source !== '3d') throw new Error(`${what}: the toolbar follows the ${r.source} view, not 3D`);
+  await h.shot('toolbar-3d');
+  await toolbarHidesDuringDrag(h, 'touch', await scenePt(h, after.items['mv-island'], ISLAND.top));
+  await toolbarNextToSelection(h, `${what}, after a drag`);
+  await undoRestores(h, before, 'tap');
+}
+
 /** In 3D: a press on the island that moves slides it across the floor; the camera stays put. */
 async function drag3dItem(h, input, dx = 110, dy = 30) {
   const before = await state(h);
@@ -1239,6 +1261,26 @@ export default [
       await pageStill(h, 'landscape 3D');
     },
   },
+  {
+    ...LOCAL,
+    name: 'move-landscape-3d',
+    viewport: 'phone-landscape',
+    timeoutMs: 40_000,
+    check: async (h) => {
+      // A phone on its side in 3D: the toolbar beside the island (and out of the way mid-drag),
+      // then the wall cabinet slid along the wall and round the corner with a finger.
+      await start(h, 'plan', wallDoc());
+      await showView(h, '3D');
+      await toolbar3dTouch(h, 'landscape 3D');
+      await h.evaluate(() => window.__mise.store.getState().select(null));
+      const w = await drag3dWallPiece(h, 'touch', 'mv-wall', WALL_FACE, 127);
+      await undoRestores(h, w.before, 'tap');
+      const corner = await drag3dWallCorner(h, 'touch');
+      await h.shot('corner');
+      await undoRestores(h, corner.before, 'tap');
+      await pageStill(h, 'landscape 3D wall pieces');
+    },
+  },
 
   // ── Tablet, touch (820×1180) ────────────────────────────────────────────
   {
@@ -1268,6 +1310,36 @@ export default [
       await undoRestores(h, d3.before, 'tap');
       await orbit3d(h, 'touch');
       await pageStill(h, 'tablet');
+    },
+  },
+  {
+    ...LOCAL,
+    name: 'move-tablet-3d',
+    viewport: 'tablet',
+    timeoutMs: 45_000,
+    check: async (h) => {
+      // Tablet in 3D: the toolbar and its buttons with a finger, wall pieces along the wall and
+      // round the corner, and a card from the Add sheet held and dragged onto the 3D floor.
+      await start(h, 'plan', wallDoc());
+      await showView(h, '3D');
+      await toolbar3dTouch(h, 'tablet 3D');
+      await tap(h, await scenePt(h, (await state(h)).items['mv-island'], ISLAND.top));
+      await h.sleep(350);
+      await toolbarActions(h, 'touch');
+      const w = await drag3dWallPiece(h, 'touch', 'mv-wall', WALL_FACE, 127);
+      await undoRestores(h, w.before, 'tap');
+      const corner = await drag3dWallCorner(h, 'touch');
+      await undoRestores(h, corner.before, 'tap');
+      const win = await drag3dWallPiece(h, 'touch', 'mv-window', WINDOW_FACE, 90);
+      await undoRestores(h, win.before, 'tap');
+      await openSheet(h, ADD, '.sheet--catalog');
+      await searchCatalog(h, 'stool', 'touch');
+      const card = '.sheet .product-card[data-product="stool"]';
+      await h.waitFor(card, 4000);
+      await catalogDrop(h, 'touch', card, '3d', EMPTY_B);
+      await sheetGone(h, 'tablet catalog drag onto 3D');
+      await h.shot('dropped-3d');
+      await pageStill(h, 'tablet 3D');
     },
   },
 ];
