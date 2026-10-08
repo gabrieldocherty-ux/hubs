@@ -28,6 +28,9 @@ export function portalRedirect(rest: string): string {
   }
 }
 
+/** A "Demo" tag only where the name doesn't already say so ("Alder & Pine Cabinetry (Demo)"). */
+export const needsDemoTag = (b: { name: string; isDemo?: boolean }): boolean => !!b.isDemo && !/\(demo\)/i.test(b.name);
+
 /** The Brand page tab's sub-pages (`#/pro/brand/<sub>`). */
 export type BrandSub = 'overview' | 'products' | 'leads' | 'settings';
 export const BRAND_SUBS: [BrandSub, string][] = [

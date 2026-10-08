@@ -6,7 +6,7 @@ import { hrefFor } from '../../lib/router';
 import { Check } from '../../components/Icons';
 import type { PublicBrand, PublicProduct } from './api';
 import { brandApi } from './api';
-import { groupByLine, priceLabel } from './logic';
+import { groupByLine, needsDemoTag, priceLabel } from './logic';
 import './brands.css';
 
 const LeadForm = lazy(() => import('./LeadForm'));
@@ -53,7 +53,7 @@ export function PublicBrandView({ brand, products, preview = false }: PublicBran
                   <Check width={13} height={13} /> {contractor ? 'Verified contractor' : 'Verified brand'}
                 </span>
               )}
-              {brand.isDemo && <span className="tag">Demo</span>}
+              {needsDemoTag(brand) && <span className="tag">Demo</span>}
             </div>
             <h1>{brand.name}</h1>
             {brand.tagline && <p className="bp-tagline">{brand.tagline}</p>}

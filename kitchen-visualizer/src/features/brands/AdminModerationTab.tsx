@@ -5,6 +5,7 @@ import { money } from '../../lib/format';
 import { timeAgo } from '../../store/useSession';
 import { Alert, Check, Close } from '../../components/Icons';
 import { brandApi, type AdminBrand, type GlbReport, type PagePreview, type ReviewItem } from './api';
+import { needsDemoTag } from './logic';
 import { NoteDialog } from './NoteDialog';
 import { PublicBrandView } from './PublicBrandView';
 import './brands.css';
@@ -81,7 +82,7 @@ export default function AdminModerationTab() {
               <article key={b.id} className="mod-page">
                 <div className="mod-page-main">
                   <h3>
-                    {b.name} {b.isDemo && <span className="tag">Demo</span>}
+                    {b.name} {needsDemoTag(b) && <span className="tag">Demo</span>}
                   </h3>
                   {b.tagline && <p className="muted">{b.tagline}</p>}
                   <dl className="mod-facts">

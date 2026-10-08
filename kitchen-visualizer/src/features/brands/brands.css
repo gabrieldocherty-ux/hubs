@@ -1482,6 +1482,79 @@
   margin: 0;
 }
 
+/* ─── Tags and links outside the workspace ──────────────── */
+
+/* The workspace's .tag lives in contractors.css, which the public page and Admin don't load. */
+.bp .tag,
+.mod .tag,
+.adm-brands .tag,
+.lead-modal .tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bp .tag.ok,
+.mod .tag.ok,
+.adm-brands .tag.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.bp .tag.warn,
+.mod .tag.warn,
+.adm-brands .tag.warn {
+  background: var(--warn-soft);
+  color: #7a5212;
+}
+
+.bp .tag.bad,
+.mod .tag.bad,
+.adm-brands .tag.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.adm-brand-title .tag,
+.mod-page h3 .tag {
+  vertical-align: 2px;
+  margin-left: 2px;
+}
+
+/* Inline links in running text: ink, underlined, never the browser's blue. */
+.brand-intro a,
+.mod-facts a,
+.lead-fine a,
+.brand-ready-fix a,
+.brand-tab .empty-note a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 2px;
+}
+
+.brand-intro a:hover,
+.mod-facts a:hover,
+.lead-fine a:hover,
+.brand-ready-fix a:hover,
+.brand-tab .empty-note a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Until package A's stage lands, its placeholder shows the thumbnail: keep it inside the box. */
+.mod-stage .product-stage {
+  overflow: hidden;
+}
+
+.mod-stage .product-stage-art {
+  max-height: 230px;
+}
+
 /* ─── Narrow screens ────────────────────────────────────── */
 
 @media (max-width: 1000px) {
@@ -1604,5 +1677,19 @@
 
   .adm-counts div {
     align-items: flex-start;
+  }
+
+  .brand-top th,
+  .brand-top td {
+    padding: 8px 5px;
+  }
+
+  .brand-top th {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .brand-top td:first-child {
+    min-width: 8.5em;
   }
 }

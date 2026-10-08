@@ -80,13 +80,13 @@ export default function BrandOverview() {
               </p>
             ) : (
               <div className="brand-table-wrap">
-                <table className="brand-table">
+                <table className="brand-table brand-top">
                   <thead>
                     <tr>
                       <th>Product</th>
                       <th className="num">Views</th>
                       <th className="num">Adds</th>
-                      <th className="num">Quote clicks</th>
+                      <th className="num" title="Quote and contact clicks">Quotes</th>
                       <th className="num">Leads</th>
                     </tr>
                   </thead>
@@ -173,7 +173,8 @@ function DayChart({ data, metric }: { data: Analytics; metric: Metric }) {
                   </title>
                 </rect>
                 {(n - 1 - i) % labelEvery === 0 && (
-                  <text x={padL + i * slot + slot / 2} y={H - 6} textAnchor="middle" className="axis">
+                  // The last label sits flush right so "Oct 8" isn't clipped at the edge.
+                  <text x={i === n - 1 ? W - 2 : padL + i * slot + slot / 2} y={H - 6} textAnchor={i === n - 1 ? 'end' : 'middle'} className="axis">
                     {shortDay(d.day)}
                   </text>
                 )}

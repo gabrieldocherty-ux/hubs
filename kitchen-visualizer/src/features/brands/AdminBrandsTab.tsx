@@ -4,7 +4,7 @@ import { money } from '../../lib/format';
 import { Close, Search } from '../../components/Icons';
 import type { Product } from '../../types';
 import { brandApi, type AdminBrand, type BrandKind } from './api';
-import { PAGE_STATUS_LABEL, PAGE_STATUS_TONE, pageHash } from './logic';
+import { needsDemoTag, PAGE_STATUS_LABEL, PAGE_STATUS_TONE, pageHash } from './logic';
 import { NoteDialog } from './NoteDialog';
 import './brands.css';
 
@@ -109,7 +109,7 @@ export default function AdminBrandsTab() {
                   <span className="tag">{b.kind === 'contractor' ? 'Contractor' : 'Partner'}</span>
                   <span className={`tag ${PAGE_STATUS_TONE[b.pageStatus]}`}>{PAGE_STATUS_LABEL[b.pageStatus]}</span>
                   {b.verified && <span className="tag ok">Verified</span>}
-                  {b.isDemo && <span className="tag">Demo</span>}
+                  {needsDemoTag(b) && <span className="tag">Demo</span>}
                 </div>
                 <span className="muted">
                   <span className="mono">#/b/{b.slug}</span>

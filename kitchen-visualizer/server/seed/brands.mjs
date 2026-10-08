@@ -195,6 +195,8 @@ const OWN = [
   { key: 'slab-base', line: 'Pine Street Slab', doorStyle: 'slab', kind: 'base', variant: 'door-drawer', name: 'Slab Base Cabinet', sku: 'PS-B{w}', widthIn: 24, depthIn: 24, heightIn: 34.5, widthOptions: [15, 18, 24, 30, 36], list: 470, costCents: 27500, finishes: OAK, color: [200, 167, 122] },
   { key: 'slab-wall', line: 'Pine Street Slab', doorStyle: 'slab', kind: 'wall', variant: 'door', name: 'Slab Wall Cabinet', sku: 'PS-W{w}', widthIn: 30, depthIn: 12, heightIn: 30, elevationIn: 54, widthOptions: [15, 18, 24, 30], list: 360, costCents: 21000, finishes: OAK, color: [200, 167, 122] },
   { key: 'island', line: 'Pine Street Slab', doorStyle: 'slab', kind: 'island', name: 'Slab Island 7 ft', sku: 'PS-I84', widthIn: 84, depthIn: 42, heightIn: 36, list: 3900, costCents: 236000, finishes: OAK, color: [200, 167, 122] },
+  // Not ready yet (no photo or model, no cost): shows the readiness checklist and "Publish whole line".
+  { key: 'shelf', line: 'Alder Shaker', doorStyle: 'shaker', kind: 'wall', variant: 'door', name: 'Shaker Open Wall Shelf', sku: 'AS-OS{w}', widthIn: 30, depthIn: 12, heightIn: 15, elevationIn: 54, widthOptions: [24, 30, 36], list: 0, costCents: null, finishes: PAINT, color: [239, 236, 228], draft: true },
 ];
 
 const LEADS = [
@@ -236,7 +238,7 @@ async function seedContractor(ctx, pages) {
       ids[p.key] = existing.id;
       continue;
     }
-    const m = media(services, { ...p, visibility: 'private', ownerUserId: userId, name: p.sku.replace('{w}', '') });
+    const m = p.draft ? {} : media(services, { ...p, visibility: 'private', ownerUserId: userId, name: p.sku.replace('{w}', '') });
     const spec = {
       kind: p.kind,
       ...(p.variant ? { variant: p.variant } : {}),
@@ -257,10 +259,11 @@ async function seedContractor(ctx, pages) {
     };
     const created = services.products.create({ source: 'contractor', ownerUserId: userId, visibility: 'private', spec, status: 'draft' });
     services.products.publish(created.id);
-    db.prepare(
-      `INSERT INTO price_book (user_id, product_id, cost_cents, cost_by_width, markup_pct, updated_at) VALUES (?, ?, ?, NULL, NULL, ?)
-       ON CONFLICT(user_id, product_id) DO NOTHING`,
-    ).run(userId, created.id, p.costCents, now());
+    if (p.costCents != null)
+      db.prepare(
+        `INSERT INTO price_book (user_id, product_id, cost_cents, cost_by_width, markup_pct, updated_at) VALUES (?, ?, ?, NULL, NULL, ?)
+         ON CONFLICT(user_id, product_id) DO NOTHING`,
+      ).run(userId, created.id, p.costCents, now());
     ids[p.key] = created.id;
   }
 
@@ -296,8 +299,9 @@ async function seedContractor(ctx, pages) {
   pages.log('approve', { brandId: id, note: 'Demo page.' });
   const brand = pages.get(id);
 
-  // Publish: everything but the pantry goes live; the pantry waits in the queue.
+  // Publish: everything but the pantry goes live; the pantry waits in the queue; the shelf isn't ready.
   for (const p of OWN) {
+    if (p.draft) continue;
     const source = services.products.get(ids[p.key]);
     const { copy } = pages.publish(brand, source, { by: userId });
     if (p.key !== 'pantry') pages.approveProduct(copy, {});

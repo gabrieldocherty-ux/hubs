@@ -642,6 +642,11 @@ test('the seed: fictional (Demo) partner brands with models, and a demo contract
     assert.equal((await me.post('/api/auth/login', { email: 'demo-brand@mise.test', password: 'seed-password-123' })).status, 200);
     assert.ok((await me.get('/api/pro/brand/leads')).body.leads.length >= 3);
     assert.equal((await me.get('/api/pro/brand/analytics?days=30')).body.analytics.isDemo, true);
+    // One My-catalog product isn't ready, so the demo shows the readiness checklist.
+    const mine = (await me.get('/api/pro/brand/products')).body.products;
+    const shelf = mine.find((p) => p.name === 'Shaker Open Wall Shelf');
+    assert.ok(shelf && !shelf.readiness.ready && !shelf.listing, 'the demo shelf is unpublished and not ready');
+    assert.deepEqual(shelf.readiness.checks.filter((c) => !c.ok).map((c) => c.id).sort(), ['media', 'price']);
   } finally {
     await s.close();
   }
