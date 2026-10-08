@@ -1066,6 +1066,14 @@
   font-weight: 600;
 }
 
+.ord-q-label {
+  display: none;
+}
+
+.ord-q-amt {
+  white-space: nowrap;
+}
+
 .ord-drawer-backdrop {
   position: fixed;
   inset: 0;
@@ -1392,5 +1400,62 @@
   }
   .ord-actions .btn {
     flex: 1 1 100%;
+  }
+  /* The studio queue becomes one card per order instead of a sideways-scrolling table. */
+  .admin-table.ord-queue,
+  .ord-queue tbody {
+    display: block;
+    overflow: visible;
+  }
+  .ord-queue thead {
+    display: none;
+  }
+  .ord-queue tr.ord-q-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'order status'
+      'due amt'
+      'tier who';
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ord-queue tr.ord-q-row td {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .ord-queue tr.ord-q-row.on {
+    background: var(--accent-soft);
+  }
+  .ord-q-order {
+    grid-area: order;
+  }
+  .ord-q-status {
+    grid-area: status;
+    justify-self: end;
+  }
+  .ord-q-due {
+    grid-area: due;
+  }
+  .ord-q-amt {
+    grid-area: amt;
+    justify-self: end;
+  }
+  .ord-q-tier {
+    grid-area: tier;
+    color: var(--ink-2);
+    text-transform: capitalize;
+  }
+  .ord-q-who {
+    grid-area: who;
+    justify-self: end;
+    color: var(--ink-2);
+  }
+  .ord-q-label {
+    display: inline;
   }
 }

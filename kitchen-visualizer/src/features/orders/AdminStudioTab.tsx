@@ -86,11 +86,12 @@ export default function AdminStudioTab() {
               const overdue = !!o.dueAt && o.dueAt < now && ['paid', 'in_progress', 'revision_requested'].includes(o.status);
               return (
                 <tr key={o.id} className={open === o.id ? 'ord-q-row on' : 'ord-q-row'} onClick={() => setOpen(o.id)}>
-                  <td className={overdue ? 'ord-overdue' : undefined}>
+                  <td className={overdue ? 'ord-q-due ord-overdue' : 'ord-q-due'}>
+                    <span className="ord-q-label">Due </span>
                     {shortDate(o.dueAt)}
                     {overdue ? ' · overdue' : ''}
                   </td>
-                  <td>
+                  <td className="ord-q-order">
                     <div className="ord-q-title">
                       <button type="button" onClick={(e) => (e.stopPropagation(), setOpen(o.id))}>
                         {o.title}
@@ -102,17 +103,19 @@ export default function AdminStudioTab() {
                       </span>
                     </div>
                   </td>
-                  <td>
+                  <td className="ord-q-tier">
                     {o.items.length > 1 ? `${o.items.length} items` : o.tier}
                     {o.extras.rush ? ' · rush' : ''}
                   </td>
-                  <td>
+                  <td className="ord-q-status">
                     <StatusPill status={o.status} label={STUDIO_STATUS_LABEL[o.status]} />
                   </td>
-                  <td>{o.assignee ?? '—'}</td>
-                  <td className="ord-num mono">
-                    {dollars(o.amountCents)}
-                    {o.provider === 'demo' ? ' (demo)' : ''}
+                  <td className="ord-q-who">
+                    <span className="ord-q-label">Assignee: </span>
+                    {o.assignee ?? '—'}
+                  </td>
+                  <td className="ord-num ord-q-amt">
+                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className="mono">{dollars(o.amountCents)}</span>
                   </td>
                 </tr>
               );
@@ -228,10 +231,8 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
       <h2>{o.title}</h2>
       <div className="ord-head-meta">
         <StatusPill status={o.status} label={STUDIO_STATUS_LABEL[o.status]} />
-        <span className="mono">
-          {dollars(o.amountCents)}
-          {o.provider === 'demo' ? ' (demo)' : ''}
-        </span>
+        <span className="mono">{dollars(o.amountCents)}</span>
+        {o.provider === 'demo' && <span className="ord-tag">Demo payment</span>}
         {o.dueAt && <span className="muted">Due {shortDate(o.dueAt)}</span>}
       </div>
       {data?.buyer && (
