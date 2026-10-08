@@ -14,6 +14,12 @@
 // It also registers a file read policy: a private file (e.g. a customer's custom 3D model) is
 // readable with `?share=<token>` while the link is live, when the file belongs to a product
 // placed in that kitchen and owned by the kitchen's owner.
+//
+// And it offers `services.share` to other server packages (the brand page's lead form attaches
+// a kitchen this way when the browser didn't make the link itself):
+//   services.share.createViewLink({ projectId, userId, label?, showPrices?, expiresInDays? }) → ShareLink
+//     (the caller's own kitchen only; the same checks and 20-link cap as POST …/shares)
+//   services.share.resolve(token) → { projectId, showPrices } | null   (a live link, or null)
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -95,6 +101,44 @@ export default function routes(ctx) {
     }
   };
 
+  /**
+   * Makes a link to the user's own kitchen (the route and services.share both come here).
+   * Throws an HttpError for bad input, someone else's kitchen, or a kitchen at the link cap.
+   */
+  const createLink = (userId, projectId, body) => {
+    const b = body && typeof body === 'object' ? body : {};
+    const project = ownedProject(userId, projectId);
+    const label = str(b.label, 80);
+    if (b.showPrices !== undefined && typeof b.showPrices !== 'boolean') throw new HttpError(400, 'Show prices is on or off.', { field: 'showPrices' });
+    const showPrices = b.showPrices !== false;
+    const days = b.expiresInDays ?? null;
+    if (days !== null && !EXPIRY_DAYS.includes(days)) throw new HttpError(400, 'A link can expire after 7, 30 or 90 days, or never.', { field: 'expiresInDays' });
+    const t = ctx.now();
+    const active = db
+      .prepare('SELECT COUNT(*) AS n FROM share_links WHERE project_id = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)')
+      .get(project.id, t).n;
+    if (active >= MAX_ACTIVE_LINKS) throw new HttpError(409, `This kitchen already has ${MAX_ACTIVE_LINKS} active links. Turn one off before making another.`);
+    const id = randomId('sh_', 16);
+    const token = crypto.randomBytes(24).toString('base64url');
+    db.prepare(
+      `INSERT INTO share_links (id, project_id, token, created_by, label, show_prices, expires_at, revoked_at, view_count, last_viewed_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, NULL, ?)`,
+    ).run(id, project.id, token, userId, label, showPrices ? 1 : 0, days === null ? null : t + days * DAY, t);
+    return linkWire(db.prepare('SELECT * FROM share_links WHERE id = ?').get(id));
+  };
+
+  // ── services.share, for other server packages ───────────────────────────
+  services.share = Object.freeze({
+    createViewLink: ({ projectId, userId, label, showPrices, expiresInDays } = {}) => {
+      if (typeof userId !== 'string' || typeof projectId !== 'string') throw new HttpError(400, 'A kitchen and its owner are required.');
+      return createLink(userId, projectId, { label, showPrices, expiresInDays });
+    },
+    resolve: (token) => {
+      const { link } = resolveToken(token);
+      return link ? { projectId: link.project_id, showPrices: !!link.show_prices } : null;
+    },
+  });
+
   // ── private files behind a live share token ─────────────────────────────
   files.addReadPolicy((_user, file, rc) => {
     const token = rc?.query?.get?.('share');
@@ -139,25 +183,7 @@ export default function routes(ctx) {
       path: '/api/projects/:id/shares',
       rateLimit: { name: 'share-create', max: 60, windowMs: HOUR, by: 'user' },
       handler: (rc) => {
-        const project = ownedProject(rc.user.id, rc.params.id);
-        const b = rc.body;
-        const label = str(b.label, 80);
-        if (b.showPrices !== undefined && typeof b.showPrices !== 'boolean') throw new HttpError(400, 'Show prices is on or off.', { field: 'showPrices' });
-        const showPrices = b.showPrices !== false;
-        const days = b.expiresInDays ?? null;
-        if (days !== null && !EXPIRY_DAYS.includes(days)) throw new HttpError(400, 'A link can expire after 7, 30 or 90 days, or never.', { field: 'expiresInDays' });
-        const t = ctx.now();
-        const active = db
-          .prepare('SELECT COUNT(*) AS n FROM share_links WHERE project_id = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)')
-          .get(project.id, t).n;
-        if (active >= MAX_ACTIVE_LINKS) throw new HttpError(409, `This kitchen already has ${MAX_ACTIVE_LINKS} active links. Turn one off before making another.`);
-        const id = randomId('sh_', 16);
-        const token = crypto.randomBytes(24).toString('base64url');
-        db.prepare(
-          `INSERT INTO share_links (id, project_id, token, created_by, label, show_prices, expires_at, revoked_at, view_count, last_viewed_at, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, NULL, ?)`,
-        ).run(id, project.id, token, rc.user.id, label, showPrices ? 1 : 0, days === null ? null : t + days * DAY, t);
-        rc.send(201, { share: linkWire(db.prepare('SELECT * FROM share_links WHERE id = ?').get(id)) });
+        rc.send(201, { share: createLink(rc.user.id, rc.params.id, rc.body) });
       },
     },
     {
