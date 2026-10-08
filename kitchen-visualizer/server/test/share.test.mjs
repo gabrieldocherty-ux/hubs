@@ -146,6 +146,10 @@ test('anyone with a live token reads the kitchen; views count once per visitor a
   const s = await share(owner, k.id);
   const anon = t.agent();
 
+  // The owner checking their own link first: not a view.
+  assert.equal((await owner.get(`/api/share/${s.token}`)).status, 200);
+  assert.equal((await owner.get(`/api/projects/${k.id}/shares`)).body.shares[0].viewCount, 0);
+
   const r = await anon.get(`/api/share/${s.token}`);
   assert.equal(r.status, 200, r.text);
   assert.equal(r.body.kitchen.name, 'Lake House');
@@ -158,9 +162,8 @@ test('anyone with a live token reads the kitchen; views count once per visitor a
   assert.equal(r.body.preparedBy, undefined);
   assert.equal(r.body.hideDuplicate, undefined);
 
-  // Same visitor again: still one view. The owner looking at their own link: not a view.
+  // Same visitor again: still one view.
   await anon.get(`/api/share/${s.token}`);
-  await owner.get(`/api/share/${s.token}`);
   let mine = (await owner.get(`/api/projects/${k.id}/shares`)).body.shares[0];
   assert.equal(mine.viewCount, 1);
   assert.ok(mine.lastViewedAt > 0);
