@@ -5,7 +5,8 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startTestServer } from './helpers.mjs';
-import { makePng, makeGlb } from './fixtures/images.mjs';
+import { makePng } from './fixtures/images.mjs';
+import { makeGlb } from './fixtures/glb.mjs';
 import { seed as seedBrands } from '../seed/brands.mjs';
 
 let t;
@@ -626,11 +627,12 @@ test('the seed: fictional (Demo) partner brands with models, and a demo contract
     const brands = s.db.prepare('SELECT * FROM brands ORDER BY name').all();
     assert.ok(brands.length >= 3);
     for (const b of brands) assert.match(b.name, /\(Demo\)$/, `${b.name} is marked as demo`);
-    assert.equal(brands.filter((b) => b.kind === 'contractor').length, 1, 'one contractor page, once');
+    assert.equal(brands.filter((b) => b.kind === 'contractor').length, 2, 'two contractor pages, once each');
+    assert.equal(brands.filter((b) => b.kind === 'contractor' && b.status === 'active').length, 1, 'one live, one in review');
     const anon = s.agent();
     const cat = await anon.get('/api/catalog');
     assert.ok(cat.body.products.some((p) => p.model), 'partner products have GLB models');
-    const contractorBrand = brands.find((b) => b.kind === 'contractor');
+    const contractorBrand = brands.find((b) => b.kind === 'contractor' && b.status === 'active');
     const page = await anon.get(`/api/brands/by-slug/${contractorBrand.slug}`);
     assert.equal(page.status, 200);
     assert.ok(page.body.products.length >= 3);
