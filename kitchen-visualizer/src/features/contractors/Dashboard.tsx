@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { ApiError } from '../../lib/api';
 import { hrefFor } from '../../lib/router';
 import { timeAgo } from '../../store/useSession';
 import { proApi, type Dashboard as DashboardData } from './api';
 import { useWorkspace } from './ContractorRoot';
+import { BrandDashboardCard } from '../brands';
 
 /** `#/pro`: the workspace at a glance, and what to do next. */
 export default function Dashboard() {
@@ -64,6 +65,10 @@ export default function Dashboard() {
           <span>clients</span>
         </a>
       </div>
+      {/* Package B2: the Brand page at a glance (BRAND_PAGE §2). */}
+      <Suspense fallback={null}>
+        <BrandDashboardCard />
+      </Suspense>
       {todo.length > 0 && (
         <section className="pro-card" aria-labelledby="todo-title">
           <span className="eyebrow" id="todo-title">

@@ -9,6 +9,8 @@ import type { ContractorProfile, Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
 import { proApi } from './api';
 import { loadPriceBook } from './pricing';
+import { ProBrandTab } from '../brands';
+import { useBrandSummary } from '../brands/summary';
 import './contractors.css';
 
 const Setup = lazy(() => import('./Setup'));
@@ -45,6 +47,8 @@ const TABS: [string, string][] = [
   ['', 'Dashboard'],
   ['catalog', 'My catalog'],
   ['price-book', 'Price book'],
+  // Package B2: the brand page lives in the workspace (BRAND_PAGE.md §2).
+  ['brand', 'Brand page'],
   ['brands', 'Brands I carry'],
   ['quotes', 'Quotes'],
   ['modelling', 'Modelling requests'],
@@ -81,7 +85,7 @@ export default function ContractorRoot({ rest }: { rest: string }) {
   }, [load]);
 
   if (state === 'loading') return <div className="screen-msg">Opening your workspace…</div>;
-  if (state === 'pitch') return <Pitch />;
+  if (state === 'pitch') return <Pitch brand={rest.split('/')[0] === 'brand'} />;
   if ('error' in state)
     return (
       <div className="screen-msg">
@@ -130,6 +134,7 @@ export default function ContractorRoot({ rest }: { rest: string }) {
           {TABS.map(([k, label]) => (
             <a key={k} href={hrefFor({ name: 'pro', rest: k })} className={active === k ? 'chip on' : 'chip'} aria-current={active === k ? 'page' : undefined}>
               {label}
+              {k === 'brand' && <BrandBadge />}
             </a>
           ))}
         </nav>
@@ -146,6 +151,7 @@ export default function ContractorRoot({ rest }: { rest: string }) {
             {active === '' && <Dashboard />}
             {active === 'catalog' && (id === 'new' ? <ProductForm key="new" id={null} /> : id ? <ProductForm key={id} id={id} /> : <MyCatalog />)}
             {active === 'price-book' && <PriceBook />}
+            {active === 'brand' && <ProBrandTab rest={rest} />}
             {active === 'brands' && <Brands />}
             {active === 'quotes' && <Quotes />}
             {active === 'modelling' && <Modelling />}
@@ -158,8 +164,21 @@ export default function ContractorRoot({ rest }: { rest: string }) {
   );
 }
 
+/** Package B2: the unread-leads badge on the Brand page tab. */
+function BrandBadge() {
+  const unread = useBrandSummary((s) => s.summary?.unread ?? 0);
+  useEffect(() => {
+    void useBrandSummary.getState().load();
+  }, []);
+  return unread > 0 ? (
+    <span className="badge bad" aria-label={`${unread} new lead${unread === 1 ? '' : 's'}`}>
+      {unread}
+    </span>
+  ) : null;
+}
+
 /** For anyone without the Contractor plan: what it is and how to start it. */
-function Pitch() {
+function Pitch({ brand = false }: { brand?: boolean }) {
   const plan = useSession((s) => s.user?.plan);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,6 +212,13 @@ function Pitch() {
       <main className="pro-pitch-main">
         <span className="eyebrow">For kitchen contractors, cabinet shops and remodelers</span>
         <h1>{CONTRACTOR.tagline}</h1>
+        {brand && (
+          // Package B2: `#/brand*` lands here for anyone without the plan (BRAND_PAGE §2).
+          <p className="pro-pitch-brand">
+            <b>Get found:</b> put the cabinets you sell in front of homeowners designing their kitchens. A brand page with your products in 3D and a leads inbox is included in the
+            Contractor plan.
+          </p>
+        )}
         <div className="pro-pitch-grid">
           <ul className="plan-bullets pro-pitch-bullets">
             {CONTRACTOR.bullets.map((b) => (

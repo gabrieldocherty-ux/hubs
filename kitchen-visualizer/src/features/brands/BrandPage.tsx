@@ -1,7 +1,72 @@
-import { ComingSoon } from '../../components/ComingSoon';
+import { useEffect, useState } from 'react';
+import { AccountMenu } from '../../components/AccountMenu';
+import { Logo } from '../../components/Icons';
+import { Toasts } from '../../components/Toasts';
+import { ApiError } from '../../lib/api';
+import { useCatalog } from '../../store/useCatalog';
+import { brandApi, type PublicBrand, type PublicProduct } from './api';
+import { PublicBrandView } from './PublicBrandView';
 import './brands.css';
 
-/** Placeholder until package B lands: the public brand page, `#/b/:slug`. */
+type State = 'loading' | 'gone' | { error: string } | { brand: PublicBrand; products: PublicProduct[] };
+
+/** `#/b/:slug`: a live brand page. Unknown, in-review, suspended and lapsed pages all say the same thing. */
 export default function BrandPage({ slug }: { slug: string }) {
-  return <ComingSoon title="Brand page" detail={`Brand ${slug}`} />;
+  const [state, setState] = useState<State>('loading');
+
+  useEffect(() => {
+    let live = true;
+    brandApi
+      .page(slug)
+      .then((r) => {
+        if (!live) return;
+        // The cards link to product pages and "Try in my kitchen": make the products resolvable.
+        useCatalog.getState().register(r.products);
+        setState(r);
+        document.title = `${r.brand.name} · Mise`;
+        void brandApi.event(slug, 'brand_view');
+      })
+      .catch((e) => {
+        if (!live) return;
+        if (e instanceof ApiError && e.status === 404) setState('gone');
+        else setState({ error: e instanceof ApiError ? e.message : 'Could not open this page.' });
+      });
+    return () => {
+      live = false;
+      document.title = 'Mise';
+    };
+  }, [slug]);
+
+  return (
+    <div className="bp-screen">
+      <header className="home-bar">
+        <a className="brand" href="#/">
+          <Logo />
+          <span className="wordmark">Mise</span>
+        </a>
+        <AccountMenu />
+      </header>
+      <main className="bp-main">
+        {state === 'loading' && <div className="screen-msg">Opening the page…</div>}
+        {state === 'gone' && (
+          <div className="screen-msg bp-gone">
+            <p>This page is unavailable.</p>
+            <a className="btn" href="#/">
+              Back to Mise
+            </a>
+          </div>
+        )}
+        {typeof state === 'object' && 'error' in state && (
+          <div className="screen-msg">
+            <p>{state.error}</p>
+            <button className="btn" onClick={() => location.reload()}>
+              Try again
+            </button>
+          </div>
+        )}
+        {typeof state === 'object' && 'brand' in state && <PublicBrandView brand={state.brand} products={state.products} />}
+      </main>
+      <Toasts />
+    </div>
+  );
 }
