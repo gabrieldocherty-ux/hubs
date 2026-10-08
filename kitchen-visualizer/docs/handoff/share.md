@@ -230,8 +230,10 @@ Each was a throwaway detached worktree with a `--no-commit` merge, deleted after
   share's). The share and marketing chunks are lazy and small: SharedKitchen 9.2 kB, ShareDialog
   5.6 kB, Landing 9.8 kB, Pricing 10.1 kB (minified).
 - `node scripts/qa.mjs --pkg share --port 8816` (Edge over CDP, with the seeds including
-  `share.mjs`): **19/19 passed**, no console errors, no failed requests. The only external request
-  is the app shell's Google Fonts, which is blocked and reported as known (Request 3).
+  `share.mjs`): **19/19 passed**, no console errors. The only API errors are expected 404s:
+  `GET /api/orders/tiers` on the pricing routes (package C isn't on this branch, so the fallback
+  tiers show) and `GET /api/share/<token>` on the dead-end routes. The only external request is the
+  app shell's Google Fonts, which is blocked and reported as known (Request 3).
 - I looked at the screenshots: the landing and pricing pages at 1440 and 375 px, the share dialog,
   the shared kitchen (desktop and phone, prices on and off, contractor with Contact open) and the
   dead ends. Nothing is broken apart from the phone sheets noted above, which aren't share's.
