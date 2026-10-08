@@ -63,27 +63,32 @@ function Hero() {
         <Ctas where="top" />
         <p className="mk-hero-fine">No card needed. Exports are $5 per kitchen, or $15 a month for every kitchen.</p>
       </div>
-      <figure className="mk-hero-art">
-        {art === 'render' ? (
+      {art === 'render' ? (
+        // The render is a real Mise 3D view of the starter kitchen (public/marketing/hero.webp).
+        <figure className="mk-hero-art">
           <img
             className="mk-hero-render"
             src="/marketing/hero.webp"
             width={1200}
             height={800}
-            alt="A Mise 3D view of an L-shaped kitchen with an island, warm white shaker cabinets and a marble countertop."
+            alt="A Mise 3D view of an L-shaped kitchen with an island, warm white shaker cabinets, brass pendants and a marble countertop."
             onError={() => setArt('plan')}
           />
-        ) : (
+          <div className="mk-hero-inset" aria-hidden>
+            <span className="mk-hero-inset-label">Plan</span>
+            <MiniPlan doc={doc} />
+          </div>
+          <figcaption>The starter kitchen in Mise: the 3D view, and the same room as a plan.</figcaption>
+        </figure>
+      ) : (
+        // Without the render (a build without public/marketing), the live plan stands in.
+        <figure className="mk-hero-art mk-hero-art--plan">
           <div className="mk-hero-render mk-hero-render--plan">
             <MiniPlan doc={doc} />
           </div>
-        )}
-        <div className="mk-hero-inset" aria-hidden>
-          <span className="mk-hero-inset-label">Plan</span>
-          <MiniPlan doc={doc} />
-        </div>
-        <figcaption>The starter kitchen in Mise: 3D view, with the same room as a plan.</figcaption>
-      </figure>
+          <figcaption>The starter kitchen in Mise, as a plan.</figcaption>
+        </figure>
+      )}
     </section>
   );
 }

@@ -349,6 +349,14 @@
   color: var(--ink-3);
 }
 
+.mk-hero-art--plan {
+  padding: 0;
+}
+
+.mk-hero-art--plan figcaption {
+  margin-left: 0;
+}
+
 /* ─── How it works ───────────────────────────────────────── */
 
 .mk-steps {
@@ -1163,6 +1171,10 @@
 
   .mk-hero-art figcaption {
     margin-left: calc(36% + 4px);
+  }
+
+  .mk-hero-art--plan figcaption {
+    margin-left: 0;
   }
 
   .mk-hero-inset {
