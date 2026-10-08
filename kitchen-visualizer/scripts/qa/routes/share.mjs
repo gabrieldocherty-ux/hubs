@@ -419,6 +419,15 @@ export default [
       await h.waitForText(['555-0142', 'hello@birchbevel.example', 'birchbevel.example']);
       const hrefs = await h.evaluate(() => [...document.querySelectorAll('.share-contact a')].map((a) => a.getAttribute('href')));
       if (!hrefs.some((x) => x.startsWith('tel:')) || !hrefs.some((x) => x.startsWith('mailto:'))) throw new Error(`Contact needs tel: and mailto: links, got ${JSON.stringify(hrefs)}`);
+      // The menu pops in (0.14 s); let it finish so the shot shows it opaque, and prove it sits on top.
+      await h.sleep(400);
+      const onTop = await h.evaluate(() => {
+        const m = document.querySelector('.share-contact')?.getBoundingClientRect();
+        if (!m) return 'no menu';
+        const hit = document.elementFromPoint(m.left + m.width / 2, m.bottom - 12);
+        return hit && hit.closest('.share-contact') ? true : `covered by ${hit?.className || hit?.tagName}`;
+      });
+      if (onTop !== true) throw new Error(`the Contact menu is under the editor: ${onTop}`);
       await h.shot('contact');
     },
   },
