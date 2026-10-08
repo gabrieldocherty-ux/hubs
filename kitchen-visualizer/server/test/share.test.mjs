@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { startTestServer, sampleDoc } from './helpers.mjs';
 import { makeGlb } from './fixtures/glb.mjs';
 import { makePng } from './fixtures/images.mjs';
+import { seed as seedShare, SHARE_DEMO_LINKS, SHARE_DEMO_PROJECT_ID } from '../seed/share.mjs';
 
 let t;
 before(async () => {
@@ -431,6 +432,56 @@ test('whatever a pricing implementation returns, cost and margin never reach the
     assert.equal(r.body.prices[own.id].price, 777);
     assert.deepEqual(r.body.preparedBy, { company: 'Fake Fit-outs', phone: '555-0123' });
     assert.equal(r.body.hideDuplicate, true);
+  } finally {
+    await t2.close();
+  }
+});
+
+test('the share demo seed: one kitchen, a link in each state, idempotent, and readable through the real route', async () => {
+  const t2 = await startTestServer({ env: { PAYMENTS: 'demo' } });
+  try {
+    // Without the demo customer the seed does nothing and says why.
+    const none = await seedShare({ db: t2.db, now: t2.ctx.now });
+    assert.match(none.summary, /skipped/);
+    assert.equal(t2.db.prepare('SELECT COUNT(*) AS n FROM projects').get().n, 0);
+
+    const owner = await t2.user({ name: 'Dana Demo' });
+    const ctx = { db: t2.db, now: t2.ctx.now, demo: { users: { customer: owner.user.id } } };
+    const first = await seedShare(ctx);
+    const links = () => t2.db.prepare('SELECT * FROM share_links WHERE project_id = ? ORDER BY created_at, id').all(SHARE_DEMO_PROJECT_ID);
+    const before = links();
+    assert.equal(before.length, SHARE_DEMO_LINKS.length);
+    assert.match(first.summary, /rows created/);
+
+    // A second run changes nothing: same rows, same tokens.
+    const second = await seedShare(ctx);
+    assert.match(second.summary, /already there/);
+    assert.deepEqual(links(), before);
+    assert.equal(t2.db.prepare('SELECT COUNT(*) AS n FROM projects WHERE user_id = ?').get(owner.user.id).n, 1);
+
+    // The owner sees the kitchen and its links like any other.
+    const mine = await owner.get(`/api/projects/${SHARE_DEMO_PROJECT_ID}/shares`);
+    assert.equal(mine.status, 200, mine.text);
+    const byLabel = Object.fromEntries(mine.body.shares.map((s) => [s.label, s]));
+    for (const l of SHARE_DEMO_LINKS) {
+      const s = byLabel[l.label];
+      assert.ok(s, `the seed made "${l.label}"`);
+      assert.match(s.token, /^[A-Za-z0-9_-]{32}$/);
+      assert.equal(s.showPrices, l.showPrices);
+      assert.equal(s.revokedAt != null, l.revoked);
+      assert.equal(s.expiresAt != null, l.expiresInDays != null);
+      const r = await t2.agent().get(`/api/share/${s.token}`);
+      if (l.revoked) assert.equal(r.status, 404);
+      else {
+        assert.equal(r.status, 200, r.text);
+        assert.equal(r.body.showPrices, l.showPrices);
+        assert.equal(r.body.kitchen.sharedBy, 'Dana');
+        assert.ok(r.body.kitchen.doc.items.length > 0);
+        assertClean(r.body, [owner.user.email, owner.user.id, 'Lindqvist'], 'seeded share wire');
+      }
+      // Every summary link is live; the turned-off one is never printed.
+      assert.equal(second.summary.includes(s.token), !l.revoked);
+    }
   } finally {
     await t2.close();
   }
