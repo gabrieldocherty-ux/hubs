@@ -19,6 +19,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[0-9+().\-\s]{3,40}$/;
 const LEAD_ID_RE = /^ld_[a-z0-9]{24}$/;
 const PROJECT_ID_RE = /^[0-9a-f-]{36}$/;
+/** Package E's share-link token (24 random bytes, base64url). */
+const SHARE_TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
 /** The lead form's hidden trap field: people never see it, form-filling bots do. */
 export const HONEYPOT = 'website_url';
 
@@ -58,6 +60,20 @@ const newBrandId = () => randomId('b_');
 /** @param {any} ctx */
 export default function routes(ctx) {
   const { db, services, config } = ctx;
+
+  /**
+   * A share-link token (package E's share_links table, read-only here) if it is live and was made
+   * by this user for this kitchen; null otherwise, including before package E's table exists.
+   */
+  let shareTable = false;
+  const liveShareToken = (token, projectId, userId) => {
+    shareTable ||= !!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'share_links'").get();
+    if (!shareTable) return null;
+    const row = db
+      .prepare('SELECT token FROM share_links WHERE token = ? AND project_id = ? AND created_by = ? AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > ?)')
+      .get(token, projectId, userId, ctx.now());
+    return row?.token ?? null;
+  };
   const { products, files } = services;
   const pages = createBrandPageService({ db, now: ctx.now, services, config, log: ctx.log });
   const leadMemo = createMemo();
@@ -609,9 +625,11 @@ export default function routes(ctx) {
           if (!pr) throw new HttpError(400, 'Choose one of your kitchens.', { field: 'projectId' });
           projectId = pr.id;
           projectName = pr.name;
-          // A view-only link once package E's share service exists (see docs/handoff/brands.md).
+          // The view-only link: the form makes one through package E's share API and sends its
+          // token; it's kept only if it is a live link this user made for this very kitchen.
+          if (typeof b.shareToken === 'string' && SHARE_TOKEN_RE.test(b.shareToken)) shareToken = liveShareToken(b.shareToken, pr.id, rc.user.id);
           const share = services.share;
-          if (share && typeof share.createViewLink === 'function') {
+          if (!shareToken && share && typeof share.createViewLink === 'function') {
             try {
               shareToken = share.createViewLink({ projectId: pr.id, userId: rc.user.id, label: `Sent to ${brand.name}` })?.token ?? null;
             } catch {

@@ -434,6 +434,43 @@ test('leads: anyone can send one; only the owning contractor reads it; admins se
   assert.ok(!adminWire.includes('dana@example.test') && !adminWire.includes('Can you quote'), 'no lead contents in admin wires');
 });
 
+test('an attached kitchen keeps its view-only share link only when it is the sender’s live link to that kitchen', async () => {
+  const c = await contractor();
+  const page = await livePage(c);
+  // Package E's table, exactly as its migration makes it (a no-op once package E has landed).
+  t.db.exec(`CREATE TABLE IF NOT EXISTS share_links (
+    id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE,
+    created_by TEXT REFERENCES users(id) ON DELETE SET NULL, label TEXT NOT NULL DEFAULT '', show_prices INTEGER NOT NULL DEFAULT 1,
+    expires_at INTEGER, revoked_at INTEGER, view_count INTEGER NOT NULL DEFAULT 0, last_viewed_at INTEGER, created_at INTEGER NOT NULL)`);
+  const doc = { name: 'Our kitchen', room: { widthIn: 150, lengthIn: 120, ceilingIn: 96 }, surfaces: { cabinetFinishId: 'white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'marble', backsplashId: 'subway', flooringId: 'oak', paintId: 'white' }, items: [] };
+  const home = await t.user();
+  const other = await t.user();
+  const mine = (await home.post('/api/projects', { name: 'Our kitchen', client: '', doc })).body.project;
+  const theirs = (await other.post('/api/projects', { name: 'Theirs', client: '', doc })).body.project;
+  const link = (projectId, userId, extra = {}) => {
+    const token = `${Math.random().toString(36).slice(2)}${'x'.repeat(32)}`.slice(0, 32);
+    t.db
+      .prepare('INSERT INTO share_links (id, project_id, token, created_by, label, show_prices, expires_at, revoked_at, view_count, last_viewed_at, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 0, NULL, ?)')
+      .run(`sh_${token.slice(0, 16)}`, projectId, token, userId, 'Sent to Hollis', extra.expiresAt ?? null, extra.revokedAt ?? null, Date.now());
+    return token;
+  };
+  const homeId = (await home.get('/api/auth/me')).body.user.id;
+  const otherId = (await other.get('/api/auth/me')).body.user.id;
+  const good = link(mine.id, homeId);
+  const send = (name, shareToken) => home.post(`/api/brands/by-slug/${page.slug}/leads`, leadBody({ name, projectId: mine.id, shareToken }));
+  assert.equal((await send('Good link', good)).status, 201);
+  assert.equal((await send('Someone else’s link', link(theirs.id, otherId))).status, 201);
+  assert.equal((await send('Revoked link', link(mine.id, homeId, { revokedAt: Date.now() - 1000 }))).status, 201);
+  assert.equal((await send('Not a token', 'nope')).status, 201);
+  const leads = (await c.get('/api/pro/brand/leads')).body.leads;
+  const tokenOf = (n) => leads.find((l) => l.name === n).shareToken;
+  assert.equal(tokenOf('Good link'), good, 'the sender’s live link to that kitchen is kept');
+  assert.equal(tokenOf('Someone else’s link'), null);
+  assert.equal(tokenOf('Revoked link'), null);
+  assert.equal(tokenOf('Not a token'), null);
+  for (const l of leads) assert.equal(l.projectName, 'Our kitchen');
+});
+
 test('lead spam: honeypot, per-IP rate limit, per-page daily limit', async () => {
   const s = await startTestServer({ env: { PAYMENTS: 'demo' }, rateLimits: true });
   try {

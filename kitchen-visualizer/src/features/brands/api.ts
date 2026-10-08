@@ -1,4 +1,4 @@
-import { call, upload } from '../../lib/api';
+import { ApiError, call, upload } from '../../lib/api';
 import type { Product } from '../../types';
 import type { FileWire, GlbMeta } from '../../types/platform';
 
@@ -185,6 +185,8 @@ export interface LeadInput {
   consent: boolean;
   productId?: string;
   projectId?: string;
+  /** A view-only share link to that kitchen (package E), made by the form just before sending. */
+  shareToken?: string;
   /** The honeypot: always empty from a person. */
   website_url?: string;
 }
@@ -267,6 +269,21 @@ export const brandApi = {
   event: (slug: string, type: 'brand_view' | 'quote_click', productId?: string) =>
     call<void>('POST', `/api/brands/by-slug/${enc(slug)}/events`, productId ? { type, productId } : { type }).catch(() => undefined),
   sendLead: (slug: string, body: LeadInput) => call<{ ok: true; company: string }>('POST', `/api/brands/by-slug/${enc(slug)}/leads`, body),
+  /**
+   * A view-only link to one of my kitchens through package E's share API, to attach to a lead.
+   * Null where share links don't exist yet (the lead then carries just the kitchen's name).
+   */
+  shareKitchen: async (projectId: string, label: string): Promise<{ id: string; token: string } | null> => {
+    try {
+      const r = await call<{ share: { id: string; token: string } }>('POST', `/api/projects/${enc(projectId)}/shares`, { label: label.slice(0, 80) });
+      return r.share?.token ? { id: r.share.id, token: r.share.token } : null;
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 404 || e.status === 405)) return null;
+      throw e;
+    }
+  },
+  /** Turns that link off again when the lead didn't go through. Best effort. */
+  revokeShare: (projectId: string, shareId: string) => call<unknown>('DELETE', `/api/projects/${enc(projectId)}/shares/${enc(shareId)}`).catch(() => undefined),
 
   // admin
   moderation: () => call<{ brands: AdminBrand[]; products: ReviewItem[] }>('GET', '/api/admin/moderation'),

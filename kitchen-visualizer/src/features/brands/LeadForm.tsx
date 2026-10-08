@@ -58,6 +58,15 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    // The server checks these too; checking first means no share link is made for a lead that can't go.
+    if (!name.trim()) {
+      setError({ text: 'Tell them your name.', field: 'name' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError({ text: 'That email address does not look right.', field: 'email' });
+      return;
+    }
     if (!consent) {
       setError({ text: `Tick the box to share your details with ${company}.`, field: 'consent' });
       return;
@@ -67,7 +76,10 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
       return;
     }
     setBusy(true);
+    // An attached kitchen goes as a view-only share link the contractor can open.
+    let share: { id: string; token: string } | null = null;
     try {
+      if (projectId) share = await brandApi.shareKitchen(projectId, `Sent to ${company}`);
       await brandApi.sendLead(slug, {
         name: name.trim(),
         email: email.trim(),
@@ -77,10 +89,12 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
         consent: true,
         ...(product ? { productId: product.id } : {}),
         ...(projectId ? { projectId } : {}),
+        ...(share ? { shareToken: share.token } : {}),
         website_url: trap,
       });
       setSent(true);
     } catch (err) {
+      if (share) void brandApi.revokeShare(projectId, share.id);
       const body = err instanceof ApiError ? (err.body as { field?: string } | undefined) : undefined;
       setError({ text: err instanceof ApiError ? err.message : 'That didn’t send. Try again.', field: body?.field });
     } finally {
@@ -159,7 +173,7 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
               <span>
                 Attach one of my kitchens <em>· optional</em>
               </span>
-              <select className="brand-select" value={projectId} onChange={(e) => setProjectId(e.target.value)} disabled={!kitchens?.length}>
+              <select className="brand-select" value={projectId} onChange={(e) => setProjectId(e.target.value)} disabled={!kitchens?.length} aria-describedby={projectId ? 'lead-kitchen-note' : undefined}>
                 <option value="">{kitchens === null ? 'Loading your kitchens…' : kitchens.length ? 'Don’t attach a kitchen' : 'You have no saved kitchens yet'}</option>
                 {kitchens?.map((k) => (
                   <option key={k.id} value={k.id}>
@@ -167,6 +181,11 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
                   </option>
                 ))}
               </select>
+              {projectId && (
+                <em className="lead-kitchen-note" id="lead-kitchen-note">
+                  {company} gets a view-only link to it. Your other kitchens stay private.
+                </em>
+              )}
             </label>
           )}
           {/* A field people never see: bots fill it in, and the server then keeps nothing. */}
