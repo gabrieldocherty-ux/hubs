@@ -75,7 +75,7 @@ export default function ProBrandTab({ rest }: { rest: string }) {
             )}
           </div>
         </div>
-        <StatusBanner />
+        <StatusBanner onSettings={sub === 'settings'} />
         <nav className="brand-subnav" aria-label="Brand page">
           {BRAND_SUBS.map(([k, label]) => (
             <a key={k} href={subHref(k)} className={sub === k ? 'chip on' : 'chip'} aria-current={sub === k ? 'page' : undefined}>
@@ -98,7 +98,8 @@ export default function ProBrandTab({ rest }: { rest: string }) {
 }
 
 /** One line about where the page stands and what to do next. */
-function StatusBanner() {
+/** `onSettings`: already on Settings, so no button that only leads back to it. */
+function StatusBanner({ onSettings = false }: { onSettings?: boolean }) {
   const { state } = useBrandTab();
   const b = state.brand;
   const ps = b?.pageStatus ?? 'none';
@@ -110,7 +111,7 @@ function StatusBanner() {
           <span>
             <b>Set up your page in about two minutes.</b> Most of it comes from your Company profile, so nothing is retyped.
           </span>
-          {!state.readOnly && (
+          {!state.readOnly && !onSettings && (
             <a className="btn primary" href={settings}>
               Set up my page
             </a>
@@ -123,9 +124,11 @@ function StatusBanner() {
           <span>
             <b>Not submitted yet.</b> When it looks right, submit it: Mise checks the business is real, then it goes live with a Verified contractor badge.
           </span>
-          <a className="btn" href={settings}>
-            Finish and submit
-          </a>
+          {!onSettings && (
+            <a className="btn" href={settings}>
+              Finish and submit
+            </a>
+          )}
         </div>
       );
     case 'in_review':
@@ -145,9 +148,11 @@ function StatusBanner() {
           <span>
             <b>Changes requested.</b> {b?.statusNote || 'Mise couldn’t verify the business yet.'} Fix it in Settings and submit again.
           </span>
-          <a className="btn" href={settings}>
-            Open settings
-          </a>
+          {!onSettings && (
+            <a className="btn" href={settings}>
+              Open settings
+            </a>
+          )}
         </div>
       );
     case 'hidden':

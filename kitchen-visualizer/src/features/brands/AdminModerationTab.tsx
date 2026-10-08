@@ -284,6 +284,28 @@ function GlbPanel({ report }: { report: GlbReport | null }) {
   );
 }
 
+/** Plain names for the ProductSpec fields a reviewer sees in the diff. */
+const FIELD_LABEL: Record<string, string> = {
+  name: 'Name',
+  blurb: 'Description',
+  sku: 'SKU',
+  price: 'Price',
+  priceByWidth: 'Prices by width',
+  widthIn: 'Width (in)',
+  depthIn: 'Depth (in)',
+  heightIn: 'Height (in)',
+  elevationIn: 'Height off floor (in)',
+  widthOptions: 'Widths',
+  finishes: 'Finishes',
+  imageFileIds: 'Photos',
+  modelFileId: '3D model',
+  line: 'Line',
+  doorStyle: 'Door style',
+  category: 'Category',
+  kind: 'Kind',
+  variant: 'Variant',
+};
+
 const show = (v: unknown): string => {
   if (v === null || v === undefined || v === '') return '—';
   if (typeof v === 'string') return v;
@@ -318,7 +340,9 @@ function DiffPanel({ item }: { item: ReviewItem }) {
             <tbody>
               {item.diff.map((d) => (
                 <tr key={d.field}>
-                  <td className="mono">{d.field}</td>
+                  <td className="mod-field" title={d.field}>
+                    {FIELD_LABEL[d.field] ?? d.field}
+                  </td>
                   <td className="mod-before">{show(d.before)}</td>
                   <td className="mod-after">{show(d.after)}</td>
                 </tr>

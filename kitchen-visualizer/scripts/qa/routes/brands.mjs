@@ -64,6 +64,19 @@ async function mark({ evaluate }, selector, text, tag) {
   return `[data-qa="${tag}"]`;
 }
 
+/**
+ * A finger tap: touchStart, 50 ms, touchEnd, so the browser makes the click a button needs. (The
+ * runner's h.tap uses Input.synthesizeTapGesture, which under Edge's touch emulation never
+ * delivers a click to a button; packages move and share found the same.)
+ */
+async function fingerTap(h, selector) {
+  const r = await h.rectOf(selector, { scroll: true });
+  if (!(r.w > 0 && r.h > 0)) throw new Error(`tap: ${selector} has no size (hidden?)`);
+  await h.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r.cx, y: r.cy, id: 1 }] });
+  await h.sleep(50);
+  await h.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+
 /** Fills the open lead form and sends it; resolves once the confirmation shows. */
 async function sendLead(h, { name, email }) {
   for (const [sel, value] of [
@@ -315,7 +328,7 @@ export default [
     viewport: 'phone',
     waitFor: ['.bp-card-actions'],
     check: async (h) => {
-      await h.tap(await mark(h, '.bp-card-actions button', 'Request a quote', 'quote'));
+      await fingerTap(h, await mark(h, '.bp-card-actions button', 'Request a quote', 'quote'));
       await h.waitFor('.lead-modal');
       const r = await h.evaluate(() => {
         const m = document.querySelector('.lead-modal').getBoundingClientRect();

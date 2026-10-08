@@ -399,4 +399,10 @@ export async function seed(ctx) {
   seedPartners(c);
   await seedContractor(c, pages);
   await seedApplicant(c, pages);
+  const n = (sql) => c.db.prepare(sql).get().n;
+  return {
+    summary:
+      `${n("SELECT COUNT(*) AS n FROM brands WHERE kind = 'partner' AND is_demo = 1")} demo partner brands, ` +
+      `${n("SELECT COUNT(*) AS n FROM brands WHERE kind = 'contractor' AND is_demo = 1")} demo contractor pages, ${n('SELECT COUNT(*) AS n FROM leads')} leads`,
+  };
 }

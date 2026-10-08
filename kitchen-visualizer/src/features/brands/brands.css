@@ -1292,6 +1292,12 @@
   gap: 14px;
 }
 
+.mod-diff-table .mod-field {
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
 .mod-images {
   display: flex;
   flex-wrap: wrap;
