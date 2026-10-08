@@ -710,6 +710,19 @@
   gap: 5px;
 }
 
+/* A two-line item keeps its icon full size, beside the first line. */
+.brand-ready li svg {
+  flex: none;
+}
+
+.brand-ready--page li {
+  align-items: flex-start;
+}
+
+.brand-ready--page li svg {
+  margin-top: 3px;
+}
+
 .brand-ready li.ok {
   color: var(--ok);
 }
