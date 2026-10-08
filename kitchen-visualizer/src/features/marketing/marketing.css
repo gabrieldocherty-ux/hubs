@@ -30,6 +30,11 @@
   color: inherit;
 }
 
+.mk h1,
+.mk h2 {
+  text-wrap: balance;
+}
+
 .mk p {
   overflow-wrap: break-word;
 }
@@ -936,8 +941,9 @@
   background: var(--accent-2);
 }
 
-.mk-plan-cta p {
-  margin: 10px 0 0;
+/* A plan's footnote sits above its button, so every card's button lines up at the bottom. */
+.mk-plan-note {
+  margin: -8px 0 16px;
   font-size: 12.5px;
   color: var(--ink-3);
 }

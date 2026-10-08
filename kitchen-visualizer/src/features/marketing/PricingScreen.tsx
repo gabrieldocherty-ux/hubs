@@ -124,11 +124,11 @@ function PlanCard({ plan }: { plan: Plan }) {
           <li key={b}>{b}</li>
         ))}
       </ul>
+      {cta.note && <p className="mk-plan-note">{cta.note}</p>}
       <div className="mk-plan-cta">
         <a className={`btn wide${pro || plan.id === 'unlimited' ? ' primary' : ''}`} href={cta.href}>
           {cta.label}
         </a>
-        {cta.note && <p>{cta.note}</p>}
       </div>
     </article>
   );
