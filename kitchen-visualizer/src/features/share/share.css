@@ -1,0 +1,591 @@
+/* Package E (share): the share dialog, the shared kitchen page and its dead ends. */
+
+/* ─── The shared page: a strip above the read-only editor ─── */
+
+.share-page {
+  height: 100%;
+}
+
+.share-bar {
+  position: relative;
+  z-index: 21; /* above the TopBar, so the Contact menu drops over it */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 9px 14px 9px 18px;
+  background: var(--paper-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.share-bar-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.share-bar-text {
+  min-width: 0;
+}
+
+.share-bar-line {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.share-bar-line b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.share-bar--pro .share-bar-line b {
+  font-family: var(--display);
+  font-size: 16px;
+}
+
+.share-bar-kicker {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.share-bar-when {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.share-bar-note {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.share-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.share-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.share-bar-error {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--bad);
+}
+
+.share-short {
+  display: none;
+}
+
+.share-logo {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  object-fit: contain;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+.share-logo--initial {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: var(--ink);
+  color: #fbf9f4;
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.share-contact {
+  width: 250px;
+}
+
+.share-contact a {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.share-contact a:hover,
+.share-contact a:focus-visible {
+  background: var(--paper);
+}
+
+.share-contact a span {
+  overflow-wrap: anywhere;
+}
+
+/* A contractor's client stays with the contractor: no Duplicate, and no Export either (an export
+   would save a copy into the visitor's account). Asked for as a proper TopBar prop in
+   docs/handoff/share.md; until then the share page hides the Export menu itself. */
+.share-page--sealed .topbar .menu-wrap:has(> .export-btn),
+.share-page--sealed .topbar .menu-wrap:has(> .btn.primary) {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .share-bar {
+    padding: 8px 12px;
+  }
+  .share-bar-note,
+  .share-bar-when {
+    display: none;
+  }
+  .share-bar-who {
+    flex-basis: 160px;
+  }
+  .share-bar .btn {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  .share-long {
+    display: none;
+  }
+  .share-short {
+    display: inline;
+  }
+  .share-logo {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ─── The products in a shared kitchen ─── */
+
+.modal.share-products {
+  width: min(640px, 100%);
+}
+
+.share-plist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.share-plist li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.share-plist-art {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border-radius: 9px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.share-plist-art svg,
+.share-plist-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.share-plist-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.share-plist-main b {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.share-plist-main > span {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.share-plist-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 2px;
+}
+
+.share-plist-links a {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12.5px;
+  text-decoration: none;
+}
+
+.share-plist-links a:hover {
+  text-decoration: underline;
+}
+
+.share-plist-qty {
+  font-size: 13px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.share-plist-price {
+  font-size: 13px;
+  text-align: right;
+  min-width: 72px;
+}
+
+.share-plist-total {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
+.share-plist-note {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.share-disclaimer {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.share-plist-cta {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.share-plist-cta a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .share-plist li {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+  }
+  .share-plist-art {
+    width: 48px;
+    height: 48px;
+  }
+  .share-plist-qty {
+    display: none;
+  }
+}
+
+/* ─── The share dialog (editor) ─── */
+
+.modal.share-dialog {
+  width: min(580px, 100%);
+}
+
+.share-new {
+  margin-bottom: 14px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.share-new .field {
+  margin-bottom: 12px;
+}
+
+.share-new-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+.share-new-row .btn {
+  margin-left: auto;
+}
+
+.share-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.share-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.share-expiry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.share-expiry select {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+}
+
+.share-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.share-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.share-link.is-fresh {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.share-link-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.share-link-main b {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-link-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.share-link-url {
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.share-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+.share-link-actions .btn {
+  padding: 6px 10px;
+  font-size: 12.5px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.share-link-actions .btn.danger-btn {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.share-link-actions .btn.ghost-btn {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.share-link-actions .btn.ghost-btn:hover {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.share-confirm {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bad);
+}
+
+.share-copied {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.share-copied.warn {
+  color: var(--warn);
+}
+
+.share-empty {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.share-old {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.share-old summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.share-old ul {
+  margin-top: 6px;
+  gap: 0;
+}
+
+.share-old li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+
+.share-old li span {
+  color: var(--ink-3);
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .share-link {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .share-link-actions {
+    justify-content: flex-start;
+  }
+  .share-new-row .btn {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* ─── Dead ends: revoked, expired, missing, unreachable ─── */
+
+.share-state {
+  min-height: 100%;
+  background: var(--paper);
+}
+
+.share-state-main {
+  display: grid;
+  place-items: center;
+  padding: 72px 16px;
+}
+
+.share-state-card {
+  width: min(480px, 100%);
+  padding: 28px 28px 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.share-state-card h1 {
+  margin: 0 0 10px;
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.share-state-card p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.share-state-card.is-error h1 {
+  color: var(--bad);
+}
+
+.share-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.share-state-actions .btn {
+  text-decoration: none;
+  color: inherit;
+}
+
+.share-state-actions .btn.primary {
+  color: #fbf9f4;
+}
