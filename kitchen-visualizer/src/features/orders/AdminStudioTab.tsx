@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useRef, useState, type ChangeEvent, t
 import { Close } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { useSession } from '../../store/useSession';
+import { useCatalog } from '../../store/useCatalog';
 import { productType } from '../../data/productTypes';
 import type { Product } from '../../types';
 import type { FileWire, GlbMeta, OrderStatus } from '../../types/platform';
@@ -185,6 +186,7 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const catalog = useCatalog((s) => s.byId);
   const [confirmRefund, setConfirmRefund] = useState(false);
   const [refundNote, setRefundNote] = useState('');
   const [delivered, setDelivered] = useState<{ product: Product; report: GlbReport } | null>(null);
@@ -377,7 +379,7 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
                       <dt>From</dt>
                       <dd>
                         <a href={`#/p/${it.brief.refProductId}`} target="_blank" rel="noreferrer">
-                          {it.brief.refProductId}
+                          {catalog.get(it.brief.refProductId)?.name ?? it.brief.refProductId}
                         </a>
                       </dd>
                     </div>
