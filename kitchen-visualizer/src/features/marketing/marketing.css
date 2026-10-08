@@ -59,6 +59,11 @@
   border-bottom: 1px solid var(--line);
 }
 
+/* In-page jumps (How it works, For contractors, the FAQ) land below the sticky header. */
+.mk [id] {
+  scroll-margin-top: 36px;
+}
+
 .mk-bar .brand {
   color: var(--ink);
   text-decoration: none;
@@ -1133,6 +1138,11 @@
     flex-wrap: wrap;
     gap: 0 12px;
     padding-top: 8px;
+  }
+
+  /* The header is two rows here (about 96 px). */
+  .mk [id] {
+    scroll-margin-top: 72px;
   }
 
   /* The nav drops to its own row under the logo and the account buttons. */

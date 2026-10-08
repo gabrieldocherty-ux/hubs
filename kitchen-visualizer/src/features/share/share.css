@@ -181,6 +181,21 @@
   }
 }
 
+/* A phone: the contractor's name gets the whole first row (it is the point of the strip), and
+   wraps rather than being cut off; Products and Contact move to the row below. */
+@media (max-width: 560px) {
+  .share-bar--pro .share-bar-who {
+    flex-basis: 100%;
+  }
+  .share-bar--pro .share-bar-line {
+    white-space: normal;
+    line-height: 1.3;
+  }
+  .share-bar--pro .share-bar-kicker {
+    display: block;
+  }
+}
+
 /* ─── The products in a shared kitchen ─── */
 
 .modal.share-products {
