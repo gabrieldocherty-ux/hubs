@@ -34,6 +34,21 @@ export function moveDoc() {
   };
 }
 
+/**
+ * moveDoc plus the two kinds of wall-hung piece, which drag along the wall surface in 3D instead
+ * of a floor plane: a 30″ wall cabinet (54″ up) in the free stretch of the north wall, and a 36″
+ * casement window (sill 42″) above the sink. Openings sit on the wall line (y 0).
+ */
+export function wallDoc() {
+  const d = moveDoc();
+  d.name = 'QA Move Kitchen (wall pieces)';
+  d.items.push(
+    { id: 'mv-wall', productId: 'wall', x: 147, y: 6, rotation: 0, finishIndex: 0 },
+    { id: 'mv-window', productId: 'window', x: 60, y: 0, rotation: 0, finishIndex: 0 },
+  );
+  return d;
+}
+
 const ISLAND = { x: 100, y: 96, top: 36 };
 const EMPTY_A = { x: 25, y: 132 };
 const EMPTY_B = { x: 170, y: 128 };
@@ -104,7 +119,7 @@ async function ready3d(h) {
 }
 
 /** Loads the test kitchen into the open editor and shows `view` ('plan' | '3d' | 'split'). */
-async function start(h, view = 'plan') {
+async function start(h, view = 'plan', doc = moveDoc()) {
   await h.waitUntil(() => !!window.__mise?.store, 15_000, 'window.__mise (the ?qa hook)');
   await h.evaluate(
     (doc, v) => {
@@ -112,7 +127,7 @@ async function start(h, view = 'plan') {
       s.loadDoc(doc);
       s.setUI({ viewMode: v });
     },
-    moveDoc(),
+    doc,
     view,
   );
   if (view !== '3d') await readyPlan(h);
@@ -334,9 +349,9 @@ async function toolbarActions(h, input, id = 'mv-island') {
   h.note(`${input} toolbar: rotate ${r0}° → ${s1.items[id].rotation}°, duplicate → ${copy}, delete → ${s3.count} items`);
 }
 
-/** The toolbar gets out of the way while the piece is being dragged, and comes back after. */
-async function toolbarHidesDuringDrag(h, input) {
-  const from = await planPt(h, ISLAND);
+/** The toolbar gets out of the way while the piece is being dragged, and comes back after. `at`: where the island is pressed (default: its centre in the plan). */
+async function toolbarHidesDuringDrag(h, input, at = null) {
+  const from = at ?? (await planPt(h, ISLAND));
   const mid = { x: from.x + 30, y: from.y + 18 };
   if (input === 'mouse') {
     await mouse(h, 'mouseMoved', from);
@@ -387,6 +402,46 @@ async function drag3dItem(h, input, dx = 110, dy = 30) {
   if (!cam1.enabled) throw new Error(`${input} 3D drag: the camera controls were left switched off`);
   return { before, after };
 }
+
+/**
+ * In 3D: drags a wall-hung piece sideways along the north wall, from a point on its face to where
+ * that point is when the piece sits at `toX` (chosen clear of every edge it could snap to). It must
+ * slide along the wall to there (same wall, same rotation), end under the pointer, leave the camera
+ * where it was, and be one undo step. `face` is the grabbed point: inches in front of the piece's
+ * centre line (its y) and height off the floor.
+ */
+async function drag3dWallPiece(h, input, id, face, toX) {
+  const before = await state(h);
+  const cam0 = await camera(h);
+  const a = before.items[id];
+  const from = await scenePt(h, { x: a.x, y: a.y + face.front }, face.z);
+  const hit = await pick3d(h, from);
+  if (hit !== id) throw new Error(`3D: ${id}'s face (${from.x.toFixed(0)},${from.y.toFixed(0)}) picks ${hit}, not ${id}`);
+  const to = await scenePt(h, { x: toX, y: a.y + face.front }, face.z);
+  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
+  else await h.touchDrag(from, to, { steps: 16 });
+  await h.sleep(350);
+  const after = await state(h);
+  const cam1 = await camera(h);
+  const b = after.items[id];
+  const land = await scenePt(h, { x: b.x, y: b.y + face.front }, face.z);
+  const off = Math.hypot(land.x - to.x, land.y - to.y);
+  h.note(`${input} 3D drag of ${id}: ${fmt(a)} → ${fmt(b)} (aimed at x ${toX}); its face is ${off.toFixed(1)}px from the release point; camera moved ${cameraMoved(cam0, cam1).toFixed(4)}`);
+  if (!near(b.x, toX, 2)) throw new Error(`${input} 3D drag of ${id}: it slid to x ${b.x.toFixed(1)}, the pointer took it to x ${toX}`);
+  if (b.y !== a.y || b.rotation !== a.rotation) throw new Error(`${input} 3D drag of ${id}: it left the north wall (${fmt(a)} → ${fmt(b)})`);
+  if (off > 12) throw new Error(`${input} 3D drag of ${id}: it ended ${off.toFixed(0)}px from the pointer`);
+  if (cameraMoved(cam0, cam1) > 1e-3) throw new Error(`${input} 3D drag of ${id}: the camera orbited (moved ${cameraMoved(cam0, cam1).toFixed(3)})`);
+  if (after.past !== before.past + 1) throw new Error(`${input} 3D drag of ${id}: ${after.past - before.past} undo steps for one drag`);
+  if (after.dragging) throw new Error(`${input} 3D drag of ${id}: the store is still dragging after release`);
+  if (!cam1.enabled) throw new Error(`${input} 3D drag of ${id}: the camera controls were left switched off`);
+  const others = { ...after, items: { ...after.items, [id]: a } };
+  sameItems(before, others, `${input} 3D drag of ${id} (everything else)`);
+  return { before, after };
+}
+
+/** The wall cabinet's door face (6″ in front of its centre, half way up) and the window's glass. */
+const WALL_FACE = { front: 6, z: 54 + 15 };
+const WINDOW_FACE = { front: 0, z: 42 + 21 };
 
 /** In 3D: a drag that starts on empty floor orbits the camera and moves nothing. */
 async function orbit3d(h, input) {
@@ -718,6 +773,21 @@ export default [
   },
   {
     ...LOCAL,
+    name: 'move-desktop-3d-wall-pieces',
+    timeoutMs: 40_000,
+    check: async (h) => {
+      await start(h, '3d', wallDoc());
+      // x 127 and x 40 are clear of every edge the pieces could snap to (6″ edge snap).
+      const w = await drag3dWallPiece(h, 'mouse', 'mv-wall', WALL_FACE, 127);
+      await h.shot('wall-cabinet');
+      await undoRestores(h, w.before, 'key');
+      const win = await drag3dWallPiece(h, 'mouse', 'mv-window', WINDOW_FACE, 40);
+      await h.shot('window');
+      await undoRestores(h, win.before, 'key');
+    },
+  },
+  {
+    ...LOCAL,
     name: 'move-desktop-catalog-drop',
     timeoutMs: 40_000,
     check: async (h) => {
@@ -922,6 +992,8 @@ export default [
       if (after.selectedId !== 'mv-island') throw new Error(`a tap on the island in 3D selected ${after.selectedId}`);
       await toolbarNextToSelection(h, 'phone 3D, island');
       await h.shot('selected');
+      await toolbarHidesDuringDrag(h, 'touch', await scenePt(h, after.items['mv-island'], ISLAND.top));
+      await toolbarNextToSelection(h, 'phone 3D, after a drag');
       await toolbarActions(h, 'touch');
       // Pinch zooms the camera; nothing moves.
       const s0 = await state(h);
@@ -933,6 +1005,22 @@ export default [
       sameItems(s0, await state(h), '3D pinch');
       if (cameraMoved(cam0, cam1) < 0.05) throw new Error('a pinch in 3D did not zoom the camera');
       await pageStill(h, '3D gestures');
+    },
+  },
+  {
+    ...LOCAL,
+    name: 'move-phone-3d-wall-pieces',
+    viewport: 'phone',
+    timeoutMs: 40_000,
+    check: async (h) => {
+      await start(h, 'plan', wallDoc());
+      await showView(h, '3D');
+      const w = await drag3dWallPiece(h, 'touch', 'mv-wall', WALL_FACE, 127);
+      await h.shot('wall-cabinet');
+      await undoRestores(h, w.before, 'tap');
+      const win = await drag3dWallPiece(h, 'touch', 'mv-window', WINDOW_FACE, 40);
+      await undoRestores(h, win.before, 'tap');
+      await pageStill(h, '3D wall-piece drags');
     },
   },
   {
