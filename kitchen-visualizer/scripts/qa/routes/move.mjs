@@ -49,6 +49,21 @@ export function wallDoc() {
   return d;
 }
 
+/**
+ * moveDoc plus two doorways in the west wall (x 0, facing east into the room), which the default
+ * 3D camera looks at: a 32″ interior door at y 55 (its leaf swings open into the room) and a 48″
+ * cased opening at y 112, which has no leaf at all, so a press in its middle sees the hall beyond.
+ */
+export function doorDoc() {
+  const d = moveDoc();
+  d.name = 'QA Move Kitchen (doors)';
+  d.items.push(
+    { id: 'mv-door', productId: 'door', x: 0, y: 55, rotation: 270, finishIndex: 0 },
+    { id: 'mv-open', productId: 'opening', x: 0, y: 112, rotation: 270, finishIndex: 0 },
+  );
+  return d;
+}
+
 const ISLAND = { x: 100, y: 96, top: 36 };
 const EMPTY_A = { x: 25, y: 132 };
 const EMPTY_B = { x: 170, y: 128 };
@@ -494,6 +509,39 @@ async function drag3dWallCorner(h, input) {
 const WALL_FACE = { front: 6, z: 54 + 15 };
 const WINDOW_FACE = { front: 0, z: 42 + 21 };
 
+/**
+ * In 3D: a doorway in the west wall pressed in the MIDDLE of its hole (at height `z`, on the wall
+ * line), not on its trim, and dragged along the wall to y `toY`. It must be grabbed (not orbit the
+ * camera), slide there on the same wall at the same rotation, end under the pointer, and be one
+ * undo step with nothing else moved.
+ */
+async function drag3dDoorway(h, input, id, toY, z = 40) {
+  const before = await state(h);
+  const cam0 = await camera(h);
+  const a = before.items[id];
+  const from = await scenePt(h, { x: a.x, y: a.y }, z);
+  const hit = await pick3d(h, from);
+  if (hit !== id) throw new Error(`3D: a press in the middle of ${id} (${from.x.toFixed(0)},${from.y.toFixed(0)}) picks ${hit}, not the doorway`);
+  const to = await scenePt(h, { x: a.x, y: toY }, z);
+  if (input === 'mouse') await h.mouseDrag(from, to, { steps: 16 });
+  else await h.touchDrag(from, to, { steps: 16 });
+  await h.sleep(350);
+  const after = await state(h);
+  const cam1 = await camera(h);
+  const b = after.items[id];
+  const land = await scenePt(h, { x: b.x, y: b.y }, z);
+  const off = Math.hypot(land.x - to.x, land.y - to.y);
+  h.note(`${input} 3D drag of ${id} from the middle of its hole: ${fmt(a)} → ${fmt(b)} (aimed at y ${toY}); ${off.toFixed(1)}px from the release point; camera moved ${cameraMoved(cam0, cam1).toFixed(4)}`);
+  if (cameraMoved(cam0, cam1) > 1e-3) throw new Error(`${input} 3D drag of ${id}: the camera orbited instead (moved ${cameraMoved(cam0, cam1).toFixed(3)})`);
+  if (!near(b.y, toY, 2)) throw new Error(`${input} 3D drag of ${id}: it slid to y ${b.y.toFixed(1)}, the pointer took it to y ${toY}`);
+  if (b.x !== a.x || b.rotation !== a.rotation) throw new Error(`${input} 3D drag of ${id}: it left the west wall (${fmt(a)} → ${fmt(b)})`);
+  if (off > 12) throw new Error(`${input} 3D drag of ${id}: it ended ${off.toFixed(0)}px from the pointer`);
+  if (after.past !== before.past + 1) throw new Error(`${input} 3D drag of ${id}: ${after.past - before.past} undo steps for one drag`);
+  if (after.dragging || !cam1.enabled) throw new Error(`${input} 3D drag of ${id}: still dragging, or the camera controls were left off`);
+  sameItems(before, { ...after, items: { ...after.items, [id]: a } }, `${input} 3D drag of ${id} (everything else)`);
+  return { before, after };
+}
+
 /** In 3D: a drag that starts on empty floor orbits the camera and moves nothing. */
 async function orbit3d(h, input) {
   const before = await state(h);
@@ -843,6 +891,29 @@ export default [
   },
   {
     ...LOCAL,
+    name: 'move-desktop-3d-doors',
+    timeoutMs: 40_000,
+    check: async (h) => {
+      await start(h, '3d', doorDoc());
+      // A click in the middle of each doorway selects that doorway (and moves nothing); a drag
+      // from there moves it.
+      for (const [id, y] of [['mv-open', 112], ['mv-door', 55]]) {
+        const s0 = await state(h);
+        await h.click(await scenePt(h, { x: 0, y }, 40));
+        await h.sleep(300);
+        const s1 = await state(h);
+        sameItems(s0, s1, `a click in the middle of ${id}`);
+        if (s1.selectedId !== id) throw new Error(`a click in the middle of ${id} selected ${s1.selectedId}`);
+      }
+      const o = await drag3dDoorway(h, 'mouse', 'mv-open', 125);
+      await h.shot('opening');
+      await undoRestores(h, o.before, 'key');
+      const d = await drag3dDoorway(h, 'mouse', 'mv-door', 66);
+      await undoRestores(h, d.before, 'key');
+    },
+  },
+  {
+    ...LOCAL,
     name: 'move-desktop-catalog-drop',
     timeoutMs: 40_000,
     check: async (h) => {
@@ -1079,6 +1150,31 @@ export default [
       const win = await drag3dWallPiece(h, 'touch', 'mv-window', WINDOW_FACE, 90);
       await undoRestores(h, win.before, 'tap');
       await pageStill(h, '3D wall-piece drags');
+    },
+  },
+  {
+    ...LOCAL,
+    name: 'move-phone-3d-doors',
+    viewport: 'phone',
+    timeoutMs: 40_000,
+    check: async (h) => {
+      await start(h, 'plan', doorDoc());
+      await showView(h, '3D');
+      // A tap in the middle of each doorway selects that doorway and moves nothing.
+      for (const [id, y] of [['mv-open', 112], ['mv-door', 55]]) {
+        const s0 = await state(h);
+        await tap(h, await scenePt(h, { x: 0, y }, 40));
+        await h.sleep(350);
+        const s1 = await state(h);
+        sameItems(s0, s1, `a tap in the middle of ${id}`);
+        if (s1.selectedId !== id) throw new Error(`a tap in the middle of ${id} selected ${s1.selectedId}`);
+      }
+      const o = await drag3dDoorway(h, 'touch', 'mv-open', 125);
+      await h.shot('opening');
+      await undoRestores(h, o.before, 'tap');
+      const d = await drag3dDoorway(h, 'touch', 'mv-door', 66);
+      await undoRestores(h, d.before, 'tap');
+      await pageStill(h, '3D doorway drags');
     },
   },
   {

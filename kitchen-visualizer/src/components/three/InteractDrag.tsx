@@ -4,7 +4,9 @@
  *  - Press on a piece and drag: it slides under the pointer through the same store
  *    drag protocol (dragStart / dragMove / dragEnd) and snapping as the 2D plan, so
  *    it is one undo step. A press that doesn't travel past a few pixels is a click and
- *    only selects (Item3D / Room3D handle that through r3f as before).
+ *    only selects (Item3D / Room3D handle that through r3f as before, except on a doorway
+ *    or window, which this selects itself: see onUp).
+ *  - A press in the hole of a doorway or window grabs it too, not only one on its trim.
  *  - Press on empty space still orbits; right-drag still pans; on touch, two fingers
  *    still pinch-zoom and pan, even when the first finger landed on a piece.
  *  - With a product armed for tap-to-place (usePlacement), a tap places it there.
@@ -19,12 +21,12 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import type { PlacedItem, Product } from '../../types';
+import type { PlacedItem, Product, Room } from '../../types';
 import { useDesignStore } from '../../store/useDesignStore';
 import { getProduct, isOpening, snapsToWall } from '../../data/catalog';
-import { boxesOverlap, overlap1D, resolve, resolveAll, type Resolved, type Wall } from '../../lib/geometry';
+import { boxesOverlap, flushWall, overlap1D, resolve, resolveAll, type Resolved, type Wall } from '../../lib/geometry';
 import { placeAt, registerDropTarget, useOverlay, usePlacement, worldToRoom, type RoomPoint } from '../../lib/interaction';
-import { dragPlaneHeight, rayFromClient, rayToHorizontalPlane, roomPointUnderRay, toItemLocal } from './InteractMath';
+import { dragPlaneHeight, rayFromClient, rayThroughOpening, rayToHorizontalPlane, roomPointUnderRay, toItemLocal } from './InteractMath';
 import { markActiveView } from './InteractOverlay';
 import { qaExpose } from '../../lib/qa';
 
@@ -98,6 +100,33 @@ function openingAt(world: THREE.Vector3, items: PlacedItem[]): string | null {
   return null;
 }
 
+/**
+ * The doorway or window whose hole a ray goes through before `maxDist` (the nearest one). A
+ * press in the middle of a cased opening (it has no leaf), between a pair of French doors or
+ * past a single door's open leaf lands on whatever is beyond the wall, which openingAt rightly
+ * doesn't count as part of the piece, yet it is plainly a press on that doorway (and a click
+ * there already selects it through Room3D). Only openings Room3D draws: flush on a wall, and on
+ * a wall that is showing, i.e. seen from the room side.
+ */
+function openingThroughRay(ray: THREE.Ray, items: PlacedItem[], room: Room, maxDist: number): { id: string; point: THREE.Vector3 } | null {
+  let best: { id: string; point: THREE.Vector3; distance: number } | null = null;
+  for (const it of items) {
+    const p = getProduct(it.productId);
+    if (!p || !isOpening(p)) continue;
+    const r = resolve(it);
+    if (!r || !flushWall(r, room)) continue;
+    const hit = rayThroughOpening(ray, it, r, Math.min(maxDist, best ? best.distance : Infinity));
+    if (hit) best = { id: it.id, point: hit.point, distance: hit.distance };
+  }
+  return best ? { id: best.id, point: best.point } : null;
+}
+
+function isOpeningItem(id: string): boolean {
+  const it = useDesignStore.getState().doc.items.find((i) => i.id === id);
+  const p = it && getProduct(it.productId);
+  return !!p && isOpening(p);
+}
+
 /** Wall-hung pieces and openings follow the wall/floor surface under the pointer; everything else a horizontal plane. */
 function wallHung(p: Product): boolean {
   return isOpening(p) || (snapsToWall(p) && p.elevationIn >= 30);
@@ -166,13 +195,14 @@ export function InteractDrag({ containerRef }: { containerRef: RefObject<HTMLDiv
       camera.updateMatrixWorld();
       rayHelper.setFromCamera(ndcHelper, camera);
       const hits = rayHelper.intersectObjects(scene.children, true);
-      const items = useDesignStore.getState().doc.items;
-      for (const h of hits) {
-        if (!(h.object as THREE.Mesh).isMesh || h.object.userData?.interactIgnore || !visibleChain(h.object)) continue;
-        const id = taggedItem(h.object) ?? openingAt(h.point, items);
-        return id && items.some((i) => i.id === id) ? { id, point: h.point.clone() } : null;
+      const { items, room } = useDesignStore.getState().doc;
+      const first = hits.find((h) => (h.object as THREE.Mesh).isMesh && !h.object.userData?.interactIgnore && visibleChain(h.object));
+      if (first) {
+        const id = taggedItem(first.object) ?? openingAt(first.point, items);
+        if (id && items.some((i) => i.id === id)) return { id, point: first.point.clone() };
       }
-      return null;
+      // Nothing of a piece is the nearest surface, but the ray may have gone through a doorway first.
+      return openingThroughRay(rayHelper.ray, items, room, first ? first.distance : Infinity);
     };
 
     const applyMove = () => {
@@ -297,6 +327,14 @@ export function InteractDrag({ containerRef }: { containerRef: RefObject<HTMLDiv
       if (p.state === 'pending' && p.armed && armed === p.armed) {
         const pt = toRoom(e.clientX, e.clientY);
         if (pt && placeAt(armed, pt.x, pt.y)) suppressClickUntil = performance.now() + 600;
+      } else if (p.state === 'pending' && p.itemId && isOpeningItem(p.itemId)) {
+        // A click or tap on a doorway or window selects the one a drag from there would move.
+        // Room3D's own click can't be trusted here: through the hole it lands on whichever
+        // opening's backdrop (behind the wall, where they overlap) is drawn first.
+        const s = useDesignStore.getState();
+        s.select(p.itemId);
+        s.setUI({ rightTab: 'details' });
+        suppressClickUntil = performance.now() + 600;
       }
       finishPress();
     }
