@@ -25,7 +25,7 @@ Owned paths: `src/components/plan/**`, `src/components/three/Interact*`,
 | `4115206` | **A press in the hole of a doorway didn't grab it in 3D.** A press in the middle of a cased opening (it has no leaf), between French doors or past an open door's leaf hit whatever was beyond the wall. A drag from there orbited the camera instead of moving the doorway. A click selected whichever opening's backdrop happened to be drawn first: in the QA kitchen, a click in the middle of the cased opening selected the door beside it. `InteractDrag` now also checks whether the ray went through a flush opening's hole before the nearest surface (`rayThroughOpening` in `InteractMath.ts`, 4 unit tests). A click or tap there selects that opening. New routes `move-desktop-3d-doors` and `move-phone-3d-doors` (25 now): both **fail on the previous build** ("a click in the middle of mv-open selected mv-door") and pass now. |
 | `05e9c63` | **A pen tap that lifted a few px off nudged the piece in 3D.** 3D treated a pen as a mouse (4px before a press becomes a drag), so a stylus tap that lifted 5px from where it landed moved the island 1.5″ and added an undo step. The plan already gives a pen 6px (`usePlanGestures`); `InteractDrag` now does too. New route `move-tablet-pen` (26 now): it **fails on the previous build** at the 3D wobble tap and passes now. |
 | `4330935` | **A quick tap on a catalog card could arm nothing on a busy page.** Tap or hold was decided by a wall-clock timer (`HOLD_MS`, 280 ms) racing the pointer events. On a slow phone drawing the 3D view, a frame of a second or more queues both: the timer ran first and turned a 60 ms tap into an empty drag (the card never armed), and a held finger's first move was taken for a scroll. `pressProduct` now compares each event's own `timeStamp` with the pointerdown's, and a tap that the late timer began as a drag finishes as the tap it was (adds, or arms on a phone). Seen for real under `--swiftshader`: a 3D tap-to-place card tap that reached the page 365 ms late, with the up event ~700 ms after the down in wall-clock time, armed the stool. |
-| `1a66a8f`, next | QA only: `openSheet`, `sheetGone`, the toolbar checks and `pick3d` wait for finished slides and drawn 3D frames instead of fixed sleeps, and the touch `tap` sends explicit event timestamps (60 ms apart). `Input.dispatchTouchEvent` returns only when the renderer has handled the event, so under `--swiftshader` a "50 ms" tap lasted 415 ms of event time, the app rightly read it as a press-and-hold, and `move-phone-tap-to-place` failed with "armed null". With the timestamps it passes; the app was not at fault. |
+| `1a66a8f`, `9586fde` | QA only: `openSheet`, `sheetGone`, the toolbar checks and `pick3d` wait for finished slides and drawn 3D frames instead of fixed sleeps, and the touch `tap` sends explicit event timestamps (60 ms apart). `Input.dispatchTouchEvent` returns only when the renderer has handled the event, so under `--swiftshader` a "50 ms" tap lasted 415 ms of event time, the app rightly read it as a press-and-hold, and `move-phone-tap-to-place` failed with "armed null". With the timestamps it passes; the app was not at fault. |
 
 ## QA routes (`node scripts/qa.mjs --pkg move --port 8817`)
 
@@ -91,22 +91,32 @@ phone 390×844, phone on its side 844×390 and tablet 820×1180; a pen (CDP mous
 
 ## Last run
 
-2026-10-08, on `dist/` freshly built from `05e9c63`, Edge 154, GPU (ANGLE D3D11):
+2026-10-08, on `dist/` freshly built from the app code of `4330935` (the later commits only
+touch `move.mjs` and this note), Edge 154 / Chrome 154:
 
-- `node scripts/qa.mjs --pkg move --port 8817`: **PASS: 24 passed, 2 known issues, 0 failed**
-  (26 routes). The 2 known issues are the reload routes (request 1).
+- `node scripts/qa.mjs --pkg move --port 8817`, Edge, GPU (ANGLE D3D11): **PASS: 24 passed, 2 known
+  issues, 0 failed** (26 routes). The 2 known issues are the reload routes (request 1).
+- The same with `--chrome` (Chrome 154.0.8037.99): **PASS: 24 passed, 2 known issues, 0 failed.**
+- The same with `--swiftshader --timeout 40000` (software WebGL, frames of seconds in 3D), after
+  the `4330935` / `9586fde` fixes: **PASS: 24 passed, 2 known issues, 0 failed.** The first
+  software-WebGL run, before the tap timestamps, **failed** `move-phone-tap-to-place` (see the
+  table): QA harness latency, not an app fault.
 - `node scripts/qa.mjs --pkg core --port 8817`: **PASS: 38 passed, 2 known issues, 0 failed**
   (40 routes; `local-topbar-fits` and `home-signed-in-phone`, both in `docs/handoff/qa.md`, not
   move's). `local-phone`, `kitchen-open-phone` and `kitchen-selection-toolbar` pass with no marker.
+- Request 1's diff, re-checked on this HEAD: built from a scratch copy (the worktree untouched)
+  and run with `--dist`, both reload routes **pass** (the runner then fails them only for the
+  stale `knownIssue` marker, as designed). `useAutosave.ts` has not changed since `0b57b37`.
 - `npx tsc --noEmit -p tsconfig.json` clean; `npm test` 63/63 TS tests, 71/72 server tests
   (1 skipped: the real-`mise.db` upgrade test); `npm run build` succeeds (the usual >500 kB
   chunk warning).
 
-Screenshots in `.qa/move/` and `.qa/core/`. Looked at on this build: core `kitchen-open-phone`
-(full-screen plan over the bottom bar) and `kitchen-selection-toolbar` (pill above the range in
-the plan); move `move-phone-sheets--add-half`, `move-landscape--panel`, `move-tablet-pen--pen-3d`.
-Earlier builds: phone 3D selection, phone sheets (full, Room), tap-to-place in plan and 3D,
-tablet sheet, the desktop toolbar in plan.
+Screenshots in `.qa/move/` and `.qa/core/`. Looked at on this build: move
+`move-phone-sheets--add-half` and `--add-full`, `move-phone-toolbar--island`,
+`move-phone-3d--selected`, `move-phone-tap-to-place--placing-3d`, `move-landscape--panel`,
+`move-tablet--sheet`, `move-desktop-toolbar-3d--island`. Earlier builds: core
+`kitchen-open-phone` and `kitchen-selection-toolbar`, `move-tablet-pen--pen-3d`, phone sheets
+(Room), tap-to-place in plan, the desktop toolbar in plan.
 
 ## Requests for the integration pass (files I don't own)
 
@@ -211,7 +221,11 @@ tablet sheet, the desktop toolbar in plan.
   pen pointer events, which carry no pressure or tilt. `env(safe-area-inset-bottom)` can't be
   exercised headless (no notch). `:has()` needs iOS 15.4+ / Chrome 105+; older browsers just keep
   their swipe-back.
-- `--chrome` was not run (Chrome is not what QA defaults to here).
+- Chrome and Edge are both Chromium: `--chrome` passing is the same engine at another build, not
+  Safari or Firefox, which were not tried (WebKit's touch and pointer-capture behaviour is the
+  likeliest place for a gesture to differ).
+- Software WebGL is the only slow-machine test. It showed the tap-or-hold race (`4330935`), but a
+  phone's real input timing, thermals and a CPU-bound main thread were not reproduced.
 - 3D wall pieces are dragged from the default overview camera only, and only along and round the
   north/west corner. A door is dragged in 3D only along the west wall; a door round a corner was
   not tried.
