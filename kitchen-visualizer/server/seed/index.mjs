@@ -5,7 +5,7 @@
 //   DB_PATH=<db> npm run seed -- --prod --force-demo   production refuses without --force-demo
 //
 // Runs core.mjs first, then every other server/seed/*.mjs in name order. Each module
-// exports `async function seed(ctx)` with ctx = { db, config, services, now, log, demo },
+// exports `async function seed(ctx)` with ctx = { db, config, services, now, log, demo, forceDemo },
 // where `demo` is what the core seed made ({ users: { customer, brand, studio, admin }, brandId,
 // productIds }). Every seed must be idempotent: running twice leaves the same state.
 //
@@ -58,7 +58,7 @@ export async function runSeeds({ db, config, now = Date.now, log = quietLog, ser
     const mod = await import(pathToFileURL(path.join(SEED_DIR, file)).href);
     if (typeof mod.seed !== 'function') throw new Error(`server/seed/${file} must export "async function seed(ctx)".`);
     t0 = Date.now();
-    const out = await mod.seed({ db, config, services: svc, now, log, demo });
+    const out = await mod.seed({ db, config, services: svc, now, log, demo, forceDemo });
     ran.push({ name, ms: Date.now() - t0, ...(typeof out?.summary === 'string' ? { summary: out.summary } : {}) });
   }
   return { ran, core: coreResult };
