@@ -13,7 +13,7 @@ export function kitchenDoc(name = 'QA Kitchen') {
   return {
     name,
     room: { widthIn: 200, lengthIn: 156, ceilingIn: 108 },
-    surfaces: { cabinetFinishId: 'white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'marble', backsplashId: 'subway', flooringId: 'oak', paintId: 'white' },
+    surfaces: { cabinetFinishId: 'warm-white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'calacatta', backsplashId: 'zellige-white', flooringId: 'herringbone', paintId: 'chalk' },
     items: [
       n('qa-fridge', 'fridge-36', 18, 15),
       n('qa-base-1', 'base', 48, 12),
