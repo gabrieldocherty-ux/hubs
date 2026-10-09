@@ -2975,6 +2975,24 @@ a.btn {
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
+  /* Take the room between the wordmark and the avatar, and scroll inside it; never overlap them. */
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.admin-tabs .chip {
+  flex: none;
+}
+
+.admin .home-bar .brand {
+  flex: none;
+}
+
+@media (max-width: 560px) {
+  .admin .home-bar {
+    padding: 0 12px;
+    gap: 10px;
+  }
 }
 
 .admin-tabs a {
