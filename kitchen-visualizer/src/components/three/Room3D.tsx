@@ -278,8 +278,10 @@ function WindowModel({ r, surfaces, bare = false }: { r: Resolved; surfaces: Sur
       ))}
       <mesh geometry={boxGeo(w - 3, h - 3, 0.15)} position={[0, y0 + h / 2, zc - 0.2]} material={M.clearGlass()} dispose={null} />
       {!bare && (
-        <mesh position={[0, y0 + h / 2, -T - 40]} material={skyMaterial()}>
-          <planeGeometry args={[w + 90, h + 70]} />
+        // Just behind the wall and the size of the hole (the casing hides the margin). A sky 40 inches
+        // back poked above the wall top from the raised overview camera.
+        <mesh position={[0, y0 + h / 2, -T - 0.5]} material={skyMaterial()}>
+          <planeGeometry args={[w + 2, h + 2]} />
         </mesh>
       )}
     </group>
@@ -323,8 +325,8 @@ function DoorModel({ r, surfaces, ctx, bare = false }: { r: Resolved; surfaces: 
       <Box size={[w, 0.5, T]} pos={[0, 0.25, -T / 2]} mat={finishMaterial({ id: 'oak', name: 'oak', hex: '#b88e61', material: 'wood' })} />
       {leaves}
       {!bare && (
-        <mesh position={[0, h / 2 + 6, -T - 44]} material={beyond}>
-          <planeGeometry args={[w + 70, h + 40]} />
+        <mesh position={[0, h / 2, -T - 0.5]} material={beyond}>
+          <planeGeometry args={[w + 2, h + 2]} />
         </mesh>
       )}
     </group>
