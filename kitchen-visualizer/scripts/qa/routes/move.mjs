@@ -191,7 +191,8 @@ async function showView(h, label) {
 // ─── low-level input (for checks in the middle of a gesture) ─────────────────
 
 const mouse = (h, type, p, buttons = 0) => h.send('Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'left', buttons, clickCount: 1 });
-const touch = (h, type, points) => h.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, i) => ({ x: p.x, y: p.y, id: i + 1 })) });
+const touch = (h, type, points, timestamp) =>
+  h.send('Input.dispatchTouchEvent', { type, touchPoints: points.map((p, i) => ({ x: p.x, y: p.y, id: i + 1 })), ...(timestamp ? { timestamp } : {}) });
 /**
  * A pen (stylus): CDP mouse events with pointerType 'pen', which Chromium delivers as pen pointer
  * events (pointerType "pen", a click after a press and release). The pen route checks the app
@@ -261,7 +262,7 @@ async function twoFingerPan(h, a, b, dx, dy, steps = 12) {
 }
 
 /**
- * A finger tap: touchStart, 50 ms, touchEnd, so the browser makes the pointer events AND the
+ * A finger tap: touchStart, 60 ms of event time, touchEnd, so the browser makes the pointer events AND the
  * click a button needs. (The runner's h.tap uses Input.synthesizeTapGesture, which under Edge's
  * touch emulation delivers pointer/touch events but never a click: buttons ignore it. See
  * docs/handoff/move.md.) Targets: a selector (scrolled into view), a rectOf result, or {x, y}.
@@ -273,9 +274,13 @@ async function tap(h, target) {
     if (!(r.w > 0 && r.h > 0)) throw new Error(`tap: ${target} has no size (hidden?)`);
     p = { x: r.cx, y: r.cy };
   } else if (target && typeof target.cx === 'number') p = { x: target.cx, y: target.cy };
-  await touch(h, 'touchStart', [p]);
-  await h.sleep(50);
-  await touch(h, 'touchEnd', []);
+  // Input.dispatchTouchEvent returns when the renderer has handled the event, so on a busy page
+  // (3D under --swiftshader: frames of seconds) the "50 ms" between the two calls became 400 ms or
+  // more of EVENT time, and the app, rightly, took the press for a hold (catalog cards: HOLD_MS).
+  // A finger's events carry the time it touched and lifted, whatever the page was doing: so do these.
+  const t = Date.now() / 1000;
+  await touch(h, 'touchStart', [p], t);
+  await touch(h, 'touchEnd', [], t + 0.06);
 }
 
 /** What a drop or a tap at client (x, y) would hit: { id: 'plan' | '3d', point } or null. */

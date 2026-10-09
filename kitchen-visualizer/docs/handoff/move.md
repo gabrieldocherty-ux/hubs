@@ -24,6 +24,8 @@ Owned paths: `src/components/plan/**`, `src/components/three/Interact*`,
 | `c5ee4ea` | Two more routes (23 now): **3D on a phone on its side (844×390) and on a tablet (820×1180)**, both with a finger. Tap to select, toolbar above the piece and hidden mid-drag, wall cabinet along the wall and round the corner; on the tablet also Rotate / Duplicate / Delete in 3D, the window along the wall, and a card dragged from the Add sheet onto the 3D floor. Passed first time. |
 | `4115206` | **A press in the hole of a doorway didn't grab it in 3D.** A press in the middle of a cased opening (it has no leaf), between French doors or past an open door's leaf hit whatever was beyond the wall. A drag from there orbited the camera instead of moving the doorway. A click selected whichever opening's backdrop happened to be drawn first: in the QA kitchen, a click in the middle of the cased opening selected the door beside it. `InteractDrag` now also checks whether the ray went through a flush opening's hole before the nearest surface (`rayThroughOpening` in `InteractMath.ts`, 4 unit tests). A click or tap there selects that opening. New routes `move-desktop-3d-doors` and `move-phone-3d-doors` (25 now): both **fail on the previous build** ("a click in the middle of mv-open selected mv-door") and pass now. |
 | `05e9c63` | **A pen tap that lifted a few px off nudged the piece in 3D.** 3D treated a pen as a mouse (4px before a press becomes a drag), so a stylus tap that lifted 5px from where it landed moved the island 1.5″ and added an undo step. The plan already gives a pen 6px (`usePlanGestures`); `InteractDrag` now does too. New route `move-tablet-pen` (26 now): it **fails on the previous build** at the 3D wobble tap and passes now. |
+| `4330935` | **A quick tap on a catalog card could arm nothing on a busy page.** Tap or hold was decided by a wall-clock timer (`HOLD_MS`, 280 ms) racing the pointer events. On a slow phone drawing the 3D view, a frame of a second or more queues both: the timer ran first and turned a 60 ms tap into an empty drag (the card never armed), and a held finger's first move was taken for a scroll. `pressProduct` now compares each event's own `timeStamp` with the pointerdown's, and a tap that the late timer began as a drag finishes as the tap it was (adds, or arms on a phone). Seen for real under `--swiftshader`: a 3D tap-to-place card tap that reached the page 365 ms late, with the up event ~700 ms after the down in wall-clock time, armed the stool. |
+| `1a66a8f`, next | QA only: `openSheet`, `sheetGone`, the toolbar checks and `pick3d` wait for finished slides and drawn 3D frames instead of fixed sleeps, and the touch `tap` sends explicit event timestamps (60 ms apart). `Input.dispatchTouchEvent` returns only when the renderer has handled the event, so under `--swiftshader` a "50 ms" tap lasted 415 ms of event time, the app rightly read it as a press-and-hold, and `move-phone-tap-to-place` failed with "armed null". With the timestamps it passes; the app was not at fault. |
 
 ## QA routes (`node scripts/qa.mjs --pkg move --port 8817`)
 
@@ -148,14 +150,17 @@ tablet sheet, the desktop toolbar in plan.
 2. **`h.tap` in `scripts/qa.mjs` never clicks.** It sends `Input.synthesizeTapGesture`; under Edge's
    touch emulation that delivers pointerdown/touchstart/pointerup/touchend but **no click**
    (verified: a tap on the bottom bar's Room button did not open the sheet). Any route that taps a
-   button with it silently does nothing. `move.mjs` uses its own `tap` (touchStart, 50 ms,
-   touchEnd), which does click. Suggested replacement in `inputHelpers`:
+   button with it silently does nothing. `move.mjs` uses its own `tap` (touchStart, touchEnd 60 ms
+   later in event time), which does click. Suggested replacement in `inputHelpers`. The explicit
+   `timestamp`s matter: `Input.dispatchTouchEvent` returns when the renderer has handled the event,
+   so without them a tap on a busy page (3D under `--swiftshader`) lasts hundreds of ms of event
+   time and the app reads it as a press-and-hold:
    ```js
    async tap(target) {
      const p = await pointOf(target, true);
-     await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y, id: 1 }] });
-     await sleep(50);
-     await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+     const t = Date.now() / 1000;
+     await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y, id: 1 }], timestamp: t });
+     await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [], timestamp: t + 0.06 });
    },
    ```
    (Touch events need `Emulation.setTouchEmulationEnabled`, which the phone/tablet viewports
