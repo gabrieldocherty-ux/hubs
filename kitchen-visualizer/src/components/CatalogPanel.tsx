@@ -37,6 +37,11 @@ import { CATALOG_DRAG_CLASS, isCompact, useCompact, useMobileUI } from './Mobile
  *          (HOLD_MS) or a clearly sideways pull; a mostly vertical move is a scroll
  *          and is left to the browser.
  *
+ * Tap or hold is decided by the events' own timestamps, not by which runs first, the hold
+ * timer or the event handler. On a busy page (a slow phone drawing the 3D view) both can be
+ * queued behind one long frame: the timer would then turn a quick tap into an empty drag
+ * (the card never arms), and a held finger's first move would be taken for a scroll.
+ *
  * A ghost follows the pointer. Releasing over a registered view (findDropTarget: the
  * plan, the 3D floor) places the product there with placeAt, snapped like a drag and
  * selected. Releasing anywhere else, or Escape, cancels.
@@ -63,13 +68,17 @@ let pressing = false;
 /** The browser may still deliver a click to the card after a drag; it must not also add the product. */
 let swallowClickUntil = 0;
 
-function pressProduct(e: ReactPointerEvent<HTMLElement>, product: Product, catalogEl: HTMLElement | null) {
+/** `onTap`: what a tap on the card does (the card's click handler, minus the after-a-drag check). */
+function pressProduct(e: ReactPointerEvent<HTMLElement>, product: Product, catalogEl: HTMLElement | null, onTap: () => void) {
   if (pressing || dragActive) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   const touchLike = e.pointerType !== 'mouse';
   const pid = e.pointerId;
   const x0 = e.clientX;
   const y0 = e.clientY;
+  const t0 = e.nativeEvent.timeStamp;
+  /** Whether the press had lasted HOLD_MS when an event happened (its timestamp, not now). */
+  const heldAt = (ev: Event) => ev.timeStamp - t0 >= HOLD_MS;
   let x = x0;
   let y = y0;
   let dragging = false;
@@ -116,13 +125,19 @@ function pressProduct(e: ReactPointerEvent<HTMLElement>, product: Product, catal
       return;
     }
     if (dist <= TOUCH_SLOP) return;
-    if (Math.abs(dx) > Math.abs(dy) * 1.2) begin();
+    // Held long enough before it moved (the hold timer just hasn't run yet), or pulled sideways.
+    if (heldAt(ev) || Math.abs(dx) > Math.abs(dy) * 1.2) begin();
     else finish(false); // a scroll: the browser takes it from here
   };
   const onUp = (ev: PointerEvent) => {
     if (ev.pointerId !== pid) return;
     x = ev.clientX;
     y = ev.clientY;
+    // A quick tap the late hold timer turned into a drag: it is still a tap (adds or arms the product).
+    if (touchLike && dragging && !heldAt(ev) && Math.hypot(x - x0, y - y0) <= TOUCH_SLOP) {
+      finish(false, true);
+      return;
+    }
     finish(true);
   };
   const onCancel = (ev: PointerEvent) => {
@@ -137,7 +152,12 @@ function pressProduct(e: ReactPointerEvent<HTMLElement>, product: Product, catal
   // A long press opens the context menu on touch screens; a held card is a drag instead.
   const onContext = (ev: Event) => ev.preventDefault();
 
-  function finish(drop: boolean) {
+  /**
+   * Ends the press. `drop`: place the product if released over a view. `tap`: it was a tap
+   * after all; do what a tap on the card does here rather than trust the browser's click,
+   * which may land elsewhere (the sheet had started sliding away for the drag).
+   */
+  function finish(drop: boolean, tap = false) {
     window.clearTimeout(hold);
     window.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
@@ -153,6 +173,7 @@ function pressProduct(e: ReactPointerEvent<HTMLElement>, product: Product, catal
     overEl = null;
     document.body.classList.remove(CATALOG_DRAG_CLASS);
     useGhost.setState({ productId: null, over: null });
+    if (tap) onTap();
     if (!drop) return;
     const hit = findDropTarget(x, y);
     if (hit) {
@@ -260,6 +281,10 @@ export function CatalogPanel() {
 
   const pick = (p: Product) => {
     if (performance.now() < swallowClickUntil) return;
+    tapProduct(p);
+  };
+
+  const tapProduct = (p: Product) => {
     if (isCompact()) {
       // On a phone the room is hidden behind the catalog: arm the product, get out of
       // the way, and let the next tap on the plan or the 3D floor say where it goes.
@@ -331,7 +356,7 @@ export function CatalogPanel() {
                         data-product={p.id}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
-                        onPointerDown={(e) => pressProduct(e, p, rootRef.current)}
+                        onPointerDown={(e) => pressProduct(e, p, rootRef.current, () => tapProduct(p))}
                         onClick={() => pick(p)}
                         title={`${p.brand} ${p.name}: ${p.blurb}`}
                       >
