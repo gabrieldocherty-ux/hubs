@@ -42,13 +42,23 @@ export function useAutosave(projectId: string | null, enabled = true) {
     let disposed = false;
 
     if (!projectId) {
-      const unsub = useDesignStore.subscribe((s, prev) => {
-        if (s.doc === prev.doc || s.dragging) return;
+      const save = () => {
         window.clearTimeout(timer);
-        timer = window.setTimeout(() => saveLocalDraft(useDesignStore.getState().doc), 400);
+        // Never mid-drag: the drag's end schedules the save of where the piece landed.
+        if (!useDesignStore.getState().dragging) saveLocalDraft(useDesignStore.getState().doc);
+      };
+      const unsub = useDesignStore.subscribe((s, prev) => {
+        if (s.dragging) return;
+        // A drag ends with dragging -> false and the doc unchanged since its last move.
+        if (s.doc === prev.doc && !prev.dragging) return;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(save, 400);
       });
+      // A reload or a closed tab within the 400 ms still keeps the last change.
+      window.addEventListener('pagehide', save);
       return () => {
         unsub();
+        window.removeEventListener('pagehide', save);
         window.clearTimeout(timer);
         saveLocalDraft(useDesignStore.getState().doc);
       };
@@ -93,6 +103,8 @@ export function useAutosave(projectId: string | null, enabled = true) {
     const flush = async (keepalive = false): Promise<void> => {
       window.clearTimeout(timer);
       if (conflicted) return;
+      // Never save a half-dragged position from a stale timer; the drag's end schedules a save.
+      if (!keepalive && useDesignStore.getState().dragging) return;
       const doc = useDesignStore.getState().doc;
       if (doc === lastSaved) return;
       if (inflight) {

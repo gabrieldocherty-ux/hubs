@@ -913,14 +913,6 @@ async function swipesStay(h) {
 
 const LOCAL = { path: '#/local', as: 'anon', waitFor: ['.topbar', '.plan-view canvas'] };
 
-/**
- * src/hooks/useAutosave.ts (not owned by `move`): in device-only mode a drag's end never schedules
- * a save, so the moved position only reaches the device draft if something else changes later.
- * Exact diff in docs/handoff/move.md; verified against a side build with it applied.
- */
-const PERSIST_BUG =
-  'useAutosave (device-only mode) never saves when a drag ends: the subscriber returns while dragging and the drag end leaves doc unchanged, so a moved item is lost on reload. Fix in docs/handoff/move.md.';
-
 export default [
   // ── Desktop, mouse ──────────────────────────────────────────────────────
   {
@@ -1153,7 +1145,6 @@ export default [
   {
     ...LOCAL,
     name: 'move-desktop-persist-reload',
-    knownIssue: PERSIST_BUG,
     check: async (h) => {
       await start(h, 'plan');
       const { after } = await planDragIsland(h, 'mouse', -70, 40);
@@ -1403,7 +1394,6 @@ export default [
     ...LOCAL,
     name: 'move-phone-persist-reload',
     viewport: 'phone',
-    knownIssue: PERSIST_BUG,
     check: async (h) => {
       await start(h, 'plan');
       const { after } = await planDragIsland(h, 'touch', -50, 30);
