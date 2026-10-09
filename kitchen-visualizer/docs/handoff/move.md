@@ -41,7 +41,7 @@ phone 390×844, phone on its side 844×390 and tablet 820×1180; a pen (CDP mous
   toolbar placement, hidden mid-drag, Rotate / Duplicate / Delete; catalog drag onto the plan and
   onto 3D; 3D drag of the island and of the wall cabinet; orbit on empty 3D floor.
 
-- **Plan drag** (mouse, phone, side, tablet): the island lands where the pointer says (±1.5″), a
+- **Plan drag** (mouse, phone, side, tablet finger and pen): the island lands where the pointer says (±1.5″), a
   base dragged near the wall snaps flush to it (y 12) and edge to edge with its neighbour (x 162),
   exactly one undo step, and one undo (Ctrl+Z, the Undo button, or a tap on it) restores everything.
 - **Tap / click without moving** selects only: no move, no undo step. Click on empty floor deselects.
@@ -69,11 +69,11 @@ phone 390×844, phone on its side 844×390 and tablet 820×1180; a pen (CDP mous
 - **Phone tap-to-place** in plan and 3D: tapping a card arms it and closes the sheet, the banner
   floats over the canvas with the full name and Cancel, no toolbar while placing, a tap places at
   that point (±1″) and disarms; Cancel disarms and a later tap places nothing.
-- **Selection toolbar** placement in plan and 3D (mouse, phone, side, tablet): fixed, ≤260×64px,
-  4-20px above (or below) the piece and centred on it unless clamped, inside the canvas, never
-  under the bottom bar, hidden while dragging and back after (mouse and finger, plan and 3D);
-  Rotate, Duplicate, Delete each do exactly one thing (desktop plan and 3D with the mouse, phone
-  plan and 3D and tablet 3D with a finger); flips below a piece at the top edge; stays on the
+- **Selection toolbar** placement in plan and 3D (mouse, phone, side, tablet finger and pen):
+  fixed, ≤260×64px, 4-20px above (or below) the piece and centred on it unless clamped, inside the
+  canvas, never under the bottom bar, hidden while dragging and back after (mouse, finger and pen,
+  plan and 3D); Rotate, Duplicate, Delete each do exactly one thing (desktop plan and 3D with the
+  mouse, phone plan and 3D and tablet 3D with a finger, tablet plan with a pen); flips below a piece at the top edge; stays on the
   canvas for a piece half off the left edge; steps aside while the Details sheet is open.
 - **Phone sheets**: Add opens at half height right above the bar, full width; dragging the handle
   up makes it full; the close button, a tap on the backdrop, a flick down on the handle, the bar

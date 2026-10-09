@@ -113,7 +113,25 @@ const planView = (h) => h.evaluate(() => window.__miseQA.plan.view());
 const planPt = (h, p) => h.evaluate((x, y) => window.__miseQA.plan.toClient(x, y), p.x, p.y);
 const scenePt = (h, p, z = 0) => h.evaluate((x, y, zz) => window.__miseQA.scene3d.toClient(x, y, zz), p.x, p.y, z);
 const camera = (h) => h.evaluate(() => window.__miseQA.scene3d.cameraState());
-const pick3d = (h, c) => h.evaluate((x, y) => window.__miseQA.scene3d.pick(x, y)?.id ?? null, c.x, c.y);
+/**
+ * Waits until the 3D view has drawn `n` more frames, so what it shows (and what a press picks:
+ * meshes are placed on screen when a frame is drawn) has caught up with the store. A fixed sleep
+ * is not enough on a slow renderer: under --swiftshader one frame takes hundreds of ms. No-op
+ * without a 3D view on screen.
+ */
+const drawn3d = (h, n = 2) =>
+  h.evaluate(async (k) => {
+    const s = window.__miseQA?.scene3d;
+    const gl = s?.get().gl;
+    if (!gl || !gl.domElement.isConnected) return;
+    const f0 = gl.info.render.frame;
+    const t0 = performance.now();
+    while (gl.info.render.frame < f0 + k && performance.now() - t0 < 8000) await new Promise((r) => requestAnimationFrame(r));
+  }, n);
+const pick3d = async (h, c) => {
+  await drawn3d(h);
+  return h.evaluate((x, y) => window.__miseQA.scene3d.pick(x, y)?.id ?? null, c.x, c.y);
+};
 
 function cameraMoved(a, b) {
   const d = (u, v) => Math.hypot(u[0] - v[0], u[1] - v[1], u[2] - v[2]);
@@ -418,20 +436,27 @@ async function toolbarNextToSelection(h, what) {
 
 /** Rotate, Duplicate and Delete on the toolbar each do their one thing. */
 async function toolbarActions(h, input, id = 'mv-island') {
+  // In 3D the toolbar follows the piece's box, which the view publishes as it draws a frame: after
+  // Rotate, or Duplicate (the copy is selected), it moves a frame later. Press it where it is then.
+  const ready = async () => {
+    await h.waitFor('.sel-toolbar', 3000);
+    await drawn3d(h);
+  };
   const s0 = await state(h);
   const r0 = s0.items[id].rotation;
+  await ready();
   await press(h, input, '.sel-toolbar button[aria-label="Rotate 90 degrees"]');
   await h.sleep(150);
   const s1 = await state(h);
   if (s1.items[id].rotation !== (r0 + 90) % 360) throw new Error(`toolbar Rotate: ${id} is at ${s1.items[id].rotation}°, was ${r0}°`);
-  await h.waitFor('.sel-toolbar', 3000);
+  await ready();
   await press(h, input, '.sel-toolbar button[aria-label="Duplicate"]');
   await h.sleep(150);
   const s2 = await state(h);
   if (s2.count !== s1.count + 1) throw new Error(`toolbar Duplicate: ${s2.count} items, was ${s1.count}`);
   const copy = s2.selectedId;
   if (!copy || copy === id || s2.items[copy]?.productId !== s1.items[id].productId) throw new Error(`toolbar Duplicate: the copy is not selected (${copy})`);
-  await h.waitFor('.sel-toolbar', 3000);
+  await ready();
   await press(h, input, '.sel-toolbar button[aria-label="Delete"]');
   await h.sleep(150);
   const s3 = await state(h);
@@ -729,18 +754,28 @@ async function openSheet(h, btn, sheetSel) {
   await tap(h, btn);
   await h.waitFor(`${sheetSel}.is-open`, 4000);
   await h.sleep(380); // the slide-up transition
+  // A slow renderer (--swiftshader, 3D on screen) can still be mid-slide: wait for it to land, or
+  // the next tap is aimed at where a card was a moment ago.
+  await h.waitUntil(
+    `() => { const s = document.querySelector(${JSON.stringify(`${sheetSel}.is-open`)}); return !!s && s.getAnimations().every((a) => a.playState === 'finished'); }`,
+    4000,
+    `${sheetSel} to finish sliding open`,
+  );
 }
 
 async function sheetGone(h, what) {
-  await h.sleep(420);
-  const r = await h.evaluate(() =>
+  const sheets = () =>
     [...document.querySelectorAll('.sheet')].map((s) => {
       const b = s.getBoundingClientRect();
       const st = getComputedStyle(s);
-      return { open: s.classList.contains('is-open'), title: s.getAttribute('aria-label'), vis: st.visibility, top: b.top, left: b.left, inert: s.hasAttribute('inert') };
-    }),
-  );
-  const shown = r.filter((s) => s.open || (s.vis !== 'hidden' && s.top < innerHeight && s.left < innerWidth));
+      const open = s.classList.contains('is-open');
+      return { open, shown: open || (st.visibility !== 'hidden' && b.top < innerHeight && b.left < innerWidth), title: s.getAttribute('aria-label'), vis: st.visibility, top: b.top, left: b.left, inert: s.hasAttribute('inert') };
+    });
+  // The slide-away transition is 0.38 s; give a slow renderer (--swiftshader) longer to finish it.
+  await h.sleep(420);
+  await h.waitUntil(`() => (${sheets})().every((s) => !s.shown)`, 3000, `${what}: every sheet to finish closing`).catch(() => {});
+  const r = await h.evaluate(sheets);
+  const shown = r.filter((s) => s.shown);
   if (shown.length) throw new Error(`${what}: a sheet is still showing: ${JSON.stringify(shown)}`);
   if (r.some((s) => !s.inert)) throw new Error(`${what}: a closed sheet is not inert`);
   const veil = await h.evaluate(() => getComputedStyle(document.querySelector('.sheet-backdrop')).visibility);
@@ -1106,8 +1141,8 @@ export default [
       await readyPlan(h);
       if ((await state(h)).viewMode !== 'plan') throw new Error('1 did not switch back to the plan');
       await h.key('/');
-      await h.sleep(150);
-      if ((await h.evaluate(() => document.activeElement?.id)) !== 'catalog-search') throw new Error('/ did not focus the catalog search');
+      // The shortcut focuses the search on the next animation frame (late on a slow renderer).
+      await h.waitUntil(() => document.activeElement?.id === 'catalog-search', 3000, '/ focusing the catalog search');
     },
   },
   {
