@@ -9,12 +9,12 @@ import { M, cached, finishMaterial, rugMaterial, sinkMaterial } from './material
 import { DRAIN_R, farmhouseBowl } from './sinkGeo';
 import { farmhouseFronts, farmhouseSink } from '../../lib/fronts';
 import { boxGeo, canopy } from './geom3d';
+import { GltfModel, slotMaterials } from './gltf';
 
 export interface ModelProps {
   r: Resolved;
   finish: Finish;
   ctx: SceneCtx;
-  lightOn: boolean;
 }
 
 function doubleSided(f: Finish) {
@@ -570,7 +570,7 @@ function ShelfModel({ r, finish }: ModelProps) {
       decor.push(
         <group key={x}>
           <Cyl r={2.2} rb={1.7} h={3.5} pos={[x + 2.5, top + 1.75, 0]} mat={terracotta} seg={14} />
-          <mesh position={[x + 2.5, top + 5.5, 0]} material={leaf} castShadow>
+          <mesh position={[x + 2.5, top + 5.5, 0]} material={leaf}>
             <icosahedronGeometry args={[3, 0]} />
           </mesh>
         </group>,
@@ -602,7 +602,7 @@ function StoolModel({ r, finish }: ModelProps) {
           const rad = (a * Math.PI) / 180;
           return <Cyl key={a} r={0.45} h={24} pos={[Math.cos(rad) * 6, 12, Math.sin(rad) * 6]} mat={M.castIron()} seg={8} />;
         })}
-        <mesh position={[0, 9, 0]} rotation={[Math.PI / 2, 0, 0]} material={M.castIron()} castShadow>
+        <mesh position={[0, 9, 0]} rotation={[Math.PI / 2, 0, 0]} material={M.castIron()}>
           <torusGeometry args={[6, 0.3, 6, 32]} />
         </mesh>
         <RoundedBox args={[17, 3.2, 16]} radius={1.4} smoothness={3} position={[0, 25.4, 0.5]} material={seatMat} castShadow receiveShadow />
@@ -616,7 +616,7 @@ function StoolModel({ r, finish }: ModelProps) {
         const rad = (a * Math.PI) / 180;
         return <Cyl key={a} r={0.6} rb={0.5} h={24.5} pos={[Math.cos(rad) * 5.3, 12.25, Math.sin(rad) * 5.3]} mat={legMat} seg={10} />;
       })}
-      <mesh position={[0, 9, 0]} rotation={[Math.PI / 2, 0, 0]} material={legMat} castShadow>
+      <mesh position={[0, 9, 0]} rotation={[Math.PI / 2, 0, 0]} material={legMat}>
         <torusGeometry args={[5.4, 0.35, 6, 32]} />
       </mesh>
       <Cyl r={7.4} h={1.6} pos={[0, 25.2, 0]} mat={seatMat} seg={28} />
@@ -664,7 +664,8 @@ const stoolShell = new THREE.CylinderGeometry(8.5, 8.5, 9, 24, 1, true, Math.PI 
 const domeGeo = new THREE.SphereGeometry(1, 36, 14, 0, Math.PI * 2, 0, Math.PI / 2);
 const coneGeo = new THREE.ConeGeometry(1, 1, 32, 1, true);
 
-function PendantModel({ r, finish, ctx, lightOn }: ModelProps) {
+/** The shade and fittings only: its light comes from the room's fixed light pool (lightPool.ts). */
+function PendantModel({ r, finish, ctx }: ModelProps) {
   const { w, product } = r;
   const y0 = product.elevationIn;
   const h = product.heightIn;
@@ -698,8 +699,6 @@ function PendantModel({ r, finish, ctx, lightOn }: ModelProps) {
     });
   }, [v, finish.hex]);
 
-  const light = lightOn ? <pointLight position={[0, y0 - 1, 0]} intensity={v === 'linear' ? 26 : 16} distance={16} decay={2} color="#ffcf8f" /> : null;
-
   if (v === 'linear') {
     return (
       <group>
@@ -711,7 +710,6 @@ function PendantModel({ r, finish, ctx, lightOn }: ModelProps) {
         ))}
         <Box size={[w, h - 0.6, 4]} pos={[0, y0 + (h - 0.6) / 2 + 0.6, 0]} mat={shadeMat} />
         <Box size={[w - 2, 0.6, 3]} pos={[0, y0 + 0.3, 0]} mat={M.led()} cast={false} />
-        {light}
       </group>
     );
   }
@@ -748,7 +746,6 @@ function PendantModel({ r, finish, ctx, lightOn }: ModelProps) {
       <mesh position={[0, v === 'globe' ? y0 + rad : y0 + Math.min(2.5, h * 0.3), 0]} material={M.bulb()}>
         <sphereGeometry args={[v === 'globe' ? 1.4 : 1.6, 16, 12]} />
       </mesh>
-      {light}
     </group>
   );
 }
@@ -792,7 +789,7 @@ function PlantModel({ r, finish }: ModelProps) {
       <Cyl r={potR * 0.92} h={0.3} pos={[0, potH - 0.6, 0]} mat={M.soil()} seg={20} cast={false} />
       <Cyl r={olive ? 0.9 : 0.6} rb={olive ? 1.3 : 0.8} h={olive ? 32 : 36} pos={[0, potH + (olive ? 16 : 18), 0]} mat={M.bark()} seg={8} />
       {parts.map((pt, i) => (
-        <mesh key={i} position={pt.p} scale={pt.s} rotation={pt.rot} material={leafMat} castShadow>
+        <mesh key={i} position={pt.p} scale={pt.s} rotation={pt.rot} material={leafMat}>
           {olive ? <icosahedronGeometry args={[1, 1]} /> : <sphereGeometry args={[1, 12, 8]} />}
         </mesh>
       ))}
@@ -807,7 +804,8 @@ function MissingModel({ r }: ModelProps) {
   return <Box size={[r.w, h, r.d]} pos={[0, r.z0 + h / 2, 0]} mat={mat} />;
 }
 
-export function renderModel(p: ModelProps): JSX.Element | null {
+/** The model drawn from code for a product's kind (also the stand-in for a GLB while it loads or if it fails). */
+export function proceduralModel(p: ModelProps): JSX.Element | null {
   if (p.r.product.source === 'missing') return <MissingModel {...p} />;
   switch (p.r.product.kind) {
     case 'base':
@@ -853,4 +851,27 @@ export function renderModel(p: ModelProps): JSX.Element | null {
     default:
       return null;
   }
+}
+
+/**
+ * A placed product: its GLB when it has one (fitted to the declared size, lifted to its
+ * elevation, finishes through the mise_* slots), else the procedural model.
+ */
+export function renderModel(p: ModelProps): JSX.Element | null {
+  const procedural = proceduralModel(p);
+  const { product } = p.r;
+  const url = product.source !== 'missing' ? product.model?.url : undefined;
+  if (!url) return procedural;
+  return <GltfProduct {...p} url={url} fallback={procedural} />;
+}
+
+function GltfProduct({ r, finish, ctx, url, fallback }: ModelProps & { url: string; fallback: JSX.Element | null }) {
+  const { product } = r;
+  const target = useMemo(() => ({ w: r.w, h: product.heightIn, d: product.depthIn }), [r.w, product.heightIn, product.depthIn]);
+  const slots = useMemo(() => slotMaterials(finish, ctx), [finish.id, finish.hex, finish.material, ctx]);
+  return (
+    <group position={[0, product.elevationIn, 0]}>
+      <GltfModel url={url} target={target} slots={slots} fallback={<group position={[0, -product.elevationIn, 0]}>{fallback}</group>} />
+    </group>
+  );
 }
