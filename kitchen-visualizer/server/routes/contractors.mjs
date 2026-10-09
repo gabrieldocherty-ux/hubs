@@ -258,6 +258,19 @@ export default function routes(ctx) {
     };
   }
 
+  /**
+   * Pushes a catalog or price-book write to the contractor's live brand page at once (new prices go
+   * straight to it, content edits go back to review). The page also syncs when its tab opens and
+   * every 10 minutes, so a failure here is logged, never the contractor's problem.
+   */
+  const syncBrandPage = async (userId) => {
+    try {
+      await services.brandPages?.syncOwner(userId);
+    } catch (err) {
+      ctx.log?.warn?.('brand page sync failed', err);
+    }
+  };
+
   return [
     {
       method: 'GET',
@@ -360,7 +373,7 @@ export default function routes(ctx) {
     {
       method: 'PATCH',
       path: '/api/pro/products/:id',
-      handler: (rc) => {
+      handler: async (rc) => {
         gate(rc, { write: true });
         const row = ownProduct(rc.user.id, rc.params.id);
         if (rc.body.spec !== undefined) {
@@ -375,27 +388,32 @@ export default function routes(ctx) {
           if (rc.body.cost !== undefined) pro.setPriceRow(rc.user.id, r.id, readCostPatch(rc.body.cost));
           return r;
         });
+        await syncBrandPage(rc.user.id);
         return { product: productWire(updated, rc.user), price: pro.priceRows(rc.user.id)[updated.id] ?? null };
       },
     },
     {
       method: 'POST',
       path: '/api/pro/products/:id/archive',
-      handler: (rc) => {
+      handler: async (rc) => {
         gate(rc, { write: true });
         const row = ownProduct(rc.user.id, rc.params.id);
-        return { product: productWire(services.products.archive(row.id), rc.user) };
+        const product = productWire(services.products.archive(row.id), rc.user);
+        await syncBrandPage(rc.user.id);
+        return { product };
       },
     },
     {
       method: 'POST',
       path: '/api/pro/products/:id/restore',
-      handler: (rc) => {
+      handler: async (rc) => {
         gate(rc, { write: true });
         const row = ownProduct(rc.user.id, rc.params.id);
         if (row.status !== 'archived') return { product: productWire(row, rc.user) };
         if (pro.ownCount(rc.user.id) >= pro.PRODUCT_LIMIT) throw new HttpError(400, `Your catalog can hold ${pro.PRODUCT_LIMIT} products.`);
-        return { product: productWire(services.products.publish(row.id), rc.user) };
+        const product = productWire(services.products.publish(row.id), rc.user);
+        await syncBrandPage(rc.user.id);
+        return { product };
       },
     },
     {
@@ -432,7 +450,7 @@ export default function routes(ctx) {
     {
       method: 'PATCH',
       path: '/api/pro/brand-settings',
-      handler: (rc) => {
+      handler: async (rc) => {
         gate(rc, { write: true });
         const key = brandKey(rc.body.key);
         if (!key) throw new HttpError(400, 'Choose a brand or line.');
@@ -448,7 +466,10 @@ export default function routes(ctx) {
         }
         const markup = readPct(rc.body.markupPct, 'markupPct');
         if (markup !== undefined) patch.markupPct = markup;
-        return { key, setting: pro.setBrandSetting(rc.user.id, key, patch) };
+        const setting = pro.setBrandSetting(rc.user.id, key, patch);
+        // A markup moves sell prices, which the brand page shows.
+        if (patch.markupPct !== undefined) await syncBrandPage(rc.user.id);
+        return { key, setting };
       },
     },
     {
@@ -478,6 +499,7 @@ export default function routes(ctx) {
         const { ids } = await builtinIds();
         pro.assertPriceable(rc.user, rc.params.productId, ids);
         const row = pro.setPriceRow(rc.user.id, rc.params.productId, readCostPatch(rc.body));
+        await syncBrandPage(rc.user.id);
         return { productId: rc.params.productId, row };
       },
     },
@@ -504,6 +526,7 @@ export default function routes(ctx) {
             else pro.setPriceRow(rc.user.id, c.productId, { costCents: c.costCents });
           }
         });
+        await syncBrandPage(rc.user.id);
         return { preview, applied: changes.length };
       },
     },
