@@ -5,7 +5,6 @@ import { useCatalog } from './store/useCatalog';
 import { AuthScreen } from './screens/AuthScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { SetupWizard } from './screens/SetupWizard';
-import { KitchenEditor, LocalEditor } from './screens/Editor';
 import { ProductPage } from './features/viewer';
 import { BrandPage, BrandPortal } from './features/brands';
 import { DemoPay, OrdersRoot } from './features/orders';
@@ -15,6 +14,10 @@ import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
 
 const AdminScreen = lazy(() => import('./screens/AdminScreen'));
+// The editor carries the 2D plan (konva), the panels and the exports: about 60% of what used to be
+// the entry chunk, and none of it is needed by the landing page, pricing, product pages or sign-in.
+const KitchenEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.KitchenEditor })));
+const LocalEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.LocalEditor })));
 
 /** Routes that need an account; signed-out visitors are sent to sign in (and brought back after). */
 const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'pro', 'payDemoPlan']);
@@ -58,7 +61,9 @@ export default function App() {
   if (route.name === 'local')
     return (
       <>
-        <LocalEditor />
+        <Suspense fallback={loading}>
+          <LocalEditor />
+        </Suspense>
         <PhotoReference />
         <BillingHost />
       </>
