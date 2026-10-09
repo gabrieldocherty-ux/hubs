@@ -9,7 +9,7 @@ import { KitchenEditor, LocalEditor } from './screens/Editor';
 import { ProductPage } from './features/viewer';
 import { BrandPage, BrandPortal } from './features/brands';
 import { DemoPay, OrdersRoot } from './features/orders';
-import { GenerateScreen } from './features/generate';
+import { GenerateScreen, PhotoReference } from './features/generate';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
 import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
@@ -59,6 +59,7 @@ export default function App() {
     return (
       <>
         <LocalEditor />
+        <PhotoReference />
         <BillingHost />
       </>
     );
@@ -86,7 +87,14 @@ function screenFor(route: Route, signedIn: boolean) {
     case 'new':
       return <SetupWizard />;
     case 'kitchen':
-      return <KitchenEditor key={route.id} id={route.id} add={route.add} />;
+      // The photos a kitchen was started from float over the editor. Never on a share view
+      // (`#/s/:token`): they are private to the owner.
+      return (
+        <>
+          <KitchenEditor key={route.id} id={route.id} add={route.add} />
+          <PhotoReference key={`ref-${route.id}`} projectId={route.id} />
+        </>
+      );
     case 'generate':
       return <GenerateScreen q={route.q} from={route.from} />;
     case 'product':
