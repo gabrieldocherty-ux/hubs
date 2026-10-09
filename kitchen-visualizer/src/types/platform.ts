@@ -2,7 +2,7 @@
  * Shared platform types (BUILD_PLAN §3.8). Owned by the foundation and frozen for the
  * feature packages: add package-local types in your own directory, never redefine these.
  */
-import type { CategoryId, DesignDoc, Kind, MaterialKind, Product, Room } from '../types';
+import type { CategoryId, DesignDoc, Kind, MaterialKind, Product } from '../types';
 
 // ─── Accounts ────────────────────────────────────────────────────────────
 
@@ -391,6 +391,8 @@ export interface SharedKitchenWire {
    * priced in the browser). Absent for non-contractor shares, which use list prices.
    */
   prices?: Record<string, { price: number; priceByWidth?: Record<string, number> }>;
+  /** When the link stops working (epoch ms); null or absent = never. */
+  expiresAt?: number | null;
 }
 
 // ─── Generate (package D) ────────────────────────────────────────────────
@@ -398,43 +400,8 @@ export interface SharedKitchenWire {
 export type LayoutType = 'one-wall' | 'galley' | 'l-shape' | 'u-shape' | 'l-island';
 export type WallSide = 'north' | 'east' | 'south' | 'west';
 
-/** The structured brief behind "Describe your kitchen" (PRODUCT_SPEC §5.2). */
-export interface GenerateBrief {
-  room: Room;
-  /** Allowed layout types; `'auto'` means every type that fits. */
-  layouts: LayoutType[] | 'auto';
-  range: { widthIn: 30 | 36 | 48; fuel: 'gas' | 'induction' | 'dual-fuel' };
-  fridge: 'column-30' | 'french-36' | 'retro-24';
-  dishwasher: boolean;
-  wallOven: boolean;
-  microwave: boolean;
-  wine: boolean;
-  pantry: boolean;
-  sink: { type: 'farmhouse' | 'undermount' | 'double'; prep: boolean };
-  island: 'yes' | 'no' | 'auto';
-  seats: number;
-  windowWall: WallSide | 'none';
-  /** A style preset id from `src/data/styles.ts`. */
-  style: string;
-  budget?: { min?: number; max?: number };
-}
-
-export interface LayoutOption {
-  id: string;
-  layout: LayoutType;
-  name: string;
-  doc: DesignDoc;
-  score: number;
-  checksPassed: number;
-  checksTotal: number;
-  /** Work-triangle total in inches, or null when there is no triangle. */
-  triangleTotal: number | null;
-  estimateTotal: number;
-  /** 2–4 short "why" chips, e.g. "Island seats 3". */
-  reasons: string[];
-  /** Which walls hold the sink, range and fridge; options are diverse on this. */
-  signature: string;
-}
+// The text brief ("Describe your kitchen") and its scored layout options were dropped: kitchens
+// start from a photo (src/lib/generate/photoModel.ts), not from a typed description.
 
 // ─── Admin ───────────────────────────────────────────────────────────────
 

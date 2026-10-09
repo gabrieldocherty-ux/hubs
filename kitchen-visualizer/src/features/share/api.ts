@@ -1,10 +1,8 @@
 import { call, type Project } from '../../lib/api';
 import type { ShareLink, SharedKitchenWire } from '../../types/platform';
 
-/** `GET /api/share/:token`: the frozen wire plus when the link stops working. */
-export interface SharedWire extends SharedKitchenWire {
-  expiresAt?: number | null;
-}
+/** `GET /api/share/:token`: the wire (it carries `expiresAt`). */
+export type SharedWire = SharedKitchenWire;
 
 /** Why a share link didn't open (`404 { reason }`). */
 export type GoneReason = 'missing' | 'revoked' | 'expired';
