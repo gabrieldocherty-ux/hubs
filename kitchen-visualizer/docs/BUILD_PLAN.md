@@ -778,6 +778,8 @@ Packages may add **package-local** types in their own directory but must not red
 
 ## 8. Package D: generate (describe your kitchen)
 
+> **Superseded:** package D built **Start from a photo** instead (no text brief, parser, enumerator or scorer); see `docs/handoff/generate.md` and `docs/handoff/integration.md`. The section below is the original plan.
+
 **Goal:** a Drafted-style "describe it → pick from 5 options" flow, built on a declarative layout generator scored by the (fixed) checks and the estimate. Fully offline; the LLM is an optional parser.
 
 **Owned paths:** `src/features/generate/**`, `src/lib/generate/**`, `src/lib/checks.ts`, `src/data/templates.ts`, `src/data/compose.ts`, `src/data/styles.ts`, `src/screens/SetupWizard.tsx`, `server/routes/generate.mjs`, `server/llm/**`, `server/db/migrations/generate.mjs`, `server/test/generate.test.mjs`, `scripts/qa/routes/generate.mjs`, `docs/handoff/generate.md`.

@@ -89,6 +89,8 @@ Mise keeps hash routing. Query strings are now supported inside the hash, and `l
 
 ### 5.2 Describe your kitchen: generated layout options (package: generate)
 
+> **Superseded (2026-10-07, Gabe):** "i dont like discribe your kitchen but uploading a photo and being able to model that space would be nice." Built instead: **Start from a photo** (`#/generate`), see `docs/handoff/generate.md`. There is no text brief, parser or option scorer. The text below is the original plan, kept for history.
+
 This is the Drafted-style core [D1]. It runs **offline and rule-based by default**. An LLM is only ever an optional parser in front of it.
 
 **Inputs.** The primary input is a structured *brief*. Drafted deliberately avoids free-text prompts [D1]. We accept free text too, but only to *fill in* the brief, which is shown back as editable chips so the user can see what was understood.
@@ -249,6 +251,8 @@ This is the "realistic product viewer" in the brief, and it is the product's vis
 ---
 
 ## 6. Brand features (package: brands)
+
+> **Superseded (2026-10-06, Gabe):** there is no standalone brand portal. A contractor's company is the brand and the Brand page is a tab of the Contractor workspace: `docs/BRAND_PAGE.md`. The moderation, product editor, GLB report and public brand page below were kept and now serve that. "List your products" and the brand-portal sign-up are gone for everyone except admin-created partner brands.
 
 > **Superseded 2026-10-06 by [BRAND_PAGE.md](./BRAND_PAGE.md):** there is no separate brand account or outside brand portal. The brand page is a tab of the Contractor account (a contractor's company is the brand); partner brands are admin-created only. The editor, moderation, brand page and analytics below are reused there.
 
