@@ -1151,3 +1151,23 @@
     display: none;
   }
 }
+
+/* ─── Package B2: the Brand page tab's badge and pitch line (BRAND_PAGE §2) ─── */
+
+.pro-tabs .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.pro-pitch-brand {
+  max-width: 64ch;
+  margin: -6px 0 22px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 15px;
+}

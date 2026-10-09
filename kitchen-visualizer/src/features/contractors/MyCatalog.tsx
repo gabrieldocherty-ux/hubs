@@ -11,6 +11,8 @@ import type { Product } from '../../types';
 import { proApi } from './api';
 import { useWorkspace } from './ContractorRoot';
 import { loadPriceBook, usePriceBook } from './pricing';
+import { useBrandListings } from '../brands/listings';
+import { PublishSwitch } from '../brands/PublishSwitch';
 
 /** `#/pro/catalog`: the contractor's own products, grouped by line (PLANS_AND_CONTRACTORS §4.2). */
 export default function MyCatalog() {
@@ -21,6 +23,8 @@ export default function MyCatalog() {
   const [limit, setLimit] = useState(500);
   const [error, setError] = useState<string | null>(null);
   const toast = useDesignStore((s) => s.toast);
+  // Package B2: "Show on my brand page" (BRAND_PAGE §4). Null until the brand page answers.
+  const brand = useBrandListings();
 
   const load = async (withArchived = archived) => {
     try {
@@ -49,6 +53,7 @@ export default function MyCatalog() {
       await (archive ? proApi.archiveProduct(p.id) : proApi.restoreProduct(p.id));
       toast(archive ? `Archived ${p.name}. Kitchens that use it keep it.` : `${p.name} is back in your catalog.`, 'ok');
       await load();
+      void brand.reload();
       // The editor's catalog panel should drop (or regain) it too.
       void useCatalog.getState().load(true);
     } catch (e) {
@@ -124,6 +129,11 @@ export default function MyCatalog() {
                       {p.model && <span className="tag">3D model</span>}
                     </span>
                   </div>
+                  {p.status !== 'archived' && brand.byId.get(p.id) && (
+                    <div className="brand-catalog-switch">
+                      <PublishSwitch entry={brand.byId.get(p.id)!} pageStatus={brand.data?.brand?.pageStatus ?? 'none'} readOnly={readOnly} onChange={brand.replace} />
+                    </div>
+                  )}
                   {!readOnly && (
                     <div className="pro-product-actions">
                       <a className="btn" href={hrefFor({ name: 'pro', rest: `catalog/${p.id}` })}>
