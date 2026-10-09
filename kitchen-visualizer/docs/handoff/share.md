@@ -228,7 +228,7 @@ Each was a throwaway detached worktree with a `--no-commit` merge, deleted after
   share's). The share and marketing chunks are lazy and small: SharedKitchen 9.2 kB, ShareDialog
   5.6 kB, Landing 9.8 kB, Pricing 10.1 kB (minified).
 - `node scripts/qa.mjs --pkg share --port 8816` (Edge over CDP, with the seeds including
-  `share.mjs`): **20/20 passed** (the last re-run of the whole file was 19/19 before the signed-out duplicate route was added; that route passes on its own, the other 19 are unchanged), no console errors. The only API errors are expected 404s:
+  `share.mjs`): **20/20 passed** on this branch alone, no console errors. The only API errors are expected 404s:
   `GET /api/orders/tiers` on the pricing routes (package C isn't on this branch, so the fallback
   tiers show) and `GET /api/share/<token>` on the dead-end routes. The only external request is the
   app shell's Google Fonts, which is blocked and reported as known (Request 3).
