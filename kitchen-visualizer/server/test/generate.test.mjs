@@ -281,6 +281,28 @@ test('the answer schema stays inside what structured outputs accept', () => {
   assert.deepEqual(bad, []);
 });
 
+test('duplicating a kitchen keeps the photos it was started from', async () => {
+  const t = await startTestServer({});
+  try {
+    const alice = await t.user();
+    const p = (await alice.post('/api/projects', { name: 'From a photo', doc: sampleDoc() })).body.project;
+    const a = await upload(alice, makePng());
+    await alice.put(`/api/generate/photos/${p.id}`, { fileIds: [a.id] });
+    const plain = (await alice.post('/api/projects', { name: 'No photos', doc: sampleDoc() })).body.project;
+
+    const copy = await alice.post(`/api/projects/${p.id}/duplicate`);
+    assert.equal(copy.status, 201, copy.text);
+    assert.deepEqual((await alice.get(`/api/generate/photos/${copy.body.project.id}`)).body.files.map((f) => f.id), [a.id]);
+    assert.deepEqual((await alice.get(`/api/generate/photos/${p.id}`)).body.files.map((f) => f.id), [a.id], 'the original keeps them');
+
+    const plainCopy = await alice.post(`/api/projects/${plain.id}/duplicate`);
+    assert.equal(plainCopy.status, 201, plainCopy.text);
+    assert.deepEqual((await alice.get(`/api/generate/photos/${plainCopy.body.project.id}`)).body, { files: [] });
+  } finally {
+    await t.close();
+  }
+});
+
 test('reference photos attach to a kitchen: owner only, own uploads only', async () => {
   const t = await startTestServer({});
   try {

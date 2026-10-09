@@ -110,7 +110,11 @@ export default function routes(ctx) {
         const t = ctx.now();
         const name = `${src.name} (copy)`.slice(0, 120);
         const doc = JSON.stringify({ ...JSON.parse(src.doc), name });
-        db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)').run(nid, rc.user.id, name, src.client, doc, t, t);
+        ctx.tx(() => {
+          db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)').run(nid, rc.user.id, name, src.client, doc, t, t);
+          // The photos a kitchen was started from (Start from a photo) go with its copy.
+          db.prepare('INSERT INTO generate_photo_refs (project_id, user_id, file_ids, updated_at) SELECT ?, user_id, file_ids, ? FROM generate_photo_refs WHERE project_id = ?').run(nid, t, src.id);
+        });
         rc.send(201, { project: projectWire(owned(rc.user.id, nid)) });
       },
     },
