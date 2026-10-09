@@ -209,13 +209,15 @@ export default [
     name: 'pro-brand-setup-fresh-contractor',
     as: 'contractor',
     setup: async ({ me }) => {
-      // The runner's contractor has the plan but maybe no company yet: give it one.
-      const p = await me.get('/api/pro/profile');
+      // The runner's contractor has the plan but maybe no company yet (another package's route may
+      // have set one earlier in a --pkg all run): give it one, and compare with whichever it has.
+      let p = await me.get('/api/pro/profile');
       if (!p.body?.profile?.company) {
         const r = await me.put('/api/pro/profile', { company: 'Quinn Kitchens (QA)', phone: '555-0188', email: 'quinn@example.test', website: 'quinn.test', serviceArea: 'Hamilton', defaultMarkupPct: 30 });
         if (r.status !== 200) throw new Error(`setting the QA contractor's company failed (${r.status})`);
+        p = await me.get('/api/pro/profile');
       }
-      return { path: '#/pro/brand' };
+      return { path: '#/pro/brand', company: p.body.profile.company };
     },
     waitFor: ['.brand-pitch'],
     expectText: ['Homeowners on Mise can find you', 'Set up my page'],
@@ -224,7 +226,11 @@ export default [
       await h.click('.brand-pitch a.btn.primary');
       await h.waitFor('.brand-settings');
       // Pre-filled from Company: the public name is the company's.
-      await h.waitUntil(() => [...document.querySelectorAll('.brand-settings input')].some((i) => /Quinn Kitchens/.test(i.value)), 5000, 'the public name pre-filled from Company');
+      const t0 = Date.now();
+      while (!(await h.evaluate((c) => [...document.querySelectorAll('.brand-settings input')].some((i) => i.value === c), h.data.company))) {
+        if (Date.now() - t0 > 5000) throw new Error(`the public name was not pre-filled from Company ("${h.data.company}")`);
+        await h.sleep(100);
+      }
     },
   },
 

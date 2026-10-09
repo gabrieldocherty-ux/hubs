@@ -136,8 +136,6 @@ export default [
     name: 'local-topbar-fits',
     path: '#/local',
     as: 'anon',
-    knownIssue:
-      '"Sign in to save" wraps onto two lines at 1440px and fills the whole 58px top bar (AccountMenu.tsx, `.btn` has no white-space rule and the bar’s right column is a squeezed 1fr). Seen with QA’s fallback fonts; may not reproduce with Instrument Sans. Fix: `.topbar .btn { white-space: nowrap; }`; see docs/handoff/qa.md.',
     waitFor: ['.topbar', '.topbar a[href="#/signin"]'],
     check: async (h) => {
       // Nothing in the editor's top bar wraps onto a second line or spills out of the bar.
@@ -252,8 +250,6 @@ export default [
     as: 'customer',
     viewport: 'phone',
     timeoutMs: 6000, // the card renders at once; a missing name won't appear by waiting
-    knownIssue:
-      'Kitchen cards on phones and tablets show no kitchen name: src/styles.css hides `.project-name` at max-width 980px for the editor top bar, and HomeScreen uses the same class for the card title. Scope the rule to `.topbar .project-name`; see docs/handoff/qa.md.',
     waitFor: ['.home', '.home-main'],
     expectText: ['QA Home Kitchen'],
     check: noSideScroll,

@@ -223,8 +223,7 @@ export default [
     },
   },
   {
-    // Passes only once the integration pass mounts <PhotoReference projectId /> in the editor
-    // (requested in docs/handoff/generate.md).
+    // <PhotoReference projectId /> is mounted in the editor by App.tsx (the integration pass).
     name: 'editor-photo-reference',
     path: '#/',
     as: 'customer',
@@ -236,7 +235,7 @@ export default [
       const p = await me.post('/api/projects', { name: 'QA photo kitchen', doc });
       if (p.status !== 201 && p.status !== 200) throw new Error(`project create failed (${p.status})`);
       const id = p.body.project.id;
-      const a = await me.request('PUT', `/api/generate/photos/${id}`, { body: { fileIds: [fileId] } });
+      const a = await me.put(`/api/generate/photos/${id}`, { fileIds: [fileId] });
       if (a.status !== 200) throw new Error(`attach failed (${a.status})`);
       return { path: `#/k/${id}` };
     },
