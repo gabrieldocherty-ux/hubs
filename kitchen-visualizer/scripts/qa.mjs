@@ -78,11 +78,8 @@ const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
  * gets deleted the moment the app is fixed. Keep this list short and every `why` specific.
  */
 export const KNOWN_EXTERNAL = Object.freeze([
-  {
-    id: 'google-fonts',
-    match: /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
-    why: 'index.html loads Fraunces, Instrument Sans and JetBrains Mono from Google Fonts at runtime. Self-host them (docs/handoff/qa.md); until then QA screenshots use fallback fonts.',
-  },
+  // Empty since the Google Fonts links left index.html (integration pass). Add { id, match, why } here only for a
+  // request that is real, blocked and outside every package's control.
 ]);
 
 // ─── arguments ────────────────────────────────────────────────────────────────
