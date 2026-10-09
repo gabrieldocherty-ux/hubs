@@ -19,10 +19,21 @@ import type { PreparedBy } from '../../types/platform';
 import { shareApi, type GoneReason, type SharedWire } from './api';
 import './share.css';
 
-type State = { kind: 'loading' } | { kind: 'ready'; wire: SharedWire } | { kind: 'gone'; reason: GoneReason; message: string } | { kind: 'error'; message: string };
+type State = { kind: 'loading' } | { kind: 'ready'; wire: SharedWire; resume: boolean } | { kind: 'gone'; reason: GoneReason; message: string } | { kind: 'error'; message: string };
 
 /** Set when a signed-out visitor asks to duplicate: the copy is made once they're back, signed in. */
 const DUP_INTENT = 'mise-share-duplicate';
+
+/** True once, for a signed-in visitor who asked to duplicate before signing in (and clears the request). */
+function takeDuplicateIntent(token: string): boolean {
+  try {
+    const want = sessionStorage.getItem(DUP_INTENT) === token;
+    if (want) sessionStorage.removeItem(DUP_INTENT);
+    return want;
+  } catch {
+    return false;
+  }
+}
 
 /** `#/s/:token`: a kitchen someone shared, read-only (the editor in view mode). */
 export default function SharedKitchen({ token }: { token: string }) {
@@ -41,7 +52,9 @@ export default function SharedKitchen({ token }: { token: string }) {
         setSharedPrices(wire.showPrices ? (wire.prices ?? null) : null);
         useSession.getState().openProject(null, 0);
         useDesignStore.getState().openReadOnly(wire.kitchen.doc, wire.products);
-        setState({ kind: 'ready', wire });
+        // Back from signing in to duplicate: skip the page and make the copy (see ResumeDuplicate).
+        const resume = !wire.hideDuplicate && useSession.getState().status === 'signedIn' && takeDuplicateIntent(token);
+        setState({ kind: 'ready', wire, resume });
       })
       .catch((e) => {
         if (!live) return;
@@ -74,12 +87,41 @@ export default function SharedKitchen({ token }: { token: string }) {
       </StatePage>
     );
   const { wire } = state;
+  if (state.resume) return <ResumeDuplicate token={token} onFail={() => setState({ ...state, resume: false })} />;
   const sealed = !!wire.hideDuplicate;
   return (
     <div className={`share-page${sealed ? ' share-page--sealed' : ''}`}>
       <Workspace projectId={null} mode="view" showPrices={wire.showPrices} hideExport={sealed} banner={<ShareBar token={token} wire={wire} />} />
     </div>
   );
+}
+
+/**
+ * Finishes a Duplicate the visitor asked for before signing in. It shows a message instead of the
+ * shared kitchen: the copy takes a moment, and opening the page (with its 3D canvas) only to leave it
+ * again straight away made react-three-fiber throw from its own onCreated when the canvas was
+ * unmounted while still being created.
+ */
+let resumedFor: string | null = null;
+function ResumeDuplicate({ token, onFail }: { token: string; onFail: () => void }) {
+  useEffect(() => {
+    if (resumedFor === token) return;
+    resumedFor = token;
+    shareApi
+      .duplicate(token)
+      .then(({ project }) => {
+        resumedFor = null;
+        useDesignStore.getState().toast(`“${project.name}” is in your kitchens. Changes you make are yours alone.`, 'ok');
+        navigate({ name: 'kitchen', id: project.id });
+      })
+      .catch((e) => {
+        resumedFor = null;
+        useDesignStore.getState().toast(e instanceof ApiError ? e.message : 'Could not copy this kitchen. Try again.', 'warn');
+        onFail();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+  return <div className="screen-msg">Making your copy…</div>;
 }
 
 // ── the header strip above the editor ─────────────────────────────────────

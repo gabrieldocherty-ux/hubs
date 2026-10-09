@@ -460,6 +460,12 @@ export default [
     expectText: ['Sign in to duplicate'],
     waitMs: 800,
     check: async (h) => {
+      // Let the 3D canvas finish starting before leaving the page: react-three-fiber's Canvas throws an
+      // uncaught "reading 'addEventListener'" from its own onCreated when it is unmounted while it is
+      // still being created (harmless to a visitor, but the runner fails on any uncaught error). The
+      // same race used to hit after sign-up, when the shared page opened and the copy moved on 150 ms
+      // later; SharedKitchen's ResumeDuplicate now makes that copy without opening the page.
+      await h.waitUntil(() => (window.__miseQa?.frames ?? 0) > 0, 30_000, 'the 3D view drawing its first frame');
       await shareBarButton(h, 'Duplicate');
       await h.waitUntil(() => /^#\/signin\?next=/.test(location.hash), 10_000, 'being sent to sign in');
       const next = await h.evaluate(() => new URLSearchParams(location.hash.split('?')[1] ?? '').get('next'));
