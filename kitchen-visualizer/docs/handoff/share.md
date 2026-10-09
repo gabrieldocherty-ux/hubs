@@ -126,7 +126,7 @@ each with a file, a reason and a suggested diff.
 - the §13.3 deep scan with a deliberately leaky fake pricing implementation;
 - the seed: idempotent, a link in each state, readable through the real route.
 
-**QA** (`scripts/qa/routes/share.mjs`, 19 routes):
+**QA** (`scripts/qa/routes/share.mjs`, 20 routes):
 - landing at 1440 px, signed out at `#/` and signed in, and at 375 px with a tour of each section;
 - pricing at 1440 px, 375 px and as a contractor;
 - the share dialog on desktop and phone: create with label, prices off and 7 days; copy; turn off;
@@ -137,7 +137,8 @@ each with a file, a reason and a suggested diff.
   - prices off: no `$` anywhere;
   - a contractor's share: Prepared by, Contact menu (tel: and mailto:, opaque and on top), no
     Duplicate, no cost/margin/markup, no client name;
-  - Duplicate as a fresh user;
+  - Duplicate as a fresh user, and signed out: Duplicate → sign in (`next` kept) → create an account →
+    the copy finishes by itself and is the only one in the new user's kitchens;
   - phone views, with the contractor's name wrapping onto its own row;
   - revoked, expired, unknown.
 
@@ -169,9 +170,6 @@ Each was a throwaway detached worktree with a `--no-commit` merge, deleted after
   mints a link server-side, which makes its own test fail (`brands.test.mjs:437`, expecting `null` for
   a bad or foreign token). The lead form already makes the link in the browser, so nothing is lost.
   If B2 wants the server fallback, see Request 4.
-- The signed-out "Sign in to duplicate" → sign in → automatic copy path is implemented
-  (sessionStorage intent plus `next`) but not driven end to end in QA; the QA duplicate route starts
-  signed in.
 - View counts are approximate by design: the dedupe map is in memory, so it resets on restart, and
   it is per IP.
 - The plan named the hero `public/marketing/hero.png` (≤ 400 KB). It shipped as `hero.webp`
@@ -230,7 +228,7 @@ Each was a throwaway detached worktree with a `--no-commit` merge, deleted after
   share's). The share and marketing chunks are lazy and small: SharedKitchen 9.2 kB, ShareDialog
   5.6 kB, Landing 9.8 kB, Pricing 10.1 kB (minified).
 - `node scripts/qa.mjs --pkg share --port 8816` (Edge over CDP, with the seeds including
-  `share.mjs`): **19/19 passed**, no console errors. The only API errors are expected 404s:
+  `share.mjs`): **20/20 passed** (the last re-run of the whole file was 19/19 before the signed-out duplicate route was added; that route passes on its own, the other 19 are unchanged), no console errors. The only API errors are expected 404s:
   `GET /api/orders/tiers` on the pricing routes (package C isn't on this branch, so the fallback
   tiers show) and `GET /api/share/<token>` on the dead-end routes. The only external request is the
   app shell's Google Fonts, which is blocked and reported as known (Request 3).

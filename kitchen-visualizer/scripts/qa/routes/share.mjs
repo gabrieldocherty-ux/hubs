@@ -451,6 +451,42 @@ export default [
     },
   },
   {
+    // The signed-out path end to end: Duplicate sends a visitor to sign in (remembering the link),
+    // they make an account there, and the copy finishes by itself when they come back.
+    name: 'shared-kitchen-duplicate-signed-out',
+    as: 'anon',
+    setup: async ({ api }) => kitchenWithLink(api.as('customer'), { name: 'Elm Court Kitchen', label: 'For a neighbour' }),
+    waitFor: ['.share-bar', '.plan-view canvas'],
+    expectText: ['Sign in to duplicate'],
+    waitMs: 800,
+    check: async (h) => {
+      await shareBarButton(h, 'Duplicate');
+      await h.waitUntil(() => /^#\/signin\?next=/.test(location.hash), 10_000, 'being sent to sign in');
+      const next = await h.evaluate(() => new URLSearchParams(location.hash.split('?')[1] ?? '').get('next'));
+      if (!/^#\/s\//.test(next ?? '')) throw new Error(`sign-in does not remember the shared link: next=${next}`);
+      // New here: the sign-up page keeps the same `next`.
+      await h.click('.auth-switch a');
+      await h.waitUntil(() => /^#\/signup\?next=/.test(location.hash), 10_000, 'the sign-up page keeping the shared link');
+      const stamp = Date.now().toString(36);
+      await h.click('.auth-form input[autocomplete="name"]');
+      await h.type('Nina Neighbour');
+      await h.click('.auth-form input[type="email"]');
+      await h.type(`qa-neighbour-${stamp}@mise.test`);
+      await h.click('.auth-form .pw input');
+      await h.type('qa-neighbour-pass-1');
+      await h.click('.auth-form button[type="submit"]');
+      await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'the copy opening in the editor after sign-up');
+      await h.waitForText('Elm Court Kitchen (copy)');
+      const list = await h.evaluate(async () => {
+        const r = await fetch('/api/projects', { credentials: 'same-origin' });
+        const b = await r.json();
+        return (Array.isArray(b) ? b : b.projects).map((p) => p.name);
+      });
+      if (list.filter((n) => n === 'Elm Court Kitchen (copy)').length !== 1) throw new Error(`expected exactly one copy in my kitchens, saw ${JSON.stringify(list)}`);
+      await h.shot('copied');
+    },
+  },
+  {
     name: 'shared-kitchen-phone',
     as: 'anon',
     viewport: 'phone',
