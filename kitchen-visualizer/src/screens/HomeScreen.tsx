@@ -121,7 +121,7 @@ export function HomeScreen() {
           </div>
           <div className="home-cta">
             <button className="btn big" onClick={() => navigate({ name: 'generate' })}>
-              Describe your kitchen
+              Start from a photo
             </button>
             <button className="btn primary big" onClick={() => navigate({ name: 'new' })}>
               <Plus /> New kitchen

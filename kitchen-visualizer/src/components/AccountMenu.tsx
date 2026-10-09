@@ -67,15 +67,6 @@ export function AccountMenu() {
               <b>For contractors</b>
             </button>
           )}
-          {user.brands.length > 0 ? (
-            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'brand', rest: '' }))}>
-              <b>Brand portal</b>
-            </button>
-          ) : (
-            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'brand', rest: 'join' }))}>
-              <b>List your products</b>
-            </button>
-          )}
           {(user.role === 'admin' || user.role === 'studio') && (
             <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'admin', tab: user.role === 'admin' ? 'overview' : 'studio' }))}>
               <b>Admin</b>
