@@ -24,6 +24,7 @@ import { AccountMenu } from '../../components/AccountMenu';
 import { Dialog } from '../../components/Dialog';
 import { ProductArt } from '../../components/ProductArt';
 import { Toasts } from '../../components/Toasts';
+import { QuoteButton } from '../brands';
 import { Download, Logo, Plus } from '../../components/Icons';
 import { dimText, pickWidth, productHash, widthChoices } from './stageMath';
 import type { StageStill } from './ProductStage';
@@ -398,6 +399,9 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
               Buy from {product.brand}
             </a>
           )}
+          <Suspense fallback={null}>
+            <QuoteButton product={product} className="btn big" />
+          </Suspense>
           <a className="pp-link" href={`#/orders/new?ref=${encodeURIComponent(product.id)}`}>
             Request a custom version
           </a>

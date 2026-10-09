@@ -345,7 +345,7 @@ export default [
     expectText: ['This page is unavailable'],
   },
   {
-    // Needs the viewer's ProductPage to render brands' QuoteButton (docs/handoff/brands.md).
+    // The viewer's ProductPage renders the brands' QuoteButton (wired at integration).
     name: 'product-page-request-a-quote',
     as: 'anon',
     setup: async ({ api }) => {
@@ -357,7 +357,6 @@ export default [
     waitFor: ['.quote-by'],
     expectText: ['Request a quote', 'Verified contractor'],
     timeoutMs: 8000,
-    knownIssue: 'ProductPage does not render the brands QuoteButton yet (handoff request to the viewer / integration pass)',
   },
 
   // ── The Brand page tab on a phone ─────────────────────────────────────────
