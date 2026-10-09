@@ -1270,14 +1270,23 @@
     flex: 0 1 auto;
   }
 
+  /* Above the plan's zoom controls (bottom right) and the phone bottom bar, not on them. */
   .photo-ref,
   .photo-ref-pill {
     right: 12px;
-    bottom: 84px;
+    bottom: calc(146px + env(safe-area-inset-bottom, 0px));
   }
 
   .photo-ref {
     width: min(280px, calc(100vw - 24px));
+  }
+}
+
+/* A phone on its side: the bar and the zoom controls are shorter, and there is little height to spare. */
+@media (max-width: 900px) and (max-height: 520px) {
+  .photo-ref,
+  .photo-ref-pill {
+    bottom: calc(126px + env(safe-area-inset-bottom, 0px));
   }
 }
 
