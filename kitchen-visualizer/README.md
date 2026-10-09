@@ -113,6 +113,35 @@ production — put it behind a TLS-terminating proxy.
   presentation mode, and branded printable quotes. Costs never leave the contractor's account: the
   server tests scan every client-facing response for them. If the plan lapses, everything stays,
   read-only, and kitchens keep their prices.
+## Start from a photo, sharing, brand pages and custom models
+
+- **Start from a photo** (`#/generate`): add 1-6 photos of the kitchen as it is now, check the space
+  (one tape-measured wall rescales everything; every field is editable), and *Build my kitchen* makes
+  that room in the editor, with the photos kept in a floating *Your photos* panel to compare against.
+  There is no text box to describe a kitchen. Reading the photos for you needs
+  `ANTHROPIC_API_KEY` and `MISE_LLM_MODEL` (a vision model that supports structured outputs, for
+  example `claude-opus-5-5`) in the server's environment; without both, `POST /api/generate/photo`
+  answers 503 and the form starts from a typical L-shape. `/api/config` reports `llm: true` once it
+  is on. No call to Anthropic has been made from this repo's tests or QA.
+- **Share links** (`#/s/:token`, from the Share button): view-only, turn off or expire anytime.
+  A contractor's link shows *Prepared by <company>*, their sell prices and a Contact menu, never a
+  cost, and offers no Export or Duplicate.
+- **Brand page** (a tab of the Contractor workspace, `#/pro/brand`): a contractor's company is the
+  brand. Publish My-catalog products to a public page (`#/b/:slug`) and the public catalog after an
+  admin approves the page and each product; homeowners can try a product in their kitchen or send
+  a lead, which only that contractor can read. `docs/BRAND_PAGE.md` is the spec.
+- **Custom models** (`#/orders`): order a 3D model of a product (Simple $129, Standard $279,
+  Complex $549, quoted by the server), pay (DEMO or Stripe), the studio delivers a GLB through
+  Admin > Studio, and it is private to the buyer.
+
+## QA
+
+`node scripts/qa.mjs --pkg all --port 8818` builds nothing: run `npm run build` first. It makes a temp
+database, seeds fictional demo data (`npm run seed` does the same for a `DB_PATH` you name), starts
+the server on that port and drives the built app in the installed Edge over CDP at desktop and phone
+sizes, failing any route on a console error, an uncaught exception, a non-local request or a 5xx.
+`--pkg integration` runs the chains that cross packages. Screenshots land in `.qa/<pkg>/`.
+
 - **Keyboard.** `R` rotate · `Del` remove · arrows nudge 1″ (Shift 6″) ·
   `Ctrl/⌘+D` duplicate · `Ctrl/⌘+Z` undo · `1–4` plan/split/3D/walls · `F` flip hinge.
 
