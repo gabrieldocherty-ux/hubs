@@ -131,6 +131,11 @@ kbd {
   z-index: 20;
 }
 
+/* "Sign in to save" and friends must stay on one line in the 58px bar. */
+.topbar .btn {
+  white-space: nowrap;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -1878,7 +1883,7 @@ kbd {
     display: none;
   }
   .divider,
-  .project-name {
+  .topbar .project-name {
     display: none;
   }
   .workspace {
