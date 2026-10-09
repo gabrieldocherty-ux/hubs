@@ -575,10 +575,18 @@ function inputHelpers(page) {
       }
       await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     },
-    /** A real tap gesture (touch start/end → click), as a finger would. */
+    /**
+     * A finger tap: touchStart then touchEnd, which does click. (Input.synthesizeTapGesture
+     * delivers touch events but no click under Edge's touch emulation, so a tap on a button
+     * silently did nothing.) The explicit timestamps matter: dispatchTouchEvent returns when the
+     * renderer has handled the event, so on a busy page (3D under --swiftshader) a "50 ms" tap
+     * would last hundreds of ms of event time and the app would read it as a press-and-hold.
+     */
     async tap(target) {
       const p = await pointOf(target, true);
-      await page.send('Input.synthesizeTapGesture', { x: p.x, y: p.y, gestureSourceType: 'touch' });
+      const t = Date.now() / 1000;
+      await page.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y, id: 1 }], timestamp: t });
+      await page.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [], timestamp: t + 0.06 });
     },
     async key(key, { modifiers = [] } = {}) {
       const mods = asList(modifiers).reduce((m, k) => m | (MODS[k] ?? 0), 0);
