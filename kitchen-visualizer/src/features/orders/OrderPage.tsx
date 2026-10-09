@@ -169,7 +169,7 @@ export function OrderPage({ id }: { id: string }) {
                     </span>
                   </div>
                   {o.target === 'brand' ? (
-                    <a className="btn" href={hrefFor({ name: 'brand', rest: '' })}>
+                    <a className="btn" href={hrefFor({ name: 'pro', rest: 'brand/products' })}>
                       Open in my brand
                     </a>
                   ) : o.status !== 'refunded' ? (

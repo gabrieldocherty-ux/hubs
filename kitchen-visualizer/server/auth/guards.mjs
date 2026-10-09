@@ -30,17 +30,17 @@ export function createAuthService({ db }) {
       return db.prepare('SELECT member_role FROM brand_members WHERE brand_id = ? AND user_id = ?').get(brandId, user.id).member_role;
     },
 
-    /** `[{ id, slug, name, status, memberRole }]` for every brand the user belongs to. */
+    /** `[{ id, slug, name, status, memberRole, kind }]` for every brand the user belongs to. */
     membershipsOf(userId) {
       if (!userId) return [];
       return db
         .prepare(
-          `SELECT b.id, b.slug, b.name, b.status, m.member_role AS memberRole
+          `SELECT b.id, b.slug, b.name, b.status, b.kind, m.member_role AS memberRole
              FROM brand_members m JOIN brands b ON b.id = m.brand_id
             WHERE m.user_id = ? ORDER BY b.name COLLATE NOCASE`,
         )
         .all(userId)
-        .map((r) => ({ id: r.id, slug: r.slug, name: r.name, status: r.status, memberRole: r.memberRole }));
+        .map((r) => ({ id: r.id, slug: r.slug, name: r.name, status: r.status, memberRole: r.memberRole, kind: r.kind === 'contractor' ? 'contractor' : 'partner' }));
     },
   };
   return svc;

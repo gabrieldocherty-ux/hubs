@@ -127,7 +127,7 @@ test('me returns the brands the user belongs to', async () => {
   const u = await t.user();
   const b = t.brand(u, { name: 'Membership Co', status: 'pending' });
   const me = await u.get('/api/auth/me');
-  assert.deepEqual(me.body.user.brands, [{ id: b.id, slug: b.slug, name: 'Membership Co', status: 'pending', memberRole: 'owner' }]);
+  assert.deepEqual(me.body.user.brands, [{ id: b.id, slug: b.slug, name: 'Membership Co', status: 'pending', memberRole: 'owner', kind: 'partner' }]);
 });
 
 test('Secure cookie rule: encrypted socket, or loopback + X-Forwarded-Proto https; never by mode', async () => {

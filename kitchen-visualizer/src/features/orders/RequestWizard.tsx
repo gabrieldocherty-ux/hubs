@@ -83,7 +83,9 @@ export function RequestWizard() {
   const askedBrand = query.get('brand');
   const askedTarget = query.get('target');
 
-  const brands = (user?.brands ?? []).filter((b) => b.status !== 'rejected' && b.status !== 'suspended');
+  // A contractor's own brand page is fed from My catalog (Brand page → Products), so the only brand
+  // drafts an order can target are partner brands the user belongs to.
+  const brands = (user?.brands ?? []).filter((b) => b.kind !== 'contractor' && b.status !== 'rejected' && b.status !== 'suspended');
   const isContractor = user?.plan?.id === 'contractor';
 
   const initial = (): Draft => {

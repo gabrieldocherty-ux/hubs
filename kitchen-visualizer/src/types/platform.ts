@@ -16,6 +16,8 @@ export interface BrandMembership {
   name: string;
   status: BrandStatus;
   memberRole: 'owner' | 'editor';
+  /** `contractor`: the brand page of a Contractor account. `partner`: a curated brand run by Mise admins. */
+  kind?: 'contractor' | 'partner';
 }
 
 /** `GET /api/auth/me` → `{ user: SessionUser | null }`. */
