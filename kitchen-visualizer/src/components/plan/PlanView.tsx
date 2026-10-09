@@ -8,6 +8,7 @@ import { FLOORING, byId } from '../../data/finishes';
 import { getProduct } from '../../data/catalog';
 import { feetInches } from '../../lib/format';
 import { registerExporter } from '../../lib/exporters';
+import { qaExpose } from '../../lib/qa';
 import { clamp, type Resolved } from '../../lib/geometry';
 import { placeAt, planClientToRoom, planRoomToClient, registerDropTarget, useOverlay, usePlacement } from '../../lib/interaction';
 import { ACCENT, BAD, FONT_MONO, INK, OK, PAPER, WALL, WALL_T, WARN, patternFill } from './planStyle';
@@ -90,7 +91,6 @@ export function PlanView() {
   const setUI = useDesignStore((s) => s.setUI);
   const applyTemplate = useDesignStore((s) => s.applyTemplate);
   const armedId = usePlacement((s) => s.armedProductId);
-  const disarm = usePlacement((s) => s.disarm);
   const all = useResolvedItems();
   const catalogVersion = useCatalogVersion();
   const readOnly = useDesignStore((s) => s.readOnly);
@@ -104,10 +104,28 @@ export function PlanView() {
 
   usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRef });
 
+  // Headless checks (only with ?qa): where a room point is on screen, and the stage transform.
+  useEffect(() => {
+    const rect = () => stageRef.current?.container().getBoundingClientRect() ?? null;
+    qaExpose({
+      plan: {
+        view: () => ({ ...viewRef.current }),
+        toClient: (x: number, y: number) => {
+          const c = rect();
+          return c ? planRoomToClient({ x, y }, c, viewRef.current) : null;
+        },
+        toRoom: (cx: number, cy: number) => {
+          const c = rect();
+          return c ? planClientToRoom(cx, cy, c, viewRef.current) : null;
+        },
+      },
+    });
+    return () => qaExpose({ plan: undefined });
+  }, []);
+
   const k = 1 / view.scale;
   const rendered = ui.planStyle === 'rendered';
   const armed = armedId ? getProduct(armedId) : undefined;
-  const coarse = useMemo(() => typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: coarse)').matches, []);
 
   const fit = useCallback(() => {
     const m = fitMargin(size.w, size.h);
@@ -452,15 +470,6 @@ export function PlanView() {
         <button aria-label="Zoom in" onClick={() => zoomAt(1.25, size.w / 2, size.h / 2)}>+</button>
       </div>
 
-      {armed && (
-        <div className="plan-hud plan-placing" role="status" style={PLACING_STYLE}>
-          <span style={{ padding: '0 4px 0 8px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {coarse ? 'Tap' : 'Click'} where the <b>{armed.name}</b> goes
-          </span>
-          <button onClick={disarm} style={PLACING_CANCEL}>Cancel</button>
-        </div>
-      )}
-
       {items.length === 0 && !armed && !readOnly && (
         <div className="plan-empty">
           <h3>A blank room, {feetInches(W)} × {feetInches(L)}</h3>
@@ -476,30 +485,3 @@ export function PlanView() {
     </div>
   );
 }
-
-const PLACING_STYLE: CSSProperties = {
-  top: 10,
-  left: '50%',
-  transform: 'translateX(-50%)',
-  maxWidth: 'calc(100% - 24px)',
-  padding: 4,
-  gap: 4,
-  background: 'var(--card, #fbf9f4)',
-  border: '1px solid var(--line, #e2dbcf)',
-  borderRadius: 999,
-  boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.12))',
-  fontSize: 13,
-  whiteSpace: 'nowrap',
-  zIndex: 6,
-};
-
-const PLACING_CANCEL: CSSProperties = {
-  flex: 'none',
-  padding: '6px 12px',
-  minHeight: 32,
-  borderRadius: 999,
-  background: 'var(--ink, #29251f)',
-  color: '#fff',
-  fontWeight: 600,
-  fontSize: 12.5,
-};

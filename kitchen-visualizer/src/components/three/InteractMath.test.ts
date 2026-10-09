@@ -6,6 +6,7 @@ import {
   projectBoxToClient,
   rayExitRoom,
   rayFromClient,
+  rayThroughOpening,
   rayToHorizontalPlane,
   roomPointUnderRay,
   toItemLocal,
@@ -134,5 +135,41 @@ describe('item-local frame', () => {
     const l = toItemLocal(new THREE.Vector3(10, 0, 2), { x: 100, y: 20, rotation: 0 });
     near(l.x, 20, 1e-9);
     near(l.z, 4, 1e-9);
+  });
+});
+
+describe('rays through a wall opening', () => {
+  // A 48″ × 84″ cased opening in the west wall (x 0) centred at y 112, facing east into the room.
+  const west = { x: 0, y: 112, rotation: 270 };
+  const hole = { w: 48, z0: 0, z1: 84 };
+  const eye: [number, number, number] = [150 / 12, 70 / 12, 112 / 12];
+
+  test('a ray from the room into the middle of the hole goes through it, at the wall face', () => {
+    const r = ray(eye, [-44 / 12, 30 / 12, 112 / 12]); // aimed at the hall beyond the wall
+    const hit = rayThroughOpening(r, west, hole)!;
+    assert.ok(hit);
+    near(hit.point.x, 0, 1e-9);
+    near(hit.point.z, 112 / 12, 1e-9);
+    near(hit.distance, hit.point.distanceTo(r.origin), 1e-9);
+    const l = toItemLocal(hit.point, west);
+    assert.ok(l.y > 0 && l.y < 84, `crossed at height ${l.y}`);
+  });
+  test('beside or above the hole is the wall, not the opening', () => {
+    assert.equal(rayThroughOpening(ray(eye, [0, 30 / 12, 140 / 12]), west, hole), null); // 28″ along: beyond w/2
+    assert.equal(rayThroughOpening(ray(eye, [0, 96 / 12, 112 / 12]), west, hole), null); // over the head
+  });
+  test('not when something nearer is hit first, nor from behind the wall, nor heading away', () => {
+    const r = ray(eye, [-44 / 12, 30 / 12, 112 / 12]);
+    const d = rayThroughOpening(r, west, hole)!.distance;
+    assert.equal(rayThroughOpening(r, west, hole, d - 0.01), null);
+    assert.ok(rayThroughOpening(r, west, hole, d + 0.01));
+    assert.equal(rayThroughOpening(ray([-60 / 12, 40 / 12, 112 / 12], [20 / 12, 40 / 12, 112 / 12]), west, hole), null);
+    assert.equal(rayThroughOpening(ray(eye, [300 / 12, 40 / 12, 112 / 12]), west, hole), null);
+  });
+  test('on the north wall (rotation 0) too', () => {
+    const r = ray([100 / 12, 60 / 12, 120 / 12], [100 / 12, 40 / 12, -30 / 12]);
+    const hit = rayThroughOpening(r, { x: 100, y: 0, rotation: 0 }, { w: 36, z0: 0, z1: 80 })!;
+    assert.ok(hit);
+    near(hit.point.z, 0, 1e-9);
   });
 });

@@ -160,3 +160,31 @@ export function toItemLocal(world: THREE.Vector3, item: { x: number; y: number; 
   const s = Math.sin(phi);
   return { x: wx * c + wz * s, y: world.y * INCHES_PER_WORLD_UNIT, z: -wx * s + wz * c };
 }
+
+/**
+ * Where a ray passes through the hole of a wall opening (door or window), seen from the room.
+ * The hole is in the opening's local z = 0 plane (the room face of the wall): |x| ≤ w/2 and
+ * z0 ≤ y ≤ z1, inches. Only from the room side, since a wall seen from behind is not drawn.
+ * `distance` is along the ray in world units (feet, for a normalised direction); a crossing
+ * further than `maxDist` is null.
+ */
+export function rayThroughOpening(
+  ray: THREE.Ray,
+  item: { x: number; y: number; rotation: number },
+  hole: { w: number; z0: number; z1: number },
+  maxDist = Infinity,
+): { distance: number; point: THREE.Vector3 } | null {
+  const phi = (item.rotation * Math.PI) / 180;
+  // The item's front (+local z) in world axes; toItemLocal's z is the offset dotted with it.
+  const n = new THREE.Vector3(-Math.sin(phi), 0, Math.cos(phi));
+  const facing = n.dot(ray.direction);
+  if (facing > -1e-6) return null; // parallel to the wall, or heading out of the room through it
+  const origin = toItemLocal(ray.origin, item);
+  if (origin.z <= 0) return null; // the eye is behind this wall
+  const t = origin.z / INCHES_PER_WORLD_UNIT / -facing;
+  if (!Number.isFinite(t) || t > maxDist) return null;
+  const point = ray.at(t, new THREE.Vector3());
+  const l = toItemLocal(point, item);
+  if (Math.abs(l.x) > hole.w / 2 || l.y < hole.z0 || l.y > hole.z1) return null;
+  return { distance: t, point };
+}
