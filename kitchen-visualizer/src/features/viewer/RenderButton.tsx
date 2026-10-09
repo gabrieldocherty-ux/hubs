@@ -2,9 +2,7 @@ import { lazy, Suspense, useEffect, useState, type SVGProps } from 'react';
 import { useSession } from '../../store/useSession';
 import { useDesignStore } from '../../store/useDesignStore';
 import { useCompact, useMedia } from '../../components/MobileState';
-import { loadEntitlements, useEntitlements } from '../billing';
-// The paid-export intent is billing's; it isn't on billing's public index (see docs/handoff/viewer.md).
-import { clearIntent, peekIntent } from '../billing/entitlements';
+import { clearIntent, loadEntitlements, peekIntent, useEntitlements } from '../billing';
 import { closeStudioRender, openStudioRender, useStudio } from './studioDialog';
 
 /**

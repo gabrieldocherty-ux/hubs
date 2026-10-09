@@ -12,6 +12,6 @@ export const BillingPage: Lazy<{}> = lazy(() => import('./BillingPage'));
 export const DemoPlanPay: Lazy<{ checkoutRef: string }> = lazy(() => import('./DemoPlanPay'));
 export const AdminBillingTab: Lazy<{}> = lazy(() => import('./AdminBillingTab'));
 
-export { useEntitlements, loadEntitlements, type ExportFile, type ExportRunner } from './entitlements';
+export { useEntitlements, loadEntitlements, peekIntent, clearIntent, type ExportFile, type ExportRunner } from './entitlements';
 export { requestExport, useResumeExport } from './exportFlow';
 export { BillingHost } from './BillingHost';
