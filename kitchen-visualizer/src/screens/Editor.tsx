@@ -46,9 +46,11 @@ export interface WorkspaceProps {
   showPrices?: boolean;
   /** Optional strip above the TopBar, e.g. the share page's "Shared by …" header. */
   banner?: ReactNode;
+  /** View mode only: no Export menu (a contractor's share). */
+  hideExport?: boolean;
 }
 
-export function Workspace({ projectId, mode, showPrices = true, banner }: WorkspaceProps) {
+export function Workspace({ projectId, mode, showPrices = true, banner, hideExport = false }: WorkspaceProps) {
   const viewMode = useDesignStore((s) => s.ui.viewMode);
   const placing = usePlacement((s) => s.armedProductId !== null);
   const compact = useCompact();
@@ -79,7 +81,7 @@ export function Workspace({ projectId, mode, showPrices = true, banner }: Worksp
   return (
     <div className={`app${banner ? ' app--banner' : ''}${view ? ' app--view' : ''}${compact ? ' app--compact' : ''}${placing ? ' is-placing' : ''}`}>
       {banner}
-      <TopBar mode={mode} showPrices={prices} projectId={view ? null : projectId} compact={compact} />
+      <TopBar mode={mode} showPrices={prices} projectId={view ? null : projectId} compact={compact} hideExport={hideExport} />
       <div className={`workspace${view ? ' workspace--view' : ''}`}>
         {!view && !compact && <LeftPanel />}
         <main className={`stage stage--${shown}`}>

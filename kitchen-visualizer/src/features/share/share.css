@@ -146,14 +146,6 @@
   overflow-wrap: anywhere;
 }
 
-/* A contractor's client stays with the contractor: no Duplicate, and no Export either (an export
-   would save a copy into the visitor's account). Asked for as a proper TopBar prop in
-   docs/handoff/share.md; until then the share page hides the Export menu itself. */
-.share-page--sealed .topbar .menu-wrap:has(> .export-btn),
-.share-page--sealed .topbar .menu-wrap:has(> .btn.primary) {
-  display: none;
-}
-
 @media (max-width: 900px) {
   .share-bar {
     padding: 8px 12px;

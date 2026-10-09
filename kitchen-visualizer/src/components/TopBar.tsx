@@ -54,9 +54,11 @@ export interface TopBarProps {
   projectId?: string | null;
   /** The phone layout: the view switch moves to the bottom bar and Export shrinks to an icon. */
   compact?: boolean;
+  /** View mode: no Export menu at all (a contractor's share: an export would save a copy to the visitor's account). */
+  hideExport?: boolean;
 }
 
-export function TopBar({ mode = 'edit', showPrices = true, projectId = null, compact = false }: TopBarProps) {
+export function TopBar({ mode = 'edit', showPrices = true, projectId = null, compact = false, hideExport = false }: TopBarProps) {
   const view = mode === 'view';
   const name = useDesignStore((s) => s.doc.name);
   const viewMode = useDesignStore((s) => s.ui.viewMode);
@@ -199,71 +201,73 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
         <RenderButton />
         {!view && <ShareButton projectId={projectId} />}
         {!view && <PresentButton compact={compact} />}
-        <div className="menu-wrap" ref={menuRef}>
-          {compact ? (
-            <button className="icon-btn export-btn" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label="Export" title="Export">
-              <Download width={20} height={20} />
-            </button>
-          ) : (
-            <button className="btn primary" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
-              <Download /> Export <Chevron width={14} height={14} />
-            </button>
-          )}
-          {menu && (
-            <div className="menu" role="menu">
-              <button role="menuitem" onClick={() => doExport('plan_png')}>
-                <b>{lock}Floor plan</b><span>PNG, print-ready with dimensions</span>
+        {!(view && hideExport) && (
+          <div className="menu-wrap" ref={menuRef}>
+            {compact ? (
+              <button className="icon-btn export-btn" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label="Export" title="Export">
+                <Download width={20} height={20} />
               </button>
-              <button role="menuitem" onClick={() => doExport('scene_png')}>
-                <b>{lock}3D render</b><span>PNG of the current camera</span>
+            ) : (
+              <button className="btn primary" onClick={() => setMenu((m) => !m)} aria-expanded={menu}>
+                <Download /> Export <Chevron width={14} height={14} />
               </button>
-              {showPrices && (
-                <button role="menuitem" onClick={() => doExport('csv')}>
-                  <b>{lock}Shopping list</b><span>CSV with every product and surface</span>
+            )}
+            {menu && (
+              <div className="menu" role="menu">
+                <button role="menuitem" onClick={() => doExport('plan_png')}>
+                  <b>{lock}Floor plan</b><span>PNG, print-ready with dimensions</span>
                 </button>
-              )}
-              {!view && (
-                <>
-                  <button role="menuitem" onClick={() => doExport('json')}>
-                    <b>{lock}Project file</b><span>.kitchen.json to share or reopen</span>
+                <button role="menuitem" onClick={() => doExport('scene_png')}>
+                  <b>{lock}3D render</b><span>PNG of the current camera</span>
+                </button>
+                {showPrices && (
+                  <button role="menuitem" onClick={() => doExport('csv')}>
+                    <b>{lock}Shopping list</b><span>CSV with every product and surface</span>
                   </button>
-                  {isContractor && projectId && (
-                    <button
-                      role="menuitem"
-                      onClick={() => {
-                        setMenu(false);
-                        void openQuote(projectId);
-                      }}
-                    >
-                      <b>Quote</b><span>Branded and printable, at your prices</span>
+                )}
+                {!view && (
+                  <>
+                    <button role="menuitem" onClick={() => doExport('json')}>
+                      <b>{lock}Project file</b><span>.kitchen.json to share or reopen</span>
                     </button>
-                  )}
-                  {!canExport && (
-                    <p className="menu-note">
-                      <Lock width={12} height={12} /> Exports are a paid feature. Pick one to see the options.
-                    </p>
-                  )}
-                  <div className="menu-sep" />
-                  <button role="menuitem" onClick={() => fileRef.current?.click()}>
-                    <b><Upload width={14} height={14} /> Import project…</b><span>Open a .kitchen.json</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,application/json"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) onImport(f);
-              e.target.value = '';
-              setMenu(false);
-            }}
-          />
-        </div>
+                    {isContractor && projectId && (
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setMenu(false);
+                          void openQuote(projectId);
+                        }}
+                      >
+                        <b>Quote</b><span>Branded and printable, at your prices</span>
+                      </button>
+                    )}
+                    {!canExport && (
+                      <p className="menu-note">
+                        <Lock width={12} height={12} /> Exports are a paid feature. Pick one to see the options.
+                      </p>
+                    )}
+                    <div className="menu-sep" />
+                    <button role="menuitem" onClick={() => fileRef.current?.click()}>
+                      <b><Upload width={14} height={14} /> Import project…</b><span>Open a .kitchen.json</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".json,application/json"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onImport(f);
+                e.target.value = '';
+                setMenu(false);
+              }}
+            />
+          </div>
+        )}
         {(!view || hasUser) && <AccountMenu />}
       </div>
     </header>

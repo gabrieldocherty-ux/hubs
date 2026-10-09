@@ -77,7 +77,7 @@ export default function SharedKitchen({ token }: { token: string }) {
   const sealed = !!wire.hideDuplicate;
   return (
     <div className={`share-page${sealed ? ' share-page--sealed' : ''}`}>
-      <Workspace projectId={null} mode="view" showPrices={wire.showPrices} banner={<ShareBar token={token} wire={wire} />} />
+      <Workspace projectId={null} mode="view" showPrices={wire.showPrices} hideExport={sealed} banner={<ShareBar token={token} wire={wire} />} />
     </div>
   );
 }
