@@ -86,6 +86,30 @@ test('contractor products are private to their owner, labelled with their compan
   }
 });
 
+test('catalog guards run before every catalog read, and before inCatalog only for a brand’s product', async () => {
+  const t = await startTestServer();
+  try {
+    const { products } = t.services;
+    const owner = await t.user();
+    const brand = t.brand(owner, { name: 'Guard Co' });
+    const branded = t.product({ brandId: brand.id, publish: true });
+    const own = t.product({ source: 'contractor', ownerUserId: owner.user.id, visibility: 'private', publish: true });
+    let runs = 0;
+    products.addCatalogGuard(() => runs++);
+    products.addCatalogGuard('not a function');
+    products.catalogRows(null);
+    assert.equal(runs, 1, 'catalogRows runs the guard');
+    assert.equal(products.inCatalog(products.get(branded.id), null), true);
+    assert.equal(runs, 2, 'a brand’s product runs it');
+    assert.equal(products.inCatalog(products.get(own.id), owner.user), true);
+    assert.equal(runs, 2, 'a contractor’s own product does not');
+    assert.equal(products.inCatalog(null, null), false);
+    assert.equal(runs, 2);
+  } finally {
+    await t.close();
+  }
+});
+
 test('saved kitchens keep valid extra estimate lines and refuse bad ones', async () => {
   const t = await startTestServer();
   try {

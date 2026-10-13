@@ -268,9 +268,25 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
     return row;
   };
 
+  /** Run before the catalog is read (see `addCatalogGuard`). */
+  const catalogGuards = [];
+  const runCatalogGuards = () => {
+    for (const guard of catalogGuards) guard();
+  };
+
   const svc = {
     validateSpec,
     fileIdsOf,
+
+    /**
+     * Registers `fn()` to run before the catalog is read: `catalogRows` always, `inCatalog` when
+     * the row belongs to a brand. For visibility that changes with time rather than with a write,
+     * such as a lapsed contractor's brand page, so nobody has to wrap `catalogRows` themselves.
+     * `fn` must be cheap (it runs on every catalog read) and must not throw.
+     */
+    addCatalogGuard(fn) {
+      if (typeof fn === 'function') catalogGuards.push(fn);
+    },
 
     /**
      * Creates a product (draft unless `status` says otherwise). The caller has already
@@ -434,6 +450,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
      * public or owned by the caller.
      */
     catalogRows(user) {
+      runCatalogGuards();
       return db
         .prepare(
           `SELECT p.* FROM products p LEFT JOIN brands b ON b.id = p.brand_id
@@ -448,6 +465,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
 
     /** True when `row` is in the catalog for `user` (the same rule as catalogRows). */
     inCatalog(row, user) {
+      if (row?.brandId) runCatalogGuards();
       if (!row || !row.liveSpec || row.status === 'archived') return false;
       if (row.brandId && brands.get(row.brandId)?.status !== 'active') return false;
       return row.visibility === 'public' || (!!user && row.ownerUserId === user.id);

@@ -80,19 +80,10 @@ export default function routes(ctx) {
   const viewMemo = createMemo();
   const limitsOn = config.RATE_LIMITS !== 'off';
 
-  // The catalog reads through these two; a lapsed contractor's products must leave it at the
-  // moment the plan lapses, not when someone next opens the brand page. (A plan lapses with
-  // time, so there is no event to hang this on.) See docs/handoff/brands.md for a cleaner hook.
-  const catalogRows = products.catalogRows;
-  products.catalogRows = (user) => {
-    pages.syncVisibilityDue();
-    return catalogRows(user);
-  };
-  const inCatalog = products.inCatalog;
-  products.inCatalog = (row, user) => {
-    if (row?.brandId) pages.syncVisibilityDue();
-    return inCatalog(row, user);
-  };
+  // A lapsed contractor's products must leave the catalog at the moment the plan lapses, not when
+  // someone next opens the brand page. A plan lapses with time, so there is no event to hang this
+  // on: the products service runs this guard before every catalog read instead.
+  products.addCatalogGuard(() => pages.syncVisibilityDue());
   const maintenance = ctx.maintenance;
   ctx.maintenance = () => {
     maintenance?.();
