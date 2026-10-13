@@ -66,8 +66,8 @@ Mise keeps hash routing. Query strings are now supported inside the hash, and `l
 | `#/` | Signed in: My kitchens. Signed out: **Landing** | public | foundation / share |
 | `#/welcome`, `#/pricing` | Landing, Pricing | public | share |
 | `#/signin`, `#/signup` | Auth | public | existing |
-| `#/new` | Setup wizard, now with a "Describe it" path | account | generate |
-| `#/generate?q=&from=` | **Describe your kitchen** → options grid | public; saving needs an account or uses the device draft | generate |
+| `#/new` | Setup wizard, now with a "Start from a photo of my kitchen" path | account | generate |
+| `#/generate?from=` | **Start from a photo** → Check the space → Build my kitchen (`q` is accepted and ignored) | public; saving needs an account or uses the device draft | generate |
 | `#/k/:id?add=<productId>` | Editor (`add` places a product once the kitchen loads) | account, owner | existing / foundation |
 | `#/local` | Device-only editor | public | existing |
 | `#/p/:productId?finish=` | **Realistic product page** | public for published public products; private ones only for entitled users | viewer |
@@ -84,7 +84,7 @@ Mise keeps hash routing. Query strings are now supported inside the hash, and `l
 
 ### 5.1 Landing and pricing (package: share)
 
-- **Landing** (signed-out `#/` and `#/welcome`): a hero image that is a real Mise render made by the QA script, not stock art; "How it works" in five steps (Describe → Pick from 5 options → Edit in 2D/3D → See the real products → Share); a section for brands; a section for custom models; calls to action (*Describe your kitchen* → `#/generate`, *Start free* → signup, *Try without an account* → `#/local`). The footer carries the visualizer disclaimer (§12).
+- **Landing** (signed-out `#/` and `#/welcome`): a hero image that is a real Mise render made by the QA script, not stock art; "How it works" in four steps (Photo → Check the space → Redesign in 2D and 3D with real products → Share); a section for contractors and one for brands; a section for custom models; calls to action (*Start from a photo of your kitchen* → `#/generate`, *Start free* → signup, *Try without an account* → `#/local`). The footer carries the visualizer disclaimer (§12).
 - **Pricing (superseded, see PLANS_AND_CONTRACTORS §1 and BUILD_PLAN §13.3):** the four plans from `src/data/plans.json` come first. The original copy read: homeowners are free. Brands are free during beta, up to `BRAND_PRODUCT_LIMIT` published products (default 50); the planned per-product-count tiers are labelled *Planned*, an idea taken from Zakeke's product-count tiers [K7]. Custom-model tiers are read live from `GET /api/orders/tiers`. An FAQ covers demo payments, file formats, turnaround and revisions.
 
 ### 5.2 Describe your kitchen: generated layout options (package: generate)
