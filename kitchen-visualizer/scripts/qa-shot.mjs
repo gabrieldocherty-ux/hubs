@@ -97,6 +97,27 @@ export function killTree(pid) {
   }
 }
 
+/**
+ * Kills the browser processes started with this exact throwaway profile (Windows only; elsewhere
+ * the process group does it). A last resort for a browser whose PID could not be learned, e.g.
+ * when its launcher exited before it said it was up. The profile dir is one this script made.
+ */
+function killByProfile(profile) {
+  if (process.platform !== 'win32') return;
+  const quoted = profile.replace(/'/g, "''");
+  const script = `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${quoted}') -and -not $_.CommandLine.Contains('--type=') } | ForEach-Object { taskkill /PID $_.ProcessId /T /F | Out-Null }`;
+  spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', script], { stdio: 'ignore', windowsHide: true });
+}
+
+function isAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err?.code === 'EPERM';
+  }
+}
+
 export function findBrowser({ chrome = false } = {}) {
   const fromEnv = process.env.MISE_QA_BROWSER;
   if (fromEnv) {
@@ -225,7 +246,13 @@ export async function launchBrowser({ chrome = false, swiftshader = false, headl
   ];
   const proc = spawn(exe, args, { stdio: 'ignore', windowsHide: true, detached: process.platform !== 'win32' });
   let exited = false;
-  proc.on('exit', () => (exited = true));
+  let exitCode = null;
+  proc.on('exit', (code) => {
+    exited = true;
+    exitCode = code;
+  });
+  /** The real browser process. msedge.exe can be a launcher that starts the browser and exits. */
+  let browserPid = null;
   const cleanupProfile = async () => {
     for (let i = 0; i < 10; i++) {
       try {
@@ -237,13 +264,18 @@ export async function launchBrowser({ chrome = false, swiftshader = false, headl
     }
   };
   const kill = async () => {
+    if (browserPid) killTree(browserPid);
     killTree(proc.pid);
+    if (!browserPid) killByProfile(profile);
     await cleanupProfile();
   };
   try {
     let port = null;
+    // An installed Edge newer than the msedge.exe stub (it updates itself) makes the stub start the
+    // real browser and exit 0 within milliseconds, so an exit is only fatal when it is a failure
+    // code. A browser that never writes DevToolsActivePort is caught by the 15 s limit below.
     for (let i = 0; i < 150 && !port; i++) {
-      if (exited) throw new Error(`${path.basename(exe)} exited before exposing a DevTools port.`);
+      if (exited && exitCode) throw new Error(`${path.basename(exe)} exited with code ${exitCode} before exposing a DevTools port.`);
       try {
         port = fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0].trim();
       } catch {
@@ -253,10 +285,16 @@ export async function launchBrowser({ chrome = false, swiftshader = false, headl
     if (!port) throw new Error('The browser did not expose a DevTools port within 15 s.');
     const info = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
     const cdp = await Cdp.connect(info.webSocketDebuggerUrl);
-    log(`browser: ${info.Browser} (pid ${proc.pid})`);
+    try {
+      const { processInfo } = await cdp.send('SystemInfo.getProcessInfo', {}, undefined, 5000);
+      browserPid = processInfo?.find((p) => p.type === 'browser')?.id ?? null;
+    } catch {
+      /* falls back to the launcher's PID and the profile sweep */
+    }
+    log(`browser: ${info.Browser} (pid ${browserPid ?? proc.pid})`);
     return {
       cdp,
-      pid: proc.pid,
+      pid: browserPid ?? proc.pid,
       exe,
       version: info.Browser,
       async close() {
@@ -266,7 +304,7 @@ export async function launchBrowser({ chrome = false, swiftshader = false, headl
           /* killed below anyway */
         }
         cdp.close();
-        for (let i = 0; i < 20 && !exited; i++) await sleep(100);
+        for (let i = 0; i < 20 && !(exited && !(browserPid && isAlive(browserPid))); i++) await sleep(100);
         await kill();
       },
     };
