@@ -96,6 +96,8 @@ export interface Product {
   source?: ProductSource;
   brandId?: string;
   brandSlug?: string;
+  /** `contractor`: sold by a Contractor account's brand page ("by <company>" in the catalog). */
+  brandKind?: 'contractor' | 'partner';
   isDemo?: boolean;
   sku?: string;
   skuByWidth?: Record<string, string>;

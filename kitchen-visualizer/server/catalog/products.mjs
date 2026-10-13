@@ -415,7 +415,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
         finishes,
         blurb: spec.blurb || '',
         source: row.source,
-        ...(brand ? { brandId: brand.id, brandSlug: brand.slug, isDemo: brand.isDemo } : {}),
+        ...(brand ? { brandId: brand.id, brandSlug: brand.slug, brandKind: brand.kind, isDemo: brand.isDemo } : {}),
         sku: spec.sku || '',
         ...(spec.skuByWidth ? { skuByWidth: spec.skuByWidth } : {}),
         ...(spec.priceByWidth ? { priceByWidth: spec.priceByWidth } : {}),

@@ -373,7 +373,7 @@ export function CatalogPanel() {
                         </span>
                         <span className="product-name">{p.name}</span>
                         <span className="product-meta">
-                          <span>{p.brand}</span>
+                          <span>{p.brandKind === 'contractor' ? `by ${p.brand}` : p.brand}</span>
                           <span className="mono">{p.widthOptions?.length ? `${Math.min(...p.widthOptions)}–${Math.max(...p.widthOptions)}″` : `${p.widthIn}″`}</span>
                         </span>
                         <span className="product-foot">

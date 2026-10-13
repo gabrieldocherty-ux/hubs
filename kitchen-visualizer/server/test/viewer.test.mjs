@@ -96,6 +96,7 @@ test('the viewer seed makes one fictional demo brand with two published GLB prod
   for (const p of mine) {
     assert.match(p.id, /^p_[a-z0-9]{24}$/);
     assert.equal(p.isDemo, true);
+    assert.equal(p.brandKind, 'partner', 'a Mise-curated brand, not a contractor’s page');
     assert.match(p.name, /\(Demo\)$/);
     assert.ok(p.model?.url, 'has a model');
     assert.ok(p.model.slots.includes('mise_finish'));

@@ -277,6 +277,7 @@ test('moderation round trip: submitted → approved (public fields, public files
   assert.ok(cat, 'in the public catalog');
   assert.equal(cat.brand, 'Hollis Cabinet Co');
   assert.equal(cat.brandSlug, page.slug);
+  assert.equal(cat.brandKind, 'contractor', 'the catalog says this is a contractor’s page (“by <company>”)');
   assert.match(cat.thumbnailUrl, /^\/files\/[0-9a-f]{64}\.png$/);
   assert.equal((await anon.get(cat.thumbnailUrl)).status, 200);
   assert.equal(cat.buyUrl, undefined, 'no buy link on a contractor’s public product');

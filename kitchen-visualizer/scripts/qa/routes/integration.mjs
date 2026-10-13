@@ -484,6 +484,36 @@ export default [
     },
   },
 
+  {
+    // BRAND_PAGE §5: a contractor's live products sit in everyone's catalog under their company with
+    // a "by <company>" line; a Mise-curated partner brand shows its plain name.
+    name: 'int-catalog-by-company',
+    path: '#/local',
+    as: 'anon',
+    waitFor: ['.topbar', 'input[placeholder^="Search"]'],
+    check: async (h) => {
+      await h.click('input[placeholder^="Search"]');
+      await h.type('Slab Wall');
+      await h.waitForText('Slab Wall Cabinet');
+      const metas = () =>
+        h.evaluate(() => [...document.querySelectorAll('.product-card')].map((c) => ({ name: c.querySelector('.product-name')?.textContent?.trim(), brand: c.querySelector('.product-meta span')?.textContent?.trim() })));
+      const slab = (await metas()).find((c) => c.name === 'Slab Wall Cabinet');
+      if (!slab) throw new Error('the demo contractor’s Slab Wall Cabinet is not in the catalog');
+      if (slab.brand !== 'by Alder & Pine Cabinetry (Demo)') throw new Error(`a contractor’s product shows “${slab.brand}”, not “by Alder & Pine Cabinetry (Demo)”`);
+      await h.shot('contractor');
+      // A partner brand: no “by”.
+      await h.evaluate(() => {
+        const input = document.querySelector('input[placeholder^="Search"]');
+        const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+        set.call(input, 'Harrier');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await h.waitForText('Harrier 36″ Dual-Fuel Range');
+      const range = (await metas()).find((c) => c.name === 'Harrier 36″ Dual-Fuel Range');
+      if (range?.brand !== 'Kestrel & Finch Appliances (Demo)') throw new Error(`a partner brand’s product shows “${range?.brand}”`);
+    },
+  },
+
   // ─── photo ─────────────────────────────────────────────────────────────────
   {
     // Photo -> Check the space (the manual form: the QA server has no model key) -> Build my

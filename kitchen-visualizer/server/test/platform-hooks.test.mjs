@@ -105,6 +105,7 @@ test('catalog guards run before every catalog read, and before inCatalog only fo
     assert.equal(runs, 2, 'a contractor’s own product does not');
     assert.equal(products.inCatalog(null, null), false);
     assert.equal(runs, 2);
+    assert.equal(products.toWire(products.get(branded.id), { which: 'live', viewer: null }).brandKind, 'partner');
   } finally {
     await t.close();
   }
