@@ -53,7 +53,11 @@ export default function routes(ctx) {
       path: '/api/generate/photo',
       auth: 'user',
       maxBytes: 4_000,
-      rateLimit: { name: 'generate-photo', max: 10, windowMs: 3_600_000, by: 'user' },
+      // Each call costs a model request: per account, and per real address.
+      rateLimit: [
+        { name: 'generate-photo', max: 10, windowMs: 3_600_000, by: 'user' },
+        { name: 'generate-photo-ip', max: 30, windowMs: 3_600_000, by: 'ip' },
+      ],
       handler: async (rc) => {
         if (!config.llmEnabled) throw new HttpError(503, 'Photo analysis is not configured.');
         const ids = fileIdsOf(rc.body);

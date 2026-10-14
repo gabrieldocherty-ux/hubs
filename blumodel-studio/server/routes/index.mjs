@@ -16,8 +16,10 @@ import share from './share.mjs';
 import webhooks from './webhooks.mjs';
 import billing from './billing.mjs';
 import contractors from './contractors.mjs';
+import account from './account.mjs';
+import ops from './ops.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, orders, generate, share, billing, contractors];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, orders, generate, share, billing, contractors, account, ops];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -34,4 +36,6 @@ export const ROUTE_MODULE_NAMES = [
   'share',
   'billing',
   'contractors',
+  'account',
+  'ops',
 ];

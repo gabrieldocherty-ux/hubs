@@ -11,7 +11,7 @@
 // Prices come only from server/payments/tiers.mjs; client-sent amounts are ignored.
 
 import { HttpError } from '../http/respond.mjs';
-import { selectProvider } from '../payments/index.mjs';
+import { paymentsUnavailable, selectProvider } from '../payments/index.mjs';
 import { quote, tiersWire, tierById, MAX_ITEMS } from '../payments/tiers.mjs';
 import { createOrderService, ORDER_STATUSES, UNPAID, ACTIVE, REFUNDABLE } from '../payments/orders.mjs';
 import { idOf } from '../payments/stripe.mjs';
@@ -81,9 +81,13 @@ export default function routes(ctx) {
     return o;
   };
 
+  /** No payments on this server (launch contract): every order-payment endpoint answers 503. */
+  const requirePayments = () => {
+    if (config.paymentsProvider === 'none') throw paymentsUnavailable();
+  };
   const requireDemo = () => {
+    requirePayments();
     if (config.paymentsProvider !== 'demo') throw new HttpError(403, 'Demo payments are only available when Stripe isn’t configured.');
-    if (!config.demoPaymentsAllowed) throw new HttpError(403, 'Demo payments are turned off on this server.');
   };
 
   const label = (byUserId, viewer, buyerId) => {
@@ -190,6 +194,7 @@ export default function routes(ctx) {
       path: '/api/orders',
       rateLimit: { name: 'order-create', max: 30, windowMs: 3_600_000, by: 'user' },
       handler: (rc) => {
+        requirePayments();
         const req = orders.readRequest(rc.body, rc.user);
         const row = orders.create(rc.user, req);
         const w = orders.toWire(row);
@@ -231,6 +236,7 @@ export default function routes(ctx) {
       path: '/api/orders/:id/checkout',
       rateLimit: { name: 'order-checkout', max: 30, windowMs: 3_600_000, by: 'user' },
       handler: async (rc) => {
+        requirePayments();
         orders.sweepExpired();
         const o = ownOrder(rc, rc.params.id);
         if (!UNPAID.includes(o.status)) {

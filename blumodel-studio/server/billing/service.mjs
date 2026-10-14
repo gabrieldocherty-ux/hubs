@@ -7,6 +7,11 @@
 // - Cancelling keeps the plan to the end of the paid period.
 // - A failed renewal gives 7 days of grace, then the account is Free until it pays.
 // - Demo subscriptions renew themselves at the end of each period (nothing to charge).
+// - A complimentary plan (provider 'comp') is given and taken back by an admin
+//   (POST/DELETE /api/admin/billing/grant): no period, no charge, no receipt, audit-logged. A
+//   late Stripe event about an old subscription never overwrites it.
+// - An admin may export their own kitchens without paying (launch contract); each such export
+//   is audit-logged by the export route.
 
 import { randomId } from '../lib/ids.mjs';
 import { planById, SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
@@ -75,11 +80,14 @@ export function createBillingService({ db, now, log = console }) {
     return { ...r, current_period_end: end };
   }
 
+  const isAdmin = (userId) => db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role === 'admin';
+
   const svc = {
     GRACE_MS,
     priceOf,
     subRow,
     checkout,
+    isAdmin,
 
     /** The plan in force for a user now (see the rules at the top). May tidy the row as it reads it. */
     planOf(userId) {
@@ -96,20 +104,33 @@ export function createBillingService({ db, now, log = console }) {
       return { ...FREE, status: r.status };
     },
 
-    /** True when `userId` owns `projectId` and it is unlocked or they have a plan. */
-    canExport(userId, projectId) {
+    /** True when `userId` owns `projectId` and it is unlocked or they have a plan (no admin bypass). */
+    paidExport(userId, projectId) {
       if (!db.prepare('SELECT 1 FROM projects WHERE id = ? AND user_id = ?').get(projectId, userId)) return false;
       if (svc.planOf(userId).id !== 'free') return true;
       return !!db.prepare('SELECT 1 FROM kitchen_unlocks WHERE project_id = ? AND user_id = ?').get(projectId, userId);
     },
 
-    /** `{ plan, unlockedProjectIds }` for the editor. */
+    /** True when `userId` owns `projectId` and may export it: paid for, or the owner is an admin. */
+    canExport(userId, projectId) {
+      if (!db.prepare('SELECT 1 FROM projects WHERE id = ? AND user_id = ?').get(projectId, userId)) return false;
+      return isAdmin(userId) || svc.paidExport(userId, projectId);
+    },
+
+    /**
+     * `{ plan, unlockedProjectIds, adminBypass? }` for the editor. An admin's own kitchens are all
+     * listed as unlocked (they export without paying) and `adminBypass: true` says why; `plan`
+     * stays what they actually pay for.
+     */
     entitlements(userId) {
-      const ids = db
-        .prepare('SELECT u.project_id FROM kitchen_unlocks u JOIN projects p ON p.id = u.project_id WHERE u.user_id = ? AND p.user_id = ? ORDER BY u.created_at DESC')
-        .all(userId, userId)
-        .map((r) => r.project_id);
-      return { plan: svc.planOf(userId).id, unlockedProjectIds: ids };
+      const admin = isAdmin(userId);
+      const ids = admin
+        ? db.prepare('SELECT id FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(userId).map((r) => r.id)
+        : db
+            .prepare('SELECT u.project_id FROM kitchen_unlocks u JOIN projects p ON p.id = u.project_id WHERE u.user_id = ? AND p.user_id = ? ORDER BY u.created_at DESC')
+            .all(userId, userId)
+            .map((r) => r.project_id);
+      return { plan: svc.planOf(userId).id, unlockedProjectIds: ids, ...(admin ? { adminBypass: true } : {}) };
     },
 
     /** Sets (or creates) the user's one subscription row. */
@@ -190,6 +211,11 @@ export function createBillingService({ db, now, log = console }) {
       // A late event about an old subscription must not overwrite the one in use now.
       if (current && current.subscription_ref && current.subscription_ref !== ref && current.status === 'active') {
         log.warn?.(`billing: ignoring ${sub.status} for ${ref}; user is on ${current.subscription_ref}`);
+        return;
+      }
+      // Nor a complimentary plan an admin gave (it has no Stripe subscription of its own).
+      if (current && current.provider === 'comp' && current.status === 'active' && current.subscription_ref !== ref) {
+        log.warn?.(`billing: ignoring ${sub.status} for ${ref}; user has a complimentary plan`);
         return;
       }
       const metaPlan = SUBSCRIPTION_PLANS.includes(sub.metadata?.plan) ? sub.metadata.plan : null;
@@ -298,7 +324,72 @@ export function createBillingService({ db, now, log = console }) {
           churn30d: live.length + churned ? churned / (live.length + churned) : 0,
         };
       };
-      return { demo: stats('demo'), stripe: stats('stripe') };
+      const comp = { unlimited: 0, contractor: 0 };
+      for (const r of db.prepare("SELECT plan FROM subscriptions WHERE provider = 'comp' AND status = 'active'").all()) comp[r.plan] = (comp[r.plan] ?? 0) + 1;
+      return { demo: stats('demo'), stripe: stats('stripe'), comp: { active: comp } };
+    },
+
+    // -- complimentary plans (admin) --------------------------------------------
+
+    /** Active and past complimentary plans, newest first. */
+    compGrants() {
+      return db
+        .prepare(
+          `SELECT s.*, u.email AS email FROM subscriptions s JOIN users u ON u.id = s.user_id
+            WHERE s.provider = 'comp' ORDER BY s.updated_at DESC LIMIT 500`,
+        )
+        .all()
+        .map((r) => svc.compWire(r));
+    },
+
+    compWire(r) {
+      return {
+        id: r.id,
+        userId: r.user_id,
+        email: r.email ?? db.prepare('SELECT email FROM users WHERE id = ?').get(r.user_id)?.email ?? null,
+        plan: r.plan,
+        active: r.status === 'active',
+        note: r.comp_note ?? '',
+        grantedBy: r.comp_granted_by ?? null,
+        grantedAt: r.updated_at,
+        revokedAt: r.status === 'canceled' ? (r.canceled_at ?? r.updated_at) : null,
+      };
+    },
+
+    /**
+     * Gives `userId` a complimentary plan. Refused (409, code 'paid_subscription') while they pay
+     * for a plan through Stripe: two subscriptions for one account can't be told apart later.
+     * Returns `{ row, replaced }`.
+     */
+    grantComp(userId, { plan, note, adminId }) {
+      const t = now();
+      const r = subRow(userId);
+      if (r && r.provider === 'stripe' && (r.status === 'active' || r.status === 'past_due') && svc.planOf(userId).id !== 'free') {
+        throw Object.assign(new Error('This account pays for a plan through Stripe. Cancel that plan first, then grant.'), { status: 409, code: 'paid_subscription' });
+      }
+      const replaced = r ? { provider: r.provider, plan: r.plan, status: r.status } : null;
+      if (r) {
+        db.prepare(
+          `UPDATE subscriptions SET plan = ?, status = 'active', provider = 'comp', subscription_ref = NULL, current_period_end = NULL,
+                  cancel_at_period_end = 0, grace_until = NULL, canceled_at = NULL, comp_note = ?, comp_granted_by = ?, updated_at = ?
+            WHERE id = ?`,
+        ).run(plan, note, adminId, t, r.id);
+      } else {
+        db.prepare(
+          `INSERT INTO subscriptions (id, user_id, plan, status, provider, current_period_end, cancel_at_period_end, created_at, updated_at, comp_note, comp_granted_by)
+           VALUES (?, ?, ?, 'active', 'comp', NULL, 0, ?, ?, ?, ?)`,
+        ).run(randomId('sub_'), userId, plan, t, t, note, adminId);
+      }
+      return { row: subRow(userId), replaced };
+    },
+
+    /** Ends a complimentary plan now. Returns the row, or null when `id` isn't an active comp plan. */
+    revokeComp(id) {
+      const r = db.prepare("SELECT * FROM subscriptions WHERE id = ? AND provider = 'comp'").get(id);
+      if (!r || r.status !== 'active') return null;
+      const t = now();
+      db.prepare("UPDATE subscriptions SET status = 'canceled', canceled_at = ?, updated_at = ? WHERE id = ?").run(t, t, r.id);
+      return db.prepare('SELECT * FROM subscriptions WHERE id = ?').get(r.id);
     },
   };
   return svc;

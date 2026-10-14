@@ -138,7 +138,8 @@ test('Secure cookie rule: encrypted socket, or loopback + X-Forwarded-Proto http
     assert.equal(isHttps(req(lo, 'http'), { TRUST_PROXY: 0 }), false, lo);
   }
   assert.equal(isHttps(req('192.168.1.20', 'https'), { TRUST_PROXY: 0 }), false, 'a LAN client cannot claim https');
-  assert.equal(isHttps(req('192.168.1.20', 'https'), { TRUST_PROXY: 1 }), true, 'TRUST_PROXY trusts it from a proxy');
+  assert.equal(isHttps(req('192.168.1.20', 'https'), { TRUST_PROXY: 1 }), false, 'not even with TRUST_PROXY: only a loopback peer is believed');
+  assert.equal(isHttps(req('127.0.0.1', 'https, http'), { TRUST_PROXY: 1 }), true, 'the first X-Forwarded-Proto value counts');
   assert.equal(isHttps(req('192.168.1.20', undefined, true), { TRUST_PROXY: 0 }), true, 'TLS socket');
   assert.equal(secureAttr(req('192.168.1.20', undefined), { TRUST_PROXY: 0, PROD: true }), '', 'production mode alone is not Secure');
 
@@ -187,9 +188,16 @@ test('login throttle: per IP+email, and per email across rotating IPs (TRUST_PRO
       blocked = r.status === 429;
     }
     assert.ok(blocked, 'per-email limit kicks in');
-    // The first hop from the right is used: a spoofed left-most entry doesn't help.
-    const ip = t2.ctx.internal.clientIp({ headers: { 'x-forwarded-for': '6.6.6.6, 10.9.9.9' }, socket: { remoteAddress: '127.0.0.1' } });
-    assert.equal(ip, '10.9.9.9');
+    // From a loopback peer (cloudflared on this machine): CF-Connecting-IP, else the first
+    // X-Forwarded-For hop. From anyone else the headers are ignored.
+    const ipOf = (headers, remoteAddress = '127.0.0.1') => t2.ctx.internal.clientIp({ headers, socket: { remoteAddress } });
+    assert.equal(ipOf({ 'x-forwarded-for': '6.6.6.6, 10.9.9.9' }), '6.6.6.6');
+    assert.equal(ipOf({ 'cf-connecting-ip': '203.0.113.7', 'x-forwarded-for': '6.6.6.6' }), '203.0.113.7');
+    assert.equal(ipOf({ 'cf-connecting-ip': 'not an ip', 'x-forwarded-for': '6.6.6.6' }), '6.6.6.6');
+    assert.equal(ipOf({ 'cf-connecting-ip': '203.0.113.7', 'x-forwarded-for': '6.6.6.6' }, '192.168.1.20'), '192.168.1.20', 'a LAN peer cannot pick its address');
+    assert.equal(ipOf({ 'x-forwarded-for': 'garbage' }), '127.0.0.1');
+    assert.equal(ipOf({ 'cf-connecting-ip': '2001:db8::1' }, '::1'), '2001:db8::1');
+    assert.equal(t.ctx.internal.clientIp({ headers: { 'cf-connecting-ip': '203.0.113.7' }, socket: { remoteAddress: '127.0.0.1' } }), '127.0.0.1', 'TRUST_PROXY off: the socket');
   } finally {
     await t2.close();
   }

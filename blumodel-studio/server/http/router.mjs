@@ -11,8 +11,10 @@ const PARAM_RE = /^[A-Za-z0-9_-]{1,80}$/;
 const BY = new Set(['ip', 'user', 'ip+user']);
 
 /**
+ * @typedef {{ name: string, max: number, windowMs: number, by?: string }} RateLimitDef
+ *   A route may carry several (e.g. per user AND per real IP); every one must pass.
  * @typedef {{ method: string, path: string, auth?: string, csrf?: boolean, body?: string,
- *   maxBytes?: number, rateLimit?: { name: string, max: number, windowMs: number, by?: string },
+ *   maxBytes?: number, rateLimit?: RateLimitDef | RateLimitDef[],
  *   params?: Record<string, RegExp>, handler: (rc: any) => any }} RouteDef
  */
 
@@ -29,9 +31,9 @@ function compileRoute(def, moduleName) {
   const body = def.body ?? (hasBody ? 'json' : 'none');
   if (!BODY_KINDS.has(body)) throw new Error(`${where}: body must be json, raw or none.`);
   const csrf = def.csrf ?? method !== 'GET';
-  if (def.rateLimit) {
-    const rl = def.rateLimit;
-    if (!rl.name || !(rl.max > 0) || !(rl.windowMs > 0)) throw new Error(`${where}: rateLimit needs name, max and windowMs.`);
+  const limits = def.rateLimit ? (Array.isArray(def.rateLimit) ? def.rateLimit : [def.rateLimit]) : [];
+  for (const rl of limits) {
+    if (!rl || !rl.name || !(rl.max > 0) || !(rl.windowMs > 0)) throw new Error(`${where}: rateLimit needs name, max and windowMs.`);
     if (rl.by && !BY.has(rl.by)) throw new Error(`${where}: rateLimit.by must be ip, user or ip+user.`);
   }
   const segments = def.path.split('/').slice(1).map((s) => (s.startsWith(':') ? { param: s.slice(1) } : { lit: s }));
@@ -47,7 +49,7 @@ function compileRoute(def, moduleName) {
     csrf,
     body,
     maxBytes: def.maxBytes ?? 1_000_000,
-    rateLimit: def.rateLimit ? { by: 'ip', ...def.rateLimit } : null,
+    rateLimits: limits.map((rl) => ({ by: 'ip', ...rl })),
     params: def.params || {},
     handler: def.handler,
     module: moduleName,
@@ -164,14 +166,17 @@ export async function runRoute({ req, res, url, route, params, ctx, deps }) {
     if (route.auth === 'admin' && rc.user.role !== 'admin') throw new HttpError(403, 'You don’t have access to that.');
   }
 
-  // 3. Rate limit.
-  if (route.rateLimit && deps.limiter) {
-    const { name, max, windowMs, by } = route.rateLimit;
-    const who = by === 'user' ? (rc.user ? `u:${rc.user.id}` : `ip:${rc.ip}`) : by === 'ip+user' ? `ip:${rc.ip}|u:${rc.user?.id ?? '-'}` : `ip:${rc.ip}`;
-    const hit = deps.limiter.hit(`route:${name}:${who}`, max, windowMs);
-    if (!hit.ok) {
+  // 3. Rate limits (every one counts the request; the first one over its budget refuses it).
+  if (route.rateLimits.length && deps.limiter) {
+    let refused = null;
+    for (const { name, max, windowMs, by } of route.rateLimits) {
+      const who = by === 'user' ? (rc.user ? `u:${rc.user.id}` : `ip:${rc.ip}`) : by === 'ip+user' ? `ip:${rc.ip}|u:${rc.user?.id ?? '-'}` : `ip:${rc.ip}`;
+      const hit = deps.limiter.hit(`route:${name}:${who}`, max, windowMs);
+      if (!hit.ok && !refused) refused = hit;
+    }
+    if (refused) {
       const err = new HttpError(429, 'Too many requests. Wait a little and try again.');
-      err.retryAfter = Math.max(1, Math.ceil(hit.retryAfterMs / 1000));
+      err.retryAfter = Math.max(1, Math.ceil(refused.retryAfterMs / 1000));
       throw err;
     }
   }

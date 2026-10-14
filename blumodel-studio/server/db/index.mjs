@@ -4,12 +4,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
-/** Opens (creating the folder if needed) a database in WAL mode with foreign keys on. */
+/**
+ * Opens (creating the folder if needed) a database in WAL mode with foreign keys on.
+ *   busy_timeout 5 s        a writer waits for another instead of failing at once
+ *   synchronous NORMAL      safe with WAL (a power cut can lose the last commits, never corrupt)
+ *                           and far fewer fsyncs than FULL
+ *   journal_size_limit 64MB the WAL file is truncated back to this after a checkpoint
+ */
 export function openDb(file) {
   if (file !== ':memory:') fs.mkdirSync(path.dirname(path.resolve(file)), { recursive: true });
   const db = new DatabaseSync(file);
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
+  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA synchronous = NORMAL; PRAGMA journal_size_limit = 67108864;');
   return db;
+}
+
+/** Folds the WAL back into the database and truncates it (on shutdown). Never throws. */
+export function checkpoint(db) {
+  try {
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const depth = new WeakMap();

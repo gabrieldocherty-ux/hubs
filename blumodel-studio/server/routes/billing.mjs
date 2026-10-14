@@ -11,6 +11,8 @@ import { planById, PLANS, SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
 import { loadKit } from '../lib/kit.mjs';
 import { createBillingService, GRACE_MS } from '../billing/service.mjs';
 import { createStripe, idOf, periodEndOf } from '../billing/stripe.mjs';
+import { paymentsUnavailable } from '../payments/stripeApi.mjs';
+import { audit, auditLog } from '../lib/audit.mjs';
 
 export const EXPORT_KINDS = ['plan_png', 'scene_png', 'csv', 'json', 'render', 'quote'];
 const RETURN_RE = /^#\/[A-Za-z0-9/_\-?=&.%]{0,200}$/;
@@ -83,9 +85,13 @@ export default function routes(ctx) {
     return c;
   };
 
+  /** No payments on this server (launch contract): checkout and billing changes answer 503. */
+  const requirePayments = () => {
+    if (config.paymentsProvider === 'none') throw paymentsUnavailable();
+  };
   const requireDemo = () => {
+    requirePayments();
     if (!demo()) throw new HttpError(403, 'Demo payments are only available when Stripe isn’t configured.');
-    if (!config.demoPaymentsAllowed) throw new HttpError(403, 'Demo payments are turned off on this server.');
   };
 
   const meWire = (userId) => ({
@@ -160,8 +166,12 @@ export default function routes(ctx) {
     const plan = billing.planOf(userId);
     const r = billing.subRow(userId);
     if (plan.id === 'free' || !r) throw new HttpError(409, 'You don’t have a plan to change. Choose one from Pricing.');
+    if (r.provider === 'comp') throw new HttpError(409, 'Your plan was given to you by BluModel Studio. Contact support to change it.', { code: 'complimentary_plan' });
     return r;
   };
+
+  const GRANT_NOTE_MAX = 500;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   return [
     {
@@ -185,6 +195,7 @@ export default function routes(ctx) {
       path: '/api/billing/checkout',
       rateLimit: { name: 'billing-checkout', max: 30, windowMs: 3_600_000, by: 'user' },
       handler: async (rc) => {
+        requirePayments();
         const { kind } = rc.body;
         const user = rc.user;
         let projectId = null;
@@ -285,6 +296,7 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/billing/sync',
       handler: async (rc) => {
+        requirePayments();
         const sessionId = String(rc.body.sessionId ?? '');
         if (demo() || !/^cs_[A-Za-z0-9_]{1,200}$/.test(sessionId)) return { entitlements: billing.entitlements(rc.user.id), checkout: null };
         const s = await stripe.retrieveCheckoutSession(sessionId);
@@ -310,6 +322,7 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/billing/portal',
       handler: async (rc) => {
+        requirePayments();
         if (demo()) return { url: '#/account/billing?portal=demo' };
         const r = billing.subRow(rc.user.id);
         if (!r?.customer_ref) throw new HttpError(409, 'There are no payment details on file yet.');
@@ -321,6 +334,7 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/billing/change',
       handler: async (rc) => {
+        requirePayments();
         const plan = rc.body.plan;
         if (!SUBSCRIPTION_PLANS.includes(plan)) throw new HttpError(400, 'Choose Unlimited or Contractor.');
         const r = activeSub(rc.user.id);
@@ -352,6 +366,7 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/billing/cancel',
       handler: async (rc) => {
+        requirePayments();
         const r = activeSub(rc.user.id);
         if (r.cancel_at_period_end) throw new HttpError(409, 'Your plan is already set to end.');
         if (r.provider === 'stripe') {
@@ -365,6 +380,7 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/billing/resume',
       handler: async (rc) => {
+        requirePayments();
         const r = activeSub(rc.user.id);
         if (!r.cancel_at_period_end) throw new HttpError(409, 'Your plan isn’t set to cancel.');
         if (r.provider === 'stripe') {
@@ -385,6 +401,8 @@ export default function routes(ctx) {
         if (!EXPORT_KINDS.includes(kind)) throw new HttpError(400, 'Choose what to export.');
         const project = ownedProject(rc.user.id, rc.params.id);
         if (!billing.canExport(rc.user.id, project.id)) throw new HttpError(403, 'Exports are a paid feature.', { needs: 'unlock' });
+        // An admin exporting without paying is allowed (launch contract) and goes on the record.
+        const bypass = !billing.paidExport(rc.user.id, project.id);
         const doc = { ...JSON.parse(project.doc), name: project.name };
         let file = null;
         if (kind === 'csv') {
@@ -395,7 +413,10 @@ export default function routes(ctx) {
           const clean = services.pricing.stripDoc(doc, { viewer: null, ownerUserId: rc.user.id });
           file = { filename: `${slug(project.name)}.kitchen.json`, contentType: 'application/json', content: JSON.stringify({ app: 'blumodel-studio', version: 2, doc: clean }, null, 2) };
         }
-        db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, rc.user.id, kind, ctx.now());
+        ctx.tx(() => {
+          db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, rc.user.id, kind, ctx.now());
+          if (bypass) audit(db, { admin: rc.user, action: 'export_without_payment', targetUserId: rc.user.id, targetEmail: rc.user.email, detail: { projectId: project.id, kind }, at: ctx.now() });
+        });
         return { ok: true, ...(file ? { file } : {}) };
       },
     },
@@ -404,6 +425,58 @@ export default function routes(ctx) {
       path: '/api/admin/billing',
       auth: 'admin',
       handler: () => ({ payments: config.paymentsProvider, ...billing.adminStats() }),
+    },
+
+    // -- complimentary plans (admin only, audit-logged) -------------------------------------
+    {
+      method: 'GET',
+      path: '/api/admin/billing/grants',
+      auth: 'admin',
+      handler: () => ({ grants: billing.compGrants(), audit: auditLog(db, { limit: 200 }) }),
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/billing/grant',
+      auth: 'admin',
+      maxBytes: 8_192,
+      rateLimit: { name: 'admin-grant', max: 120, windowMs: 3_600_000, by: 'user' },
+      handler: (rc) => {
+        const email = typeof rc.body.email === 'string' ? rc.body.email.trim().toLowerCase().slice(0, 254) : '';
+        const plan = rc.body.plan;
+        const note = typeof rc.body.note === 'string' ? rc.body.note.trim() : '';
+        if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Enter the account’s email address.', { errors: [{ field: 'email', message: 'Enter the account’s email address.' }] });
+        if (!SUBSCRIPTION_PLANS.includes(plan)) throw new HttpError(400, 'Choose Unlimited or Contractor.', { errors: [{ field: 'plan', message: 'Choose Unlimited or Contractor.' }] });
+        if (note.length > GRANT_NOTE_MAX) throw new HttpError(400, `Keep the note to ${GRANT_NOTE_MAX} characters or fewer.`, { errors: [{ field: 'note', message: `Keep the note to ${GRANT_NOTE_MAX} characters or fewer.` }] });
+        const target = db.prepare('SELECT id, email FROM users WHERE email = ?').get(email);
+        if (!target) throw new HttpError(404, 'No account has that email address.', { code: 'no_such_user' });
+        const out = ctx.tx(() => {
+          let res;
+          try {
+            res = billing.grantComp(target.id, { plan, note, adminId: rc.user.id });
+          } catch (err) {
+            if (err?.code === 'paid_subscription') throw new HttpError(409, err.message, { code: 'paid_subscription' });
+            throw err;
+          }
+          audit(db, { admin: rc.user, action: 'comp_grant', targetUserId: target.id, targetEmail: target.email, detail: { plan, note, replaced: res.replaced }, at: ctx.now() });
+          return res;
+        });
+        rc.send(201, { grant: billing.compWire(out.row) });
+      },
+    },
+    {
+      method: 'DELETE',
+      path: '/api/admin/billing/grant/:id',
+      auth: 'admin',
+      handler: (rc) => {
+        const row = ctx.tx(() => {
+          const r = billing.revokeComp(rc.params.id);
+          if (!r) throw new HttpError(404, 'There is no active complimentary plan with that id.');
+          const u = db.prepare('SELECT email FROM users WHERE id = ?').get(r.user_id);
+          audit(db, { admin: rc.user, action: 'comp_revoke', targetUserId: r.user_id, targetEmail: u?.email ?? '', detail: { plan: r.plan, grantId: r.id }, at: ctx.now() });
+          return r;
+        });
+        return { grant: billing.compWire(row) };
+      },
     },
   ];
 }

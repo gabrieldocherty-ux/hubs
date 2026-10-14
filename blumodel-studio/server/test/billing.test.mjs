@@ -222,13 +222,14 @@ test('the server CSV is byte-for-byte the editor’s (golden), and the project f
   assert.equal(t.db.prepare("SELECT COUNT(*) AS n FROM export_events WHERE project_id = ? AND kind IN ('csv','json')").get(k.id).n, 2);
 });
 
-test('demo payments are refused in production unless DEMO_PAYMENTS=1', async () => {
+test('demo payments are refused in production unless DEMO_PAYMENTS=1 (payments: none, 503 payments_unavailable)', async () => {
   const prod = await startTestServer({ env: { PAYMENTS: 'demo', NODE_ENV: 'production' } });
   try {
     const u = await prod.user();
+    assert.equal((await u.get('/api/config')).body.payments, 'none');
     const c = await u.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
-    assert.equal(c.status, 403);
-    assert.match(c.body.error, /turned off/);
+    assert.equal(c.status, 503);
+    assert.deepEqual(c.body, { error: 'Payments are not available yet.', code: 'payments_unavailable' });
   } finally {
     await prod.close();
   }

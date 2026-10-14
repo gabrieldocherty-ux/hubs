@@ -184,14 +184,16 @@ test('demo flow: draft → pending_payment → paid; a double complete is idempo
 test('the demo route is refused in production without DEMO_PAYMENTS, and allowed with it', async () => {
   const prod = await startTestServer({ env: { PAYMENTS: 'demo', NODE_ENV: 'production' } });
   try {
+    // No Stripe and no demo: payments are 'none', and every order-payment endpoint is a 503.
     const ann = await prod.user();
     const refs = [(await ann.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id];
-    const o = (await ann.post('/api/orders', { brief: brief(refs), tier: 'simple' })).body.order;
-    const c = await ann.post(`/api/orders/${o.id}/checkout`);
-    assert.equal(c.status, 403);
-    assert.equal(c.body.error, 'Demo payments are turned off on this server.');
-    assert.equal((await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' })).status, 403);
-    assert.equal(prod.db.prepare('SELECT status FROM orders WHERE id = ?').get(o.id).status, 'draft');
+    const created = await ann.post('/api/orders', { brief: brief(refs), tier: 'simple' });
+    assert.equal(created.status, 503);
+    assert.equal(created.body.code, 'payments_unavailable');
+    const c = await ann.post('/api/orders/ord_nothing/checkout');
+    assert.deepEqual([c.status, c.body.code], [503, 'payments_unavailable']);
+    assert.equal((await ann.post('/api/payments/demo/ord_nothing/complete', { outcome: 'success' })).status, 503);
+    assert.equal(prod.db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 0);
   } finally {
     await prod.close();
   }

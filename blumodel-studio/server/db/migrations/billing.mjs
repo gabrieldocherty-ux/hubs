@@ -7,6 +7,10 @@
 //   billing_payments   receipts: unlocks, first payments and renewals
 //   export_events      who exported what, when (never the file itself)
 //   billing_stripe_products  the Stripe Product per plan, created on first plan change
+//
+//   billing-002  subscriptions.provider may be 'comp' (a complimentary plan an admin grants, with
+//                who granted it and the note); billing_payments.user_id is kept (set NULL) when
+//                an account is deleted, so receipts survive for the accounts.
 
 /** @type {{ id: string, up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
@@ -81,6 +85,55 @@ export const steps = [
           plan TEXT PRIMARY KEY CHECK (plan IN ('unlimited','contractor')),
           product_id TEXT NOT NULL,
           created_at INTEGER NOT NULL);
+      `);
+    },
+  },
+  {
+    // SQLite can't alter a CHECK or a foreign key, so both tables are rebuilt (create, copy by
+    // column name, drop, rename) with foreign keys off; nothing references either table.
+    id: 'billing-002-comp-plans-keep-receipts',
+    foreignKeys: 'off',
+    up(db) {
+      const subCols = `id, user_id, plan, status, provider, customer_ref, subscription_ref, current_period_end,
+          cancel_at_period_end, grace_until, canceled_at, created_at, updated_at`;
+      const payCols = 'id, user_id, kind, plan, project_id, project_name, amount_cents, currency, provider, ref, created_at';
+      db.exec(`
+        CREATE TABLE subscriptions_next (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+          plan TEXT NOT NULL CHECK (plan IN ('unlimited','contractor')),
+          status TEXT NOT NULL CHECK (status IN ('active','past_due','canceled','incomplete')),
+          provider TEXT NOT NULL CHECK (provider IN ('demo','stripe','comp')),
+          customer_ref TEXT,
+          subscription_ref TEXT UNIQUE,
+          current_period_end INTEGER,
+          cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+          grace_until INTEGER,
+          canceled_at INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          comp_note TEXT NOT NULL DEFAULT '',
+          comp_granted_by TEXT);
+        INSERT INTO subscriptions_next (${subCols}) SELECT ${subCols} FROM subscriptions;
+        DROP TABLE subscriptions;
+        ALTER TABLE subscriptions_next RENAME TO subscriptions;
+
+        CREATE TABLE billing_payments_next (
+          id TEXT PRIMARY KEY,
+          user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          kind TEXT NOT NULL CHECK (kind IN ('kitchen_unlock','subscription','renewal')),
+          plan TEXT,
+          project_id TEXT,
+          project_name TEXT NOT NULL DEFAULT '',
+          amount_cents INTEGER NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'usd',
+          provider TEXT NOT NULL CHECK (provider IN ('demo','stripe')),
+          ref TEXT UNIQUE,
+          created_at INTEGER NOT NULL);
+        INSERT INTO billing_payments_next (${payCols}) SELECT ${payCols} FROM billing_payments;
+        DROP TABLE billing_payments;
+        ALTER TABLE billing_payments_next RENAME TO billing_payments;
+        CREATE INDEX billing_payments_user ON billing_payments(user_id, created_at);
       `);
     },
   },

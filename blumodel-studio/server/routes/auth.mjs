@@ -76,6 +76,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/auth/login',
       auth: 'none',
+      // Every attempt from one real address, on top of the per IP+email and per-email budgets below.
+      rateLimit: { name: 'login-ip', max: 100, windowMs: LOGIN_WINDOW, by: 'ip' },
       handler: async (rc) => {
         const email = str(rc.body.email, 254).toLowerCase();
         const password = typeof rc.body.password === 'string' ? rc.body.password : '';

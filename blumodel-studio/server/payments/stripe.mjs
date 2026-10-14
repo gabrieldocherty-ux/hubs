@@ -5,60 +5,16 @@
 // Every amount sent here was computed by tiers.mjs when the order was created.
 
 import { HttpError } from '../http/respond.mjs';
+import { createStripeRequest, encodeForm, idOf } from './stripeApi.mjs';
 
-const API = 'https://api.stripe.com/v1';
-
-/** Stripe's form encoding: nested objects as a[b][c], arrays as a[0][b]. */
-export function encodeForm(params, prefix = '', out = new URLSearchParams()) {
-  for (const [k, v] of Object.entries(params ?? {})) {
-    if (v === undefined || v === null) continue;
-    const key = prefix ? `${prefix}[${k}]` : k;
-    if (Array.isArray(v)) v.forEach((x, i) => (x !== null && typeof x === 'object' ? encodeForm(x, `${key}[${i}]`, out) : out.append(`${key}[${i}]`, String(x))));
-    else if (typeof v === 'object') encodeForm(v, key, out);
-    else out.append(key, String(v));
-  }
-  return out;
-}
-
-/** An id whether Stripe sent the object or just its id. */
-export const idOf = (v) => (typeof v === 'string' ? v : v && typeof v.id === 'string' ? v.id : null);
+export { encodeForm, idOf };
 
 /**
  * @param {{ config: any, fetch: typeof fetch, log?: any }} deps
  */
 export function createStripeProvider({ config, fetch, log = console }) {
-  async function request(method, path, params, { idempotencyKey } = {}) {
-    const form = params ? encodeForm(params).toString() : '';
-    const url = method === 'GET' && form ? `${API}${path}?${form}` : `${API}${path}`;
-    let res;
-    try {
-      res = await fetch(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${config.STRIPE_SECRET_KEY}`,
-          ...(method === 'GET' ? {} : { 'Content-Type': 'application/x-www-form-urlencoded' }),
-          ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
-        },
-        body: method === 'GET' ? undefined : form,
-        signal: AbortSignal.timeout(20_000),
-      });
-    } catch (err) {
-      log.warn?.(`stripe ${method} ${path}: ${err?.message ?? err}`);
-      throw new HttpError(502, 'Couldn’t reach the payment provider. Try again in a moment.');
-    }
-    let data = null;
-    try {
-      data = await res.json();
-    } catch {
-      /* not JSON */
-    }
-    if (!res.ok) {
-      const message = data?.error?.message;
-      log.warn?.(`stripe ${method} ${path}: ${res.status} ${message ?? ''}`);
-      throw new HttpError(502, message ? `The payment provider said: ${message}` : 'The payment provider refused that request.');
-    }
-    return data;
-  }
+  // Failures never echo Stripe's message, a header, a body or the key (see stripeApi.mjs).
+  const request = createStripeRequest({ config, fetch, log });
 
   return {
     id: 'stripe',

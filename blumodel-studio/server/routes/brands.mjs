@@ -593,7 +593,11 @@ export default function routes(ctx) {
       path: '/api/brands/by-slug/:slug/leads',
       auth: 'optional',
       maxBytes: 16_384,
-      rateLimit: { name: 'brand-lead', max: 5, windowMs: 3_600_000, by: 'ip' },
+      // Per real address: 5 an hour, 20 a day across every brand page.
+      rateLimit: [
+        { name: 'brand-lead', max: 5, windowMs: 3_600_000, by: 'ip' },
+        { name: 'brand-lead-day', max: 20, windowMs: 86_400_000, by: 'ip' },
+      ],
       handler: (rc) => {
         const brand = livePage(rc.params.slug);
         if (brand.kind !== 'contractor' || !brand.leadForm) throw new HttpError(404, 'This page isn’t taking requests right now.');

@@ -16,7 +16,11 @@ export default function routes(ctx) {
       method: 'PUT',
       path: '/api/files',
       body: 'none', // streamed by files.saveUpload
-      rateLimit: { name: 'upload', max: 120, windowMs: 3_600_000, by: 'user' },
+      // Per account, and per real address (many throwaway accounts behind one address).
+      rateLimit: [
+        { name: 'upload', max: 120, windowMs: 3_600_000, by: 'user' },
+        { name: 'upload-ip', max: 300, windowMs: 3_600_000, by: 'ip' },
+      ],
       handler: async (rc) => {
         const kind = rc.query.get('kind') || '';
         if (!['model', 'image', 'reference'].includes(kind)) throw new HttpError(400, 'Choose a file kind: model, image or reference.');

@@ -8,6 +8,9 @@
 
 import { verifyStripeSignature } from '../lib/validators.mjs';
 
+/** Signed events older (or newer) than this are refused: Stripe's own default tolerance. */
+export const WEBHOOK_TOLERANCE_SEC = 300;
+
 /** @param {any} ctx */
 export default function routes(ctx) {
   const { config, db, services } = ctx;
@@ -21,9 +24,10 @@ export default function routes(ctx) {
       body: 'raw',
       maxBytes: 1_000_000,
       handler: (rc) => {
-        if (config.paymentsProvider !== 'stripe' || !config.STRIPE_WEBHOOK_SECRET) throw rc.error(400, 'Stripe payments are not enabled on this server.');
+        // 503 (not 400) so Stripe keeps retrying while the server's Stripe setup is being fixed.
+        if (config.paymentsProvider !== 'stripe' || !config.STRIPE_WEBHOOK_SECRET) throw rc.error(503, 'Stripe payments are not enabled on this server.', { code: 'payments_unavailable' });
         const signature = rc.req.headers['stripe-signature'];
-        if (!verifyStripeSignature(rc.body, signature, config.STRIPE_WEBHOOK_SECRET, 300, ctx.now())) throw rc.error(400, 'Invalid signature.');
+        if (!verifyStripeSignature(rc.body, signature, config.STRIPE_WEBHOOK_SECRET, WEBHOOK_TOLERANCE_SEC, ctx.now())) throw rc.error(400, 'Invalid signature.');
         let event;
         try {
           event = JSON.parse(rc.body.toString('utf8'));
