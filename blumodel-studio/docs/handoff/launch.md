@@ -69,6 +69,11 @@ pages say "the operator of this site" and "the place where the operator of this 
      180px apple-touch-icon, all made from the brand mark by `node scripts/make-icons.mjs`
      (headless Edge through the QA driver; `--check` verifies sizes); theme-color; canonical,
      og and twitter tags for https://blumodel.studio/.
+   - **Plain paths work**: every route lives in the hash, but the server answers any extensionless
+     path with the app, so `src/boot.ts` turns a typed or shared `https://blumodel.studio/terms`
+     (or `/pricing/`, `/b/<slug>`) into `/#/terms` before the router reads the address, keeping
+     the query; an unknown path becomes the 404 and a path that came with a hash keeps that hash
+     (`pathToHashUrl` in `src/lib/router.ts`, unit-tested, and the `path-to-hash` QA route).
    - **Friendly failure screens**: a 404 for any unknown address; a root error boundary and one per
      route ("Something went wrong · Reload; your design is saved", pending edits are flushed
      first, a chunk missing after a redeploy reloads once by itself); a *Can't reach BluModel
@@ -79,14 +84,15 @@ pages say "the operator of this site" and "the place where the operator of this 
      safe-area insets on modals, the editor shell and fixed bars. The known cosmetic issues (home
      card names below 980px, the top bar's "Sign in to save" wrapping) were fixed in the
      integration pass and their markers are gone; no QA route carries a `knownIssue`.
-4. **QA** (`scripts/qa/routes/launch.mjs`, 69 routes): every payment state on pricing, Billing,
+4. **QA** (`scripts/qa/routes/launch.mjs`, 70 routes): every payment state on pricing, Billing,
    the Unlock dialog (signed in and on a device), model orders and the Contractor sign-up; the
    DEMO checkout finishing the export the user clicked; the return from a cancelled or paid
    Stripe checkout on Billing, a kitchen, an order and `#/pro`; the three legal pages with and
    without the operator's details, the admins-only badge, and the footer on every public page;
    account export (no other user's data, no hash) and delete (the 409 for a renewing plan, a wrong
-   password, then the real thing); the 404; both error boundaries; the connection banner; the
-   manifest, icons, head tags and self-hosted fonts; and the **phone pass**: every routed screen
+   password, then the real thing); the 404 and a plain `/terms`-style path; both error
+   boundaries; the connection banner; the manifest, icons, head tags and self-hosted fonts; and
+   the **phone pass**: every routed screen
    for a visitor, a customer, a contractor, an admin and a brand at 360×740, 390×844, 414×896,
    844×390 and 820×1180, failing on sideways scroll, clipped or off-screen text, a tap target
    under 44px or a field under 16px (each problem names the element's tag and classes).

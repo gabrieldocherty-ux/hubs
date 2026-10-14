@@ -921,6 +921,26 @@ export default [
     check: noSideScroll,
   },
   {
+    // A typed or shared https://blumodel.studio/terms (no hash) is served the app; boot.ts moves the
+    // path into the hash, so it opens the Terms rather than the landing page, and an unknown path is the 404.
+    name: 'path-to-hash',
+    path: '#/welcome',
+    as: 'anon',
+    expectText: ['See your new kitchen before anyone picks up a hammer'],
+    check: async (h) => {
+      const where = () => h.evaluate(() => `${location.pathname}${location.search}${location.hash}`);
+      await h.page.goto(`${h.base}/terms?qa=1`, 20_000);
+      await h.waitForText('Terms of Service');
+      if ((await where()) !== '/?qa=1#/terms') throw new Error(`/terms became ${await where()}, not /?qa=1#/terms`);
+      await h.page.goto(`${h.base}/pricing/?qa=1`, 20_000);
+      await h.waitFor('.mk-pricing-hero');
+      if ((await where()) !== '/?qa=1#/pricing') throw new Error(`/pricing/ became ${await where()}, not /?qa=1#/pricing`);
+      await h.page.goto(`${h.base}/no/such/page?qa=1`, 20_000);
+      await h.waitForText('We can’t find that page');
+      if ((await where()) !== '/?qa=1#/no/such/page') throw new Error(`/no/such/page became ${await where()}`);
+    },
+  },
+  {
     name: 'crash-route',
     path: '#/pricing?qa-crash=route',
     as: 'anon',

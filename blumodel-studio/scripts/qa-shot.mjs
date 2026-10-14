@@ -17,7 +17,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const FORBIDDEN_PORTS = Object.freeze([8787, 8790]);
+// 8787: another app. 8790: the live BluModel server. 8795: the blumodel.studio holding page.
+export const FORBIDDEN_PORTS = Object.freeze([8787, 8790, 8795]);
 
 const BROWSERS = {
   edge: ['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe', '/usr/bin/microsoft-edge'],
