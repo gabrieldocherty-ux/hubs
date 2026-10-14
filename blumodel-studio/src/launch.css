@@ -404,3 +404,39 @@
 .auth-panel {
   align-content: center;
 }
+
+/* ─── Phones, tablets and safe areas ────────────────────── */
+
+/* The editor's "← Kitchens" stays on one line. */
+.back-label {
+  white-space: nowrap;
+}
+
+/*
+ * index.html asks for viewport-fit=cover, so the page may run under a notch or the home indicator.
+ * In-flow content keeps clear of the side insets (landscape); fixed bars pad themselves.
+ */
+body {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* The dynamic viewport height: a phone's collapsing browser bars never cut a dialog or panel off. */
+.modal-backdrop > .modal {
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 901px) {
+  .gen-compare {
+    height: calc(100dvh - 58px - 84px - 32px);
+  }
+}
+
+/* Touch screens: text fields at 16px (smaller makes iOS zoom in on focus). */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

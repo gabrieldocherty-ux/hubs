@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="BluModel Studio: plan a kitchen to scale with branded cabinets, appliances and finishes, then walk through it in 3D." />
     <meta name="application-name" content="BluModel Studio" />
     <meta name="apple-mobile-web-app-title" content="BluModel" />
@@ -12,14 +12,25 @@
     <meta property="og:description" content="Plan a kitchen to scale with branded cabinets, appliances and finishes, then walk through it in 3D." />
     <meta property="og:url" content="https://blumodel.studio/" />
     <meta property="og:image" content="https://blumodel.studio/marketing/hero.webp" />
+    <meta property="og:image:alt" content="A kitchen designed in BluModel Studio, in 3D" />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BluModel Studio: design your kitchen in 3D" />
+    <meta name="twitter:description" content="Plan a kitchen to scale with branded cabinets, appliances and finishes, then walk through it in 3D." />
+    <meta name="twitter:image" content="https://blumodel.studio/marketing/hero.webp" />
     <meta name="theme-color" content="#f3eee5" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2.5' y='2.5' width='27' height='27' rx='3' fill='%23fbf9f4' stroke='%23211e1a' stroke-width='2.4'/%3E%3Cpath d='M9 23V9' stroke='%23211e1a' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M9 9a14 14 0 0 1 14 14' fill='none' stroke='%23c2542d' stroke-width='2.4'/%3E%3C/svg%3E" />
-    <!-- No web fonts are loaded from a third party (BUILD_PLAN 1.8: no runtime requests to other hosts, and
-         Google Fonts would see every visitor's IP). styles.css names Fraunces, Instrument Sans and JetBrains
-         Mono first, so a machine that has them installed uses them; everyone else gets the Iowan Old Style /
-         Georgia, system-ui / Segoe UI and ui-monospace fallbacks. To ship the real faces, put woff2 files in
-         public/fonts/ and add @font-face rules at the top of src/styles.css (all three are SIL OFL). -->
+    <meta name="color-scheme" content="light" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- The app lives at the root; every #/ route is the same document, so one canonical URL. -->
+    <link rel="canonical" href="https://blumodel.studio/" />
+    <!-- Installable (Add to Home Screen) with no service worker: nothing is cached behind the server's back. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <!-- Web fonts are self-hosted (public/fonts, src/fonts.css): no page asks Google, or any other host, for anything. -->
     <title>BluModel Studio · Design your kitchen in 3D</title>
   </head>
   <body>
