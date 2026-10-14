@@ -58,12 +58,46 @@ pages say "the operator of this site" and "the place where the operator of this 
    (`GET /api/account/export`, saved under the server's filename) and *Delete my account* (password,
    explains that a renewing plan must be cancelled first and links to Billing on the 409; on success
    the landing page says the account is gone).
+3. **Polish and phones:**
+   - **Fonts are self-hosted**: Fraunces (roman + italic, with its optical-size axis), Instrument
+     Sans (roman + italic) and JetBrains Mono, variable 400-700, latin and latin-ext subsets, as
+     woff2 in `public/fonts/` with the SIL OFL in `public/fonts/OFL.txt`, declared in
+     `src/fonts.css`. Nothing the site serves names a Google host: `index.html` has no font links,
+     and `vite.config.ts` rewrites drei's unused default Draco URL (gstatic) to `/draco/`.
+   - **Installable, no service worker**: `public/manifest.webmanifest` (*BluModel Studio* /
+     *BluModel*, standalone, start `/#/`), icons 192, 512, maskable 512, an SVG favicon and a
+     180px apple-touch-icon, all made from the brand mark by `node scripts/make-icons.mjs`
+     (headless Edge through the QA driver; `--check` verifies sizes); theme-color; canonical,
+     og and twitter tags for https://blumodel.studio/.
+   - **Friendly failure screens**: a 404 for any unknown address; a root error boundary and one per
+     route ("Something went wrong · Reload; your design is saved", pending edits are flushed
+     first, a chunk missing after a redeploy reloads once by itself); a *Can't reach BluModel
+     Studio · Retry* banner whenever the API doesn't answer.
+   - **Phones and tablets** (`src/launch.css`, the `pointer: coarse` block): every control is at
+     least 44 × 44 px and every text field 16 px; headers that also carry steps or a button drop
+     the wordmark below 480px rather than overlap it; header buttons never wrap; 100dvh and the
+     safe-area insets on modals, the editor shell and fixed bars. The known cosmetic issues (home
+     card names below 980px, the top bar's "Sign in to save" wrapping) were fixed in the
+     integration pass and their markers are gone; no QA route carries a `knownIssue`.
+4. **QA** (`scripts/qa/routes/launch.mjs`, 69 routes): every payment state on pricing, Billing,
+   the Unlock dialog (signed in and on a device), model orders and the Contractor sign-up; the
+   DEMO checkout finishing the export the user clicked; the return from a cancelled or paid
+   Stripe checkout on Billing, a kitchen, an order and `#/pro`; the three legal pages with and
+   without the operator's details, the admins-only badge, and the footer on every public page;
+   account export (no other user's data, no hash) and delete (the 409 for a renewing plan, a wrong
+   password, then the real thing); the 404; both error boundaries; the connection banner; the
+   manifest, icons, head tags and self-hosted fonts; and the **phone pass**: every routed screen
+   for a visitor, a customer, a contractor, an admin and a brand at 360×740, 390×844, 414×896,
+   844×390 and 820×1180, failing on sideways scroll, clipped or off-screen text, a tap target
+   under 44px or a field under 16px (each problem names the element's tag and classes).
 
 ## How to see every state
 
-QA-only override, read only when the page URL has `?qa`:
+QA-only override, read only when the page URL has `?qa` **and** the page is on a loopback address
+(127.x, localhost, [::1]; never on blumodel.studio, so a crafted link can't show a DEMO banner over
+real checkout or another business's name on the Terms):
 `http://127.0.0.1:<port>/?qa=1#/pricing?qa-payments=none|demo|stripe&qa-legal=ready|unset`. It is
 remembered for that tab (sessionStorage `blumodel.qa.config`). `qa-crash=route|root` throws inside the
-route's or the root error boundary.
+route's or the root error boundary (also loopback only).
 
 `node scripts/qa.mjs --pkg launch --port 8852 --dist .build/client --strict-external`

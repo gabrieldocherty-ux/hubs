@@ -24,7 +24,7 @@ const loc = globalThis.location as unknown as { search: string; hash: string };
 const { ApiError } = await import('../api');
 const { normalizeConfig, normalizeLegal, readQaOverride, applyQaOverride, NO_LEGAL, QA_LEGAL, PUBLIC_URL } = await import('../config');
 const { isPaymentsUnavailable, paymentError, PAYMENTS_SOON, markCheckout, settleDemoCheckout, takeCheckoutReturn } = await import('../payments');
-const { parseRoute, hrefFor, safeNext } = await import('../router');
+const { parseRoute, hrefFor, safeNext, pathToHashUrl } = await import('../router');
 const { attachmentName } = await import('../attachment');
 const { isLoopbackHost } = await import('../qa');
 
@@ -75,6 +75,19 @@ test('the QA override only replaces payments and legal, and is remembered for th
 test('the QA override works only on this machine: never on blumodel.studio, whatever the link says', () => {
   for (const h of ['127.0.0.1', '127.0.0.2', 'localhost', 'LOCALHOST', '[::1]']) assert.equal(isLoopbackHost(h), true, h);
   for (const h of ['blumodel.studio', 'www.blumodel.studio', '127.0.0.1.evil.test', 'localhost.evil.test', '192.168.1.5', '10.0.0.1', '']) assert.equal(isLoopbackHost(h), false, h);
+});
+
+test('a path the server answered with the app becomes the same hash route', () => {
+  assert.equal(pathToHashUrl('/', '', ''), null);
+  assert.equal(pathToHashUrl('/', '?qa=1', '#/pricing'), null);
+  assert.equal(pathToHashUrl('/index.html', '', ''), null);
+  assert.equal(pathToHashUrl('/terms', '', ''), '/#/terms');
+  assert.equal(pathToHashUrl('/pricing/', '', ''), '/#/pricing');
+  assert.equal(pathToHashUrl('/b/alder-and-pine', '?ref=x', ''), '/?ref=x#/b/alder-and-pine');
+  assert.equal(pathToHashUrl('/old-page', '', '#/privacy'), '/#/privacy', 'a hash of its own wins');
+  assert.equal(pathToHashUrl('/no/such/page', '', '#'), '/#/no/such/page');
+  assert.deepEqual(parseRoute('#/no/such/page'), { name: 'notFound' });
+  assert.deepEqual(parseRoute('#/terms'), { name: 'legal', doc: 'terms' });
 });
 
 // ─── payments ────────────────────────────────────────────────────────────────

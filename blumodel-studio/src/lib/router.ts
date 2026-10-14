@@ -58,6 +58,20 @@ export function splitHash(hash: string): { path: string; query: URLSearchParams 
 const opt = (v: string | null) => (v ? v : undefined);
 
 /**
+ * The server answers any extensionless path with the app (server/http/static.mjs), but every route
+ * lives in the hash, so `https://blumodel.studio/terms` used to open the landing page. A typed or
+ * shared `/terms`, `/pricing` or `/b/<slug>` now becomes `/#/terms` and so on, and an unknown path
+ * lands on the 404 like an unknown `#/…`. A path that came with a hash of its own keeps the hash.
+ * Returns the URL to put in the address bar, or null when the path is already the root.
+ */
+export function pathToHashUrl(pathname: string, search: string, hash: string): string | null {
+  const path = pathname.replace(/\/+$/, '');
+  if (!path || path === '/index.html') return null;
+  const own = hash && hash !== '#' && hash !== '#/' ? hash : '';
+  return `/${search}${own || `#${path}`}`;
+}
+
+/**
  * The route for a hash. A path the app doesn't know (or a malformed id) is `notFound`, which shows
  * a friendly page with a way home, never a blank screen or someone else's page.
  */
