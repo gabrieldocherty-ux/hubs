@@ -52,6 +52,10 @@ export function createWebhookService() {
       if (typeof handler !== 'function') throw new Error('webhooks.on(kind, handler): handler must be a function.');
       handlers.set(kind, [...(handlers.get(kind) ?? []), handler]);
     },
+    /** Every kind and event type a handler is registered for (the webhook event list is checked against it). */
+    registered() {
+      return [...handlers.keys()];
+    },
     /** Runs every handler for the event's type and its object's metadata.kind. Returns how many ran. */
     dispatch(event) {
       const kinds = new Set([event?.type, event?.data?.object?.metadata?.kind].filter((k) => typeof k === 'string' && k));

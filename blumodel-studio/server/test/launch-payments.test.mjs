@@ -14,7 +14,9 @@ const TEST_KEY = 'sk_test_FAKE_FOR_TESTS';
 const LIVE_KEY = 'sk_live_FAKE_FOR_TESTS';
 const LIVE_RK = 'rk_live_FAKE_FOR_TESTS';
 const WHSEC = 'whsec_FAKE_FOR_TESTS';
-const noSecret = (s) => !/FAKE_FOR_TESTS|sk_(live|test)_|rk_(live|test)_|whsec_/.test(String(s));
+// A key fragment is a prefix followed by key characters. Naming a prefix to explain what belongs
+// in a setting ("they start whsec_", "sk_live_/sk_test_") is not a leak.
+const noSecret = (s) => !/FAKE_FOR_TESTS|(sk|rk|pk)_(live|test)_[A-Za-z0-9]|whsec_[A-Za-z0-9]/.test(String(s));
 
 test('stripeKeyMode reads the mode from the prefix only', () => {
   assert.equal(stripeKeyMode(''), 'none');
