@@ -1,6 +1,7 @@
 // Launch QA routes (blumodel.studio going public): the three payment states, the legal pages and
 // their footer links, account export and delete, the 404, the error boundaries, the connection
-// banner, and the phone pass over every routed screen.
+// banner, the manifest / head tags / self-hosted fonts, and the phone pass over every routed
+// screen (a failure names the element's tag and classes, so it says which rule to fix).
 // Run: node scripts/qa.mjs --pkg launch --port 8852 --dist .build/client --strict-external
 //
 // The QA server always runs with PAYMENTS=demo. The client's QA-only override shows the other
@@ -186,6 +187,8 @@ function audit() {
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 36);
+  /** `tag.class.class`, so a failure says which rule to fix. */
+  const sel = (el) => `${el.tagName.toLowerCase()}${[...el.classList].slice(0, 3).map((c) => `.${c}`).join('')}`;
   /** Inside something that scrolls sideways on purpose (chip rows, tables), or a canvas overlay. */
   const inScroller = (el) => {
     for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
@@ -210,12 +213,12 @@ function audit() {
       if (!lr) continue;
       box = lr;
     }
-    if (box.height < 43.5 || box.width < 43.5) out.small.push(`${name(el)} (${Math.round(box.width)}×${Math.round(box.height)})`);
+    if (box.height < 43.5 || box.width < 43.5) out.small.push(`${name(el)} ${sel(el)} (${Math.round(box.width)}×${Math.round(box.height)})`);
   }
   for (const el of document.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea')) {
     if (!shown(el)) continue;
     const fs = parseFloat(getComputedStyle(el).fontSize);
-    if (fs < 15.5) out.font.push(`${name(el)} (${fs}px)`);
+    if (fs < 15.5) out.font.push(`${name(el)} ${sel(el)} (${fs}px)`);
   }
   for (const el of document.querySelectorAll('body *')) {
     if (el.closest('canvas, svg')) continue;
@@ -227,7 +230,7 @@ function audit() {
     if (cut) out.clipped.push(`${name(el)} (${el.scrollWidth} in ${el.clientWidth}px)`);
     if ((r.right > vw + 1 || r.left < -1) && !inScroller(el) && s.position !== 'fixed') out.offscreen.push(`${name(el)} (${Math.round(r.left)}–${Math.round(r.right)})`);
   }
-  const uniq = (a) => [...new Set(a)].slice(0, 12);
+  const uniq = (a) => [...new Set(a)].slice(0, 40);
   return { overflow: out.overflow, clipped: uniq(out.clipped), offscreen: uniq(out.offscreen), small: uniq(out.small), font: uniq(out.font) };
 }
 
@@ -924,6 +927,7 @@ export default [
     ignoreConsole: DELIBERATE_CRASH,
     expectText: ['Something went wrong', 'Your design is saved', 'Reload', 'Go to the home page'],
     check: async (h) => {
+      await h.shot('crashed');
       // Only the screen is replaced: moving to another screen clears it.
       await h.goto('#/welcome');
       await h.waitForText('See your new kitchen before anyone picks up a hammer');
@@ -962,6 +966,68 @@ export default [
       });
       await clickLabelled(h, 'Retry');
       await h.waitUntil(() => !document.querySelector('.conn-banner'), 5000, 'the banner clearing');
+    },
+  },
+
+  // ── Installable, self-hosted, findable ───────────────────────────────────
+  {
+    // The manifest and every icon it names are served (no service worker), the head carries the
+    // canonical and share tags for blumodel.studio, and the web fonts came from this server.
+    name: 'pwa-head-fonts',
+    path: '#/',
+    as: 'anon',
+    expectText: ['See your new kitchen before anyone picks up a hammer'],
+    check: async (h) => {
+      const r = await h.evaluate(async () => {
+        const meta = (sel, attr = 'content') => document.querySelector(sel)?.getAttribute(attr) ?? null;
+        const link = document.querySelector('link[rel="manifest"]')?.getAttribute('href');
+        const res = await fetch(link);
+        const manifest = await res.json();
+        const icons = [];
+        for (const i of manifest.icons ?? []) {
+          const ir = await fetch(i.src);
+          const blob = await ir.blob();
+          let size = null;
+          if (i.type === 'image/png') {
+            const bmp = await createImageBitmap(blob);
+            size = `${bmp.width}x${bmp.height}`;
+          }
+          icons.push({ src: i.src, status: ir.status, type: ir.headers.get('content-type'), declared: i.sizes, size, purpose: i.purpose });
+        }
+        const touch = await fetch(meta('link[rel="apple-touch-icon"]', 'href'));
+        await document.fonts.ready;
+        const fontFiles = performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\.woff2(\?|$)/.test(n));
+        return {
+          manifestType: res.headers.get('content-type'),
+          manifest,
+          icons,
+          touch: touch.status,
+          themeColor: meta('meta[name="theme-color"]'),
+          canonical: meta('link[rel="canonical"]', 'href'),
+          ogUrl: meta('meta[property="og:url"]'),
+          ogImage: meta('meta[property="og:image"]'),
+          title: document.title,
+          workers: navigator.serviceWorker ? (await navigator.serviceWorker.getRegistrations()).length : 0,
+          fonts: ['Fraunces', 'Instrument Sans'].map((f) => [f, document.fonts.check(`16px "${f}"`)]),
+          fontFiles,
+        };
+      });
+      const bad = [];
+      if (!/application\/manifest\+json/.test(r.manifestType ?? '')) bad.push(`manifest served as ${r.manifestType}`);
+      if (r.manifest.name !== 'BluModel Studio' || r.manifest.short_name !== 'BluModel') bad.push(`manifest names ${r.manifest.name} / ${r.manifest.short_name}`);
+      if (r.manifest.display !== 'standalone' || r.manifest.start_url !== '/#/') bad.push(`manifest display ${r.manifest.display}, start_url ${r.manifest.start_url}`);
+      for (const want of ['192x192', '512x512']) if (!r.icons.some((i) => i.size === want && i.declared === want && i.purpose === 'any')) bad.push(`no ${want} "any" icon`);
+      if (!r.icons.some((i) => i.purpose === 'maskable' && i.size === '512x512')) bad.push('no 512px maskable icon');
+      for (const i of r.icons) if (i.status !== 200 || (i.size && i.size !== i.declared)) bad.push(`icon ${i.src}: ${i.status}, ${i.size} for ${i.declared}`);
+      if (r.touch !== 200) bad.push(`apple-touch-icon answered ${r.touch}`);
+      if (!r.themeColor) bad.push('no theme-color');
+      if (r.canonical !== 'https://blumodel.studio/' || r.ogUrl !== 'https://blumodel.studio/' || !String(r.ogImage).startsWith('https://blumodel.studio/')) bad.push(`canonical ${r.canonical}, og:url ${r.ogUrl}, og:image ${r.ogImage}`);
+      if (!/BluModel Studio/.test(r.title)) bad.push(`title “${r.title}”`);
+      if (r.workers) bad.push(`${r.workers} service worker(s) registered`);
+      for (const [f, ok] of r.fonts) if (!ok) bad.push(`${f} is not loaded`);
+      if (!r.fontFiles.length || r.fontFiles.some((u) => !u.startsWith(`${h.base}/fonts/`))) bad.push(`font files: ${JSON.stringify(r.fontFiles)}`);
+      if (bad.length) throw new Error(bad.join('; '));
+      h.note(`icons ${r.icons.map((i) => i.size ?? i.type).join(', ')}; fonts ${r.fontFiles.length} files from /fonts/`);
     },
   },
 
