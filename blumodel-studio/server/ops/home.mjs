@@ -93,12 +93,17 @@ export const crlf = (s) => s.replace(/\r?\n/g, '\r\n');
  * blumodel.env alone: a stray user or system variable (an ANTHROPIC_API_KEY set for other work, an
  * old test Stripe key, DEMO_PAYMENTS=1) can't override the file on the public server. The loader's
  * rule "the environment wins over the file" still holds; the supervisor just starts clean.
+ * NODE_OPTIONS and NODE_TLS_REJECT_UNAUTHORIZED go too: a NODE_OPTIONS=--inspect (or --require)
+ * set for other work would open a debugger or load code into the public server, and
+ * NODE_TLS_REJECT_UNAUTHORIZED=0 would stop it checking Stripe's certificate.
  */
 export const CLEARED_ENV = Object.freeze([
   ...ENV_FILE_KEYS,
   'PAYMENTS',
   'RATE_LIMITS',
   'NODE_ENV',
+  'NODE_OPTIONS',
+  'NODE_TLS_REJECT_UNAUTHORIZED',
   'MISE_ENV_FILE',
   'MISE_LLM_MODEL',
   'SEED_PASSWORD',

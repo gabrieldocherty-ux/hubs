@@ -14,7 +14,9 @@
 //   2. Moves the folder (one rename on the same drive), or, when the new folder exists, moves each
 //      file and folder that isn't there yet. Nothing in the new folder is ever overwritten; what
 //      can't move (a file of the same name is already there, or the old app\ when the new folder
-//      has one) stays in the old folder, which is then left in place and listed.
+//      has one) stays in the old folder, which is then left in place and listed. When Windows
+//      won't move it (a terminal whose current folder is inside, Notepad with mise.env open), it
+//      refuses with that reason instead: the folder rename is the first change it makes.
 //   3. Renames data\mise.db (and its -wal and -shm, which may hold most of the data) to
 //      data\blumodel.db.
 //   4. Renames mise.env to blumodel.env with a file rename only: the file is never opened, read,
@@ -22,8 +24,8 @@
 //      who may read it without reading it).
 //   5. Renames supervisor scripts generated before the rename (they start the server on
 //      data\mise.db, which would now create an empty database) to <name>.pre-migration.
-//   6. Prints what is left to do: deploy the new code, and the Task Scheduler changes
-//      (delete MiseKitchenServer; register BluModelStudioServer and BluModelTunnel).
+//   6. Prints what is left to do: deploy the new code, write the tunnel files, and the Task
+//      Scheduler changes (delete MiseKitchenServer; register BluModelStudioServer and BluModelTunnel).
 // Backups (data\backups\), uploads (data\uploads\) and logs (logs\) move with the folder.
 
 import fs from 'node:fs';
@@ -126,6 +128,8 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
   to = path.resolve(to);
   const blocked = [];
   const did = [];
+  /** Set when a merge stopped part-way (some items already moved). */
+  let partial = false;
   /** @type {ReturnType<typeof planMove>} */
   let plan = { kind: 'none', moves: [], left: [] };
   const say = (s) => {
@@ -166,16 +170,41 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
   );
 
   // ── 2. move or merge ───────────────────────────────────────────────────
+  // Windows refuses to move a folder (EPERM/EBUSY) while any process has it, or a file in it, open:
+  // a terminal whose current folder is inside it, an editor such as Notepad with mise.env open.
+  // The process check above only sees command lines, so this is where those show up.
+  const busy = (err) => ['EPERM', 'EBUSY', 'EACCES'].includes(err?.code);
+  const busyHint = 'something has it, or a file in it, open: a terminal or PowerShell window whose current folder is inside it, an editor (Notepad) with a file from it, or an Explorer window. Close it and run this again';
   if (plan.kind === 'none') out(`${from} does not exist: nothing to move. Checking ${to}.`);
   else if (plan.kind === 'rename') {
-    say(`move ${from} to ${to}`);
     if (!dryRun) {
       fs.mkdirSync(path.dirname(to), { recursive: true });
-      fs.renameSync(from, to);
+      try {
+        fs.renameSync(from, to);
+      } catch (err) {
+        if (!busy(err)) throw err;
+        // One rename, so nothing has changed.
+        blocked.push(`Windows would not move ${from} (${err.code}): ${busyHint}.`);
+        return finish();
+      }
     }
+    say(`move ${from} to ${to}`);
   } else {
     say(`merge ${from} into ${to}: ${plan.moves.length} item(s) to move, ${plan.left.length} left in place because ${to} already has them`);
-    if (!dryRun) for (const m of plan.moves) fs.renameSync(m.from, m.to);
+    if (!dryRun) {
+      let moved = 0;
+      for (const m of plan.moves) {
+        try {
+          fs.renameSync(m.from, m.to);
+          moved++;
+        } catch (err) {
+          if (!busy(err)) throw err;
+          blocked.push(`Windows would not move ${m.from} (${err.code}): ${busyHint}. ${moved} of ${plan.moves.length} item(s) were moved before it; running this again carries on from there.`);
+          partial = moved > 0;
+          return finish();
+        }
+      }
+    }
   }
 
   // ── 3. the database ────────────────────────────────────────────────────
@@ -233,7 +262,7 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
     const left = plan.left.filter((p) => exists(p));
     if (blocked.length) {
       out('');
-      out(`REFUSED${dryRun ? ' (dry run)' : ''}: nothing was changed.`);
+      out(partial ? 'STOPPED part-way: nothing was overwritten, and running this again finishes the move.' : `REFUSED${dryRun ? ' (dry run)' : ''}: nothing was changed.`);
       for (const b of blocked) out(`  - ${b}`);
       return { ok: false, blocked, did, left };
     }
@@ -250,11 +279,13 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
     if (to.toLowerCase() === defaultHome().toLowerCase()) out('  1. Deploy the new code there: npm run deploy:local');
     else out(`  1. Deploy the new code there: in PowerShell  $env:BLUMODEL_HOME = '${to}'; npm run deploy:local`);
     out('     (or node scripts/deploy-local.mjs --dist <a build>). It writes new supervisor scripts and starts the server.');
-    out(`  2. Task Scheduler: delete the old task and register the new ones (both start hidden at logon):`);
+    // The tunnel files come before the tasks: register-tasks refuses a task whose launcher
+    // (start-tunnel.vbs) doesn't exist yet.
+    out(`  2. The tunnel files: node scripts/tunnel/setup-tunnel.mjs --home "${to}" --validate  (docs/OPERATIONS.md).`);
+    out(`  3. Task Scheduler: delete the old task and register the new ones (both start hidden at logon):`);
     out(`       schtasks /Delete /TN ${LEGACY_TASK} /F`);
     out(`       node scripts/register-tasks.mjs --home "${to}" --dry-run     (then again without --dry-run)`);
     out(`     That registers ${SERVER_TASK} (start-hidden.vbs) and ${TUNNEL_TASK} (start-tunnel.vbs).`);
-    out(`  3. The tunnel: node scripts/tunnel/setup-tunnel.mjs --home "${to}" --validate  (docs/OPERATIONS.md).`);
     return { ok: true, blocked, did, left };
   }
 }

@@ -75,7 +75,7 @@ test('run-server.cmd: port 8790 on 127.0.0.1, settings from %~dp0blumodel.env on
   assert.match(run, /^set "BLUMODEL_SHUTDOWN_FILE=%~dp0shutdown\.request"\r$/m);
   // DEMO_PAYMENTS is only ever cleared, never given a value.
   assert.deepEqual(run.match(/^set "?DEMO_PAYMENTS[^\r]*/gm), ['set "DEMO_PAYMENTS="']);
-  for (const k of [...ENV_FILE_KEYS, 'PAYMENTS', 'NODE_ENV', 'MISE_ENV_FILE']) assert.match(run, new RegExp(`^set "${k}="\\r$`, 'm'), k);
+  for (const k of [...ENV_FILE_KEYS, 'PAYMENTS', 'NODE_ENV', 'NODE_OPTIONS', 'NODE_TLS_REJECT_UNAUTHORIZED', 'MISE_ENV_FILE']) assert.match(run, new RegExp(`^set "${k}="\\r$`, 'm'), k);
   assert.ok(CLEARED_ENV.includes('STRIPE_SECRET_KEY') && CLEARED_ENV.includes('ANTHROPIC_API_KEY'));
   assert.match(run, /"C:\\Program Files\\nodejs\\node\.exe" --no-warnings "%~dp0app\\server\\index\.mjs" --prod >> logs\\console\.log 2>&1/);
   assert.match(run, /rotate-log\.mjs" "%~dp0logs\\console\.log"/);
@@ -116,7 +116,8 @@ test('run-server.cmd really runs: the server gets the home’s settings file and
     const port = await freePort();
     for (const [name, body] of Object.entries(serverScripts({ node: NODE, port }))) fs.writeFileSync(path.join(home, name), body);
     // Variables a user might have set for other work: none may reach the server.
-    const env = { ...cleanEnv(), STRIPE_SECRET_KEY: FAKE_KEY, ANTHROPIC_API_KEY: 'FAKE_FOR_TESTS', DEMO_PAYMENTS: '1', NODE_ENV: 'development', MISE_ENV_FILE: 'C:\\nowhere\\mise.env' };
+    // NODE_OPTIONS here is harmless (--no-deprecation) but would be --inspect or --require in the bad case.
+    const env = { ...cleanEnv(), STRIPE_SECRET_KEY: FAKE_KEY, ANTHROPIC_API_KEY: 'FAKE_FOR_TESTS', DEMO_PAYMENTS: '1', NODE_ENV: 'development', MISE_ENV_FILE: 'C:\\nowhere\\mise.env', NODE_OPTIONS: '--no-deprecation', NODE_TLS_REJECT_UNAUTHORIZED: '0' };
     const r = spawnSync('cmd.exe', ['/d', '/c', L.runServer], { cwd: os.tmpdir(), env, encoding: 'utf8', timeout: 60_000, windowsHide: true });
     assert.equal(r.status, 0, r.stdout + r.stderr);
     const runs = fs.readFileSync(path.join(home, 'stub-ran.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
@@ -384,6 +385,8 @@ test('migrate-home moves the old folder, renames the database (with its WAL) and
     assert.match(dryText, /\$env:BLUMODEL_HOME = '.*BluModelStudio'; npm run deploy:local/);
     assert.match(dryText, /schtasks \/Delete \/TN MiseKitchenServer \/F/);
     assert.match(dryText, /register-tasks\.mjs --home ".*BluModelStudio" --dry-run/);
+    // The tunnel files before the tasks: register-tasks refuses while start-tunnel.vbs is missing.
+    assert.ok(dryText.indexOf('setup-tunnel.mjs') < dryText.indexOf('register-tasks.mjs'), 'setup-tunnel is listed before register-tasks');
     assert.deepEqual(restricted, []);
 
     out.length = 0;
@@ -451,6 +454,57 @@ test('migrate-home refuses, changing nothing, while a server listens or a proces
     assert.ok(fs.existsSync(path.join(from, 'data', 'mise.db')) && fs.existsSync(path.join(from, 'mise.env')), 'nothing moved');
   } finally {
     await new Promise((r) => blocker.close(r));
+    rm(root);
+  }
+});
+
+test('migrate-home refuses cleanly when Windows won’t move the folder (a process has its current folder inside it), and finishes once it is closed', { skip: !WIN }, async () => {
+  const root = tempDir('blumodel-migrate-');
+  /** A process whose current folder is `dir`: what an open terminal there looks like to Windows. */
+  const holder = async (dir) => {
+    const child = spawn(NODE, ['-e', 'setInterval(() => {}, 1000)'], { cwd: dir, stdio: 'ignore', windowsHide: true });
+    await new Promise((r) => setTimeout(r, 500));
+    return child;
+  };
+  const kill = async (c) => {
+    c.kill();
+    await new Promise((r) => (c.exitCode !== null ? r() : c.once('exit', r)));
+  };
+  try {
+    // A plain move: refused, nothing changed, then done after the holder goes.
+    const from = oldHome(root);
+    const to = path.join(root, 'BluModelStudio');
+    const out = [];
+    const base = { from, to, ports: [], out: (s) => out.push(s), processes: noProcs, restrict: () => 'TESTPC\\owner' };
+    let h = await holder(path.join(from, 'data'));
+    const r = await migrateHome(base);
+    await kill(h);
+    assert.equal(r.ok, false, out.join('\n'));
+    assert.match(r.blocked[0], /Windows would not move .*Mise \((EPERM|EBUSY|EACCES)\): something has it, or a file in it, open: a terminal/);
+    assert.match(out.join('\n'), /REFUSED: nothing was changed\./);
+    assert.deepEqual(r.did, []);
+    assert.ok(fs.existsSync(path.join(from, 'mise.env')) && fs.existsSync(path.join(from, 'data', 'mise.db')) && !fs.existsSync(to), 'nothing moved');
+    out.length = 0;
+    assert.equal((await migrateHome(base)).ok, true, out.join('\n'));
+    assert.ok(fs.existsSync(homeLayout(to).db) && fs.existsSync(homeLayout(to).settings));
+
+    // A merge stopped part-way: says so, and a second run carries on.
+    const from2 = oldHome(root, 'Mise2');
+    const to2 = path.join(root, 'BluModelStudio2');
+    fs.mkdirSync(to2);
+    out.length = 0;
+    h = await holder(path.join(from2, 'data'));
+    const m = await migrateHome({ ...base, from: from2, to: to2 });
+    await kill(h);
+    assert.equal(m.ok, false);
+    assert.match(m.blocked[0], /Windows would not move .*Mise2\\data .*1 of \d+ item\(s\) were moved before it; running this again carries on from there\./);
+    assert.match(out.join('\n'), /STOPPED part-way: nothing was overwritten/);
+    assert.ok(fs.existsSync(path.join(to2, 'app', 'DEPLOYED.txt')), 'app\\ (first in order) moved before the stop');
+    out.length = 0;
+    const m2 = await migrateHome({ ...base, from: from2, to: to2 });
+    assert.equal(m2.ok, true, out.join('\n'));
+    assert.ok(fs.existsSync(homeLayout(to2).db) && fs.existsSync(homeLayout(to2).settings) && !fs.existsSync(from2));
+  } finally {
     rm(root);
   }
 });
