@@ -192,6 +192,15 @@ export default [
       if (/\bcost\b|\bmargin\b|\bmarkup\b/.test(text)) throw new Error('the quote mentions cost, margin or markup');
       if (!/\$\s?\d/.test(text)) throw new Error('the quote shows no price');
       await h.shot('quote');
+      // pageText is lower-cased, so the exact casing is checked on the footer element itself.
+      const madeWith = await h.evaluate(() => {
+        const el = document.querySelector('.quote-made-with');
+        el?.scrollIntoView({ block: 'center' });
+        return el?.textContent?.trim() ?? null;
+      });
+      if (madeWith !== 'Prepared with BluModel Studio') throw new Error(`the quote's footer reads ${JSON.stringify(madeWith)}, not "Prepared with BluModel Studio"`);
+      await h.sleep(200);
+      await h.shot('quote-footer');
     },
   },
 ];
