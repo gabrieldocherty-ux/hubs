@@ -134,7 +134,7 @@ tests pass (1 skipped: the real-`mise.db` upgrade test, which needs `MISE_UPGRAD
    fails and tells you to delete the entry.
 6. **`seed-credentials.txt` is not gitignored.** A generated demo password is written next to
    `DB_PATH`; if that is inside the repo (e.g. `DB_PATH=./tmp/mise.db`), git would offer to commit
-   it. Add to `kitchen-visualizer/.gitignore`:
+   it. Add to `blumodel-studio/.gitignore`:
    ```diff
    +seed-credentials.txt
    ```

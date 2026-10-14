@@ -4,7 +4,7 @@ Plan a kitchen to scale with branded cabinets, appliances and finishes, check it
 against real kitchen-planning guidelines, price it, and walk through it in 3D.
 
 ```bash
-cd kitchen-visualizer
+cd blumodel-studio
 npm install
 npm run api        # terminal 1: the API on 127.0.0.1:8790 (Node 22.13+)
 npm run dev        # terminal 2: the app, proxies /api to the server

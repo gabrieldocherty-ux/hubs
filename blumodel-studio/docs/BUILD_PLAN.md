@@ -16,7 +16,7 @@
 
 ## 1. Ground rules for every package
 
-1. **Scope:** work only inside `kitchen-visualizer/`. Never touch the trading-bot code or anything else in the repo.
+1. **Scope:** work only inside `blumodel-studio/`. Never touch the trading-bot code or anything else in the repo.
 2. **Ports:** **never use, probe or kill port 8787**; an unrelated app owns it. Each package uses its own port for servers and QA:
 
    | Agent | Port | Build dir |
@@ -54,7 +54,7 @@
 | `src/features/orders/**`, `server/routes/orders.mjs`, `server/payments/**`, `server/db/migrations/orders.mjs`, `server/seed/orders.mjs`, `server/test/orders.test.mjs`, `server/test/payments.test.mjs`, `scripts/qa/routes/orders.mjs`, `docs/handoff/orders.md` | **C orders** |
 | `src/features/generate/**`, `src/lib/generate/**`, `src/lib/checks.ts`, `src/data/templates.ts`, `src/data/compose.ts`, `src/data/styles.ts`, `src/screens/SetupWizard.tsx`, `server/routes/generate.mjs`, `server/llm/**`, `server/db/migrations/generate.mjs`, `server/test/generate.test.mjs`, `scripts/qa/routes/generate.mjs`, `docs/handoff/generate.md` | **D generate** |
 | `src/features/share/**`, `src/features/marketing/**`, `public/marketing/**`, `server/routes/share.mjs`, `server/db/migrations/share.mjs`, `server/seed/share.mjs`, `server/test/share.test.mjs`, `scripts/qa/routes/share.mjs`, `docs/handoff/share.md` | **E share** |
-| **Everything else in `kitchen-visualizer/`**, including `package.json`, the lockfile, `vite.config.ts`, `tsconfig.json`, `index.html`, `.gitignore`, `README.md`, `src/App.tsx`, `src/main.tsx`, `src/styles.css`, `src/types.ts`, `src/types/**`, `src/lib/{api,router,track,finish,geometry,estimate,csv,format,exporters,color,id,fronts}.ts`, `src/store/**`, `src/data/{catalog,finishes,defaults,productTypes}.ts`, `src/data/kinds.json`, `src/hooks/**`, `src/screens/**` (except `SetupWizard.tsx`), `src/components/**` (except `three/`), `src/features/README.md`, `server/index.mjs`, `server/app.mjs`, `server/config.mjs`, `server/http/**`, `server/auth/**`, `server/db/{index,migrate}.mjs`, `server/db/migrations/{index,core,platform}.mjs`, `server/files/**`, `server/catalog/**`, `server/lib/**`, `server/routes/{index,auth,projects,catalog,files,events,admin,config}.mjs`, `server/seed/{index,core}.mjs`, `server/scripts/**`, `server/test/{helpers.mjs,fixtures/**}` + foundation tests, `scripts/{qa,qa-shot,test-ts}.mjs`, `scripts/qa/routes/core.mjs`, `docs/PRODUCT_SPEC.md`, `docs/BUILD_PLAN.md` | **F foundation**, **frozen** after it lands. Changes go through handoff notes to the integration pass |
+| **Everything else in `blumodel-studio/`**, including `package.json`, the lockfile, `vite.config.ts`, `tsconfig.json`, `index.html`, `.gitignore`, `README.md`, `src/App.tsx`, `src/main.tsx`, `src/styles.css`, `src/types.ts`, `src/types/**`, `src/lib/{api,router,track,finish,geometry,estimate,csv,format,exporters,color,id,fronts}.ts`, `src/store/**`, `src/data/{catalog,finishes,defaults,productTypes}.ts`, `src/data/kinds.json`, `src/hooks/**`, `src/screens/**` (except `SetupWizard.tsx`), `src/components/**` (except `three/`), `src/features/README.md`, `server/index.mjs`, `server/app.mjs`, `server/config.mjs`, `server/http/**`, `server/auth/**`, `server/db/{index,migrate}.mjs`, `server/db/migrations/{index,core,platform}.mjs`, `server/files/**`, `server/catalog/**`, `server/lib/**`, `server/routes/{index,auth,projects,catalog,files,events,admin,config}.mjs`, `server/seed/{index,core}.mjs`, `server/scripts/**`, `server/test/{helpers.mjs,fixtures/**}` + foundation tests, `scripts/{qa,qa-shot,test-ts}.mjs`, `scripts/qa/routes/core.mjs`, `docs/PRODUCT_SPEC.md`, `docs/BUILD_PLAN.md` | **F foundation**, **frozen** after it lands. Changes go through handoff notes to the integration pass |
 
 Notes:
 - `src/features/<key>/index.ts` is created by F with the exact exports in §3.8, then owned by that package.
@@ -395,7 +395,7 @@ Packages may add **package-local** types in their own directory but must not red
 
 **Owned paths:** everything not listed for A–E in §2, including all of A–E's pre-created stub files. It hands those to the packages when it lands.
 
-**May read:** the whole of `kitchen-visualizer/`, and the research scratch files at
+**May read:** the whole of `blumodel-studio/`, and the research scratch files at
 `C:/Users/gdoch/AppData/Local/Temp/claude/C--Users-gdoch-Desktop-Hyperliquid-Bot--claude-worktrees-hyperliquid-bot-setup-aad430/0ec14d08-ef48-4006-a159-55057b47a169/scratchpad/qa/{validators.mjs,validators-test.mjs,cdp-shot.mjs}`.
 
 ### Tasks
