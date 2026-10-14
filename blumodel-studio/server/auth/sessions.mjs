@@ -16,13 +16,16 @@ export function isLoopback(addr = '') {
 /**
  * Secure follows the request, not the mode: a Secure cookie sent over plain http to
  * anything but localhost is silently dropped, which would break sign-in on a home
- * server reached over the LAN. X-Forwarded-Proto is trusted ONLY from a loopback peer
- * (cloudflared or `tailscale serve` on this machine); a LAN or internet client can't
- * claim https by sending the header, whatever TRUST_PROXY says. Never Secure just because
+ * server reached over the LAN. X-Forwarded-Proto is trusted ONLY with TRUST_PROXY=1 AND from a
+ * loopback peer (cloudflared or `tailscale serve` on this machine), the same rule as the client
+ * address (app.mjs clientIp): a LAN or internet client can't claim https by sending the header,
+ * and with TRUST_PROXY off no forwarding header is believed at all. Never Secure just because
  * the server runs in production mode. HSTS follows the same rule (http/respond.mjs).
+ * @param {{ TRUST_PROXY?: number } | undefined} config
  */
-export function isHttps(req, _config) {
+export function isHttps(req, config) {
   if (req.socket?.encrypted) return true;
+  if (!(Number(config?.TRUST_PROXY) > 0)) return false;
   const proto = String(req.headers['x-forwarded-proto'] ?? '').split(',')[0].trim().toLowerCase();
   if (proto !== 'https') return false;
   return isLoopback(req.socket?.remoteAddress);

@@ -141,7 +141,7 @@ test('a route that throws: JSON 500 with the request id (also in X-Request-Id), 
 });
 
 test('security headers on every response: CSP, nosniff, Referrer-Policy, Permissions-Policy, frame denial; HSTS only over https', async () => {
-  const s = await startTestServer();
+  const s = await startTestServer({ env: { TRUST_PROXY: '1' } });
   try {
     fs.mkdirSync(s.config.DIST_DIR, { recursive: true });
     fs.writeFileSync(path.join(s.config.DIST_DIR, 'index.html'), '<!doctype html><title>BluModel Studio</title>');

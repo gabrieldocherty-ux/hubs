@@ -93,6 +93,30 @@ test('Secure cookie and HSTS follow https: through a loopback proxy saying https
   } finally {
     await s.close();
   }
+  // TRUST_PROXY off: a loopback peer saying https is not believed either.
+  const off = await startTestServer({ env: { NODE_ENV: 'production', DEMO_PAYMENTS: '1' } });
+  try {
+    const r = await signup(off, 3, { 'X-Forwarded-Proto': 'https' });
+    assert.equal(r.status, 201);
+    assert.doesNotMatch(r.headers.get('set-cookie'), /Secure/);
+    assert.equal(r.headers.get('strict-transport-security'), null);
+  } finally {
+    await off.close();
+  }
+});
+
+test('links are built from PUBLIC_URL, never from the request: no Host or X-Forwarded-Host reaches a response', async () => {
+  const s = await startTestServer({ env: { PUBLIC_URL: 'https://blumodel.example', TRUST_PROXY: '1' } });
+  try {
+    const hdrs = { Host: 'evil.example', 'X-Forwarded-Host': 'evil.example' };
+    const cfg = await s.agent().get('/api/config', { headers: hdrs });
+    assert.equal(cfg.body.publicUrl, 'https://blumodel.example');
+    assert.ok(!cfg.text.includes('evil.example'));
+    const robots = await s.agent().get('/robots.txt', { headers: hdrs });
+    assert.ok(!robots.text.includes('evil.example'));
+  } finally {
+    await s.close();
+  }
 });
 
 test('bodies are capped per route: a 1 MB+ signup is a 413 (and the connection is closed, not reused)', async () => {

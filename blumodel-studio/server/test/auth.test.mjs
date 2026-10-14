@@ -130,12 +130,14 @@ test('me returns the brands the user belongs to', async () => {
   assert.deepEqual(me.body.user.brands, [{ id: b.id, slug: b.slug, name: 'Membership Co', status: 'pending', memberRole: 'owner', kind: 'partner' }]);
 });
 
-test('Secure cookie rule: encrypted socket, or loopback + X-Forwarded-Proto https; never by mode', async () => {
+test('Secure cookie rule: encrypted socket, or TRUST_PROXY=1 + loopback + X-Forwarded-Proto https; never by mode', async () => {
   const req = (remoteAddress, xfp, encrypted = false) => ({ socket: { remoteAddress, encrypted }, headers: xfp ? { 'x-forwarded-proto': xfp } : {} });
   for (const lo of ['127.0.0.1', '::1', '::ffff:127.0.0.1']) {
-    assert.equal(isHttps(req(lo, 'https'), { TRUST_PROXY: 0 }), true, lo);
-    assert.equal(isHttps(req(lo, undefined), { TRUST_PROXY: 0 }), false, lo);
-    assert.equal(isHttps(req(lo, 'http'), { TRUST_PROXY: 0 }), false, lo);
+    assert.equal(isHttps(req(lo, 'https'), { TRUST_PROXY: 1 }), true, lo);
+    assert.equal(isHttps(req(lo, 'https'), { TRUST_PROXY: 0 }), false, `${lo}: TRUST_PROXY off believes no forwarding header`);
+    assert.equal(isHttps(req(lo, 'https'), undefined), false, `${lo}: no config, no trust`);
+    assert.equal(isHttps(req(lo, undefined), { TRUST_PROXY: 1 }), false, lo);
+    assert.equal(isHttps(req(lo, 'http'), { TRUST_PROXY: 1 }), false, lo);
   }
   assert.equal(isHttps(req('192.168.1.20', 'https'), { TRUST_PROXY: 0 }), false, 'a LAN client cannot claim https');
   assert.equal(isHttps(req('192.168.1.20', 'https'), { TRUST_PROXY: 1 }), false, 'not even with TRUST_PROXY: only a loopback peer is believed');
@@ -143,9 +145,16 @@ test('Secure cookie rule: encrypted socket, or loopback + X-Forwarded-Proto http
   assert.equal(isHttps(req('192.168.1.20', undefined, true), { TRUST_PROXY: 0 }), true, 'TLS socket');
   assert.equal(secureAttr(req('192.168.1.20', undefined), { TRUST_PROXY: 0, PROD: true }), '', 'production mode alone is not Secure');
 
-  // End to end through a loopback "proxy".
-  const viaProxy = await t.agent().post('/api/auth/signup', { name: 'P', email: 'proxy@test.blumodel', password: 'password123' }, { headers: { 'X-Forwarded-Proto': 'https' } });
-  assert.match(viaProxy.headers.get('set-cookie'), /; Secure$/);
+  // End to end through a loopback "proxy": Secure only once TRUST_PROXY=1 says there is one.
+  const noTrust = await t.agent().post('/api/auth/signup', { name: 'P', email: 'proxy0@test.blumodel', password: 'password123' }, { headers: { 'X-Forwarded-Proto': 'https' } });
+  assert.doesNotMatch(noTrust.headers.get('set-cookie'), /Secure/);
+  const trusted = await startTestServer({ env: { TRUST_PROXY: '1' } });
+  try {
+    const viaProxy = await trusted.agent().post('/api/auth/signup', { name: 'P', email: 'proxy@test.blumodel', password: 'password123' }, { headers: { 'X-Forwarded-Proto': 'https' } });
+    assert.match(viaProxy.headers.get('set-cookie'), /; Secure$/);
+  } finally {
+    await trusted.close();
+  }
 
   // Production mode over plain http: still not Secure, so LAN sign-in works.
   const prod = await startTestServer({ env: { NODE_ENV: 'production' } });

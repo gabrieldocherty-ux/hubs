@@ -26,7 +26,7 @@ export function startupReport(config) {
   ].filter(Boolean);
   if (missing.length) warn.push(`Legal details missing (${missing.join(', ')}): the terms, privacy and receipt pages can't name the business.`);
   if (config.PROD && !config.httpsPublicUrl) warn.push(`PUBLIC_URL is ${config.PUBLIC_URL}: links in payment pages and emails point there. Set PUBLIC_URL=https://blumodel.studio for the public server.`);
-  if (config.PROD && config.httpsPublicUrl && !config.TRUST_PROXY) warn.push('TRUST_PROXY is off behind an https PUBLIC_URL: every visitor through the tunnel shares one address, so rate limits apply to all of them at once. Set TRUST_PROXY=1.');
+  if (config.PROD && config.httpsPublicUrl && !config.TRUST_PROXY) warn.push('TRUST_PROXY is off behind an https PUBLIC_URL: every visitor through the tunnel shares one address, so rate limits apply to all of them at once, and the tunnel’s https is not believed (no Secure cookie, no HSTS). Set TRUST_PROXY=1.');
   if (config.BACKUPS === 'off') warn.push('Daily database backups are off (BACKUPS=off or an in-memory database).');
   return { info, warn };
 }
