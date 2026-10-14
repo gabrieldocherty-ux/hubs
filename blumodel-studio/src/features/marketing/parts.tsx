@@ -1,7 +1,8 @@
-import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, type MouseEvent, type ReactNode } from 'react';
 import { Logo, Wordmark } from '../../components/Icons';
-import { api } from '../../lib/api';
+import { usePayments, type PaymentsMode } from '../../lib/config';
 import { VISUALIZER_DISCLAIMER } from '../../lib/csv';
+import { LegalLinks } from '../legal/LegalLinks';
 import { useSession } from '../../store/useSession';
 import './marketing.css';
 
@@ -90,7 +91,8 @@ export function MarketingFooter() {
         </nav>
       </div>
       <p className="mk-disclaimer">{VISUALIZER_DISCLAIMER}</p>
-      <p className="mk-fine">The brands in the built-in demo catalog are fictional. Products from contractors and partner brands appear once an admin has verified them.</p>
+      <p className="mk-fine">The brands in the built-in sample catalog are fictional. Products from contractors and partner brands appear once an admin has verified them.</p>
+      <LegalLinks className="mk-legal" />
     </footer>
   );
 }
@@ -106,18 +108,10 @@ export function SectionHead({ eyebrow, title, children, center }: { eyebrow?: st
   );
 }
 
-/** Whether payments on this server are the labelled demo (no Stripe keys). Null until known. */
-export function usePaymentsMode(): 'demo' | 'stripe' | null {
-  const [mode, setMode] = useState<'demo' | 'stripe' | null>(null);
-  useEffect(() => {
-    let live = true;
-    api
-      .config()
-      .then((c) => live && setMode(c.payments === 'stripe' ? 'stripe' : 'demo'))
-      .catch(() => live && setMode(null));
-    return () => {
-      live = false;
-    };
-  }, []);
-  return mode;
+/**
+ * How this server takes payments (`/api/config`, shared with every paying screen): `stripe`, the
+ * labelled `demo`, or `none` while payments aren't open yet. Null until known.
+ */
+export function usePaymentsMode(): PaymentsMode | null {
+  return usePayments();
 }

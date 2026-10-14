@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
 import { Logo, Wordmark } from '../../components/Icons';
+import { PaymentsSoon } from '../../components/PaymentNotice';
+import type { PaymentsMode } from '../../lib/config';
 import { hrefFor } from '../../lib/router';
 import type { OrderStatus } from '../../types/platform';
 import type { OrderEventWire } from './api';
@@ -31,6 +33,21 @@ export function OrdersShell({ children, wide = false }: { children: ReactNode; w
 /** A status pill: the label always travels with the colour. */
 export function StatusPill({ status, label }: { status: OrderStatus; label?: string }) {
   return <span className={`ord-pill ord-pill--${statusTone(status)}`}>{label ?? STATUS_LABEL[status]}</span>;
+}
+
+/**
+ * The note an orders screen carries for this server's payments: the DEMO banner, "orders open
+ * soon" while payments aren't open, and nothing at all with real Stripe payments.
+ */
+export function OrdersPayNote({ payments }: { payments: PaymentsMode | null }) {
+  if (payments === 'demo') return <DemoBanner compact />;
+  if (payments === 'none')
+    return (
+      <PaymentsSoon compact title="Model orders open soon">
+        You can fill in a request and see its price, but it can’t be paid for or sent to the studio yet. Designing, saving and sharing your kitchens are free and work today.
+      </PaymentsSoon>
+    );
+  return null;
 }
 
 /** The banner every payment screen carries while the DEMO provider is active (PRODUCT_SPEC §7.4). */

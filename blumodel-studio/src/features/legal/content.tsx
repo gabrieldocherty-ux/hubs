@@ -16,6 +16,7 @@ import type { LegalConfig, Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
 import { VISUALIZER_DISCLAIMER } from '../../lib/csv';
 import type { LegalDocId } from '../../lib/router';
+import type { PaymentsMode } from '../../lib/config';
 
 export type { LegalDocId };
 
@@ -53,9 +54,14 @@ export interface LegalWords {
   jurisdiction: string | null;
   /** How to reach the operator, as a sentence fragment that follows "contact us". */
   contact: ReactNode;
+  /**
+   * This server's payments. Only the labelled demo gets demo wording; with real Stripe payments the
+   * pages say nothing about demos, and while payments aren't open they say so.
+   */
+  payments: PaymentsMode | null;
 }
 
-export function legalWords(legal: LegalConfig): LegalWords {
+export function legalWords(legal: LegalConfig, payments: PaymentsMode | null = null): LegalWords {
   const name = legal.businessName;
   const email = legal.supportEmail;
   return {
@@ -63,12 +69,13 @@ export function legalWords(legal: LegalConfig): LegalWords {
     Who: name ?? 'The operator of this site',
     email,
     jurisdiction: legal.jurisdiction,
+    payments,
     contact: email ? (
       <>
         at <a href={`mailto:${email}`}>{email}</a>
       </>
     ) : (
-      <>through the support address the operator publishes on this page</>
+      <>through the contact details provided by the operator of this site</>
     ),
   };
 }
@@ -80,8 +87,8 @@ const ContactBlock = ({ w }: { w: LegalWords }) =>
     </p>
   ) : (
     <p>
-      The operator’s support address isn’t published on this page yet. Everything this page lets you ask for, you can also do yourself: <a href="#/account">Account settings</a> has{' '}
-      <b>Download my data</b> and <b>Delete my account</b>, and <a href="#/account/billing">Billing</a> cancels a plan.
+      Contact the operator of this site through the contact details it provides, from the email address on your account. Much of what you might ask for, you can do yourself:{' '}
+      <a href="#/account">Account settings</a> has <b>Download my data</b> and <b>Delete my account</b>, and <a href="#/account/billing">Billing</a> cancels a plan.
     </p>
   );
 
@@ -153,8 +160,14 @@ export function termsDoc(w: LegalWords): LegalDoc {
         body: (
           <>
             <p>
-              Payments are taken by Stripe on its own secure checkout page. We never see or store your card number; we keep a record of what you bought, when, and the amount. A page
-              marked <b>DEMO</b> is a simulation: nothing is charged and nothing is bought.
+              Payments are taken by Stripe on its own secure checkout page. We never see or store your card number; we keep a record of what you bought, when, and the amount.
+              {w.payments === 'demo' && (
+                <>
+                  {' '}
+                  A page marked <b>DEMO</b> is a simulation: nothing is charged and nothing is bought.
+                </>
+              )}
+              {w.payments === 'none' && ' Payments aren’t open yet: until they are, nothing can be bought here and nothing is charged.'}
             </p>
             <p>
               After a payment we check every export on our server, so the files you paid for are made for you even if your browser was closed mid-way. Anyone can screenshot a screen;
@@ -580,17 +593,21 @@ export function refundsDoc(w: LegalWords): LegalDoc {
           </>
         ),
       },
-      {
-        id: 'demo',
-        heading: '5. Demo payments',
-        body: <p>A checkout marked DEMO is a simulation. Nothing is charged, so there is nothing to refund.</p>,
-      },
-      { id: 'contact', heading: '6. Contact', body: <ContactBlock w={w} /> },
+      ...(w.payments === 'demo'
+        ? [
+            {
+              id: 'demo',
+              heading: '5. Demo payments',
+              body: <p>A checkout marked DEMO is a simulation. Nothing is charged, so there is nothing to refund.</p>,
+            },
+          ]
+        : []),
+      { id: 'contact', heading: w.payments === 'demo' ? '6. Contact' : '5. Contact', body: <ContactBlock w={w} /> },
     ],
   };
 }
 
-export function legalDoc(id: LegalDocId, legal: LegalConfig): LegalDoc {
-  const w = legalWords(legal);
+export function legalDoc(id: LegalDocId, legal: LegalConfig, payments: PaymentsMode | null = null): LegalDoc {
+  const w = legalWords(legal, payments);
   return id === 'terms' ? termsDoc(w) : id === 'privacy' ? privacyDoc(w) : refundsDoc(w);
 }

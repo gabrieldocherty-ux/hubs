@@ -2,7 +2,10 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useS
 import { AccountMenu } from '../../components/AccountMenu';
 import { Check, Logo, Wordmark } from '../../components/Icons';
 import { Toasts } from '../../components/Toasts';
-import { ApiError } from '../../lib/api';
+import { AgreeToPay, DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
+import { ApiError, call } from '../../lib/api';
+import { usePayments } from '../../lib/config';
+import { clearSessionId, markCheckout, paymentError, takeCheckoutReturn, type CheckoutReturn } from '../../lib/payments';
 import { hrefFor, navigateHash } from '../../lib/router';
 import { useSession } from '../../store/useSession';
 import type { ContractorProfile, Plan } from '../../types/platform';
@@ -55,9 +58,43 @@ const TABS: [string, string][] = [
   ['company', 'Company'],
 ];
 
+/**
+ * Back from the Contractor plan's checkout (`#/pro` is its return page). A paid Stripe checkout is
+ * confirmed with the server first, without waiting for the webhook; then the session is re-read so
+ * the workspace opens on the new plan.
+ */
+async function settleReturn(): Promise<CheckoutReturn | null> {
+  const back = takeCheckoutReturn('#/pro');
+  if (!back) return null;
+  if (back.sessionId) {
+    try {
+      await call('POST', '/api/billing/sync', { sessionId: back.sessionId });
+    } catch {
+      // The webhook catches up; the plan shows on the next visit.
+    }
+    clearSessionId();
+  }
+  await useSession.getState().refresh();
+  return back;
+}
+
 /** `#/pro/<rest>`: the Contractor workspace (PLANS_AND_CONTRACTORS §4). */
 export default function ContractorRoot({ rest }: { rest: string }) {
   const [state, setState] = useState<'loading' | 'pitch' | { error: string } | { profile: ContractorProfile | null; readOnly: boolean }>('loading');
+  const [back, setBack] = useState<CheckoutReturn | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void settleReturn().then((b) => {
+      if (!live || !b) return;
+      setBack(b);
+      void load();
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const load = useCallback(async () => {
     // Not a contractor (no plan, no company): the pitch, without asking the server for a 403.
@@ -85,7 +122,7 @@ export default function ContractorRoot({ rest }: { rest: string }) {
   }, [load]);
 
   if (state === 'loading') return <div className="screen-msg">Opening your workspace…</div>;
-  if (state === 'pitch') return <Pitch brand={rest.split('/')[0] === 'brand'} />;
+  if (state === 'pitch') return <Pitch brand={rest.split('/')[0] === 'brand'} back={back} />;
   if ('error' in state)
     return (
       <div className="screen-msg">
@@ -95,9 +132,16 @@ export default function ContractorRoot({ rest }: { rest: string }) {
     );
   if (!state.profile) {
     return (
-      <Suspense fallback={<div className="screen-msg">Loading…</div>}>
-        <Setup onDone={refresh} />
-      </Suspense>
+      <>
+        {back && back.outcome === 'success' && (
+          <div className="auth-ok pro-return" role="status">
+            Payment received: you’re on the Contractor plan. Set up your company to open the workspace.
+          </div>
+        )}
+        <Suspense fallback={<div className="screen-msg">Loading…</div>}>
+          <Setup onDone={refresh} />
+        </Suspense>
+      </>
     );
   }
 
@@ -177,12 +221,19 @@ function BrandBadge() {
   ) : null;
 }
 
-/** For anyone without the Contractor plan: what it is and how to start it. */
-function Pitch({ brand = false }: { brand?: boolean }) {
+/**
+ * For anyone without the Contractor plan: what it is and how to start it. The button follows this
+ * server's payments: Stripe's hosted checkout, the labelled DEMO, or "opens soon" while payments
+ * aren't open (no checkout is started then).
+ */
+function Pitch({ brand = false, back = null }: { brand?: boolean; back?: CheckoutReturn | null }) {
   const plan = useSession((s) => s.user?.plan);
+  const payments = usePayments();
+  const soon = payments === 'none';
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const start = async () => {
+    if (soon) return;
     setBusy(true);
     setError(null);
     try {
@@ -193,10 +244,11 @@ function Pitch({ brand = false }: { brand?: boolean }) {
         return;
       }
       const { url } = await proApi.startContractorPlan();
+      markCheckout('contractor', '#/pro');
       if (url.startsWith('#/')) navigateHash(url);
       else location.assign(url);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Could not start the plan. Try again.');
+      setError(paymentError(e, 'Could not start the plan. Try again.'));
       setBusy(false);
     }
   };
@@ -234,10 +286,28 @@ function Pitch({ brand = false }: { brand?: boolean }) {
               <span>/ month</span>
             </div>
             <p>Set up your company, add the cabinets you sell, and price kitchens at your markup. Cancel anytime.</p>
-            <button className="btn primary big wide" onClick={start} disabled={busy}>
-              {busy ? 'One moment…' : plan?.id === 'unlimited' ? 'Switch from Unlimited to Contractor' : 'Start the Contractor plan'}
-            </button>
+            {back?.outcome === 'cancel' && (
+              <div className="auth-note" role="status">
+                Checkout cancelled. Nothing was charged.
+              </div>
+            )}
+            {back?.outcome === 'success' && (
+              <div className="auth-note" role="status">
+                Payment received. We’re still confirming it with the payment provider: reload this page in a minute.
+              </div>
+            )}
+            {payments === 'demo' && <DemoBanner compact />}
+            {soon ? (
+              <PaymentsSoon compact title="The Contractor plan opens soon">
+                Sign-ups open with payments. Until then you can design and share kitchens for free.
+              </PaymentsSoon>
+            ) : (
+              <button className="btn primary big wide" onClick={start} disabled={busy}>
+                {busy ? 'One moment…' : plan?.id === 'unlimited' ? 'Switch from Unlimited to Contractor' : 'Start the Contractor plan'}
+              </button>
+            )}
             {error && <div className="auth-error">{error}</div>}
+            {!soon && <AgreeToPay />}
             <p className="fine">Your clients only ever see your sell prices. Your costs stay in your account.</p>
           </section>
         </div>

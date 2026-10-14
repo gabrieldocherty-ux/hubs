@@ -1,6 +1,9 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { Dialog } from '../../components/Dialog';
 import { api, ApiError, type Project } from '../../lib/api';
+import { AgreeToPay } from '../../components/PaymentNotice';
+import { usePayments } from '../../lib/config';
+import { clearSessionId, markCheckout, paymentError, takeCheckoutReturn, type CheckoutReturn } from '../../lib/payments';
 import { hrefFor, navigate, pageQuery } from '../../lib/router';
 import { useCatalog } from '../../store/useCatalog';
 import { productType } from '../../data/productTypes';
@@ -8,13 +11,14 @@ import type { Product } from '../../types';
 import { ProductStage } from '../viewer';
 import { goToCheckout, ordersApi, type OrderDetail, type OrderWire } from './api';
 import { dollars, isUnpaid, relative, shortDate, sizeText } from './model';
-import { DemoBanner, OrdersShell, StatusPill, Timeline } from './parts';
+import { OrdersPayNote, OrdersShell, StatusPill, Timeline } from './parts';
 
 /**
  * `#/orders/:id`: the buyer's order page (PRODUCT_SPEC §7.5). Timeline, brief, private reference
  * photos and, once delivered, the model on the product stage with Add to a kitchen, Request
  * revision and Accept. Back from Stripe (`?session_id=` on the page URL) it syncs the payment
- * instead of waiting for the webhook.
+ * instead of waiting for the webhook, and says what happened at checkout (paid, still being
+ * confirmed, or cancelled with nothing charged).
  */
 export function OrderPage({ id }: { id: string }) {
   const [data, setData] = useState<OrderDetail | null>(null);
@@ -22,18 +26,24 @@ export function OrderPage({ id }: { id: string }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [dialog, setDialog] = useState<null | 'cancel' | 'revision' | { add: Product }>(null);
+  const [back, setBack] = useState<CheckoutReturn | null>(null);
+  const payments = usePayments();
+  const soon = payments === 'none';
 
   useEffect(() => {
     let live = true;
     (async () => {
-      const sessionId = pageQuery().get('session_id');
+      const ret = takeCheckoutReturn(hrefFor({ name: 'orders', rest: id }));
+      const sessionId = ret?.sessionId ?? pageQuery().get('session_id');
       let d: OrderDetail;
       if (sessionId) {
         d = await ordersApi.get(id, { sessionId });
         // Keep the hash, drop Stripe's query so a reload doesn't sync again.
-        history.replaceState(null, '', `${location.pathname}${location.hash}`);
+        clearSessionId();
       } else d = await ordersApi.get(id);
-      if (live) setData(d);
+      if (!live) return;
+      setData(d);
+      if (ret) setBack(ret);
     })().catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load this order.'));
     return () => {
       live = false;
@@ -62,9 +72,11 @@ export function OrderPage({ id }: { id: string }) {
     setBusy('pay');
     setActionError(null);
     try {
-      goToCheckout((await ordersApi.checkout(id)).url);
+      const { url } = await ordersApi.checkout(id);
+      markCheckout('order', hrefFor({ name: 'orders', rest: id }));
+      goToCheckout(url);
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Could not start the payment.');
+      setActionError(paymentError(e));
       setBusy(null);
     }
   };
@@ -91,6 +103,8 @@ export function OrderPage({ id }: { id: string }) {
   const unpaid = isUnpaid(o.status);
   const roundsLeft = Math.max(0, o.revisionsAllowed - o.revisionsUsed);
   const deliverables = data.deliverables;
+  // A demo-provider order says so once it's paid (nothing was charged), or while the demo is what pays it.
+  const demoOrder = o.provider === 'demo' && (!unpaid || payments === 'demo');
 
   return (
     <OrdersShell>
@@ -106,12 +120,13 @@ export function OrderPage({ id }: { id: string }) {
           <div className="ord-head-meta">
             <StatusPill status={o.status} />
             <span className="mono">{dollars(o.amountCents)}</span>
-            {o.provider === 'demo' && <span className="ord-tag">Demo payment</span>}
+            {demoOrder && <span className="ord-tag">Demo payment</span>}
             <span className="muted">Requested {shortDate(o.createdAt)}</span>
           </div>
         </div>
       </div>
-      {data.demo && unpaid && <DemoBanner compact />}
+      {unpaid && <OrdersPayNote payments={payments} />}
+      {back && <CheckoutNote back={back} unpaid={unpaid} />}
 
       <section className="ord-card ord-status-card" aria-label="What happens next">
         <StatusMessage order={o} roundsLeft={roundsLeft} />
@@ -123,8 +138,8 @@ export function OrderPage({ id }: { id: string }) {
         <div className="ord-actions">
           {unpaid && (
             <>
-              <button className="btn primary big" onClick={pay} disabled={!!busy}>
-                {busy === 'pay' ? 'Starting checkout…' : `Pay ${dollars(o.amountCents)}${o.provider === 'demo' || data.demo ? ' (demo)' : ''}`}
+              <button className="btn primary big" onClick={pay} disabled={!!busy || soon} title={soon ? 'Payments aren’t open yet' : undefined}>
+                {soon ? 'Payments open soon' : busy === 'pay' ? 'Starting checkout…' : `Pay ${dollars(o.amountCents)}${payments === 'demo' ? ' (demo)' : ''}`}
               </button>
               <button className="btn big" onClick={() => setDialog('cancel')} disabled={!!busy}>
                 Cancel order
@@ -147,6 +162,7 @@ export function OrderPage({ id }: { id: string }) {
             </a>
           )}
         </div>
+        {unpaid && !soon && <AgreeToPay />}
       </section>
 
       {deliverables.length > 0 && (
@@ -252,7 +268,7 @@ export function OrderPage({ id }: { id: string }) {
             ))}
           </ul>
           <div className="ord-total">
-            <span>Total{o.provider === 'demo' ? ' (demo, nothing charged)' : ''}</span>
+            <span>Total{demoOrder ? ' (demo, nothing charged)' : ''}</span>
             <b className="mono">{dollars(o.amountCents)}</b>
           </div>
         </section>
@@ -279,6 +295,27 @@ export function OrderPage({ id }: { id: string }) {
       {dialog === 'revision' && <RevisionDialog roundsLeft={roundsLeft} busy={busy === 'revision'} error={actionError} onClose={() => setDialog(null)} onSend={(note) => void run('revision', () => ordersApi.revision(id, note))} />}
       {dialog && typeof dialog === 'object' && <AddToKitchenDialog product={dialog.add} onClose={() => setDialog(null)} />}
     </OrdersShell>
+  );
+}
+
+/** What happened at checkout, said once on the way back to the order. */
+function CheckoutNote({ back, unpaid }: { back: CheckoutReturn; unpaid: boolean }) {
+  if (!unpaid)
+    return (
+      <div className="auth-ok ord-return" role="status">
+        Payment received. The studio has your request and starts on it next.
+      </div>
+    );
+  if (back.outcome === 'cancel')
+    return (
+      <div className="auth-note ord-return" role="status">
+        Checkout cancelled. Nothing was charged; your request is saved, so you can pay when you’re ready.
+      </div>
+    );
+  return (
+    <div className="auth-note ord-return" role="status">
+      Payment received. We’re still confirming it with the payment provider: reload this page in a minute.
+    </div>
   );
 }
 

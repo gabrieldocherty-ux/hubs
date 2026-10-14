@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
 import plansJson from '../../data/plans.json';
 import { call } from '../../lib/api';
+import type { PaymentsMode } from '../../lib/config';
 import { useSession } from '../../store/useSession';
 import type { ModelTier, Plan, PlanId } from '../../types/platform';
 import { MarketingFooter, MarketingHeader, SectionHead, usePaymentsMode, usePendingScroll } from './parts';
@@ -69,7 +71,8 @@ function priceLine(p: Plan): { amount: string; per: string } {
   return { amount: dollars(p.priceCents), per: p.id === 'kitchen_unlock' ? 'once, per kitchen' : 'once' };
 }
 
-function useCta(id: PlanId): { label: string; href: string; note?: string; current?: boolean } {
+/** A plan card's button. `href: null` is a plan that can't be bought yet (payments not open). */
+function useCta(id: PlanId, soon: boolean): { label: string; href: string | null; note?: string; current?: boolean } {
   const signedIn = useSession((s) => s.status === 'signedIn');
   const plan = useSession((s) => s.user?.plan?.id ?? 'free');
   const signup = (next: string) => `#/signup?next=${encodeURIComponent(next)}`;
@@ -77,12 +80,18 @@ function useCta(id: PlanId): { label: string; href: string; note?: string; curre
     case 'free':
       return signedIn ? { label: 'Open my kitchens', href: '#/', current: plan === 'free' } : { label: 'Start free', href: '#/signup' };
     case 'kitchen_unlock':
-      return { label: signedIn ? 'Choose a kitchen' : 'Start a kitchen', href: signedIn ? '#/' : '#/signup', note: 'Unlock it from the kitchen’s Export menu when you need the files.' };
+      return {
+        label: signedIn ? 'Choose a kitchen' : 'Start a kitchen',
+        href: signedIn ? '#/' : '#/signup',
+        note: soon ? 'Design it now; unlock it from the kitchen’s Export menu once payments open.' : 'Unlock it from the kitchen’s Export menu when you need the files.',
+      };
     case 'unlimited':
       if (plan === 'unlimited') return { label: 'Manage your plan', href: '#/account/billing', current: true };
+      if (soon) return { label: 'Opens soon', href: null };
       return { label: 'Go Unlimited', href: signedIn ? '#/account/billing' : signup('#/account/billing') };
     case 'contractor':
       if (plan === 'contractor') return { label: 'Open your workspace', href: '#/pro', current: true };
+      if (soon) return { label: 'Opens soon', href: null };
       return { label: 'Become a BluModel Studio contractor', href: signedIn ? '#/pro' : signup('#/pro') };
   }
 }
@@ -103,29 +112,34 @@ export default function PricingScreen() {
             Designing, saving, starting from photos and sharing are free with no limits. Exports are paid: the floor plan with dimensions, the full-size 3D image, the shopping list, the project file and studio renders without a watermark.
           </p>
           {payments === 'demo' && (
-            <p className="mk-demo-note" role="note">
-              <b>Demo payments.</b> This server has no payment provider set up, so checkout is a clearly labelled simulation and nothing is charged.
-            </p>
+            <div className="mk-pay-note">
+              <DemoBanner>This server has no payment provider set up, so checkout is a clearly labelled simulation and nothing is charged.</DemoBanner>
+            </div>
+          )}
+          {payments === 'none' && (
+            <div className="mk-pay-note">
+              <PaymentsSoon>These are the prices once payments open. Until then designing, saving, starting from photos and sharing are free and work today.</PaymentsSoon>
+            </div>
           )}
         </section>
 
         <section className="mk-plans" aria-label="Plans">
           {PLANS.map((p) => (
-            <PlanCard key={p.id} plan={p} />
+            <PlanCard key={p.id} plan={p} soon={payments === 'none'} />
           ))}
         </section>
 
         <ContractorProgram />
-        <CustomModels tiers={tiers} />
-        <Faq />
+        <CustomModels tiers={tiers} soon={payments === 'none'} />
+        <Faq payments={payments} />
       </main>
       <MarketingFooter />
     </div>
   );
 }
 
-function PlanCard({ plan }: { plan: Plan }) {
-  const cta = useCta(plan.id);
+function PlanCard({ plan, soon }: { plan: Plan; soon: boolean }) {
+  const cta = useCta(plan.id, soon);
   const { amount, per } = priceLine(plan);
   const pro = plan.id === 'contractor';
   return (
@@ -143,9 +157,15 @@ function PlanCard({ plan }: { plan: Plan }) {
       </ul>
       {cta.note && <p className="mk-plan-note">{cta.note}</p>}
       <div className="mk-plan-cta">
-        <a className={`btn wide${pro || plan.id === 'unlimited' ? ' primary' : ''}`} href={cta.href}>
-          {cta.label}
-        </a>
+        {cta.href ? (
+          <a className={`btn wide${pro || plan.id === 'unlimited' ? ' primary' : ''}`} href={cta.href}>
+            {cta.label}
+          </a>
+        ) : (
+          <button type="button" className="btn wide" disabled title="Payments aren’t open yet">
+            {cta.label}
+          </button>
+        )}
       </div>
     </article>
   );
@@ -195,7 +215,7 @@ function ContractorProgram() {
   );
 }
 
-function CustomModels({ tiers }: { tiers: Tiers }) {
+function CustomModels({ tiers, soon }: { tiers: Tiers; soon: boolean }) {
   return (
     <section className="mk-section" id="models" aria-labelledby="models-title">
       <SectionHead eyebrow="Custom 3D models" title={<span id="models-title">Not in the catalog? We’ll model it.</span>}>
@@ -232,9 +252,15 @@ function CustomModels({ tiers }: { tiers: Tiers }) {
           </div>
           <p className="mk-tiers-note">{tiersNote(tiers)}</p>
           <div className="mk-center">
-            <a className="btn big" href="#/orders/new">
-              Request a model
-            </a>
+            {soon ? (
+              <button type="button" className="btn big" disabled title="Payments aren’t open yet">
+                Model orders open soon
+              </button>
+            ) : (
+              <a className="btn big" href="#/orders/new">
+                Request a model
+              </a>
+            )}
           </div>
         </>
       )}
@@ -272,7 +298,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How do payments work?',
-    a: 'Through Stripe’s hosted checkout: BluModel Studio never asks for or sees your card number. On a server without a payment provider, checkout is a clearly labelled demo and nothing is charged.',
+    a: 'Through Stripe’s hosted checkout: BluModel Studio never asks for or sees your card number. Cancel a plan any time; you keep it to the end of the period you’ve paid for.',
   },
   {
     q: 'What do my contractor’s clients see?',
@@ -288,12 +314,23 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
-function Faq() {
+/** The payments answer for this server: with real Stripe payments it says nothing about demos. */
+function faqFor(payments: PaymentsMode | null): { q: string; a: string }[] {
+  const tail =
+    payments === 'demo'
+      ? ' On this server checkout is a clearly labelled demo instead, and nothing is charged.'
+      : payments === 'none'
+        ? ' Payments aren’t open yet: until they are, nothing can be bought here, and designing, saving and sharing stay free.'
+        : '';
+  return FAQ.map((f) => (f.q === 'How do payments work?' ? { ...f, a: f.a + tail } : f));
+}
+
+function Faq({ payments }: { payments: PaymentsMode | null }) {
   return (
     <section className="mk-section mk-faq" id="faq" aria-labelledby="faq-title">
       <SectionHead eyebrow="Questions" title={<span id="faq-title">Good questions, straight answers</span>} center />
       <div className="mk-faq-list">
-        {FAQ.map((f) => (
+        {faqFor(payments).map((f) => (
           <details key={f.q}>
             <summary>{f.q}</summary>
             <p>{f.a}</p>

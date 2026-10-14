@@ -87,7 +87,7 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
   };
 
   return (
-    <Dialog title={step === 'plans' ? `Unlock “${kitchenName}”` : soon ? 'Exports open soon' : 'Exports are a paid feature'} onClose={closeUnlock} wide className="unlock">
+    <Dialog title={step === 'plans' ? (soon ? `Exports for “${kitchenName}”` : `Unlock “${kitchenName}”`) : soon ? 'Exports open soon' : 'Exports are a paid feature'} onClose={closeUnlock} wide className="unlock">
       {payments === 'demo' && step === 'plans' && <DemoBanner compact />}
       {step === 'soon' && (
         <div className="unlock-soon">

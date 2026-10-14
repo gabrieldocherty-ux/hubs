@@ -20,6 +20,7 @@ import { Download, Lock } from '../../components/Icons';
 import { isCompact } from '../../components/MobileState';
 import { slug } from '../../lib/exporters';
 import { QA } from '../../lib/qa';
+import { usePayments } from '../../lib/config';
 import { useDesignStore } from '../../store/useDesignStore';
 import { requestExport, useEntitlements } from '../billing';
 import { STUDIO_SIZES, capSize, renderFilename, stillOptionsFor, useStudioPrefs, waitForStillRenderer, type StudioCamera, type StudioPrefs } from './studio';
@@ -106,6 +107,7 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
   const setPrefs = useStudioPrefs((s) => s.setPrefs);
   const name = useDesignStore((s) => s.doc.name);
   const { watermark, loading } = useEntitlements(projectId);
+  const payments = usePayments();
   const [status, setStatus] = useState<'idle' | 'preparing' | 'rendering' | 'done' | 'error'>('idle');
   const [error, setError] = useState('');
   const [result, setResult] = useState<Rendered | null>(null);
@@ -277,8 +279,9 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
         <p className="studio-paywall">
           <Lock width={14} height={14} aria-hidden="true" />
           <span>
-            Free previews carry a watermark. Downloading the full-resolution render is an export: unlock this kitchen for $5, or go Unlimited, and it downloads
-            clean.
+            {payments === 'none'
+              ? 'Free previews carry a watermark. Downloading the full-resolution render is a paid export, and paid exports open soon.'
+              : 'Free previews carry a watermark. Downloading the full-resolution render is an export: unlock this kitchen for $5, or go Unlimited, and it downloads clean.'}
           </span>
         </p>
       )}

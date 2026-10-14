@@ -77,18 +77,27 @@ export interface CheckoutReturn {
 
 const hashPath = (h: string) => h.replace(/\?.*$/, '').replace(/\/+$/, '');
 
+/** The last answer, so a screen's effect that runs twice (React StrictMode) hears the same thing. */
+let taken: { path: string; at: number; result: CheckoutReturn | null } | null = null;
+
 /**
  * What the buyer is coming back from on this page (`hash`, defaulting to the current one), read
  * once: the marker is cleared. Null when they aren't coming back from a checkout.
  */
 export function takeCheckoutReturn(hash: string = location.hash, now = Date.now()): CheckoutReturn | null {
+  const path = hashPath(hash);
+  if (taken && taken.path === path && now - taken.at < 3000) return taken.result;
   const sessionId = pageQuery().get('session_id');
   const m = read();
-  const fresh = m && now - m.at < TTL && hashPath(m.returnTo) === hashPath(hash) ? m : null;
+  const fresh = m && now - m.at < TTL && hashPath(m.returnTo) === path ? m : null;
   if (fresh || (m && now - m.at >= TTL)) write(null);
-  if (sessionId) return { outcome: 'success', what: fresh?.what ?? null, sessionId };
-  if (!fresh) return null;
-  return { outcome: fresh.outcome ?? 'cancel', what: fresh.what, sessionId: null };
+  const result: CheckoutReturn | null = sessionId
+    ? { outcome: 'success', what: fresh?.what ?? null, sessionId }
+    : fresh
+      ? { outcome: fresh.outcome ?? 'cancel', what: fresh.what, sessionId: null }
+      : null;
+  taken = result ? { path, at: now, result } : null;
+  return result;
 }
 
 /** Drops Stripe's `?session_id=` from the address bar (so a reload doesn't confirm it again), keeping the rest. */

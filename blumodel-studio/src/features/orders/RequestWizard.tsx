@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { AgreeToPay } from '../../components/PaymentNotice';
+import { usePayments } from '../../lib/config';
+import { isPaymentsUnavailable, markCheckout, PAYMENTS_SOON } from '../../lib/payments';
 import { hrefFor, navigate, useHashQuery } from '../../lib/router';
 import { useSession } from '../../store/useSession';
 import { getProduct, CATEGORIES } from '../../data/catalog';
@@ -8,7 +11,7 @@ import type { Product } from '../../types';
 import type { ModelTierId } from '../../types/platform';
 import { goToCheckout, ordersApi, type OrderRequest, type OrderTarget, type QuoteWire, type TiersWire } from './api';
 import { dollars, MAX_NOTES, MAX_REFERENCES, NAME_MAX, parseInches, stepProblem, STEPS, suggestedTier, type DraftItem, type Step } from './model';
-import { DemoBanner, OrdersShell } from './parts';
+import { OrdersPayNote, OrdersShell } from './parts';
 
 const DRAFT_KEY = 'blumodel.orders.request';
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -169,6 +172,11 @@ export function RequestWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteKey]);
 
+  const payments = usePayments();
+  const demo = payments === 'demo';
+  /** Payments aren't open: the request can be filled in and priced, not paid for. */
+  const soon = payments === 'none';
+
   const stepIndex = STEPS.findIndex((s) => s.id === d.step);
   const problem = stepProblem(item, d.step);
   const firstBad = (it: DraftItem) => STEPS.find((s) => s.id !== 'review' && stepProblem(it, s.id))?.id ?? null;
@@ -206,6 +214,10 @@ export function RequestWizard() {
       setTouched(true);
       return;
     }
+    if (soon) {
+      setError(PAYMENTS_SOON);
+      return;
+    }
     setPaying(true);
     setError(null);
     const body: OrderRequest = {
@@ -239,6 +251,7 @@ export function RequestWizard() {
       orderId = (await ordersApi.create(body)).order.id;
       saveDraft(null);
       const { url } = await ordersApi.checkout(orderId);
+      markCheckout('order', hrefFor({ name: 'orders', rest: orderId }));
       goToCheckout(url);
     } catch (e) {
       setPaying(false);
@@ -247,7 +260,7 @@ export function RequestWizard() {
         navigate({ name: 'orders', rest: orderId }, true);
         return;
       }
-      const msg = e instanceof ApiError ? e.message : 'Could not send the request.';
+      const msg = isPaymentsUnavailable(e) ? PAYMENTS_SOON : e instanceof ApiError ? e.message : 'Could not send the request.';
       const field = e instanceof ApiError ? (e.body as { errors?: { field: string; message: string }[] } | undefined)?.errors?.[0] : undefined;
       setError(field ? `${field.message}` : msg);
       const m = field?.field.match(/^items\[(\d+)\]\.(?:brief\.)?(\w+)/);
@@ -277,7 +290,7 @@ export function RequestWizard() {
           <p className="muted">The BluModel 3D studio models it to real scale with 2 revision rounds. Prices come from the tier you pick.</p>
         </div>
       </div>
-      {tiers?.demo && <DemoBanner compact />}
+      <OrdersPayNote payments={payments} />
       {askedTarget === 'contractor' && !isContractor && (
         <div className="auth-note">
           Modelling straight into My catalog is part of the Contractor plan. <a href={hrefFor({ name: 'pro', rest: '' })}>See the Contractor plan</a>, or request a model for your own kitchens below.
@@ -418,8 +431,8 @@ export function RequestWizard() {
               </a>
             )}
             {d.step === 'review' ? (
-              <button type="submit" className="btn primary big" disabled={paying || !quote}>
-                {paying ? 'Starting checkout…' : quote ? `Pay ${dollars(quote.amountCents)}${tiers?.demo ? ' (demo)' : ''}` : 'Pay'}
+              <button type="submit" className="btn primary big" disabled={paying || !quote || soon} title={soon ? 'Payments aren’t open yet' : undefined}>
+                {soon ? 'Payments open soon' : paying ? 'Starting checkout…' : quote ? `Pay ${dollars(quote.amountCents)}${demo ? ' (demo)' : ''}` : 'Pay'}
               </button>
             ) : (
               <button type="submit" className="btn primary big">
@@ -427,10 +440,11 @@ export function RequestWizard() {
               </button>
             )}
           </div>
+          {d.step === 'review' && !soon && <AgreeToPay className="ord-agree" />}
         </form>
 
         <aside className="ord-card ord-quote" aria-live="polite" aria-label="Price">
-          <span className="eyebrow">Your quote{tiers?.demo ? ' · demo payments' : ''}</span>
+          <span className="eyebrow">Your quote{demo ? ' · demo payments' : ''}</span>
           {!quote ? (
             <p className="muted">Pick a tier to see the price.</p>
           ) : (
@@ -454,7 +468,8 @@ export function RequestWizard() {
           )}
           {quoteError && <p className="ord-bad">{quoteError}</p>}
           <p className="fine">
-            Prices are set by BluModel Studio’s servers from the tier and extras.{tiers?.demo ? ' Demo payments: no money moves.' : ' You pay on Stripe’s secure page; BluModel Studio never sees card details.'}
+            Prices are set by BluModel Studio’s servers from the tier and extras.
+            {demo ? ' Demo payments: no money moves.' : soon ? ' Payments open soon.' : ' You pay on Stripe’s secure page; BluModel Studio never sees card details.'}
           </p>
         </aside>
       </div>

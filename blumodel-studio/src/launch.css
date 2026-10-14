@@ -84,6 +84,38 @@
   margin-bottom: 16px;
 }
 
+/* The pricing page's DEMO / opens-soon note sits centred under the hero copy. */
+.mk-pay-note {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.mk-pay-note .pay-note {
+  max-width: 640px;
+  margin: 0;
+  text-align: left;
+}
+
+.ord-agree {
+  text-align: right;
+}
+
+.ord-return,
+.pro-return {
+  margin: 0 0 14px;
+}
+
+.pro-return {
+  margin: 16px auto 0;
+  max-width: min(720px, calc(100% - 32px));
+}
+
+.pro-pitch-card .pay-note,
+.pro-pitch-card .auth-note {
+  margin: 0 0 12px;
+}
+
 .billing-policy {
   margin-top: 16px;
 }
@@ -102,6 +134,48 @@
 
 .legal-links-owner {
   margin-left: auto;
+}
+
+/* Where each screen puts it. */
+.page-legal {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.mk-foot .legal-links {
+  max-width: var(--mk-max);
+  margin: 18px auto 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.auth-legal {
+  justify-content: center;
+  width: min(380px, 100%);
+  margin: 24px auto 0;
+}
+
+.auth-legal .legal-links-owner {
+  margin-left: 0;
+}
+
+.home-legal {
+  margin-top: 40px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.gen-legal {
+  margin-top: 32px;
+}
+
+.bp-foot .legal-links {
+  margin-top: 14px;
+}
+
+.share-bar-note a {
+  color: inherit;
+  text-underline-offset: 2px;
 }
 
 .legal-unset {
@@ -324,4 +398,9 @@
   color: #2d5b3b;
   text-align: center;
   font-size: 14px;
+}
+
+/* The sign-in panel stacks the form and the legal links in its centre. */
+.auth-panel {
+  align-content: center;
 }

@@ -16,7 +16,7 @@ const DOCS: { id: LegalDocId; label: string }[] = [
 export default function LegalScreen({ doc }: { doc: LegalDocId }) {
   const config = useAppConfig();
   const signedIn = useSession((s) => s.status === 'signedIn');
-  const d = useMemo(() => legalDoc(doc, config?.legal ?? NO_LEGAL), [doc, config]);
+  const d = useMemo(() => legalDoc(doc, config?.legal ?? NO_LEGAL, config?.payments ?? null), [doc, config]);
 
   useEffect(() => {
     const before = document.title;

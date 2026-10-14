@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../lib/api';
+import { usePayments } from '../../lib/config';
 import { hrefFor } from '../../lib/router';
 import { ordersApi, type OrderWire } from './api';
 import { dollars, inFilter, isUnpaid, LIST_FILTERS, relative, shortDate, type ListFilter } from './model';
-import { DemoBanner, OrdersShell, StatusPill } from './parts';
+import { OrdersPayNote, OrdersShell, StatusPill } from './parts';
 
 /** `#/orders`: the buyer's custom-model orders, newest first, with status chips. */
 export function OrdersList() {
   const [orders, setOrders] = useState<OrderWire[] | null>(null);
-  const [demo, setDemo] = useState(false);
+  const payments = usePayments();
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ListFilter>('all');
 
@@ -19,7 +20,6 @@ export function OrdersList() {
       .then((r) => {
         if (!live) return;
         setOrders(r.orders);
-        setDemo(r.demo);
       })
       .catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load your orders.'));
     return () => {
@@ -46,7 +46,7 @@ export function OrdersList() {
           Request a custom model
         </a>
       </div>
-      {demo && <DemoBanner compact />}
+      <OrdersPayNote payments={payments} />
       {error && <div className="auth-error">{error}</div>}
       {!orders && !error && <div className="ord-loading">Loading your orders…</div>}
       {orders && orders.length === 0 && (

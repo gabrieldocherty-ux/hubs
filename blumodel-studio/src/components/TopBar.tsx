@@ -6,6 +6,7 @@ import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporte
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
+import { usePayments } from '../lib/config';
 import { AccountMenu } from './AccountMenu';
 import { Check } from './Icons';
 import { RenderButton } from '../features/viewer';
@@ -118,6 +119,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   };
   const exportProject = view ? null : projectId;
   const { canExport } = useEntitlements(exportProject);
+  const payments = usePayments();
   const { isContractor } = usePriceBook();
   useResumeExport(exportProject, runners);
   const doExport = (kind: ExportKind) => {
@@ -243,7 +245,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
                     )}
                     {!canExport && (
                       <p className="menu-note">
-                        <Lock width={12} height={12} /> Exports are a paid feature. Pick one to see the options.
+                        <Lock width={12} height={12} /> {payments === 'none' ? 'Exports are a paid feature and open soon. Designing and sharing are free.' : 'Exports are a paid feature. Pick one to see the options.'}
                       </p>
                     )}
                     <div className="menu-sep" />

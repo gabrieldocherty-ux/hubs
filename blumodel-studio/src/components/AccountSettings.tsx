@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
+import { attachmentName } from '../lib/attachment';
 import { markDown } from '../lib/reachability';
 import { navigateHash } from '../lib/router';
 import { useSession } from '../store/useSession';
@@ -74,13 +75,6 @@ export function AccountSettingsForm({ onClose }: { onClose?: () => void }) {
       <YourData />
     </div>
   );
-}
-
-/** The filename from `Content-Disposition: attachment; filename="…"`, if it is a plain one. */
-export function attachmentName(header: string | null, fallback: string): string {
-  const m = header ? /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header) : null;
-  const name = m ? decodeURIComponent(m[1]!).replace(/[\\/:*?"<>|]+/g, '-').trim() : '';
-  return name || fallback;
 }
 
 function YourData() {
