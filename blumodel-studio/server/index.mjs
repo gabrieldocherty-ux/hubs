@@ -17,8 +17,8 @@
 // database and exits 0. An uncaught error is logged and exits 1 (the supervisor restarts it).
 
 import fs from 'node:fs';
-import http from 'node:http';
 import { loadConfig } from './config.mjs';
+import { createHttpServer } from './http/listen.mjs';
 import { checkpoint, openDb } from './db/index.mjs';
 import { migrate } from './db/migrate.mjs';
 import { createApp } from './app.mjs';
@@ -70,17 +70,9 @@ if (applied.length) console.log(`Applied migrations: ${applied.join(', ')}`);
 const { handler, ctx } = createApp({ config, db });
 ctx.health.integrity = integrity;
 
-// Limits for the public internet. A client gets 20 s to send its headers (slowloris), 5 minutes
-// for the whole request (a 25 MB model over a slow uplink), and an idle keep-alive connection is
-// closed after 5 s. Bodies are capped per route (server/http/body.mjs).
-const server = http.createServer(
-  { maxHeaderSize: 16 * 1024, headersTimeout: 20_000, requestTimeout: 300_000, connectionsCheckingInterval: 5_000 },
-  handler,
-);
-server.keepAliveTimeout = 5_000;
-server.maxHeadersCount = 100;
-server.maxRequestsPerSocket = 1_000;
-server.maxConnections = 1_000;
+// Limits for the public internet (header and request timeouts against slowloris, header size,
+// connections): server/http/listen.mjs. Bodies are capped per route (server/http/body.mjs).
+const server = createHttpServer(handler);
 server.on('error', (err) => {
   console.error(`BluModel Studio could not listen on ${config.HOST}:${config.PORT}: ${err.message}`);
   process.exit(1);
@@ -103,7 +95,7 @@ let stopping = false;
 function shutdown(reason) {
   if (stopping) return;
   stopping = true;
-  ctx.health.shuttingDown = true;
+  ctx.beginShutdown();
   console.log(`Shutting down (${reason}): finishing open requests (up to ${DRAIN_MS / 1000} s).`);
   let done = false;
   const finish = (how) => {

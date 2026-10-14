@@ -95,12 +95,33 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
 
   const modules = routeModules ?? ROUTE_MODULES.map((fn, i) => ({ name: ROUTE_MODULE_NAMES[i], fn }));
   const routes = compileRoutes(ctx, modules);
-  ctx.routes = routes.map((r) => ({ method: r.method, path: r.path, auth: r.auth, module: r.module }));
+  ctx.routes = routes.map((r) => ({
+    method: r.method,
+    path: r.path,
+    auth: r.auth,
+    module: r.module,
+    maxBytes: r.maxBytes,
+    rateLimits: r.rateLimits.map(({ name, max, windowMs, by }) => ({ name, max, windowMs, by })),
+  }));
   const deps = { currentUser: sessions.currentUser, limiter, clientIp };
+
+  /** Responses not yet finished, so shutdown can tell them to close their connection. */
+  const inflight = new Set();
+  /**
+   * Shutdown has begun (index.mjs): /api/health answers 503, and every response from now on,
+   * including those for requests already in progress, closes its connection instead of keeping
+   * it alive, so the server's close() isn't held up by idle keep-alive sockets.
+   */
+  ctx.beginShutdown = () => {
+    ctx.health.shuttingDown = true;
+    for (const r of inflight) if (!r.headersSent) r.setHeader('Connection', 'close');
+  };
 
   const handler = async (req, res) => {
     const requestId = crypto.randomBytes(6).toString('hex');
     securityHeaders(res, { https: isHttps(req, config), requestId });
+    inflight.add(res);
+    res.once('close', () => inflight.delete(res));
     // While shutting down, finish this response and close the connection.
     if (ctx.health.shuttingDown) res.setHeader('Connection', 'close');
     try {
