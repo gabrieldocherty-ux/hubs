@@ -17,15 +17,7 @@ import { SelectionDimensions, WallDimensions } from './Dimensions';
 import { DragFeedback } from './DragFeedback';
 import { itemRoomBox } from './planHit';
 import { MAX_SCALE, MIN_SCALE, usePlanGestures, type View } from './usePlanGestures';
-
-/**
- * Fit margin per side, in px. A desktop pane keeps 72px for the dimension strings; a
- * phone pane (390x244 in split view) can't spare that, so the room gets the space and
- * the outer dimension strings may clip. Pinching out shows them.
- */
-function fitMargin(w: number, h: number): number {
-  return clamp((Math.min(w, h) - 200) * 0.2, 12, 72);
-}
+import { fitView } from './planFit';
 
 /** The pane's visible part in client px (on a phone it can be scrolled partly off-screen). */
 function visibleRect(el: HTMLElement): { left: number; top: number; right: number; bottom: number } {
@@ -128,12 +120,8 @@ export function PlanView() {
   const armed = armedId ? getProduct(armedId) : undefined;
 
   const fit = useCallback(() => {
-    const m = fitMargin(size.w, size.h);
-    const scale = Math.min((size.w - m * 2) / (room.widthIn + 20), (size.h - m * 2) / (room.lengthIn + 20));
-    const s = clamp(scale, MIN_SCALE, MAX_SCALE);
-    // Nudged right/down a little: the overall dimension strings sit on the north and west sides.
-    const nudge = m / 72;
-    applyView({ scale: s, x: (size.w - room.widthIn * s) / 2 + 12 * nudge, y: (size.h - room.lengthIn * s) / 2 + 14 * nudge });
+    // Room and dimension strings centred in the pane (planFit.ts).
+    applyView(fitView(size.w, size.h, room.widthIn, room.lengthIn, MIN_SCALE, MAX_SCALE));
     userZoomed.current = false;
   }, [size.w, size.h, room.widthIn, room.lengthIn, applyView]);
 
