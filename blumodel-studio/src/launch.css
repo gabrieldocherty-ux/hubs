@@ -4,6 +4,13 @@
  * Imported by main.tsx after styles.css. Tokens come from styles.css (:root).
  */
 
+/* A link no rule colours (a link inside a sentence) takes the brand's link colour, never the
+   browser's blue and purple. Zero specificity: every screen's own link style still wins. */
+:where(a) {
+  color: var(--accent-2);
+  text-underline-offset: 2px;
+}
+
 /* ─── Payment notes: DEMO, "opens soon" ─────────────────── */
 
 .pay-note {
@@ -280,7 +287,12 @@
   color: var(--ink-3);
 }
 
-.nf-card .brand {
+/* The wordmark link: the root boundary has no app styles around it, so it would be a blue underlined link. */
+.nf-card .brand,
+.crash-card .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--ink);
   text-decoration: none;
 }
@@ -412,6 +424,21 @@
   white-space: nowrap;
 }
 
+/* No button in a header bar wraps onto two lines (it did beside the wordmark on a 360px phone). */
+.home-bar .btn {
+  white-space: nowrap;
+}
+
+/* A phone's header that also carries steps (new kitchen) or a button (custom models) keeps the
+   mark and drops the wordmark, as the editor and Start from a photo already do; at 360px the
+   steps sat on top of the name and "Request a model" covered it. */
+@media (max-width: 480px) {
+  .home-bar:has(> .steps) .wordmark,
+  .ord-page .home-bar .wordmark {
+    display: none;
+  }
+}
+
 /*
  * index.html asks for viewport-fit=cover, so the page may run under a notch or the home indicator.
  * In-flow content keeps clear of the side insets (landscape); fixed bars pad themselves.
@@ -432,11 +459,88 @@ body {
   }
 }
 
-/* Touch screens: text fields at 16px (smaller makes iOS zoom in on focus). */
+/*
+ * Touch screens (phones, tablets): every control is at least 44 × 44 px, and every text field is
+ * 16 px (smaller makes iOS zoom the page in on focus). One block for the whole app, so a screen
+ * added later is covered too. `min-height` / `min-width` win over a fixed `height` / `width`, so
+ * the rules that size each control for a mouse stay as they are. The QA phone pass
+ * (scripts/qa/routes/launch.mjs) measures every routed screen against this at five sizes.
+ */
 @media (pointer: coarse) {
+  /* !important: feature stylesheets load later and set their own smaller sizes on fields. */
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
+  }
+
+  .btn,
+  .chip,
+  .icon-btn,
+  .avatar,
+  .swatch,
+  [role='tab'],
+  .seg button,
+  .steps button,
+  .ord-step,
+  .link-btn,
+  .legal-toc button,
+  .plan-hud--br button,
+  .project-actions button,
+  .ord-q-title button,
+  .pw button,
+  select,
+  summary,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden']) {
+    /* !important: a floor, not a size; the screens' own (lazy-loaded, so later) rules set smaller ones. */
+    min-height: 44px !important;
+  }
+
+  .btn,
+  .chip,
+  .icon-btn,
+  .avatar,
+  .swatch,
+  .steps button,
+  .plan-hud--br button,
+  .project-actions button,
+  .pw button {
+    min-width: 44px !important;
+  }
+
+  /* A checkbox or radio is tapped through its label, so the label is the 44px target. A bare
+     (inline) label becomes a centred row; one a screen already lays out keeps its display. */
+  label:has(> input[type='checkbox']),
+  label:has(> input[type='radio']) {
+    min-height: 44px !important;
+  }
+
+  :where(label:has(> input[type='checkbox']), label:has(> input[type='radio'])) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Links drawn as chips are inline: give them a box the height applies to, text centred. */
+  a.chip {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* A disclosure keeps its marker (so it stays a list item); the padding centres one line in 44px. */
+  summary {
+    padding-block: 12px;
+  }
+
+  /* Show/Hide password fills the field's height at its right end. */
+  .pw button {
+    top: 0;
+    right: 0;
+    height: 100%;
+  }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
   }
 }

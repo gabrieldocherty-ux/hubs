@@ -3,7 +3,9 @@ import { AccountMenu } from '../../components/AccountMenu';
 import { Logo, Wordmark } from '../../components/Icons';
 import { Toasts } from '../../components/Toasts';
 import { ApiError } from '../../lib/api';
+import { signinHref } from '../../lib/router';
 import { useCatalog } from '../../store/useCatalog';
+import { useSession } from '../../store/useSession';
 import { brandApi, type PublicBrand, type PublicProduct } from './api';
 import { PublicBrandView } from './PublicBrandView';
 import './brands.css';
@@ -13,6 +15,7 @@ type State = 'loading' | 'gone' | { error: string } | { brand: PublicBrand; prod
 /** `#/b/:slug`: a live brand page. Unknown, in-review, suspended and lapsed pages all say the same thing. */
 export default function BrandPage({ slug }: { slug: string }) {
   const [state, setState] = useState<State>('loading');
+  const signedIn = useSession((s) => s.status === 'signedIn');
 
   useEffect(() => {
     let live = true;
@@ -44,7 +47,14 @@ export default function BrandPage({ slug }: { slug: string }) {
           <Logo />
           <Wordmark />
         </a>
-        <AccountMenu />
+        {/* Signed out, "Sign in" (as on a product page): AccountMenu's "Sign in to save" is the editor's words, and wrapped beside the name on a phone. */}
+        {signedIn ? (
+          <AccountMenu />
+        ) : (
+          <a className="btn" href={signinHref()}>
+            Sign in
+          </a>
+        )}
       </header>
       <main className="bp-main">
         {state === 'loading' && <div className="screen-msg">Opening the page…</div>}

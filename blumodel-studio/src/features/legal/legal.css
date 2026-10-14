@@ -94,16 +94,32 @@
   background: var(--panel);
 }
 
+/* Numbered by a counter beside the button, not the list marker: a marker sits on the baseline of
+   the button's LAST line, so a two-line entry read "Where your data is kept, and for how / 5. long". */
 .legal-toc ol {
   margin: 0;
-  padding: 0 0 0 20px;
+  padding: 0;
+  list-style: none;
+  counter-reset: toc;
   columns: 2;
   column-gap: 24px;
 }
 
 .legal-toc li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   break-inside: avoid;
+  counter-increment: toc;
   color: var(--ink-3);
+}
+
+.legal-toc li::before {
+  content: counter(toc) '.';
+  flex: none;
+  min-width: 1.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .legal-toc button {
