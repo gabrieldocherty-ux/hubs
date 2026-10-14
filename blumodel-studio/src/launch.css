@@ -1,0 +1,327 @@
+/*
+ * Launch (blumodel.studio going public): the payment-state notes, the legal footer, the
+ * connection banner, the error and 404 screens, and the phone rules every screen shares.
+ * Imported by main.tsx after styles.css. Tokens come from styles.css (:root).
+ */
+
+/* ─── Payment notes: DEMO, "opens soon" ─────────────────── */
+
+.pay-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.pay-note--compact {
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+.pay-note--demo {
+  border: 1px dashed var(--warn);
+  background: var(--warn-soft);
+  color: #6b4810;
+}
+
+.pay-note-tag {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: #6b4810;
+  color: #fff8ea;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+}
+
+.pay-note--soon {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: 1px solid #cfdccf;
+  background: var(--ok-soft);
+  color: #2d5b3b;
+}
+
+.pay-note-title {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pay-note--compact .pay-note-title {
+  font-size: 15px;
+}
+
+.agree {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.agree a,
+.legal-links a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.agree a:hover,
+.legal-links a:hover {
+  color: var(--ink);
+}
+
+.unlock-soon .modal-actions {
+  flex-wrap: wrap;
+}
+
+.billing-return {
+  margin-bottom: 16px;
+}
+
+.billing-policy {
+  margin-top: 16px;
+}
+
+/* ─── Legal footer ──────────────────────────────────────── */
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: 28px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.legal-links-owner {
+  margin-left: auto;
+}
+
+.legal-unset {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--bad);
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: help;
+}
+
+/* ─── Connection banner ─────────────────────────────────── */
+
+.conn-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  z-index: 90;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 8px 8px 8px 14px;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  background: var(--ink);
+  color: #fbf9f4;
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+.conn-banner b {
+  font-weight: 600;
+}
+
+.conn-banner .btn {
+  min-height: 34px;
+  padding: 4px 12px;
+  border-color: rgba(251, 249, 244, 0.35);
+  background: transparent;
+  color: inherit;
+}
+
+.conn-banner .btn:hover {
+  background: rgba(251, 249, 244, 0.12);
+}
+
+/* ─── Something went wrong / not found ──────────────────── */
+
+.crash,
+.nf {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  background: var(--paper);
+}
+
+.crash-card,
+.nf-card {
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.crash-card h1,
+.nf-card h1 {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-size: clamp(26px, 6vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.crash-card p,
+.nf-card p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+
+.crash-actions,
+.nf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.crash-detail {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.nf-card .brand {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nf-card .legal-links {
+  margin-top: 18px;
+}
+
+/* A broken panel inside a screen (a route-level boundary) stays inside its space. */
+.crash--inline {
+  min-height: 60vh;
+}
+
+/* ─── Account settings: your data ───────────────────────── */
+
+.acct-modal {
+  width: min(480px, 100%);
+}
+
+.acct-copy {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+}
+
+.acct-copy a,
+.acct-delete a {
+  color: var(--accent-2);
+  text-underline-offset: 2px;
+}
+
+.acct-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn.acct-danger {
+  color: var(--bad);
+  border-color: #e3b4ad;
+}
+
+.btn.acct-danger:hover {
+  background: var(--bad-soft);
+}
+
+.btn.acct-danger--solid {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.btn.acct-danger--solid:hover {
+  background: #a33224;
+}
+
+.acct-delete {
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid #e8c3bd;
+  border-radius: 12px;
+  background: #fdf5f3;
+}
+
+.acct-delete h4 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.acct-delete ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+
+.acct-delete li + li {
+  margin-top: 4px;
+}
+
+.acct-delete .modal-actions {
+  flex-wrap: wrap;
+}
+
+.acct-main {
+  max-width: 640px;
+}
+
+.acct-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.menu-legal {
+  display: flex;
+  gap: 12px;
+  margin: 4px 10px 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.menu-legal a {
+  color: var(--ink-3);
+  text-underline-offset: 2px;
+}
+
+.mk-deleted {
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--ok-soft);
+  color: #2d5b3b;
+  text-align: center;
+  font-size: 14px;
+}

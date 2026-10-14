@@ -60,14 +60,15 @@ export interface PlanState {
   cancelAtPeriodEnd: boolean;
   /** Set while a failed renewal is being retried; the plan stays on until then. */
   graceUntil: number | null;
-  provider: 'demo' | 'stripe' | null;
+  /** `comp`: a complimentary plan an admin gave (POST /api/admin/billing/grant); nothing to pay or cancel. */
+  provider: 'demo' | 'stripe' | 'comp' | null;
 }
 
 /** A subscription as the Billing page shows it (`GET /api/billing/me`). */
 export interface Subscription {
   plan: 'unlimited' | 'contractor';
   status: SubscriptionStatus;
-  provider: 'demo' | 'stripe';
+  provider: 'demo' | 'stripe' | 'comp';
   currentPeriodEnd: number | null;
   cancelAtPeriodEnd: boolean;
   graceUntil: number | null;
@@ -282,10 +283,26 @@ export interface CatalogWire {
 
 // ─── Config ──────────────────────────────────────────────────────────────
 
-/** `GET /api/config`. */
+/** Who runs this site, for the Terms, Privacy and Refund pages (`GET /api/config` → `legal`). */
+export interface LegalConfig {
+  /** True once the operator has set the business name and support email. */
+  ready: boolean;
+  businessName: string | null;
+  supportEmail: string | null;
+  jurisdiction: string | null;
+}
+
+/**
+ * `GET /api/config`. `payments`: `stripe` (real money through Stripe Checkout), `demo` (the labelled
+ * simulation) or `none` (payments not open yet: billing, checkout and order-payment endpoints answer
+ * 503 `{ code: 'payments_unavailable' }`). Older servers send no `publicUrl` or `legal`; read it
+ * through `src/lib/config.ts`, which fills them in.
+ */
 export interface AppConfig {
-  payments: 'demo' | 'stripe';
+  payments: 'demo' | 'stripe' | 'none';
   demoPayments: boolean;
+  publicUrl?: string;
+  legal?: LegalConfig;
   llm: boolean;
   limits: { glbMb: number; imageMb: number; brandProducts: number };
   version: string;

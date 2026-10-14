@@ -9,6 +9,7 @@ import type {
   Role,
   SessionUser,
 } from '../types/platform';
+import { markDown, markUp } from './reachability';
 
 /** The signed-in user, with role and brand memberships (`GET /api/auth/me`). */
 export type User = SessionUser;
@@ -42,9 +43,17 @@ export interface CallOptions {
 }
 
 async function parse<T>(res: Response): Promise<T> {
-  if (res.status === 204) return undefined as T;
+  if (res.status === 204) {
+    markUp();
+    return undefined as T;
+  }
   const type = res.headers.get('content-type') || '';
-  if (!type.includes('application/json')) throw new ApiError(0, 'The account service isn’t running here.');
+  if (!type.includes('application/json')) {
+    // An HTML error page (the tunnel or a proxy answering for a server that's down) or no API at all.
+    if (res.status >= 500 || res.status === 0) markDown();
+    throw new ApiError(0, 'The account service isn’t running here.');
+  }
+  markUp();
   const data = await res.json();
   if (!res.ok) throw new ApiError(res.status, data?.error || 'Something went wrong.', data);
   return data as T;
@@ -68,6 +77,7 @@ export async function call<T>(method: string, path: string, body?: unknown, opts
     });
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    markDown();
     throw new ApiError(0, 'Can’t reach the server. Check your connection.');
   }
   return parse<T>(res);
@@ -88,6 +98,7 @@ export async function upload<T>(path: string, file: Blob, query?: Record<string,
       body: file,
     });
   } catch {
+    markDown();
     throw new ApiError(0, 'Can’t reach the server. Check your connection.');
   }
   return parse<T>(res);
@@ -103,6 +114,8 @@ export const api = {
   logout: () => call<{ ok: true }>('POST', '/api/auth/logout'),
   updateMe: (name: string) => call<{ user: User }>('PATCH', '/api/auth/me', { name }),
   changePassword: (current: string, next: string) => call<{ ok: true }>('POST', '/api/auth/password', { current, next }),
+  /** 204. 409 `{ code: 'active_subscription' }` while a paid plan still renews; 4xx on a wrong password. */
+  deleteAccount: (password: string) => call<void>('POST', '/api/account/delete', { password }),
 
   // projects
   listProjects: () => call<{ projects: Project[] }>('GET', '/api/projects'),

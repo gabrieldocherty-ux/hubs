@@ -25,8 +25,13 @@ export type Route =
   | { name: 'share'; token: string } // #/s/:token
   | { name: 'admin'; tab: AdminTab } // #/admin/:tab
   | { name: 'billing' } // #/account/billing
+  | { name: 'account' } // #/account (settings: name, password, download or delete my data)
   | { name: 'pro'; rest: string } // #/pro, #/pro/<rest…> (the Contractor workspace)
-  | { name: 'payDemoPlan'; ref: string }; // #/pay/demo-plan/:ref
+  | { name: 'payDemoPlan'; ref: string } // #/pay/demo-plan/:ref
+  | { name: 'legal'; doc: LegalDocId } // #/terms, #/privacy, #/refunds
+  | { name: 'notFound' }; // anything else
+
+export type LegalDocId = 'terms' | 'privacy' | 'refunds';
 
 const UUID = /^[0-9a-f-]{36}$/;
 /** Product ids, slugs, order ids and share tokens: the server's `:param` alphabet. */
@@ -52,23 +57,32 @@ export function splitHash(hash: string): { path: string; query: URLSearchParams 
 
 const opt = (v: string | null) => (v ? v : undefined);
 
+/**
+ * The route for a hash. A path the app doesn't know (or a malformed id) is `notFound`, which shows
+ * a friendly page with a way home, never a blank screen or someone else's page.
+ */
 export function parseRoute(hash: string): Route {
   const { path, query } = splitHash(hash);
   const parts = path.split('/').map((p) => decode(p));
-  if (parts.some((p) => p === null)) return { name: 'home' };
+  if (parts.some((p) => p === null)) return { name: 'notFound' };
   const seg = parts as string[];
   const [a, b, c] = seg;
 
   switch (a) {
     case '':
-      return { name: 'home' };
+      return seg.length === 1 ? { name: 'home' } : { name: 'notFound' };
     case 'signin':
     case 'signup':
     case 'new':
     case 'local':
     case 'welcome':
     case 'pricing':
-      return seg.length === 1 ? { name: a } : { name: 'home' };
+      return seg.length === 1 ? { name: a } : { name: 'notFound' };
+    case 'terms':
+    case 'privacy':
+    case 'refunds':
+      if (seg.length === 1) return { name: 'legal', doc: a };
+      break;
     case 'generate': {
       if (seg.length !== 1) break;
       const q = opt(query.get('q'));
@@ -98,6 +112,7 @@ export function parseRoute(hash: string): Route {
       break;
     }
     case 'account':
+      if (seg.length === 1) return { name: 'account' };
       if (seg.length === 2 && b === 'billing') return { name: 'billing' };
       break;
     case 'pay':
@@ -113,7 +128,7 @@ export function parseRoute(hash: string): Route {
       break;
     }
   }
-  return { name: 'home' };
+  return { name: 'notFound' };
 }
 
 function withQuery(path: string, q: Record<string, string | undefined>): string {
@@ -143,6 +158,12 @@ export function hrefFor(r: Route): string {
       return r.rest ? `#/${r.name}/${r.rest}` : `#/${r.name}`;
     case 'billing':
       return '#/account/billing';
+    case 'account':
+      return '#/account';
+    case 'legal':
+      return `#/${r.doc}`;
+    case 'notFound':
+      return '#/';
     case 'payDemo':
       return `#/pay/demo/${enc(r.orderId)}`;
     case 'payDemoPlan':
@@ -198,7 +219,7 @@ export function safeNext(query: URLSearchParams): string {
   const next = query.get('next');
   if (!next || !next.startsWith('#/')) return '#/';
   const r = parseRoute(next);
-  return r.name === 'signin' || r.name === 'signup' ? '#/' : next;
+  return r.name === 'signin' || r.name === 'signup' || r.name === 'notFound' ? '#/' : next;
 }
 
 /** The sign-in page, remembering the current hash so the user comes back to it. */

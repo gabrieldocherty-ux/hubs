@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../store/useSession';
-import { api, ApiError } from '../lib/api';
 import { navigate } from '../lib/router';
-import { Close } from './Icons';
+import { AccountSettingsForm } from './AccountSettings';
+import { Dialog } from './Dialog';
 
 function initials(name: string) {
   return name
@@ -87,6 +87,17 @@ export function AccountMenu() {
           >
             <b>Sign out</b>
           </button>
+          <div className="menu-legal">
+            <a href="#/terms" target="_blank" rel="noopener">
+              Terms
+            </a>
+            <a href="#/privacy" target="_blank" rel="noopener">
+              Privacy
+            </a>
+            <a href="#/refunds" target="_blank" rel="noopener">
+              Refunds
+            </a>
+          </div>
         </div>
       )}
       {settings && <AccountSettings onClose={() => setSettings(false)} />}
@@ -95,75 +106,9 @@ export function AccountMenu() {
 }
 
 function AccountSettings({ onClose }: { onClose: () => void }) {
-  const user = useSession((s) => s.user)!;
-  const setUser = useSession((s) => s.setUser);
-  const [name, setName] = useState(user.name);
-  const [current, setCurrent] = useState('');
-  const [next, setNext] = useState('');
-  const [msg, setMsg] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setMsg(null);
-    try {
-      if (name.trim() && name.trim() !== user.name) setUser((await api.updateMe(name.trim())).user);
-      if (current || next) {
-        await api.changePassword(current, next);
-        setCurrent('');
-        setNext('');
-        setMsg({ tone: 'ok', text: 'Saved. Other devices have been signed out.' });
-      } else setMsg({ tone: 'ok', text: 'Saved.' });
-    } catch (err) {
-      setMsg({ tone: 'bad', text: err instanceof ApiError ? err.message : 'Could not save. Try again.' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
-    <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <form className="modal" onSubmit={save} role="dialog" aria-modal="true" aria-labelledby="acct-title">
-        <header>
-          <h3 id="acct-title">Account settings</h3>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">
-            <Close />
-          </button>
-        </header>
-        <label className="field">
-          <span>Name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-        </label>
-        <label className="field">
-          <span>Email</span>
-          <input value={user.email} disabled />
-        </label>
-        <div className="modal-sep">Change password</div>
-        <label className="field">
-          <span>Current password</span>
-          <input type="password" value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
-        </label>
-        <label className="field">
-          <span>New password <em>· at least 8 characters</em></span>
-          <input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
-        </label>
-        {msg && <div className={msg.tone === 'ok' ? 'auth-ok' : 'auth-error'}>{msg.text}</div>}
-        <div className="modal-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            Close
-          </button>
-          <button type="submit" className="btn primary" disabled={busy}>
-            {busy ? 'Saving…' : 'Save changes'}
-          </button>
-        </div>
-      </form>
-    </div>
+    <Dialog title="Account settings" onClose={onClose} className="acct-modal">
+      <AccountSettingsForm onClose={onClose} />
+    </Dialog>
   );
 }

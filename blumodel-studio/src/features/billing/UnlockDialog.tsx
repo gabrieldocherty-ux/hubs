@@ -1,7 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Dialog } from '../../components/Dialog';
 import { Check, Lock } from '../../components/Icons';
+import { AgreeToPay, AgreeToSignUp, DemoBanner, PaymentsSoon, SOON_LABEL } from '../../components/PaymentNotice';
 import { api, ApiError } from '../../lib/api';
+import { usePayments } from '../../lib/config';
+import { markCheckout, paymentError } from '../../lib/payments';
 import { prepareDocForSave } from '../../lib/doc';
 import { navigate } from '../../lib/router';
 import { useDesignStore } from '../../store/useDesignStore';
@@ -33,18 +36,14 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
   const user = useSession((s) => s.user);
   const kitchenName = useDesignStore((s) => s.doc.name);
   const projectId = request.projectId;
-  const [demo, setDemo] = useState(false);
+  const payments = usePayments();
+  const soon = payments === 'none';
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** While payments aren't open, saving the design to an account is offered, not required. */
+  const [keep, setKeep] = useState(false);
 
-  useEffect(() => {
-    billingApi
-      .plans()
-      .then((r) => setDemo(r.demo))
-      .catch(() => setDemo(false));
-  }, []);
-
-  const step: 'account' | 'save' | 'plans' = !user ? 'account' : !projectId ? 'save' : 'plans';
+  const step: 'account' | 'save' | 'plans' | 'soon' = soon && !keep && (!user || !projectId) ? 'soon' : !user ? 'account' : !projectId ? 'save' : 'plans';
 
   /** Device drafts and share views become a kitchen in the account, then the dialog carries on for it. */
   const saveToAccount = async () => {
@@ -73,6 +72,7 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
       const returnTo = `#/k/${projectId}`;
       const res = await billingApi.checkout(what === 'kitchen_unlock' ? { kind: 'kitchen_unlock', projectId, returnTo } : { kind: 'subscription', plan: 'unlimited', returnTo });
       saveIntent({ projectId, kind: request.kind });
+      markCheckout(what, returnTo);
       closeUnlock();
       goToCheckout(res.url);
     } catch (e) {
@@ -80,18 +80,30 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
         // Already entitled (another tab, or a plan): just export.
         await loadEntitlements(true);
         setError(e.message);
-      } else setError(e instanceof ApiError ? e.message : 'Could not start the payment. Try again.');
+      } else setError(paymentError(e));
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <Dialog title={step === 'plans' ? `Unlock “${kitchenName}”` : 'Exports are a paid feature'} onClose={closeUnlock} wide className="unlock">
-      {demo && step === 'plans' && (
-        <p className="demo-banner" role="note">
-          <b>DEMO</b> Demo payments: no real money moves and no card details are collected.
-        </p>
+    <Dialog title={step === 'plans' ? `Unlock “${kitchenName}”` : soon ? 'Exports open soon' : 'Exports are a paid feature'} onClose={closeUnlock} wide className="unlock">
+      {payments === 'demo' && step === 'plans' && <DemoBanner compact />}
+      {step === 'soon' && (
+        <div className="unlock-soon">
+          <PaymentsSoon title="Paid exports open soon">
+            You can’t buy {WHAT[request.kind]} yet. Designing, saving and sharing this kitchen are free and keep working
+            {user ? '.' : ', and it stays in this browser until you save it to an account.'}
+          </PaymentsSoon>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setKeep(true)}>
+              {user ? 'Save it to my kitchens' : 'Keep it in a free account'}
+            </button>
+            <button className="btn primary" onClick={closeUnlock} data-autofocus>
+              Back to my kitchen
+            </button>
+          </div>
+        </div>
       )}
       {step === 'account' && <AccountStep why={WHAT[request.kind]} />}
       {step === 'save' && (
@@ -106,27 +118,34 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
       )}
       {step === 'plans' && (
         <>
-          <p className="unlock-lede">
-            <Lock width={15} height={15} /> Designing, saving and sharing stay free. To export {WHAT[request.kind]}, pick one:
-          </p>
+          {soon ? (
+            <PaymentsSoon title="Paid exports open soon" compact>
+              Here is what they will cost. Designing, saving and sharing stay free.
+            </PaymentsSoon>
+          ) : (
+            <p className="unlock-lede">
+              <Lock width={15} height={15} /> Designing, saving and sharing stay free. To export {WHAT[request.kind]}, pick one:
+            </p>
+          )}
           <div className="unlock-cards">
             <PlanOption
               plan={plan('kitchen_unlock')}
               note="Every export for this kitchen, forever, including after you change it."
-              cta={busy === 'kitchen_unlock' ? 'Starting…' : `Unlock this kitchen · ${dollars(plan('kitchen_unlock').priceCents)}`}
+              cta={soon ? SOON_LABEL : busy === 'kitchen_unlock' ? 'Starting…' : `Unlock this kitchen · ${dollars(plan('kitchen_unlock').priceCents)}`}
               onChoose={() => buy('kitchen_unlock')}
-              disabled={!!busy}
-              autoFocus
+              disabled={!!busy || soon}
+              autoFocus={!soon}
             />
             <PlanOption
               plan={plan('unlimited')}
               note="Exports on all your kitchens, no watermarks. Cancel anytime."
-              cta={busy === 'unlimited' ? 'Starting…' : `Go Unlimited · ${dollars(plan('unlimited').priceCents)}/month`}
+              cta={soon ? SOON_LABEL : busy === 'unlimited' ? 'Starting…' : `Go Unlimited · ${dollars(plan('unlimited').priceCents)}/month`}
               onChoose={() => buy('unlimited')}
-              disabled={!!busy}
+              disabled={!!busy || soon}
               featured
             />
           </div>
+          {!soon && <AgreeToPay className="unlock-agree" />}
           <a className="unlock-contractor" href="#/pro" onClick={() => closeUnlock()}>
             Are you a contractor? See the Contractor plan ({dollars(plan('contractor').priceCents)}/month) →
           </a>
@@ -205,6 +224,7 @@ function AccountStep({ why }: { why: string }) {
         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required minLength={mode === 'signup' ? 8 : undefined} />
       </label>
       {error && <div className="auth-error">{error}</div>}
+      {mode === 'signup' && <AgreeToSignUp />}
       <div className="modal-actions">
         <button type="button" className="btn" onClick={() => setMode(mode === 'signup' ? 'signin' : 'signup')}>
           {mode === 'signup' ? 'I have an account' : 'Create an account instead'}

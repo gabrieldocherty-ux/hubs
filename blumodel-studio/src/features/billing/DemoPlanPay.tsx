@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
+import { settleDemoCheckout } from '../../lib/payments';
 import { navigateHash } from '../../lib/router';
 import { useSession } from '../../store/useSession';
 import { billingApi, dollars, type CheckoutWire } from './api';
@@ -23,7 +24,10 @@ export default function DemoPlanPay({ checkoutRef }: { checkoutRef: string }) {
       .catch((e) => setError(e instanceof ApiError ? e.message : 'Could not load this payment.'));
   }, [checkoutRef]);
 
-  const back = (c: CheckoutWire) => navigateHash(c.returnTo || '#/account/billing', true);
+  const back = (c: CheckoutWire) => {
+    settleDemoCheckout(c.status === 'completed' ? 'success' : 'cancel');
+    navigateHash(c.returnTo || '#/account/billing', true);
+  };
 
   const act = async (outcome: 'success' | 'decline' | 'cancel') => {
     if (!checkout) return;

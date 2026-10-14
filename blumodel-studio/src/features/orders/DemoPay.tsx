@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
+import { settleDemoCheckout } from '../../lib/payments';
 import { hrefFor, navigate } from '../../lib/router';
 import { ordersApi, type OrderDetail } from './api';
 import { dollars } from './model';
@@ -29,6 +30,10 @@ export default function DemoPay({ orderId }: { orderId: string }) {
   }, [orderId]);
 
   const toOrder = () => navigate({ name: 'orders', rest: orderId }, true);
+  const cancel = () => {
+    settleDemoCheckout('cancel');
+    toOrder();
+  };
 
   const act = async (outcome: 'success' | 'decline') => {
     setBusy(outcome);
@@ -36,7 +41,10 @@ export default function DemoPay({ orderId }: { orderId: string }) {
     try {
       const d = await ordersApi.demoComplete(orderId, outcome);
       setData(d);
-      if (outcome === 'success' && d.order.status === 'paid') toOrder();
+      if (outcome === 'success' && d.order.status === 'paid') {
+        settleDemoCheckout('success');
+        toOrder();
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong. Try again.');
     } finally {
@@ -104,7 +112,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
                   <button className="btn big" onClick={() => void act('decline')} disabled={!!busy}>
                     {busy === 'decline' ? 'Processing…' : 'Simulate declined payment'}
                   </button>
-                  <button className="btn big" onClick={toOrder} disabled={!!busy}>
+                  <button className="btn big" onClick={cancel} disabled={!!busy}>
                     Cancel
                   </button>
                 </div>

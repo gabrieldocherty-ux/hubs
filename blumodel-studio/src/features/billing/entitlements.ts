@@ -44,22 +44,28 @@ export function loadEntitlements(force = false): Promise<void> {
   return p;
 }
 
-/** True when the signed-in account may export this kitchen (it owns it, and it's unlocked or on a plan). */
+/**
+ * True when the signed-in account may export this kitchen (it owns it, and it's unlocked or on a
+ * plan). Admins export without paying (the server allows it), so they never see the Unlock dialog.
+ */
 export function isEntitled(projectId: string | null): boolean {
   const s = useEntitlementStore.getState();
-  const userId = useSession.getState().user?.id ?? null;
-  return !!projectId && !!userId && s.userId === userId && (s.plan !== 'free' || s.unlocked.has(projectId));
+  const user = useSession.getState().user;
+  if (!projectId || !user) return false;
+  if (user.role === 'admin') return true;
+  return s.userId === user.id && (s.plan !== 'free' || s.unlocked.has(projectId));
 }
 
 /** BUILD_PLAN §13.2. `watermark` is true until the kitchen is unlocked or the account has a plan. */
 export function useEntitlements(projectId: string | null): { loading: boolean; canExport: boolean; watermark: boolean; plan: PlanId } {
   const userId = useSession((s) => s.user?.id ?? null);
+  const admin = useSession((s) => s.user?.role === 'admin');
   const st = useEntitlementStore();
   useEffect(() => {
     void loadEntitlements();
   }, [userId]);
   const mine = st.userId === userId;
-  const canExport = !!projectId && !!userId && mine && (st.plan !== 'free' || st.unlocked.has(projectId));
+  const canExport = !!projectId && !!userId && (admin || (mine && (st.plan !== 'free' || st.unlocked.has(projectId))));
   return { loading: !!userId && (!mine || st.status === 'loading'), canExport, watermark: !canExport, plan: userId && mine ? st.plan : 'free' };
 }
 

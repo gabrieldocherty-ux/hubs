@@ -2,8 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
 import { Dialog } from '../../components/Dialog';
 import { Check, Logo, Wordmark } from '../../components/Icons';
+import { AgreeToPay, DemoBanner, PaymentsSoon, SOON_LABEL } from '../../components/PaymentNotice';
+import { LegalLinks } from '../legal/LegalLinks';
 import { ApiError } from '../../lib/api';
-import { navigateHash, pageQuery, useHashQuery } from '../../lib/router';
+import { usePayments } from '../../lib/config';
+import { clearSessionId, isPaymentsUnavailable, markCheckout, paymentError, takeCheckoutReturn, type CheckoutReturn } from '../../lib/payments';
+import { navigateHash, useHashQuery } from '../../lib/router';
 import { useSession } from '../../store/useSession';
 import type { Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
@@ -15,13 +19,21 @@ const PLANS = plansJson as Plan[];
 const planName = (id: string) => PLANS.find((p) => p.id === id)?.name ?? id;
 const date = (ms: number | null) => (ms ? new Date(ms).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '—');
 
-/** `#/account/billing` (PLANS_AND_CONTRACTORS §5): plan, changes, cancellation, unlocks and receipts. */
+/**
+ * `#/account/billing` (PLANS_AND_CONTRACTORS §5): plan, changes, cancellation, unlocks and receipts.
+ * The payment state comes from `/api/config`: real Stripe payments say nothing about demos, the
+ * DEMO carries its banner and simulation controls, and while payments aren't open the plans are
+ * shown with "Opens soon" instead of a checkout.
+ */
 export default function BillingPage() {
   const query = useHashQuery();
+  const payments = usePayments();
+  const soon = payments === 'none';
   const [me, setMe] = useState<BillingMe | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [back, setBack] = useState<(CheckoutReturn & { confirmed: boolean }) | null>(null);
   const portalDemo = query.get('portal') === 'demo';
 
   const apply = useCallback(async (next: BillingMe) => {
@@ -32,18 +44,29 @@ export default function BillingPage() {
   useEffect(() => {
     let live = true;
     (async () => {
-      // Back from Stripe Checkout: confirm the payment without waiting for the webhook.
-      const sessionId = pageQuery().get('session_id');
-      if (sessionId) {
+      // Back from a checkout: Stripe adds `?session_id=` after paying (confirm it without waiting
+      // for the webhook); a cancelled checkout comes back without it.
+      const ret = takeCheckoutReturn('#/account/billing');
+      if (ret?.sessionId) {
         try {
-          await billingApi.sync(sessionId);
+          await billingApi.sync(ret.sessionId);
         } catch {
           /* the webhook will catch up */
         }
-        history.replaceState(null, '', `${location.pathname}${location.hash}`);
+        clearSessionId();
       }
-      const next = await billingApi.me();
-      if (live) await apply(next);
+      let next: BillingMe;
+      try {
+        next = await billingApi.me();
+      } catch (e) {
+        // A server with payments switched off may refuse its billing endpoints: show the plan the
+        // session knows (a complimentary one, usually) instead of an error.
+        if (!isPaymentsUnavailable(e)) throw e;
+        next = fromSession();
+      }
+      if (!live) return;
+      await apply(next);
+      if (ret) setBack({ ...ret, confirmed: next.plan.id !== 'free' });
     })().catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load billing.'));
     return () => {
       live = false;
@@ -56,7 +79,7 @@ export default function BillingPage() {
     try {
       await apply(await fn());
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'That didn’t work. Try again.');
+      setError(paymentError(e, 'That didn’t work. Try again.'));
     } finally {
       setBusy(null);
     }
@@ -66,10 +89,12 @@ export default function BillingPage() {
     setBusy(plan);
     setError(null);
     try {
-      const r = await billingApi.checkout({ kind: 'subscription', plan, returnTo: plan === 'contractor' ? '#/pro' : '#/account/billing' });
+      const returnTo = plan === 'contractor' ? '#/pro' : '#/account/billing';
+      const r = await billingApi.checkout({ kind: 'subscription', plan, returnTo });
+      markCheckout(plan, returnTo);
       goToCheckout(r.url);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Could not start the payment.');
+      setError(paymentError(e));
       setBusy(null);
     }
   };
@@ -79,7 +104,7 @@ export default function BillingPage() {
     try {
       goToCheckout((await billingApi.portal()).url);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Could not open the billing portal.');
+      setError(paymentError(e, 'Could not open the billing portal.'));
     } finally {
       setBusy(null);
     }
@@ -88,7 +113,9 @@ export default function BillingPage() {
   const sub = me?.subscription ?? null;
   const plan = me?.plan;
   const onPlan = plan && plan.id !== 'free';
+  const comp = sub?.provider === 'comp' || plan?.provider === 'comp';
   const other = plan?.id === 'unlimited' ? 'contractor' : 'unlimited';
+  const demo = payments === 'demo';
 
   return (
     <div className="billing">
@@ -105,12 +132,9 @@ export default function BillingPage() {
             <span className="eyebrow">Account</span>
             <h1>Billing</h1>
           </div>
-          {me?.demo && (
-            <span className="demo-chip" title="Payments on this server are simulated: no real money moves.">
-              Demo payments
-            </span>
-          )}
         </div>
+        {demo && <DemoBanner>Demo payments on this server: no real money moves and no card details are collected.</DemoBanner>}
+        {back && <ReturnNote back={back} plan={plan?.id ?? 'free'} />}
         {error && <div className="auth-error billing-error">{error}</div>}
         {!me && !error && <div className="screen-msg">Loading billing…</div>}
         {me && plan && (
@@ -119,10 +143,10 @@ export default function BillingPage() {
               <div>
                 <span className="eyebrow">Current plan</span>
                 <h2 id="current-plan">{planName(plan.id)}</h2>
-                <p className="billing-status">{statusLine(me)}</p>
+                <p className="billing-status">{statusLine(me, comp)}</p>
               </div>
               <div className="billing-actions">
-                {onPlan && sub && (
+                {onPlan && sub && !comp && !soon && (
                   <>
                     {!sub.cancelAtPeriodEnd && (
                       <button className="btn" onClick={() => run('change', () => billingApi.change(other))} disabled={!!busy}>
@@ -140,7 +164,7 @@ export default function BillingPage() {
                     )}
                   </>
                 )}
-                {sub && (
+                {sub && !comp && !soon && (
                   <button className="btn" onClick={portal} disabled={!!busy}>
                     Manage payment & invoices
                   </button>
@@ -153,6 +177,11 @@ export default function BillingPage() {
                 <h2 id="plans-title" className="billing-h2">
                   Plans
                 </h2>
+                {soon && (
+                  <PaymentsSoon>
+                    Plans aren’t on sale yet. Your kitchens, sharing and everything you design stay free; this is what the plans will cost when payments open.
+                  </PaymentsSoon>
+                )}
                 <div className="billing-plans">
                   {(['unlimited', 'contractor'] as const).map((id) => {
                     const p = PLANS.find((x) => x.id === id)!;
@@ -172,18 +201,22 @@ export default function BillingPage() {
                             </li>
                           ))}
                         </ul>
-                        <button className={id === 'contractor' ? 'btn primary wide' : 'btn wide'} onClick={() => subscribe(id)} disabled={!!busy}>
-                          {busy === id ? 'Starting…' : `Choose ${p.name}`}
+                        <button className={id === 'contractor' ? 'btn primary wide' : 'btn wide'} onClick={() => subscribe(id)} disabled={!!busy || soon}>
+                          {soon ? SOON_LABEL : busy === id ? 'Starting…' : `Choose ${p.name}`}
                         </button>
                       </section>
                     );
                   })}
                 </div>
-                <p className="fine">One kitchen only? Open it and choose Export: you can unlock just that kitchen for {dollars(PLANS.find((p) => p.id === 'kitchen_unlock')!.priceCents)}, once.</p>
+                {!soon && <AgreeToPay />}
+                <p className="fine">
+                  One kitchen only? Open it and choose Export: you can unlock just that kitchen for {dollars(PLANS.find((p) => p.id === 'kitchen_unlock')!.priceCents)}, once
+                  {soon ? ', when payments open.' : '.'}
+                </p>
               </section>
             )}
 
-            {me.demo && sub?.provider === 'demo' && (
+            {demo && sub?.provider === 'demo' && (
               <section className="billing-card demo-controls" aria-labelledby="demo-title">
                 <span className="eyebrow" id="demo-title">
                   Demo controls · no real money
@@ -213,7 +246,7 @@ export default function BillingPage() {
                 Unlocked kitchens
               </span>
               {me.unlocks.length === 0 ? (
-                <p className="empty-note">None yet. Unlock one kitchen from its Export menu.</p>
+                <p className="empty-note">None yet.{soon ? '' : ' Unlock one kitchen from its Export menu.'}</p>
               ) : (
                 <ul className="billing-list">
                   {me.unlocks.map((u) => (
@@ -247,6 +280,7 @@ export default function BillingPage() {
                         <td>{date(r.createdAt)}</td>
                         <td>
                           {r.kind === 'kitchen_unlock' ? `Kitchen unlock: ${r.projectName || 'kitchen'}` : `${planName(r.plan ?? '')} plan${r.kind === 'renewal' ? ', renewal' : ''}`}
+                          {/* A receipt from the simulation says so, whatever mode the server is in now: nothing was charged. */}
                           {r.provider === 'demo' && <span className="demo-tag">Demo</span>}
                         </td>
                         <td className="num mono">{dollars(r.amountCents)}</td>
@@ -256,8 +290,12 @@ export default function BillingPage() {
                 </table>
               )}
             </section>
+            <p className="fine billing-policy">
+              Cancelling keeps your plan until the end of the period you’ve paid for. See the <a href="#/refunds">Refund policy</a> and the <a href="#/terms">Terms</a>.
+            </p>
           </>
         )}
+        <LegalLinks />
       </main>
 
       {confirmCancel && sub && (
@@ -283,7 +321,7 @@ export default function BillingPage() {
         </Dialog>
       )}
 
-      {portalDemo && (
+      {portalDemo && demo && (
         <Dialog title="Billing portal (demo)" onClose={() => navigateHash('#/account/billing', true)}>
           <p className="dialog-copy">
             With real payments, this opens Stripe’s secure customer portal, where you update your card and download invoices. BluModel Studio never sees card details. Payments on this server are simulated, so there is nothing to manage here.
@@ -299,13 +337,41 @@ export default function BillingPage() {
   );
 }
 
-function statusLine(me: BillingMe): string {
+/** What happened at checkout, said once on the way back. */
+function ReturnNote({ back, plan }: { back: CheckoutReturn & { confirmed: boolean }; plan: string }) {
+  if (back.outcome === 'cancel')
+    return (
+      <div className="auth-note billing-return" role="status">
+        Checkout cancelled. Nothing was charged.
+      </div>
+    );
+  if (back.confirmed)
+    return (
+      <div className="auth-ok billing-return" role="status">
+        Payment received. You’re on {planName(plan)}: exports are unlocked on all your kitchens.
+      </div>
+    );
+  return (
+    <div className="auth-note billing-return" role="status">
+      Payment received. We’re still confirming it with the payment provider; reload this page in a minute to see your plan.
+    </div>
+  );
+}
+
+/** The Billing page from the session alone, for a server that won't answer `/api/billing/me`. */
+function fromSession(): BillingMe {
+  const plan = useSession.getState().user?.plan ?? { id: 'free', status: 'none', periodEnd: null, cancelAtPeriodEnd: false, graceUntil: null, provider: null };
+  return { plan, subscription: null, unlocks: [], receipts: [], payments: 'demo', demo: false, graceDays: 7 };
+}
+
+function statusLine(me: BillingMe, comp: boolean): string {
   const { plan, subscription: sub } = me;
   if (plan.id === 'free') {
     if (sub?.status === 'past_due') return `Your ${planName(sub.plan)} renewal failed and the ${me.graceDays}-day grace period has ended. Update your payment to restore it.`;
     if (sub?.status === 'canceled') return `Your ${planName(sub.plan)} plan ended. Exports are locked; everything you designed is still here.`;
     return 'Design, save and share for free. Exports need a plan or a one-time kitchen unlock.';
   }
+  if (comp) return plan.periodEnd ? `Complimentary, until ${date(plan.periodEnd)}. There is nothing to pay.` : 'Complimentary. There is nothing to pay.';
   if (plan.status === 'past_due') return `The last payment failed. You keep ${planName(plan.id)} until ${date(plan.graceUntil)} while it is retried.`;
   if (plan.cancelAtPeriodEnd) return `Cancelled. You keep ${planName(plan.id)} until ${date(plan.periodEnd)}.`;
   return `Renews on ${date(plan.periodEnd)} for ${dollars(PLANS.find((p) => p.id === plan.id)?.priceCents ?? 0)}.`;
