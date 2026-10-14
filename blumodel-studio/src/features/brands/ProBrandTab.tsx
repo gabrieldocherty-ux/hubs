@@ -122,7 +122,7 @@ function StatusBanner({ onSettings = false }: { onSettings?: boolean }) {
       return (
         <div className="brand-banner">
           <span>
-            <b>Not submitted yet.</b> When it looks right, submit it: Mise checks the business is real, then it goes live with a Verified contractor badge.
+            <b>Not submitted yet.</b> When it looks right, submit it: BluModel Studio checks the business is real, then it goes live with a Verified contractor badge.
           </span>
           {!onSettings && (
             <a className="btn" href={settings}>
@@ -135,7 +135,7 @@ function StatusBanner({ onSettings = false }: { onSettings?: boolean }) {
       return (
         <div className="brand-banner warn">
           <span>
-            <b>In review.</b> Mise is checking your business details. Your page and products go live together once it’s approved; you can keep adding products meanwhile.
+            <b>In review.</b> BluModel Studio is checking your business details. Your page and products go live together once it’s approved; you can keep adding products meanwhile.
           </span>
           <a className="btn" href={hrefFor({ name: 'pro', rest: 'brand/preview' })}>
             Preview
@@ -146,7 +146,7 @@ function StatusBanner({ onSettings = false }: { onSettings?: boolean }) {
       return (
         <div className="brand-banner bad">
           <span>
-            <b>Changes requested.</b> {b?.statusNote || 'Mise couldn’t verify the business yet.'} Fix it in Settings and submit again.
+            <b>Changes requested.</b> {b?.statusNote || 'BluModel Studio couldn’t verify the business yet.'} Fix it in Settings and submit again.
           </span>
           {!onSettings && (
             <a className="btn" href={settings}>
@@ -170,7 +170,7 @@ function StatusBanner({ onSettings = false }: { onSettings?: boolean }) {
       return (
         <div className="brand-banner bad">
           <span>
-            <b>Suspended by Mise.</b> {b?.statusNote || ''} Your page and products are hidden. Reply to Mise support to sort it out.
+            <b>Suspended by BluModel Studio.</b> {b?.statusNote || ''} Your page and products are hidden. Reply to BluModel Studio support to sort it out.
           </span>
         </div>
       );

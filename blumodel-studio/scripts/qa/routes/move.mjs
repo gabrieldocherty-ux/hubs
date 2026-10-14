@@ -1,12 +1,12 @@
 // QA for the `move` package: Gabe's requirement, "I SHOULD BE ABLE TO MOVE ITEMS AROUND EASILY
 // ON COMPUTER AND MOBILE". Every route drives REAL input through CDP (mouse events on desktop,
 // touch events with touch emulation on phones and tablets) and reads item x/y/rotation from the
-// store (window.__mise, ?qa only) before and after each gesture.
+// store (window.__blumodel, ?qa only) before and after each gesture.
 //
 //   node scripts/qa.mjs --pkg move --port 8817
 //
 // Positions are ROOM INCHES (PlacedItem.x/y, footprint centre). The plan and the 3D view expose
-// toClient()/toRoom() on window.__miseQA (plan, scene3d) so a route can press exactly on a piece.
+// toClient()/toRoom() on window.__blumodelQA (plan, scene3d) so a route can press exactly on a piece.
 // The device planner (#/local) is used throughout: no account needed, and each route gets a fresh
 // browser context, so the test kitchen below is loaded into the store first.
 
@@ -76,7 +76,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
 /** Items (id → {x, y, rotation, productId}), undo depth, selection, drag flag, view. */
 async function state(h) {
   return h.evaluate(() => {
-    const s = window.__mise.store.getState();
+    const s = window.__blumodel.store.getState();
     return {
       items: Object.fromEntries(s.doc.items.map((i) => [i.id, { x: i.x, y: i.y, rotation: i.rotation, productId: i.productId }])),
       count: s.doc.items.length,
@@ -84,7 +84,7 @@ async function state(h) {
       selectedId: s.selectedId,
       dragging: s.dragging,
       viewMode: s.ui.viewMode,
-      armed: window.__mise.placement.getState().armedProductId,
+      armed: window.__blumodel.placement.getState().armedProductId,
     };
   });
 }
@@ -109,10 +109,10 @@ async function settle(h, fn, { gap = 250, max = 6000 } = {}) {
   }
 }
 
-const planView = (h) => h.evaluate(() => window.__miseQA.plan.view());
-const planPt = (h, p) => h.evaluate((x, y) => window.__miseQA.plan.toClient(x, y), p.x, p.y);
-const scenePt = (h, p, z = 0) => h.evaluate((x, y, zz) => window.__miseQA.scene3d.toClient(x, y, zz), p.x, p.y, z);
-const camera = (h) => h.evaluate(() => window.__miseQA.scene3d.cameraState());
+const planView = (h) => h.evaluate(() => window.__blumodelQA.plan.view());
+const planPt = (h, p) => h.evaluate((x, y) => window.__blumodelQA.plan.toClient(x, y), p.x, p.y);
+const scenePt = (h, p, z = 0) => h.evaluate((x, y, zz) => window.__blumodelQA.scene3d.toClient(x, y, zz), p.x, p.y, z);
+const camera = (h) => h.evaluate(() => window.__blumodelQA.scene3d.cameraState());
 /**
  * Waits until the 3D view has drawn `n` more frames, so what it shows (and what a press picks:
  * meshes are placed on screen when a frame is drawn) has caught up with the store. A fixed sleep
@@ -121,7 +121,7 @@ const camera = (h) => h.evaluate(() => window.__miseQA.scene3d.cameraState());
  */
 const drawn3d = (h, n = 2) =>
   h.evaluate(async (k) => {
-    const s = window.__miseQA?.scene3d;
+    const s = window.__blumodelQA?.scene3d;
     const gl = s?.get().gl;
     if (!gl || !gl.domElement.isConnected) return;
     const f0 = gl.info.render.frame;
@@ -130,7 +130,7 @@ const drawn3d = (h, n = 2) =>
   }, n);
 const pick3d = async (h, c) => {
   await drawn3d(h);
-  return h.evaluate((x, y) => window.__miseQA.scene3d.pick(x, y)?.id ?? null, c.x, c.y);
+  return h.evaluate((x, y) => window.__blumodelQA.scene3d.pick(x, y)?.id ?? null, c.x, c.y);
 };
 
 function cameraMoved(a, b) {
@@ -140,23 +140,23 @@ function cameraMoved(a, b) {
 
 async function readyPlan(h) {
   await h.waitFor('.plan-view canvas');
-  await h.waitUntil(() => !!window.__miseQA?.plan?.toClient, 10_000, 'the plan QA hook');
-  await settle(h, () => JSON.stringify(window.__miseQA.plan.view()));
+  await h.waitUntil(() => !!window.__blumodelQA?.plan?.toClient, 10_000, 'the plan QA hook');
+  await settle(h, () => JSON.stringify(window.__blumodelQA.plan.view()));
 }
 
 async function ready3d(h) {
   await h.waitFor('.scene-view canvas');
-  await h.waitUntil(() => !!window.__miseQA?.scene3d?.toClient && !!window.__miseQA.scene3d.get().controls, 25_000, 'the 3D view (scene3d QA hook and camera controls)');
+  await h.waitUntil(() => !!window.__blumodelQA?.scene3d?.toClient && !!window.__blumodelQA.scene3d.get().controls, 25_000, 'the 3D view (scene3d QA hook and camera controls)');
   // The camera eases to its preset (0.95 s) whenever the canvas changes shape; wait it out.
-  await settle(h, () => JSON.stringify(window.__miseQA.scene3d.cameraState()), { gap: 400, max: 8000 });
+  await settle(h, () => JSON.stringify(window.__blumodelQA.scene3d.cameraState()), { gap: 400, max: 8000 });
 }
 
 /** Loads the test kitchen into the open editor and shows `view` ('plan' | '3d' | 'split'). */
 async function start(h, view = 'plan', doc = moveDoc()) {
-  await h.waitUntil(() => !!window.__mise?.store, 15_000, 'window.__mise (the ?qa hook)');
+  await h.waitUntil(() => !!window.__blumodel?.store, 15_000, 'window.__blumodel (the ?qa hook)');
   await h.evaluate(
     (doc, v) => {
-      const s = window.__mise.store.getState();
+      const s = window.__blumodel.store.getState();
       s.loadDoc(doc);
       s.setUI({ viewMode: v });
     },
@@ -286,7 +286,7 @@ async function tap(h, target) {
 /** What a drop or a tap at client (x, y) would hit: { id: 'plan' | '3d', point } or null. */
 const dropAt = (h, c) =>
   h.evaluate((x, y) => {
-    const t = window.__mise.findDropTarget(x, y);
+    const t = window.__blumodel.findDropTarget(x, y);
     return t ? { id: t.id, point: t.point } : null;
   }, c.x, c.y);
 
@@ -362,7 +362,7 @@ async function undoRestores(h, before, how) {
 
 /** A press and release with no travel selects the piece and moves nothing. */
 async function tapSelects(h, input, p = ISLAND, id = 'mv-island') {
-  await h.evaluate(() => window.__mise.store.getState().select(null));
+  await h.evaluate(() => window.__blumodel.store.getState().select(null));
   const before = await state(h);
   const c = await planPt(h, p);
   await press(h, input, c);
@@ -378,7 +378,7 @@ async function tapSelects(h, input, p = ISLAND, id = 'mv-island') {
  * in the plan or in 3D: a hand-held stylus rarely lifts exactly where it touched down.
  */
 async function penTapWobble(h, view, wobble) {
-  await h.evaluate(() => window.__mise.store.getState().select(null));
+  await h.evaluate(() => window.__blumodel.store.getState().select(null));
   const before = await state(h);
   const at = view === 'plan' ? await planPt(h, ISLAND) : await scenePt(h, before.items['mv-island'], ISLAND.top);
   await penTap(h, at, wobble);
@@ -406,7 +406,7 @@ async function toolbarNextToSelection(h, what) {
   const r = await h.evaluate(() => {
     const el = document.querySelector('.sel-toolbar');
     const t = el.getBoundingClientRect();
-    const o = window.__mise.overlay.getState();
+    const o = window.__blumodel.overlay.getState();
     const stage = document.querySelector('.app .stage').getBoundingClientRect();
     const bar = document.querySelector('.mbar')?.getBoundingClientRect() ?? null;
     return {
@@ -486,7 +486,7 @@ async function toolbarHidesDuringDrag(h, input, at = null) {
     await touch(h, 'touchMove', [mid]);
   }
   await h.sleep(120);
-  const during = await h.evaluate(() => ({ bar: !!document.querySelector('.sel-toolbar'), dragging: window.__mise.store.getState().dragging }));
+  const during = await h.evaluate(() => ({ bar: !!document.querySelector('.sel-toolbar'), dragging: window.__blumodel.store.getState().dragging }));
   if (input === 'mouse') await mouse(h, 'mouseReleased', mid);
   else if (input === 'pen') await pen(h, 'mouseReleased', mid);
   else await touch(h, 'touchEnd', []);
@@ -502,7 +502,7 @@ async function toolbarHidesDuringDrag(h, input, at = null) {
  * beside it afterwards. The drag is undone so the kitchen is as it was.
  */
 async function toolbar3dTouch(h, what) {
-  await h.evaluate(() => window.__mise.store.getState().select(null));
+  await h.evaluate(() => window.__blumodel.store.getState().select(null));
   const before = await state(h);
   await tap(h, await scenePt(h, before.items['mv-island'], ISLAND.top));
   await h.sleep(350);
@@ -663,7 +663,7 @@ async function orbit3d(h, input) {
   if (after.past !== before.past) throw new Error(`${input} 3D orbit: an undo step was added`);
   if (cameraMoved(cam0, cam1) < 0.05) throw new Error(`${input} 3D orbit: dragging empty space did not move the camera`);
   // Let the damping die down before anything else measures the camera.
-  await settle(h, () => JSON.stringify(window.__miseQA.scene3d.cameraState()), { gap: 300, max: 5000 });
+  await settle(h, () => JSON.stringify(window.__blumodelQA.scene3d.cameraState()), { gap: 300, max: 5000 });
 }
 
 /** Pinch out over the island (fingers land on it): the plan zooms; nothing moves; the page stays put. */
@@ -680,7 +680,7 @@ async function pinchPlan(h) {
   if (after.past !== before.past || after.dragging) throw new Error('pinch: it touched the undo history or left a drag open');
   if (!(v1.scale > v0.scale * 1.8)) throw new Error(`pinch: the plan only zoomed ${v0.scale.toFixed(2)} → ${v1.scale.toFixed(2)} for fingers 70 → 170px apart`);
   // The room point under the fingers' midpoint stays under it.
-  const back = await h.evaluate((x, y) => window.__miseQA.plan.toRoom(x, y), c.x, c.y);
+  const back = await h.evaluate((x, y) => window.__blumodelQA.plan.toRoom(x, y), c.x, c.y);
   if (!near(back.x, ISLAND.x, 1.5) || !near(back.y, ISLAND.y, 1.5)) throw new Error(`pinch: the point under the fingers drifted to (${back.x.toFixed(1)}, ${back.y.toFixed(1)})`);
   await pageStill(h, 'pinch');
   // And back out again.
@@ -946,7 +946,7 @@ export default [
       await h.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: c.x, y: c.y, deltaX: 0, deltaY: -240 });
       await h.sleep(200);
       const v1 = await planView(h);
-      const back = await h.evaluate((x, y) => window.__miseQA.plan.toRoom(x, y), c.x, c.y);
+      const back = await h.evaluate((x, y) => window.__blumodelQA.plan.toRoom(x, y), c.x, c.y);
       h.note(`wheel: scale ${v0.scale.toFixed(2)} → ${v1.scale.toFixed(2)}`);
       if (!(v1.scale > v0.scale * 1.2)) throw new Error(`the wheel did not zoom in (${v0.scale.toFixed(2)} → ${v1.scale.toFixed(2)})`);
       if (!near(back.x, ISLAND.x, 1) || !near(back.y, ISLAND.y, 1)) throw new Error('the wheel zoom did not keep the point under the pointer');
@@ -1088,7 +1088,7 @@ export default [
       await mouse(h, 'mouseMoved', { x: from.x + 12, y: from.y + 4 }, 1);
       await mouse(h, 'mouseMoved', { x: from.x + 40, y: from.y + 12 }, 1);
       await h.sleep(150);
-      const during = await h.evaluate(() => ({ bar: !!document.querySelector('.sel-toolbar'), dragging: window.__mise.store.getState().dragging }));
+      const during = await h.evaluate(() => ({ bar: !!document.querySelector('.sel-toolbar'), dragging: window.__blumodel.store.getState().dragging }));
       await mouse(h, 'mouseReleased', { x: from.x + 40, y: from.y + 12 });
       await h.sleep(300);
       if (!during.dragging) throw new Error('3D: pressing the island and moving 40px did not start a drag');
@@ -1428,7 +1428,7 @@ export default [
       const d = await planDragIsland(h, 'touch', 50, 20);
       await undoRestores(h, d.before, 'tap');
       await pinchPlan(h);
-      await h.evaluate(() => window.__mise.store.getState().select(null));
+      await h.evaluate(() => window.__blumodel.store.getState().select(null));
       // Fit again so the island is on screen for the toolbar.
       await tap(h, '.plan-hud--br .zoom-pct');
       await h.sleep(300);
@@ -1450,7 +1450,7 @@ export default [
       await sheetGone(h, 'landscape: a swipe right on the panel');
       await pageStill(h, 'landscape');
       // 3D on a phone on its side: a finger drags the island, empty floor orbits.
-      await h.evaluate(() => window.__mise.store.getState().select(null));
+      await h.evaluate(() => window.__blumodel.store.getState().select(null));
       await showView(h, '3D');
       const d3 = await drag3dItem(h, 'touch', 70, 15);
       await undoRestores(h, d3.before, 'tap');
@@ -1469,7 +1469,7 @@ export default [
       await start(h, 'plan', wallDoc());
       await showView(h, '3D');
       await toolbar3dTouch(h, 'landscape 3D');
-      await h.evaluate(() => window.__mise.store.getState().select(null));
+      await h.evaluate(() => window.__blumodel.store.getState().select(null));
       const w = await drag3dWallPiece(h, 'touch', 'mv-wall', WALL_FACE, 127);
       await undoRestores(h, w.before, 'tap');
       const corner = await drag3dWallCorner(h, 'touch');
@@ -1495,7 +1495,7 @@ export default [
       await h.sleep(300);
       await tapSelects(h, 'touch');
       await toolbarNextToSelection(h, 'tablet plan, island');
-      await h.evaluate(() => window.__mise.store.getState().select(null));
+      await h.evaluate(() => window.__blumodel.store.getState().select(null));
       await openSheet(h, ADD, '.sheet--catalog');
       await searchCatalog(h, 'stool', 'touch');
       await h.shot('sheet');

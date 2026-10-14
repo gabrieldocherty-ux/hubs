@@ -6,7 +6,7 @@ import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog, useCatalogVersion } from '../store/useCatalog';
 import { MiniPlan } from '../components/MiniPlan';
 import { AccountMenu } from '../components/AccountMenu';
-import { Copy, Logo, Plus, Search, Trash } from '../components/Icons';
+import { Copy, Logo, Wordmark, Plus, Search, Trash } from '../components/Icons';
 import { buildEstimate } from '../lib/estimate';
 import { feetInches, money } from '../lib/format';
 import { Toasts } from '../components/Toasts';
@@ -102,7 +102,7 @@ export function HomeScreen() {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <AccountMenu />
       </header>

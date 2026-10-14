@@ -180,7 +180,7 @@ test('building is deterministic (apart from item ids)', () => {
   assert.deepEqual(a.notes, b.notes);
 });
 
-test('style is matched to Mise finishes', () => {
+test('style is matched to BluModel Studio finishes', () => {
   const m = L_KITCHEN();
   m.style = { cabinetHex: '#304055', cabinetDoor: 'glass', counter: 'soapstone', backsplash: 'stack-ink', floor: 'oak-smoked', hardware: 'nickel', wall: 'fog' };
   const { doc } = buildFromPhotoModel(m);
@@ -338,7 +338,7 @@ test('an island is placed with clear walkways, or left out with a note', () => {
 
 test('corner cabinets only narrow the island space where they are: a 14½ ft U still fits one', () => {
   // A U-shape 174″ wide with corner cabinets at both north corners: 116″ between the range and
-  // fridge fronts leaves 37″ walkways around Mise's 42″-deep island running north-south. The
+  // fridge fronts leaves 37″ walkways around BluModel Studio's 42″-deep island running north-south. The
   // corner squares sit beyond the island's end, so they mustn't count as 36″-deep runs along the
   // whole of the side walls (which left the island out).
   const u = model({

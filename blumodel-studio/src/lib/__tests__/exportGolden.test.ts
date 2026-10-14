@@ -9,7 +9,7 @@ import { sanitizeDoc } from '../doc';
 
 // The shopping list the editor produces for the server tests' sample kitchen. The server's
 // paid export (server/test/billing.test.mjs) must match this same file byte for byte.
-// Regenerate deliberately with MISE_UPDATE_GOLDEN=1 npm run test:ts -- exportGolden.
+// Regenerate deliberately with BLUMODEL_UPDATE_GOLDEN=1 npm run test:ts -- exportGolden.
 const GOLDEN = path.join(process.cwd(), 'server/test/fixtures/golden/sample-shopping-list.csv');
 
 const sample: DesignDoc = {
@@ -22,6 +22,6 @@ const sample: DesignDoc = {
 test('the editor’s shopping list for the sample kitchen matches the golden file', () => {
   const doc = sanitizeDoc(sample);
   const csv = estimateCsv(doc, buildEstimate(doc));
-  if (process.env.MISE_UPDATE_GOLDEN === '1') fs.writeFileSync(GOLDEN, csv + '\n');
+  if (process.env.BLUMODEL_UPDATE_GOLDEN === '1') fs.writeFileSync(GOLDEN, csv + '\n');
   assert.equal(csv, fs.readFileSync(GOLDEN, 'utf8').replace(/\r\n/g, '\n').replace(/\n$/, ''));
 });

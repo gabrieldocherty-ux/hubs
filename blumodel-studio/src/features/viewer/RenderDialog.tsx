@@ -8,7 +8,7 @@
  *    doesn't depend on the canvas on screen, so split view gives the same image as 3D view. If
  *    the 3D view isn't showing, the dialog switches to it first.
  *  - The preview is a scaled copy. Until this kitchen is unlocked or the account has a plan
- *    (`useEntitlements(projectId).watermark`), the preview carries the "Mise · Preview"
+ *    (`useEntitlements(projectId).watermark`), the preview carries the "BluModel Studio · Preview"
  *    watermark. Downloading is an export: it goes through `requestExport(projectId, 'render', …)`,
  *    which opens the Unlock dialog when needed and resumes the download after payment. The
  *    downloaded PNG is the full-resolution render and never has a watermark.
@@ -49,10 +49,10 @@ const toast = (text: string, tone: 'ok' | 'warn' | 'info' = 'warn') => useDesign
 
 function qaStudio(values: Record<string, unknown>) {
   if (!QA) return;
-  const w = window as unknown as { __miseQa?: Record<string, unknown> };
-  const prev = (w.__miseQa?.studio as Record<string, unknown> | undefined) ?? {};
+  const w = window as unknown as { __blumodelQa?: Record<string, unknown> };
+  const prev = (w.__blumodelQa?.studio as Record<string, unknown> | undefined) ?? {};
   // In place: the canvas stats on this object are live getters (qaStats.tsx) that a copy would freeze.
-  w.__miseQa = Object.assign(w.__miseQa ?? {}, { studio: { ...prev, ...values } });
+  w.__blumodelQa = Object.assign(w.__blumodelQa ?? {}, { studio: { ...prev, ...values } });
 }
 
 /** Shows the 3D view if it isn't on screen (split view on a desktop, 3D on a phone). */

@@ -7,9 +7,9 @@ export default function Modelling() {
       <div className="pro-head">
         <div>
           <span className="eyebrow">Modelling requests</span>
-          <h1>Have Mise model your products</h1>
+          <h1>Have BluModel Studio model your products</h1>
           <p className="muted">
-            Send reference photos, dimensions and a spec sheet, and the Mise studio builds an accurate 3D model. One request can hold several products of the same line, each priced per item at the
+            Send reference photos, dimensions and a spec sheet, and the BluModel 3D studio builds an accurate 3D model. One request can hold several products of the same line, each priced per item at the
             normal model tiers, with one checkout. Delivered models land straight in My catalog, linked to their price-book rows.
           </p>
         </div>

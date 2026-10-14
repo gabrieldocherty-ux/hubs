@@ -13,7 +13,7 @@ before(async () => {
   const dist = t.config.DIST_DIR;
   fs.mkdirSync(path.join(dist, 'assets'), { recursive: true });
   fs.mkdirSync(path.join(dist, 'draco'), { recursive: true });
-  fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>Mise</title><div id="root"></div>');
+  fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>BluModel Studio</title><div id="root"></div>');
   fs.writeFileSync(path.join(dist, 'assets', 'app-abc123.js'), 'console.log(1)');
   fs.writeFileSync(path.join(dist, 'draco', 'x.wasm'), Buffer.from([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0]));
   fs.writeFileSync(path.join(dist, 'model.glb'), Buffer.from('glTF'));
@@ -74,7 +74,7 @@ test('a 1.2 MB JSON body is a JSON 413, not a connection reset', async () => {
   const chunk = Buffer.alloc(64 * 1024, 0x61);
   const chunks = [Buffer.from('{"name":"'), ...Array.from({ length: 20 }, () => chunk), Buffer.from('"}')];
   const cookie = [...a.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
-  const c = await raw('POST', '/api/projects', { headers: { 'content-type': 'application/json', 'x-mise': '1', cookie, 'transfer-encoding': 'chunked' }, chunks });
+  const c = await raw('POST', '/api/projects', { headers: { 'content-type': 'application/json', 'x-blumodel': '1', cookie, 'transfer-encoding': 'chunked' }, chunks });
   assert.equal(c.status, 413);
   assert.deepEqual(JSON.parse(c.text), { error: 'That request is too large.' });
   // The server is still fine afterwards.
@@ -173,6 +173,6 @@ test('config defaults: port 8790, host 127.0.0.1; nothing defaults to 8787', asy
   assert.throws(() => loadConfig({ PAYMENTS: 'stripe' }, []), /STRIPE_SECRET_KEY/);
   assert.equal(loadConfig({ TRUST_PROXY: 'true' }, []).TRUST_PROXY, 1);
   assert.equal(loadConfig({ TRUST_PROXY: '0' }, []).TRUST_PROXY, 0);
-  assert.equal(loadConfig({ ANTHROPIC_API_KEY: 'k', MISE_LLM_MODEL: 'm' }, []).llmEnabled, true);
+  assert.equal(loadConfig({ ANTHROPIC_API_KEY: 'k', BLUMODEL_LLM_MODEL: 'm' }, []).llmEnabled, true);
   assert.ok(Object.isFrozen(c));
 });

@@ -8,7 +8,7 @@ import { analyzePhotos, buildRequest, parseAnswer, API_URL } from '../llm/anthro
 import { clampPhotoModel, photoModelJsonSchema } from '../llm/photoModel.mjs';
 
 const KEY = 'sk-ant-test-0123456789abcdef-SECRET';
-const LLM = { ANTHROPIC_API_KEY: KEY, MISE_LLM_MODEL: 'claude-opus-5-5' };
+const LLM = { ANTHROPIC_API_KEY: KEY, BLUMODEL_LLM_MODEL: 'claude-opus-5-5' };
 
 /** A model answer the way the analyser gives it: per-item confidence, some values out of range. */
 const ANSWER = {
@@ -59,8 +59,8 @@ async function upload(agent, buf, name = 'kitchen.png', type = 'image/png') {
   return r.body.file;
 }
 
-test('photo analysis is a 503 unless ANTHROPIC_API_KEY and MISE_LLM_MODEL are both set', async () => {
-  for (const env of [{}, { ANTHROPIC_API_KEY: KEY }, { MISE_LLM_MODEL: 'claude-opus-5-5' }]) {
+test('photo analysis is a 503 unless ANTHROPIC_API_KEY and BLUMODEL_LLM_MODEL are both set', async () => {
+  for (const env of [{}, { ANTHROPIC_API_KEY: KEY }, { BLUMODEL_LLM_MODEL: 'claude-opus-5-5' }]) {
     const fetch = mockFetch(() => apiReply('{}'));
     const t = await startTestServer({ env, fetch });
     try {

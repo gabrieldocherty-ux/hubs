@@ -51,7 +51,7 @@ async function parse<T>(res: Response): Promise<T> {
 }
 
 /**
- * JSON request to the Mise API. Every non-GET carries `X-Mise: 1` (the CSRF gate) and a JSON
+ * JSON request to the BluModel Studio API. Every non-GET carries `X-BluModel: 1` (the CSRF gate) and a JSON
  * body (`{}` when none is given). Errors become `ApiError` with the server's `error` message;
  * a network failure or a non-JSON answer is `status 0` (see `isUnreachable`).
  */
@@ -63,7 +63,7 @@ export async function call<T>(method: string, path: string, body?: unknown, opts
       credentials: 'same-origin',
       keepalive: opts.keepalive,
       signal: opts.signal,
-      headers: body !== undefined || method !== 'GET' ? { 'Content-Type': 'application/json', 'X-Mise': '1' } : undefined,
+      headers: body !== undefined || method !== 'GET' ? { 'Content-Type': 'application/json', 'X-BluModel': '1' } : undefined,
       body: body !== undefined ? JSON.stringify(body) : method !== 'GET' ? '{}' : undefined,
     });
   } catch (err) {
@@ -84,7 +84,7 @@ export async function upload<T>(path: string, file: Blob, query?: Record<string,
     res = await fetch(path + qs, {
       method: 'PUT',
       credentials: 'same-origin',
-      headers: { 'X-Mise': '1', 'Content-Type': file.type || 'application/octet-stream' },
+      headers: { 'X-BluModel': '1', 'Content-Type': file.type || 'application/octet-stream' },
       body: file,
     });
   } catch {

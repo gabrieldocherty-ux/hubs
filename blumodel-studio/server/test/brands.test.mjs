@@ -703,7 +703,7 @@ test('the seed: fictional (Demo) partner brands with models, and a demo contract
     assert.ok(s.db.prepare('SELECT COUNT(*) AS n FROM leads WHERE brand_id = ?').get(contractorBrand.id).n >= 3);
     // The demo contractor can sign in and sees their leads.
     const me = s.agent();
-    assert.equal((await me.post('/api/auth/login', { email: 'demo-brand@mise.test', password: 'seed-password-123' })).status, 200);
+    assert.equal((await me.post('/api/auth/login', { email: 'demo-brand@blumodel.test', password: 'seed-password-123' })).status, 200);
     assert.ok((await me.get('/api/pro/brand/leads')).body.leads.length >= 3);
     assert.equal((await me.get('/api/pro/brand/analytics?days=30')).body.analytics.isDemo, true);
     // One My-catalog product isn't ready, so the demo shows the readiness checklist.

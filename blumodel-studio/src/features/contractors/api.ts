@@ -119,7 +119,7 @@ export const proApi = {
     const res = await fetch(`/api/pro/price-book/import${dryRun ? '?dryRun=1' : ''}`, {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'X-Mise': '1', 'Content-Type': 'text/csv' },
+      headers: { 'X-BluModel': '1', 'Content-Type': 'text/csv' },
       body: csv,
     });
     const data = await res.json().catch(() => null);

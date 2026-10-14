@@ -120,7 +120,7 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
           <p className="dialog-copy">
             {preview
               ? 'This is the preview, so nothing was sent. Homeowners see this confirmation once their request reaches you.'
-              : `${company} has your details and will contact you${email ? ` at ${email}` : ''}. Mise doesn’t share them with anyone else.`}
+              : `${company} has your details and will contact you${email ? ` at ${email}` : ''}. BluModel Studio doesn’t share them with anyone else.`}
           </p>
           <div className="modal-actions">
             <button className="btn primary" onClick={onClose}>

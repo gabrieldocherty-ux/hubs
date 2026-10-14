@@ -150,6 +150,40 @@ kbd {
   font-style: italic;
   letter-spacing: -0.02em;
   font-variation-settings: 'opsz' 144;
+  white-space: nowrap;
+}
+
+/* The mark never shrinks away to make room for the text beside it. */
+.brand > svg {
+  flex-shrink: 0;
+}
+
+/* The editor's top bar shares its left third with the kitchen's name, which must keep room to
+   be read: the whole name on a wide screen, the short "BluModel" on a laptop, and from 1280px
+   down to where the name leaves the bar (980px) the mark alone, as it already is for a
+   signed-in user (whose mark is the link back to Kitchens). On a phone the bar is full of
+   controls, so the mark stands alone there too. Landing, sign-in and pricing always show the
+   whole name. */
+.topbar .wordmark {
+  font-size: 22px;
+}
+
+@media (max-width: 1399px) {
+  .topbar .wordmark-tail {
+    display: none;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1280px) {
+  .topbar .wordmark {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar--compact .wordmark {
+    display: none;
+  }
 }
 
 .divider {

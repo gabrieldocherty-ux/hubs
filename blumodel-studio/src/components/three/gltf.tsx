@@ -11,8 +11,8 @@
  *    clone, and clears that URL from the cache so a later mount retries.
  *  - Fit: `fitTransform` (fit.ts) scales uniformly to the declared footprint, centres x/z and
  *    puts the lowest point on y = 0; the caller adds the elevation.
- *  - Slots: meshes whose material is named `mise_finish`, `mise_cabinet`, `mise_hardware` or
- *    `mise_counter` wear the chosen finish, the kitchen's cabinet finish, hardware or counter.
+ *  - Slots: meshes whose material is named `blumodel_finish`, `blumodel_cabinet`, `blumodel_hardware` or
+ *    `blumodel_counter` wear the chosen finish, the kitchen's cabinet finish, hardware or counter.
  *  - Shadows: only meshes larger than ~8″ cast; everything receives.
  */
 import { Component, Suspense, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
@@ -148,7 +148,7 @@ export function useModel(url: string): GLTF | null {
   return e.status === 'ready' ? e.gltf : null;
 }
 
-/** What the mise_* slots wear. Any slot left out keeps the model's own material. */
+/** What the blumodel_* slots wear. Any slot left out keeps the model's own material. */
 export type SlotMaterials = Partial<Record<SlotName, THREE.Material>>;
 
 export function slotMaterials(finish: Finish, ctx: SceneCtx): SlotMaterials {

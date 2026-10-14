@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Workspace } from '../../screens/Editor';
 import { Dialog } from '../../components/Dialog';
 import { ProductArt } from '../../components/ProductArt';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { money } from '../../lib/format';
 import { navigate, navigateHash, signinHref } from '../../lib/router';
@@ -22,7 +22,7 @@ import './share.css';
 type State = { kind: 'loading' } | { kind: 'ready'; wire: SharedWire; resume: boolean } | { kind: 'gone'; reason: GoneReason; message: string } | { kind: 'error'; message: string };
 
 /** Set when a signed-out visitor asks to duplicate: the copy is made once they're back, signed in. */
-const DUP_INTENT = 'mise-share-duplicate';
+const DUP_INTENT = 'blumodel-share-duplicate';
 
 /** True once, for a signed-in visitor who asked to duplicate before signing in (and clears the request). */
 function takeDuplicateIntent(token: string): boolean {
@@ -62,7 +62,7 @@ export default function SharedKitchen({ token }: { token: string }) {
           const reason = ((e.body as { reason?: GoneReason } | undefined)?.reason ?? 'missing') as GoneReason;
           setState({ kind: 'gone', reason, message: e.message });
         } else if (e instanceof ApiError && e.status === 429) setState({ kind: 'error', message: 'This link has been opened a lot in the last hour. Try again in a little while.' });
-        else if (e instanceof ApiError && e.status === 0) setState({ kind: 'error', message: 'Can’t reach Mise right now. Check your connection and try again.' });
+        else if (e instanceof ApiError && e.status === 0) setState({ kind: 'error', message: 'Can’t reach BluModel Studio right now. Check your connection and try again.' });
         else setState({ kind: 'error', message: 'This kitchen couldn’t be opened. Try again in a moment.' });
       });
     return () => {
@@ -349,7 +349,7 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
       {!pro && (
         <p className="share-plist-cta">
           <a href="#/welcome" onClick={onClose}>
-            Made with Mise. Design your own kitchen free →
+            Made with BluModel Studio. Design your own kitchen free →
           </a>
         </p>
       )}
@@ -365,7 +365,7 @@ function StatePage({ title, tone, children }: { title: string; tone?: 'error'; c
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
       </header>
       <main className="share-state-main">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { Toasts } from '../../components/Toasts';
 import { ApiError } from '../../lib/api';
 import { useCatalog } from '../../store/useCatalog';
@@ -23,7 +23,7 @@ export default function BrandPage({ slug }: { slug: string }) {
         // The cards link to product pages and "Try in my kitchen": make the products resolvable.
         useCatalog.getState().register(r.products);
         setState(r);
-        document.title = `${r.brand.name} · Mise`;
+        document.title = `${r.brand.name} · BluModel Studio`;
         void brandApi.event(slug, 'brand_view');
       })
       .catch((e) => {
@@ -33,7 +33,7 @@ export default function BrandPage({ slug }: { slug: string }) {
       });
     return () => {
       live = false;
-      document.title = 'Mise';
+      document.title = 'BluModel Studio';
     };
   }, [slug]);
 
@@ -42,7 +42,7 @@ export default function BrandPage({ slug }: { slug: string }) {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <AccountMenu />
       </header>
@@ -52,7 +52,7 @@ export default function BrandPage({ slug }: { slug: string }) {
           <div className="screen-msg bp-gone">
             <p>This page is unavailable.</p>
             <a className="btn" href="#/">
-              Back to Mise
+              Back to BluModel Studio
             </a>
           </div>
         )}

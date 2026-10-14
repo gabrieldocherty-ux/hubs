@@ -34,7 +34,7 @@ const BG = '#efe8dc';
 /**
  * The room's light palette: the direct lights and the Lightformer environment (its backdrop
  * colour is the diffuse fill every surface picks up). With `?qa`, localStorage
- * `mise.qa.roomLight` (JSON) may override any key for tone-mapping A/B tests.
+ * `blumodel.qa.roomLight` (JSON) may override any key for tone-mapping A/B tests.
  *
  * Tuned for Neutral tone mapping (docs/handoff/viewer.md, "Tone mapping"): the old palette was
  * warm enough that only ACES's desaturated highlights hid it. Under Neutral it turned Warm Linen
@@ -60,7 +60,7 @@ const ROOM_LIGHT = (() => {
   };
   if (!QA) return base;
   try {
-    return { ...base, ...JSON.parse(localStorage.getItem('mise.qa.roomLight') || '{}') } as typeof base;
+    return { ...base, ...JSON.parse(localStorage.getItem('blumodel.qa.roomLight') || '{}') } as typeof base;
   } catch {
     return base;
   }

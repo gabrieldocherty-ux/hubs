@@ -489,7 +489,7 @@ export function createOrderService({ db, now, services, config, log = console, t
         ...(brief.variant ? { variant: brief.variant } : {}),
         category: brief.category ?? KIND_CATEGORY[brief.kind],
         name,
-        blurb: 'Custom 3D model made by the Mise studio.',
+        blurb: 'Custom 3D model made by the BluModel 3D studio.',
         sku: '',
         ...dims,
         price,

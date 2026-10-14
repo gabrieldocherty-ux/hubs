@@ -11,7 +11,7 @@ import { MiniPlan } from '../components/MiniPlan';
 import { PresetStrip } from '../components/PresetStrip';
 import { FeetInchesInput } from '../components/FeetInchesInput';
 import { AccountMenu } from '../components/AccountMenu';
-import { Check, Logo } from '../components/Icons';
+import { Check, Logo, Wordmark } from '../components/Icons';
 import { feetInches } from '../lib/format';
 import { CameraIcon } from '../features/generate/icons';
 import '../features/generate/generate.css';
@@ -61,7 +61,7 @@ export function SetupWizard() {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <ol className="steps" aria-label="Setup steps">
           {STEPS.map((s, i) => (
@@ -87,7 +87,7 @@ export function SetupWizard() {
                 </span>
                 <span className="gen-wiz-photo-text">
                   <b>Start from a photo of my kitchen</b>
-                  <span>Already have a kitchen? Add photos of it and Mise models the space for you to redesign.</span>
+                  <span>Already have a kitchen? Add photos of it and BluModel Studio models the space for you to redesign.</span>
                 </span>
                 <span className="gen-wiz-photo-go" aria-hidden>
                   →

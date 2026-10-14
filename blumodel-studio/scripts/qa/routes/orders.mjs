@@ -1,7 +1,7 @@
 // Package C (orders) QA routes, BUILD_PLAN §3.7 / §7 C-T8. Run with
 //   node scripts/qa.mjs --pkg orders --port 8814 --dist .build/orders
 //
-// Needs the orders seed (server/seed/orders.mjs): demo-customer@mise.test owns four DEMO
+// Needs the orders seed (server/seed/orders.mjs): demo-customer@blumodel.test owns four DEMO
 // orders with fixed ids, one per state below. Checks only use `evaluate` (a JS expression run in
 // the page, awaited), so they work whatever else the runner's context provides. expectText avoids
 // text under `text-transform: uppercase` (eyebrows, banners' bold lead), so innerText and
@@ -57,7 +57,7 @@ const click = (label) => `(() => {
  */
 const life = { id: null, name: null };
 
-/** In-page: a box GLB (one `mise_finish` material, w×h×d metres, base on y = 0) as a File. */
+/** In-page: a box GLB (one `blumodel_finish` material, w×h×d metres, base on y = 0) as a File. */
 const GLB_FILE = `(() => {
   const w = 0.838, h = 0.914, d = 0.559;
   const F = [
@@ -78,9 +78,9 @@ const GLB_FILE = `(() => {
   const views = [];
   parts.forEach((p, i) => { bin.set(p, o); views.push({ buffer: 0, byteOffset: o, byteLength: p.length, target: i === 3 ? 34963 : 34962 }); o += p.length; });
   const gltf = {
-    asset: { version: '2.0', generator: 'mise qa' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, name: 'box' }],
+    asset: { version: '2.0', generator: 'blumodel qa' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, name: 'box' }],
     meshes: [{ name: 'box', primitives: [{ attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 }, indices: 3, material: 0 }] }],
-    materials: [{ name: 'mise_finish', pbrMetallicRoughness: { baseColorFactor: [0.9, 0.9, 0.88, 1], metallicFactor: 0, roughnessFactor: 0.6 } }],
+    materials: [{ name: 'blumodel_finish', pbrMetallicRoughness: { baseColorFactor: [0.9, 0.9, 0.88, 1], metallicFactor: 0, roughnessFactor: 0.6 } }],
     accessors: [
       { bufferView: 0, componentType: 5126, count: 24, type: 'VEC3', min: [-w / 2, 0, -d / 2], max: [w / 2, h, d / 2] },
       { bufferView: 1, componentType: 5126, count: 24, type: 'VEC3' },

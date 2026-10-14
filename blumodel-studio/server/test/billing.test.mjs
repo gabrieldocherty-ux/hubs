@@ -215,7 +215,7 @@ test('the server CSV is byte-for-byte the editor’s (golden), and the project f
   const json = await ann.post(`/api/projects/${k.id}/exports`, { kind: 'json' });
   assert.equal(json.body.file.filename, 'test-kitchen.kitchen.json');
   const parsed = JSON.parse(json.body.file.content);
-  assert.equal(parsed.app, 'mise-kitchen');
+  assert.equal(parsed.app, 'blumodel-studio');
   assert.deepEqual(parsed.doc.extras, [{ id: 'x1', label: 'Installation', amount: 1200 }], 'the cost is stripped');
   // The owner's own saved kitchen keeps its cost.
   assert.equal((await ann.get(`/api/projects/${k.id}`)).body.project.doc.extras[0].cost, 700);
@@ -281,7 +281,7 @@ function stripeMock() {
 
 test('Stripe mode: checkout is built on the server’s price with metadata, return URLs and an idempotency key', async () => {
   const mock = stripeMock();
-  const s = await startTestServer({ env: { STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_URL: 'https://mise.example' }, fetch: mock.fetch });
+  const s = await startTestServer({ env: { STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_URL: 'https://blumodel.example' }, fetch: mock.fetch });
   try {
     assert.equal((await s.agent().get('/api/config')).body.payments, 'stripe');
     const ann = await s.user();
@@ -296,21 +296,23 @@ test('Stripe mode: checkout is built on the server’s price with metadata, retu
     assert.equal(c1.form.get('mode'), 'payment');
     assert.equal(c1.form.get('line_items[0][price_data][unit_amount]'), '500', 'server price; client amounts ignored');
     assert.equal(c1.form.get('line_items[0][price_data][currency]'), 'usd');
+    assert.match(c1.form.get('line_items[0][price_data][product_data][name]'), /^BluModel Studio - Kitchen unlock: /, 'what the buyer sees on Stripe');
     assert.equal(c1.form.get('metadata[kind]'), 'kitchen_unlock');
     assert.equal(c1.form.get('metadata[checkout_ref]'), unlock.body.ref);
     assert.equal(c1.form.get('metadata[project_id]'), k.id);
     assert.equal(c1.form.get('client_reference_id'), unlock.body.ref);
-    assert.equal(c1.form.get('success_url'), `https://mise.example/?session_id={CHECKOUT_SESSION_ID}#/k/${k.id}`);
-    assert.equal(c1.form.get('cancel_url'), `https://mise.example/#/k/${k.id}`);
+    assert.equal(c1.form.get('success_url'), `https://blumodel.example/?session_id={CHECKOUT_SESSION_ID}#/k/${k.id}`);
+    assert.equal(c1.form.get('cancel_url'), `https://blumodel.example/#/k/${k.id}`);
 
     const sub = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
     const c2 = mock.calls[1];
     assert.equal(c2.form.get('mode'), 'subscription');
     assert.equal(c2.form.get('line_items[0][price_data][unit_amount]'), '4000');
     assert.equal(c2.form.get('line_items[0][price_data][recurring][interval]'), 'month');
+    assert.equal(c2.form.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Contractor');
     assert.equal(c2.form.get('subscription_data[metadata][plan]'), 'contractor');
     assert.equal(c2.form.get('subscription_data[metadata][user_id]'), ann.id);
-    assert.equal(c2.form.get('success_url'), 'https://mise.example/?session_id={CHECKOUT_SESSION_ID}#/pro');
+    assert.equal(c2.form.get('success_url'), 'https://blumodel.example/?session_id={CHECKOUT_SESSION_ID}#/pro');
     assert.ok(sub.body.ref);
 
     // Demo completion is refused when Stripe is the provider.
@@ -379,7 +381,7 @@ test('Stripe webhooks: verified, deduplicated, amount-checked; subscription even
     await post(signed({ id: 'evt_sub_deleted', type: 'customer.subscription.deleted', data: { object: { ...subObj, status: 'canceled' } } }));
     assert.equal((await ann.get('/api/auth/me')).body.user.plan.id, 'free');
 
-    // The webhook needs no X-Mise header, but every other POST still does.
+    // The webhook needs no X-BluModel header, but every other POST still does.
     assert.equal((await ann.request('POST', '/api/billing/cancel', { body: {}, csrf: false })).status, 403);
   } finally {
     await s.close();

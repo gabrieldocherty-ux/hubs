@@ -137,7 +137,7 @@ export function normalizeDoc(doc) {
     const items = doc.items.map(normalizeItem);
     const out = { name: typeof doc.name === 'string' ? doc.name.slice(0, 120) : '', room, surfaces, items };
     if (doc.version !== undefined && doc.version !== null) {
-      if (doc.version !== 1 && doc.version !== 2) bad('version', 'This kitchen was saved by a newer version of Mise.');
+      if (doc.version !== 1 && doc.version !== 2) bad('version', 'This kitchen was saved by a newer version of BluModel Studio.');
       out.version = doc.version;
     }
     if (doc.products !== undefined && doc.products !== null) {

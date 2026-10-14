@@ -36,7 +36,7 @@ export function PublishSwitch({ entry, pageStatus, readOnly, onChange, bare = fa
         onChange(r.product, r.liveCount);
       } else {
         const r = await brandApi.publish(entry.id);
-        toast(r.status === 'published' ? `${entry.name} is back on your page.` : `${entry.name} is in review. It goes live once Mise approves it.`, 'ok');
+        toast(r.status === 'published' ? `${entry.name} is back on your page.` : `${entry.name} is in review. It goes live once BluModel Studio approves it.`, 'ok');
         onChange(r.product, r.liveCount);
       }
     } catch (e) {

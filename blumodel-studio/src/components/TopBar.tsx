@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
-import { WallsIcon, CubeIcon, Download, Logo, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
+import { WallsIcon, CubeIcon, Download, Logo, Wordmark, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
@@ -140,7 +140,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   };
 
   return (
-    <header className="topbar">
+    <header className={compact ? 'topbar topbar--compact' : 'topbar'}>
       <div className="brand">
         {signedIn ? (
           <a className="back-link" href="#/" title="Back to my kitchens">
@@ -150,7 +150,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
         ) : (
           <>
             <Logo />
-            <span className="wordmark">Mise</span>
+            <Wordmark />
           </>
         )}
         <span className="divider" />

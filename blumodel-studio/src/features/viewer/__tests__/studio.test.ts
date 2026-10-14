@@ -47,7 +47,7 @@ test('stillOptionsFor maps prefs to the exact pixel size', () => {
 test('setPrefs remembers the choice on this device', () => {
   useStudioPrefs.getState().setPrefs({ size: '1440', camera: 'overview' });
   assert.equal(useStudioPrefs.getState().prefs.size, '1440');
-  assert.deepEqual(parsePrefs(localStorage.getItem('mise.studio.prefs')), { ...DEFAULT_STUDIO_PREFS, size: '1440', camera: 'overview' });
+  assert.deepEqual(parsePrefs(localStorage.getItem('blumodel.studio.prefs')), { ...DEFAULT_STUDIO_PREFS, size: '1440', camera: 'overview' });
 });
 
 test('renderFilename is <kitchen>-render-<w>x<h>.png', () => {

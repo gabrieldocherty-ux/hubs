@@ -30,7 +30,7 @@ with placeholder screens; the package then owns everything inside it.
 - **One stylesheet per package:** `<key>.css`, imported by your own components. Never edit
   `src/styles.css`; ask for a token or class through your handoff note instead.
 - **API calls** live in `src/features/<key>/api.ts`, built on `call()` and `upload()` from
-  `src/lib/api.ts` (they add the `X-Mise: 1` CSRF header and turn errors into `ApiError`).
+  `src/lib/api.ts` (they add the `X-BluModel: 1` CSRF header and turn errors into `ApiError`).
 - **Package-local types** go in your own directory. Don't redefine anything from
   `src/types.ts` or `src/types/platform.ts`.
 - **Tests:** pure-module TS tests in `src/features/<key>/__tests__/*.test.ts`, run with
@@ -63,4 +63,4 @@ with placeholder screens; the package then owns everything inside it.
 - Status is never shown by colour alone (pair it with text or an icon).
 - No third-party requests at runtime: no web fonts, CDN decoders, drei `Environment` presets,
   `<Stage>`, `useKTX2` or `useDetectGPU`. QA fails a page that makes one.
-- Debug hooks (`window.__miseQa`) only when `location.search` contains `qa`.
+- Debug hooks (`window.__blumodelQa`) only when `location.search` contains `qa`.

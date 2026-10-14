@@ -5,7 +5,7 @@ import { feetInches } from './format';
 
 export const PLACEHOLDER_PRICES_NOTE = 'Brand names and prices are placeholders for illustration.';
 export const VISUALIZER_DISCLAIMER =
-  'Mise is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional.';
+  'BluModel Studio is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional.';
 
 /** CSV-injection guard: a cell that a spreadsheet would treat as a formula gets a leading quote. */
 function safeCell(v: string | number): string | number {

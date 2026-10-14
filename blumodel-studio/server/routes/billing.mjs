@@ -132,7 +132,7 @@ export default function routes(ctx) {
             price_data: {
               currency: 'usd',
               unit_amount: c.amount_cents,
-              product_data: { name: sub ? `Mise ${plan.name}` : `Mise kitchen unlock: ${c.project_name || 'kitchen'}`.slice(0, 120) },
+              product_data: { name: sub ? `BluModel Studio - ${plan.name}` : `BluModel Studio - Kitchen unlock: ${c.project_name || 'kitchen'}`.slice(0, 120) },
               ...(sub ? { recurring: { interval: 'month' } } : {}),
             },
           },
@@ -151,7 +151,7 @@ export default function routes(ctx) {
   async function ensureStripeProduct(plan) {
     const row = db.prepare('SELECT product_id FROM billing_stripe_products WHERE plan = ?').get(plan);
     if (row) return row.product_id;
-    const product = await stripe.createProduct({ name: `Mise ${planById(plan).name}`, metadata: { mise_plan: plan } }, `mise-product-${plan}`);
+    const product = await stripe.createProduct({ name: `BluModel Studio - ${planById(plan).name}`, metadata: { blumodel_plan: plan } }, `blumodel-product-${plan}`);
     db.prepare('INSERT OR REPLACE INTO billing_stripe_products (plan, product_id, created_at) VALUES (?, ?, ?)').run(plan, product.id, ctx.now());
     return product.id;
   }
@@ -393,7 +393,7 @@ export default function routes(ctx) {
           file = { filename: out.filename, contentType: 'text/csv', content: out.content };
         } else if (kind === 'json') {
           const clean = services.pricing.stripDoc(doc, { viewer: null, ownerUserId: rc.user.id });
-          file = { filename: `${slug(project.name)}.kitchen.json`, contentType: 'application/json', content: JSON.stringify({ app: 'mise-kitchen', version: 2, doc: clean }, null, 2) };
+          file = { filename: `${slug(project.name)}.kitchen.json`, contentType: 'application/json', content: JSON.stringify({ app: 'blumodel-studio', version: 2, doc: clean }, null, 2) };
         }
         db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, rc.user.id, kind, ctx.now());
         return { ok: true, ...(file ? { file } : {}) };

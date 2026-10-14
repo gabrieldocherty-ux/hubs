@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { hrefFor } from '../../lib/router';
 import type { OrderStatus } from '../../types/platform';
 import type { OrderEventWire } from './api';
@@ -13,7 +13,7 @@ export function OrdersShell({ children, wide = false }: { children: ReactNode; w
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <nav className="ord-nav" aria-label="Custom models">
           <a href={hrefFor({ name: 'orders', rest: '' })}>My orders</a>

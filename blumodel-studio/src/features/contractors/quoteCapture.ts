@@ -9,7 +9,7 @@ import { useDesignStore } from '../../store/useDesignStore';
  * quote page falls back to a drawn plan when they're missing.
  */
 
-const key = (projectId: string) => `mise.quoteImages.${projectId}`;
+const key = (projectId: string) => `blumodel.quoteImages.${projectId}`;
 const MAX_AGE = 6 * 3600 * 1000;
 
 export interface QuoteImages {

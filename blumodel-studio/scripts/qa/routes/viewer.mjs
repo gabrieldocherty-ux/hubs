@@ -9,8 +9,8 @@
 //
 // The GLB products come from server/seed/viewer.mjs: "Ashgrove 30″ Pro Range (Demo)" and
 // "Ashgrove Dome Pendant (Demo)", brand slug ashgrove-studio-demo. The debug hooks used here exist
-// only with ?qa in the URL: window.__miseQa (canvas stats, viewer.renderStill, stage, studio) and
-// window.__miseQA (the design store, scene3d).
+// only with ?qa in the URL: window.__blumodelQa (canvas stats, viewer.renderStill, stage, studio) and
+// window.__blumodelQA (the design store, scene3d).
 
 const GLB_BRAND = 'ashgrove-studio-demo';
 
@@ -78,18 +78,18 @@ async function dimsMatch({ evaluate }, want) {
 /** Switches the editor to the 3D view and waits for the room canvas to have drawn. */
 async function show3d(h) {
   await h.evaluate(() => {
-    const s = window.__miseQA.store.getState();
+    const s = window.__blumodelQA.store.getState();
     s.select(null);
     s.setUI({ viewMode: '3d' });
   });
   try {
-    await h.waitUntil(() => window.__miseQa?.canvas === 'room' && (window.__miseQa?.frames ?? 0) > 0 && !!window.__miseQa?.viewer?.renderStill, 20_000, 'the room canvas drawing');
+    await h.waitUntil(() => window.__blumodelQa?.canvas === 'room' && (window.__blumodelQa?.frames ?? 0) > 0 && !!window.__blumodelQa?.viewer?.renderStill, 20_000, 'the room canvas drawing');
   } catch (err) {
     const st = await h.evaluate(() => ({
-      canvas: window.__miseQa?.canvas ?? null,
-      frames: window.__miseQa?.frames ?? null,
-      still: !!window.__miseQa?.viewer?.renderStill,
-      mode: window.__miseQA?.store?.getState().ui.viewMode ?? null,
+      canvas: window.__blumodelQa?.canvas ?? null,
+      frames: window.__blumodelQa?.frames ?? null,
+      still: !!window.__blumodelQa?.viewer?.renderStill,
+      mode: window.__blumodelQA?.store?.getState().ui.viewMode ?? null,
       sceneCanvas: !!document.querySelector('.scene-view canvas'),
       visible: document.visibilityState,
     }));
@@ -103,7 +103,7 @@ async function show3d(h) {
  * Runs in the page.
  */
 function itemBoxInPage(itemId) {
-  const st = window.__miseQA.scene3d.get();
+  const st = window.__blumodelQA.scene3d.get();
   let g = null;
   st.scene.traverse((o) => {
     if (!g && o.userData?.itemId === itemId) g = o;
@@ -150,7 +150,7 @@ export default [
     check: async (h) => {
       await dimsMatch(h, { W: 30, D: 28, H: 36 });
       // The turntable spins, so frames are expected; the stage must have drawn something.
-      const stats = await h.evaluate(() => ({ canvas: window.__miseQa?.canvas, frames: window.__miseQa?.frames ?? 0, calls: window.__miseQa?.calls ?? 0 }));
+      const stats = await h.evaluate(() => ({ canvas: window.__blumodelQa?.canvas, frames: window.__blumodelQa?.frames ?? 0, calls: window.__blumodelQa?.calls ?? 0 }));
       if (stats.canvas !== 'stage' || stats.calls < 1) throw new Error(`the product stage did not draw (${JSON.stringify(stats)})`);
       await noSideScroll(h);
     },
@@ -170,7 +170,7 @@ export default [
       // The GLB loaded (not the procedural stand-in) and fills its declared box (uniform fit).
       const fit = await h.evaluate(() => {
         let g = null;
-        window.__miseQa.stage.get().scene.traverse((o) => {
+        window.__blumodelQa.stage.get().scene.traverse((o) => {
           if (!g && o.userData?.gltf) g = o;
         });
         if (!g) return null;
@@ -207,13 +207,13 @@ export default [
     waitFor: ['.product-stage[data-ready="1"] canvas', '.swatches .swatch.on'],
     check: async (h) => {
       const [, other, start] = h.data.finishes;
-      // ?finish= selects the swatch and the model wears it (the mise_finish slot).
+      // ?finish= selects the swatch and the model wears it (the blumodel_finish slot).
       const on = await h.evaluate(() => document.querySelector('.swatches .swatch.on')?.getAttribute('aria-label'));
       if (on !== start.name) throw new Error(`?finish=${start.id} selected "${on}", expected "${start.name}"`);
       const wears = (hex) =>
         h.evaluate((want) => {
           let hit = false;
-          window.__miseQa.stage.get().scene.traverse((o) => {
+          window.__blumodelQa.stage.get().scene.traverse((o) => {
             if (!o.isMesh) return;
             for (const m of Array.isArray(o.material) ? o.material : [o.material]) if (m?.color && '#' + m.color.getHexString() === want.toLowerCase()) hit = true;
           });
@@ -277,9 +277,9 @@ export default [
     waitFor: ['.topbar'],
     check: async (h) => {
       const p = h.data.product;
-      await until(h, (id) => !!window.__miseQA?.store?.getState().doc.items.some((i) => i.productId === id), p.id, 20_000, 'the ?add= product in the kitchen');
+      await until(h, (id) => !!window.__blumodelQA?.store?.getState().doc.items.some((i) => i.productId === id), p.id, 20_000, 'the ?add= product in the kitchen');
       await show3d(h);
-      const itemId = await h.evaluate((id) => window.__miseQA.store.getState().doc.items.find((i) => i.productId === id).id, p.id);
+      const itemId = await h.evaluate((id) => window.__blumodelQA.store.getState().doc.items.find((i) => i.productId === id).id, p.id);
       let box = null;
       for (let i = 0; i < 60; i++) {
         box = await h.evaluate(itemBoxInPage, itemId);
@@ -303,11 +303,11 @@ export default [
       // A product whose model URL answers 200 but isn't a GLB: the loader fails, the procedural
       // model stays, nothing throws and the room keeps rendering.
       const id = await h.evaluate(() => {
-        const cat = window.__miseQa.viewer.catalog;
+        const cat = window.__blumodelQa.viewer.catalog;
         const base = cat.getState().byId.get('range-30');
         const pid = 'p_qabrokenmodel0000000000';
         cat.getState().register([{ ...base, id: pid, source: 'brand', name: 'QA Broken Model Range', model: { url: '/draco/draco_wasm_wrapper.js' } }]);
-        const s = window.__miseQA.store.getState();
+        const s = window.__blumodelQA.store.getState();
         const itemId = s.addItem(pid);
         s.select(null);
         return itemId;
@@ -319,7 +319,7 @@ export default [
       if (box.gltf) throw new Error('a non-GLB file was shown as a model');
       if (box.meshes < 3 || box.size[1] < 30) throw new Error(`the procedural fallback is not drawn (${box.meshes} meshes, ${box.size.join(' × ')} in)`);
       const flat = await h.evaluate(async () => {
-        const c = await window.__miseQa.viewer.renderStill({ width: 320, height: 180, camera: 'overview', quality: 'fast', toneMap: 'neutral' });
+        const c = await window.__blumodelQa.viewer.renderStill({ width: 320, height: 180, camera: 'overview', quality: 'fast', toneMap: 'neutral' });
         const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
         let lo = 765;
         let hi = 0;
@@ -343,9 +343,9 @@ export default [
     check: async (h) => {
       await show3d(h);
       await h.sleep(2500);
-      const f0 = await h.evaluate(() => window.__miseQa.frames);
+      const f0 = await h.evaluate(() => window.__blumodelQa.frames);
       await h.sleep(2000);
-      const s1 = await h.evaluate(() => ({ frames: window.__miseQa.frames, calls: window.__miseQa.calls, triangles: window.__miseQa.triangles, programs: window.__miseQa.programs }));
+      const s1 = await h.evaluate(() => ({ frames: window.__blumodelQa.frames, calls: window.__blumodelQa.calls, triangles: window.__blumodelQa.triangles, programs: window.__blumodelQa.programs }));
       if (s1.frames - f0 !== 0) throw new Error(`the idle room drew ${s1.frames - f0} frames in 2 s (want 0)`);
       h.note(`idle: 0 frames in 2 s; last frame ${s1.calls} draw calls, ${s1.triangles} triangles, ${s1.programs} programs`);
       // Adding a pendant: no new shader programs and no long frame.
@@ -358,12 +358,12 @@ export default [
           if (window.__qaGaps.length < 90) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
-        const s = window.__miseQA.store.getState();
+        const s = window.__blumodelQA.store.getState();
         s.addItem('pendant-globe');
         s.select(null);
       });
       await h.sleep(2500);
-      const after = await h.evaluate(() => ({ programs: window.__miseQa.programs, worst: Math.round(Math.max(...window.__qaGaps)) }));
+      const after = await h.evaluate(() => ({ programs: window.__blumodelQa.programs, worst: Math.round(Math.max(...window.__qaGaps)) }));
       if (after.programs !== s1.programs) throw new Error(`adding a pendant changed the shader programs ${s1.programs} → ${after.programs}`);
       if (after.worst > 100) throw new Error(`adding a pendant took a ${after.worst} ms frame (budget 100 ms)`);
       h.note(`pendant: programs ${s1.programs} → ${after.programs}, worst frame ${after.worst} ms`);
@@ -377,8 +377,8 @@ export default [
     setup: async ({ me }) => newKitchen(me, 'QA Studio Free'),
     waitFor: ['.topbar .studio-btn'],
     check: async (h) => {
-      await h.evaluate(() => window.__miseQA.store.getState().setUI({ viewMode: 'split' }));
-      await h.waitUntil(() => window.__miseQa?.canvas === 'room' && !!window.__miseQa?.viewer?.renderStill, 20_000, 'the split-view room canvas');
+      await h.evaluate(() => window.__blumodelQA.store.getState().setUI({ viewMode: 'split' }));
+      await h.waitUntil(() => window.__blumodelQa?.canvas === 'room' && !!window.__blumodelQa?.viewer?.renderStill, 20_000, 'the split-view room canvas');
       await h.click('.topbar .studio-btn');
       await h.waitFor('.studio-preview[data-state="done"]', 30_000);
       await h.evaluate(() => {
@@ -392,7 +392,7 @@ export default [
       });
       await h.sleep(300);
       await h.waitFor('.studio-preview[data-state="done"]', 60_000);
-      const d = await h.evaluate(() => ({ ...document.querySelector('.studio-preview').dataset, max: window.__miseQa.viewer.maxSide }));
+      const d = await h.evaluate(() => ({ ...document.querySelector('.studio-preview').dataset, max: window.__blumodelQa.viewer.maxSide }));
       const wantW = Math.min(3840, d.max);
       if (+d.width !== wantW || +d.height !== Math.round((wantW * 9) / 16)) throw new Error(`the 4K render from split view is ${d.width}×${d.height} (max side ${d.max})`);
       if (d.watermark !== '1') throw new Error('a free user’s preview has no watermark');
@@ -412,8 +412,8 @@ export default [
       if (wm !== '0') throw new Error('an entitled (Contractor) user’s preview is watermarked');
       // The renderer itself at 4K: the canvas it returns is the size asked for (or the GPU cap).
       const r = await h.evaluate(async () => {
-        const max = window.__miseQa.viewer.maxSide;
-        const c = await window.__miseQa.viewer.renderStill({ width: 3840, height: 2160, camera: 'current', quality: 'high', toneMap: 'neutral' });
+        const max = window.__blumodelQa.viewer.maxSide;
+        const c = await window.__blumodelQa.viewer.renderStill({ width: 3840, height: 2160, camera: 'current', quality: 'high', toneMap: 'neutral' });
         return { w: c.width, h: c.height, max };
       });
       const wantW = Math.min(3840, r.max);
@@ -433,7 +433,7 @@ export default [
       await h.sleep(1500);
       for (const tm of ['aces', 'neutral', 'agx']) {
         await h.evaluate(async (t) => {
-          const c = await window.__miseQa.viewer.renderStill({ width: 1440, height: 810, camera: 'eye', quality: 'high', toneMap: t });
+          const c = await window.__blumodelQa.viewer.renderStill({ width: 1440, height: 810, camera: 'eye', quality: 'high', toneMap: t });
           let img = document.getElementById('qa-tonemap');
           if (!img) {
             img = document.createElement('img');

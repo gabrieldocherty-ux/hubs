@@ -29,7 +29,7 @@ export function createBrandService({ db, files }) {
       statusNote: r.status_note,
       verifiedAt: r.verified_at ?? null,
       isDemo: !!r.is_demo,
-      /** `contractor`: a Contractor account's brand page. `partner`: a Mise-curated brand. */
+      /** `contractor`: a Contractor account's brand page. `partner`: a BluModel-curated brand. */
       kind: r.kind === 'contractor' ? 'contractor' : 'partner',
       createdBy: r.created_by ?? null,
       createdAt: r.created_at,

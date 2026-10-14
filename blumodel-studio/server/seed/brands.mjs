@@ -4,7 +4,7 @@
 //   Partner brands (admin-curated, kind 'partner', no login):
 //     Kestrel & Finch Appliances (Demo), Marlow Lighting Co. (Demo)
 //     3–4 live products each, with fixture GLBs at real sizes and generated thumbnails.
-//   A demo contractor, demo-brand@mise.test (Contractor plan, demo provider):
+//   A demo contractor, demo-brand@blumodel.test (Contractor plan, demo provider):
 //     company Alder & Pine Cabinetry (Demo), a live verified brand page, My-catalog products
 //     with costs in the price book, most of them live, one submitted (in the moderation
 //     queue), one live with a pending edit (field diff), leads in every status, and 30 days of
@@ -101,9 +101,9 @@ function ensureProfile(ctx, userId, p) {
   ).run(userId, p.company, p.logoFileId ?? null, p.phone, p.email, p.website, p.serviceArea, p.markup ?? 30, p.tax ?? 0, t, t);
 }
 
-/** A product's GLB (mise_finish slot, real size) and thumbnail. */
+/** A product's GLB (blumodel_finish slot, real size) and thumbnail. */
 function media(services, { widthIn, heightIn, depthIn, color, accent, kind, visibility, ownerUserId = null, brandId = null, name }) {
-  const model = services.files.saveBuffer(makeGlb({ w: widthIn * IN, h: heightIn * IN, d: depthIn * IN, materials: ['mise_finish', 'body'] }), {
+  const model = services.files.saveBuffer(makeGlb({ w: widthIn * IN, h: heightIn * IN, d: depthIn * IN, materials: ['blumodel_finish', 'body'] }), {
     kind: 'model',
     visibility,
     ownerUserId,
@@ -121,7 +121,7 @@ const PARTNERS = [
   {
     name: 'Kestrel & Finch Appliances (Demo)',
     tagline: 'Pro-style ranges and quiet dishwashers (a fictional demo brand)',
-    about: 'A made-up appliance maker used to demonstrate brand products in Mise. Nothing here is for sale.',
+    about: 'A made-up appliance maker used to demonstrate brand products in BluModel Studio. Nothing here is for sale.',
     products: [
       { kind: 'range', variant: 'gas-6', category: 'appliances', name: 'Harrier 36″ Dual-Fuel Range', sku: 'KF-R36', widthIn: 36, depthIn: 28, heightIn: 36, price: 4899, color: STEEL, accent: [30, 30, 32], finishes: [{ id: 'steel', name: 'Brushed steel', hex: '#c4c7cb', material: 'metal' }, { id: 'slate', name: 'Slate', hex: '#3f4549', material: 'metal' }] },
       { kind: 'range', variant: 'induction', category: 'appliances', name: 'Wren 30″ Induction Range', sku: 'KF-I30', widthIn: 30, depthIn: 28, heightIn: 36, price: 2799, color: [40, 42, 46], accent: [12, 12, 14], finishes: [{ id: 'black', name: 'Black glass', hex: '#25272b', material: 'glass' }] },
@@ -132,7 +132,7 @@ const PARTNERS = [
   {
     name: 'Marlow Lighting Co. (Demo)',
     tagline: 'Pendants for islands and breakfast nooks (a fictional demo brand)',
-    about: 'A made-up lighting studio used to demonstrate brand products in Mise. Nothing here is for sale.',
+    about: 'A made-up lighting studio used to demonstrate brand products in BluModel Studio. Nothing here is for sale.',
     products: [
       { kind: 'pendant', variant: 'dome', category: 'lighting', name: 'Tidewater Dome Pendant', sku: 'ML-DOME14', widthIn: 14, depthIn: 14, heightIn: 10, elevationIn: 68, price: 289, color: [52, 74, 70], accent: [30, 30, 30], finishes: [{ id: 'sea', name: 'Sea green', hex: '#344a46', material: 'metal' }, { id: 'brass', name: 'Aged brass', hex: '#b08d57', material: 'metal' }] },
       { kind: 'pendant', variant: 'globe', category: 'lighting', name: 'Harbour Glass Globe', sku: 'ML-GLB12', widthIn: 12, depthIn: 12, heightIn: 12, elevationIn: 66, price: 239, color: [214, 222, 224], accent: [150, 150, 150], finishes: [{ id: 'clear', name: 'Clear glass', hex: '#dfe6e8', material: 'glass' }] },
@@ -218,7 +218,7 @@ function rng(seed) {
 
 async function seedContractor(ctx, pages) {
   const { db, services, now } = ctx;
-  const userId = await ensureUser(ctx, { email: 'demo-brand@mise.test', name: 'Demo Contractor' });
+  const userId = await ensureUser(ctx, { email: 'demo-brand@blumodel.test', name: 'Demo Contractor' });
   ensureContractorPlan(ctx, userId);
   ensureProfile(ctx, userId, {
     company: 'Alder & Pine Cabinetry (Demo)',
@@ -283,7 +283,7 @@ async function seedContractor(ctx, pages) {
     services.brands.uniqueSlug('Alder & Pine Cabinetry'),
     profile.company,
     'Custom shaker and slab cabinetry for the Hamilton area',
-    'A fictional two-person shop used to demonstrate brand pages in Mise. Everything is built to order: face-frame shaker in paint-grade maple, and rift-oak slab. We measure, build and install.',
+    'A fictional two-person shop used to demonstrate brand pages in BluModel Studio. Everything is built to order: face-frame shaker in paint-grade maple, and rift-oak slab. We measure, build and install.',
     profile.website,
     profile.logo_file_id ?? null,
     liveAt,
@@ -352,7 +352,7 @@ async function seedContractor(ctx, pages) {
 /** A second demo contractor whose page waits in the brand-page review queue. */
 async function seedApplicant(ctx, pages) {
   const { db, services, now } = ctx;
-  const userId = await ensureUser(ctx, { email: 'demo-applicant@mise.test', name: 'Demo Applicant', loginable: false });
+  const userId = await ensureUser(ctx, { email: 'demo-applicant@blumodel.test', name: 'Demo Applicant', loginable: false });
   ensureContractorPlan(ctx, userId);
   ensureProfile(ctx, userId, {
     company: 'Birchwood Kitchen Studio (Demo)',

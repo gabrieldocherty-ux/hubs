@@ -129,16 +129,16 @@ async function newKitchen(who, name, items = [], { client } = {}) {
 /** Switches the editor to 3D and waits for the room canvas to have drawn. */
 async function show3d(h) {
   await h.evaluate(() => {
-    const s = window.__miseQA.store.getState();
+    const s = window.__blumodelQA.store.getState();
     s.select(null);
     s.setUI({ viewMode: '3d' });
   });
-  await h.waitUntil(() => window.__miseQa?.canvas === 'room' && (window.__miseQa?.frames ?? 0) > 0, 25_000, 'the room canvas drawing');
+  await h.waitUntil(() => window.__blumodelQa?.canvas === 'room' && (window.__blumodelQa?.frames ?? 0) > 0, 25_000, 'the room canvas drawing');
 }
 
 /** The placed item's size in inches and whether it is a loaded GLB (a group tagged userData.gltf). Runs in the page. */
 function itemBoxInPage(itemId) {
-  const st = window.__miseQA.scene3d.get();
+  const st = window.__blumodelQA.scene3d.get();
   let g = null;
   st.scene.traverse((o) => {
     if (!g && o.userData?.itemId === itemId) g = o;
@@ -166,7 +166,7 @@ function itemBoxInPage(itemId) {
 
 /** The GLB reaches the room (not the procedural stand-in) at no more than its declared size. */
 async function glbInRoom(h, productId, want) {
-  const itemId = await h.evaluate((id) => window.__miseQA.store.getState().doc.items.find((i) => i.productId === id)?.id ?? null, productId);
+  const itemId = await h.evaluate((id) => window.__blumodelQA.store.getState().doc.items.find((i) => i.productId === id)?.id ?? null, productId);
   if (!itemId) throw new Error('the product is not in the kitchen');
   let box = null;
   for (let i = 0; i < 80; i++) {
@@ -342,7 +342,7 @@ export default [
       await h.waitForText([PRODUCT_NAME, 'Request a quote']);
       const fit = await h.evaluate(() => {
         let g = null;
-        window.__miseQa.stage.get().scene.traverse((o) => {
+        window.__blumodelQa.stage.get().scene.traverse((o) => {
           if (!g && o.userData?.gltf) g = o;
         });
         return !!g;
@@ -362,7 +362,7 @@ export default [
     },
     waitFor: ['.topbar'],
     check: async (h) => {
-      await until(h, (id) => !!window.__miseQA?.store?.getState().doc.items.some((i) => i.productId === id), brand.copyId, 20_000, 'the ?add= product in the kitchen');
+      await until(h, (id) => !!window.__blumodelQA?.store?.getState().doc.items.some((i) => i.productId === id), brand.copyId, 20_000, 'the ?add= product in the kitchen');
       await show3d(h);
       const box = await glbInRoom(h, brand.copyId, [24, 34.5, 24]);
       h.note(`room GLB ${box.size.join(' x ')} in (declared 24 x 34.5 x 24)`);
@@ -486,7 +486,7 @@ export default [
 
   {
     // BRAND_PAGE §5: a contractor's live products sit in everyone's catalog under their company with
-    // a "by <company>" line; a Mise-curated partner brand shows its plain name.
+    // a "by <company>" line; a BluModel-curated partner brand shows its plain name.
     name: 'int-catalog-by-company',
     path: '#/local',
     as: 'anon',
@@ -539,7 +539,7 @@ export default [
       await h.waitFor('.photo-ref, .photo-ref-pill');
       const photos = must(await h.api.as('customer').get(`/api/generate/photos/${id}`), 'Reading the kitchen\'s photos');
       if (!photos.files?.some((f) => f.id === brand.photoId)) throw new Error('the photo was not attached to the new kitchen');
-      const items = await h.evaluate(() => window.__miseQA.store.getState().doc.items.length);
+      const items = await h.evaluate(() => window.__blumodelQA.store.getState().doc.items.length);
       if (items < 5) throw new Error(`the built kitchen has only ${items} pieces`);
       // A signed-in kitchen survives a reload with its photo reference.
       await h.reload();
@@ -680,7 +680,7 @@ export default [
       if (exportBtn) throw new Error('a contractor share offers Export');
       if (!/\$\s?\d/.test(text)) throw new Error('no sell price is shown');
       // Open the Estimate to be sure the totals are sell prices too.
-      await h.evaluate(() => window.__miseQA.store.getState().setUI({ rightTab: 'estimate' }));
+      await h.evaluate(() => window.__blumodelQA.store.getState().setUI({ rightTab: 'estimate' }));
       await h.sleep(500);
       const est = (await h.evaluate(() => document.body.innerText)).toLowerCase();
       for (const n of COST_TEXT) if (est.includes(n)) throw new Error(`the contractor's cost (${n}) is in the client's estimate`);
@@ -723,7 +723,7 @@ export default [
       await h.waitForText(['Unlock “QA Unlock Kitchen”', 'Unlock this kitchen · $5']);
       await h.click(await mark(h, '.modal.unlock button', 'Unlock this kitchen', 'unlock'));
       await h.waitUntil(() => location.hash.startsWith('#/pay/'), 10_000, 'the demo checkout');
-      await h.waitForText(['DEMO PAYMENT', 'Mise never sees or stores card details']);
+      await h.waitForText(['DEMO PAYMENT', 'BluModel Studio never sees or stores card details']);
       const cardish = await h.evaluate(() => [...document.querySelectorAll('input')].filter((i) => /card|cc-|cvc|cvv|expir/i.test(`${i.name} ${i.id} ${i.autocomplete} ${i.placeholder}`)).length);
       if (cardish) throw new Error(`${cardish} card-like field(s) on the demo checkout`);
       await h.click('.demo-pay-actions .btn.primary');

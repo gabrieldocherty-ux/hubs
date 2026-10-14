@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { hrefFor, navigate } from '../../lib/router';
 import { ordersApi, type OrderDetail } from './api';
@@ -56,7 +56,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
       </header>
       <main className="ord-pay-main">
@@ -73,7 +73,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
           <section className="ord-card ord-pay-card" aria-labelledby="ord-pay-title">
             <span className="eyebrow">Checkout · Demo</span>
             <h1 id="ord-pay-title">{o.title}</h1>
-            <p className="muted">Custom 3D model{o.items.length > 1 ? `s (${o.items.length} products)` : ''} from the Mise studio</p>
+            <p className="muted">Custom 3D model{o.items.length > 1 ? `s (${o.items.length} products)` : ''} from the BluModel 3D studio</p>
             <ul className="ord-lines">
               {o.quote.lines.map((l, i) => (
                 <li key={i}>
@@ -127,7 +127,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
               </>
             )}
             {error && <div className="auth-error">{error}</div>}
-            <p className="fine">With real payments this is Stripe’s secure checkout page. Mise never sees or stores card details.</p>
+            <p className="fine">With real payments this is Stripe’s secure checkout page. BluModel Studio never sees or stores card details.</p>
           </section>
         )}
       </main>

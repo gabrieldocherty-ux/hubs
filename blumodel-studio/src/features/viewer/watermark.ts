@@ -1,11 +1,11 @@
 /**
  * The Studio render preview watermark (PLANS_AND_CONTRACTORS §3): a repeated diagonal
- * "Mise · Preview" at low opacity plus a corner badge. Drawn into the preview's pixels (so a
+ * "BluModel Studio · Preview" at low opacity plus a corner badge. Drawn into the preview's pixels (so a
  * saved preview carries it too), never into the full-resolution render that an entitled user
  * downloads. The on-screen plan and 3D views are never watermarked.
  */
 
-export const WATERMARK_TEXT = 'Mise · Preview';
+export const WATERMARK_TEXT = 'BluModel Studio · Preview';
 
 const FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 

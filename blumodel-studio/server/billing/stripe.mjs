@@ -1,5 +1,5 @@
 // The few Stripe REST calls billing needs, over ctx.fetch (no SDK, and tests mock fetch).
-// Mise never sees card details: Checkout and the customer portal are Stripe's pages.
+// BluModel Studio never sees card details: Checkout and the customer portal are Stripe's pages.
 //
 // Stripe has moved fields between API versions (a subscription's period end now lives on
 // its items; an invoice's subscription moved under `parent`), and webhooks arrive in the

@@ -15,6 +15,16 @@ const int = (v, def, min = -Infinity, max = Infinity) => {
 };
 const bool = (v) => /^(1|true|yes|on)$/i.test(String(v ?? '').trim());
 
+/**
+ * The default database, server/data/blumodel.db. A checkout that still has the database from before
+ * the rename (server/data/mise.db) and no blumodel.db keeps using the old file.
+ */
+function defaultDbPath() {
+  const current = path.join(SERVER_DIR, 'data', 'blumodel.db');
+  const legacy = path.join(SERVER_DIR, 'data', 'mise.db');
+  return !fs.existsSync(current) && fs.existsSync(legacy) ? legacy : current;
+}
+
 function readVersion() {
   try {
     return JSON.parse(fs.readFileSync(path.join(SERVER_DIR, '..', 'package.json'), 'utf8')).version || '0.0.0';
@@ -31,7 +41,7 @@ export function loadConfig(env = process.env, argv = process.argv) {
   const PROD = env.NODE_ENV === 'production' || argv.includes('--prod');
   const PORT = int(env.PORT, 8790, 0, 65535);
   const HOST = (env.HOST || '').trim() || '127.0.0.1';
-  const DB_PATH = env.DB_PATH || path.join(SERVER_DIR, 'data', 'mise.db');
+  const DB_PATH = env.DB_PATH || defaultDbPath();
   const UPLOAD_DIR = path.resolve(env.UPLOAD_DIR || path.join(DB_PATH === ':memory:' ? path.join(SERVER_DIR, 'data') : path.dirname(DB_PATH), 'uploads'));
   const DIST_DIR = path.resolve(env.DIST_DIR || path.join(SERVER_DIR, '..', 'dist'));
   const PUBLIC_URL = (env.PUBLIC_URL || `http://127.0.0.1:${PORT}`).replace(/\/+$/, '');
@@ -57,7 +67,8 @@ export function loadConfig(env = process.env, argv = process.argv) {
   const DEMO_PAYMENTS = bool(env.DEMO_PAYMENTS);
 
   const ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY || '';
-  const MISE_LLM_MODEL = env.MISE_LLM_MODEL || '';
+  // MISE_LLM_MODEL is the deprecated name from before the rename; still read.
+  const BLUMODEL_LLM_MODEL = env.BLUMODEL_LLM_MODEL || env.MISE_LLM_MODEL || '';
   const SEED_PASSWORD = env.SEED_PASSWORD || '';
 
   const RATE_LIMITS = (env.RATE_LIMITS || 'on').trim().toLowerCase() === 'off' ? 'off' : 'on';
@@ -81,12 +92,12 @@ export function loadConfig(env = process.env, argv = process.argv) {
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
     ANTHROPIC_API_KEY,
-    MISE_LLM_MODEL,
+    BLUMODEL_LLM_MODEL,
     SEED_PASSWORD,
     RATE_LIMITS,
     // derived
     paymentsProvider,
-    llmEnabled: !!(ANTHROPIC_API_KEY && MISE_LLM_MODEL),
+    llmEnabled: !!(ANTHROPIC_API_KEY && BLUMODEL_LLM_MODEL),
     demoPaymentsAllowed: !PROD || DEMO_PAYMENTS,
     version: readVersion(),
   });

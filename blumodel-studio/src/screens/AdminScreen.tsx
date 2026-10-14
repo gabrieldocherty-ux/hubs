@@ -4,7 +4,7 @@ import { ADMIN_TABS, hrefFor, navigate, type AdminTab } from '../lib/router';
 import { timeAgo, useSession } from '../store/useSession';
 import type { AdminOverview, AdminUser, Role } from '../types/platform';
 import { AccountMenu } from '../components/AccountMenu';
-import { Logo, Search } from '../components/Icons';
+import { Logo, Wordmark, Search } from '../components/Icons';
 import { AdminBrandsTab, AdminModerationTab } from '../features/brands';
 import { AdminRevenueTab, AdminStudioTab } from '../features/orders';
 import { AdminBillingTab } from '../features/billing';
@@ -42,7 +42,7 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
   if (!tabs.length)
     return (
       <div className="screen-msg">
-        <p>This area is for Mise staff.</p>
+        <p>This area is for BluModel Studio staff.</p>
         <a className="btn" href="#/">Back to my kitchens</a>
       </div>
     );
@@ -52,7 +52,7 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <nav className="admin-tabs" role="tablist" aria-label="Admin sections">
           {tabs.map((t) => (

@@ -213,6 +213,7 @@ export default function QuotePage({ projectId }: { projectId: string }) {
         <footer className="quote-foot">
           {quote.hasBuiltin && <p>{PLACEHOLDER_PRICES_NOTE}</p>}
           <p>{quote.disclaimer}</p>
+          <p className="quote-made-with">Prepared with BluModel Studio</p>
         </footer>
       </article>
       <Toasts />

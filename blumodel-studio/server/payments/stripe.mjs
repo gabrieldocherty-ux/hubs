@@ -1,6 +1,6 @@
 // Stripe Checkout for custom-model orders: REST over ctx.fetch, no SDK (PRODUCT_SPEC §7.4,
 // BUILD_PLAN §7 C-T3). Tests inject a mock fetch; no real Stripe call is made anywhere in
-// the test suite. Mise never sees card details: Checkout is Stripe's own page.
+// the test suite. BluModel Studio never sees card details: Checkout is Stripe's own page.
 //
 // Every amount sent here was computed by tiers.mjs when the order was created.
 

@@ -337,7 +337,7 @@ export function SpaceForm({ model, onChange, units, onUnits, name, onName, focus
         k="style"
         model={model}
         onChange={change}
-        hint={seenFromPhotos ? 'Matched to the closest Mise finishes from your photos. Change any of them later in the editor.' : 'Pick what’s there now; change any of it later in the editor.'}
+        hint={seenFromPhotos ? 'Matched to the closest BluModel Studio finishes from your photos. Change any of them later in the editor.' : 'Pick what’s there now; change any of it later in the editor.'}
       >
         {seenFromPhotos && (
           <p className="gen-seen">

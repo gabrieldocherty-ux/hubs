@@ -3,7 +3,7 @@
 
 import crypto from 'node:crypto';
 
-export const COOKIE = 'mise_session';
+export const COOKIE = 'blumodel_session';
 export const SESSION_DAYS = 30;
 const DAY = 86_400_000;
 

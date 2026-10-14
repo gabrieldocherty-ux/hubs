@@ -2,7 +2,7 @@
  * Pure maths for GLB products (no three import, so it can be unit-tested in node).
  *
  * A brand's GLB arrives in glTF units (metres, +Y up, +Z toward the viewer, which is already
- * Mise's "front"). It is shown at the product's declared footprint: the bounding box is
+ * BluModel Studio's "front"). It is shown at the product's declared footprint: the bounding box is
  * converted to inches and scaled **uniformly** by the smallest of the three ratios, so the
  * model never exceeds the declared W × H × D and is never distorted. It is then centred on x
  * and z with its lowest point on y = 0; the item group adds the elevation.
@@ -66,13 +66,14 @@ export function applyFit(fit: Fit, p: V3): V3 {
 
 export type SlotName = 'finish' | 'cabinet' | 'hardware' | 'counter';
 
-const SLOT_RE = /^mise_(finish|cabinet|hardware|counter)(?![a-z0-9])/i;
+// `mise_` is the prefix models used before the product was renamed BluModel Studio; still read.
+const SLOT_RE = /^(?:blumodel|mise)_(finish|cabinet|hardware|counter)(?![a-z0-9])/i;
 
 /**
- * The Mise material slot a GLB material belongs to, from its name: `mise_finish` takes the chosen
- * finish, `mise_cabinet` the kitchen's cabinet finish, `mise_hardware` the hardware and
- * `mise_counter` the countertop. Exporter suffixes (`mise_finish.001`, `mise_finish_2`) still
- * match; every other material keeps its baked look.
+ * The BluModel Studio material slot a GLB material belongs to, from its name: `blumodel_finish` takes the chosen
+ * finish, `blumodel_cabinet` the kitchen's cabinet finish, `blumodel_hardware` the hardware and
+ * `blumodel_counter` the countertop. Exporter suffixes (`blumodel_finish.001`, `blumodel_finish_2`) still
+ * match, and so does the legacy `mise_` prefix; every other material keeps its baked look.
  */
 export function slotOf(materialName: string | undefined | null): SlotName | null {
   const m = materialName ? SLOT_RE.exec(materialName) : null;

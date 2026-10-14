@@ -291,7 +291,7 @@ test('deliver creates a private product only the buyer sees; its GLB is 404 to o
   assert.equal(view.body.deliverables[0].id, pid);
   assert.ok(view.body.events.some((e) => e.type === 'note' && e.note === 'Modelling the knobs now.' && e.by === 'studio'));
   assert.equal(view.body.buyer, undefined);
-  assert.equal(view.body.assignee, 'Mise studio');
+  assert.equal(view.body.assignee, 'BluModel 3D studio');
   assert.ok(view.body.events.every((e) => !e.data || !('ref' in e.data)));
 
   const acc = await ann.post(`/api/orders/${o.id}/accept`);
@@ -402,7 +402,7 @@ test('two revision rounds, then no more; a redelivery updates the same product',
     assert.equal(rev.body.order.revisionsUsed, round);
     assert.equal((await studioDeliver(studio, o.id)).status, 409, 'start the revision first');
     await studio.post(`/api/studio/orders/${o.id}/start`);
-    const again = await studioDeliver(studio, o.id, { glb: makeGlb({ w: 0.762, h: 0.914, d: 0.711, materials: ['mise_finish', `rev${round}`] }) });
+    const again = await studioDeliver(studio, o.id, { glb: makeGlb({ w: 0.762, h: 0.914, d: 0.711, materials: ['blumodel_finish', `rev${round}`] }) });
     assert.equal(again.body.order.status, 'delivered');
     assert.equal(again.body.order.deliverableProductId, pid, 'same product');
   }
@@ -541,8 +541,8 @@ test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept ap
 test('the seed creates paid, in-progress, delivered and completed demo orders, idempotently', async () => {
   const s = await startTestServer({ env: { PAYMENTS: 'demo' } });
   try {
-    const customer = await s.user({ email: 'demo-customer@mise.test' });
-    await s.user({ email: 'demo-studio@mise.test', role: 'studio' });
+    const customer = await s.user({ email: 'demo-customer@blumodel.test' });
+    await s.user({ email: 'demo-studio@blumodel.test', role: 'studio' });
     const ctx = { db: s.db, config: s.config, services: s.services, now: s.ctx.now };
     const first = await seed(ctx);
     const second = await seed(ctx);

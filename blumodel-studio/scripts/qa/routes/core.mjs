@@ -282,8 +282,8 @@ export default [
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
       // Select the range through the store (exposed only with ?qa), as a click on it would.
-      await h.waitUntil(() => !!window.__miseQA?.store, 10_000, 'window.__miseQA.store');
-      await h.evaluate(() => window.__miseQA.store.getState().select('qa-range'));
+      await h.waitUntil(() => !!window.__blumodelQA?.store, 10_000, 'window.__blumodelQA.store');
+      await h.evaluate(() => window.__blumodelQA.store.getState().select('qa-range'));
       await h.waitFor('.sel-toolbar');
       await h.sleep(300);
       const t = await h.evaluate(() => {
@@ -416,7 +416,7 @@ export default [
       return { path: `#/pay/demo-plan/${c.body.ref}`, projectId: k.projectId };
     },
     waitFor: ['.demo-pay-card', '.demo-pay-actions .btn.primary'],
-    expectText: ['Checkout · Demo', 'Mise never sees or stores card details'],
+    expectText: ['Checkout · Demo', 'BluModel Studio never sees or stores card details'],
     check: async (h) => {
       // No card fields, ever: payments are demo or Stripe-hosted.
       const cardish = await h.evaluate(() => [...document.querySelectorAll('input')].filter((i) => /card|cc-|cvc|cvv|expir/i.test(`${i.name} ${i.id} ${i.autocomplete} ${i.placeholder}`)).length);
@@ -449,7 +449,7 @@ export default [
       as: 'anon',
       setup: async ({ api }) => ({ path: `#/p/${(await demoProduct(api)).id}` }),
     },
-    { name: 'screen-brand-page-demo', path: '#/b/mise-sample-co-demo', as: 'anon' },
+    { name: 'screen-brand-page-demo', path: '#/b/blumodel-sample-co-demo', as: 'anon' },
     { name: 'screen-brand-portal', path: '#/brand', as: 'brand' },
     { name: 'screen-orders', path: '#/orders', as: 'customer' },
     ...['moderation', 'brands', 'studio', 'revenue', 'billing', 'users'].map((tab) => ({ name: `admin-${tab}`, path: `#/admin/${tab}`, as: 'admin' })),

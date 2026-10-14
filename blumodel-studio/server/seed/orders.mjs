@@ -1,5 +1,5 @@
 // Package C (orders) demo seed (BUILD_PLAN §7 C-T6): custom-model orders for
-// demo-customer@mise.test in `paid`, `in_progress`, `delivered` (with a fixture deliverable
+// demo-customer@blumodel.test in `paid`, `in_progress`, `delivered` (with a fixture deliverable
 // product) and `completed`, all on the DEMO provider, so the studio queue, the order pages
 // and Admin → Revenue aren't empty.
 //
@@ -69,8 +69,8 @@ export async function seed(ctx) {
   const { db, config, services } = ctx;
   if (config?.PROD && !ctx.forceDemo) return { created: 0, skipped: 'production (pass --force-demo to the seed runner)' };
   const userBy = (email) => db.prepare('SELECT id, email, name, role FROM users WHERE email = ?').get(email) ?? null;
-  const customer = userBy('demo-customer@mise.test');
-  const studio = userBy('demo-studio@mise.test');
+  const customer = userBy('demo-customer@blumodel.test');
+  const studio = userBy('demo-studio@blumodel.test');
   if (!customer || !studio) return { created: 0, skipped: 'the demo customer and studio users do not exist yet (run the core seed first)' };
 
   const realNow = ctx.now ?? Date.now;

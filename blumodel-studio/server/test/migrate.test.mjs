@@ -1,8 +1,9 @@
 // Migrations: fresh DBs, DBs made by the old single-file server, and a temp copy of a
-// real mise.db all reach the latest step; a second run is a no-op.
+// real blumodel.db all reach the latest step; a second run is a no-op.
 //
-// The real-database case copies (never opens) the file named by MISE_UPGRADE_DB, and
-// server/data/mise.db when it exists, plus their -wal/-shm files, into a temp folder.
+// The real-database case copies (never opens) the file named by BLUMODEL_UPGRADE_DB, and
+// server/data/blumodel.db (or the pre-rename server/data/mise.db) when it exists, plus their
+// -wal/-shm files, into a temp folder.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -47,7 +48,7 @@ const OLD_DDL = `
   CREATE INDEX IF NOT EXISTS projects_user ON projects(user_id, updated_at DESC);
 `;
 
-const tempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'mise-migrate-'));
+const tempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-migrate-'));
 const rm = (dir) => fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 const tables = (db) => db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map((r) => r.name);
 
@@ -71,7 +72,7 @@ test('a database made by the old server upgrades with users and projects intact,
   try {
     const old = new DatabaseSync(file);
     old.exec(OLD_DDL);
-    old.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run('u-old', 'old@test.mise', 'Old Timer', await hashPassword('old password 1'), 1700000000000);
+    old.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run('u-old', 'old@test.blumodel', 'Old Timer', await hashPassword('old password 1'), 1700000000000);
     old.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
       '11111111-1111-4111-8111-111111111111',
       'u-old',
@@ -90,7 +91,7 @@ test('a database made by the old server upgrades with users and projects intact,
     assert.deepEqual(migrate(db), ALL_IDS);
     assert.deepEqual(migrate(db), []);
     const u = db.prepare('SELECT * FROM users').get();
-    assert.equal(u.email, 'old@test.mise');
+    assert.equal(u.email, 'old@test.blumodel');
     assert.equal(u.role, 'customer');
     const p = db.prepare('SELECT * FROM projects').get();
     assert.equal(p.revision, 7);
@@ -101,7 +102,7 @@ test('a database made by the old server upgrades with users and projects intact,
     const t = await startTestServer({ dbPath: file });
     try {
       const a = t.agent();
-      const login = await a.post('/api/auth/login', { email: 'old@test.mise', password: 'old password 1' });
+      const login = await a.post('/api/auth/login', { email: 'old@test.blumodel', password: 'old password 1' });
       assert.equal(login.status, 200);
       assert.equal(login.body.user.role, 'customer');
       const list = await a.get('/api/projects');
@@ -117,13 +118,14 @@ test('a database made by the old server upgrades with users and projects intact,
   }
 });
 
-const realCandidates = [process.env.MISE_UPGRADE_DB, path.join(HERE, '..', 'data', 'mise.db')].filter((p, i, a) => p && fs.existsSync(p) && a.indexOf(p) === i);
+// mise.db: a checkout's database from before the rename to BluModel Studio (config.mjs still uses it).
+const realCandidates = [process.env.BLUMODEL_UPGRADE_DB, path.join(HERE, '..', 'data', 'blumodel.db'), path.join(HERE, '..', 'data', 'mise.db')].filter((p, i, a) => p && fs.existsSync(p) && a.indexOf(p) === i);
 
-test('temp copies of real mise.db files upgrade cleanly', { skip: realCandidates.length ? false : 'no real mise.db to copy (set MISE_UPGRADE_DB)' }, async () => {
+test('temp copies of real blumodel.db files upgrade cleanly', { skip: realCandidates.length ? false : 'no real blumodel.db to copy (set BLUMODEL_UPGRADE_DB)' }, async () => {
   for (const src of realCandidates) {
     const dir = tempDir();
     try {
-      const dest = path.join(dir, 'mise.db');
+      const dest = path.join(dir, 'blumodel.db');
       // Copy the database and its WAL/SHM side files; the original is never opened.
       for (const suffix of ['', '-wal', '-shm']) if (fs.existsSync(src + suffix)) fs.copyFileSync(src + suffix, dest + suffix);
       const db = openDb(dest);

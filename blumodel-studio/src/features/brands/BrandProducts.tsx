@@ -143,7 +143,7 @@ function ProductRow({ entry: e, pageStatus, readOnly, onChange }: { entry: Produ
         </span>
         {e.listing?.reviewNote && (e.listing.status === 'rejected' || e.listing.status === 'submitted') && (
           <p className="brand-note">
-            <b>Mise:</b> {e.listing.reviewNote}
+            <b>BluModel Studio:</b> {e.listing.reviewNote}
           </p>
         )}
         {!st.on && !e.readiness.ready && (

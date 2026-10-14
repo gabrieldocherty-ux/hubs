@@ -1,5 +1,5 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { api } from '../../lib/api';
 import { VISUALIZER_DISCLAIMER } from '../../lib/csv';
 import { useSession } from '../../store/useSession';
@@ -10,9 +10,9 @@ export function MarketingHeader({ active }: { active?: 'pricing' | 'home' }) {
   const signedIn = useSession((s) => s.status === 'signedIn');
   return (
     <header className="mk-bar">
-      <a className="brand" href={signedIn ? '#/welcome' : '#/'} aria-label="Mise home">
+      <a className="brand" href={signedIn ? '#/welcome' : '#/'} aria-label="BluModel Studio home">
         <Logo />
-        <span className="wordmark">Mise</span>
+        <Wordmark />
       </a>
       <nav className="mk-nav" aria-label="Site">
         <a href="#/welcome" className={active === 'home' ? 'on' : ''} onClick={(e) => scrollIfHere(e, 'how')}>
@@ -78,7 +78,7 @@ export function MarketingFooter() {
         <div className="mk-foot-brand">
           <span className="brand">
             <Logo />
-            <span className="wordmark">Mise</span>
+            <Wordmark />
           </span>
           <p>Kitchen design for the kitchen you actually have.</p>
         </div>

@@ -10,7 +10,7 @@
 // productIds }). Every seed must be idempotent: running twice leaves the same state.
 //
 // DB_PATH is required on the command line, so a bare `npm run seed` can never write demo
-// accounts into the default server/data/mise.db by accident.
+// accounts into the default server/data/blumodel.db by accident.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -71,7 +71,7 @@ async function main(argv = process.argv, env = process.env) {
     return 0;
   }
   if (!env.DB_PATH) {
-    console.error('Set DB_PATH to the database to seed (e.g. DB_PATH=./tmp/mise.db npm run seed).');
+    console.error('Set DB_PATH to the database to seed (e.g. DB_PATH=./tmp/blumodel.db npm run seed).');
     return 2;
   }
   const config = loadConfig(env, argv);

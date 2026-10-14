@@ -2,7 +2,7 @@
 // or reorder an applied one. A step may reference only foundation tables and its own.
 //
 //   contractor_profiles  the company: branding, default markup, tax
-//   carried_brands       which public brands (and Mise's built-ins) they carry, their
+//   carried_brands       which public brands (and BluModel Studio's built-ins) they carry, their
 //                        discount off list and markup; also per-line ('line:<name>') and
 //                        own-catalog ('own') markups
 //   price_book           per-product cost (one, or per width) and markup override

@@ -52,7 +52,7 @@ const FACES = [
  *   `transform` puts the mesh under a parent node with that transform.
  *   `json` is merged over the generated glTF JSON (or maps it, when a function).
  */
-export function makeGlb({ w = 0.762, h = 0.914, d = 0.66, materials = ['mise_finish', 'body'], image, imageMime = 'image/png', transform, json } = {}) {
+export function makeGlb({ w = 0.762, h = 0.914, d = 0.66, materials = ['blumodel_finish', 'body'], image, imageMime = 'image/png', transform, json } = {}) {
   const mats = materials.length ? materials : ['material'];
   const pos = [];
   const nrm = [];
@@ -96,7 +96,7 @@ export function makeGlb({ w = 0.762, h = 0.914, d = 0.66, materials = ['mise_fin
     return { attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 }, indices: accessors.length - 1, material: k };
   });
   const gltf = {
-    asset: { version: '2.0', generator: 'mise synth' },
+    asset: { version: '2.0', generator: 'blumodel synth' },
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: transform ? [{ ...transform, children: [1] }, { mesh: 0, name: 'box' }] : [{ mesh: 0, name: 'box' }],

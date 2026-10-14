@@ -425,7 +425,7 @@ export default function ProductForm({ id }: { id: string | null }) {
             <legend>Finishes</legend>
             {isCabinet && (
               <label className="pro-check">
-                <input type="checkbox" checked={useKitchenColours} onChange={(e) => setUseKitchenColours(e.target.checked)} /> Use the kitchen’s cabinet colour (Mise’s palette) instead of my own finishes
+                <input type="checkbox" checked={useKitchenColours} onChange={(e) => setUseKitchenColours(e.target.checked)} /> Use the kitchen’s cabinet colour (BluModel Studio’s palette) instead of my own finishes
               </label>
             )}
             {!useKitchenColours && (
@@ -484,7 +484,7 @@ export default function ProductForm({ id }: { id: string | null }) {
                 </button>
               )}
               <input ref={modelRef} type="file" accept=".glb,model/gltf-binary" hidden onChange={(e) => (e.target.files?.[0] && void pickModel(e.target.files[0]), (e.target.value = ''))} />
-              <p className="fine">Optional: without one, Mise draws the product from its size, door style and finish.</p>
+              <p className="fine">Optional: without one, BluModel Studio draws the product from its size, door style and finish.</p>
             </div>
             {modelMeta && (
               <div className="pro-glb-report" role="status" aria-label="Model check">

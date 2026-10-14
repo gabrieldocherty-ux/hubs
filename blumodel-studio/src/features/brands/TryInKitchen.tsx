@@ -60,7 +60,7 @@ export default function TryInKitchen({ product, onClose }: { product: Product; o
           </button>
         </header>
         <p className="dialog-copy">
-          Mise places the <b>{product.name}</b> in the kitchen you pick, at its real size. Drag it into place on the plan.
+          BluModel Studio places the <b>{product.name}</b> in the kitchen you pick, at its real size. Drag it into place on the plan.
         </p>
         {user ? (
           kitchens === null ? (

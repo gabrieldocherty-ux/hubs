@@ -12,7 +12,7 @@ import { createApp } from '../app.mjs';
 import { ROUTE_MODULES, ROUTE_MODULE_NAMES } from '../routes/index.mjs';
 import { startTestServer, silentLog } from './helpers.mjs';
 
-const baseConfig = () => loadConfig({ DB_PATH: ':memory:', UPLOAD_DIR: path.join(os.tmpdir(), 'mise-router-test-uploads'), RATE_LIMITS: 'off' }, []);
+const baseConfig = () => loadConfig({ DB_PATH: ':memory:', UPLOAD_DIR: path.join(os.tmpdir(), 'blumodel-router-test-uploads'), RATE_LIMITS: 'off' }, []);
 
 function appWith(extra) {
   const db = openDb(':memory:');
@@ -83,7 +83,7 @@ test('auth levels: none, optional, user, studio, admin', async () => {
     const get = (path, cookie) => fetch(p.url + path, { headers: cookie ? { cookie } : {} });
     // Create users in the probe server's own DB by signing up there.
     const signup = async (email) => {
-      const r = await fetch(p.url + '/api/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json', 'x-mise': '1' }, body: JSON.stringify({ name: 'P', email, password: 'password123' }) });
+      const r = await fetch(p.url + '/api/auth/signup', { method: 'POST', headers: { 'content-type': 'application/json', 'x-blumodel': '1' }, body: JSON.stringify({ name: 'P', email, password: 'password123' }) });
       assert.equal(r.status, 201);
       return { cookie: r.headers.getSetCookie()[0].split(';')[0], id: (await r.json()).user.id };
     };
@@ -123,15 +123,15 @@ test('static segments win over params; params reject odd characters', async () =
   }
 });
 
-test('CSRF gate: writes need X-Mise: 1 unless the route opts out', async () => {
+test('CSRF gate: writes need X-BluModel: 1 unless the route opts out', async () => {
   const p = await probeServer();
   try {
     const post = (path, headers, body = '{"a":1}') => fetch(p.url + path, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body });
     const missing = await post('/api/probe/write', {});
     assert.equal(missing.status, 403);
     assert.deepEqual(await missing.json(), { error: 'Missing request header.' });
-    assert.equal((await post('/api/probe/write', { 'x-mise': '0' })).status, 403);
-    const ok = await post('/api/probe/write', { 'x-mise': '1' });
+    assert.equal((await post('/api/probe/write', { 'x-blumodel': '0' })).status, 403);
+    const ok = await post('/api/probe/write', { 'x-blumodel': '1' });
     assert.equal(ok.status, 200);
     assert.deepEqual(await ok.json(), { got: { a: 1 } });
     const nocsrf = await post('/api/probe/nocsrf', {}, 'raw bytes');
@@ -150,7 +150,7 @@ test('CSRF gate: writes need X-Mise: 1 unless the route opts out', async () => {
 test('a handler returning undefined is a 204 with no body', async () => {
   const p = await probeServer();
   try {
-    const r = await fetch(p.url + '/api/probe/empty', { method: 'POST', headers: { 'x-mise': '1' } });
+    const r = await fetch(p.url + '/api/probe/empty', { method: 'POST', headers: { 'x-blumodel': '1' } });
     assert.equal(r.status, 204);
     assert.equal(await r.text(), '');
   } finally {

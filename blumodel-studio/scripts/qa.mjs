@@ -1,4 +1,4 @@
-// Headless QA for Mise (BUILD_PLAN §3.7, F-T12). Zero dependencies: the built app, Node's
+// Headless QA for BluModel Studio (BUILD_PLAN §3.7, F-T12). Zero dependencies: the built app, Node's
 // built-in WebSocket + node:sqlite, and the installed Edge driven over CDP (scripts/qa-shot.mjs).
 //
 //   npm run build
@@ -63,12 +63,12 @@ const { DatabaseSync } = await (async () => {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ROUTES_DIR = path.join(ROOT, 'scripts', 'qa', 'routes');
 const QA_DIR = path.join(ROOT, '.qa');
-const COOKIE = 'mise_session';
+const COOKIE = 'blumodel_session';
 
 export const ROLES = Object.freeze(['anon', 'customer', 'contractor', 'brand', 'studio', 'admin', 'fresh']);
 /** Seeded by server/seed/core.mjs. */
-const DEMO_EMAIL = { customer: 'demo-customer@mise.test', brand: 'demo-brand@mise.test', studio: 'demo-studio@mise.test', admin: 'demo-admin@mise.test' };
-const CONTRACTOR_EMAIL = 'qa-contractor@mise.test';
+const DEMO_EMAIL = { customer: 'demo-customer@blumodel.test', brand: 'demo-brand@blumodel.test', studio: 'demo-studio@blumodel.test', admin: 'demo-admin@blumodel.test' };
+const CONTRACTOR_EMAIL = 'qa-contractor@blumodel.test';
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,80}$/;
 
 /**
@@ -206,7 +206,7 @@ class Agent {
     const write = method !== 'GET' && method !== 'HEAD';
     let payload;
     if (write) {
-      h['X-Mise'] = '1';
+      h['X-BluModel'] = '1';
       if (raw !== undefined) {
         payload = raw;
         h['Content-Type'] = contentType ?? 'application/octet-stream';
@@ -347,7 +347,7 @@ class Users {
   /** A brand-new free customer. */
   async fresh() {
     const n = ++this.freshCount;
-    const email = `qa-fresh-${n}-${crypto.randomBytes(3).toString('hex')}@mise.test`;
+    const email = `qa-fresh-${n}-${crypto.randomBytes(3).toString('hex')}@blumodel.test`;
     await this.createUser(email, `Fresh Customer ${n}`);
     return this.login(email, 'fresh');
   }
@@ -404,7 +404,11 @@ function serverEnv(extra) {
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
     'ANTHROPIC_API_KEY',
-    'MISE_LLM_MODEL',
+    'BLUMODEL_LLM_MODEL',
+    'MISE_LLM_MODEL', // the deprecated name, still read by the server
+    // A private settings file would hand the QA server real keys.
+    'BLUMODEL_ENV_FILE',
+    'MISE_ENV_FILE',
     'PUBLIC_URL',
     'TRUST_PROXY',
     'RATE_LIMITS',
@@ -827,13 +831,13 @@ export async function main(argv = process.argv.slice(2)) {
   if (!fs.existsSync(path.join(dist, 'index.html'))) throw new Error(`No built app at ${dist} (index.html missing). Run npm run build${opts.dist ? ` or vite build --outDir ${opts.dist}` : ''} first.`);
   if (!(await portFree(port))) throw new Error(`Port ${port} is already in use. QA starts its own server; stop whatever you started there (by PID), or pick another port.`);
 
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `mise-qa-${opts.pkg}-`));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `blumodel-qa-${opts.pkg}-`));
   const logFile = path.join(tmp, 'server.log');
   const password = crypto.randomBytes(18).toString('base64url');
   const env = serverEnv({
     PORT: String(port),
     HOST: '127.0.0.1',
-    DB_PATH: path.join(tmp, 'mise.db'),
+    DB_PATH: path.join(tmp, 'blumodel.db'),
     UPLOAD_DIR: path.join(tmp, 'uploads'),
     PAYMENTS: 'demo',
     DEMO_PAYMENTS: '1',

@@ -6,7 +6,7 @@ import { useSession } from '../../store/useSession';
 import { loadLocalDraft, saveLocalDraft } from '../../store/useDesignStore';
 import { AccountMenu } from '../../components/AccountMenu';
 import { Dialog } from '../../components/Dialog';
-import { Check, Logo } from '../../components/Icons';
+import { Check, Logo, Wordmark } from '../../components/Icons';
 import { buildFromPhotoModel, defaultPhotoModel, photoModelFromDoc, validatePhotoModel, type PhotoModel } from '../../lib/generate/photoModel';
 import { uncheckedKeys, type Units } from '../../lib/generate/edit';
 import { generateApi } from './api';
@@ -41,7 +41,7 @@ interface Notice {
 }
 
 const STEPS = ['Add photos', 'Check the space', 'Build'] as const;
-const UNITS_KEY = 'mise-units';
+const UNITS_KEY = 'blumodel-units';
 
 function loadUnits(): Units {
   try {
@@ -75,7 +75,7 @@ function useLlm(): boolean | null {
 const withUrl = (p: StoredPhoto): Photo => ({ ...p, url: URL.createObjectURL(p.blob) });
 const errText = (err: unknown, fallback: string) => (err instanceof ApiError && err.status !== 0 && err.message ? err.message : fallback);
 
-/** "Start from a photo" (`#/generate`): photos of an existing kitchen → a Mise kitchen to redesign. */
+/** "Start from a photo" (`#/generate`): photos of an existing kitchen → a BluModel Studio kitchen to redesign. */
 export default function GenerateScreen({ from }: { q?: string; from?: string }) {
   const status = useSession((s) => s.status);
   const signedIn = status === 'signedIn';
@@ -186,8 +186,8 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
   // QA hook (only with ?qa in the page URL).
   useEffect(() => {
     if (!location.search.includes('qa')) return;
-    const w = window as unknown as { __miseQa?: Record<string, unknown> };
-    w.__miseQa = { ...(w.__miseQa ?? {}), generate: { model: () => modelRef.current, photos: () => photosRef.current.length } };
+    const w = window as unknown as { __blumodelQa?: Record<string, unknown> };
+    w.__blumodelQa = { ...(w.__blumodelQa ?? {}), generate: { model: () => modelRef.current, photos: () => photosRef.current.length } };
   }, []);
 
   const built = useMemo(() => buildFromPhotoModel(model), [model]);
@@ -203,7 +203,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
   const addFiles = async (files: File[]) => {
     setPhotoError(null);
     const room = MAX_PHOTOS - photosRef.current.length;
-    if (files.length > room) setPhotoError(`Mise uses up to ${MAX_PHOTOS} photos, so ${files.length - room === 1 ? 'one was' : `${files.length - room} were`} left out.`);
+    if (files.length > room) setPhotoError(`BluModel Studio uses up to ${MAX_PHOTOS} photos, so ${files.length - room === 1 ? 'one was' : `${files.length - room} were`} left out.`);
     setPhase({ kind: 'preparing' });
     const added: Photo[] = [];
     for (const f of files.slice(0, Math.max(0, room))) {
@@ -255,7 +255,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
     try {
       const res = await generateApi.analyze(ids, ac.signal);
       const checked = validatePhotoModel(res.model);
-      if (!checked) throw new ApiError(502, 'The photo analysis came back in a form Mise can’t read. Fill in the space by hand.');
+      if (!checked) throw new ApiError(502, 'The photo analysis came back in a form BluModel Studio can’t read. Fill in the space by hand.');
       setModel(checked.model);
       setSource('analysis');
       setAnalysedIds(ids.join(','));
@@ -376,7 +376,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
       <header className="home-bar gen-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <ol className="steps" aria-label="Steps">
           {STEPS.map((s, i) => {
@@ -397,7 +397,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
       {step === 'photos' ? (
         <main className="gen-main gen-main--photos">
           <h1>Start from a photo of your kitchen.</h1>
-          <p className="gen-sub">Add photos of the kitchen as it is now. Mise models the room — its walls, windows and doors, cabinets, appliances, island and look — so you can redesign it.</p>
+          <p className="gen-sub">Add photos of the kitchen as it is now. BluModel Studio models the room — its walls, windows and doors, cabinets, appliances, island and look — so you can redesign it.</p>
           {restored && (
             <p className="gen-restored" role="status">
               Picked up where you left off.{' '}
@@ -410,7 +410,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
           {!signedIn && llm && (
             <div className="gen-account">
               <p>
-                <b>Want Mise to fill in the room for you?</b> With a free account your photos are read for you. Without one, they stay on this device as a reference while you enter the space yourself.
+                <b>Want BluModel Studio to fill in the room for you?</b> With a free account your photos are read for you. Without one, they stay on this device as a reference while you enter the space yourself.
               </p>
               <a className="btn" href={`#/signup?next=${nextHere}`}>
                 Create a free account
@@ -476,7 +476,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
             )}
             {notes.length > 0 && (
               <details className="gen-notes">
-                <summary>{notes.length === 1 ? 'One thing Mise adjusted' : `${notes.length} things Mise adjusted`} to build it with real cabinet sizes</summary>
+                <summary>{notes.length === 1 ? 'One thing BluModel Studio adjusted' : `${notes.length} things BluModel Studio adjusted`} to build it with real cabinet sizes</summary>
                 <ul>
                   {notes.map((n) => (
                     <li key={n}>{n}</li>
@@ -540,7 +540,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
 
       {confirmReplace && (
         <Dialog title="Replace the kitchen on this device?" onClose={() => setConfirmReplace(false)}>
-          <p className="gen-dialog-text">Without an account, Mise keeps one kitchen in this browser. Building this one replaces it. Sign in to keep both.</p>
+          <p className="gen-dialog-text">Without an account, BluModel Studio keeps one kitchen in this browser. Building this one replaces it. Sign in to keep both.</p>
           <div className="modal-actions">
             <a className="btn" href={`#/signin?next=${nextHere}`}>
               Sign in
@@ -562,7 +562,7 @@ function introFor({ source, signedIn, llm, photos, checks }: { source: 'analysis
       text: checks ? `Filled in from your photos. Compare it with them: the ${checks === 1 ? 'one thing' : `${checks} things`} marked “Check this” were hard to see.` : 'Filled in from your photos. Compare it with them, then build.',
     };
   if (!photos) return { tone: 'warn', text: 'No photos, so this starts from a typical L-shaped kitchen. Match it to your room; you can add photos any time.' };
-  if (signedIn && llm === false) return { tone: 'warn', text: 'Photo analysis isn’t switched on for this Mise yet, so this starts from a typical L-shaped kitchen. Match it to your photos.' };
+  if (signedIn && llm === false) return { tone: 'warn', text: 'Photo analysis isn’t switched on for this server yet, so this starts from a typical L-shaped kitchen. Match it to your photos.' };
   if (!signedIn) return { tone: 'warn', text: 'This starts from a typical L-shaped kitchen. Match it to your photos, which stay on this device.' };
   return { tone: 'warn', text: 'This starts from a typical L-shaped kitchen. Match it to your photos.' };
 }

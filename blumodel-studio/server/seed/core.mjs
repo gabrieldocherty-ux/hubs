@@ -2,10 +2,10 @@
 // published 3D products. Idempotent: run it any number of times and the end state is the same.
 //
 // Demo accounts (all on the reserved .test domain, so none can be a real address):
-//   demo-customer@mise.test   a homeowner
-//   demo-brand@mise.test      owner of the demo brand "Mise Sample Co. (Demo)"
-//   demo-studio@mise.test     role studio
-//   demo-admin@mise.test      role admin
+//   demo-customer@blumodel.test   a homeowner
+//   demo-brand@blumodel.test      owner of the demo brand "BluModel Sample Co. (Demo)"
+//   demo-studio@blumodel.test     role studio
+//   demo-admin@blumodel.test      role admin
 //
 // Their password is SEED_PASSWORD, or one generated on the first run and written to
 // <dirname DB_PATH>/seed-credentials.txt (reused on later runs). It is never printed.
@@ -18,18 +18,18 @@ import { makeGlb, makePng } from '../lib/synth.mjs';
 import { randomId } from '../lib/ids.mjs';
 
 export const DEMO_USERS = Object.freeze([
-  { key: 'customer', email: 'demo-customer@mise.test', name: 'Dana Demo', role: 'customer' },
-  { key: 'brand', email: 'demo-brand@mise.test', name: 'Sam Sample', role: 'customer' },
-  { key: 'studio', email: 'demo-studio@mise.test', name: 'Studio Demo', role: 'studio' },
-  { key: 'admin', email: 'demo-admin@mise.test', name: 'Admin Demo', role: 'admin' },
+  { key: 'customer', email: 'demo-customer@blumodel.test', name: 'Dana Demo', role: 'customer' },
+  { key: 'brand', email: 'demo-brand@blumodel.test', name: 'Sam Sample', role: 'customer' },
+  { key: 'studio', email: 'demo-studio@blumodel.test', name: 'Studio Demo', role: 'studio' },
+  { key: 'admin', email: 'demo-admin@blumodel.test', name: 'Admin Demo', role: 'admin' },
 ]);
 
 /** A made-up brand. Seed and demo data use fictional brands only. */
 export const DEMO_BRAND = Object.freeze({
-  slug: 'mise-sample-co-demo',
-  name: 'Mise Sample Co. (Demo)',
-  tagline: 'Sample products for trying Mise. Not a real company.',
-  description: 'A fictional brand that ships with Mise so the catalog, product pages and 3D models can be tried without real brand data.',
+  slug: 'blumodel-sample-co-demo',
+  name: 'BluModel Sample Co. (Demo)',
+  tagline: 'Sample products for trying BluModel Studio. Not a real company.',
+  description: 'A fictional brand that ships with BluModel Studio so the catalog, product pages and 3D models can be tried without real brand data.',
 });
 
 export const CREDENTIALS_FILE = 'seed-credentials.txt';
@@ -61,7 +61,7 @@ export function demoPassword(config) {
   const password = crypto.randomBytes(18).toString('base64url');
   if (file) {
     const lines = [
-      '# Mise demo accounts (server/seed/core.mjs). Local demo data only; never commit this file.',
+      '# BluModel Studio demo accounts (server/seed/core.mjs). Local demo data only; never commit this file.',
       ...DEMO_USERS.map((u) => `# ${u.email} (${u.key === 'brand' ? 'owner of the demo brand' : u.role})`),
       `password=${password}`,
       '',
@@ -75,7 +75,7 @@ export function demoPassword(config) {
 /** The two demo products: a 30″ range and a dome pendant, each with a GLB at real size. */
 const DEMO_PRODUCTS = [
   {
-    glb: { w: 0.762, h: 0.914, d: 0.711, materials: ['mise_finish', 'body'] },
+    glb: { w: 0.762, h: 0.914, d: 0.711, materials: ['blumodel_finish', 'body'] },
     thumb: { w: 96, h: 96, rgba: (x, y) => (y < 20 ? [60, 62, 66, 255] : x % 24 < 2 || y % 24 < 2 ? [150, 152, 156, 255] : [196, 198, 202, 255]) },
     spec: {
       kind: 'range',
@@ -96,7 +96,7 @@ const DEMO_PRODUCTS = [
     },
   },
   {
-    glb: { w: 0.356, h: 0.254, d: 0.356, materials: ['mise_finish'] },
+    glb: { w: 0.356, h: 0.254, d: 0.356, materials: ['blumodel_finish'] },
     thumb: { w: 96, h: 96, rgba: (x, y) => ((x - 48) ** 2 + (y - 56) ** 2 < 900 && y > 40 ? [184, 140, 74, 255] : [243, 238, 229, 255]) },
     spec: {
       kind: 'pendant',
@@ -157,7 +157,7 @@ function ensureBrand({ db, now, services }, ownerId) {
     const t = now();
     const logo = services.files.saveBuffer(
       makePng({ w: 128, h: 128, rgba: (x, y) => ((x - 64) ** 2 + (y - 64) ** 2 < 2600 ? [194, 84, 45, 255] : [251, 249, 244, 255]) }),
-      { kind: 'image', visibility: 'public', ownerUserId: ownerId, originalName: 'mise-sample-co-logo.png' },
+      { kind: 'image', visibility: 'public', ownerUserId: ownerId, originalName: 'blumodel-sample-co-logo.png' },
     );
     const id = randomId('b_');
     db.prepare(

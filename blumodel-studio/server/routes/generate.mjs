@@ -70,7 +70,7 @@ export default function routes(ctx) {
           images.push({ ext: file.ext, bytes: fs.readFileSync(files.blobPath(file.sha256, file.ext)) });
         }
         try {
-          const { model, warnings } = await analyzePhotos({ fetch: ctx.fetch, apiKey: config.ANTHROPIC_API_KEY, model: config.MISE_LLM_MODEL, images, log: ctx.log });
+          const { model, warnings } = await analyzePhotos({ fetch: ctx.fetch, apiKey: config.ANTHROPIC_API_KEY, model: config.BLUMODEL_LLM_MODEL, images, log: ctx.log });
           return { model, warnings };
         } catch (err) {
           if (err instanceof AnalysisError) throw new HttpError(err.status, err.message);

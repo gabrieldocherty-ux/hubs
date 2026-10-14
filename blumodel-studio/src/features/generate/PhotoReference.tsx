@@ -8,7 +8,7 @@ import { Lightbox, PhotoCarousel, type ViewerPhoto } from './PhotoViewer';
 import { CameraIcon } from './icons';
 import './generate.css';
 
-const POS_KEY = 'mise-photo-ref';
+const POS_KEY = 'blumodel-photo-ref';
 
 interface Saved {
   open: boolean;

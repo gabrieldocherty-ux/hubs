@@ -154,7 +154,7 @@ export async function runRoute({ req, res, url, route, params, ctx, deps }) {
 
   // 1. CSRF: writes must carry a custom header. Browsers can't add one cross-site
   //    without a CORS preflight this server never approves.
-  if (route.csrf && req.headers['x-mise'] !== '1') throw new HttpError(403, 'Missing request header.');
+  if (route.csrf && req.headers['x-blumodel'] !== '1') throw new HttpError(403, 'Missing request header.');
 
   // 2. Auth level.
   if (route.auth !== 'none') rc.user = deps.currentUser(req, res);

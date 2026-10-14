@@ -30,6 +30,9 @@ const M_TO_IN = 39.3701;
 const MIME = { glb: 'model/gltf-binary', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp' };
 export const mimeFor = (ext) => MIME[ext] || 'application/octet-stream';
 
+/** Material names the viewer re-tints (src/components/three/fit.ts `slotOf`). */
+const SLOT_PREFIX = /^(?:blumodel|mise)_/i;
+
 class Rejection extends Error {}
 const reject = (message) => {
   throw new Rejection(message);
@@ -38,6 +41,7 @@ const reject = (message) => {
 // ─── 4×4 column-major matrices (glTF convention) ────────────────────────────
 
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
 
 function multiply(a, b) {
   const out = new Array(16).fill(0);
@@ -100,7 +104,7 @@ export function inspectGlb(buf) {
   const required = Array.isArray(json.extensionsRequired) ? json.extensionsRequired.map(String) : [];
   const warnings = [];
   if (used.includes('KHR_texture_basisu') || required.includes('KHR_texture_basisu')) reject('KTX2 / Basis textures (KHR_texture_basisu) aren’t supported yet. Export PNG, JPEG or WebP textures.');
-  for (const e of required) if (!GLB_EXTENSIONS.has(e)) reject(`The model requires the extension ${e}, which Mise doesn’t support.`);
+  for (const e of required) if (!GLB_EXTENSIONS.has(e)) reject(`The model requires the extension ${e}, which BluModel Studio doesn’t support.`);
   for (const e of used) if (!GLB_EXTENSIONS.has(e) && !required.includes(e)) warnings.push(`The extension ${e} will be ignored.`);
   for (const [i, im] of (json.images || []).entries()) if (im.mimeType === 'image/ktx2') reject(`images[${i}] is a KTX2 texture, which isn’t supported yet.`);
 
@@ -150,7 +154,8 @@ export function inspectGlb(buf) {
   const bboxIn = { w: round(size[0] * M_TO_IN, 2), h: round(size[1] * M_TO_IN, 2), d: round(size[2] * M_TO_IN, 2) };
 
   const materials = (json.materials || []).map((m, i) => (typeof m?.name === 'string' && m.name ? m.name : `material_${i}`));
-  const slots = [...new Set(materials.filter((n) => n.startsWith('mise_')))];
+  // Finish slots: `blumodel_*`, or `mise_*` from models made before the rename (the viewer reads both).
+  const slots = [...new Set(materials.filter((n) => SLOT_PREFIX.test(n)))];
 
   const images = (json.images || []).map((im) => {
     const view = Number.isInteger(im.bufferView) ? json.bufferViews?.[im.bufferView] : null;
@@ -171,7 +176,7 @@ export function inspectGlb(buf) {
   return { bboxM, bboxIn, triangles, materials, slots, images, extensions: used, warnings };
 }
 
-/** Image metadata `{ width, height }` with Mise's limits applied. */
+/** Image metadata `{ width, height }` with BluModel Studio's limits applied. */
 export function inspectImage(sniff) {
   if (!(sniff.width > 0 && sniff.height > 0)) reject('That image has no size.');
   if (sniff.width > MAX_IMAGE_SIDE || sniff.height > MAX_IMAGE_SIDE) reject(`Images can be at most ${MAX_IMAGE_SIDE}×${MAX_IMAGE_SIDE} pixels.`);

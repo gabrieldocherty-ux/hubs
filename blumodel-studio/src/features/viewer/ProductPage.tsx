@@ -25,7 +25,7 @@ import { Dialog } from '../../components/Dialog';
 import { ProductArt } from '../../components/ProductArt';
 import { Toasts } from '../../components/Toasts';
 import { QuoteButton } from '../brands';
-import { Download, Logo, Plus } from '../../components/Icons';
+import { Download, Logo, Wordmark, Plus } from '../../components/Icons';
 import { dimText, pickWidth, productHash, widthChoices } from './stageMath';
 import type { StageStill } from './ProductStage';
 import './viewer.css';
@@ -63,7 +63,7 @@ function useProduct(id: string): [Load, () => void] {
           setLoad((cur) =>
             cur.status === 'ready'
               ? cur
-              : { status: 'error', message: isUnreachable(e) ? 'Mise can’t reach its server right now. Check your connection and try again.' : 'This product didn’t load. Try again.' },
+              : { status: 'error', message: isUnreachable(e) ? 'BluModel Studio can’t reach its server right now. Check your connection and try again.' : 'This product didn’t load. Try again.' },
           );
       });
     return () => {
@@ -87,7 +87,7 @@ function PageBar() {
     <header className="home-bar">
       <a className="brand" href="#/">
         <Logo />
-        <span className="wordmark">Mise</span>
+        <Wordmark />
       </a>
       {user ? (
         <AccountMenu />
@@ -255,7 +255,7 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
 
   useEffect(() => {
     const prev = document.title;
-    document.title = `${product.name} · Mise`;
+    document.title = `${product.name} · BluModel Studio`;
     return () => {
       document.title = prev;
     };
@@ -447,7 +447,7 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
             </tr>
             <tr>
               <th scope="row">3D model</th>
-              <td>{product.model?.url ? `From ${product.brand}` : 'Drawn by Mise'}</td>
+              <td>{product.model?.url ? `From ${product.brand}` : 'Drawn by BluModel Studio'}</td>
             </tr>
             {product.specSheetUrl && (
               <tr>
@@ -490,7 +490,7 @@ export default function ProductPage({ id, finish }: { id: string; finish?: strin
                 </a>
               )}
               <a className="btn" href="#/">
-                Back to Mise
+                Back to BluModel Studio
               </a>
             </div>
           </div>

@@ -16,7 +16,7 @@ export interface BrandMembership {
   name: string;
   status: BrandStatus;
   memberRole: 'owner' | 'editor';
-  /** `contractor`: the brand page of a Contractor account. `partner`: a curated brand run by Mise admins. */
+  /** `contractor`: the brand page of a Contractor account. `partner`: a curated brand run by BluModel Studio admins. */
   kind?: 'contractor' | 'partner';
 }
 
@@ -207,7 +207,7 @@ export interface GlbMeta {
   bboxIn: { w: number; h: number; d: number };
   triangles: number;
   materials: string[];
-  /** Material names that start with `mise_` (finish, cabinet, hardware, counter). */
+  /** Material names that start with `blumodel_` (finish, cabinet, hardware, counter), or the legacy `mise_`. */
   slots: string[];
   images: { mime: string; width: number; height: number }[];
   extensions: string[];

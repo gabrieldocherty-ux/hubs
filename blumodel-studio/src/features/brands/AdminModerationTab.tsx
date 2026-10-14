@@ -262,7 +262,7 @@ function GlbPanel({ report }: { report: GlbReport | null }) {
           <Check width={13} height={13} /> {(report.sizeBytes / 1_048_576).toFixed(2)} MB · {report.triangles?.toLocaleString() ?? '?'} triangles
         </li>
         <li className={report.slots.length ? '' : 'warn'}>
-          {report.slots.length ? <Check width={13} height={13} /> : <Alert width={13} height={13} />} {report.slots.length ? `Finish slots: ${report.slots.join(', ')}` : 'No mise_* finish slot: finishes won’t recolour it'}
+          {report.slots.length ? <Check width={13} height={13} /> : <Alert width={13} height={13} />} {report.slots.length ? `Finish slots: ${report.slots.join(', ')}` : 'No blumodel_* finish slot: finishes won’t recolour it'}
         </li>
         {(['w', 'h', 'd'] as const).map((k) => {
           const m = report.mismatches.find((x) => x.axis === k);

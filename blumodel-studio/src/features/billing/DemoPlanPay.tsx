@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { navigateHash } from '../../lib/router';
 import { useSession } from '../../store/useSession';
@@ -47,7 +47,7 @@ export default function DemoPlanPay({ checkoutRef }: { checkoutRef: string }) {
     ? ''
     : checkout.kind === 'kitchen_unlock'
       ? `Kitchen unlock: “${checkout.projectName || 'your kitchen'}”`
-      : `Mise ${checkout.plan === 'contractor' ? 'Contractor' : 'Unlimited'}, monthly`;
+      : `BluModel Studio ${checkout.plan === 'contractor' ? 'Contractor' : 'Unlimited'}, monthly`;
 
   return (
     <div className="demo-pay">
@@ -57,7 +57,7 @@ export default function DemoPlanPay({ checkoutRef }: { checkoutRef: string }) {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
       </header>
       <main className="demo-pay-main">
@@ -107,7 +107,7 @@ export default function DemoPlanPay({ checkoutRef }: { checkoutRef: string }) {
               </>
             )}
             {error && <div className="auth-error">{error}</div>}
-            <p className="fine">With real payments, this is Stripe’s secure checkout page. Mise never sees or stores card details.</p>
+            <p className="fine">With real payments, this is Stripe’s secure checkout page. BluModel Studio never sees or stores card details.</p>
           </section>
         )}
       </main>

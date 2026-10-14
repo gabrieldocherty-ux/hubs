@@ -10,7 +10,7 @@ import { verifyStripeSignature } from '../lib/validators.mjs';
 import { quote, addBusinessDays } from '../payments/tiers.mjs';
 
 const SECRET = 'whsec_orders_test';
-const STRIPE_ENV = { STRIPE_SECRET_KEY: 'sk_test_orders', STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_URL: 'https://mise.example' };
+const STRIPE_ENV = { STRIPE_SECRET_KEY: 'sk_test_orders', STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_URL: 'https://blumodel.example' };
 
 const sign = (body, secret = SECRET, ts = Math.floor(Date.now() / 1000)) => `t=${ts},v1=${crypto.createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex')}`;
 function signed(event, secret = SECRET, ts) {
@@ -139,16 +139,16 @@ test('Stripe checkout is built on the server’s amount: form fields, idempotenc
     assert.equal(f.get('mode'), 'payment');
     assert.equal(f.get('line_items[0][price_data][currency]'), 'usd');
     assert.equal(f.get('line_items[0][price_data][unit_amount]'), '31800', 'the server’s quote; the client’s 50 is ignored');
-    assert.match(f.get('line_items[0][price_data][product_data][name]'), /Old farmhouse sink/);
+    assert.match(f.get('line_items[0][price_data][product_data][name]'), /^BluModel Studio - Custom 3D model \(\w+\): Old farmhouse sink/);
     assert.equal(f.get('line_items[0][quantity]'), '1');
     assert.equal(f.get('client_reference_id'), o.id);
     assert.equal(f.get('metadata[order_id]'), o.id);
     assert.equal(f.get('metadata[kind]'), 'order');
     assert.equal(f.get('payment_intent_data[metadata][order_id]'), o.id);
     assert.equal(f.get('customer_email'), ann.user.email);
-    assert.equal(f.get('success_url'), `https://mise.example/?session_id={CHECKOUT_SESSION_ID}#/orders/${o.id}`);
-    assert.ok(call.form.toString().includes('success_url=https%3A%2F%2Fmise.example%2F%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D%23%2Forders%2F'), 'the placeholder sits in the query string, before the hash');
-    assert.equal(f.get('cancel_url'), `https://mise.example/#/orders/${o.id}`);
+    assert.equal(f.get('success_url'), `https://blumodel.example/?session_id={CHECKOUT_SESSION_ID}#/orders/${o.id}`);
+    assert.ok(call.form.toString().includes('success_url=https%3A%2F%2Fblumodel.example%2F%3Fsession_id%3D%7BCHECKOUT_SESSION_ID%7D%23%2Forders%2F'), 'the placeholder sits in the query string, before the hash');
+    assert.equal(f.get('cancel_url'), `https://blumodel.example/#/orders/${o.id}`);
     const row = orderRow(s, o.id);
     assert.equal(row.status, 'pending_payment');
     assert.equal(row.provider_ref, 'cs_test_1');
@@ -179,7 +179,7 @@ test('Stripe checkout is built on the server’s amount: form fields, idempotenc
 
 // ── webhooks ─────────────────────────────────────────────────────────────
 
-test('webhook: verified, deduplicated (one fulfilment), no X-Mise needed; every other POST still needs it', async () => {
+test('webhook: verified, deduplicated (one fulfilment), no X-BluModel needed; every other POST still needs it', async () => {
   const { s, mock, hook } = await stripeServer();
   try {
     const ann = await s.user();

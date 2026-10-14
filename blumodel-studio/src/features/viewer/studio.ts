@@ -70,8 +70,8 @@ export function capSize(width: number, height: number, maxSide: number): { width
 
 // ── room quality (on screen) ─────────────────────────────────────────────
 
-const Q_KEY = 'mise.room.quality';
-const T_KEY = 'mise.room.tonemap';
+const Q_KEY = 'blumodel.room.quality';
+const T_KEY = 'blumodel.room.tonemap';
 
 function read<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
@@ -139,7 +139,7 @@ export interface StudioPrefs {
   toneMap: Exclude<ToneMap, 'aces'>;
 }
 
-const P_KEY = 'mise.studio.prefs';
+const P_KEY = 'blumodel.studio.prefs';
 export const DEFAULT_STUDIO_PREFS: StudioPrefs = { camera: 'current', size: '1080', quality: 'high', toneMap: 'neutral' };
 
 /** Reads saved prefs, keeping only known values (anything else falls back to the default). */

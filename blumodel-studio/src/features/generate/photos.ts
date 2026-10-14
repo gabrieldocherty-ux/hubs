@@ -97,10 +97,12 @@ export const newPhotoId = () => Math.random().toString(36).slice(2, 10) + Date.n
 
 // ─── IndexedDB ───────────────────────────────────────────────────────────
 
-const DB_NAME = 'mise-generate';
+const DB_NAME = 'blumodel-generate';
+/** The same database under its name from before the rename to BluModel Studio. */
+const LEGACY_DB_NAME = 'mise-generate';
 const STORE = 'photos';
 
-function openDb(): Promise<IDBDatabase | null> {
+function openCurrentDb(): Promise<IDBDatabase | null> {
   return new Promise((resolve) => {
     try {
       if (typeof indexedDB === 'undefined') return resolve(null);
@@ -115,6 +117,82 @@ function openDb(): Promise<IDBDatabase | null> {
       resolve(null);
     }
   });
+}
+
+/** Opens the pre-rename database only if it exists (never creates it). */
+function openLegacyDb(): Promise<IDBDatabase | null> {
+  return new Promise((resolve) => {
+    try {
+      const req = indexedDB.open(LEGACY_DB_NAME);
+      // An upgrade means it didn't exist: abort, so the open fails and creates nothing.
+      req.onupgradeneeded = () => req.transaction?.abort();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+      req.onblocked = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+const done = (tx: IDBTransaction) =>
+  new Promise<boolean>((resolve) => {
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = tx.onabort = () => resolve(false);
+  });
+
+/**
+ * Photos kept on this device before the rename (the signed-out kitchen's and the "Start from a
+ * photo" draft's) move once into the current database: each key is copied unless the current
+ * database already has it, then the old database is deleted. Any failure leaves the old
+ * database for the next visit. Never rejects.
+ */
+async function moveLegacyPhotos(): Promise<void> {
+  try {
+    if (typeof indexedDB === 'undefined') return;
+    if (typeof indexedDB.databases === 'function') {
+      const names = (await indexedDB.databases()).map((d) => d.name);
+      if (!names.includes(LEGACY_DB_NAME)) return;
+    }
+    const old = await openLegacyDb();
+    if (!old) return;
+    const rows: [IDBValidKey, unknown][] = [];
+    if (old.objectStoreNames.contains(STORE)) {
+      const tx = old.transaction(STORE, 'readonly');
+      const store = tx.objectStore(STORE);
+      const keys = store.getAllKeys();
+      const values = store.getAll();
+      const ok = await done(tx);
+      if (!ok) return old.close();
+      keys.result.forEach((k, i) => rows.push([k, values.result[i]]));
+    }
+    old.close();
+    if (rows.length) {
+      const db = await openCurrentDb();
+      if (!db) return;
+      const tx = db.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      for (const [key, value] of rows) {
+        const has = store.count(key);
+        has.onsuccess = () => {
+          if (!has.result) store.put(value, key);
+        };
+      }
+      const ok = await done(tx);
+      db.close();
+      if (!ok) return;
+    }
+    indexedDB.deleteDatabase(LEGACY_DB_NAME);
+  } catch {
+    // Leave the old database for next time.
+  }
+}
+
+let legacyMoved: Promise<void> | null = null;
+
+function openDb(): Promise<IDBDatabase | null> {
+  legacyMoved ??= moveLegacyPhotos();
+  return legacyMoved.then(openCurrentDb);
 }
 
 async function withStore<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T> | null): Promise<T | null> {
@@ -160,7 +238,7 @@ export async function deletePhotos(key: string): Promise<void> {
 
 // ─── The draft's model (small: localStorage) ─────────────────────────────
 
-const DRAFT_MODEL = 'mise-generate-draft';
+const DRAFT_MODEL = 'blumodel-generate-draft';
 
 export interface DraftState {
   step: 'photos' | 'space';

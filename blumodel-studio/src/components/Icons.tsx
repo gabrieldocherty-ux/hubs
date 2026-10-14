@@ -89,6 +89,16 @@ export const Logo = (p: P) => (
     <circle cx="23" cy="23" r="2.2" fill="#c2542d" />
   </svg>
 );
+
+/**
+ * The name next to the mark. " Studio" is its own span so a crowded bar (the editor's top bar on a
+ * phone) can drop it with CSS and show the compact "BluModel"; marketing, sign-in and pricing never do.
+ */
+export const Wordmark = ({ className }: { className?: string }) => (
+  <span className={className ? `wordmark ${className}` : 'wordmark'}>
+    BluModel<span className="wordmark-tail"> Studio</span>
+  </span>
+);
 export const Lock = (p: P) => (
   <svg {...base(p)}><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
 );

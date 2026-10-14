@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validateGlb, sniffImage, verifyStripeSignature } from '../lib/validators.mjs';
 import { packGlb, makeGlb } from './fixtures/glb.mjs';
+import { inspectGlb } from '../files/meta.mjs';
 import { makePng, makeJpeg, makeWebp, svgBytes } from './fixtures/images.mjs';
 
 const NM = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'node_modules');
@@ -47,7 +48,13 @@ test('three GLTFLoader.parse accepts the minimal GLB and makeGlb output', async 
   b.scene.traverse((o) => {
     if (o.material) names.push(o.material.name);
   });
-  assert.ok(names.includes('mise_finish') && names.includes('body'));
+  assert.ok(names.includes('blumodel_finish') && names.includes('body'));
+});
+
+test('GLB finish slots: blumodel_* and the legacy mise_* from models made before the rename', () => {
+  const meta = inspectGlb(makeGlb({ materials: ['blumodel_finish', 'mise_hardware', 'MISE_Counter.001', 'body', 'misc_finish'] }));
+  assert.deepEqual(meta.slots, ['blumodel_finish', 'mise_hardware', 'MISE_Counter.001']);
+  assert.deepEqual(inspectGlb(makeGlb({ materials: ['body'] })).slots, []);
 });
 
 test('GLB rejections', () => {

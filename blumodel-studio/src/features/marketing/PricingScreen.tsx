@@ -83,7 +83,7 @@ function useCta(id: PlanId): { label: string; href: string; note?: string; curre
       return { label: 'Go Unlimited', href: signedIn ? '#/account/billing' : signup('#/account/billing') };
     case 'contractor':
       if (plan === 'contractor') return { label: 'Open your workspace', href: '#/pro', current: true };
-      return { label: 'Become a Mise contractor', href: signedIn ? '#/pro' : signup('#/pro') };
+      return { label: 'Become a BluModel Studio contractor', href: signedIn ? '#/pro' : signup('#/pro') };
   }
 }
 
@@ -155,7 +155,7 @@ function ContractorProgram() {
   const groups: { title: string; items: string[] }[] = [
     {
       title: 'Your catalog',
-      items: ['Quick-add a whole cabinet line with widths, door style and finishes: no 3D model needed', 'Upload your own models, checked for size and detail', 'Or have Mise model them, delivered straight into your catalog'],
+      items: ['Quick-add a whole cabinet line with widths, door style and finishes: no 3D model needed', 'Upload your own models, checked for size and detail', 'Or have BluModel Studio model them, delivered straight into your catalog'],
     },
     {
       title: 'Your prices',
@@ -256,7 +256,7 @@ function tiersNote(t: NonNullable<Tiers>): string {
 const FAQ: { q: string; a: string }[] = [
   {
     q: 'Why are exports paid?',
-    a: 'Designing is the part we want everyone to do freely, so it has no limits. The exports are what you take to a contractor or a store: the floor plan with dimensions, the full-size 3D image, the shopping list with SKUs and the project file. That is what pays for Mise. To be straight with you: anyone can screenshot their screen. What an export gets you is the clean, full-resolution, dimensioned file.',
+    a: 'Designing is the part we want everyone to do freely, so it has no limits. The exports are what you take to a contractor or a store: the floor plan with dimensions, the full-size 3D image, the shopping list with SKUs and the project file. That is what pays for BluModel Studio. To be straight with you: anyone can screenshot their screen. What an export gets you is the clean, full-resolution, dimensioned file.',
   },
   {
     q: 'What does the $5 unlock cover?',
@@ -272,7 +272,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How do payments work?',
-    a: 'Through Stripe’s hosted checkout: Mise never asks for or sees your card number. On a server without a payment provider, checkout is a clearly labelled demo and nothing is charged.',
+    a: 'Through Stripe’s hosted checkout: BluModel Studio never asks for or sees your card number. On a server without a payment provider, checkout is a clearly labelled demo and nothing is charged.',
   },
   {
     q: 'What do my contractor’s clients see?',

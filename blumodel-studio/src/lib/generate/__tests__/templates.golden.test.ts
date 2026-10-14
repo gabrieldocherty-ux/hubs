@@ -10,7 +10,7 @@ import { STYLE_PRESETS } from '../../../data/styles';
 // The exact output of the five starting templates, recorded from the foundation commit (b78193a)
 // BEFORE the declarative refactor. The refactored builder must reproduce it item for item: same
 // products, positions, rotations, widths, finishes, order and notes. Only the random item ids are
-// left out. Regenerate only on purpose: MISE_UPDATE_GOLDEN=1 npm run test:ts -- templates.golden
+// left out. Regenerate only on purpose: BLUMODEL_UPDATE_GOLDEN=1 npm run test:ts -- templates.golden
 const GOLDEN = path.join(process.cwd(), 'src/lib/generate/__tests__/fixtures/templates.golden.json');
 
 const ROOMS: Room[] = [
@@ -49,7 +49,7 @@ function capture(): Snapshot {
 
 test('the five templates build exactly what they built before the declarative refactor', () => {
   const now = capture();
-  if (process.env.MISE_UPDATE_GOLDEN === '1') {
+  if (process.env.BLUMODEL_UPDATE_GOLDEN === '1') {
     fs.mkdirSync(path.dirname(GOLDEN), { recursive: true });
     fs.writeFileSync(GOLDEN, JSON.stringify(now, null, 1) + '\n');
   }

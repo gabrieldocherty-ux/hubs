@@ -119,14 +119,14 @@ function isAlive(pid) {
 }
 
 export function findBrowser({ chrome = false } = {}) {
-  const fromEnv = process.env.MISE_QA_BROWSER;
+  const fromEnv = process.env.BLUMODEL_QA_BROWSER;
   if (fromEnv) {
-    if (!fs.existsSync(fromEnv)) throw new Error(`MISE_QA_BROWSER points at ${fromEnv}, which doesn't exist.`);
+    if (!fs.existsSync(fromEnv)) throw new Error(`BLUMODEL_QA_BROWSER points at ${fromEnv}, which doesn't exist.`);
     return fromEnv;
   }
   const list = chrome ? BROWSERS.chrome : BROWSERS.edge;
   const exe = list.find((p) => fs.existsSync(p));
-  if (!exe) throw new Error(`No ${chrome ? 'Chrome' : 'Edge'} found (looked in ${list.join(', ')}). Set MISE_QA_BROWSER to the browser's path.`);
+  if (!exe) throw new Error(`No ${chrome ? 'Chrome' : 'Edge'} found (looked in ${list.join(', ')}). Set BLUMODEL_QA_BROWSER to the browser's path.`);
   return exe;
 }
 
@@ -218,7 +218,7 @@ export class Cdp {
  */
 export async function launchBrowser({ chrome = false, swiftshader = false, headless = true, log = () => {} } = {}) {
   const exe = findBrowser({ chrome });
-  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'mise-qa-browser-'));
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-qa-browser-'));
   const args = [
     ...(headless ? ['--headless=new'] : []),
     '--no-first-run',

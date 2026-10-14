@@ -115,7 +115,7 @@ export interface TimelineEvent {
 
 /** What a timeline row says. Notes are shown separately, under the title. */
 export function eventTitle(e: TimelineEvent): string {
-  const who = e.by === 'you' ? 'You' : e.by === 'studio' || e.by === 'admin' ? 'Mise studio' : e.by === 'customer' ? 'The customer' : 'Mise';
+  const who = e.by === 'you' ? 'You' : e.by === 'studio' || e.by === 'admin' ? 'BluModel 3D studio' : e.by === 'customer' ? 'The customer' : 'BluModel Studio';
   switch (e.type) {
     case 'created':
       return `${who} sent the request`;

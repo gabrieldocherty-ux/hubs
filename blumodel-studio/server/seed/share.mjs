@@ -1,4 +1,4 @@
-// Package E (share) demo seed: one kitchen for demo-customer@mise.test with share links in
+// Package E (share) demo seed: one kitchen for demo-customer@blumodel.test with share links in
 // every state the share dialog shows (prices on and never expiring, prices off for 30 days,
 // and one turned off), so the dialog and the shared page (#/s/<token>) have something to show
 // on a fresh demo server. The summary prints the two live links.
@@ -16,7 +16,7 @@ import { normalizeDoc } from '../lib/doc.mjs';
 import { randomId } from '../lib/ids.mjs';
 
 const DAY = 86_400_000;
-const CUSTOMER_EMAIL = 'demo-customer@mise.test';
+const CUSTOMER_EMAIL = 'demo-customer@blumodel.test';
 
 /** Fixed so a second run finds it (a UUID, like every kitchen id). */
 export const SHARE_DEMO_PROJECT_ID = 'd3e05ea7-0000-4000-8000-00000000e5e1';

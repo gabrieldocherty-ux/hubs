@@ -1,7 +1,7 @@
 /*
  * Package E (marketing): the landing page (#/welcome, signed-out #/) and pricing (#/pricing).
  * Reuses the tokens in styles.css. No web fonts of its own and no third-party images: every
- * picture is drawn by Mise's own components or is a render saved under public/marketing/.
+ * picture is drawn by BluModel Studio's own components or is a render saved under public/marketing/.
  * Every grid track is minmax(0, …) and .mk clips sideways overflow, so 375 px never scrolls
  * horizontally.
  */
@@ -1241,5 +1241,18 @@
 @media (prefers-reduced-motion: reduce) {
   .mk-sample {
     transform: none;
+  }
+}
+
+/* A small phone: the whole name and the account buttons can't share one row, and a three-row
+   sticky header would take a fifth of the screen. The name stays whole (a little smaller) next to
+   Sign in; Start free is the hero's and the plans' first button right below, so the header drops it. */
+@media (max-width: 480px) {
+  .mk-bar .wordmark {
+    font-size: 22px;
+  }
+
+  .mk-bar-actions .mk-signin ~ .btn.primary {
+    display: none;
   }
 }

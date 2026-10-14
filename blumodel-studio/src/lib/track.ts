@@ -11,7 +11,7 @@ import { api } from './api';
 const viewedThisSession = new Set<string>();
 
 function seenView(productId: string): boolean {
-  const key = `mise-viewed:${productId}`;
+  const key = `blumodel-viewed:${productId}`;
   if (viewedThisSession.has(productId)) return true;
   viewedThisSession.add(productId);
   try {

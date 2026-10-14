@@ -36,14 +36,14 @@ test('signup → 201 with role, brands and plan, an httpOnly SameSite=Lax cookie
   assert.equal(r.body.user.plan.id, 'free', 'a new account is on the Free plan');
   assert.equal(r.body.user.contractor, null);
   const cookie = r.headers.get('set-cookie');
-  assert.match(cookie, /^mise_session=[A-Za-z0-9_-]{43}; HttpOnly; SameSite=Lax; Path=\/; Max-Age=(2591999|2592000)$/);
+  assert.match(cookie, /^blumodel_session=[A-Za-z0-9_-]{43}; HttpOnly; SameSite=Lax; Path=\/; Max-Age=(2591999|2592000)$/);
   const me = await a.get('/api/auth/me');
   assert.equal(me.body.user.id, r.body.user.id);
   const row = t.db.prepare('SELECT password_hash FROM users WHERE id = ?').get(r.body.user.id);
   assert.match(row.password_hash, /^scrypt\$[0-9a-f]{32}\$[0-9a-f]{128}$/);
   const sessions = t.db.prepare('SELECT token_hash FROM sessions WHERE user_id = ?').all(r.body.user.id);
   assert.equal(sessions.length, 1);
-  assert.notEqual(sessions[0].token_hash, a.cookies.get('mise_session'), 'only the hash is stored');
+  assert.notEqual(sessions[0].token_hash, a.cookies.get('blumodel_session'), 'only the hash is stored');
 });
 
 test('signup validation and duplicate email (messages unchanged)', async () => {
@@ -71,7 +71,7 @@ test('login, me, patch me, logout', async () => {
   const wrong = await a.post('/api/auth/login', { email: u.user.email, password: 'wrong password' });
   assert.equal(wrong.status, 401);
   assert.deepEqual(wrong.body, { error: 'That email and password do not match.' });
-  const unknown = await a.post('/api/auth/login', { email: 'nobody@test.mise', password: 'whatever123' });
+  const unknown = await a.post('/api/auth/login', { email: 'nobody@test.blumodel', password: 'whatever123' });
   assert.equal(unknown.status, 401);
   const ok = await a.post('/api/auth/login', { email: u.user.email, password: u.user.password });
   assert.equal(ok.status, 200);
@@ -143,13 +143,13 @@ test('Secure cookie rule: encrypted socket, or loopback + X-Forwarded-Proto http
   assert.equal(secureAttr(req('192.168.1.20', undefined), { TRUST_PROXY: 0, PROD: true }), '', 'production mode alone is not Secure');
 
   // End to end through a loopback "proxy".
-  const viaProxy = await t.agent().post('/api/auth/signup', { name: 'P', email: 'proxy@test.mise', password: 'password123' }, { headers: { 'X-Forwarded-Proto': 'https' } });
+  const viaProxy = await t.agent().post('/api/auth/signup', { name: 'P', email: 'proxy@test.blumodel', password: 'password123' }, { headers: { 'X-Forwarded-Proto': 'https' } });
   assert.match(viaProxy.headers.get('set-cookie'), /; Secure$/);
 
   // Production mode over plain http: still not Secure, so LAN sign-in works.
   const prod = await startTestServer({ env: { NODE_ENV: 'production' } });
   try {
-    const r = await prod.agent().post('/api/auth/signup', { name: 'Prod', email: 'prod@test.mise', password: 'password123' });
+    const r = await prod.agent().post('/api/auth/signup', { name: 'Prod', email: 'prod@test.blumodel', password: 'password123' });
     assert.equal(r.status, 201);
     assert.doesNotMatch(r.headers.get('set-cookie'), /Secure/);
   } finally {
@@ -161,9 +161,9 @@ test('signup is limited to 5 per hour per IP', async () => {
   const t2 = await startTestServer({ rateLimits: true });
   try {
     const codes = [];
-    for (let i = 0; i < 6; i++) codes.push((await t2.agent().post('/api/auth/signup', { name: 'S', email: `s${i}@test.mise`, password: 'password123' })).status);
+    for (let i = 0; i < 6; i++) codes.push((await t2.agent().post('/api/auth/signup', { name: 'S', email: `s${i}@test.blumodel`, password: 'password123' })).status);
     assert.deepEqual(codes, [201, 201, 201, 201, 201, 429]);
-    const r = await t2.agent().post('/api/auth/signup', { name: 'S', email: 's9@test.mise', password: 'password123' });
+    const r = await t2.agent().post('/api/auth/signup', { name: 'S', email: 's9@test.blumodel', password: 'password123' });
     assert.ok(Number(r.headers.get('retry-after')) > 0);
   } finally {
     await t2.close();
@@ -222,14 +222,14 @@ test('login does not block the event loop (async scrypt)', async () => {
 });
 
 test('ADMIN_EMAILS promotes on signup and on login', async () => {
-  const t2 = await startTestServer({ env: { ADMIN_EMAILS: 'boss@test.mise, Later@Test.Mise' } });
+  const t2 = await startTestServer({ env: { ADMIN_EMAILS: 'boss@test.blumodel, Later@Test.BluModel' } });
   try {
-    const r = await t2.agent().post('/api/auth/signup', { name: 'Boss', email: 'boss@test.mise', password: 'password123' });
+    const r = await t2.agent().post('/api/auth/signup', { name: 'Boss', email: 'boss@test.blumodel', password: 'password123' });
     assert.equal(r.body.user.role, 'admin');
     // An existing account named in ADMIN_EMAILS is promoted at its next login.
     const id = 'u-later';
-    t2.db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(id, 'later@test.mise', 'Later', await hashPassword('password123'), Date.now());
-    const l = await t2.agent().post('/api/auth/login', { email: 'later@test.mise', password: 'password123' });
+    t2.db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(id, 'later@test.blumodel', 'Later', await hashPassword('password123'), Date.now());
+    const l = await t2.agent().post('/api/auth/login', { email: 'later@test.blumodel', password: 'password123' });
     assert.equal(l.body.user.role, 'admin');
     assert.equal(t2.db.prepare('SELECT role FROM users WHERE id = ?').get(id).role, 'admin');
   } finally {
@@ -244,20 +244,20 @@ test('there is no API route that grants a role to yourself', async () => {
 });
 
 test('server/scripts/make-admin.mjs promotes an existing user', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mise-make-admin-'));
-  const dbPath = path.join(dir, 'mise.db');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-make-admin-'));
+  const dbPath = path.join(dir, 'blumodel.db');
   try {
     const db = openDb(dbPath);
     migrate(db);
-    db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run('u1', 'gabe@test.mise', 'Gabe', 'scrypt$00$00', Date.now());
+    db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run('u1', 'gabe@test.blumodel', 'Gabe', 'scrypt$00$00', Date.now());
     db.close();
     const script = path.join(HERE, '..', 'scripts', 'make-admin.mjs');
-    const out = execFileSync(process.execPath, ['--no-warnings', script, 'GABE@test.mise'], { env: { ...process.env, DB_PATH: dbPath }, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, ['--no-warnings', script, 'GABE@test.blumodel'], { env: { ...process.env, DB_PATH: dbPath }, encoding: 'utf8' });
     assert.match(out, /is now an admin/);
     const db2 = openDb(dbPath);
     assert.equal(db2.prepare('SELECT role FROM users WHERE id = ?').get('u1').role, 'admin');
     db2.close();
-    assert.throws(() => execFileSync(process.execPath, ['--no-warnings', script, 'nobody@test.mise'], { env: { ...process.env, DB_PATH: dbPath }, stdio: 'pipe' }));
+    assert.throws(() => execFileSync(process.execPath, ['--no-warnings', script, 'nobody@test.blumodel'], { env: { ...process.env, DB_PATH: dbPath }, stdio: 'pipe' }));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }

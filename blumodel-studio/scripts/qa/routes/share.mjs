@@ -119,7 +119,7 @@ async function landingContent(h) {
   const t = await pageText(h.evaluate);
   // Gabe rejected "describe your kitchen": the photo is the way in.
   if (/describe your (dream )?kitchen/.test(t)) throw new Error('the landing page still offers "describe your kitchen"');
-  for (const want of ['start from a photo of your kitchen', 'try without an account', 'how it works', 'check the space', 'share', 'contractor', 'brands', 'mise is a visualizer'])
+  for (const want of ['start from a photo of your kitchen', 'try without an account', 'how it works', 'check the space', 'share', 'contractor', 'brands', 'blumodel studio is a visualizer'])
     if (!t.includes(want)) throw new Error(`the landing page is missing "${want}"`);
   const links = await h.evaluate(() => ['#/generate', '#/local', '#/signup', '#/pricing'].filter((href) => !document.querySelector(`a[href="${href}"]`)));
   if (links.length) throw new Error(`no link to ${links.join(', ')}`);
@@ -233,7 +233,7 @@ export default [
       'Why are exports paid?',
       'What does the $5 unlock cover?',
       'Can I cancel?',
-      'Mise is a visualizer',
+      'BluModel Studio is a visualizer',
     ],
     fullPage: true,
     check: async (h) => {
@@ -349,7 +349,7 @@ export default [
     as: 'anon',
     setup: async ({ api }) => kitchenWithLink(api.as('customer'), { label: 'For Sam', showPrices: true }),
     waitFor: ['.share-bar', '.plan-view canvas'],
-    expectText: ['Shared by', 'View only', 'Mise is a visualizer', 'Maple Street Kitchen'],
+    expectText: ['Shared by', 'View only', 'BluModel Studio is a visualizer', 'Maple Street Kitchen'],
     waitMs: 1500,
     check: async (h) => {
       const t = await pageText(h.evaluate);
@@ -465,7 +465,7 @@ export default [
       // still being created (harmless to a visitor, but the runner fails on any uncaught error). The
       // same race used to hit after sign-up, when the shared page opened and the copy moved on 150 ms
       // later; SharedKitchen's ResumeDuplicate now makes that copy without opening the page.
-      await h.waitUntil(() => (window.__miseQa?.frames ?? 0) > 0, 30_000, 'the 3D view drawing its first frame');
+      await h.waitUntil(() => (window.__blumodelQa?.frames ?? 0) > 0, 30_000, 'the 3D view drawing its first frame');
       await shareBarButton(h, 'Duplicate');
       await h.waitUntil(() => /^#\/signin\?next=/.test(location.hash), 10_000, 'being sent to sign in');
       const next = await h.evaluate(() => new URLSearchParams(location.hash.split('?')[1] ?? '').get('next'));
@@ -477,7 +477,7 @@ export default [
       await h.click('.auth-form input[autocomplete="name"]');
       await h.type('Nina Neighbour');
       await h.click('.auth-form input[type="email"]');
-      await h.type(`qa-neighbour-${stamp}@mise.test`);
+      await h.type(`qa-neighbour-${stamp}@blumodel.test`);
       await h.click('.auth-form .pw input');
       await h.type('qa-neighbour-pass-1');
       await h.click('.auth-form button[type="submit"]');

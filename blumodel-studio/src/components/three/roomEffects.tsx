@@ -8,7 +8,7 @@
  *  - `FrameGovernor`: drei's PerformanceMonitor counts frames per time window, which reads a
  *    demand-driven canvas (no frames while idle) as a slow device. This one only measures runs
  *    of consecutive frames (an orbit, a drag) and steps down DPR, then AO, when they're slow.
- *  - `QaStats` (qaStats.tsx, re-exported): with `?qa`, `window.__miseQa = { frames, calls, programs, triangles }`.
+ *  - `QaStats` (qaStats.tsx, re-exported): with `?qa`, `window.__blumodelQa = { frames, calls, programs, triangles }`.
  */
 import { memo, useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';

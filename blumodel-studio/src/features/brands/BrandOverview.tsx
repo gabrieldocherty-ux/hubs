@@ -107,7 +107,7 @@ export default function BrandOverview() {
               </div>
             )}
           </section>
-          <p className="fine">Counts are first-party: Mise doesn’t store visitors’ IP addresses, and a page view counts once per visitor per half hour.</p>
+          <p className="fine">Counts are first-party: BluModel Studio doesn’t store visitors’ IP addresses, and a page view counts once per visitor per half hour.</p>
         </>
       )}
     </div>
@@ -192,14 +192,14 @@ function SetupPitch() {
   const { readOnly } = useBrandTab();
   return (
     <div className="pro-empty brand-pitch">
-      <h2>Homeowners on Mise can find you</h2>
+      <h2>Homeowners on BluModel Studio can find you</h2>
       <ul className="brand-pitch-list">
         <li>They browse your cabinets and products on your own page.</li>
         <li>They see them in realistic 3D, at true size.</li>
         <li>They drop them straight into their own kitchen designs.</li>
         <li>Then they contact you: requests land in your Leads inbox.</li>
       </ul>
-      <p>Included in your Contractor plan. Mise checks the business is real before the page goes live, and your costs and markup are never shown.</p>
+      <p>Included in your Contractor plan. BluModel Studio checks the business is real before the page goes live, and your costs and markup are never shown.</p>
       {!readOnly && (
         <a className="btn primary big" href={subHref('settings')}>
           Set up my page

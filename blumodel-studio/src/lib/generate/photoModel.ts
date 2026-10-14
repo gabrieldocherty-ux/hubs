@@ -12,7 +12,7 @@ import { APPLIANCE_WIDTHS, FINISH_CHOICES, clampPhotoModel, closestFinish } from
 /**
  * "Start from a photo" (package D): the photo model is what we know about an existing kitchen,
  * from the photo analyser or typed in by hand on "Check the space". `buildFromPhotoModel` turns
- * it into a Mise kitchen through the declarative layout specs and the built-in products.
+ * it into a BluModel Studio kitchen through the declarative layout specs and the built-in products.
  *
  * Conventions (the same as the editor): north is the top of the plan, x runs west → east and
  * y north → south. `offsetIn` / `startIn` are measured along a wall from its west end (north and
@@ -55,7 +55,7 @@ export interface PhotoIsland {
   pendants?: boolean;
 }
 
-/** The look, matched to Mise finishes (ids from src/data/finishes.ts). */
+/** The look, matched to BluModel Studio finishes (ids from src/data/finishes.ts). */
 export interface PhotoStyle {
   /** The cabinets' colour as seen; the closest cabinet finish is used. */
   cabinetHex: string;
@@ -636,7 +636,7 @@ function islandSpec(model: PhotoModel, room: Room, segments: Segment[], fixed: F
     if (!at) continue;
     const { x, y, width, rotation } = at;
     if (width + 6 < isl.widthIn) notes.push(`The island is drawn ${width}″ long so walkways stay at least ${clear === 42 ? 42 : 36}″.`);
-    if (Math.abs(isl.depthIn - island.depthIn) > 6) notes.push(`The island is drawn ${island.depthIn}″ deep (the depth Mise has); yours looks about ${Math.round(isl.depthIn)}″.`);
+    if (Math.abs(isl.depthIn - island.depthIn) > 6) notes.push(`The island is drawn ${island.depthIn}″ deep (the depth BluModel Studio has); yours looks about ${Math.round(isl.depthIn)}″.`);
     const maxSeats = Math.floor(width / 20);
     if (isl.seats > maxSeats) notes.push(`${maxSeats} stools fit along a ${width}″ island; ${isl.seats} were asked for.`);
     const runLen = (w: Wall) => segments.filter((s) => s.wall === w).reduce((n, s) => n + s.end - s.start, 0);
@@ -756,7 +756,7 @@ export function photoSpec(model: PhotoModel, opts: PhotoSpecOptions = {}): { spe
   }
 
   for (const a of model.appliances.filter((x) => x.wall === 'island')) {
-    notes.push(`Mise can’t put a ${NAMES[a.kind]} in an island yet, so the island ${NAMES[a.kind]} was left out.`);
+    notes.push(`BluModel Studio can’t put a ${NAMES[a.kind]} in an island yet, so the island ${NAMES[a.kind]} was left out.`);
   }
 
   const runs: RunSpec[] = [];
@@ -851,7 +851,7 @@ export interface PhotoBuild {
 
 /**
  * Turns a photo model into a kitchen: validated, laid out with real cabinet sizes and built-in
- * products, with the look matched to Mise finishes. Pure apart from random item ids. It never
+ * products, with the look matched to BluModel Studio finishes. Pure apart from random item ids. It never
  * leaves a collision, an item outside the room, a door swinging into a cabinet or a blocked
  * island walkway: doors that would swing into something become cased openings, and an island
  * that blocks a walkway shrinks or is left out (with a note).

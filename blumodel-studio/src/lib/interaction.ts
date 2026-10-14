@@ -224,9 +224,9 @@ export function placeAtClient(productId: string, clientX: number, clientY: numbe
 // ─── QA hook ───────────────────────────────────────────────────────────
 
 /**
- * With `?qa` in the URL (e.g. `/?qa#/local`) puts the stores on `window.__mise` so
+ * With `?qa` in the URL (e.g. `/?qa#/local`) puts the stores on `window.__blumodel` so
  * headless checks can read item positions and drive placement; also merges them
- * into `window.__miseQA`. Inert without the flag.
+ * into `window.__blumodelQA`. Inert without the flag.
  */
 export function installQaHook(): void {
   if (!QA) return;
@@ -239,6 +239,6 @@ export function installQaHook(): void {
     placeAt,
     placeAtClient,
   };
-  (window as unknown as { __mise?: typeof hook }).__mise = hook;
+  (window as unknown as { __blumodel?: typeof hook }).__blumodel = hook;
   qaExpose({ store: useDesignStore, placement: usePlacement, overlay: useOverlay });
 }

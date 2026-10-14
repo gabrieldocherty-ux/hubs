@@ -10,7 +10,7 @@ import { goToCheckout, ordersApi, type OrderRequest, type OrderTarget, type Quot
 import { dollars, MAX_NOTES, MAX_REFERENCES, NAME_MAX, parseInches, stepProblem, STEPS, suggestedTier, type DraftItem, type Step } from './model';
 import { DemoBanner, OrdersShell } from './parts';
 
-const DRAFT_KEY = 'mise.orders.request';
+const DRAFT_KEY = 'blumodel.orders.request';
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
@@ -274,7 +274,7 @@ export function RequestWizard() {
         <div>
           <span className="eyebrow">Custom 3D model</span>
           <h1>Request a model</h1>
-          <p className="muted">The Mise studio models it to real scale with 2 revision rounds. Prices come from the tier you pick.</p>
+          <p className="muted">The BluModel 3D studio models it to real scale with 2 revision rounds. Prices come from the tier you pick.</p>
         </div>
       </div>
       {tiers?.demo && <DemoBanner compact />}
@@ -454,7 +454,7 @@ export function RequestWizard() {
           )}
           {quoteError && <p className="ord-bad">{quoteError}</p>}
           <p className="fine">
-            Prices are set by Mise’s servers from the tier and extras.{tiers?.demo ? ' Demo payments: no money moves.' : ' You pay on Stripe’s secure page; Mise never sees card details.'}
+            Prices are set by BluModel Studio’s servers from the tier and extras.{tiers?.demo ? ' Demo payments: no money moves.' : ' You pay on Stripe’s secure page; BluModel Studio never sees card details.'}
           </p>
         </aside>
       </div>
@@ -674,7 +674,7 @@ function PhotosStep({
   return (
     <section>
       <h2>Reference photos</h2>
-      <p className="muted">1 to 8 photos: front, side, details and the spec-sheet drawing if you have one. They stay private to you and the Mise studio.</p>
+      <p className="muted">1 to 8 photos: front, side, details and the spec-sheet drawing if you have one. They stay private to you and the BluModel 3D studio.</p>
       <div
         className={over ? 'ord-drop over' : 'ord-drop'}
         onDragOver={(e) => {

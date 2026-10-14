@@ -86,7 +86,7 @@ export const closeUnlock = () => useUnlock.setState({ request: null });
 
 // ── what to finish after paying (kept across the trip to Stripe) ─────────
 
-const INTENT = 'mise.exportIntent';
+const INTENT = 'blumodel.exportIntent';
 const INTENT_TTL = 2 * 3600 * 1000;
 
 export function saveIntent(i: { projectId: string; kind: ExportKind }) {

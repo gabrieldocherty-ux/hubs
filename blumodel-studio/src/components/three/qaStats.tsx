@@ -1,6 +1,6 @@
 /**
  * Headless-QA statistics for a canvas (BUILD_PLAN A-T3): with `?qa` in the page URL,
- * `window.__miseQa = { canvas, frames, calls, programs, triangles, lastFrameAt }` plus whatever a
+ * `window.__blumodelQa = { canvas, frames, calls, programs, triangles, lastFrameAt }` plus whatever a
  * view adds with `qaSet`. Inert without the flag. Kept apart from roomEffects so the product stage
  * can use it without pulling in the postprocessing chunk.
  */
@@ -9,14 +9,14 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { QA } from '../../lib/qa';
 
 interface QaWindow {
-  __miseQa?: Record<string, unknown>;
+  __blumodelQa?: Record<string, unknown>;
 }
 
-/** Merges values into `window.__miseQa` (only with `?qa` in the page URL). */
+/** Merges values into `window.__blumodelQa` (only with `?qa` in the page URL). */
 export function qaSet(values: Record<string, unknown>) {
   if (!QA) return;
   const w = window as unknown as QaWindow;
-  w.__miseQa = Object.assign(w.__miseQa ?? {}, values);
+  w.__blumodelQa = Object.assign(w.__blumodelQa ?? {}, values);
 }
 
 /**
@@ -34,7 +34,7 @@ export function QaStats({ name }: { name: string }) {
     gl.info.reset();
     qaSet({ canvas: name, frames: 0 });
     const w = window as unknown as QaWindow;
-    const q = (w.__miseQa ??= {});
+    const q = (w.__blumodelQa ??= {});
     const live: [string, () => number][] = [
       ['calls', () => gl.info.render.calls],
       ['triangles', () => gl.info.render.triangles],

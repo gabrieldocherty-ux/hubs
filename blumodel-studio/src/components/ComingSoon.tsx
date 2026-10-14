@@ -1,4 +1,4 @@
-import { Logo } from './Icons';
+import { Logo, Wordmark } from './Icons';
 
 /**
  * Placeholder for a feature screen that hasn't landed yet. Each feature package replaces its
@@ -10,7 +10,7 @@ export function ComingSoon({ title, detail }: { title: string; detail?: string }
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
       </header>
       <main className="screen-msg">
@@ -18,7 +18,7 @@ export function ComingSoon({ title, detail }: { title: string; detail?: string }
         <p>Coming soon.</p>
         {detail && <p className="coming-soon-detail">{detail}</p>}
         <a className="btn" href="#/">
-          Back to Mise
+          Back to BluModel Studio
         </a>
       </main>
     </div>

@@ -855,7 +855,7 @@ export function proceduralModel(p: ModelProps): JSX.Element | null {
 
 /**
  * A placed product: its GLB when it has one (fitted to the declared size, lifted to its
- * elevation, finishes through the mise_* slots), else the procedural model.
+ * elevation, finishes through the blumodel_* slots), else the procedural model.
  */
 export function renderModel(p: ModelProps): JSX.Element | null {
   const procedural = proceduralModel(p);

@@ -1,5 +1,5 @@
 // core-001 is the schema the single-file server created with CREATE IF NOT EXISTS,
-// unchanged. Because it is idempotent, an existing mise.db (user_version 0) upgrades
+// unchanged. Because it is idempotent, an existing blumodel.db (user_version 0) upgrades
 // cleanly: the step is a no-op there and is simply recorded.
 
 export const steps = [

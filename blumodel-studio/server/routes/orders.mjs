@@ -124,7 +124,7 @@ export default function routes(ctx) {
     let assignee = null;
     if (o.assigned_to) {
       const a = db.prepare('SELECT name FROM users WHERE id = ?').get(o.assigned_to);
-      assignee = staff ? (a?.name ?? null) : 'Mise studio';
+      assignee = staff ? (a?.name ?? null) : 'BluModel 3D studio';
     }
     return {
       order: wire,
@@ -249,7 +249,7 @@ export default function routes(ctx) {
             amountCents: o.amount_cents,
             currency: o.currency,
             items: items.map((it, i) => ({
-              label: `Mise custom 3D model (${tierById(it.tier).name}): ${it.brief?.name ?? 'product'}`,
+              label: `BluModel Studio - Custom 3D model (${tierById(it.tier).name}): ${it.brief?.name ?? 'product'}`,
               amountCents: q.items[i].amountCents,
             })),
           },
@@ -270,7 +270,7 @@ export default function routes(ctx) {
       path: '/api/orders/:id/cancel',
       handler: (rc) => {
         const o = ownOrder(rc, rc.params.id);
-        if (!UNPAID.includes(o.status)) throw new HttpError(409, o.status === 'cancelled' ? 'This order is already cancelled.' : 'Paid orders can’t be cancelled here. Contact Mise for a refund.', { status: o.status });
+        if (!UNPAID.includes(o.status)) throw new HttpError(409, o.status === 'cancelled' ? 'This order is already cancelled.' : 'Paid orders can’t be cancelled here. Contact BluModel Studio for a refund.', { status: o.status });
         orders.transition(o.id, UNPAID, 'cancelled', { by: rc.user.id, type: 'cancelled' });
         return detail(orders.rowOf(o.id), rc.user);
       },

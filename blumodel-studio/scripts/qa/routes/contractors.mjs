@@ -83,7 +83,7 @@ const TABS = [
   ['#/pro/price-book', 'Cost, markup and sell price'],
   ['#/pro/brands', 'What shows while you design'],
   ['#/pro/quotes', 'Your kitchens, priced'],
-  ['#/pro/modelling', 'Have Mise model your products'],
+  ['#/pro/modelling', 'Have BluModel Studio model your products'],
   ['#/pro/company', 'What your clients see'],
 ];
 
@@ -150,7 +150,7 @@ export default [
     },
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
-      await h.evaluate(() => window.__miseQA.store.getState().setUI({ rightTab: 'estimate' }));
+      await h.evaluate(() => window.__blumodelQA.store.getState().setUI({ rightTab: 'estimate' }));
       await h.waitFor('.client-view-toggle');
       await h.sleep(500);
       const client = await pageText(h);

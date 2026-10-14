@@ -22,8 +22,8 @@ const list = (choices) => choices.map((f) => `${f.id} (${f.name})`).join(', ');
 /** The instructions. Stable text, so repeated calls can share a prompt cache. */
 export function systemPrompt() {
   return [
-    'You turn photos of an existing kitchen into a floor-plan model for Mise, a kitchen design app.',
-    'The user will redesign the kitchen in Mise, so the model must match the room as it is now.',
+    'You turn photos of an existing kitchen into a floor-plan model for BluModel Studio, a kitchen design app.',
+    'The user will redesign the kitchen in BluModel Studio, so the model must match the room as it is now.',
     '',
     'Orientation: the wall the camera faces in the first photo is "north". Looking at it, "east" is the wall on the right, "west" on the left, "south" behind the camera. Keep this orientation for every photo; use the other photos to see the walls the first one misses.',
     'Measure in inches. Positions along a wall ("offsetIn", "startIn", "endIn") run from the west end of the north and south walls, and from the north end of the east and west walls, to the near edge of the thing.',
@@ -126,7 +126,7 @@ export async function analyzePhotos({ fetch, apiKey, model, images, timeoutMs = 
   const checked = parsed ? clampPhotoModel(parsed) : null;
   if (!checked) {
     log?.warn?.(`photo analysis: unusable answer (stop_reason ${String(body?.stop_reason ?? 'none').slice(0, 30)}, ${text.length} chars)`);
-    throw new AnalysisError(502, 'The photo analysis came back in a form Mise can’t read. Fill in the space by hand, or try again.');
+    throw new AnalysisError(502, 'The photo analysis came back in a form BluModel Studio can’t read. Fill in the space by hand, or try again.');
   }
   return checked;
 }

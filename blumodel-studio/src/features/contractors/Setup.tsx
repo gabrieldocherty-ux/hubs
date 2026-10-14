@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
-import { Logo } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { hrefFor, navigateHash } from '../../lib/router';
 import { proApi } from './api';
@@ -42,7 +42,7 @@ export default function Setup({ onDone }: { onDone: () => Promise<void> }) {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <ol className="steps" aria-label="Setup steps">
           {STEPS.map((s, i) => (
@@ -68,7 +68,7 @@ export default function Setup({ onDone }: { onDone: () => Promise<void> }) {
           {step === 1 && (
             <>
               <h1>Pricing defaults</h1>
-              <p className="muted">Mise prices every kitchen at your cost plus your markup. Clients only ever see the result.</p>
+              <p className="muted">BluModel Studio prices every kitchen at your cost plus your markup. Clients only ever see the result.</p>
               <PricingFields draft={draft} onChange={setDraft} />
             </>
           )}
@@ -79,14 +79,14 @@ export default function Setup({ onDone }: { onDone: () => Promise<void> }) {
               <div className="pro-start">
                 <button type="button" className="pro-start-card" onClick={() => finish(hrefFor({ name: 'pro', rest: 'catalog/new' }))} disabled={busy}>
                   <b>Quick add a product</b>
-                  <span>Pick a type, widths, door style and finishes. Mise draws it at true size; no 3D model needed.</span>
+                  <span>Pick a type, widths, door style and finishes. BluModel Studio draws it at true size; no 3D model needed.</span>
                 </button>
                 <button type="button" className="pro-start-card" onClick={() => finish(`${hrefFor({ name: 'pro', rest: 'catalog/new' })}?model=1`)} disabled={busy}>
                   <b>Upload your own 3D model</b>
                   <span>A .glb file of a product you sell, checked for size and dimensions.</span>
                 </button>
                 <button type="button" className="pro-start-card" onClick={() => finish(hrefFor({ name: 'pro', rest: 'modelling' }))} disabled={busy}>
-                  <b>Have Mise model it</b>
+                  <b>Have BluModel Studio model it</b>
                   <span>Send photos and a spec sheet; we model a product or a whole line for you (paid per item).</span>
                 </button>
                 <button type="button" className="pro-start-card pro-start-skip" onClick={() => finish(hrefFor({ name: 'pro', rest: '' }))} disabled={busy}>

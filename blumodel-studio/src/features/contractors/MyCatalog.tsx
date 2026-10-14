@@ -87,7 +87,7 @@ export default function MyCatalog() {
       {products && products.length === 0 && (
         <div className="pro-empty">
           <h2>Nothing here yet</h2>
-          <p>Quick add a product: pick its type, the widths you sell, its door style and finishes. Mise draws it at true size, so most cabinet lines look right without any 3D modelling.</p>
+          <p>Quick add a product: pick its type, the widths you sell, its door style and finishes. BluModel Studio draws it at true size, so most cabinet lines look right without any 3D modelling.</p>
           {!readOnly && (
             <a className="btn primary big" href={hrefFor({ name: 'pro', rest: 'catalog/new' })}>
               Quick add your first product

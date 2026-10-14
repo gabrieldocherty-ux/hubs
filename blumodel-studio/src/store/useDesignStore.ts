@@ -129,9 +129,9 @@ export type CameraPreset = 'overview' | 'eye' | 'top' | 'front';
 
 export { sanitizeDoc };
 
-const LOCAL_DRAFT = 'mise-local-draft';
+const LOCAL_DRAFT = 'blumodel-local-draft';
 
-/** The design kept on this device for people using Mise without an account. */
+/** The design kept on this device for people using BluModel Studio without an account. */
 export function loadLocalDraft(): DesignDoc | null {
   try {
     const raw = localStorage.getItem(LOCAL_DRAFT);
@@ -557,7 +557,7 @@ export const useDesignStore = create<State>()(
       };
     },
     {
-      name: 'mise-kitchen-v1',
+      name: 'blumodel-kitchen-v1',
       version: 1,
       partialize: (s) => ({
         ui: { ...s.ui, leftTab: 'products' as LeftTab, rightTab: 'details' as RightTab },

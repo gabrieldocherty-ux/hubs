@@ -17,7 +17,7 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 const clampPct = (v: number) => Math.min(1000, Math.max(0, v));
 
 /**
- * The key a product's brand settings live under: 'builtin' (Mise's built-in catalog), a
+ * The key a product's brand settings live under: 'builtin' (BluModel Studio's built-in catalog), a
  * brand id, or 'own' (the contractor's own products and custom models). Decided from the
  * id and brand rather than `source`, which a saved-kitchen snapshot replaces.
  */

@@ -57,7 +57,7 @@ export function sampleDoc(over = {}) {
   };
 }
 
-/** An HTTP client with a cookie jar. Non-GET requests carry `X-Mise: 1` and JSON by default. */
+/** An HTTP client with a cookie jar. Non-GET requests carry `X-BluModel: 1` and JSON by default. */
 export class Agent {
   constructor(base) {
     this.base = base;
@@ -91,7 +91,7 @@ export class Agent {
   async request(method, p, { body, raw, contentType, headers = {}, csrf = true } = {}) {
     const h = { ...headers };
     const write = method !== 'GET' && method !== 'HEAD';
-    if (write && csrf) h['X-Mise'] = '1';
+    if (write && csrf) h['X-BluModel'] = '1';
     let payload;
     if (!write) {
       // GET and HEAD never carry a body.
@@ -155,7 +155,7 @@ let seq = 0;
  *   `dbPath` lets a test use a real file (e.g. a migrated copy) instead of ':memory:'.
  */
 export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits = false, log = silentLog, dbPath = ':memory:' } = {}) {
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mise-test-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-test-'));
   const prod = env.NODE_ENV === 'production' || env.PROD === '1';
   const config = loadConfig(
     {
@@ -198,7 +198,7 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
     async user({ role = 'customer', name, email, password } = {}) {
       const n = ++seq;
       const a = new Agent(url);
-      const creds = { name: name ?? `Test User ${n}`, email: email ?? `user${n}-${randomId('', 6)}@test.mise`, password: password ?? `correct horse ${n}` };
+      const creds = { name: name ?? `Test User ${n}`, email: email ?? `user${n}-${randomId('', 6)}@test.blumodel`, password: password ?? `correct horse ${n}` };
       const r = await a.post('/api/auth/signup', creds);
       if (r.status !== 201) throw new Error(`t.user: signup failed (${r.status}): ${r.text}`);
       // The harness's own signups don't count against the signup limit a test may be measuring.

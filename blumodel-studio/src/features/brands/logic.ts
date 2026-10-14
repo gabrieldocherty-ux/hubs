@@ -103,7 +103,7 @@ export function groupByLine<T extends { line?: string | null }>(items: T[], noLi
 export function leadMailto(lead: { email: string; productName: string; name: string }, company: string): string {
   const about = lead.productName ? `your request about ${lead.productName}` : 'your request';
   const subject = `${company}: ${about}`;
-  const body = `Hi ${lead.name.split(/\s+/)[0] || 'there'},\n\nThanks for getting in touch through Mise.\n\n`;
+  const body = `Hi ${lead.name.split(/\s+/)[0] || 'there'},\n\nThanks for getting in touch through BluModel Studio.\n\n`;
   return `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 

@@ -1,6 +1,6 @@
 // Viewer demo data (package A): one fictional demo brand with two published GLB products that
 // show off the realistic viewer: a 30″ range and a dome pendant, each built from real geometry
-// (not a single box) with `mise_*` material slots, so finishes switch the model live and the
+// (not a single box) with `blumodel_*` material slots, so finishes switch the model live and the
 // hardware follows the kitchen. Idempotent: running it again changes nothing.
 //
 //   export async function seed(ctx)   ctx = { db, config, services, now, forceDemo? }
@@ -125,7 +125,7 @@ function meshBuilder() {
       });
       const bin = Buffer.concat(chunks);
       const gltf = {
-        asset: { version: '2.0', generator: 'mise viewer seed' },
+        asset: { version: '2.0', generator: 'blumodel viewer seed' },
         scene: 0,
         scenes: [{ nodes: [0] }],
         nodes: [{ mesh: 0, name: 'product' }],
@@ -162,18 +162,18 @@ export function rangeGlb() {
   const zb = -14.5; // back
   const zf = 11.5; // front of the carcass
   m.box(P(-14.6, 0, zb + 0.5), P(14.6, 4, zf - 2), 'plinth');
-  m.box(P(-15, 4, zb), P(15, 35, zf), 'mise_finish'); // carcass
-  m.box(P(-14.85, 5.5, zf), P(14.85, 29.6, zf + 1), 'mise_finish'); // oven door
+  m.box(P(-15, 4, zb), P(15, 35, zf), 'blumodel_finish'); // carcass
+  m.box(P(-14.85, 5.5, zf), P(14.85, 29.6, zf + 1), 'blumodel_finish'); // oven door
   m.box(P(-10, 11, zf + 1), P(10, 22, zf + 1.05), 'oven_glass');
-  m.box(P(-14.85, 30, zf), P(14.85, 35, zf + 1), 'mise_finish'); // control panel
+  m.box(P(-14.85, 30, zf), P(14.85, 35, zf + 1), 'blumodel_finish'); // control panel
   m.box(P(-15, 35, zb), P(15, 36, zf + 1), 'cooktop');
   // Handle: a bar on two posts, across the top of the door.
-  m.lathe([[0.45 * IN, -12.5 * IN], [0.45 * IN, 12.5 * IN]], 'mise_hardware', { cx: 0, cy: 27.6 * IN, cz: (zf + 2.6) * IN, axis: 'x', seg: 20 });
-  for (const x of [-11.5, 11.5]) m.box(P(x - 0.3, 27.3, zf + 1), P(x + 0.3, 27.9, zf + 2.6), 'mise_hardware');
+  m.lathe([[0.45 * IN, -12.5 * IN], [0.45 * IN, 12.5 * IN]], 'blumodel_hardware', { cx: 0, cy: 27.6 * IN, cz: (zf + 2.6) * IN, axis: 'x', seg: 20 });
+  for (const x of [-11.5, 11.5]) m.box(P(x - 0.3, 27.3, zf + 1), P(x + 0.3, 27.9, zf + 2.6), 'blumodel_hardware');
   // Five knobs on the control panel, facing the front.
   for (let i = 0; i < 5; i++) {
     const cx = -15 + 6 * (i + 0.5);
-    m.lathe([[0.9 * IN, 0], [0.95 * IN, 0.5 * IN], [0.85 * IN, 1.1 * IN], [0.01 * IN, 1.15 * IN]], 'mise_hardware', { cx: cx * IN, cy: 32.5 * IN, cz: (zf + 1) * IN, axis: 'z', seg: 24 });
+    m.lathe([[0.9 * IN, 0], [0.95 * IN, 0.5 * IN], [0.85 * IN, 1.1 * IN], [0.01 * IN, 1.15 * IN]], 'blumodel_hardware', { cx: cx * IN, cy: 32.5 * IN, cz: (zf + 1) * IN, axis: 'z', seg: 24 });
   }
   // Four sealed burners with cast-iron grates.
   for (const [bx, bz] of [[-7, -8], [7, -8], [-7, 4], [7, 4]]) {
@@ -183,8 +183,8 @@ export function rangeGlb() {
   }
   return m.toGlb({
     plinth: { color: [0.08, 0.08, 0.085, 1], roughness: 0.8 },
-    mise_finish: { color: [0.76, 0.77, 0.78, 1], metallic: 0.9, roughness: 0.3 },
-    mise_hardware: { color: [0.8, 0.8, 0.82, 1], metallic: 1, roughness: 0.25 },
+    blumodel_finish: { color: [0.76, 0.77, 0.78, 1], metallic: 0.9, roughness: 0.3 },
+    blumodel_hardware: { color: [0.8, 0.8, 0.82, 1], metallic: 1, roughness: 0.25 },
     oven_glass: { color: [0.03, 0.035, 0.04, 1], metallic: 0.2, roughness: 0.08 },
     cooktop: { color: [0.06, 0.06, 0.065, 1], metallic: 0.3, roughness: 0.5 },
     burner: { color: [0.12, 0.12, 0.13, 1], metallic: 0.6, roughness: 0.45 },
@@ -208,17 +208,17 @@ export function pendantGlb() {
     const t = (i / 12) * (Math.PI / 2);
     dome.push([Math.max(0.0002, R * Math.cos(t)), H * Math.sin(t)]);
   }
-  m.lathe(dome, 'mise_finish', { seg: 48 });
+  m.lathe(dome, 'blumodel_finish', { seg: 48 });
   m.lathe(dome.map(([r, y]) => [r * 0.97, y * 0.97]).reverse(), 'shade_inner', { seg: 48 });
   m.lathe([[0.0002, 1.8 * IN], [1.4 * IN, 2 * IN], [1.6 * IN, 2.8 * IN], [1.1 * IN, 3.8 * IN], [0.0002, 3.9 * IN]], 'bulb', { seg: 20 });
-  m.lathe([[0.9 * IN, H - 0.2 * IN], [0.9 * IN, H + 1.6 * IN], [0.0002, H + 1.7 * IN]], 'mise_hardware', { seg: 20 }); // socket cup
+  m.lathe([[0.9 * IN, H - 0.2 * IN], [0.9 * IN, H + 1.6 * IN], [0.0002, H + 1.7 * IN]], 'blumodel_hardware', { seg: 20 }); // socket cup
   m.lathe([[0.12 * IN, H + 1.7 * IN], [0.12 * IN, top - 0.7 * IN]], 'cord', { seg: 8 });
-  m.lathe([[0.0002, top - 0.75 * IN], [2.4 * IN, top - 0.7 * IN], [2.4 * IN, top]], 'mise_hardware', { seg: 28 }); // canopy
+  m.lathe([[0.0002, top - 0.75 * IN], [2.4 * IN, top - 0.7 * IN], [2.4 * IN, top]], 'blumodel_hardware', { seg: 28 }); // canopy
   return m.toGlb({
-    mise_finish: { color: [0.16, 0.25, 0.21, 1], roughness: 0.45 },
+    blumodel_finish: { color: [0.16, 0.25, 0.21, 1], roughness: 0.45 },
     shade_inner: { color: [1, 0.97, 0.9, 1], roughness: 0.6, doubleSided: true, emissive: [0.9, 0.75, 0.5] },
     bulb: { color: [1, 0.95, 0.85, 1], roughness: 0.2, emissive: [1, 0.85, 0.6] },
-    mise_hardware: { color: [0.78, 0.63, 0.36, 1], metallic: 1, roughness: 0.3 },
+    blumodel_hardware: { color: [0.78, 0.63, 0.36, 1], metallic: 1, roughness: 0.3 },
     cord: { color: [0.08, 0.08, 0.08, 1], roughness: 0.7 },
   });
 }
@@ -290,7 +290,7 @@ export async function seed(ctx) {
   if (!brand) {
     const t = now();
     const id = randomId('b_');
-    const owner = db.prepare("SELECT id FROM users WHERE email = 'demo-brand@mise.test'").get();
+    const owner = db.prepare("SELECT id FROM users WHERE email = 'demo-brand@blumodel.test'").get();
     db.prepare(
       `INSERT INTO brands (id, slug, name, tagline, description, website, status, verified_at, is_demo, created_by, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, '', 'active', NULL, 1, ?, ?, ?)`,

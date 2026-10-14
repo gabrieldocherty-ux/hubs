@@ -1,6 +1,6 @@
 import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useState } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
-import { Check, Logo } from '../../components/Icons';
+import { Check, Logo, Wordmark } from '../../components/Icons';
 import { Toasts } from '../../components/Toasts';
 import { ApiError } from '../../lib/api';
 import { hrefFor, navigateHash } from '../../lib/router';
@@ -122,7 +122,7 @@ export default function ContractorRoot({ rest }: { rest: string }) {
         <header className="home-bar pro-bar">
           <a className="brand" href="#/">
             <Logo />
-            <span className="wordmark">Mise</span>
+            <Wordmark />
           </a>
           <span className="pro-company" title="Contractor workspace">
             {state.profile.logoUrl && <img src={state.profile.logoUrl} alt="" />}
@@ -205,7 +205,7 @@ function Pitch({ brand = false }: { brand?: boolean }) {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <AccountMenu />
       </header>

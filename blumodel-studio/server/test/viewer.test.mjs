@@ -20,8 +20,8 @@ let t;
 let dist;
 before(async () => {
   // A DIST_DIR fixture holding the committed decoders, as `vite build` copies them from public/.
-  dist = fs.mkdtempSync(path.join(os.tmpdir(), 'mise-viewer-dist-'));
-  fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>Mise</title>');
+  dist = fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-viewer-dist-'));
+  fs.writeFileSync(path.join(dist, 'index.html'), '<!doctype html><title>BluModel Studio</title>');
   fs.mkdirSync(path.join(dist, 'draco'));
   for (const f of DRACO) fs.copyFileSync(path.join(root, 'public', 'draco', f), path.join(dist, 'draco', f));
   t = await startTestServer({ env: { DIST_DIR: dist } });
@@ -63,7 +63,7 @@ test('the viewer adds no routes and no migrations', () => {
   assert.deepEqual(steps, []);
 });
 
-test('the demo GLBs are valid, carry mise_* slots and match their declared size', () => {
+test('the demo GLBs are valid, carry blumodel_* slots and match their declared size', () => {
   for (const [glb, dims] of [
     [rangeGlb(), { w: 30, h: 37, d: 29 }],
     [pendantGlb(), { w: 14, h: 50, d: 14 }],
@@ -71,7 +71,7 @@ test('the demo GLBs are valid, carry mise_* slots and match their declared size'
     const v = validateGlb(glb);
     assert.equal(v.ok, true, v.error);
     const file = t.file(null, glb, { kind: 'model', visibility: 'public' });
-    assert.ok(file.meta.slots.includes('mise_finish') && file.meta.slots.includes('mise_hardware'), JSON.stringify(file.meta.slots));
+    assert.ok(file.meta.slots.includes('blumodel_finish') && file.meta.slots.includes('blumodel_hardware'), JSON.stringify(file.meta.slots));
     // Uniform fit-to-declared scaling is then within 1% of 1 on every axis.
     for (const k of ['w', 'h', 'd']) {
       assert.ok(Math.abs(file.meta.bboxIn[k] / dims[k] - 1) < 0.01, `${k}: ${file.meta.bboxIn[k]} vs ${dims[k]}`);
@@ -96,10 +96,10 @@ test('the viewer seed makes one fictional demo brand with two published GLB prod
   for (const p of mine) {
     assert.match(p.id, /^p_[a-z0-9]{24}$/);
     assert.equal(p.isDemo, true);
-    assert.equal(p.brandKind, 'partner', 'a Mise-curated brand, not a contractor’s page');
+    assert.equal(p.brandKind, 'partner', 'a BluModel-curated brand, not a contractor’s page');
     assert.match(p.name, /\(Demo\)$/);
     assert.ok(p.model?.url, 'has a model');
-    assert.ok(p.model.slots.includes('mise_finish'));
+    assert.ok(p.model.slots.includes('blumodel_finish'));
     // The public model URL serves the GLB itself.
     const glb = await t.agent().get(p.model.url);
     assert.equal(glb.status, 200);

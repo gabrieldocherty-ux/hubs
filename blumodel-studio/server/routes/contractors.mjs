@@ -13,7 +13,7 @@ import { columnsOf, csvCell, parseCsv, parseMoney, parseWidth } from '../contrac
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const DISCLAIMER =
-  'Mise is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional.';
+  'BluModel Studio is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional.';
 const DAY = 86_400_000;
 
 function httpsOrEmpty(v, field) {
@@ -110,7 +110,7 @@ export default function routes(ctx) {
     markupPct: readPct(b.markupPct, 'markupPct'),
   });
 
-  /** Every product the contractor sells: their own, the public brands they carry, Mise's built-ins. */
+  /** Every product the contractor sells: their own, the public brands they carry, BluModel Studio's built-ins. */
   async function carried(user) {
     const { kit } = await builtinIds();
     const settings = pro.brandSettings(user.id);
@@ -428,7 +428,7 @@ export default function routes(ctx) {
         for (const p of catalog) counts.set(p.brandId, (counts.get(p.brandId) ?? 0) + 1);
         const s = (key) => settings[key] ?? { enabled: true, pctOffList: null, markupPct: null };
         const brands = [
-          { key: 'builtin', name: 'Mise built-in catalog', isDemo: false, verified: false, productCount: kit.BUILTIN_PRODUCTS.length, ...s('builtin') },
+          { key: 'builtin', name: 'BluModel Studio built-in catalog', isDemo: false, verified: false, productCount: kit.BUILTIN_PRODUCTS.length, ...s('builtin') },
           ...services.brands
             .listActive()
             .map(services.brands.toWire)

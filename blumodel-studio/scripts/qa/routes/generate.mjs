@@ -1,6 +1,6 @@
 // QA routes for package D, "Start from a photo" (#/generate). Format: BUILD_PLAN §3.7.
 //
-// No route reaches Anthropic: the QA server runs without ANTHROPIC_API_KEY / MISE_LLM_MODEL, so
+// No route reaches Anthropic: the QA server runs without ANTHROPIC_API_KEY / BLUMODEL_LLM_MODEL, so
 // /api/config.llm is false and the screen starts from its defaults (the manual flow). Headless
 // runs can't drive a file picker, so the screen takes QA-only URL parameters (only when the page
 // URL has `?qa`, see src/features/generate/qa.ts):
@@ -72,7 +72,7 @@ async function uploadFixture(api, as = 'customer') {
 }
 
 /** The model the screen is building from (QA hook). */
-const MODEL = 'JSON.stringify(window.__miseQa?.generate?.model?.() ?? null)';
+const MODEL = 'JSON.stringify(window.__blumodelQa?.generate?.model?.() ?? null)';
 
 async function checkSpace({ evaluate }) {
   await noSideScroll(evaluate);
@@ -111,7 +111,7 @@ export default [
     waitMs: 500,
     expectText: ['1 of 6 photos', 'Continue'],
     check: async ({ evaluate }) => {
-      const n = await until(evaluate, 'window.__miseQa?.generate?.photos?.()', 'the photo to load');
+      const n = await until(evaluate, 'window.__blumodelQa?.generate?.photos?.()', 'the photo to load');
       if (n !== 1) throw new Error(`expected 1 photo, got ${n}`);
       await until(evaluate, '[...document.querySelectorAll(".gen-thumb img")].every((i) => i.complete && i.naturalWidth > 0)', 'the thumbnail to render');
     },
@@ -216,7 +216,7 @@ export default [
     waitMs: 400,
     check: async ({ evaluate }) => {
       await build(evaluate, '#/local');
-      const n = await evaluate("JSON.parse(localStorage.getItem('mise-local-draft') || '{}').items?.length ?? 0");
+      const n = await evaluate("JSON.parse(localStorage.getItem('blumodel-local-draft') || '{}').items?.length ?? 0");
       if (n < 8) throw new Error(`the device kitchen has ${n} pieces`);
       await until(evaluate, '!!document.querySelector("canvas")', 'the editor', 20000);
       await sleep(1500);

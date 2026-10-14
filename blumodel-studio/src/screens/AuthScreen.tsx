@@ -5,7 +5,7 @@ import { useSession } from '../store/useSession';
 import { buildTemplate } from '../data/templates';
 import { DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { MiniPlan } from '../components/MiniPlan';
-import { Logo } from '../components/Icons';
+import { Logo, Wordmark } from '../components/Icons';
 
 export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
   const status = useSession((s) => s.status);
@@ -44,7 +44,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
       <section className="auth-hero" aria-hidden>
         <div className="auth-brand">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </div>
         <div className="auth-plan">
           <MiniPlan doc={hero} />
@@ -100,7 +100,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
           </button>
 
           <p className="auth-switch">
-            {signup ? 'Already have an account? ' : 'New to Mise? '}
+            {signup ? 'Already have an account? ' : 'New to BluModel Studio? '}
             <a href={`${signup ? '#/signin' : '#/signup'}${keepNext}`}>{signup ? 'Sign in' : 'Create an account'}</a>
           </p>
 

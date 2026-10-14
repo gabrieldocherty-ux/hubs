@@ -143,7 +143,7 @@ export default function routes(ctx) {
   const pageChecks = (brand, profile) => [
     { id: 'name', label: 'A public name', ok: !!brand?.name },
     { id: 'tagline', label: 'A tagline', ok: !!brand?.tagline },
-    { id: 'contact', label: 'A phone number or website in Company (Mise checks the business is real)', ok: !!(profile?.phone || profile?.website) },
+    { id: 'contact', label: 'A phone number or website in Company (BluModel Studio checks the business is real)', ok: !!(profile?.phone || profile?.website) },
   ];
 
   const defaultsFrom = (profile) => {
@@ -316,7 +316,7 @@ export default function routes(ctx) {
         const t = ctx.now();
         const name = b.name === undefined ? brand?.name ?? a.profile.company : str(b.name, 80);
         if (!name) throw new HttpError(400, 'Give your page a public name.', { field: 'name' });
-        if (brand?.liveAt && name !== brand.name) throw new HttpError(400, 'Your public name is set once your page has been live. Ask Mise to change it.', { field: 'name' });
+        if (brand?.liveAt && name !== brand.name) throw new HttpError(400, 'Your public name is set once your page has been live. Ask BluModel Studio to change it.', { field: 'name' });
         let slug = brand?.slug;
         if (b.slug !== undefined || !brand) {
           const wanted = b.slug === undefined ? services.brands.uniqueSlug(name) : str(b.slug, 60).toLowerCase();

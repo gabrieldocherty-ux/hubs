@@ -11,7 +11,7 @@ import './marketing.css';
 /**
  * The landing page (signed-out `#/` and `#/welcome`), PRODUCT_SPEC §5.1 as revised: the way in is
  * a photo of the kitchen you have (`#/generate`), not a text description, which Gabe turned down.
- * Everything here is drawn by Mise itself: the hero is a real render of the starter kitchen, the
+ * Everything here is drawn by BluModel Studio itself: the hero is a real render of the starter kitchen, the
  * plan inset and the product drawings are the app's own components. No web fonts, no stock art.
  */
 export default function LandingScreen() {
@@ -64,21 +64,21 @@ function Hero() {
         <p className="mk-hero-fine">No card needed. Exports are $5 per kitchen, or $15 a month for every kitchen.</p>
       </div>
       {art === 'render' ? (
-        // The render is a real Mise 3D view of the starter kitchen (public/marketing/hero.webp).
+        // The render is a real BluModel Studio 3D view of the starter kitchen (public/marketing/hero.webp).
         <figure className="mk-hero-art">
           <img
             className="mk-hero-render"
             src="/marketing/hero.webp"
             width={1200}
             height={800}
-            alt="A Mise 3D view of an L-shaped kitchen with an island, warm white shaker cabinets, brass pendants and a marble countertop."
+            alt="A BluModel Studio 3D view of an L-shaped kitchen with an island, warm white shaker cabinets, brass pendants and a marble countertop."
             onError={() => setArt('plan')}
           />
           <div className="mk-hero-inset" aria-hidden>
             <span className="mk-hero-inset-label">Plan</span>
             <MiniPlan doc={doc} />
           </div>
-          <figcaption>The starter kitchen in Mise: the 3D view, and the same room as a plan.</figcaption>
+          <figcaption>The starter kitchen in BluModel Studio: the 3D view, and the same room as a plan.</figcaption>
         </figure>
       ) : (
         // Without the render (a build without public/marketing), the live plan stands in.
@@ -86,7 +86,7 @@ function Hero() {
           <div className="mk-hero-render mk-hero-render--plan">
             <MiniPlan doc={doc} />
           </div>
-          <figcaption>The starter kitchen in Mise, as a plan.</figcaption>
+          <figcaption>The starter kitchen in BluModel Studio, as a plan.</figcaption>
         </figure>
       )}
     </section>
@@ -103,7 +103,7 @@ const STEPS: { n: string; title: string; body: string; icon: JSX.Element }[] = [
   {
     n: '2',
     title: 'Check the space',
-    body: 'Measure one wall with a tape and Mise scales the rest. Confirm the windows, doors and where the sink and range sit.',
+    body: 'Measure one wall with a tape and BluModel Studio scales the rest. Confirm the windows, doors and where the sink and range sit.',
     icon: <TapeIcon />,
   },
   {
@@ -229,7 +229,7 @@ function Brands() {
       <div className="mk-split">
         <div>
           <SectionHead eyebrow="Brands and makers" title={<span id="brands-title">Brand products at their real size, ready to drop in</span>}>
-            Every product in Mise has real dimensions, finishes and a price, and brand products carry their SKU and a link to buy. Open any of them on its own page, turn it around in 3D, then drop it into your kitchen.
+            Every product in BluModel Studio has real dimensions, finishes and a price, and brand products carry their SKU and a link to buy. Open any of them on its own page, turn it around in 3D, then drop it into your kitchen.
           </SectionHead>
           <ul className="mk-ticks mk-ticks--dark">
             <li>Brand pages with a <b>Verified</b> badge once we’ve checked the business is real.</li>

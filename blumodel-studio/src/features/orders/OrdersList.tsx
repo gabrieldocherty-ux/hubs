@@ -40,7 +40,7 @@ export function OrdersList() {
         <div>
           <span className="eyebrow">Custom 3D models</span>
           <h1>My orders</h1>
-          <p className="muted">Can’t find your range, sink or light in the catalog? The Mise studio models it to scale, and it lands privately in your catalog.</p>
+          <p className="muted">Can’t find your range, sink or light in the catalog? The BluModel 3D studio models it to scale, and it lands privately in your catalog.</p>
         </div>
         <a className="btn primary big" href={hrefFor({ name: 'orders', rest: 'new' })}>
           Request a custom model

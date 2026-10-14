@@ -47,12 +47,18 @@ test('a flat axis does not constrain the fit; an empty model keeps real size', (
 });
 
 test('material slots by name, tolerant of exporter suffixes', () => {
+  assert.equal(slotOf('blumodel_finish'), 'finish');
+  assert.equal(slotOf('blumodel_finish.001'), 'finish');
+  assert.equal(slotOf('BLUMODEL_Cabinet_2'), 'cabinet');
+  assert.equal(slotOf('blumodel_hardware'), 'hardware');
+  assert.equal(slotOf('blumodel_counter'), 'counter');
+  assert.equal(slotOf('blumodel_finishes'), null);
+  // Models made before the rename name their slots mise_*: they still re-tint.
   assert.equal(slotOf('mise_finish'), 'finish');
-  assert.equal(slotOf('mise_finish.001'), 'finish');
-  assert.equal(slotOf('MISE_Cabinet_2'), 'cabinet');
-  assert.equal(slotOf('mise_hardware'), 'hardware');
+  assert.equal(slotOf('MISE_Cabinet.001'), 'cabinet');
+  assert.equal(slotOf('mise_hardware_2'), 'hardware');
   assert.equal(slotOf('mise_counter'), 'counter');
-  assert.equal(slotOf('mise_finishes'), null);
+  assert.equal(slotOf('misc_finish'), null);
   assert.equal(slotOf('body'), null);
   assert.equal(slotOf(undefined), null);
 });

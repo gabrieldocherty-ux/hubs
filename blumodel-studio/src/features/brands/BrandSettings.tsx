@@ -82,7 +82,7 @@ export default function BrandSettings() {
     setBusy('submit');
     try {
       setState(await brandApi.submit());
-      toast('Submitted. Mise checks the business is real, usually within a day.', 'ok');
+      toast('Submitted. BluModel Studio checks the business is real, usually within a day.', 'ok');
     } catch (e) {
       fail(e, 'Could not submit. Try again.');
     } finally {
@@ -116,7 +116,7 @@ export default function BrandSettings() {
             <span className="eyebrow">Your page</span>
             <label className={`field${bad('name')}`}>
               <span>
-                Public name {locked && <em>· set once the page has been live; ask Mise to change it</em>}
+                Public name {locked && <em>· set once the page has been live; ask BluModel Studio to change it</em>}
               </span>
               <input
                 value={name}
@@ -242,18 +242,18 @@ export default function BrandSettings() {
                   </li>
                 ))}
               </ul>
-              <p className="fine">Mise checks the name, website and phone are a real business, then the page goes live with a Verified contractor badge. While it’s in review you can preview exactly what will be public.</p>
+              <p className="fine">BluModel Studio checks the name, website and phone are a real business, then the page goes live with a Verified contractor badge. While it’s in review you can preview exactly what will be public.</p>
             </section>
           )}
           {ps === 'in_review' && (
             <section className="pro-card">
               <span className="eyebrow">In review</span>
-              <p>Mise is checking your business. You can still change these settings; the reviewer sees the latest.</p>
+              <p>BluModel Studio is checking your business. You can still change these settings; the reviewer sees the latest.</p>
             </section>
           )}
           {state.history.length > 0 && (
             <section className="pro-card">
-              <span className="eyebrow">Notes from Mise</span>
+              <span className="eyebrow">Notes from BluModel Studio</span>
               <ul className="brand-history">
                 {state.history.map((h) => (
                   <li key={h.at + h.action}>

@@ -49,7 +49,7 @@ export function PublicBrandView({ brand, products, preview = false }: PublicBran
           <div className="bp-title">
             <div className="bp-badges">
               {brand.verified && (
-                <span className="bp-verified" title={contractor ? 'Mise checked that this business is real.' : 'A brand curated by Mise.'}>
+                <span className="bp-verified" title={contractor ? 'BluModel Studio checked that this business is real.' : 'A brand curated by BluModel Studio.'}>
                   <Check width={13} height={13} /> {contractor ? 'Verified contractor' : 'Verified brand'}
                 </span>
               )}
@@ -131,8 +131,8 @@ export function PublicBrandView({ brand, products, preview = false }: PublicBran
       <footer className="bp-foot">
         <p className="fine">
           {contractor
-            ? `Products and prices are set by ${brand.name}. Mise checked that the business is real; it doesn’t sell or install anything itself.`
-            : 'Curated by Mise. Prices are list prices.'}
+            ? `Products and prices are set by ${brand.name}. BluModel Studio checked that the business is real; it doesn’t sell or install anything itself.`
+            : 'Curated by BluModel Studio. Prices are list prices.'}
         </p>
       </footer>
 

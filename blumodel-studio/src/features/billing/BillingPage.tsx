@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
 import { Dialog } from '../../components/Dialog';
-import { Check, Logo } from '../../components/Icons';
+import { Check, Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { navigateHash, pageQuery, useHashQuery } from '../../lib/router';
 import { useSession } from '../../store/useSession';
@@ -95,7 +95,7 @@ export default function BillingPage() {
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
-          <span className="wordmark">Mise</span>
+          <Wordmark />
         </a>
         <AccountMenu />
       </header>
@@ -286,7 +286,7 @@ export default function BillingPage() {
       {portalDemo && (
         <Dialog title="Billing portal (demo)" onClose={() => navigateHash('#/account/billing', true)}>
           <p className="dialog-copy">
-            With real payments, this opens Stripe’s secure customer portal, where you update your card and download invoices. Mise never sees card details. Payments on this server are simulated, so there is nothing to manage here.
+            With real payments, this opens Stripe’s secure customer portal, where you update your card and download invoices. BluModel Studio never sees card details. Payments on this server are simulated, so there is nothing to manage here.
           </p>
           <div className="modal-actions">
             <button className="btn primary" onClick={() => navigateHash('#/account/billing', true)} data-autofocus>

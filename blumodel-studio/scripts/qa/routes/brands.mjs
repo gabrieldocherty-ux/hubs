@@ -3,7 +3,7 @@
 // moderation and brands, at desktop and phone sizes.
 // Run: node scripts/qa.mjs --pkg brands --port 8813
 //
-// Data comes from server/seed/brands.mjs: demo-brand@mise.test ("brand") is the demo contractor
+// Data comes from server/seed/brands.mjs: demo-brand@blumodel.test ("brand") is the demo contractor
 // whose company, Alder & Pine Cabinetry (Demo), has a live page with leads; Birchwood Kitchen
 // Studio (Demo) waits in the review queue; two (Demo) partner brands carry models. The runner's
 // "contractor" is a fresh Contractor-plan user with no page yet.
@@ -220,7 +220,7 @@ export default [
       return { path: '#/pro/brand', company: p.body.profile.company };
     },
     waitFor: ['.brand-pitch'],
-    expectText: ['Homeowners on Mise can find you', 'Set up my page'],
+    expectText: ['Homeowners on BluModel Studio can find you', 'Set up my page'],
     check: async (h) => {
       await noSideScroll(h);
       await h.click('.brand-pitch a.btn.primary');

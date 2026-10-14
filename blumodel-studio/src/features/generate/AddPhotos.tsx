@@ -58,7 +58,7 @@ export function AddPhotos({
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
       >
-        <p className="gen-drop-title">{full ? `That’s ${MAX_PHOTOS} photos, the most Mise uses.` : photos.length ? 'Add another angle' : 'Add photos of your kitchen as it is now'}</p>
+        <p className="gen-drop-title">{full ? `That’s ${MAX_PHOTOS} photos, the most BluModel Studio uses.` : photos.length ? 'Add another angle' : 'Add photos of your kitchen as it is now'}</p>
         <p className="gen-drop-sub">{full ? 'Remove one to add another.' : <>Drop photos here, or use the buttons. JPEG, PNG or WebP · up to {MAX_PHOTOS}.</>}</p>
         <div className="gen-drop-buttons">
           {touch && (
@@ -110,7 +110,7 @@ export function AddPhotos({
           <b>Stand back</b> in a doorway or a corner so each photo takes in a whole wall, floor to ceiling.
         </li>
         <li>
-          <b>Your first photo faces the main wall.</b> Mise calls it north and works out the others from it.
+          <b>Your first photo faces the main wall.</b> BluModel Studio calls it north and works out the others from it.
         </li>
         <li>
           <b>No need to tidy up.</b> Photos stay private to you.
