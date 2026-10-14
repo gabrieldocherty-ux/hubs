@@ -17,6 +17,9 @@
     "seed": "node scripts/build-kit.mjs && node --no-warnings server/seed/index.mjs",
     "qa": "node scripts/build-kit.mjs && node scripts/qa.mjs",
     "deploy:local": "npm run build && node scripts/deploy-local.mjs",
+    "home:migrate": "node scripts/migrate-home.mjs",
+    "home:tasks": "node scripts/register-tasks.mjs",
+    "tunnel:setup": "node scripts/tunnel/setup-tunnel.mjs",
     "stripe:check": "node --no-warnings scripts/stripe-check.mjs"
   },
   "dependencies": {

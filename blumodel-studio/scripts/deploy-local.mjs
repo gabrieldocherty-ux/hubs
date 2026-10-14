@@ -1,38 +1,49 @@
-// Deploys the built app to a stable folder outside the repo and (re)starts the
-// home server there. The database, uploads, logs and private settings are never overwritten.
+// Deploys the built app to the home server's folder outside the repo and (re)starts it there.
+// The database, uploads, backups, logs and private settings are never overwritten.
 //
 //   npm run deploy:local                          # build, copy to %USERPROFILE%\Projects\BluModelStudio, restart
 //   node scripts/deploy-local.mjs --dist <dir>    # deploy an existing build from <dir> instead of dist\
 //
-// Env: BLUMODEL_HOME (target folder), BLUMODEL_PORT (8790), BLUMODEL_HOST (127.0.0.1),
-//      BLUMODEL_DEMO_PAYMENTS (1; set 0 to refuse the DEMO checkout on this server).
-//      MISE_HOME / MISE_PORT / MISE_HOST / MISE_DEMO_PAYMENTS are the deprecated names from before
-//      the rename to BluModel Studio; still read when the BLUMODEL_ name isn't set.
+// Env: BLUMODEL_HOME (the folder; default %USERPROFILE%\Projects\BluModelStudio), BLUMODEL_PORT (8790),
+//      BLUMODEL_HOST (127.0.0.1), BLUMODEL_ADMIN_EMAILS (ADMIN_EMAILS in a new settings template).
+//      MISE_HOME / MISE_PORT / MISE_HOST are the deprecated names from before the rename; still read
+//      when the BLUMODEL_ name isn't set. DEMO_PAYMENTS is no longer a deploy setting: it lives in
+//      blumodel.env (0 in the template).
 //
-// Layout of BLUMODEL_HOME:
-//   app\                 replaced on every deploy (dist\, server\ code, src\data\*.json)
-//   data\blumodel.db     the database: kept across deploys. A home copied from before the rename
-//                        has data\mise.db: the deploy backs it up, then renames it (and its -wal and
-//                        -shm files) to blumodel.db while the server is stopped.
-//   data\backups\        a copy of the database from before each deploy (the last 5)
-//   data\uploads\        uploaded models and images: kept across deploys
-//   logs\                server.log
-//   blumodel.env         private settings (Stripe keys, PUBLIC_URL, ADMIN_EMAILS…), KEY=VALUE, made by
-//                        hand and never touched by a deploy. The server reads it at start
-//                        (server/lib/envFile.mjs) and never prints a value. A home that only has the
-//                        old mise.env uses that until it is renamed.
-//   run-server.cmd       supervisor loop: restarts the server if it exits
-//   start-server.cmd / stop-server.cmd / start-hidden.vbs
+// The folder's layout is at the top of server/ops/home.mjs. In short: app\ is replaced; data\
+// (blumodel.db, uploads\, backups\), logs\ and blumodel.env are kept; the supervisor scripts are
+// rewritten. A home from before the rename has data\mise.db and mise.env: the deploy backs the
+// database up and renames it (with its -wal and -shm) to blumodel.db, and renames mise.env to
+// blumodel.env without opening it (scripts/migrate-home.mjs does both when moving the old folder).
+// A home with no settings file at all gets a blumodel.env TEMPLATE (keys present, secrets empty,
+// payments off), readable only by the current Windows account.
+//
+// Stopping the running server: it is asked to shut down gracefully through shutdown.request (it
+// finishes open requests, checkpoints the database and exits), then its supervisor is ended so the
+// new run-server.cmd starts fresh. Only processes whose command line runs THIS home's server or
+// supervisor are touched; the tunnel keeps running through a deploy.
 //
 // Windows starts the supervisor at logon from the scheduled task BluModelStudioServer (it runs
-// start-hidden.vbs); the Cloudflare tunnel to it runs from the task BluModelTunnel. This script
-// never creates, changes or deletes a scheduled task.
+// start-hidden.vbs); the Cloudflare tunnel runs from the task BluModelTunnel (scripts/tunnel/). This
+// script never creates, changes or deletes a scheduled task (scripts/register-tasks.mjs does).
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import {
+  createSettingsTemplate,
+  defaultHome,
+  deployBackupDirs,
+  homeLayout,
+  homeProcesses,
+  serverScripts,
+  settingsTemplate,
+  sys32,
+} from '../server/ops/home.mjs';
+
+/** The admin a new settings template names (the owner of blumodel.studio). */
+const DEFAULT_ADMIN_EMAILS = 'gabrieldocherty@gmail.com';
 
 /** BLUMODEL_<name>, else the deprecated MISE_<name>, else `def`. */
 function setting(name, def) {
@@ -51,15 +62,10 @@ const distArg = argv.indexOf('--dist') >= 0 ? argv[argv.indexOf('--dist') + 1] :
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.resolve(ROOT, distArg || 'dist');
-const HOME = path.resolve(setting('HOME', path.join(os.homedir(), 'Projects', 'BluModelStudio')));
+const L = homeLayout(setting('HOME', defaultHome()));
+const HOME = L.home;
 const PORT = String(setting('PORT', '8790'));
 const HOST = setting('HOST', '127.0.0.1');
-const APP = path.join(HOME, 'app');
-const DEPLOYING = path.join(HOME, 'deploying');
-const DB = path.join(HOME, 'data', 'blumodel.db');
-const LEGACY_DB = path.join(HOME, 'data', 'mise.db');
-const SETTINGS = path.join(HOME, 'blumodel.env');
-const LEGACY_SETTINGS = path.join(HOME, 'mise.env');
 /**
  * Files outside server/ that the server imports at runtime (kept at the same relative path):
  * every JSON file in src/data/ (kinds.json, plans.json…), so a new shared data file ships
@@ -78,153 +84,153 @@ if (argv.includes('--dist') && !distArg) {
   console.error('--dist needs a folder (a vite build output with index.html).');
   process.exit(1);
 }
+if (!/^\d{1,5}$/.test(PORT)) {
+  console.error(`BLUMODEL_PORT must be a port number (got "${PORT}").`);
+  process.exit(1);
+}
 if (!fs.existsSync(path.join(DIST, 'index.html')) || !fs.existsSync(path.join(ROOT, 'server', 'generated', 'export-kit.mjs'))) {
   console.error(`No build found in ${DIST}. Run \`npm run build\` first (or use \`npm run deploy:local\`).`);
   process.exit(1);
 }
+for (const old of ['BLUMODEL_DEMO_PAYMENTS', 'MISE_DEMO_PAYMENTS']) {
+  if (process.env[old]) console.warn(`${old} is no longer used by the deploy: set DEMO_PAYMENTS in ${L.settings} instead.`);
+}
 
-/** PIDs listening on PORT whose command line runs this home's server. */
-function serverPids() {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** PIDs listening on PORT. */
+function listeners() {
   let out = '';
-  try { out = execFileSync('netstat', ['-ano', '-p', 'tcp'], { encoding: 'utf8' }); } catch { return []; }
+  try {
+    out = execFileSync(sys32('netstat.exe'), ['-ano', '-p', 'tcp'], { encoding: 'utf8', windowsHide: true });
+  } catch {
+    return [];
+  }
   const pids = new Set();
   for (const line of out.split(/\r?\n/)) {
-    const cols = line.trim().split(/\s+/);
-    if (cols[0] === 'TCP' && cols[1]?.endsWith(':' + PORT) && cols[3] === 'LISTENING') pids.add(cols[4]);
+    const c = line.trim().split(/\s+/);
+    if (c[0] === 'TCP' && c[1]?.endsWith(':' + PORT) && c[3] === 'LISTENING') pids.add(Number(c[4]));
   }
-  return [...pids].filter((pid) => {
-    try {
-      const cmd = execFileSync('powershell.exe', ['-NoProfile', '-Command',
-        `(Get-CimInstance Win32_Process -Filter "ProcessId=${Number(pid)}").CommandLine`], { encoding: 'utf8' });
-      return cmd.toLowerCase().includes(APP.toLowerCase());
-    } catch { return false; }
-  });
+  return [...pids];
 }
 
-function portTaken() {
+const alive = (pid) => {
   try {
-    const out = execFileSync('netstat', ['-ano', '-p', 'tcp'], { encoding: 'utf8' });
-    return out.split(/\r?\n/).some((l) => { const c = l.trim().split(/\s+/); return c[0] === 'TCP' && c[1]?.endsWith(':' + PORT) && c[3] === 'LISTENING'; });
-  } catch { return false; }
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err?.code === 'EPERM';
+  }
+};
+const kill = (pid) => {
+  try {
+    execFileSync(sys32('taskkill.exe'), ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true });
+  } catch {
+    /* already gone */
+  }
+};
+
+/**
+ * Stops this home's server (gracefully when its supervisor gave it a shutdown file) and its
+ * supervisor. Returns the PIDs stopped.
+ */
+async function stopServer() {
+  const procs = homeProcesses(HOME);
+  const servers = procs.servers.map((p) => p.pid);
+  const supervisors = procs.supervisors.map((p) => p.pid);
+  if (servers.length) {
+    // Only a supervisor generated since the launch hardening names a shutdown file for its server.
+    let graceful = false;
+    try {
+      graceful = fs.readFileSync(L.runServer, 'utf8').includes('BLUMODEL_SHUTDOWN_FILE');
+    } catch {
+      graceful = false;
+    }
+    if (graceful) {
+      fs.writeFileSync(L.shutdownFile, new Date().toISOString());
+      const deadline = Date.now() + 15_000;
+      while (Date.now() < deadline && servers.some(alive)) await sleep(250);
+      const left = servers.filter(alive);
+      if (left.length) console.warn(`The server did not stop within 15 s; ending it (pid ${left.join(', ')}).`);
+      else console.log(`Stopped the server gracefully (pid ${servers.join(', ')}).`);
+      for (const pid of left) kill(pid);
+    } else {
+      for (const pid of servers) kill(pid);
+      console.log(`Stopped the server (pid ${servers.join(', ')}; its supervisor predates graceful shutdown).`);
+    }
+  }
+  // The supervisor waits while `deploying` exists; end it so the new run-server.cmd starts fresh
+  // instead of a running cmd.exe reading a batch file that changed under it.
+  for (const pid of supervisors) kill(pid);
+  if (supervisors.length) console.log(`Stopped the supervisor (pid ${supervisors.join(', ')}).`);
+  fs.rmSync(L.shutdownFile, { force: true });
+  return [...servers, ...supervisors];
 }
 
-const copyTree = (from, to, skip = () => false) =>
-  fs.cpSync(from, to, { recursive: true, filter: (src) => !skip(src) });
-
-// ─── Private settings (only whether the file exists: its contents are never read here) ──
-
-const settingsFile = fs.existsSync(SETTINGS) ? SETTINGS : fs.existsSync(LEGACY_SETTINGS) ? LEGACY_SETTINGS : null;
-
-// ─── Supervisor scripts (regenerated each deploy so they track this file) ──
-
-const NODE = process.execPath;
-// The home server runs --prod, which refuses the DEMO checkout unless DEMO_PAYMENTS=1. A home with
-// no private settings has no Stripe keys, and refusing the demo would leave every export locked
-// with no way to pay, so such a home allows the (clearly labelled, moneyless) demo by default.
-// A home WITH a settings file is the public one: the file decides (production default: demo
-// refused), unless BLUMODEL_DEMO_PAYMENTS is given to this deploy. Demo never replaces real
-// payments: once both Stripe keys are set the server uses Stripe and refuses demo payments.
-const demoSetting = setting('DEMO_PAYMENTS', null);
-const DEMO_PAYMENTS = demoSetting !== null ? (demoSetting === '0' ? '0' : '1') : settingsFile ? null : '1';
-const DEMO_LINE = DEMO_PAYMENTS === null
-  ? 'rem DEMO_PAYMENTS comes from the private settings file (refused in production unless it says DEMO_PAYMENTS=1).'
-  : `set DEMO_PAYMENTS=${DEMO_PAYMENTS}`;
-// A settings file present at deploy time is named outright, so if it later goes missing the
-// server refuses to start rather than coming up without its payment keys.
-const SETTINGS_LINES = settingsFile
-  ? `set "BLUMODEL_ENV_FILE=%~dp0${path.basename(settingsFile)}"`
-  : 'rem No blumodel.env was here at deploy time: the server runs without private settings.';
-const SCRIPTS = {
-  'run-server.cmd': `@echo off
-rem BluModel Studio home server supervisor. Runs the server and restarts it if it exits.
-rem Started hidden by start-hidden.vbs (at logon from the BluModelStudioServer task, or via start-server.cmd).
-rem Generated by blumodel-studio/scripts/deploy-local.mjs - edits are overwritten.
-setlocal
-cd /d "%~dp0"
-set PORT=${PORT}
-set HOST=${HOST}
-set DB_PATH=%~dp0data\\blumodel.db
-set "DEMO_PAYMENTS="
-${DEMO_LINE}
-set "BLUMODEL_ENV_FILE="
-set "MISE_ENV_FILE="
-${SETTINGS_LINES}
-if not exist logs mkdir logs
-:loop
-if exist stopped exit /b 0
-if exist deploying (ping -n 3 127.0.0.1 >nul & goto loop)
-rem Another instance already holds the port: leave it alone rather than spin.
-netstat -ano -p tcp | findstr /R /C:":${PORT} .*LISTENING" >nul && exit /b 0
-echo [%date% %time%] starting on %HOST%:%PORT% >> logs\\server.log
-rem Absolute script path, so deploy-local can tell this server from other node processes.
-"${NODE}" --no-warnings "%~dp0app\\server\\index.mjs" --prod >> logs\\server.log 2>&1
-echo [%date% %time%] server exited with code %errorlevel%, restarting in 5s >> logs\\server.log
-ping -n 6 127.0.0.1 >nul
-goto loop
-`,
-  'start-hidden.vbs': `' Starts the BluModel Studio server supervisor with no console window.
-Set fso = CreateObject("Scripting.FileSystemObject")
-dir = fso.GetParentFolderName(WScript.ScriptFullName)
-Set sh = CreateObject("WScript.Shell")
-sh.CurrentDirectory = dir
-sh.Run "cmd /c """ & dir & "\\run-server.cmd""", 0, False
-`,
-  'start-server.cmd': `@echo off
-cd /d "%~dp0"
-if exist stopped del stopped
-wscript.exe "%~dp0start-hidden.vbs"
-echo BluModel Studio is starting at http://localhost:${PORT}
-`,
-  'stop-server.cmd': `@echo off
-rem Stops the server and its supervisor until start-server.cmd is run again.
-cd /d "%~dp0"
-echo.> stopped
-for /f "tokens=5" %%p in ('netstat -ano -p tcp ^| findstr /R /C:":${PORT} .*LISTENING"') do taskkill /PID %%p /F >nul 2>&1
-echo BluModel Studio server stopped. Run start-server.cmd to start it again.
-`,
-};
+const copyTree = (from, to, skip = () => false) => fs.cpSync(from, to, { recursive: true, filter: (src) => !skip(src) });
 
 // ─── Deploy ────────────────────────────────────────────────────────────────
 
-fs.mkdirSync(path.join(HOME, 'data'), { recursive: true });
-fs.mkdirSync(path.join(HOME, 'logs'), { recursive: true });
-fs.writeFileSync(DEPLOYING, new Date().toISOString());
+fs.mkdirSync(L.data, { recursive: true });
+fs.mkdirSync(L.logs, { recursive: true });
+fs.writeFileSync(L.deploying, new Date().toISOString());
+let settingsNote = '';
 try {
-  const running = serverPids();
-  for (const pid of running) execFileSync('taskkill', ['/PID', pid, '/F'], { stdio: 'ignore' });
-  if (running.length) console.log(`Stopped running server (pid ${running.join(', ')}).`);
-  else if (portTaken()) {
+  const stoppedPids = await stopServer();
+  // A process just ended can take a moment to release its socket.
+  for (let i = 0; i < 20 && stoppedPids.length && listeners().length; i++) await sleep(250);
+  if (listeners().length) {
     console.error(`Port ${PORT} is in use by something other than this BluModel Studio install. Set BLUMODEL_PORT to a free port.`);
-    process.exit(1);
+    process.exitCode = 1;
+    throw new Error('port in use');
   }
 
   // Back up the database before new code (and its migrations) opens it. The server is stopped and
-  // the supervisor waits while DEPLOYING exists, so the copy (with its WAL files) is consistent.
-  const legacyOnly = !fs.existsSync(DB) && fs.existsSync(LEGACY_DB);
-  const db = legacyOnly ? LEGACY_DB : DB;
+  // the supervisor is gone, so the copy (with its WAL files) is consistent.
+  const legacyOnly = !fs.existsSync(L.db) && fs.existsSync(L.legacyDb);
+  const db = legacyOnly ? L.legacyDb : L.db;
   if (fs.existsSync(db)) {
-    const backups = path.join(HOME, 'data', 'backups');
-    const dir = path.join(backups, new Date().toISOString().replace(/[:.]/g, '-'));
+    const dir = path.join(L.backups, new Date().toISOString().replace(/[:.]/g, '-'));
     fs.mkdirSync(dir, { recursive: true });
     const name = path.basename(db);
     for (const ext of ['', '-wal', '-shm']) if (fs.existsSync(db + ext)) fs.copyFileSync(db + ext, path.join(dir, `${name}${ext}`));
-    for (const old of fs.readdirSync(backups).sort().slice(0, -5)) fs.rmSync(path.join(backups, old), { recursive: true, force: true });
+    // Keep the last 5 pre-deploy copies; the server's daily\ backups and uploads-mirror\ are not touched.
+    for (const old of deployBackupDirs(L.backups).slice(0, -5)) fs.rmSync(path.join(L.backups, old), { recursive: true, force: true });
     console.log(`Backed up the database to ${dir}`);
   }
   if (legacyOnly) {
     // A home from before the rename: the database keeps its data under the new name. The WAL and
     // shared-memory files move with it, so nothing committed is left behind.
-    for (const ext of ['', '-wal', '-shm']) if (fs.existsSync(LEGACY_DB + ext)) fs.renameSync(LEGACY_DB + ext, DB + ext);
-    console.log(`Renamed data\\mise.db to data\\blumodel.db (the backup above has the original).`);
-  } else if (fs.existsSync(DB) && fs.existsSync(LEGACY_DB)) {
+    for (const ext of ['', '-wal', '-shm']) if (fs.existsSync(L.legacyDb + ext)) fs.renameSync(L.legacyDb + ext, L.db + ext);
+    console.log('Renamed data\\mise.db to data\\blumodel.db (the backup above has the original).');
+  } else if (fs.existsSync(L.db) && fs.existsSync(L.legacyDb)) {
     console.warn('Both data\\blumodel.db and data\\mise.db exist. The server uses blumodel.db; mise.db is left alone.');
   }
 
-  const staging = APP + '.new';
+  // Private settings: existence checks and a rename only. Their contents are never read here.
+  if (fs.existsSync(L.settings)) {
+    settingsNote = `The server reads its private settings from ${L.settings}.`;
+    if (fs.existsSync(L.legacySettings)) console.warn(`Both blumodel.env and mise.env are in ${HOME}. The server reads blumodel.env only; delete mise.env once you are sure it holds nothing you need.`);
+  } else if (fs.existsSync(L.legacySettings)) {
+    fs.renameSync(L.legacySettings, L.settings);
+    settingsNote = `Renamed mise.env to blumodel.env (not opened). The server reads its private settings from ${L.settings}.`;
+  } else {
+    const adminEmails = String(process.env.BLUMODEL_ADMIN_EMAILS || DEFAULT_ADMIN_EMAILS).trim();
+    const r = createSettingsTemplate(L.settings, { text: settingsTemplate({ adminEmails }) });
+    if (r.created) {
+      settingsNote =
+        `Created a settings TEMPLATE at ${L.settings} (keys present, Stripe values empty, payments off)` +
+        (r.restrictedTo ? `, readable only by ${r.restrictedTo}.` : `. Could not restrict who can read it (${r.restrictError}).`) +
+        ' Fill it in per docs/LAUNCH.md, then restart the server.';
+    } else {
+      settingsNote = `The server reads its private settings from ${L.settings}.`;
+    }
+  }
+
+  const staging = L.app + '.new';
   fs.rmSync(staging, { recursive: true, force: true });
   copyTree(DIST, path.join(staging, 'dist'));
-  copyTree(path.join(ROOT, 'server'), path.join(staging, 'server'),
-    (src) => /[\\/]server[\\/](data|test)([\\/]|$)/.test(src));
+  copyTree(path.join(ROOT, 'server'), path.join(staging, 'server'), (src) => /[\\/]server[\\/](data|test)([\\/]|$)/.test(src));
   // Files outside server/ that the server imports at runtime, at the same relative paths.
   for (const rel of RUNTIME_FILES) {
     fs.mkdirSync(path.dirname(path.join(staging, rel)), { recursive: true });
@@ -232,37 +238,55 @@ try {
   }
   fs.copyFileSync(path.join(ROOT, 'package.json'), path.join(staging, 'package.json'));
   let head = 'unknown';
-  try { head = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT, encoding: 'utf8' }).trim(); } catch {}
+  try {
+    head = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { cwd: ROOT, encoding: 'utf8', windowsHide: true }).trim();
+  } catch {
+    /* not a git checkout */
+  }
   fs.writeFileSync(path.join(staging, 'DEPLOYED.txt'), `commit ${head}\ndeployed ${new Date().toISOString()}\nfrom ${ROOT}\n`);
 
-  fs.rmSync(APP, { recursive: true, force: true });
-  fs.renameSync(staging, APP);
-  for (const [name, body] of Object.entries(SCRIPTS)) fs.writeFileSync(path.join(HOME, name), body.replace(/\r?\n/g, '\r\n'));
-  console.log(`Deployed commit ${head} to ${APP}`);
-  if (settingsFile === LEGACY_SETTINGS) console.warn(`Using the private settings in mise.env (the name from before the rename). Rename it to blumodel.env and redeploy.`);
-  else if (!settingsFile) console.warn(`No blumodel.env in ${HOME}: the server runs without private settings (no Stripe keys, so payments are DEMO${DEMO_PAYMENTS === '1' ? ', allowed' : ', refused'}).`);
-  else console.log(`The server reads its private settings from ${SETTINGS}.`);
+  fs.rmSync(L.app, { recursive: true, force: true });
+  fs.renameSync(staging, L.app);
+  for (const [name, body] of Object.entries(serverScripts({ node: process.execPath, port: PORT, host: HOST }))) fs.writeFileSync(path.join(HOME, name), body);
+  console.log(`Deployed commit ${head} to ${L.app}`);
+  console.log(settingsNote);
+  if (!fs.existsSync(L.tunnelConfig)) console.log(`No tunnel set up in ${HOME} yet: node scripts/tunnel/setup-tunnel.mjs (docs/OPERATIONS.md).`);
+} catch (err) {
+  if (err?.message !== 'port in use') throw err;
 } finally {
-  fs.rmSync(DEPLOYING, { force: true });
+  fs.rmSync(L.deploying, { force: true });
 }
+if (process.exitCode) process.exit(process.exitCode);
 
-// Start it unless the supervisor is already looping (it restarts on its own) or
-// someone stopped it on purpose.
-await new Promise((r) => setTimeout(r, 3000));
-if (fs.existsSync(path.join(HOME, 'stopped'))) {
-  console.log('Server is stopped on purpose (stopped file present). Run start-server.cmd to start it.');
+// Start it unless someone stopped it on purpose.
+if (fs.existsSync(L.stopped)) {
+  console.log('The server is stopped on purpose (a "stopped" file is in the folder). Run start-server.cmd to start it.');
   process.exit(0);
 }
-if (!serverPids().length) {
-  spawn('wscript.exe', [path.join(HOME, 'start-hidden.vbs')], { detached: true, stdio: 'ignore' }).unref();
-}
+spawn(sys32('wscript.exe'), [L.startHidden], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 
-for (let i = 0; i < 30; i++) {
-  await new Promise((r) => setTimeout(r, 1000));
+for (let i = 0; i < 40; i++) {
+  await sleep(1000);
   try {
-    const res = await fetch(`http://127.0.0.1:${PORT}/`);
-    if (res.ok) { console.log(`BluModel Studio is up at http://localhost:${PORT}`); process.exit(0); }
-  } catch {}
+    const res = await fetch(`http://127.0.0.1:${PORT}/api/health`);
+    const h = await res.json().catch(() => ({}));
+    if (res.ok) {
+      let payments = '?';
+      try {
+        payments = (await (await fetch(`http://127.0.0.1:${PORT}/api/config`)).json()).payments ?? '?';
+      } catch {
+        /* older server */
+      }
+      console.log(`BluModel Studio ${h.version ?? ''} is up at http://127.0.0.1:${PORT} (payments: ${payments}). Its log: ${path.join(L.logs, 'server.log')}`);
+      process.exit(0);
+    }
+    if (res.status === 503) {
+      console.error(`The server started but reports a problem: ${JSON.stringify(h)}. Check ${path.join(L.logs, 'server.log')}.`);
+      process.exit(1);
+    }
+  } catch {
+    /* not up yet */
+  }
 }
-console.error(`Server did not answer on port ${PORT} within 30s. Check ${path.join(HOME, 'logs', 'server.log')}.`);
+console.error(`The server did not answer on port ${PORT} within 40 s. Check ${path.join(L.logs, 'server.log')} and ${path.join(L.logs, 'console.log')}.`);
 process.exit(1);
