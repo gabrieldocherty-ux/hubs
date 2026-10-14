@@ -8,6 +8,7 @@ import type { PublicBrand, PublicProduct } from './api';
 import { brandApi } from './api';
 import { groupByLine, needsDemoTag, priceLabel } from './logic';
 import './brands.css';
+import { LegalLinks } from '../legal/LegalLinks';
 
 const LeadForm = lazy(() => import('./LeadForm'));
 const TryInKitchen = lazy(() => import('./TryInKitchen'));
@@ -134,6 +135,7 @@ export function PublicBrandView({ brand, products, preview = false }: PublicBran
             ? `Products and prices are set by ${brand.name}. BluModel Studio checked that the business is real; it doesn’t sell or install anything itself.`
             : 'Curated by BluModel Studio. Prices are list prices.'}
         </p>
+        <LegalLinks />
       </footer>
 
       <Suspense fallback={null}>

@@ -6,6 +6,8 @@ import { buildTemplate } from '../data/templates';
 import { DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { MiniPlan } from '../components/MiniPlan';
 import { Logo, Wordmark } from '../components/Icons';
+import { AgreeToSignUp } from '../components/PaymentNotice';
+import { LegalLinks } from '../features/legal/LegalLinks';
 
 export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
   const status = useSession((s) => s.status);
@@ -98,6 +100,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
           <button className="btn primary wide big" type="submit" disabled={busy || offline}>
             {busy ? 'One moment…' : signup ? 'Create account' : 'Sign in'}
           </button>
+          {signup && <AgreeToSignUp />}
 
           <p className="auth-switch">
             {signup ? 'Already have an account? ' : 'New to BluModel Studio? '}
@@ -111,6 +114,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
             Design on this device without an account
           </a>
         </form>
+        <LegalLinks className="auth-legal" />
       </section>
     </div>
   );

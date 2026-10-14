@@ -189,7 +189,15 @@ function ShareBar({ token, wire }: { token: string; wire: SharedWire }) {
             <span className="share-bar-when"> · updated {timeAgo(kitchen.updatedAt)}</span>
           </p>
           <p className="share-bar-note" title={VISUALIZER_DISCLAIMER}>
-            View only. {VISUALIZER_DISCLAIMER}
+            View only ·{' '}
+            <a href="#/terms" target="_blank" rel="noopener">
+              Terms
+            </a>{' '}
+            ·{' '}
+            <a href="#/privacy" target="_blank" rel="noopener">
+              Privacy
+            </a>{' '}
+            · {VISUALIZER_DISCLAIMER}
           </p>
         </div>
       </div>

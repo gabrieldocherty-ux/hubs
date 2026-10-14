@@ -29,6 +29,7 @@ import { Download, Logo, Wordmark, Plus } from '../../components/Icons';
 import { dimText, pickWidth, productHash, widthChoices } from './stageMath';
 import type { StageStill } from './ProductStage';
 import './viewer.css';
+import { LegalLinks } from '../legal/LegalLinks';
 
 const StageView = lazy(() => import('./ProductStage').then((m) => ({ default: m.StageView })));
 
@@ -505,6 +506,9 @@ export default function ProductPage({ id, finish }: { id: string; finish?: strin
         )}
         {load.status === 'ready' && <ProductView key={load.product.id} product={load.product} finishParam={finish} widthParam={query.get('w')} />}
       </main>
+      <footer className="page-legal">
+        <LegalLinks />
+      </footer>
       <Toasts />
     </div>
   );

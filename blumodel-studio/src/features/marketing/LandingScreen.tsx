@@ -5,6 +5,7 @@ import { getProduct } from '../../data/catalog';
 import { DEFAULT_SURFACES } from '../../data/defaults';
 import { initialDoc } from '../../store/useDesignStore';
 import type { Finish, Product } from '../../types';
+import { useHashQuery } from '../../lib/router';
 import { MarketingFooter, MarketingHeader, scrollIfHere, SectionHead, usePendingScroll } from './parts';
 import './marketing.css';
 
@@ -16,9 +17,16 @@ import './marketing.css';
  */
 export default function LandingScreen() {
   usePendingScroll();
+  // Account settings → Delete my account lands here with `?deleted=1`.
+  const deleted = useHashQuery().get('deleted') === '1';
   return (
     <div className="mk">
       <MarketingHeader active="home" />
+      {deleted && (
+        <p className="mk-deleted" role="status">
+          Your account has been deleted, and you’re signed out everywhere. Thank you for designing with BluModel Studio.
+        </p>
+      )}
       <main>
         <Hero />
         <HowItWorks />
@@ -239,14 +247,14 @@ function Brands() {
             </li>
           </ul>
         </div>
-        <div className="mk-shelf" aria-label="A few products from the demo catalog">
+        <div className="mk-shelf" aria-label="A few products from the sample catalog">
           {items.map(({ p, finish }) => (
             <div key={p.id} className="mk-shelf-item">
               <span className="mk-shelf-art">
                 <ProductArt product={p} finish={finish} surfaces={DEFAULT_SURFACES} />
               </span>
               <span className="mk-shelf-name">{p.name}</span>
-              <span className="mk-shelf-brand">{p.brand} (demo)</span>
+              <span className="mk-shelf-brand">{p.brand} (sample)</span>
             </div>
           ))}
         </div>

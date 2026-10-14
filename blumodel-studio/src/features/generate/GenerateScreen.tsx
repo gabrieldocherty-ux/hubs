@@ -31,6 +31,7 @@ import { SpacePlan } from './SpacePlan';
 import { SpaceForm, fieldName } from './SpaceForm';
 import { qaPhotos } from './qa';
 import './generate.css';
+import { LegalLinks } from '../legal/LegalLinks';
 
 type Step = 'photos' | 'space';
 type Photo = StoredPhoto & { url: string };
@@ -417,6 +418,7 @@ export default function GenerateScreen({ from }: { q?: string; from?: string }) 
               </a>
             </div>
           )}
+          <LegalLinks className="gen-legal" newTab />
         </main>
       ) : (
         <main className="gen-main gen-main--space">

@@ -11,6 +11,7 @@ import { buildEstimate } from '../lib/estimate';
 import { feetInches, money } from '../lib/format';
 import { Toasts } from '../components/Toasts';
 import { usePriceBook } from '../features/contractors';
+import { LegalLinks } from '../features/legal/LegalLinks';
 
 export function HomeScreen() {
   const user = useSession((s) => s.user)!;
@@ -213,6 +214,7 @@ export function HomeScreen() {
           </section>
         ))}
         {projects && query && shown.length === 0 && <p className="empty-note">No kitchens match “{query}”.</p>}
+        <LegalLinks className="home-legal" />
       </main>
       <Toasts />
     </div>
