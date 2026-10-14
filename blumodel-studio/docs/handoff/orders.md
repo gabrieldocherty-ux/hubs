@@ -53,7 +53,7 @@ Everything stays inside the package's owned paths; changes needed elsewhere are 
   a revision updates the same product. The order is `delivered` when every item is delivered.
 - Refund (admin): demo marks refunded; Stripe calls `/v1/refunds`. A delivered custom/contractor
   product's live catalog entry is archived; kitchens keep their snapshots. Refunding twice is a 409.
-- `server/seed/orders.mjs` — four DEMO orders for `demo-customer@mise.test` with fixed ids
+- `server/seed/orders.mjs` — four DEMO orders for `demo-customer@blumodel.test` with fixed ids
   (`o_demoseedorder0000000000{1..4}`) in `paid`, `in_progress` (assigned to demo-studio),
   `delivered` (with a fixture GLB product and a reference photo) and `completed`. Idempotent;
   fictional product names only; skips production unless `ctx.forceDemo`.
@@ -86,7 +86,7 @@ Everything stays inside the package's owned paths; changes needed elsewhere are 
 | Check | Result |
 |---|---|
 | `npx tsc --noEmit -p tsconfig.json` | pass |
-| `npm test` | pass: TS 66/66; server 93 pass, 0 fail, 1 skipped (the foundation's "real mise.db upgrade" test, skipped because no `MISE_UPGRADE_DB` is set — not this package) |
+| `npm test` | pass: TS 66/66; server 93 pass, 0 fail, 1 skipped (the foundation's "real blumodel.db upgrade" test, skipped because no `BLUMODEL_UPGRADE_DB` is set — not this package) |
 | `npm run build` | pass (Vite warns the main chunk is 685 KB and SceneView 954 KB; neither is this package's — orders code is all lazy) |
 | QA, 16 routes in `scripts/qa/routes/orders.mjs`, headless Edge on 8814 | 16/16 pass, zero console errors, no non-local requests from this package |
 
@@ -98,7 +98,7 @@ non-local requests). Screenshots were checked by eye at 1440×900 and 390×844.
 C-T7 tests: `server/test/payments.test.mjs` (8 tests: the six signature cases; demo vs Stripe
 selection from env; the Stripe checkout request built on the server's amount with the idempotency
 key and `{CHECKOUT_SESSION_ID}` in the query; webhook verified + deduplicated with one fulfilment and
-no `X-Mise` needed while other POSTs still need it; unverified → 400 with no change; amount mismatch
+no `X-BluModel` needed while other POSTs still need it; unverified → 400 with no change; amount mismatch
 not fulfilled; expired/failed sessions; `?sync=1`; Stripe refunds both ways) and
 `server/test/orders.test.mjs` (14 tests: quote ignores client amounts; brief validation and
 other-user reference files → 400; demo draft → pending → paid, double complete idempotent, decline →

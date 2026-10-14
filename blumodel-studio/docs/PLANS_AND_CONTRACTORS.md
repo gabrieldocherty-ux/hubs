@@ -1,7 +1,7 @@
-# Mise: Plans, Exports and the Contractor Program
+# BluModel Studio: Plans, Exports and the Contractor Program
 
 **Status:** approved by Gabe on 2026-10-04 ("build all of these … flesh out the ideas to flow better, just don't change them").
-**Supersedes:** PRODUCT_SPEC §1's "homeowners use Mise free" business model, §5.1's pricing copy and §15 decision 2. Everything else in PRODUCT_SPEC stands.
+**Supersedes:** PRODUCT_SPEC §1's "homeowners use BluModel Studio free" business model, §5.1's pricing copy and §15 decision 2. Everything else in PRODUCT_SPEC stands.
 **Packages:** G `billing` and H `contractors` (BUILD_PLAN §9b, §9c), plus small additions to F, A, C and E.
 
 Gabe's decisions, verbatim in substance. These are fixed; the flows below only connect them:
@@ -35,7 +35,7 @@ The prices live in one file, `src/data/plans.json`. The server is the authority 
    - **Go Unlimited: $15/month.** "Exports on all your kitchens, no watermarks. Cancel anytime."
    - A text link underneath: "Are you a contractor? See the Contractor plan ($40/month) →".
 3. **Signed out, or in `#/local`:** the dialog first asks them to create a free account. The local draft is saved into the new account as a kitchen, and the dialog continues for that kitchen. Nothing is lost.
-4. **Payment** goes through the provider abstraction (§5): Stripe Checkout when keys are configured, otherwise the clearly labelled **DEMO** checkout page. It never asks for card fields in Mise.
+4. **Payment** goes through the provider abstraction (§5): Stripe Checkout when keys are configured, otherwise the clearly labelled **DEMO** checkout page. It never asks for card fields in BluModel Studio.
 5. **On return**, the editor reopens the kitchen and **automatically finishes the export they clicked** (the "resume intent" is kept in the URL / sessionStorage), then shows a toast: "Unlocked: exports for *Kitchen name* are yours."
 6. **Already entitled** (an unlocked kitchen or an active plan): Export works immediately with no dialog; the lock icons disappear.
 
@@ -47,7 +47,7 @@ The prices live in one file, `src/data/plans.json`. The server is the authority 
 
 ## 3. Studio-render watermark
 
-- Free users can open **Studio render** (package A) and see the high-quality render **with a watermark**: a repeated diagonal "Mise · Preview" at low opacity plus a corner badge.
+- Free users can open **Studio render** (package A) and see the high-quality render **with a watermark**: a repeated diagonal "BluModel Studio · Preview" at low opacity plus a corner badge.
 - **Download** is an export, so it follows §2. Once the kitchen is unlocked or the user is on a plan, the same dialog renders and downloads **without** the watermark.
 - The normal on-screen 2D plan and 3D view are **never** watermarked. Design freely is the free promise.
 
@@ -73,14 +73,14 @@ Everything in My catalog is **private to that contractor**. Other contractors, t
    - available widths;
    - door style (shaker, slab, fluted, glass), finishes (name + colour swatch), and photos (optional).
 
-   Mise's parametric models draw it at true size in the plan and in 3D, so most cabinet lines look right **without modelling anything**. A contractor can set up a whole line in an afternoon. This is the fastest route to "these are the cabinets you sell".
+   BluModel Studio's parametric models draw it at true size in the plan and in 3D, so most cabinet lines look right **without modelling anything**. A contractor can set up a whole line in an afternoon. This is the fastest route to "these are the cabinets you sell".
 2. **Upload your own model (GLB).** This is the same upload, validation report (size, triangles, bounding box vs declared dimensions, warnings) and 3D preview as the brand portal, saved to their private catalog.
-3. **Have Mise model it (paid).** This opens the custom-model request (PRODUCT_SPEC §7) with target **Contractor**: reference photos, dimensions, spec sheet and notes, at the existing per-model tiers. To model a **line**, one request can hold **several products of the same line**; each is priced per item at its tier, and there is one checkout. The delivered models land **straight in My catalog**, already linked to their price-book rows.
+3. **Have BluModel Studio model it (paid).** This opens the custom-model request (PRODUCT_SPEC §7) with target **Contractor**: reference photos, dimensions, spec sheet and notes, at the existing per-model tiers. To model a **line**, one request can hold **several products of the same line**; each is priced per item at its tier, and there is one checkout. The delivered models land **straight in My catalog**, already linked to their price-book rows.
 
 Collections/lines group products in the catalog panel, for example "Smith Shaker: 14 pieces".
 
 ### 4.3 Brands I carry
-- Toggle which public Mise brands, and the built-in generic catalog, show in **their** catalog panel while designing.
+- Toggle which public BluModel Studio brands, and the built-in generic catalog, show in **their** catalog panel while designing.
 - Off means hidden from the contractor's catalog panel only. Existing kitchens that use those products are untouched.
 - When designing, the catalog panel shows **My catalog first**, then the brands they carry.
 
@@ -90,7 +90,7 @@ One table of everything they sell: their own products plus the public products t
 **Your cost.** Contractor accounts add their own cost:
 - type it per product, or per width where widths are priced differently;
 - for a carried public brand, set a **default "% off list"** once, then override any product;
-- or **import a CSV** from their supplier's price list (SKU, name, width, cost). Mise matches SKUs, then shows a preview of matched, new and unmatched rows before applying. The price book can also be exported as CSV.
+- or **import a CSV** from their supplier's price list (SKU, name, width, cost). BluModel Studio matches SKUs, then shows a preview of matched, new and unmatched rows before applying. The price book can also be exported as CSV.
 
 **Markup.** The company default, overridable per brand/line and per product. Sell price = cost × (1 + markup). A product with no cost uses its list price as the sell price and is flagged "no cost entered".
 
@@ -105,7 +105,7 @@ One table of everything they sell: their own products plus the public products t
 - **Extra lines:** add labour or service lines such as installation, demolition or delivery (label, amount, optional cost) to a kitchen's estimate. They appear in the quote.
 
 ### 4.6 Showing and selling to the customer
-1. **Branded share link.** A share link from a contractor reads "Prepared by **Smith Kitchens**" with logo, phone, email and website, and shows the kitchen in 2D/3D with **their products at their sell prices**, with no costs. The client gets a clear "Contact Smith Kitchens" button (tel / mailto) and "Duplicate to my kitchens" is hidden. The client sees the contractor, not Mise, as the seller.
+1. **Branded share link.** A share link from a contractor reads "Prepared by **Smith Kitchens**" with logo, phone, email and website, and shows the kitchen in 2D/3D with **their products at their sell prices**, with no costs. The client gets a clear "Contact Smith Kitchens" button (tel / mailto) and "Duplicate to my kitchens" is hidden. The client sees the contractor, not BluModel Studio, as the seller.
 2. **Quote.** A branded, printable quote page (`#/pro/quote/:projectId`) with:
    - company header and client name;
    - the kitchen's plan and 3D images;

@@ -32,7 +32,7 @@ Owned paths: `src/components/plan/**`, `src/components/three/Interact*`,
 Every route loads a fixed 200″ × 156″ test kitchen into `#/local` (north run, a lone base at the
 east end, an 84″ island; the wall-piece routes add a wall cabinet and a window on the north wall,
 the doorway routes a 32″ door and a 48″ cased opening in the west wall),
-then presses exactly on pieces via `window.__miseQA.plan.toClient` /
+then presses exactly on pieces via `window.__blumodelQA.plan.toClient` /
 `scene3d.toClient`. Mouse on desktop 1440×900; touch (CDP touch events with touch emulation) on
 phone 390×844, phone on its side 844×390 and tablet 820×1180; a pen (CDP mouse events with
 `pointerType: 'pen'`) on the tablet.
@@ -108,7 +108,7 @@ touch `move.mjs` and this note), Edge 154 / Chrome 154:
   and run with `--dist`, both reload routes **pass** (the runner then fails them only for the
   stale `knownIssue` marker, as designed). `useAutosave.ts` has not changed since `0b57b37`.
 - `npx tsc --noEmit -p tsconfig.json` clean; `npm test` 63/63 TS tests, 71/72 server tests
-  (1 skipped: the real-`mise.db` upgrade test); `npm run build` succeeds (the usual >500 kB
+  (1 skipped: the real-`blumodel.db` upgrade test); `npm run build` succeeds (the usual >500 kB
   chunk warning).
 
 Screenshots in `.qa/move/` and `.qa/core/`. Looked at on this build: move

@@ -1,4 +1,4 @@
-# Mise: Build Plan for Parallel Agents
+# BluModel Studio: Build Plan for Parallel Agents
 
 **Implements:** [`PRODUCT_SPEC.md`](./PRODUCT_SPEC.md). **Date:** 2026-10-03.
 **Shape:** a **foundation** package (`F`) lands first. After that, five feature packages run **concurrently**. Their owned paths are strictly disjoint, so they merge without conflicts.
@@ -29,10 +29,10 @@
    | E share | 8816 | `.build/share` |
    | I integration | 8817 (8818–8819 spare) | `dist/` |
 
-3. **Processes:** every server or browser you start, you kill before you finish, by PID and with its process tree (`taskkill /PID <pid> /T /F` on Windows). `scripts/qa.mjs` already does this. Never kill by port or process name. Use temp dirs for `DB_PATH` and `UPLOAD_DIR`; never use `server/data/mise.db`, which is Gabe's real local data, except for the read-only upgrade test that F does on a **copy**.
+3. **Processes:** every server or browser you start, you kill before you finish, by PID and with its process tree (`taskkill /PID <pid> /T /F` on Windows). `scripts/qa.mjs` already does this. Never kill by port or process name. Use temp dirs for `DB_PATH` and `UPLOAD_DIR`; never use `server/data/blumodel.db`, which is Gabe's real local data, except for the read-only upgrade test that F does on a **copy**.
 4. **Ownership:** a package may create or edit **only** its `ownedPaths` (§4–§9). It may read anything. If it needs a change in a path it doesn't own, it **doesn't make it**. It writes the request into its own `docs/handoff/<key>.md` (what, where, why, and a suggested diff), and the integration pass applies it. Owned paths include each package's pre-created stubs: the foundation creates them, and the package then owns them.
 5. **Contracts are frozen:** the exports, props, route names, table names, service functions and wire shapes in §3 are fixed. A package may **add** to its own public surface but must not rename or remove anything in it.
-6. **Isolation:** each package runs on its own git worktree and branch, created from the foundation commit (`mise/<key>`). Run `npm ci --prefer-offline` there, or make a directory junction to the foundation worktree's `node_modules`. **If you are forced to share one working tree:**
+6. **Isolation:** each package runs on its own git worktree and branch, created from the foundation commit (`blumodel/<key>`; the packages built before the 2026-10-13 rename used `mise/<key>`). Run `npm ci --prefer-offline` there, or make a directory junction to the foundation worktree's `node_modules`. **If you are forced to share one working tree:**
    - never run `npm run build`, because it writes `dist/`. Use `npx vite build --outDir .build/<key> --emptyOutDir`;
    - use `npm run typecheck` rather than `tsc -b`;
    - errors in another package's paths are not yours: report them, don't fix them;
@@ -40,7 +40,7 @@
 7. **Dependencies:** no package installs dependencies. The foundation installs everything up front: `@react-three/postprocessing@2.19.1` and `postprocessing@6.39.5`. If you need anything else, put it in the handoff note.
 8. **Offline:** no runtime requests to third-party hosts. That means no CDN decoders, no drei `Environment` presets, no `<Stage>` default environment, no `useKTX2`, no `useDetectGPU` and no web fonts. QA fails any page that makes such a request.
 9. **Done means green:** `npm run typecheck`, `npm test`, your build dir, and `node scripts/qa.mjs --pkg <key> --port <port> --dist .build/<key>` all pass. Every acceptance item in your section is demonstrably true. Your handoff note lists anything left.
-10. **Commits:** messages use the prefix `mise(<key>): …` and end with the line `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+10. **Commits:** messages use the prefix `blumodel(<key>): …` (`mise(<key>)` before the 2026-10-13 rename) and end with the line `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 11. **Honesty:** report what failed or was skipped as plainly as what passed. Gabe's working style asks for negative results to be stated, not buried.
 
 ---
@@ -94,10 +94,10 @@ server/
 **Config keys** (`loadConfig`; every package reads, only F adds):
 
 ```
-PORT (8790) · HOST (127.0.0.1) · PROD (NODE_ENV=production or --prod) · DB_PATH (server/data/mise.db) · UPLOAD_DIR (<dirname DB_PATH>/uploads)
+PORT (8790) · HOST (127.0.0.1) · PROD (NODE_ENV=production or --prod) · DB_PATH (server/data/blumodel.db) · UPLOAD_DIR (<dirname DB_PATH>/uploads)
 DIST_DIR (../dist) · PUBLIC_URL (http://127.0.0.1:<PORT>) · TRUST_PROXY (0) · ADMIN_EMAILS ('') · MAX_GLB_MB (25) · MAX_IMAGE_MB (8)
 BRAND_PRODUCT_LIMIT (50) · PAYMENTS ('auto' → 'stripe' iff STRIPE_SECRET_KEY && STRIPE_WEBHOOK_SECRET else 'demo') · DEMO_PAYMENTS (0)
-STRIPE_SECRET_KEY · STRIPE_WEBHOOK_SECRET · ANTHROPIC_API_KEY · MISE_LLM_MODEL · SEED_PASSWORD
+STRIPE_SECRET_KEY · STRIPE_WEBHOOK_SECRET · ANTHROPIC_API_KEY · BLUMODEL_LLM_MODEL · SEED_PASSWORD
 RATE_LIMITS ('on'; the test harness sets 'off' unless a test opts in with startTestServer({ rateLimits: true }); 'off' is refused when PROD)
 derived: config.paymentsProvider ('demo'|'stripe'), config.llmEnabled (both LLM vars set), config.demoPaymentsAllowed (!PROD || DEMO_PAYMENTS)
 ```
@@ -114,7 +114,7 @@ export default function routes(ctx) {
       method: 'POST',                       // GET | POST | PUT | PATCH | DELETE   (HEAD is served by GET routes)
       path: '/api/brands/:brandId/products',// ':name' params match [A-Za-z0-9_-]{1,80}; static segments win over params
       auth: 'user',                         // 'none' | 'optional' | 'user' (default) | 'studio' (studio or admin) | 'admin'
-      csrf: true,                           // default true for non-GET; X-Mise: 1 required. Only the Stripe webhook sets false
+      csrf: true,                           // default true for non-GET; X-BluModel: 1 required. Only the Stripe webhook sets false
       body: 'json',                         // 'json' (default for POST/PUT/PATCH) | 'raw' | 'none'
       maxBytes: 1_000_000,                  // json default
       rateLimit: { name: 'brand-create', max: 10, windowMs: 3_600_000, by: 'user' },  // optional; by: 'ip'|'user'|'ip+user'
@@ -149,7 +149,7 @@ services.brands = { get(id), bySlug(slug), toWire(row) → BrandSummary }
 services.events = { record({ productId, type, userId }) }        // looks up brand_id, sets UTC day, no IP stored
 ```
 
-`FileRecord = { id, sha256, ext, mime, sizeBytes, kind, visibility, ownerUserId, brandId, originalName, meta, createdAt }`. `meta` for an image is `{ width, height }`. For a GLB it is `{ bboxM:{x,y,z}, bboxIn:{w,h,d}, triangles, materials:[name], slots:[mise_*], images:[{mime,width,height}], extensions:[…], warnings:[…] }`.
+`FileRecord = { id, sha256, ext, mime, sizeBytes, kind, visibility, ownerUserId, brandId, originalName, meta, createdAt }`. `meta` for an image is `{ width, height }`. For a GLB it is `{ bboxM:{x,y,z}, bboxIn:{w,h,d}, triangles, materials:[name], slots:[blumodel_*], images:[{mime,width,height}], extensions:[…], warnings:[…] }`.
 
 **File read rule (F):** public files can be read by anyone. A private file can be read by its owner, members of its `brand_id`, users with a `file_grants` row, `studio` and `admin`, **or** anyone a registered read policy accepts.
 
@@ -165,7 +165,7 @@ export const steps = [
 - The runner keeps `schema_migrations(id TEXT PRIMARY KEY, applied_at INTEGER)`. Steps run in module order, then array order, each in its own transaction.
 - **Never edit or reorder an applied step; append a new one.** Step ids are globally unique and prefixed with the module key.
 - A step may reference only foundation tables and its own module's tables.
-- An existing `mise.db` (`user_version 0`, created by the old `CREATE IF NOT EXISTS`) upgrades cleanly, because `core-001` is the old DDL, unchanged and idempotent.
+- An existing `blumodel.db` (`user_version 0`, created by the old `CREATE IF NOT EXISTS`) upgrades cleanly, because `core-001` is the old DDL, unchanged and idempotent.
 
 `platform-001` (F) creates:
 
@@ -268,13 +268,13 @@ Storage is `UPLOAD_DIR/<sha[0:2]>/<sha>.<ext>`: written to a temp file, validate
 
 ```js
 import { startTestServer } from './helpers.mjs';           // node --test server/test/<file>.test.mjs
-import { makeGlb } from './fixtures/glb.mjs';              // makeGlb({ w:0.762, h:0.914, d:0.66, materials:['mise_finish','body'], json? }) → Buffer
+import { makeGlb } from './fixtures/glb.mjs';              // makeGlb({ w:0.762, h:0.914, d:0.66, materials:['blumodel_finish','body'], json? }) → Buffer
 import { makePng, makeJpeg, makeWebp, svgBytes } from './fixtures/images.mjs';
 
 const t = await startTestServer({ env: { PAYMENTS: 'demo' }, fetch: mockFetch /* optional */ });  // ':memory:' DB, temp UPLOAD_DIR, port 0
 const alice = await t.user({ role: 'customer' });     // signs up through the API, then sets the role in the DB; returns an Agent with a cookie jar
 const admin = await t.user({ role: 'admin' }); const anon = t.agent();
-const r = await alice.post('/api/orders', { ... });   // → { status, body, headers }; X-Mise and JSON headers are added automatically
+const r = await alice.post('/api/orders', { ... });   // → { status, body, headers }; X-BluModel and JSON headers are added automatically
 await alice.putRaw('/api/files?kind=model&name=a.glb', makeGlb({}), 'model/gltf-binary');
 const brand = t.brand(alice, { name: 'Test Co', status: 'active' });   // direct DB insert + owner membership (no dependency on package B)
 const prod = t.product({ source: 'brand', brandId: brand.id, publish: true, spec: { ... } });  // through services.products
@@ -293,14 +293,14 @@ export default [
   { name: 'product-builtin', path: '#/p/range-30', as: 'anon' /* anon|customer|brand|studio|admin */,
     viewport: { w: 1440, h: 900 }, waitFor: '.product-page canvas', waitMs: 1500, expectText: ['Gas Range'],
     setup: async ({ api, as }) => ({ path: '#/p/' + (await api.as('brand').get('/api/catalog')).body.products[0].id }),
-    check: async ({ evaluate }) => { if ((await evaluate('window.__miseQa?.frames ?? 0')) > 2) throw new Error('idle render'); } },
+    check: async ({ evaluate }) => { if ((await evaluate('window.__blumodelQa?.frames ?? 0')) > 2) throw new Error('idle render'); } },
 ];
 ```
 
 - It writes `.qa/<key>/<name>.png` and `.qa/<key>/report.json`.
 - A route **fails** on any console error, uncaught exception, request to a non-local host, missing `waitFor` or `expectText`, or a throwing `check`.
-- Debug hooks (`window.__miseQa`) may be exposed **only** when `location.search` contains `qa`.
-- The seeded demo users are `demo-customer@mise.test`, `demo-brand@mise.test` (owner of the active demo brand *Mise Sample Co. (Demo)*), `demo-studio@mise.test` and `demo-admin@mise.test`. Their password is `SEED_PASSWORD`, or a generated one written to `<dirname DB_PATH>/seed-credentials.txt`, which is gitignored. Never print it.
+- Debug hooks (`window.__blumodelQa`) may be exposed **only** when `location.search` contains `qa`.
+- The seeded demo users are `demo-customer@blumodel.test`, `demo-brand@blumodel.test` (owner of the active demo brand *BluModel Sample Co. (Demo)*), `demo-studio@blumodel.test` and `demo-admin@blumodel.test`. Their password is `SEED_PASSWORD`, or a generated one written to `<dirname DB_PATH>/seed-credentials.txt`, which is gitignored. Never print it.
 
 ### 3.8 Client contracts
 
@@ -357,7 +357,7 @@ export function ShareButton(p: { projectId: string | null }): JSX.Element | null
 - Lazy screens render inside one `<Suspense>` with the existing `.screen-msg` loader.
 
 **API client** (`src/lib/api.ts`, F):
-- exports `call<T>(method, path, body?, opts?)`, `upload<T>(path, file: Blob, query?: Record<string,string>)` (raw PUT with `X-Mise`), `ApiError`, `isUnreachable`, and `api` (auth, projects, config, catalog, events);
+- exports `call<T>(method, path, body?, opts?)`, `upload<T>(path, file: Blob, query?: Record<string,string>)` (raw PUT with `X-BluModel`), `ApiError`, `isUnreachable`, and `api` (auth, projects, config, catalog, events);
 - `User` gains `role` and `brands`;
 - each package keeps its own calls in `src/features/<key>/api.ts`.
 
@@ -415,10 +415,10 @@ Packages may add **package-local** types in their own directory but must not red
   - `ADMIN_EMAILS` promotes on signup and login;
   - `server/scripts/make-admin.mjs <email>`;
   - `/api/auth/me` returns `role` and `brands`.
-- **F-T4 Migrations:** add `db/migrate.mjs` and `migrations/{index,core,platform}.mjs` (§3.3), plus stub modules for A–E. Test that a DB made with the *old* DDL, and a copy of `server/data/mise.db`, both upgrade with users and projects intact (on a temp copy only).
+- **F-T4 Migrations:** add `db/migrate.mjs` and `migrations/{index,core,platform}.mjs` (§3.3), plus stub modules for A–E. Test that a DB made with the *old* DDL, and a copy of `server/data/blumodel.db`, both upgrade with users and projects intact (on a temp copy only).
 - **F-T5 Validators:** copy `validators.mjs` verbatim into `server/lib/validators.mjs`, and its cases into `server/test/validators.test.mjs`. **If the scratch files are gone**, re-implement them to the behaviour in PRODUCT_SPEC §11 and research T9, T10 and T12: GLB header, chunks, JSON, no URIs, allowlist and count caps; PNG / JPEG / WebP dimensions; Stripe `v1` HMAC with tolerance, multiple `v1` values, and short signatures rejected without throwing.
 - **F-T6 Files:** `files/{store,meta,policy}.mjs` and `routes/files.mjs` (§3.5).
-  - GLB meta: the bbox comes from POSITION accessor min/max through the node TRS/matrix hierarchy (8 corners per primitive), plus triangles, materials, `mise_*` slots and embedded image dimensions (via `sniffImage` on bufferView bytes).
+  - GLB meta: the bbox comes from POSITION accessor min/max through the node TRS/matrix hierarchy (8 corners per primitive), plus triangles, materials, `blumodel_*` slots and embedded image dimensions (via `sniffImage` on bufferView bytes).
   - Warnings for >8 MB, >150k triangles, and textures >2048.
   - Hard-reject >25 MB, >1M triangles, and disallowed extensions.
 - **F-T7 Catalog:**
@@ -432,7 +432,7 @@ Packages may add **package-local** types in their own directory but must not red
   - **revision is required** (a number) unless `force:true` (otherwise 400 "Reload this kitchen…"), using a conditional `UPDATE … WHERE revision = ?`.
 - **F-T9 Seeds:**
   - `seed/index.mjs`, `seed/core.mjs`, and stubs for viewer, brands, orders and share;
-  - core creates the 4 demo users and one active, `is_demo` brand, *Mise Sample Co. (Demo)*, owned by `demo-brand`, with **2 published GLB products** built from `fixtures/glb.mjs` with PNG thumbnails: a 30″ range-type product and a pendant-type product, both named "(Demo)";
+  - core creates the 4 demo users and one active, `is_demo` brand, *BluModel Sample Co. (Demo)*, owned by `demo-brand`, with **2 published GLB products** built from `fixtures/glb.mjs` with PNG thumbnails: a 30″ range-type product and a pendant-type product, both named "(Demo)";
   - every seed is idempotent and refuses to run in production without `--force-demo`;
   - `npm run seed`.
 - **F-T10 Test harness:**
@@ -451,7 +451,7 @@ Packages may add **package-local** types in their own directory but must not red
 - **F-T13 Package and config:**
   - pin `@react-three/postprocessing@2.19.1` and `postprocessing@6.39.5` exactly;
   - scripts `test`, `test:server` (`node --test "server/test/**/*.test.mjs"`), `test:ts`, `typecheck` (`tsc --noEmit -p tsconfig.json`), `qa`, `seed`, `api`;
-  - the `vite.config.ts` proxy target is `http://127.0.0.1:${process.env.MISE_API_PORT ?? 8790}`;
+  - the `vite.config.ts` proxy target is `http://127.0.0.1:${process.env.BLUMODEL_API_PORT ?? 8790}`;
   - `.gitignore` gains `.qa/`, `.build/`, `.tmp-tests/`;
   - the README covers the new ports, env vars, test and QA commands, and drops the "only in production" static claim.
 
@@ -508,7 +508,7 @@ Packages may add **package-local** types in their own directory but must not red
    - `/draco/x.wasm` would be served as `application/wasm` (fixture);
    - 6 signups/h from one IP → the 6th gets 429;
    - login does not block the event loop (a concurrent `/api/auth/me` answers in under 20 ms during 5 logins).
-4. Migration tests: a fresh DB, an old-DDL DB, and **a temp copy of `server/data/mise.db`** all reach the latest steps. A second run is a no-op. Old users can still log in (old-DDL fixture).
+4. Migration tests: a fresh DB, an old-DDL DB, and **a temp copy of `server/data/blumodel.db`** all reach the latest steps. A second run is a no-op. Old users can still log in (old-DDL fixture).
 5. Upload tests:
    - fixture GLB → 201 with `meta.bboxIn` within 0.1 in of the expected size;
    - bad magic, truncated, external buffer URI, `file:` image URI, glTF 1.0, `KHR_texture_basisu`, and an unknown required extension → 400;
@@ -554,7 +554,7 @@ Packages may add **package-local** types in their own directory but must not red
   - per item, `<ModelBoundary fallback={procedural} onReset={() => useGLTF.clear(url)}><Suspense fallback={procedural}>…`;
   - `scene.clone(true)` per instance;
   - Box3 → inches (×39.3701) → **uniform** scale `min(w/bx, h/by, d/bz)` → centre x and z, min.y = 0, then the elevation is applied by the item group;
-  - slot remap for `mise_finish` → `finishMaterial(finish)`, `mise_cabinet` → the cabinet finish, `mise_hardware` → `ctx.hwMat`, `mise_counter` → `ctx.counterMat`;
+  - slot remap for `blumodel_finish` → `finishMaterial(finish)`, `blumodel_cabinet` → the cabinet finish, `blumodel_hardware` → `ctx.hwMat`, `blumodel_counter` → `ctx.counterMat`;
   - shadows on meshes over a size threshold;
   - dispose on unmount;
   - `renderModel()` checks `product.model` first.
@@ -566,7 +566,7 @@ Packages may add **package-local** types in their own directory but must not red
   - `PerformanceMonitor` steps down DPR and AO;
   - drop `preserveDrawingBuffer`;
   - `castShadow` only on large parts;
-  - when `?qa`, expose `window.__miseQa = { frames, calls, programs, triangles }`.
+  - when `?qa`, expose `window.__blumodelQa = { frames, calls, programs, triangles }`.
 - **A-T4 Room rendering quality:**
   - an `EffectComposer` (multisampling 4, Canvas `antialias:false`) with `N8AO` (halfRes, quality `medium`, aoRadius ≈1.5, intensity ≈2) and `<ToneMapping>` last;
   - a Fast/High quality toggle, stored in localStorage;
@@ -675,8 +675,8 @@ Packages may add **package-local** types in their own directory but must not red
   - `AdminModerationTab`: a submitted list, a detail view with spec diff against `live_spec` (field-level), the GLB report, `ProductStage`, and approve or reject with a note; pending brands with approve or reject;
   - `AdminBrandsTab`: list, filter, actions, and member counts.
 - **B-T6 Seed** (`seed/brands.mjs`, idempotent): **fictional** demo brands, `is_demo=1`, active:
-  - *Kestrel & Finch Appliances (Demo)* and *Marlow Lighting Co. (Demo)*, owned by `demo-brand@mise.test`;
-  - 3–4 published products each, with fixture GLBs (`makeGlb` at realistic dimensions, `mise_finish` slot) and generated PNG thumbnails;
+  - *Kestrel & Finch Appliances (Demo)* and *Marlow Lighting Co. (Demo)*, owned by `demo-brand@blumodel.test`;
+  - 3–4 published products each, with fixture GLBs (`makeGlb` at realistic dimensions, `blumodel_finish` slot) and generated PNG thumbnails;
   - one `submitted` product awaiting moderation;
   - one `pending` brand application from `demo-customer`;
   - 30 days of synthetic events so the dashboard isn't empty (they appear in the totals only for `is_demo` brands; label them "demo data" in the UI).
@@ -751,7 +751,7 @@ Packages may add **package-local** types in their own directory but must not red
   - `AdminRevenueTab`: KPI tiles, by-tier table, by-day bars, refunds; a "Demo" label when the provider is demo.
 - **C-T6 Seed** (`seed/orders.mjs`): orders for `demo-customer` (provider demo) in `paid`, `in_progress`, `delivered` (with a fixture deliverable product) and `completed`, so the queue and revenue aren't empty.
 - **C-T7 Tests:**
-  - `payments.test.mjs`: all six signature cases (valid, two `v1`, tampered, 10-min old, `v0` only, short signature); webhook dedupe (same event twice → one fulfilment); amount mismatch → not paid; unverified → 400 and no DB change; the webhook works without the `X-Mise` header while every other POST still needs it; Stripe checkout request built with a mocked `fetch` (form fields, idempotency key, `{CHECKOUT_SESSION_ID}` in the query string, server amount);
+  - `payments.test.mjs`: all six signature cases (valid, two `v1`, tampered, 10-min old, `v0` only, short signature); webhook dedupe (same event twice → one fulfilment); amount mismatch → not paid; unverified → 400 and no DB change; the webhook works without the `X-BluModel` header while every other POST still needs it; Stripe checkout request built with a mocked `fetch` (form fields, idempotency key, `{CHECKOUT_SESSION_ID}` in the query string, server amount);
   - `orders.test.mjs`:
     - quote ignores a client-sent amount;
     - reference files owned by another user → 400;
@@ -819,7 +819,7 @@ Packages may add **package-local** types in their own directory but must not red
 - **D-T7 Server** (`routes/generate.mjs`, `server/llm/anthropic.mjs`):
   - `POST /api/generate/brief {text ≤ 2000}`, `auth:'optional'`, rate limit 20/h by `ip+user`;
   - 503 `{error:'AI parsing is not configured.'}` unless `config.llmEnabled`;
-  - otherwise call the Anthropic Messages API through `ctx.fetch` (model `MISE_LLM_MODEL`; key header from `ANTHROPIC_API_KEY`; 15 s timeout) with a system prompt asking for **brief JSON only**;
+  - otherwise call the Anthropic Messages API through `ctx.fetch` (model `BLUMODEL_LLM_MODEL`; key header from `ANTHROPIC_API_KEY`; 15 s timeout) with a system prompt asking for **brief JSON only**;
   - validate against the brief schema and clamp; reject non-conforming output with 502;
   - never log the key or the user's text.
   - (The implementing agent should consult the `claude-api` skill for the current request format.)
@@ -861,7 +861,7 @@ Packages may add **package-local** types in their own directory but must not red
   - the disclaimer;
   - friendly 404 and expired states.
 - **E-T5 `LandingScreen`** (`src/features/marketing/`): per PRODUCT_SPEC §5.1.
-  - The hero image is a real Mise render saved to `public/marketing/hero.png` (≤400 KB, made with `scripts/qa-shot.mjs` from the `#/local` 3D view or package A's studio render once available; until then a live `MiniPlan` hero is acceptable).
+  - The hero image is a real BluModel Studio render saved to `public/marketing/hero.png` (≤400 KB, made with `scripts/qa-shot.mjs` from the `#/local` 3D view or package A's studio render once available; until then a live `MiniPlan` hero is acceptable).
   - How it works, For brands (→ `#/brand/join`), Custom models (→ `#/orders/new`), CTAs, disclaimer footer.
   - No web fonts or third-party images. Responsive down to 375 px.
 - **E-T6 `PricingScreen`:** homeowners free; brands "Free during beta, up to 50 products" plus *Planned* tiers (clearly marked, not purchasable); custom-model tiers from `/api/orders/tiers` (fallback copy if unavailable); FAQ (demo payments, file formats, revisions, turnaround, who owns the model).
@@ -1001,7 +1001,7 @@ F foundation ──┬── A viewer · B brands · C orders · D generate · E
 - **Exports:** the server makes the CSV and the project file with the export kit (`scripts/build-kit.mjs` → `server/generated/export-kit.mjs`).
 
 ### 13.3 Changes to existing packages
-- **A viewer:** the studio render reads `useEntitlements(projectId)`. When `watermark` is true, the on-screen preview is watermarked (a repeated diagonal "Mise · Preview" at low opacity plus a corner badge), and *Download* goes through `requestExport(projectId, 'render', …)`. QA: a free user sees the watermark; an entitled user's download has none.
+- **A viewer:** the studio render reads `useEntitlements(projectId)`. When `watermark` is true, the on-screen preview is watermarked (a repeated diagonal "BluModel Studio · Preview" at low opacity plus a corner badge), and *Download* goes through `requestExport(projectId, 'render', …)`. QA: a free user sees the watermark; an entitled user's download has none.
 - **C orders:**
   - the brief accepts `target: 'contractor'`; deliverables become `source:'contractor'`, `visibility:'private'`, owned by the buyer, landing in their My catalog;
   - **multi-item requests:** `items[]` (≤ 20) of the same line, each priced per item from `tiers.mjs`, with one checkout, studio delivery per item, and order status `delivered` when all items are delivered;
@@ -1073,7 +1073,7 @@ F foundation ──┬── A viewer · B brands · C orders · D generate · E
 - **H-T3 Client (`src/features/contractors/**`, `#/pro/<rest>`):**
   - setup wizard (PLANS §4.1);
   - Dashboard;
-  - My catalog: quick-add form with the product type picker from `PRODUCT_TYPES`, widths, door style, finishes and photos; GLB upload with the validation report and a `ProductStage` preview; "Have Mise model it" → `#/orders/new?target=contractor`;
+  - My catalog: quick-add form with the product type picker from `PRODUCT_TYPES`, widths, door style, finishes and photos; GLB upload with the validation report and a `ProductStage` preview; "Have BluModel Studio model it" → `#/orders/new?target=contractor`;
   - Brands I carry;
   - Price book: an editable table with CSV import preview and export;
   - Quotes list plus the printable quote page `#/pro/quote/:projectId` (print CSS; printing goes through `requestExport(projectId, 'quote', () => window.print())`);

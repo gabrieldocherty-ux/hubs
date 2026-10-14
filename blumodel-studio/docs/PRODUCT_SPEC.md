@@ -1,4 +1,4 @@
-# Mise: Product Spec
+# BluModel Studio: Product Spec
 
 **Status:** draft for the overnight build, 2026-10-03. Owner: Gabe. Written by Claude, acting as product and tech lead.
 **Companion:** [`BUILD_PLAN.md`](./BUILD_PLAN.md) breaks this spec into one foundation package and five parallel feature packages.
@@ -10,9 +10,9 @@ Each decision below carries a tag in square brackets, such as [D1] or [T9], nami
 
 ---
 
-## 1. What Mise is
+## 1. What BluModel Studio is
 
-Mise does for kitchens what Drafted does for houses. A homeowner describes a kitchen. Mise generates several layouts that pass the design checks. The homeowner picks one, edits it in 2D and 3D, sees the products realistically, gets an estimate and shares a link. Brands upload their own products, which then appear in kitchens and on their own product pages. Anyone can pay to have a custom 3D model made of a product that isn't in the catalog yet.
+BluModel Studio does for kitchens what Drafted does for houses. A homeowner describes a kitchen. BluModel Studio generates several layouts that pass the design checks. The homeowner picks one, edits it in 2D and 3D, sees the products realistically, gets an estimate and shares a link. Brands upload their own products, which then appear in kitchens and on their own product pages. Anyone can pay to have a custom 3D model made of a product that isn't in the catalog yet.
 
 There are three audiences, and each has its own entry point:
 
@@ -20,9 +20,9 @@ There are three audiences, and each has its own entry point:
 |---|---|---|
 | **Homeowners and designers** (role `customer`) | Describe-your-kitchen generation, the wizard and editor, realistic product pages, studio renders, estimates, share links | Nothing for design. Optional paid custom 3D models |
 | **Brands** (any user with a brand membership) | Self-serve portal, product uploads (GLB + images + finishes + dimensions + price + SKU + buy link), moderation, brand page, analytics | Free during beta. Paid listing plans are planned but not built (§15 Q2) |
-| **Mise staff** (roles `studio`, `admin`) | Moderation queue, custom-model studio queue, orders, revenue overview | n/a |
+| **BluModel Studio staff** (roles `studio`, `admin`) | Moderation queue, custom-model studio queue, orders, revenue overview | n/a |
 
-**Business model — superseded 2026-10-04 by [PLANS_AND_CONTRACTORS.md](./PLANS_AND_CONTRACTORS.md):** designing is free, but exports are paid ($5 per kitchen, once), with an Unlimited plan ($15/month) and a Contractor program ($40/month). The original decision read: homeowners use Mise free, brands are the customers, and custom models are a paid service. This is how the kitchen sector already works: IKEA's planner is free and drives product sales [K1]; Roomvo is paid for by manufacturers and gives them view and save analytics [K6]; Marxent and 2020 build or syndicate manufacturer catalogs [K4][K5]. Drafted plans to charge homeowners about $1–2k per plan set [D3], but no kitchen tool charges homeowners that way, so we don't copy that part [R-money].
+**Business model — superseded 2026-10-04 by [PLANS_AND_CONTRACTORS.md](./PLANS_AND_CONTRACTORS.md):** designing is free, but exports are paid ($5 per kitchen, once), with an Unlimited plan ($15/month) and a Contractor program ($40/month). The original decision read: homeowners use BluModel Studio free, brands are the customers, and custom models are a paid service. This is how the kitchen sector already works: IKEA's planner is free and drives product sales [K1]; Roomvo is paid for by manufacturers and gives them view and save analytics [K6]; Marxent and 2020 build or syndicate manufacturer catalogs [K4][K5]. Drafted plans to charge homeowners about $1–2k per plan set [D3], but no kitchen tool charges homeowners that way, so we don't copy that part [R-money].
 
 **What "clone Drafted" means here (decision):** we copy Drafted's **UX patterns**: structured inputs, several generated options, regenerating with some choices locked, live 2D↔3D, and share links with permissions [D1][D2]. We do **not** copy its name, brand, copy, visuals or assets.
 
@@ -59,7 +59,7 @@ The server enforces every rule in the route table [MSRV]. Client-side gating onl
 
 ## 4. Site map
 
-Mise keeps hash routing. Query strings are now supported inside the hash, and `location.search` is read for Stripe's return.
+BluModel Studio keeps hash routing. Query strings are now supported inside the hash, and `location.search` is read for Stripe's return.
 
 | Route | Screen | Access | Package |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Mise keeps hash routing. Query strings are now supported inside the hash, and `l
 
 ### 5.1 Landing and pricing (package: share)
 
-- **Landing** (signed-out `#/` and `#/welcome`): a hero image that is a real Mise render made by the QA script, not stock art; "How it works" in four steps (Photo → Check the space → Redesign in 2D and 3D with real products → Share); a section for contractors and one for brands; a section for custom models; calls to action (*Start from a photo of your kitchen* → `#/generate`, *Start free* → signup, *Try without an account* → `#/local`). The footer carries the visualizer disclaimer (§12).
+- **Landing** (signed-out `#/` and `#/welcome`): a hero image that is a real BluModel Studio render made by the QA script, not stock art; "How it works" in four steps (Photo → Check the space → Redesign in 2D and 3D with real products → Share); a section for contractors and one for brands; a section for custom models; calls to action (*Start from a photo of your kitchen* → `#/generate`, *Start free* → signup, *Try without an account* → `#/local`). The footer carries the visualizer disclaimer (§12).
 - **Pricing (superseded, see PLANS_AND_CONTRACTORS §1 and BUILD_PLAN §13.3):** the four plans from `src/data/plans.json` come first. The original copy read: homeowners are free. Brands are free during beta, up to `BRAND_PRODUCT_LIMIT` published products (default 50); the planned per-product-count tiers are labelled *Planned*, an idea taken from Zakeke's product-count tiers [K7]. Custom-model tiers are read live from `GET /api/orders/tiers`. An FAQ covers demo payments, file formats, turnaround and revisions.
 
 ### 5.2 Describe your kitchen: generated layout options (package: generate)
@@ -119,7 +119,7 @@ This is the Drafted-style core [D1]. It runs **offline and rule-based by default
 
 Words it doesn't recognise appear as grey "not understood" chips, never silently dropped.
 
-**Optional LLM parse (decision).** This only runs when both `ANTHROPIC_API_KEY` and `MISE_LLM_MODEL` are set on the server. `POST /api/generate/brief {text}` asks the model for brief JSON only. The server validates that JSON against the brief schema and clamps every value. The client merges it with the offline parse and shows which source filled each chip. The LLM never places items: it only picks constraints, and the deterministic solver places items, so the geometry and checks keep their guarantees [MDATA ext. "generation step 3"]. With no key the route returns 503, and the UI never shows an LLM option.
+**Optional LLM parse (decision).** This only runs when both `ANTHROPIC_API_KEY` and `BLUMODEL_LLM_MODEL` are set on the server. `POST /api/generate/brief {text}` asks the model for brief JSON only. The server validates that JSON against the brief schema and clamps every value. The client merges it with the offline parse and shows which source filled each chip. The LLM never places items: it only picks constraints, and the deterministic solver places items, so the geometry and checks keep their guarantees [MDATA ext. "generation step 3"]. With no key the route returns 503, and the UI never shows an LLM option.
 
 **Generator.**
 1. Template building becomes declarative. `buildTemplate` turns into `LayoutSpec` runs (wall, start, end, role slots) plus an island spec, built by `buildFromSpec`. `layRun`, `fill` and `prune` are exported [MDATA ext.]. The five existing templates must produce **identical** items before and after the refactor (golden test).
@@ -196,8 +196,8 @@ This is the "realistic product viewer" in the brief, and it is the product's vis
 
 **GLB products in the kitchen.**
 - A GLB product renders inside a per-item error boundary + Suspense, with the procedural model as both the loading placeholder and the error fallback, so a broken upload never blanks the scene [T8].
-- Normalisation: the bounding box is converted to inches (×39.3701). A **uniform** scale `min(w/bx, h/by, d/bz)` is applied, the model is centred on x and z, min.y is set to 0, and the product's elevation is added. glTF's +Y up and +Z front already match Mise's convention [T8].
-- **Material slots:** meshes whose material is named `mise_finish`, `mise_cabinet`, `mise_hardware` or `mise_counter` take the chosen finish, the kitchen's cabinet finish, the hardware or the countertop respectively. Every other material keeps its baked PBR look. **(decision:** one GLB per product, with finishes applied through slots. Per-finish GLBs and `KHR_materials_variants` come later.)
+- Normalisation: the bounding box is converted to inches (×39.3701). A **uniform** scale `min(w/bx, h/by, d/bz)` is applied, the model is centred on x and z, min.y is set to 0, and the product's elevation is added. glTF's +Y up and +Z front already match BluModel Studio's convention [T8].
+- **Material slots:** meshes whose material is named `blumodel_finish`, `blumodel_cabinet`, `blumodel_hardware` or `blumodel_counter` take the chosen finish, the kitchen's cabinet finish, the hardware or the countertop respectively. Every other material keeps its baked PBR look. **(decision:** one GLB per product, with finishes applied through slots. Per-finish GLBs and `KHR_materials_variants` come later.)
 - Each placed instance gets its own clone. A failed URL is cleared from the loader cache when the boundary resets [T8].
 
 **Performance (it has to run on mid-range laptops, not just the RTX 3090 dev box [T7]):**
@@ -259,7 +259,7 @@ This is the "realistic product viewer" in the brief, and it is the product's vis
 ### 6.1 Onboarding
 1. Any signed-in user can choose **List your products** (account menu → `#/brand/join`). They enter the brand name, website (https) and a short description. This creates a brand with status `pending`, with the caller as `owner`. Each user may create at most 3 brands.
 2. An admin approves, rejects or suspends the brand. A **Verified** badge is a separate manual admin action, given only once the admin is satisfied the account really represents the brand, for example an email on the brand's domain [R-trust]. Unverified brands show no badge. Seeded demo brands show **Demo**.
-3. The owner can add editors by the email of an existing Mise account.
+3. The owner can add editors by the email of an existing BluModel Studio account.
 
 ### 6.2 Product editor
 The fields follow what brand-onboarding platforms ask for [K6][K8][K9]:
@@ -275,12 +275,12 @@ The fields follow what brand-onboarding platforms ask for [K6][K8][K9]:
 | Look | Optional flags: brass trim, pro backguard (these replace the old hard-coded brand names) |
 
 **GLB upload report**, shown right after upload and again to the moderator:
-- file size, triangles, materials, which `mise_*` slots were detected;
+- file size, triangles, materials, which `blumodel_*` slots were detected;
 - bounding box vs the declared W/D/H, with any axis off by more than 5% flagged ("your model is 31.2″ wide but you declared 30″"). We flag rather than stretch [T8];
 - a live preview in the product viewer stage;
 - warnings for over 8 MB, over 150k triangles, or embedded textures larger than 2048 px [K9].
 
-Products without a GLB are allowed. They render with Mise's procedural model for their type, tinted by their finishes. The research suggests GLBs matter most for appliances, sinks, faucets and lighting, while cabinets stay procedural [R-cabinets]. Products with a GLB show a "3D model" badge.
+Products without a GLB are allowed. They render with BluModel Studio's procedural model for their type, tinted by their finishes. The research suggests GLBs matter most for appliances, sinks, faucets and lighting, while cabinets stay procedural [R-cabinets]. Products with a GLB show a "3D model" badge.
 
 ### 6.3 Moderation states
 
@@ -313,7 +313,7 @@ These are first-party events only: no third-party trackers, and no IP addresses 
 The dashboard shows the last 7 / 30 / 90 days: totals per event, a daily bar chart, top products, and an add-to-view ratio. These are the numbers that justify brand-paid plans later, as they do for Roomvo [K6].
 
 ### 6.6 Demo brands
-**All seed data uses fictional demo brands.** The 12 built-in brand names are invented. The database seed adds a few more fictional brands flagged `is_demo` (for example *Kestrel & Finch Appliances (Demo)* and *Marlow Lighting Co. (Demo)*), with generated GLB fixtures, a pending submission and 30 days of clearly-demo analytics. **Real brands onboard themselves through the portal.** Mise never creates a page or listing under a real company's name. An admin rejects any brand application that impersonates a company without verification.
+**All seed data uses fictional demo brands.** The 12 built-in brand names are invented. The database seed adds a few more fictional brands flagged `is_demo` (for example *Kestrel & Finch Appliances (Demo)* and *Marlow Lighting Co. (Demo)*), with generated GLB fixtures, a pending submission and 30 days of clearly-demo analytics. **Real brands onboard themselves through the portal.** BluModel Studio never creates a page or listing under a real company's name. An admin rejects any brand application that impersonates a company without verification.
 
 ---
 
@@ -333,7 +333,7 @@ These are anchored on the research: Modelry from $60, Fiverr $40–400, studios 
 | Complex | Modular or multi-part products, pro ranges, chandeliers | **$549** | 15 business days |
 | Extras | +$39 per extra finish beyond 2; **Rush** +50% for half the turnaround | | |
 
-Every tier includes: a GLB to the Mise spec (real scale, origin at the base centre, +Z front, `mise_*` slots, textures ≤2048, ≤8 MB target), a thumbnail, and **2 revision rounds**. Prices are computed **on the server** from the brief. Any amount the client sends is ignored [T12].
+Every tier includes: a GLB to the BluModel Studio spec (real scale, origin at the base centre, +Z front, `blumodel_*` slots, textures ≤2048, ≤8 MB target), a thumbnail, and **2 revision rounds**. Prices are computed **on the server** from the brief. Any amount the client sends is ignored [T12].
 
 ### 7.3 Request flow (`#/orders/new?ref=&brand=`)
 1. **What:** product type, name, and optionally a reference product (prefilled from `?ref`) or "for my brand X".
@@ -349,7 +349,7 @@ Every tier includes: a GLB to the Mise spec (real scale, origin at the base cent
   - `success_url = ${PUBLIC_URL}/?session_id={CHECKOUT_SESSION_ID}#/orders/:id` (in the query string, not the hash);
   - the webhook `POST /api/webhooks/stripe` sits outside the CSRF header gate, reads the raw body, verifies `v1` HMAC-SHA256 with a 300 s tolerance and a constant-time compare, de-duplicates by event id, checks amount and currency, and fulfils idempotently;
   - the success page also syncs by retrieving the session.
-  Mise never sees card data.
+  BluModel Studio never sees card data.
 - **DEMO provider** (the default whenever Stripe isn't fully configured):
   - Checkout opens `#/pay/demo/:orderId`. The page carries a full-width **"DEMO PAYMENT – no real money moves, no card details are collected"** banner and only *Simulate successful payment*, *Simulate declined payment* and *Cancel* buttons. It has **no card fields at all**.
   - It is refused in production unless `DEMO_PAYMENTS=1`.
@@ -377,7 +377,7 @@ Every transition writes an `order_events` row. The customer sees a timeline, the
 - Delivering creates the product:
   - for a customer order: source `custom`, private, owned by the buyer, live, with read grants on its files;
   - for a brand order: source `brand`, a draft in that brand.
-- **(decision)** For now Mise staff fulfil orders. Research recommends a marketplace of vetted modellers with escrow, because Atmos failed as a human-heavy operation [D3][R-custom]. That needs Stripe Connect payouts and is out of scope (§15 Q4).
+- **(decision)** For now BluModel Studio staff fulfil orders. Research recommends a marketplace of vetted modellers with escrow, because Atmos failed as a human-heavy operation [D3][R-custom]. That needs Stripe Connect payouts and is out of scope (§15 Q4).
 
 ### 7.7 Refunds
 An admin can refund paid, in-progress or delivered orders. With the demo provider this marks the order refunded. With Stripe it calls `POST /v1/refunds` on the payment intent and records the result. A delivered custom product stays in the buyer's kitchens (snapshot), but its live catalog entry is archived.
@@ -440,7 +440,7 @@ These are new SQLite tables, created through a real migration runner. Today ther
 ## 11. Non-functional requirements
 
 **Security.**
-- Keep the `X-Mise: 1` CSRF header gate; only the Stripe webhook is exempt.
+- Keep the `X-BluModel: 1` CSRF header gate; only the Stripe webhook is exempt.
 - Fix the known server defects [MSRV][T10]: JSON `null` → 400; malformed `%` → 400; oversized body → a real 413; revision check required plus a conditional `UPDATE`; async scrypt; signup rate limit; bounded rate limiter; `TRUST_PROXY`; `path.relative` containment; SPA fallback only for extensionless paths; MIME types for `.wasm` / `.glb` / `.webp` / `.jpg` / `.hdr`; `HOST` defaults to 127.0.0.1; strict document validation.
 - **Uploads:**
   - raw `PUT` bodies, not multipart, because multipart passes `../../evil.png` through unchanged [T11];
@@ -458,7 +458,7 @@ These are new SQLite tables, created through a real migration runner. Today ther
 - Adding a pendant compiles no new shader programs.
 - The 3D chunk size is reported in QA [M3D].
 
-**Ports.** The API default moves from 8787, which an unrelated app owns on this PC, to **8790**. The Vite proxy reads `MISE_API_PORT` [MSRV bug].
+**Ports.** The API default moves from 8787, which an unrelated app owns on this PC, to **8790**. The Vite proxy reads `BLUMODEL_API_PORT` [MSRV bug].
 
 **Accessibility.** Every new control has a label. Modals trap focus and close on Esc. Status is never shown by colour alone.
 
@@ -468,7 +468,7 @@ These are new SQLite tables, created through a real migration runner. Today ther
 
 ## 12. Trust, legal and labelling
 
-- **Disclaimer** in the footer of the landing page, editor, share page and CSV: *"Mise is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional."* Drafted ships the same kind of disclaimer [D1].
+- **Disclaimer** in the footer of the landing page, editor, share page and CSV: *"BluModel Studio is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional."* Drafted ships the same kind of disclaimer [D1].
 - **Fictional brands:** all seed brands are invented and marked Demo (§6.6). Real brands appear only through self-onboarding plus admin approval.
 - **Payments:** a hosted processor only (Stripe Checkout). Demo payments are labelled on every screen that shows money and can't be enabled in production by accident [R-trust][T13].
 - **Uploaded content:** brands confirm they have the rights to the files they upload (a checkbox on submit). Admins can archive any product.
@@ -533,14 +533,14 @@ These are new SQLite tables, created through a real migration runner. Today ther
 
 ## 15. Decisions made for Gabe (please overrule in the morning)
 
-1. **Name:** kept "Mise". Drafted is the UX reference only.
+1. **Name:** **BluModel Studio** (short form BluModel), at https://blumodel.studio. Built as "Mise"; renamed 2026-10-13 (see the README, *Renamed from Mise*). Drafted is the UX reference only.
 2. **Money (superseded by Gabe, 2026-10-04 — see PLANS_AND_CONTRACTORS.md):** free for homeowners; brands free during beta (cap of 50 products); brand plans not built.
 3. **Custom-model prices:** $129 / $279 / $549, +$39 per extra finish, rush +50%, 2 revisions. These are placeholders.
-4. **Fulfilment:** Mise staff (role `studio`) for now, not a modeller marketplace (that would need Stripe Connect).
+4. **Fulfilment:** BluModel Studio staff (role `studio`) for now, not a modeller marketplace (that would need Stripe Connect).
 5. **Payments:** Stripe test mode only once keys are set; DEMO otherwise. Going live needs your business entity, tax set-up and terms.
 6. **Custom models are private to the buyer** by default; brand-requested models become brand drafts.
 7. **Brand verification** is a manual admin action; there is no automatic domain-email check yet.
-8. **LLM:** off by default; Anthropic Messages API only when `ANTHROPIC_API_KEY` and `MISE_LLM_MODEL` are set; it parses only.
+8. **LLM:** off by default; Anthropic Messages API only when `ANTHROPIC_API_KEY` and `BLUMODEL_LLM_MODEL` are set; it parses only.
 9. **Tone mapping:** Neutral in the product viewer; the room view is chosen from A/B screenshots (Neutral vs AgX).
 10. **No path tracer** this round.
 11. **Share links:** view-only and live; tokens stored in the database so they can be copied again (revocable); review and comment roles later.

@@ -69,13 +69,13 @@ the Contractor workspace.
 - **Seed** (`server/seed/brands.mjs`, idempotent, fictional "(Demo)" names only):
   - two partner brands with fixture GLBs: Kestrel & Finch Appliances (Demo) and Marlow Lighting Co.
     (Demo);
-  - the demo contractor `demo-brand@mise.test` with Alder & Pine Cabinetry (Demo). It is live and
+  - the demo contractor `demo-brand@blumodel.test` with Alder & Pine Cabinetry (Demo). It is live and
     verified, has 7 published products (1 in review, 1 live with an edit in review), 1 product that
     isn't ready, 5 leads in every status and 30 days of demo analytics labelled "Demo data";
   - Birchwood Kitchen Studio (Demo), waiting in the page review queue.
 
-  It runs cleanly after `mise/qa`'s `core.mjs`, twice. `demo-brand@mise.test` is then both Sam
-  Sample of "Mise Sample Co. (Demo)", which stays a partner brand, and the Alder & Pine contractor.
+  It runs cleanly after `mise/qa`'s `core.mjs`, twice. `demo-brand@blumodel.test` is then both Sam
+  Sample of "BluModel Sample Co. (Demo)", which stays a partner brand, and the Alder & Pine contractor.
 
 ## Requests for files I don't own (integration pass)
 
@@ -133,7 +133,7 @@ the Contractor workspace.
 7. **Package C, `src/features/orders/OrderPage.tsx` (on `mise/orders`, line ~172):** a button links
    to `#/brand`. It still works, because it redirects to `#/pro/brand`, or to the pitch for
    non-contractors. Pointing it at `#/pro/brand/products` would skip the hop.
-8. **Admin shell (F):** at 390 px the admin top bar's tabs run over the "Mise" wordmark (see
+8. **Admin shell (F):** at 390 px the admin top bar's tabs run over the "BluModel Studio" wordmark (see
    `admin-moderation-phone.png`). This is not B2 code.
 9. **Catalog panel (F), optional:** contractor-brand products show the company under the card
    (`p.brand`). BRAND_PAGE §5 says "by <company>". Prefixing "by " for contractor brands would need
@@ -151,7 +151,7 @@ the Contractor workspace.
 3. **"From $X"** is the lowest sell price across a product's widths. "Show prices" shows the sell
    price per width. "Price on request" shows no price and passes the readiness price check.
 4. **The page address can change until the page first goes live; the public name is fixed** once
-   live ("ask Mise to change it").
+   live ("ask BluModel Studio to change it").
 5. **A page view counts once per visitor per half hour**, via an in-memory hashed key, so a reload
    loop doesn't inflate it.
 6. **Admins can't read leads at all.** `/api/pro/brand/leads` returns 403 for them, and Admin →
@@ -163,7 +163,7 @@ the Contractor workspace.
 
 - `npx tsc --noEmit -p tsconfig.json`: clean.
 - `npm test`: TS unit tests and server tests all pass. One test is skipped by design ("temp copies
-  of real mise.db", which needs `MISE_UPGRADE_DB`). `server/test/brands.test.mjs` has 16 tests:
+  of real blumodel.db", which needs `BLUMODEL_UPGRADE_DB`). `server/test/brands.test.mjs` has 16 tests:
   - access (403/401 on every `/api/pro/brand` route);
   - setup pre-filled from Company;
   - the readiness gate;

@@ -46,7 +46,7 @@ Built 2026-10-04/05 alongside package G (see `billing.md` for the shared foundat
 
 - **Branded share links** need package E: the hooks are registered and tested (`brandingFor`,
   `applyForViewer`, `sellPricesFor`, `stripDoc`), but there is no share page yet to show them.
-- **"Have Mise model it"** links to `#/orders/new?target=contractor`, a placeholder until package C.
+- **"Have BluModel Studio model it"** links to `#/orders/new?target=contractor`, a placeholder until package C.
 - Per-product door styles don't change how doors are drawn (see 2).
 - The CSV import matches by SKU only; unmatched rows are reported, not created as products.
 - Verified in Chromium with a Playwright script in the session scratchpad: pitch → demo plan → setup

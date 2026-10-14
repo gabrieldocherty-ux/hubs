@@ -1,7 +1,11 @@
-# Mise — Kitchen Visualizer
+# BluModel Studio
 
 Plan a kitchen to scale with branded cabinets, appliances and finishes, check it
-against real kitchen-planning guidelines, price it, and walk through it in 3D.
+against real kitchen-planning guidelines, price it, and walk through it in 3D. Public at
+https://blumodel.studio.
+
+Renamed from **Mise** on 2026-10-13 (this folder was `kitchen-visualizer/`). What changed for a
+running install is under *Renamed from Mise* below.
 
 ```bash
 cd blumodel-studio
@@ -48,10 +52,10 @@ which keeps the kitchen in that browser only.
 The server (`server/index.mjs`) has no dependencies: Node's `http`, `crypto`
 and built-in `node:sqlite`. Passwords are salted scrypt hashes; sessions are
 random tokens stored only as SHA-256 hashes and sent as httpOnly, SameSite=Lax
-cookies (Secure in production). Writes require a custom `X-Mise` header, which
+cookies (Secure in production). Writes require a custom `X-BluModel` header, which
 blocks cross-site request forgery; failed logins are throttled per IP and
 email; every project query is scoped to its owner. Data lives in
-`server/data/mise.db` (set `DB_PATH` and `PORT` to change). Behind HTTPS in
+`server/data/blumodel.db` (set `DB_PATH` and `PORT` to change). Behind HTTPS in
 production — put it behind a TLS-terminating proxy.
 
 ## What it does
@@ -119,7 +123,7 @@ production — put it behind a TLS-terminating proxy.
   (one tape-measured wall rescales everything; every field is editable), and *Build my kitchen* makes
   that room in the editor, with the photos kept in a floating *Your photos* panel to compare against.
   There is no text box to describe a kitchen. Reading the photos for you needs
-  `ANTHROPIC_API_KEY` and `MISE_LLM_MODEL` (a vision model that supports structured outputs, for
+  `ANTHROPIC_API_KEY` and `BLUMODEL_LLM_MODEL` (a vision model that supports structured outputs, for
   example `claude-opus-5-5`) in the server's environment; without both, `POST /api/generate/photo`
   answers 503 and the form starts from a typical L-shape. `/api/config` reports `llm: true` once it
   is on. No call to Anthropic has been made from this repo's tests or QA.
@@ -133,6 +137,49 @@ production — put it behind a TLS-terminating proxy.
 - **Custom models** (`#/orders`): order a 3D model of a product (Simple $129, Standard $279,
   Complex $549, quoted by the server), pay (DEMO or Stripe), the studio delivers a GLB through
   Admin > Studio, and it is private to the buyer.
+
+## The home server (deploy-local)
+
+`npm run deploy:local` builds and copies the app to `%USERPROFILE%\Projects\BluModelStudio` (set
+`BLUMODEL_HOME`), keeping `data\blumodel.db` (backed up before every deploy, last 5 kept),
+`data\uploads\` and `logs\`, and restarts it on port 8790 (`BLUMODEL_PORT`) under `run-server.cmd`,
+a supervisor that restarts the server if it exits. `node scripts/deploy-local.mjs --dist <dir>`
+deploys an existing build. The header of `scripts/deploy-local.mjs` has the folder's layout.
+
+- **Private settings** (Stripe keys, `PUBLIC_URL=https://blumodel.studio`, `TRUST_PROXY`,
+  `ADMIN_EMAILS`…) live in `blumodel.env` in that folder, one `KEY=VALUE` per line, written by hand
+  and never touched by a deploy. If it exists at deploy time, `run-server.cmd` names it in
+  `BLUMODEL_ENV_FILE`; the server reads it at start (`server/lib/envFile.mjs`), never prints a
+  value, and refuses to start if the named file has gone. A value already in the environment wins
+  over the file. With a settings file, the file also decides `DEMO_PAYMENTS` (refused in production
+  unless it says `DEMO_PAYMENTS=1`); a home without one allows the labelled demo.
+- **Scheduled tasks:** `BluModelStudioServer` runs `start-hidden.vbs` (the supervisor) at logon;
+  `BluModelTunnel` runs the Cloudflare tunnel `blumodel` to `http://127.0.0.1:8790`. The deploy
+  never creates or changes a task.
+
+## Renamed from Mise
+
+- Session cookie `blumodel_session` (was `mise_session`): everyone signs in once more.
+- CSRF header `X-BluModel: 1` (was `X-Mise`).
+- Default database `server/data/blumodel.db`. A checkout that only has `server/data/mise.db` keeps
+  using it; the home server's deploy renames `data\mise.db` (with its `-wal`/`-shm`) to
+  `blumodel.db` after the backup.
+- Environment: `BLUMODEL_HOME`, `BLUMODEL_PORT`, `BLUMODEL_HOST`, `BLUMODEL_DEMO_PAYMENTS` (deploy),
+  `BLUMODEL_LLM_MODEL` and `BLUMODEL_ENV_FILE` (server). **Deprecated:** `MISE_HOME`, `MISE_PORT`,
+  `MISE_HOST`, `MISE_DEMO_PAYMENTS`, `MISE_LLM_MODEL` and `MISE_ENV_FILE` are still read when the
+  new name isn't set. Dev-only names were renamed outright: `BLUMODEL_API_PORT` (Vite proxy),
+  `BLUMODEL_QA_BROWSER`, `BLUMODEL_UPGRADE_DB`, `BLUMODEL_UPDATE_GOLDEN`.
+- Browser storage is `blumodel.*` / `blumodel-*`. On the first visit after the rename every old
+  `mise.*` / `mise-*` key moves to its new name (`src/lib/legacyStorage.ts`, run first by
+  `src/boot.ts`), and the device-only kitchen's photos move from the `mise-generate` IndexedDB to
+  `blumodel-generate`, so a kitchen kept on a device survives.
+- GLB finish slots are `blumodel_finish`, `blumodel_cabinet`, `blumodel_hardware` and
+  `blumodel_counter`; models made with `mise_*` slots still re-tint.
+- The project file's app id is `blumodel-studio` (import never checked it, so old files still open).
+- QA hooks are `window.__blumodel`, `__blumodelQA` and `__blumodelQa`; demo users are
+  `@blumodel.test`; the demo brand is *BluModel Sample Co. (Demo)* at `#/b/blumodel-sample-co-demo`.
+- `node scripts/qa.mjs --pkg rename` checks the name at every width and that a browser used before
+  the rename keeps its device kitchen, drafts and photos.
 
 ## QA
 

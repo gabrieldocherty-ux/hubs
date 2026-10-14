@@ -41,7 +41,7 @@ each with a file, a reason and a suggested diff.
   - Read policy (`files.addReadPolicy`): a private file is readable with `?share=<token>` while the
     link is live, the file belongs to a live, unarchived product placed in that kitchen, **and** that
     product is owned by the kitchen's owner. Anything else is a 404.
-- `server/seed/share.mjs`: for `demo-customer@mise.test`, the kitchen "Harbor Lane Kitchen (Demo)"
+- `server/seed/share.mjs`: for `demo-customer@blumodel.test`, the kitchen "Harbor Lane Kitchen (Demo)"
   (fixed id `d3e05ea7-0000-4000-8000-00000000e5e1`, the starter layout in sage, which passes every
   design check, with the fictional client "The Lindqvists") and three links: prices on and never
   expiring, prices off for 30 days, and one turned off. The tokens are random for each database.
@@ -82,7 +82,7 @@ each with a file, a reason and a suggested diff.
     - the hero's main call to action is **Start from a photo of your kitchen** → `#/generate`, with
       **Start free** → `#/signup` and **Try without an account →** → `#/local`. There is no
       "describe your kitchen" anywhere, and QA fails if it comes back;
-    - the hero image is `public/marketing/hero.webp` (55 KB), a real Mise 3D render of the starter
+    - the hero image is `public/marketing/hero.webp` (55 KB), a real BluModel Studio 3D render of the starter
       kitchen, with a live `MiniPlan` inset. If the image fails to load, the live plan stands in;
     - How it works: Photo → Check the space → Redesign in 2D/3D with real products → Share;
     - a contractor band with the pitch line, a made-up "Birch & Bevel" sample share showing sell
@@ -94,7 +94,7 @@ each with a file, a reason and a suggested diff.
       fictional".
   - `PricingScreen` (`#/pricing`):
     - the four plans from `src/data/plans.json`. The buttons follow the session: Start free, Choose a
-      kitchen, Go Unlimited → `#/account/billing`, Become a Mise contractor → `#/pro`. Signed-out
+      kitchen, Go Unlimited → `#/account/billing`, Become a BluModel Studio contractor → `#/pro`. Signed-out
       users go through `#/signup?next=`, and the user's current plan gets a "Your plan" badge;
     - a "Demo payments" note when `/api/config` says payments are demo;
     - the Contractor program with the exact pitch line and four groups: catalog, prices, with your
@@ -223,7 +223,7 @@ Each was a throwaway detached worktree with a `--no-commit` merge, deleted after
 
 - `npx tsc --noEmit -p tsconfig.json`: clean.
 - `npm test`: TS 59/59; server 84 tests, 83 passed, 1 skipped (the foundation's "temp copies of real
-  mise.db files" test, which needs `MISE_UPGRADE_DB`), 0 failed. Share: 12/12.
+  blumodel.db files" test, which needs `BLUMODEL_UPGRADE_DB`), 0 failed. Share: 12/12.
 - `npm run build`: OK (the existing >500 kB chunk warnings for `index` and `SceneView` aren't
   share's). The share and marketing chunks are lazy and small: SharedKitchen 9.2 kB, ShareDialog
   5.6 kB, Landing 9.8 kB, Pricing 10.1 kB (minified).

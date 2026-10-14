@@ -5,7 +5,7 @@ Built 2026-10-07 on branch `mise/generate` (from `b78193a`), in the worktree
 ("i dont like discribe your kitchen but uploading a photo and being able to model that space would
 be nice"), so this package keeps D's key, directories and the `#/generate` route but builds
 **Start from a photo**: a homeowner or contractor adds photos of the kitchen they have now and gets
-that space modelled in Mise to redesign. There is no free-text box and no text parser anywhere.
+that space modelled in BluModel Studio to redesign. There is no free-text box and no text parser anywhere.
 
 ## What shipped
 
@@ -27,7 +27,7 @@ that space modelled in Mise to redesign. There is no free-text box and no text p
    the golden output exactly. `composeDoc` accepts a template id, a `LayoutSpec`, ready items or null.
 4. **PhotoModel** (`src/lib/generate/photoModel.ts`, validator shared with the server in
    `server/llm/photoModel.mjs`): room, openings, runs, appliances, island, style (mapped to the
-   closest Mise finishes), per-field confidence. `validatePhotoModel` clamps to the editor's
+   closest BluModel Studio finishes), per-field confidence. `validatePhotoModel` clamps to the editor's
    ranges. `buildFromPhotoModel(model)` → a `DesignDoc` through the declarative specs and built-in
    products: pure, deterministic, with a 300-case fuzz of realistic photos building with **no bad
    checks at all** and a 60-case adversarial fuzz with no collision, poke-through, door swing or
@@ -36,7 +36,7 @@ that space modelled in Mise to redesign. There is no free-text box and no text p
 5. **Server** (`server/routes/generate.mjs`, `server/llm/anthropic.mjs`, migration
    `generate-001-photo-refs`):
    - `POST /api/generate/photo {fileIds}`: signed-in users, 10/h/user. **503 "Photo analysis is
-     not configured."** unless `ANTHROPIC_API_KEY` and `MISE_LLM_MODEL` are both set. Files the
+     not configured."** unless `ANTHROPIC_API_KEY` and `BLUMODEL_LLM_MODEL` are both set. Files the
      caller can't read are a 404; photos over 5 MB a 413 with a clear message (the server can't
      downscale without a dependency; the browser already shrinks photos to a 1600 px JPEG before
      upload). Sends base64 image blocks to the Messages API through `ctx.fetch` with structured
@@ -102,7 +102,7 @@ that space modelled in Mise to redesign. There is no free-text box and no text p
    duplicate handler (`INSERT INTO generate_photo_refs (project_id, user_id, file_ids, updated_at)
    SELECT ?, user_id, file_ids, ? FROM generate_photo_refs WHERE project_id = ?`).
 4. **Deploy/README** (not D's files): to switch analysis on, set `ANTHROPIC_API_KEY` and
-   `MISE_LLM_MODEL` (suggest `claude-opus-5-5`; the request works with any current vision model
+   `BLUMODEL_LLM_MODEL` (suggest `claude-opus-5-5`; the request works with any current vision model
    that supports structured outputs). `/api/config.llm` already reports it.
 5. **External requests in QA** (F): `index.html` loads Google Fonts, so every route the §3.7
    runner checks will see requests to `fonts.googleapis.com` / `fonts.gstatic.com`. Self-host the
@@ -117,13 +117,13 @@ that space modelled in Mise to redesign. There is no free-text box and no text p
 - `#/generate?q=` is still accepted (route contract) and ignored. `from=<projectId>` re-opens an
   account kitchen in Check the space with its photos.
 - QA-only URL parameters on `#/generate` (only with `?qa` in the page URL): `qaPhotos=synth:N` or
-  `qaPhotos=<fileId>,…`, and `qaStep=space`. `window.__miseQa.generate` exposes the model and the
+  `qaPhotos=<fileId>,…`, and `qaStep=space`. `window.__blumodelQa.generate` exposes the model and the
   photo count.
 
 ## Verified, and how
 
 - `npx tsc --noEmit -p tsconfig.json`: clean. `npm test`: TS 103/103, server 83 passed +
-  1 pre-existing skip (no real `mise.db` to copy). `npm run build`: OK.
+  1 pre-existing skip (no real `blumodel.db` to copy). `npm run build`: OK.
 - QA routes run with a stand-in runner (the real `scripts/qa.mjs` isn't on this branch) against
   the built app on port 8815 with a temp DB, headless Edge over CDP, desktop 1440×900 and phone
   390×844 @3x with touch: **11/12 pass**; `editor-photo-reference` fails only because of request 1
@@ -149,4 +149,4 @@ that space modelled in Mise to redesign. There is no free-text box and no text p
 - No seed (D needs no demo data). HEIC photos open only where the browser can decode them
   (Safari); elsewhere the screen says how to switch an iPhone to JPEG.
 - An island the photos show is left out (with a note in the form) when 36″ walkways don't fit,
-  because Mise's island is a fixed 42″ deep.
+  because BluModel Studio's island is a fixed 42″ deep.

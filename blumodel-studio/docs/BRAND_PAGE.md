@@ -1,4 +1,4 @@
-# Mise: The Brand Page (part of the Contractor account)
+# BluModel Studio: The Brand Page (part of the Contractor account)
 
 **Decision (Gabe, 2026-10-06):** "make brand portal a small part of the contractors account … make this fully fleshed out."
 **Supersedes:** PRODUCT_SPEC §6 (self-serve brand portal for outside brands) and BUILD_PLAN §6 as a standalone product. The machinery built for §6 is kept: product editor, GLB report, moderation, brand page and analytics. **What changes is who uses it and where it lives.**
@@ -10,8 +10,8 @@ There is no separate brand account and no portal for outsiders. **A contractor's
 
 ## 1. Why a contractor wants it
 
-Today a contractor pays Mise to design with clients. The Brand page also makes Mise **send them clients**:
-- Homeowners browsing Mise find the contractor's own cabinets and products.
+Today a contractor pays BluModel Studio to design with clients. The Brand page also makes BluModel Studio **send them clients**:
+- Homeowners browsing BluModel Studio find the contractor's own cabinets and products.
 - They see those products in realistic 3D.
 - They drop them straight into their own kitchen designs.
 - Then they contact the contractor.
@@ -111,7 +111,7 @@ These come from the existing `product_events` plus new `brand_view` and `lead` t
 
 ## 11. Open questions for Gabe (decisions made while fleshing out)
 1. Verification is a **manual admin check**. There's no automated business lookup.
-2. Leads are **not emailed** yet. The contractor sees them in Mise, with a badge.
+2. Leads are **not emailed** yet. The contractor sees them in BluModel Studio, with a badge.
 3. The default public price display is **"From $X"**.
 4. **50** live products per contractor brand.
 5. Partner (non-contractor) brands exist only as **admin-created** catalog content.

@@ -7,19 +7,19 @@ Owned: `scripts/qa.mjs`, `scripts/qa-shot.mjs`, `scripts/qa/routes/core.mjs`,
 ## What shipped
 
 - **`scripts/qa-shot.mjs`**: the zero-dependency CDP driver (Node's built-in `WebSocket`, the
-  installed Edge, or Chrome with `--chrome` / `MISE_QA_BROWSER`). Every page runs in its own
+  installed Edge, or Chrome with `--chrome` / `BLUMODEL_QA_BROWSER`). Every page runs in its own
   browser context. Requests to any non-loopback host are **blocked before they leave the
   machine** (CDP `Fetch` interception, plus `--host-resolver-rules` so nothing but loopback
   resolves) and reported. Ports 8787 and 8790 are refused before anything is probed. As a command
   it takes one screenshot: `node scripts/qa-shot.mjs http://127.0.0.1:<p>/#/local out.png [--phone]`.
 - **`scripts/qa.mjs`** (`npm run qa -- --pkg core --port 8811`):
   - makes a temp dir (DB, uploads, server log), runs `server/seed/index.mjs`, starts
-    `server/index.mjs --prod` with `PAYMENTS=demo DEMO_PAYMENTS=1`, `ADMIN_EMAILS=demo-admin@mise.test`,
+    `server/index.mjs --prod` with `PAYMENTS=demo DEMO_PAYMENTS=1`, `ADMIN_EMAILS=demo-admin@blumodel.test`,
     a random `SEED_PASSWORD`, `DIST_DIR` with `--dist`, and strips Stripe/Anthropic keys,
     `PUBLIC_URL`, `NODE_ENV` and the like from the inherited environment;
   - builds `server/generated/export-kit.mjs` first if it is missing (the server imports it);
   - signs in one session per role (`anon`, `customer`, `brand`, `studio`, `admin` are the seeded
-    demo users; `contractor` is `qa-contractor@mise.test`, made at run time and put on the
+    demo users; `contractor` is `qa-contractor@blumodel.test`, made at run time and put on the
     Contractor plan through the real demo checkout, `POST /api/billing/checkout` then
     `POST /api/billing/demo/:ref/complete {outcome:'success'}`; `fresh` is a brand-new free
     customer for that one route) and hands the cookie to the browser with `Network.setCookie`;
@@ -50,12 +50,12 @@ Owned: `scripts/qa.mjs`, `scripts/qa-shot.mjs`, `scripts/qa/routes/core.mjs`,
   runs `core.mjs`, then imports every other `server/seed/*.mjs` in name order and calls
   `seed(ctx)` with `ctx = { db, config, services, now, log, demo }` (`now` is a function, as in
   `createApp`; `demo = { users: { customer, brand, studio, admin }, brandId, productIds }`).
-  Refuses without `DB_PATH` (so it can never touch `server/data/mise.db` by accident) and in
+  Refuses without `DB_PATH` (so it can never touch `server/data/blumodel.db` by accident) and in
   production (`--prod` or `NODE_ENV=production`) without `--force-demo`. `npm run seed` builds the
   export kit first.
-- **`server/seed/core.mjs`**: `demo-customer@mise.test`, `demo-brand@mise.test` (owner of
-  *Mise Sample Co. (Demo)*, active, `is_demo=1`), `demo-studio@mise.test` (studio),
-  `demo-admin@mise.test` (admin); two published GLB products with PNG thumbnails, *Sample Gas
+- **`server/seed/core.mjs`**: `demo-customer@blumodel.test`, `demo-brand@blumodel.test` (owner of
+  *BluModel Sample Co. (Demo)*, active, `is_demo=1`), `demo-studio@blumodel.test` (studio),
+  `demo-admin@blumodel.test` (admin); two published GLB products with PNG thumbnails, *Sample Gas
   Range 30″ (Demo)* and *Sample Dome Pendant (Demo)*. Password: `SEED_PASSWORD`, else the one saved
   in `<dirname DB_PATH>/seed-credentials.txt`, else a generated one written there (mode 0600). It
   is never printed. Idempotent: verified by seeding the same DB three times (4 users, 1 brand,
@@ -69,7 +69,7 @@ Owned: `scripts/qa.mjs`, `scripts/qa-shot.mjs`, `scripts/qa/routes/core.mjs`,
   payment** in the browser (no card-like inputs on the page, success returns to Billing, the plan
   is `unlimited`, a CSV export then returns 200); and a text-agnostic render smoke of every other
   routed screen (`#/signup` phone, `#/welcome` and `#/pricing` desktop + phone, `#/generate`,
-  `#/p/<demo product>`, `#/b/mise-sample-co-demo`, `#/brand`, `#/orders`, and the six other admin
+  `#/p/<demo product>`, `#/b/blumodel-sample-co-demo`, `#/brand`, `#/orders`, and the six other admin
   tabs). The smoke only asks for some text and no sideways scroll, so packages can replace their
   placeholders without editing core; their own checks belong in `scripts/qa/routes/<key>.mjs`.
 
@@ -79,7 +79,7 @@ Owned: `scripts/qa.mjs`, `scripts/qa-shot.mjs`, `scripts/qa/routes/core.mjs`,
 (ANGLE D3D11): **PASS: 35 passed, 5 known issues, 0 failed** (about 55 s). Every screenshot was
 looked at. The five known issues are real app bugs outside these owned paths, listed below.
 Same commit: `npx tsc --noEmit -p tsconfig.json` clean; `npm test` 59/59 TS tests and 71/72 server
-tests pass (1 skipped: the real-`mise.db` upgrade test, which needs `MISE_UPGRADE_DB`);
+tests pass (1 skipped: the real-`blumodel.db` upgrade test, which needs `BLUMODEL_UPGRADE_DB`);
 `npm run build` succeeds (Vite's usual >500 kB chunk warning for `index` and `SceneView`).
 
 ## Requests for the integration pass (files I don't own)
@@ -133,7 +133,7 @@ tests pass (1 skipped: the real-`mise.db` upgrade test, which needs `MISE_UPGRAD
    (blocked, not failing; `--strict-external` fails it), and once no route requests it the run
    fails and tells you to delete the entry.
 6. **`seed-credentials.txt` is not gitignored.** A generated demo password is written next to
-   `DB_PATH`; if that is inside the repo (e.g. `DB_PATH=./tmp/mise.db`), git would offer to commit
+   `DB_PATH`; if that is inside the repo (e.g. `DB_PATH=./tmp/blumodel.db`), git would offer to commit
    it. Add to `blumodel-studio/.gitignore`:
    ```diff
    +seed-credentials.txt

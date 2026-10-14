@@ -11,7 +11,7 @@ Owned paths only (checked with `git diff --name-only 4f0a7a6`): `src/components/
 | Check | Result |
 |---|---|
 | `npx tsc --noEmit -p tsconfig.json` | clean |
-| `npm test` | TS 90/90 (viewer: fit, light pool, stage maths, studio, grain); server 78 pass, 1 skipped (F's upgrade test, needs `MISE_UPGRADE_DB`), 0 fail |
+| `npm test` | TS 90/90 (viewer: fit, light pool, stage maths, studio, grain); server 78 pass, 1 skipped (F's upgrade test, needs `BLUMODEL_UPGRADE_DB`), 0 fail |
 | `npm run build` | OK |
 | `node scripts/qa.mjs --pkg viewer --port 8812` | **11/11 pass**, GPU; `--swiftshader` pass of `product-builtin`, `product-glb`, `kitchen-glb-added`: 3/3 |
 | `node scripts/qa.mjs --pkg core --port 8812` on this build | 35 pass, 2 known, 3 fail; the 3 (`local-phone`, `kitchen-open-phone`, `kitchen-selection-toolbar`) are the move.css issues fixed on `mise/qa` in 2e6cf2c, not viewer code |
@@ -36,7 +36,7 @@ Lightformers, and there are no drei presets, `<Stage>`, `useKTX2` or `useDetectG
   and the app's own loader both point there; Meshopt inline; KTX2 not wired.
 - **A-T2 GLB in the room** (`three/gltf.tsx`, `three/fit.ts`, `renderModel` in `models.tsx`):
   per-URL cache, `clone(true)` per item, uniform min-ratio fit to the declared W×H×D, centred,
-  min.y = 0, then the item's elevation; `mise_finish | mise_cabinet | mise_hardware | mise_counter`
+  min.y = 0, then the item's elevation; `blumodel_finish | blumodel_cabinet | blumodel_hardware | blumodel_counter`
   slots (exporter suffixes like `.001` match); only meshes ≥ 8″ cast shadows; disposal 30 s after
   the last user. A load error never throws: the procedural model is both the Suspense fallback and
   the failure state, and `ModelBoundary` catches build errors and clears the URL. QA:
@@ -49,12 +49,12 @@ Lightformers, and there are no drei presets, `<Stage>`, `useKTX2` or `useDetectG
   `autoUpdate=false` with `needsUpdate` on change; `dpr [1, 1.5]`; `FrameGovernor` steps DPR then AO
   down after slow *interaction* runs (drei's PerformanceMonitor reads an idle demand canvas as a
   slow device, so it isn't used); no `preserveDrawingBuffer`; `castShadow` only on large parts
-  (`isLargePart` in `parts.tsx`); `window.__miseQa = { canvas, frames, calls, triangles, programs }`
+  (`isLargePart` in `parts.tsx`); `window.__blumodelQa = { canvas, frames, calls, triangles, programs }`
   with `?qa` (the last three are live getters, see "QA hooks"). Selection outlines share two
   materials instead of compiling a program per selection.
 - **A-T4 room quality:** EffectComposer (MSAA 4, Canvas `antialias:false`), N8AO (half-res,
   medium, radius 1.5, intensity 2), `<ToneMapping>` last; Fast/High toggle in the 3D view, stored
-  in `localStorage` (`mise.room.quality`, `mise.room.tonemap`). Wood is mapped at real scale with
+  in `localStorage` (`blumodel.room.quality`, `blumodel.room.tonemap`). Wood is mapped at real scale with
   its grain along the part (`grainUV` in `geom3d.ts`: stiles, doors and cabinet sides vertical;
   rails, drawer fronts and toe-kicks horizontal; shelves along their long side), fixing bug 17.
   **Not done:** the optional companion roughness/normal canvases.
@@ -77,7 +77,7 @@ Lightformers, and there are no drei presets, `<Stage>`, `useKTX2` or `useDetectG
   → `composer.render()` → canvas in the same task → restore → `invalidate()`. A still of the
   *current* view from a narrow pane (split view, phone) widens to the image's aspect instead of
   shrinking the kitchen into the middle (`stillFov`). `useEntitlements(projectId).watermark` puts
-  the repeated diagonal "Mise · Preview" plus a corner badge on the preview; *Download PNG* goes
+  the repeated diagonal "BluModel Studio · Preview" plus a corner badge on the preview; *Download PNG* goes
   through `requestExport(projectId, 'render', …)`, downloads
   `<kitchen>-render-<w>x<h>.png`, and the full-resolution file is never watermarked. After a demo
   unlock the dialog reopens and the download resumes by itself. The `scene` exporter (TopBar 3D
@@ -89,7 +89,7 @@ Lightformers, and there are no drei presets, `<Stage>`, `useKTX2` or `useDetectG
   **deliberately empty** (a test asserts it). `view` / `buy_click` use F's `/api/events`.
 - **A-T10:** TS tests listed above; `server/test/viewer.test.mjs` (Draco served `200
   application/wasm` from a `DIST_DIR` fixture and identical to three's; the demo GLBs are valid,
-  carry `mise_*` slots and match their declared size; the seed is idempotent; `view` and
+  carry `blumodel_*` slots and match their declared size; the seed is idempotent; `view` and
   `buy_click` are recorded with the brand). Seed `server/seed/viewer.mjs`: one fictional brand
   *Ashgrove Studio (Demo)* with two published GLBs built from real geometry, *Ashgrove 30″ Pro
   Range (Demo)* and *Ashgrove Dome Pendant (Demo)*. It runs under the seed runner (which guards
@@ -176,7 +176,7 @@ dialog; ACES remains only for this comparison.** Reasoning:
 - Scaling all lights down (0.6–0.75×) to tame the sunlit floor made walls and cabinets too dark
   (ΔE 10–22), so it was not shipped. The floor stays bright where the sun hits it, as a real floor
   would.
-- `?qa` plus `localStorage['mise.qa.roomLight']` (JSON) overrides any key of the palette, so the
+- `?qa` plus `localStorage['blumodel.qa.roomLight']` (JSON) overrides any key of the palette, so the
   A/B can be re-run without a rebuild.
 
 ## Requests for other owners (not applied; for the integration pass)
@@ -207,13 +207,13 @@ dialog; ACES remains only for this comparison.** Reasoning:
 
 ## QA hooks (only with `?qa`)
 
-- `window.__miseQa.{canvas, frames, lastFrameAt}`, plus **live getters** `calls`, `triangles`,
+- `window.__blumodelQa.{canvas, frames, lastFrameAt}`, plus **live getters** `calls`, `triangles`,
   `programs` on the current canvas's renderer. They used to be copied at the start of each frame,
   which left them one frame stale for as long as a demand canvas idled (the runner saw
-  `programs: 1` before a pendant and 18 after). Anything that writes to `__miseQa` must mutate it
+  `programs: 1` before a pendant and 18 after). Anything that writes to `__blumodelQa` must mutate it
   in place (`Object.assign`), not spread a copy, or the getters freeze.
-- `__miseQa.viewer = { renderStill(opts) → canvas, maxSide, setToneMap, setQuality, catalog }`
-  (room); `__miseQa.stage = { get, renderStill(size) }` (product page); `__miseQa.studio` (dialog
+- `__blumodelQa.viewer = { renderStill(opts) → canvas, maxSide, setToneMap, setQuality, catalog }`
+  (room); `__blumodelQa.stage = { get, renderStill(size) }` (product page); `__blumodelQa.studio` (dialog
   state). A loaded GLB's group has `userData.gltf = <url>`.
 
 ## Known issues and things not done
