@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { flushAutosave } from '../hooks/useAutosave';
-import { QA } from '../lib/qa';
+import { QA, QA_LOCAL } from '../lib/qa';
 import { splitHash } from '../lib/router';
 import { Logo, Wordmark } from './Icons';
 
@@ -74,10 +74,11 @@ function Crash({ inline, error }: { inline?: boolean; error: Error }) {
 }
 
 /**
- * QA only (`?qa` in the URL): `#/<route>?qa-crash=route` throws inside the route's boundary and
- * `qa-crash=root` inside the root one, so QA can see both screens. Inert without the flag.
+ * QA only (`?qa` in the URL, on a loopback address): `#/<route>?qa-crash=route` throws inside the
+ * route's boundary and `qa-crash=root` inside the root one, so QA can see both screens. Inert
+ * without the flag, and on the public site (where a crafted link would show a broken page).
  */
 export function QaCrash({ where }: { where: 'route' | 'root' }) {
-  if (QA && splitHash(location.hash).query.get('qa-crash') === where) throw new Error(`QA: a deliberate crash in the ${where} boundary`);
+  if (QA_LOCAL && splitHash(location.hash).query.get('qa-crash') === where) throw new Error(`QA: a deliberate crash in the ${where} boundary`);
   return null;
 }

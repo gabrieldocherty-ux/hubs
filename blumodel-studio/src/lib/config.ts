@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import type { AppConfig, LegalConfig } from '../types/platform';
 import { call } from './api';
-import { QA } from './qa';
+import { QA_LOCAL } from './qa';
 
 /**
  * What this server is set up for (`GET /api/config`), loaded once and shared by every screen:
@@ -47,9 +47,10 @@ export function normalizeConfig(raw: Partial<AppConfig> | null | undefined): Cli
 }
 
 // ── QA-only override ─────────────────────────────────────────────────────────
-// Under `?qa` (never otherwise), `#/<route>?qa-payments=none|demo|stripe&qa-legal=ready|unset`
-// replaces those two answers for the rest of the tab's session, so QA can show every payment
-// state against its one demo server. Nothing reads it without the flag.
+// Under `?qa` on a loopback address (never otherwise, and never on the public site),
+// `#/<route>?qa-payments=none|demo|stripe&qa-legal=ready|unset` replaces those two answers for
+// the rest of the tab's session, so QA can show every payment state against its one demo
+// server. Nothing reads it without both.
 
 const QA_KEY = 'blumodel.qa.config';
 export const QA_LEGAL: LegalConfig = Object.freeze({ ready: true, businessName: 'Sample Kitchen Co. (QA)', supportEmail: 'help@example.test', jurisdiction: 'Ontario, Canada' });
@@ -85,7 +86,7 @@ export function applyQaOverride(c: ClientConfig, o: QaOverride): ClientConfig {
 }
 
 function qaOverride(): QaOverride {
-  if (!QA) return {};
+  if (!QA_LOCAL) return {};
   try {
     const o = readQaOverride(location.hash, sessionStorage.getItem(QA_KEY));
     sessionStorage.setItem(QA_KEY, JSON.stringify(o));

@@ -26,6 +26,7 @@ const { normalizeConfig, normalizeLegal, readQaOverride, applyQaOverride, NO_LEG
 const { isPaymentsUnavailable, paymentError, PAYMENTS_SOON, markCheckout, settleDemoCheckout, takeCheckoutReturn } = await import('../payments');
 const { parseRoute, hrefFor, safeNext } = await import('../router');
 const { attachmentName } = await import('../attachment');
+const { isLoopbackHost } = await import('../qa');
 
 // ─── /api/config ─────────────────────────────────────────────────────────────
 
@@ -69,6 +70,11 @@ test('the QA override only replaces payments and legal, and is remembered for th
   assert.deepEqual(c.legal, QA_LEGAL);
   assert.equal(applyQaOverride(base, { legal: 'unset' }).legal, NO_LEGAL);
   assert.equal(applyQaOverride(base, {}).payments, 'demo');
+});
+
+test('the QA override works only on this machine: never on blumodel.studio, whatever the link says', () => {
+  for (const h of ['127.0.0.1', '127.0.0.2', 'localhost', 'LOCALHOST', '[::1]']) assert.equal(isLoopbackHost(h), true, h);
+  for (const h of ['blumodel.studio', 'www.blumodel.studio', '127.0.0.1.evil.test', 'localhost.evil.test', '192.168.1.5', '10.0.0.1', '']) assert.equal(isLoopbackHost(h), false, h);
 });
 
 // ─── payments ────────────────────────────────────────────────────────────────
