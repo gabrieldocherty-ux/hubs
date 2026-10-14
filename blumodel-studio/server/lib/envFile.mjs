@@ -135,7 +135,7 @@ function ignoredLines(text) {
  * MISE_ENV_FILE that is missing or unreadable is an error: starting without it would start the
  * public server without its payment keys.
  * @param {Record<string, string | undefined>} [env]
- * @param {{ serverDir?: string, file?: string }} [opts]  `file` names the file outright (stripe-check --env-file)
+ * @param {{ serverDir?: string, file?: string }} [opts]  `file` names the file outright (stripe-check --settings)
  */
 export function loadEnvFile(env = process.env, { serverDir = DEFAULT_SERVER_DIR, file: named } = {}) {
   const chosen = named ? { file: named, source: 'argument' } : resolveEnvFile(env, { serverDir });

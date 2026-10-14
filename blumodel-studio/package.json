@@ -16,7 +16,8 @@
     "start": "node --no-warnings server/index.mjs --prod",
     "seed": "node scripts/build-kit.mjs && node --no-warnings server/seed/index.mjs",
     "qa": "node scripts/build-kit.mjs && node scripts/qa.mjs",
-    "deploy:local": "npm run build && node scripts/deploy-local.mjs"
+    "deploy:local": "npm run build && node scripts/deploy-local.mjs",
+    "stripe:check": "node --no-warnings scripts/stripe-check.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",

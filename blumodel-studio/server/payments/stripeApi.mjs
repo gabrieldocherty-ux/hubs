@@ -34,6 +34,12 @@ export function paymentsUnavailable() {
 const WORD = /^[a-z][a-z0-9_]{0,60}$/;
 /** Only Stripe's enum words survive; anything else (free text, ids, keys) is dropped. */
 const safeWord = (v) => (typeof v === 'string' && WORD.test(v) ? v : null);
+/**
+ * The permission a restricted key lacks, when Stripe's message names one ("Having the
+ * 'rak_webhook_read' permission would allow this request"). Only the rak_ identifier is kept: a
+ * key starts rk_/sk_ and has no word boundary inside it, so it can't match.
+ */
+const permissionIn = (message) => (typeof message === 'string' ? (/\b(rak_[a-z0-9_]{1,80})\b/.exec(message)?.[1] ?? null) : null);
 /** A path for the log: Stripe object ids are fine, anything odd is replaced. */
 const safePath = (p) => String(p).replace(/[^A-Za-z0-9_/.-]/g, '?').slice(0, 120);
 
@@ -42,7 +48,7 @@ const safePath = (p) => String(p).replace(/[^A-Za-z0-9_/.-]/g, '?').slice(0, 120
  * `param` (all enum words or null). The message shown to people is generic.
  */
 export class StripeApiError extends HttpError {
-  constructor({ status, type = null, code = null, declineCode = null, param = null, network = null, method, path }) {
+  constructor({ status, type = null, code = null, declineCode = null, param = null, permission = null, network = null, method, path }) {
     const msg =
       network !== null
         ? 'Couldn’t reach the payment provider. Try again in a moment.'
@@ -55,6 +61,8 @@ export class StripeApiError extends HttpError {
     this.stripeCode = code;
     this.declineCode = declineCode;
     this.param = param;
+    /** A restricted key's missing permission (rak_...), when Stripe named it. */
+    this.permission = permission;
     this.network = network;
     this.method = method;
     this.path = path;
@@ -63,7 +71,7 @@ export class StripeApiError extends HttpError {
   /** One log line: never a key, body, header or Stripe's free text. */
   get logLine() {
     if (this.network !== null) return `stripe ${this.method} ${this.path}: network error (${this.network})`;
-    const bits = [this.stripeType, this.stripeCode, this.declineCode && `decline ${this.declineCode}`, this.param && `param ${this.param}`].filter(Boolean);
+    const bits = [this.stripeType, this.stripeCode, this.declineCode && `decline ${this.declineCode}`, this.param && `param ${this.param}`, this.permission && `needs ${this.permission}`].filter(Boolean);
     return `stripe ${this.method} ${this.path}: HTTP ${this.stripeStatus}${bits.length ? ` (${bits.join(', ')})` : ''}`;
   }
 }
@@ -112,6 +120,7 @@ export function createStripeRequest({ config, fetch, log = console, timeoutMs = 
         code: safeWord(er?.code),
         declineCode: safeWord(er?.decline_code),
         param: typeof er?.param === 'string' && /^[a-z0-9_[\]]{1,80}$/.test(er.param) ? er.param : null,
+        permission: permissionIn(er?.message),
         ...where,
       });
       if (!quiet) log.warn?.(e.logLine);
