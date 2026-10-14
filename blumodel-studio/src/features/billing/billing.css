@@ -197,7 +197,9 @@
   max-width: 920px;
 }
 
-.billing-main section + section {
+/* Between the page's own sections only: the plan cards are sections too, and the Contractor card
+   used to sit 16px lower than Unlimited beside it. */
+.billing-main section + section:not(.plan-option) {
   margin-top: 16px;
 }
 

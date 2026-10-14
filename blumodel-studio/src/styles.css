@@ -186,6 +186,14 @@ kbd {
   }
 }
 
+/* Below 380px the phone editor's bar (mark, undo, redo, render, export, each a 44px target) has
+   no room for "Sign in to save"; the long label pushed the actions over the mark at 360px. */
+@media (max-width: 379px) {
+  .topbar .signin-tail {
+    display: none;
+  }
+}
+
 .divider {
   width: 1px;
   height: 22px;
@@ -2274,6 +2282,8 @@ kbd {
   font-weight: 500;
   line-height: 1.08;
   letter-spacing: -0.02em;
+  /* No "it." left alone on the second line at desktop widths. */
+  text-wrap: balance;
 }
 
 .auth-pitch p {

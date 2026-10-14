@@ -30,7 +30,7 @@ export function AccountMenu() {
   if (!user) {
     return (
       <a className="btn" href="#/signin">
-        Sign in to save
+        Sign in<span className="signin-tail"> to save</span>
       </a>
     );
   }
