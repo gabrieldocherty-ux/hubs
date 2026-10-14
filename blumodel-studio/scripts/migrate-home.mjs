@@ -160,6 +160,10 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
     if (oldEnv && newEnv) blocked.push(`Both folders hold a private settings file (${from} and ${to}). Neither is opened by this script: decide which one is real (a deploy-made template has empty Stripe values), move the other out of the way, then run this again.`);
   }
   if (blocked.length) return finish();
+  // Markers that will arrive from the old folder (decided before anything moves).
+  const carriedMarkers = ['stopped', 'deploying'].filter((m) =>
+    plan.kind === 'rename' ? exists(path.join(from, m)) : plan.moves.some((x) => x.to === path.join(to, m)),
+  );
 
   // ── 2. move or merge ───────────────────────────────────────────────────
   if (plan.kind === 'none') out(`${from} does not exist: nothing to move. Checking ${to}.`);
@@ -205,12 +209,20 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
   // ── 5. supervisor scripts from before the rename ─────────────────────────
   // They are a set: when run-server.cmd is one of them, all four go.
   const legacySet = will('run-server.cmd') && isLegacyScript(currentPath(plan, from, to, 'run-server.cmd'));
-  for (const name of SCRIPTS) {
-    if (!will(name) || !(legacySet || isLegacyScript(currentPath(plan, from, to, name)))) continue;
+  const sideline = SCRIPTS.filter((name) => will(name) && (legacySet || isLegacyScript(currentPath(plan, from, to, name))));
+  if (sideline.length) out('The supervisor scripts from before the rename start the old code on data\\mise.db (an empty new database once it is renamed), so they are set aside; deploy-local writes new ones.');
+  for (const name of sideline) {
     let target = path.join(to, `${name}.pre-migration`);
     for (let i = 2; exists(target); i++) target = path.join(to, `${name}.pre-migration-${i}`);
-    say(`rename ${name} (made before the rename; it runs the server on data\\mise.db) to ${path.basename(target)}`);
+    say(`rename ${name} (written before the rename) to ${path.basename(target)}`);
     if (!dryRun) fs.renameSync(path.join(to, name), target);
+  }
+
+  // Markers the old supervisor scripts left (stopping the old server with its stop-server.cmd
+  // writes `stopped`): carried over, they would keep the deploy from starting the new server.
+  for (const marker of carriedMarkers) {
+    say(`remove the '${marker}' marker the old folder had (an empty file; left there, the deploy would not start the new server)`);
+    if (!dryRun) fs.rmSync(path.join(to, marker), { force: true });
   }
 
   // Empty folders the merge left behind in the old home.
@@ -235,7 +247,8 @@ export async function migrateHome({ from, to, ports = [8790], dryRun = false, ou
     }
     out('');
     out(dryRun ? 'Dry run: nothing was changed. Next, after running it for real:' : 'Next:');
-    out(`  1. Deploy the new code there: set BLUMODEL_HOME=${to}  then  npm run deploy:local`);
+    if (to.toLowerCase() === defaultHome().toLowerCase()) out('  1. Deploy the new code there: npm run deploy:local');
+    else out(`  1. Deploy the new code there: in PowerShell  $env:BLUMODEL_HOME = '${to}'; npm run deploy:local`);
     out('     (or node scripts/deploy-local.mjs --dist <a build>). It writes new supervisor scripts and starts the server.');
     out(`  2. Task Scheduler: delete the old task and register the new ones (both start hidden at logon):`);
     out(`       schtasks /Delete /TN ${LEGACY_TASK} /F`);

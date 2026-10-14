@@ -349,6 +349,8 @@ function oldHome(root, name = 'Mise') {
   fs.writeFileSync(path.join(h, 'start-hidden.vbs'), "' Starts the Mise server supervisor with no console window.\r\n");
   fs.writeFileSync(path.join(h, 'start-server.cmd'), '@echo off\r\necho Mise is starting\r\n');
   fs.writeFileSync(path.join(h, 'stop-server.cmd'), '@echo off\r\necho Mise server stopped.\r\n');
+  // The old stop-server.cmd leaves this when the old server is stopped before the move.
+  fs.writeFileSync(path.join(h, 'stopped'), '\r\n');
   return h;
 }
 
@@ -377,7 +379,9 @@ test('migrate-home moves the old folder, renames the database (with its WAL) and
     assert.match(dryText, /Would: move .*Mise to .*BluModelStudio/);
     assert.match(dryText, /Would: rename data\\mise\.db \(with -wal, -shm\) to data\\blumodel\.db/);
     assert.match(dryText, /Would: rename mise\.env to blumodel\.env \(the file is not opened\)/);
-    assert.match(dryText, /Would: rename run-server\.cmd .* to run-server\.cmd\.pre-migration/);
+    assert.match(dryText, /Would: rename run-server\.cmd \(written before the rename\) to run-server\.cmd\.pre-migration/);
+    assert.match(dryText, /Would: rename start-server\.cmd \(written before the rename\) to start-server\.cmd\.pre-migration/);
+    assert.match(dryText, /\$env:BLUMODEL_HOME = '.*BluModelStudio'; npm run deploy:local/);
     assert.match(dryText, /schtasks \/Delete \/TN MiseKitchenServer \/F/);
     assert.match(dryText, /register-tasks\.mjs --home ".*BluModelStudio" --dry-run/);
     assert.deepEqual(restricted, []);
@@ -400,6 +404,8 @@ test('migrate-home moves the old folder, renames the database (with its WAL) and
       assert.ok(!fs.existsSync(path.join(to, s)) && fs.existsSync(path.join(to, `${s}.pre-migration`)), s);
     }
     assert.ok(!out.join('\n').includes('FAKE_FOR_TESTS'), 'no settings value is ever printed');
+    assert.ok(!fs.existsSync(L.stopped), 'the old stopped marker is gone, so the deploy starts the server');
+    assert.match(out.join('\n'), /remove the 'stopped' marker the old folder had/);
 
     out.length = 0;
     const again = await migrateHome(opts);

@@ -28,6 +28,7 @@
 // script never creates, changes or deletes a scheduled task (scripts/register-tasks.mjs does).
 
 import fs from 'node:fs';
+import http from 'node:http';
 import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -265,28 +266,45 @@ if (fs.existsSync(L.stopped)) {
 }
 spawn(sys32('wscript.exe'), [L.startHidden], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
 
-for (let i = 0; i < 40; i++) {
+/**
+ * GET http://127.0.0.1:PORT<p> as `{ status, body }` on a connection that closes after the reply
+ * (fetch's pooled keep-alive sockets can trip a libuv assertion when the process exits on Windows).
+ */
+const getJson = (p) =>
+  new Promise((resolve, reject) => {
+    const req = http.get({ host: '127.0.0.1', port: Number(PORT), path: p, agent: false, headers: { Connection: 'close' }, timeout: 5000 }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', (d) => (text += d));
+      res.on('end', () => {
+        let body = {};
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = {};
+        }
+        resolve({ status: res.statusCode ?? 0, body });
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+  });
+
+let outcome = null;
+for (let i = 0; i < 40 && !outcome; i++) {
   await sleep(1000);
   try {
-    const res = await fetch(`http://127.0.0.1:${PORT}/api/health`);
-    const h = await res.json().catch(() => ({}));
-    if (res.ok) {
-      let payments = '?';
-      try {
-        payments = (await (await fetch(`http://127.0.0.1:${PORT}/api/config`)).json()).payments ?? '?';
-      } catch {
-        /* older server */
-      }
-      console.log(`BluModel Studio ${h.version ?? ''} is up at http://127.0.0.1:${PORT} (payments: ${payments}). Its log: ${path.join(L.logs, 'server.log')}`);
-      process.exit(0);
-    }
-    if (res.status === 503) {
-      console.error(`The server started but reports a problem: ${JSON.stringify(h)}. Check ${path.join(L.logs, 'server.log')}.`);
-      process.exit(1);
+    const h = await getJson('/api/health');
+    if (h.status === 200) {
+      const payments = (await getJson('/api/config').catch(() => ({ body: {} }))).body.payments ?? '?';
+      outcome = { code: 0, line: `BluModel Studio ${h.body.version ?? ''} is up at http://127.0.0.1:${PORT} (payments: ${payments}). Its log: ${path.join(L.logs, 'server.log')}` };
+    } else if (h.status === 503) {
+      outcome = { code: 1, line: `The server started but reports a problem: ${JSON.stringify(h.body)}. Check ${path.join(L.logs, 'server.log')}.` };
     }
   } catch {
     /* not up yet */
   }
 }
-console.error(`The server did not answer on port ${PORT} within 40 s. Check ${path.join(L.logs, 'server.log')} and ${path.join(L.logs, 'console.log')}.`);
-process.exit(1);
+outcome ??= { code: 1, line: `The server did not answer on port ${PORT} within 40 s. Check ${path.join(L.logs, 'server.log')} and ${path.join(L.logs, 'console.log')}.` };
+(outcome.code ? console.error : console.log)(outcome.line);
+process.exitCode = outcome.code;
