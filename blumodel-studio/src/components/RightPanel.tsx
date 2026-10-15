@@ -15,6 +15,7 @@ import { useSession } from '../store/useSession';
 import { useShowEstimator } from '../lib/prefs';
 import { requestExport, useEntitlements } from '../features/billing';
 import { ClientViewToggle, useKitchenPriceOf, usePriceBook, useShowCosts } from '../features/contractors';
+import { ContractorFinder } from '../features/finder';
 import { priceFor } from '../data/catalog';
 import type { EstimateExtra } from '../types';
 
@@ -404,6 +405,8 @@ export function RightPanel({ mode = 'edit', showPrices: pricesAllowed = true, va
         {tab === 'details' && (selectedId && !view ? <Inspector /> : <Summary view={view} showPrices={showPrices} compact={compact} />)}
         {tab === 'checks' && <ChecksPanel />}
         {tab === 'estimate' && showPrices && <EstimatePanel />}
+        {/* "Need a contractor?" at the end of the Overview and the Estimate (a shared kitchen has its own). */}
+        <ContractorFinder where="summary" hidden={view || tab === 'checks' || (tab === 'details' && !!selectedId)} />
       </div>
     </aside>
   );

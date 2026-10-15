@@ -1,0 +1,598 @@
+/*
+ * Package 'finder': the quiet "Need a contractor?" link, its popover, and the #/contractors
+ * directory. Design tokens only (no fixed colours), so the dark theme restyles it by
+ * redefining them.
+ */
+
+/* ─── The link: text, never a banner ─── */
+
+.finder {
+  display: flex;
+}
+
+.finder--summary {
+  justify-content: flex-start;
+  margin: 18px 0 2px;
+}
+
+/* Under the toasts after an export: a small chip, fading in like a toast. */
+.finder--export {
+  pointer-events: auto;
+  padding: 1px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  animation: finder-in 0.25s ease-out;
+}
+
+/* In the shared kitchen's fine print: "View only · Terms · Privacy · Need a contractor? · …". */
+.finder--share {
+  display: inline;
+  margin-right: 0.3em;
+}
+
+.finder--share::before {
+  content: '·';
+  margin-right: 0.3em;
+}
+
+/*
+ * On a tablet or phone that line is hidden (share.css) to save room; keep just the link, as a
+ * slim second line under "Shared by …". Its text nodes go to zero size, its other links away.
+ */
+@media (max-width: 900px) {
+  .share-bar-note:has(.finder--share) {
+    display: block;
+    font-size: 0;
+  }
+  .share-bar-note:has(.finder--share) > a {
+    display: none;
+  }
+  .share-bar-note .finder--share::before {
+    content: none;
+  }
+  .share-bar-note .finder--share .finder-link {
+    font-size: 12px;
+  }
+}
+
+.finder-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-color: var(--line-2);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.finder-link:hover,
+.finder-link[aria-expanded='true'] {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+.finder-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.finder--export .finder-link {
+  font-size: 12.5px;
+}
+
+.finder--share .finder-link {
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* A finger needs a bigger target than the text. */
+@media (pointer: coarse) {
+  .finder-link {
+    min-height: 40px;
+    padding: 8px 4px;
+  }
+  .finder--share .finder-link {
+    min-height: 0;
+    padding: 0;
+  }
+}
+
+/* ─── The popover ─── */
+
+.finder-pop {
+  position: fixed;
+  z-index: 55; /* over the toasts (50), under dialogs (60) */
+  box-sizing: border-box;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 12px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  animation: finder-pop-up 0.16s ease-out;
+}
+
+.finder-pop.is-below {
+  animation-name: finder-pop-down;
+}
+
+.finder-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 2px 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.finder-pop-head svg {
+  flex: none;
+  color: var(--ok);
+}
+
+.finder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.finder-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px;
+}
+
+.finder-item + .finder-item {
+  border-top: 1px solid var(--line);
+}
+
+.finder-logo,
+.fd-logo {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.finder-logo {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+
+.finder-logo img,
+.fd-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--card);
+}
+
+.finder-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.finder-name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.finder-area {
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.finder-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.finder-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.finder-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.finder-btn:hover {
+  background: var(--paper);
+}
+
+.finder-btn--ask {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+}
+
+.finder-btn--ask:hover {
+  background: var(--ink-2);
+}
+
+.finder-btn:focus-visible,
+.finder-all:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.finder-all {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+  padding: 9px 2px 4px;
+  border-top: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.finder-all:hover {
+  color: var(--accent-2);
+}
+
+.finder-fine {
+  margin: 4px 2px 0;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* A phone: the buttons go under the name, and are big enough for a thumb. */
+@media (max-width: 420px) {
+  .finder-item {
+    grid-template-columns: 36px minmax(0, 1fr);
+    row-gap: 8px;
+  }
+  .finder-actions {
+    grid-column: 2;
+  }
+}
+
+@media (pointer: coarse) {
+  .finder-btn {
+    min-height: 36px;
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .finder-all {
+    min-height: 40px;
+  }
+}
+
+@keyframes finder-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes finder-pop-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes finder-pop-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finder--export,
+  .finder-pop {
+    animation: none;
+  }
+}
+
+/* ─── #/contractors: the directory ─── */
+
+.fd-screen {
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.fd-main {
+  box-sizing: border-box;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 36px 24px 48px;
+}
+
+.fd-intro h1 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.fd-intro p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.fd-search {
+  display: flex;
+  gap: 8px;
+  max-width: 560px;
+  margin-top: 18px;
+}
+
+.fd-search-box {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink-3);
+}
+
+.fd-search-box:focus-within {
+  border-color: var(--ink-2);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.fd-search-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.fd-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.fd-status {
+  margin: 22px 0 12px;
+}
+
+.fd-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.fd-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.fd-msg,
+.fd-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+  border: 1px dashed var(--line-2);
+  border-radius: 12px;
+  background: var(--panel);
+  text-align: center;
+}
+
+.fd-msg p,
+.fd-empty p,
+.fd-empty h2 {
+  margin: 0;
+}
+
+.fd-empty h2 {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.fd-empty p {
+  max-width: 52ch;
+  color: var(--ink-2);
+}
+
+.fd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fd-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.fd-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.fd-card-head:hover .fd-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fd-logo {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  font-size: 15px;
+}
+
+.fd-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fd-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fd-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ok);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.fd-badges .finder-tag {
+  margin-left: 0;
+}
+
+.fd-name {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.fd-tagline {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.fd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.fd-meta a {
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.fd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.fd-foot {
+  display: grid;
+  gap: 8px;
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.fd-foot a {
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .fd-main {
+    padding: 24px 16px 40px;
+  }
+  .fd-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fd-search .btn {
+    padding: 8px 12px;
+  }
+}

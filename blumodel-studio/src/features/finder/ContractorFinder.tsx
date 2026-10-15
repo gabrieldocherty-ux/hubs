@@ -1,7 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type FocusEvent as ReactFocusEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { Check } from '../../components/Icons';
-import { hrefFor } from '../../lib/router';
+import { hrefFor, useRoute } from '../../lib/router';
 import { useDesignStore } from '../../store/useDesignStore';
 import { useSession } from '../../store/useSession';
 import { brandApi } from '../brands/api';
@@ -32,7 +32,7 @@ export interface ContractorFinderProps {
  * listed, when the list can't load, and for contractors themselves.
  */
 export default function ContractorFinder({ where, hidden = false }: ContractorFinderProps) {
-  const isContractor = useSession((s) => !!s.user?.contractor);
+  const isContractor = useSession((s) => s.user?.plan?.id === 'contractor' || !!s.user?.contractor);
   if (hidden || isContractor) return null;
   return where === 'export' ? <AfterExport /> : <FinderLink where={where} />;
 }
@@ -44,10 +44,17 @@ let lastExportOffer = -Infinity;
 const EXPORT_QUIET_MS = 10 * 60_000;
 const EXPORT_SHOWN_MS = 12_000;
 
-/** Watches the toasts for an export success and then shows the link under them for a while. */
+/**
+ * Watches the toasts for an export success and then shows the link under them for a while. Only
+ * in the editor: the toast stack is shared, and a shared kitchen or a contractor's quote page
+ * (their client looking at their work) is no place to suggest other contractors.
+ */
 function AfterExport() {
+  const route = useRoute();
+  const inEditor = route.name === 'kitchen' || route.name === 'local';
   const [shown, setShown] = useState(false);
   useEffect(() => {
+    if (!inEditor) return;
     let seen = Math.max(0, ...useDesignStore.getState().toasts.map((t) => t.id));
     return useDesignStore.subscribe((s) => {
       const fresh = s.toasts.filter((t) => t.id > seen);
@@ -58,8 +65,8 @@ function AfterExport() {
       lastExportOffer = Date.now();
       setShown(true);
     });
-  }, []);
-  if (!shown) return null;
+  }, [inEditor]);
+  if (!shown || !inEditor) return null;
   return <FinderLink where="export" onExpire={() => setShown(false)} />;
 }
 
@@ -213,7 +220,14 @@ function FinderLink({ where, onExpire }: { where: FinderPlace; onExpire?: () => 
   };
 
   return (
-    <div className={`finder finder--${where}`} onPointerEnter={where === 'export' ? onPopPointerEnter : undefined} onPointerLeave={where === 'export' ? onPointerLeave : undefined}>
+    // A span, so it can sit inside a line of text (the shared kitchen's fine print); title="" keeps
+    // that line's own tooltip off the link.
+    <span
+      className={`finder finder--${where}`}
+      title={where === 'share' ? '' : undefined}
+      onPointerEnter={where === 'export' ? onPopPointerEnter : undefined}
+      onPointerLeave={where === 'export' ? onPointerLeave : undefined}
+    >
       <button
         ref={linkRef}
         type="button"
@@ -254,7 +268,7 @@ function FinderLink({ where, onExpire }: { where: FinderPlace; onExpire?: () => 
           </Suspense>,
           document.body,
         )}
-    </div>
+    </span>
   );
 }
 
@@ -299,7 +313,7 @@ function Popover({ id, list, anchor, popRef, projectId, onAsk, onNavigate, onPoi
     };
   }, [anchor, popRef]);
 
-  const all = projectId ? `#/contractors?kitchen=${encodeURIComponent(projectId)}` : hrefFor({ name: 'contractors' });
+  const all = hrefFor({ name: 'contractors', ...(projectId ? { kitchen: projectId } : {}) });
   const more = list.total - list.contractors.length;
 
   return (

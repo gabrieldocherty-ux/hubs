@@ -1,5 +1,6 @@
 import { useDesignStore } from '../store/useDesignStore';
 import { Alert, Check, Close, Info } from './Icons';
+import { ContractorFinder } from '../features/finder';
 
 export function Toasts() {
   const toasts = useDesignStore((s) => s.toasts);
@@ -13,6 +14,8 @@ export function Toasts() {
           <button onClick={() => dismiss(t.id)} aria-label="Dismiss"><Close width={14} height={14} /></button>
         </div>
       ))}
+      {/* For a while after an export in the editor: a quiet "Need a contractor?" under the toast. */}
+      <ContractorFinder where="export" />
     </div>
   );
 }

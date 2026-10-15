@@ -16,6 +16,7 @@ import { GenerateScreen, PhotoReference } from './features/generate';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
 import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
+import { ContractorsPage } from './features/finder';
 import { LegalScreen } from './features/legal';
 
 const AdminScreen = lazy(() => import('./screens/AdminScreen'));
@@ -148,6 +149,8 @@ function screenFor(route: Route, signedIn: boolean) {
       return <ProductPage key={route.id} id={route.id} finish={route.finish} />;
     case 'brandPage':
       return <BrandPage key={route.slug} slug={route.slug} />;
+    case 'contractors':
+      return <ContractorsPage near={route.near} kitchen={route.kitchen} />;
     case 'brand':
       return <BrandPortal rest={route.rest} />;
     case 'orders':

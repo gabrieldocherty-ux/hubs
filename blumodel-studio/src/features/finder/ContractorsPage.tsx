@@ -21,7 +21,7 @@ type State = { kind: 'loading' } | { kind: 'ready'; list: ContractorList } | { k
  */
 export default function ContractorsPage({ near: initialNear = '', kitchen }: { near?: string; kitchen?: string }) {
   const signedIn = useSession((s) => s.status === 'signedIn');
-  const isContractor = useSession((s) => !!s.user?.contractor);
+  const isContractor = useSession((s) => s.user?.plan?.id === 'contractor' || !!s.user?.contractor);
   const [query, setQuery] = useState(initialNear || rememberedNear());
   const [searched, setSearched] = useState(query.trim());
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -50,7 +50,8 @@ export default function ContractorsPage({ near: initialNear = '', kitchen }: { n
     const ctrl = new AbortController();
     setState((s) => (s.kind === 'ready' ? s : { kind: 'loading' }));
     rememberNear(searched);
-    navigateHash(hrefFor({ name: 'contractors', ...(searched ? { near: searched } : {}), ...(kitchen ? { kitchen } : {}) }), true);
+    const href = hrefFor({ name: 'contractors', ...(searched ? { near: searched } : {}), ...(kitchen ? { kitchen } : {}) });
+    if (location.hash !== href) navigateHash(href, true);
     finderApi
       .list({ near: searched, limit: 50 }, ctrl.signal)
       .then((list) => setState({ kind: 'ready', list }))

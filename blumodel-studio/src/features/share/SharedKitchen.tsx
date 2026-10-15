@@ -15,6 +15,7 @@ import { useEstimate } from '../../store/derived';
 import { useCatalog } from '../../store/useCatalog';
 import { useSession, timeAgo } from '../../store/useSession';
 import { setSharedPrices } from '../contractors';
+import { ContractorFinder } from '../finder';
 import type { PreparedBy } from '../../types/platform';
 import { shareApi, type GoneReason, type SharedWire } from './api';
 import './share.css';
@@ -197,6 +198,8 @@ function ShareBar({ token, wire }: { token: string; wire: SharedWire }) {
             <a href="#/privacy" target="_blank" rel="noopener">
               Privacy
             </a>{' '}
+            {/* "Need a contractor?", in the fine print; never on a kitchen a contractor prepared. */}
+            <ContractorFinder where="share" hidden={!!preparedBy} />
             · {VISUALIZER_DISCLAIMER}
           </p>
         </div>
