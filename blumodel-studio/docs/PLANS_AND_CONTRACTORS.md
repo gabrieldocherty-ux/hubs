@@ -56,7 +56,7 @@ The prices live in one file, `src/data/plans.json`. The server is the authority 
 **The promise on the pricing page:** *"Show your customers the exact cabinets you sell, in their kitchen, at your price."*
 
 ### 4.1 Becoming a contractor
-1. From Pricing, the Unlock dialog link, or the account menu ("For contractors"), they choose **Contractor, $40/month** and check out.
+1. From Pricing or the Unlock dialog link, they choose **Contractor, $40/month** and check out. (The account menu shows *Contractor workspace* only to contractors; there is no "For contractors" entry for everyone else.)
 2. A three-step **company setup**:
    - **Company:** name, logo, phone, email, website, service area.
    - **Pricing defaults:** default markup %, for example 30%. This can be changed any time.

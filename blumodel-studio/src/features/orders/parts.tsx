@@ -3,14 +3,14 @@ import { AccountMenu } from '../../components/AccountMenu';
 import { Logo, Wordmark } from '../../components/Icons';
 import { PaymentsSoon } from '../../components/PaymentNotice';
 import type { PaymentsMode } from '../../lib/config';
-import { hrefFor } from '../../lib/router';
 import type { OrderStatus } from '../../types/platform';
 import type { OrderEventWire } from './api';
 import { dateTime, eventTitle, STATUS_LABEL, statusTone } from './model';
 
 /**
  * The page frame for `#/orders/*` ("Make custom models"; the route keeps its old name): the app
- * bar, a link back to the list, a "New request" button and the account menu.
+ * bar and the account menu. Nothing sits beside the account menu: the account menu's "Make custom
+ * models" opens the list, and the list and each order page carry their own New request buttons.
  */
 export function OrdersShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   return (
@@ -20,12 +20,6 @@ export function OrdersShell({ children, wide = false }: { children: ReactNode; w
           <Logo />
           <Wordmark />
         </a>
-        <nav className="ord-nav" aria-label="Custom models">
-          <a href={hrefFor({ name: 'orders', rest: '' })}>Make custom models</a>
-          <a className="btn primary" href={hrefFor({ name: 'orders', rest: 'new' })}>
-            New request
-          </a>
-        </nav>
         <AccountMenu />
       </header>
       <main className={wide ? 'ord-main ord-main--wide' : 'ord-main'}>{children}</main>

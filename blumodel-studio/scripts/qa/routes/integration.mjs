@@ -439,13 +439,15 @@ export default [
     expectText: ['Start from a photo'],
     check: async (h) => {
       await assertCopy(h, 'Home');
-      // The account menu: For contractors, never List your products / Brand portal.
+      // The account menu: Make custom models; no contractor entry for a homeowner (the Contractor
+      // plan is on the Pricing page), never List your products / Brand portal.
       await h.click('.home-bar .menu-wrap > button, .home-bar [aria-haspopup]');
       await h.waitFor('.menu[role="menu"]');
-      await h.waitForText('For contractors');
+      await h.waitForText('Make custom models');
       await assertCopy(h, 'the account menu');
       const items = await h.evaluate(() => [...document.querySelectorAll('.menu [role="menuitem"]')].map((b) => b.textContent.trim().replace(/\s+/g, ' ')));
       h.note(`account menu: ${items.join(' | ')}`);
+      if (items.some((t) => /for contractors|contractor workspace|my orders/i.test(t))) throw new Error(`a homeowner's account menu offers: ${items.join(' | ')}`);
       await h.key('Escape');
       for (const hash of ['#/new', '#/generate', '#/pricing', '#/welcome', '#/orders', '#/account/billing', '#/pro']) {
         await h.goto(hash);

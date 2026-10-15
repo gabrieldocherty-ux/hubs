@@ -48,20 +48,18 @@ export function AccountMenu() {
             <b>My kitchens</b>
           </button>
           <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'orders', rest: '' }))}>
-            <b>My orders</b>
+            <b>Make custom models</b>
           </button>
           <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'billing' }))}>
             <b>Billing</b>
             <span>{user.plan.id === 'free' ? 'Free plan' : `${user.plan.id === 'contractor' ? 'Contractor' : 'Unlimited'} plan`}</span>
           </button>
-          {user.plan.id === 'contractor' || user.contractor ? (
+          {/* Only contractors (on the plan, or with a company whose plan lapsed) see their workspace.
+              Everyone else finds the Contractor plan on the Pricing page, not in this menu. */}
+          {(user.plan.id === 'contractor' || user.contractor) && (
             <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'pro', rest: '' }))}>
               <b>Contractor workspace</b>
               {user.contractor && <span>{user.contractor.company}{user.contractor.active ? '' : ' · plan lapsed'}</span>}
-            </button>
-          ) : (
-            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'pro', rest: '' }))}>
-              <b>For contractors</b>
             </button>
           )}
           {(user.role === 'admin' || user.role === 'studio') && (
