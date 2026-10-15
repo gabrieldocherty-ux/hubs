@@ -5,8 +5,8 @@ import { dollars } from './model';
 import './orders.css';
 
 const RANGES = [30, 90, 365] as const;
-/** Model packs since 2026-10-14; the retired tiers stay so older orders still add up. */
-const TIER_NAME: Record<string, string> = { pack: 'Model pack', simple: 'Simple (retired)', standard: 'Standard (retired)', complex: 'Complex (retired)' };
+/** Custom models aren't sold since 2026-10-15 (they come with the Contractor plan); every paid order here was sold before, so every name is retired. */
+const TIER_NAME: Record<string, string> = { pack: 'Model pack (retired)', simple: 'Simple (retired)', standard: 'Standard (retired)', complex: 'Complex (retired)' };
 
 const dayLabel = (day: string) => new Date(`${day}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 

@@ -1256,3 +1256,23 @@
     display: none;
   }
 }
+
+/* Three plans since 2026-10-15 (Free, Unlimited, Contractor): the one-kitchen unlock is offered
+   in the export dialog, not here. */
+.mk-plans--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: min(var(--mk-max), 1080px);
+}
+
+@media (max-width: 1080px) {
+  .mk-plans--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .mk-plans--3 {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 560px;
+  }
+}

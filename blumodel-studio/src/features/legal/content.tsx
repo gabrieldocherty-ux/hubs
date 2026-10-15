@@ -135,21 +135,23 @@ export function termsDoc(w: LegalWords): LegalDoc {
             </p>
             <ul>
               <li>
-                <b>Kitchen unlock, {price('kitchen_unlock')} once:</b> every export of one kitchen, for as long as the kitchen exists, including after you change it. A duplicate is a new
-                kitchen and is not unlocked.
+                <b>Kitchen unlock, a one-time payment</b> offered when you export: every export of one kitchen, for as long as the kitchen exists, including after you change it. A
+                duplicate is a new kitchen and is not unlocked.
               </li>
               <li>
                 <b>Unlimited, {price('unlimited')} a month:</b> every export of every kitchen you own.
               </li>
               <li>
-                <b>Contractor, {price('contractor')} a month:</b> everything in Unlimited, plus a private catalog, a price book, branded quotes and a public brand page (section 6).
+                <b>Contractor, {price('contractor')} a month:</b> everything in Unlimited, plus 3 custom 3D models a month made by our studio (section 5), a private catalog, a price
+                book, branded quotes and a public brand page (section 6).
               </li>
             </ul>
             <p>
-              <b>Custom 3D models</b> are priced per product by complexity, with optional extra finishes and rush delivery. The order form shows the exact amount before you pay.
+              <b>Custom 3D models</b> aren’t sold on their own: they come with the Contractor plan (section 5). Orders paid for before 15 October 2026 keep the price, currency and
+              terms they were sold at.
             </p>
             <p>
-              Prices are in Canadian dollars (CAD) and are shown before you pay; the checkout page shows the final amount, including any tax. Payments made before 15 October 2026
+              Every paid feature is priced at the point of purchase, in Canadian dollars (CAD), before you pay; the checkout page shows the final amount, including any tax. Payments made before 15 October 2026
               were in US dollars: their receipts stay in US dollars, and a plan started then renews at its price in US dollars until you change or cancel it. Someone else’s plan
               never covers your exports, even of a kitchen they shared with you.
             </p>
@@ -185,8 +187,8 @@ export function termsDoc(w: LegalWords): LegalDoc {
           <>
             <p>
               Unlimited and Contractor renew every month until you cancel. Cancel any time in <a href="#/account/billing">Account → Billing</a>.{' '}
-              <b>Cancelling takes effect at the end of the period you have already paid for</b>: you keep the plan until then, and it does not renew. Kitchens you unlocked for{' '}
-              {price('kitchen_unlock')} stay unlocked whatever happens to a plan.
+              <b>Cancelling takes effect at the end of the period you have already paid for</b>: you keep the plan until then, and it does not renew. A kitchen you unlocked with a
+              one-time payment stays unlocked whatever happens to a plan.
             </p>
             <p>
               If a renewal payment fails you keep the plan for a 7-day grace period while it is retried; after that the account moves to Free and nothing you designed is deleted.
@@ -201,18 +203,22 @@ export function termsDoc(w: LegalWords): LegalDoc {
       },
       {
         id: 'models',
-        heading: '5. Custom 3D model orders',
+        heading: '5. Custom 3D models',
         body: (
           <>
             <p>
-              You send photos, dimensions and, if you have one, a spec sheet; our studio builds a true-to-size 3D model. The turnaround shown for the tier counts business days from
-              your payment. Two rounds of revisions are included: a revision corrects the model against the brief you sent, it isn’t a new product. When you accept a delivery, the
-              order is complete.
+              The Contractor plan includes <b>3 custom 3D models a month</b>, made by our studio: one model per product, with up to 3 finishes and 2 revision rounds each. A model
+              counts when you send its request. The month is your plan’s billing month; models you don’t use don’t carry over. If you withdraw a request, or we cancel it, before
+              modelling starts, its models go back to that month’s allowance. If the plan ends, requests you already sent are still made and delivered, but no new ones can be sent.
             </p>
             <p>
-              Only send material you have the right to use. A model you paid for is private to your account (a contractor’s goes into their private catalog). It shows inside kitchens
-              you share while the link works. We may decline an order we can’t model faithfully, or one that would infringe someone else’s rights; a declined order is refunded in
-              full.
+              You send each product’s name and its UPC, photos or both, and the size if you have it; our studio builds a true-to-size 3D model. Turnaround counts business days from
+              your request. A revision corrects the model against the brief you sent, it isn’t a new product. When you accept a delivery, the request is complete.
+            </p>
+            <p>
+              Only send material you have the right to use. A custom model is private to your account (a contractor’s goes into their private catalog). It shows inside kitchens you
+              share while the link works. We may decline a request we can’t model faithfully, or one that would infringe someone else’s rights; a declined request goes back to your
+              allowance. Orders paid for before 15 October 2026 keep the turnaround, revisions and refund terms they were sold with.
             </p>
           </>
         ),
@@ -539,7 +545,7 @@ export function refundsDoc(w: LegalWords): LegalDoc {
     sections: [
       {
         id: 'unlock',
-        heading: `1. Kitchen unlock (${price('kitchen_unlock')} once)`,
+        heading: '1. Kitchen unlock (one-time)',
         body: (
           <p>
             If you haven’t exported anything from that kitchen yet, ask within 14 days of paying for a full refund. Once you have downloaded an export, the unlock has been used and
@@ -565,9 +571,13 @@ export function refundsDoc(w: LegalWords): LegalDoc {
       },
       {
         id: 'models',
-        heading: '3. Custom 3D models',
+        heading: '3. Custom 3D models paid for before 15 October 2026',
         body: (
           <ul>
+            <li>
+              Custom models now come with the Contractor plan and aren’t paid for separately, so there is nothing to refund on a new request: withdraw it before modelling starts
+              and its models go back to your allowance. The rest of this section covers orders paid for before then.
+            </li>
             <li>
               <b>Before you pay</b>, cancel the order from its page and nothing is charged. <b>After you pay but before modelling starts</b>, contact us to cancel it for a full
               refund.

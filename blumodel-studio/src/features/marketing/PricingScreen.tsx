@@ -1,7 +1,5 @@
-import { Fragment, useEffect, useState } from 'react';
 import { DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
 import plansJson from '../../data/plans.json';
-import { call } from '../../lib/api';
 import { planPrice } from '../../lib/money';
 import type { PaymentsMode } from '../../lib/config';
 import { useSession } from '../../store/useSession';
@@ -10,66 +8,22 @@ import { MarketingFooter, MarketingHeader, SectionHead, usePaymentsMode, usePend
 import './marketing.css';
 
 const PLANS = plansJson as Plan[];
-
 /**
- * The custom-model offer: one Model pack (docs/PLANS_AND_CONTRACTORS.md §8). The server's
- * `GET /api/orders/tiers` is the source; this published copy is shown only when that endpoint
- * isn't answering, and labelled as such. The order form is always the real quote.
+ * The plans this page shows: Free, Unlimited and Contractor. The one-kitchen unlock is not
+ * advertised (Gabe, 2026-10-15): a free user is offered it in the export dialog when they try
+ * an export, and nowhere else.
  */
-interface PackOffer {
-  priceCents: number;
-  productsPerPack: number;
-  finishesPerModel: number;
-  revisions: number;
-  businessDays: number;
-  extraPackBusinessDays: number;
-  rushPct: number;
-}
-
-const FALLBACK_PACK: PackOffer = { priceCents: 12900, productsPerPack: 8, finishesPerModel: 3, revisions: 2, businessDays: 15, extraPackBusinessDays: 5, rushPct: 50 };
-
-type Pack = { live: boolean; pack: PackOffer } | null;
-
-function readPack(r: unknown): PackOffer | null {
-  const x = r as { pack?: Partial<PackOffer>; rushPct?: unknown } | null;
-  const p = x?.pack;
-  const n = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
-  if (!p || !n(p.priceCents) || !n(p.productsPerPack) || p.productsPerPack < 1 || !n(x.rushPct)) return null;
-  return {
-    priceCents: p.priceCents,
-    productsPerPack: p.productsPerPack,
-    finishesPerModel: n(p.finishesPerModel) ? p.finishesPerModel : FALLBACK_PACK.finishesPerModel,
-    revisions: n(p.revisions) ? p.revisions : FALLBACK_PACK.revisions,
-    businessDays: n(p.businessDays) ? p.businessDays : FALLBACK_PACK.businessDays,
-    extraPackBusinessDays: n(p.extraPackBusinessDays) ? p.extraPackBusinessDays : FALLBACK_PACK.extraPackBusinessDays,
-    rushPct: x.rushPct,
-  };
-}
-
-/** The live Model pack from the orders API, or the published one when that endpoint isn't there. */
-function usePack(): Pack {
-  const [pack, setPack] = useState<Pack>(null);
-  useEffect(() => {
-    let live = true;
-    call<unknown>('GET', '/api/orders/tiers')
-      .then((r) => {
-        const p = readPack(r);
-        if (live) setPack(p ? { live: true, pack: p } : { live: false, pack: FALLBACK_PACK });
-      })
-      .catch(() => live && setPack({ live: false, pack: FALLBACK_PACK }));
-    return () => {
-      live = false;
-    };
-  }, []);
-  return pack;
-}
+const SHOWN = PLANS.filter((p) => p.id !== 'kitchen_unlock');
+const CONTRACTOR = PLANS.find((p) => p.id === 'contractor')!;
+/** Custom 3D models a month the Contractor plan includes (src/data/plans.json; checked by the server). */
+const INCLUDED = CONTRACTOR.includedModels ?? 3;
 
 const dollars = (cents: number) => `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
 
 function priceLine(p: Plan): { amount: string; per: string } {
   if (p.priceCents === 0) return { amount: '$0', per: 'free forever' };
   if (p.interval === 'month') return { amount: dollars(p.priceCents), per: 'CAD a month' };
-  return { amount: dollars(p.priceCents), per: p.id === 'kitchen_unlock' ? 'CAD once, per kitchen' : 'CAD once' };
+  return { amount: dollars(p.priceCents), per: 'CAD once' };
 }
 
 /** A plan card's button. `href: null` is a plan that can't be bought yet (payments not open). */
@@ -79,13 +33,8 @@ function useCta(id: PlanId, soon: boolean): { label: string; href: string | null
   const signup = (next: string) => `#/signup?next=${encodeURIComponent(next)}`;
   switch (id) {
     case 'free':
-      return signedIn ? { label: 'Open my kitchens', href: '#/', current: plan === 'free' } : { label: 'Start free', href: '#/signup' };
     case 'kitchen_unlock':
-      return {
-        label: signedIn ? 'Choose a kitchen' : 'Start a kitchen',
-        href: signedIn ? '#/' : '#/signup',
-        note: soon ? 'Design it now; unlock it from the kitchen’s Export menu once payments open.' : 'Unlock it from the kitchen’s Export menu when you need the files.',
-      };
+      return signedIn ? { label: 'Open my kitchens', href: '#/', current: plan === 'free' } : { label: 'Start free', href: '#/signup' };
     case 'unlimited':
       if (plan === 'unlimited') return { label: 'Manage your plan', href: '#/account/billing', current: true };
       if (soon) return { label: 'Opens soon', href: null };
@@ -97,11 +46,10 @@ function useCta(id: PlanId, soon: boolean): { label: string; href: string | null
   }
 }
 
-/** `#/pricing`: the four plans, the Contractor program, custom models and the FAQ. */
+/** `#/pricing`: the three plans, the Contractor program, the custom models it includes, and the FAQ. */
 export default function PricingScreen() {
   usePendingScroll();
   const payments = usePaymentsMode();
-  const pack = usePack();
   return (
     <div className="mk">
       <MarketingHeader active="pricing" />
@@ -110,7 +58,7 @@ export default function PricingScreen() {
           <span className="mk-eyebrow">Pricing</span>
           <h1>Design for free. Pay when you take it with you.</h1>
           <p className="mk-lede">
-            Designing, saving, starting from photos and sharing are free with no limits. Exports are paid: the floor plan with dimensions, the full-size 3D image, the shopping list, the project file and studio renders without a watermark.
+            Designing, saving, starting from photos and sharing are free with no limits. Exports are paid: the floor plan with dimensions, the full-size 3D image, the shopping list, the project file and studio renders without a watermark. Prices are in Canadian dollars.
           </p>
           {payments === 'demo' && (
             <div className="mk-pay-note">
@@ -124,14 +72,14 @@ export default function PricingScreen() {
           )}
         </section>
 
-        <section className="mk-plans" aria-label="Plans">
-          {PLANS.map((p) => (
+        <section className="mk-plans mk-plans--3" aria-label="Plans">
+          {SHOWN.map((p) => (
             <PlanCard key={p.id} plan={p} soon={payments === 'none'} />
           ))}
         </section>
 
         <ContractorProgram />
-        <CustomModels pack={pack} soon={payments === 'none'} />
+        <CustomModels />
         <Faq payments={payments} />
       </main>
       <MarketingFooter />
@@ -176,7 +124,7 @@ function ContractorProgram() {
   const groups: { title: string; items: string[] }[] = [
     {
       title: 'Your catalog',
-      items: ['Quick-add a whole cabinet line with widths, door style and finishes: no 3D model needed', 'Upload your own models, checked for size and detail', 'Or have BluModel Studio model them, delivered straight into your catalog'],
+      items: ['Quick-add a whole cabinet line with widths, door style and finishes: no 3D model needed', 'Upload your own models, checked for size and detail', `${INCLUDED} custom 3D models a month, made by our studio and delivered straight into your catalog`],
     },
     {
       title: 'Your prices',
@@ -216,90 +164,73 @@ function ContractorProgram() {
   );
 }
 
-function CustomModels({ pack: offer, soon }: { pack: Pack; soon: boolean }) {
-  const p = offer?.pack;
+/**
+ * Custom 3D models: included in the Contractor plan, made by our studio (docs/PLANS_AND_CONTRACTORS.md
+ * §8). Nothing here has a price: they aren't sold on their own.
+ */
+function CustomModels() {
+  const isContractor = useSession((s) => s.user?.plan?.id === 'contractor');
   return (
     <section className="mk-section" id="models" aria-labelledby="models-title">
-      <SectionHead eyebrow="Make custom models" title={<span id="models-title">Not in the catalog? We’ll model it.</span>}>
-        List the products: a name, the UPC from the box or a photo, and the size if you have it. Our studio builds a true-to-size 3D model of each one that appears in your kitchens. A whole cabinet line is one request with one checkout.
+      <SectionHead eyebrow="Make custom models · Contractor plan" title={<span id="models-title">Not in the catalog? Our studio models it.</span>}>
+        The Contractor plan includes {INCLUDED} custom 3D models a month. List the products: a name, the UPC from the box or a photo, and the size if you have it. Our studio builds a true-to-size 3D model of each one, and it lands privately in your catalog.
       </SectionHead>
-      {!offer || !p ? (
-        <p className="mk-loading">Loading prices…</p>
-      ) : (
-        <>
-          <div className="mk-tiers mk-pack">
-            <div className="mk-tier mk-pack-main">
-              <h3>Model pack</h3>
-              <p className="mk-tier-price">
-                <b>{dollars(p.priceCents)}</b> <span>up to {p.productsPerPack} products</span>
-              </p>
-              <p className="mk-tier-for">One 3D model per product, at true size, private to you.</p>
-              <dl>
-                <dt>Finishes</dt>
-                <dd>Up to {p.finishesPerModel} per model</dd>
-                <dt>Revisions</dt>
-                <dd>{p.revisions} rounds per model</dd>
-                <dt>Turnaround</dt>
-                <dd>
-                  {p.businessDays} business days{p.extraPackBusinessDays ? `, +${p.extraPackBusinessDays} per extra pack` : ''}
-                </dd>
-              </dl>
-            </div>
-            <div className="mk-tier mk-pack-more">
-              <h3>More products, more packs</h3>
-              <p className="mk-tier-for">Add products and the request adds packs. One checkout for all of them.</p>
-              <dl>
-                {[1, 2, 3].map((n) => (
-                  <Fragment key={n}>
-                    <dt>
-                      {(n - 1) * p.productsPerPack + 1}–{n * p.productsPerPack} products
-                    </dt>
-                    <dd>
-                      {n} pack{n === 1 ? '' : 's'}, {dollars(n * p.priceCents)}
-                    </dd>
-                  </Fragment>
-                ))}
-                <dt>Rush</dt>
-                <dd>+{p.rushPct}%, half the turnaround</dd>
-              </dl>
-            </div>
-            <div className="mk-tier mk-pack-how">
-              <h3>What you send</h3>
-              <p className="mk-tier-for">Per product, in one short form:</p>
-              <dl>
-                <dt>Name</dt>
-                <dd>What it is</dd>
-                <dt>UPC</dt>
-                <dd>Typed, pasted or scanned with your phone</dd>
-                <dt>Photos</dt>
-                <dd>Front, side, details</dd>
-                <dt>Optional</dt>
-                <dd>Brand, size, notes</dd>
-              </dl>
-            </div>
-          </div>
-          <p className="mk-tiers-note">{packNote(offer)}</p>
-          <div className="mk-center">
-            {soon ? (
-              <button type="button" className="btn big" disabled title="Payments aren’t open yet">
-                Custom models open soon
-              </button>
-            ) : (
-              <a className="btn big" href="#/orders/new">
-                Make custom models
-              </a>
-            )}
-          </div>
-        </>
-      )}
+      <div className="mk-tiers mk-pack">
+        <div className="mk-tier mk-pack-main">
+          <h3>{INCLUDED} models a month</h3>
+          <p className="mk-tier-price">
+            <b>Included</b> <span>in the Contractor plan</span>
+          </p>
+          <p className="mk-tier-for">One 3D model per product, at true size, private to your company.</p>
+          <dl>
+            <dt>Finishes</dt>
+            <dd>Up to 3 per model</dd>
+            <dt>Revisions</dt>
+            <dd>2 rounds per model</dd>
+            <dt>Turnaround</dt>
+            <dd>About 15 business days</dd>
+          </dl>
+        </div>
+        <div className="mk-tier mk-pack-more">
+          <h3>How the allowance works</h3>
+          <p className="mk-tier-for">Each product you send is one model from that month’s allowance.</p>
+          <dl>
+            <dt>Resets</dt>
+            <dd>Every billing month</dd>
+            <dt>Unused</dt>
+            <dd>Don’t carry over</dd>
+            <dt>Changed your mind</dt>
+            <dd>Withdraw a request before the studio starts and its models come back</dd>
+          </dl>
+        </div>
+        <div className="mk-tier mk-pack-how">
+          <h3>What you send</h3>
+          <p className="mk-tier-for">Per product, in one short form:</p>
+          <dl>
+            <dt>Name</dt>
+            <dd>What it is</dd>
+            <dt>UPC</dt>
+            <dd>Typed, pasted or scanned with your phone</dd>
+            <dt>Photos</dt>
+            <dd>Front, side, details</dd>
+            <dt>Optional</dt>
+            <dd>Brand, size, notes</dd>
+          </dl>
+        </div>
+      </div>
+      <div className="mk-center">
+        {isContractor ? (
+          <a className="btn big" href="#/orders/new">
+            Make custom models
+          </a>
+        ) : (
+          <a className="btn big" href="#contractor" onClick={(e) => (e.preventDefault(), document.getElementById('contractor')?.scrollIntoView({ behavior: 'smooth' }))}>
+            See the Contractor plan
+          </a>
+        )}
+      </div>
     </section>
   );
-}
-
-function packNote(t: NonNullable<Pack>): string {
-  const exact = 'The order form always shows the exact amount before you pay.';
-  const same = `A pack costs the same with 1 product or ${t.pack.productsPerPack}.`;
-  return t.live ? `${same} ${exact}` : `Published list prices. ${same} ${exact}`;
 }
 
 const FAQ: { q: string; a: string }[] = [
@@ -308,12 +239,8 @@ const FAQ: { q: string; a: string }[] = [
     a: 'Designing is the part we want everyone to do freely, so it has no limits. The exports are what you take to a contractor or a store: the floor plan with dimensions, the full-size 3D image, the shopping list with SKUs and the project file. That is what pays for BluModel Studio. To be straight with you: anyone can screenshot their screen. What an export gets you is the clean, full-resolution, dimensioned file.',
   },
   {
-    q: 'What does the $5 unlock cover?',
-    a: 'Every export of that one kitchen, forever: floor plan, 3D image, shopping list, project file, and studio renders without the watermark. Change the kitchen and export again as often as you like. Renaming it keeps the unlock; a duplicate is a new kitchen and isn’t unlocked.',
-  },
-  {
     q: 'Can I cancel?',
-    a: 'Yes, any time, from Account → Billing. You keep your plan until the end of the period you’ve paid for, then you’re back on Free with all your kitchens. Kitchens you unlocked for $5 stay unlocked forever, whatever happens to a plan.',
+    a: 'Yes, any time, from Account → Billing. You keep your plan until the end of the period you’ve paid for, then you’re back on Free with all your kitchens.',
   },
   {
     q: 'Do I need an account?',
@@ -321,7 +248,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'How do payments work?',
-    a: 'Through Stripe’s hosted checkout: BluModel Studio never asks for or sees your card number. Cancel a plan any time; you keep it to the end of the period you’ve paid for.',
+    a: 'Through Stripe’s hosted checkout: BluModel Studio never asks for or sees your card number. Prices are in Canadian dollars. Cancel a plan any time; you keep it to the end of the period you’ve paid for.',
   },
   {
     q: 'What do my contractor’s clients see?',
@@ -329,11 +256,11 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Custom models: what do you need, and what do I get?',
-    a: 'For each product: its name, the UPC or EAN from the box (type it, paste it, or scan the barcode with your phone), and photos (PNG, JPEG or WebP, up to 8 MB each). The brand, the width, depth and height and a spec-sheet link help but are optional. You get a GLB model at true size in up to three finishes, plus a thumbnail, within the pack’s turnaround in business days. Two rounds of revisions are included per model.',
+    a: `They come with the Contractor plan: ${INCLUDED} a month, one per product. For each product send its name, the UPC or EAN from the box (type it, paste it, or scan the barcode with your phone), and photos (PNG, JPEG or WebP, up to 8 MB each). The brand, the width, depth and height and notes help but are optional. You get a GLB model at true size in up to three finishes, plus a thumbnail, in about 15 business days. Two rounds of revisions are included per model. Need more than ${INCLUDED} in a month? Contact us.`,
   },
   {
-    q: 'Who can see a model I paid for?',
-    a: 'Only you. It is private to your account: you can place it in your kitchens, and people you share a kitchen with see it in that kitchen while the link works. A contractor’s models land in their private catalog.',
+    q: 'Who can see my custom models?',
+    a: 'Only you. They are private to your account: a contractor’s land in their private catalog, ready to price and place, and people you share a kitchen with see them in that kitchen while the link works.',
   },
 ];
 

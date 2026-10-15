@@ -542,7 +542,7 @@ function DeliverForm({
   orderId: string;
   item: OrderItemWire;
   multi: boolean;
-  /** A Model pack includes this many finishes per model; null on an order from before packs. */
+  /** Finishes included per model (a plan request or a pack order); null on an order priced per tier. */
   includedFinishes: number | null;
   onDelivered: (r: OrderDetail & { product: Product; report: GlbReport }) => void;
 }) {
@@ -654,7 +654,7 @@ function DeliverForm({
           </label>
         ))}
       </div>
-      <span className="mini-label">Finishes{includedFinishes ? ` (the Model pack includes up to ${includedFinishes})` : ''}</span>
+      <span className="mini-label">Finishes{includedFinishes ? ` (each model includes up to ${includedFinishes})` : ''}</span>
       {finishes.map((f, i) => (
         <div key={i} className="ord-finish-row">
           <label className="field">

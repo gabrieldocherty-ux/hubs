@@ -281,7 +281,7 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
           <span>
             {payments === 'none'
               ? 'Free previews carry a watermark. Downloading the full-resolution render is a paid export, and paid exports open soon.'
-              : 'Free previews carry a watermark. Downloading the full-resolution render is an export: unlock this kitchen for $5, or go Unlimited, and it downloads clean.'}
+              : 'Free previews carry a watermark. Downloading the full-resolution render is an export: choose Download to see your options, and it downloads clean.'}
           </span>
         </p>
       )}
