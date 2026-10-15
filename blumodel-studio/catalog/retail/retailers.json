@@ -1,0 +1,3495 @@
+{
+  "group": "retail-retailers",
+  "checkedAt": "2026-10-15",
+  "products": [
+    {
+      "key": "hampton-bay-edson-b30-white",
+      "brand": "Hampton Bay",
+      "name": "Edson 30 in assembled shaker base cabinet, White",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": 24.4,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-white/1001818777",
+          "sku": "1001818777",
+          "priceCad": 309,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-white/1001818777"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Model code seen: EN3035N-WH. A grey version is SKU 1001818776."
+    },
+    {
+      "key": "hampton-bay-edson-b30-grey",
+      "brand": "Hampton Bay",
+      "name": "Edson 30 in assembled shaker base cabinet, Grey",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": 24.4,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey",
+          "hex": "#8c9093"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-grey/1001818776",
+          "sku": "1001818776",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-grey/1001818776"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Model code seen: EN3035N-KG."
+    },
+    {
+      "key": "hampton-bay-edson-bd303v-3-drawer-base",
+      "brand": "Hampton Bay",
+      "name": "Edson 30 in three-drawer base cabinet, Solid White (BD303V)",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 30,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Solid White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-base-cabinet-cupboard-in-solid-white-with-3-soft-close-drawers-bd303v-/1001515353",
+          "sku": "1001515353",
+          "priceCad": 710,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-base-cabinet-cupboard-in-solid-white-with-3-soft-close-drawers-bd303v-/1001515353"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date."
+    },
+    {
+      "key": "hampton-bay-edson-bs30-sink-base-white",
+      "brand": "Hampton Bay",
+      "name": "Edson 30 in sink base cabinet, Solid White (BS30)",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "sink-base",
+      "widthIn": 30,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": [
+        30,
+        36
+      ],
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Solid White",
+          "hex": "#f3f3ef"
+        },
+        {
+          "name": "Taupe Grey",
+          "hex": "#9b948b"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-solid-white-bs30-/1001469565",
+          "sku": "1001469565",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-36-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-solid-white-bs36-/1001469566",
+          "sku": "1001469566",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-taupe-grey-bs30-/1001505058",
+          "sku": "1001505058",
+          "priceCad": 458,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-solid-white-bs30-/1001469565",
+        "https://www.homedepot.ca/product/hampton-bay-edson-36-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-solid-white-bs36-/1001469566",
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-taupe-grey-bs30-/1001505058"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Three store entries: BS30 white, BS36 white, BS30 taupe grey (price CAD 458 from a 2025-08-29 snapshot). Two shaker doors, no drawer or shelf."
+    },
+    {
+      "key": "hampton-bay-edson-lazy-susan-corner-base",
+      "brand": "Hampton Bay",
+      "name": "Edson 27.6 in corner base cabinet with lazy susan, Grey",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 27.6,
+      "depthIn": 27.6,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey",
+          "hex": "#8c9093"
+        },
+        {
+          "name": "Dusk Cocoa Brown",
+          "hex": "#6a5648"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-assembled-27-6-x-34-5-x-27-6-inch-lazy-susan-corner-base-cabinet-in-grey/1001509798",
+          "sku": "1001509798",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-assembled-27-6-x-34-5-x-27-6-inch-lazy-susan-corner-base-cabinet-in-grey/1001509798"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Also sold in white and Dusk Cocoa brown (BCCQ36FHLLS)."
+    },
+    {
+      "key": "hampton-bay-edson-w3030-wall-white",
+      "brand": "Hampton Bay",
+      "name": "Edson 30 x 30 in assembled wall cabinet, Solid White (W3030)",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 12.5,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        24,
+        30,
+        36
+      ],
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Solid White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-30-inch-h-x-12-5-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-solid-white-with-adjustable-shelves-w3030-/1001447095",
+          "sku": "1001447095",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-30-inch-h-x-12-5-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-solid-white-with-adjustable-shelves-w3030-/1001447095"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date."
+    },
+    {
+      "key": "hampton-bay-edson-w3018-wall-white",
+      "brand": "Hampton Bay",
+      "name": "Edson 30 x 18 in assembled wall cabinet, Solid White (W3018)",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 12.5,
+      "heightIn": 18,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Solid White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-18-inch-h-x-12-5-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-solid-white-w3018-/1001431678",
+          "sku": "1001431678",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-18-inch-h-x-12-5-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-solid-white-w3018-/1001431678"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. A W3012 (12 in tall) sibling is SKU 1001431677."
+    },
+    {
+      "key": "hampton-bay-edson-wa2430l-corner-wall",
+      "brand": "Hampton Bay",
+      "name": "Edson 24 in assembled corner wall cabinet, White (WA2430L)",
+      "line": "Edson",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 24,
+      "depthIn": 13,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/hampton-bay-edson-24-in-w-x-30-h-x-13-d-assembled-kitchen-corner-wall-cabinet-white-wa2430l-/1001421149",
+          "sku": "1001421149",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/hampton-bay-edson-24-in-w-x-30-h-x-13-d-assembled-kitchen-corner-wall-cabinet-white-wa2430l-/1001421149"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Left-opening."
+    },
+    {
+      "key": "thomasville-nouveau-cavette-b36fwd-base",
+      "brand": "Thomasville Nouveau",
+      "name": "Cavette 36 in base cabinet, Lagoon Blue (B36FWD)",
+      "line": "Cavette",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 36,
+      "depthIn": 24,
+      "heightIn": 34.6,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Lagoon Blue",
+          "hex": "#3b6a86"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-36-inch-w-x-34-6-inch-h-x-24-inch-d-assembled-kitchen-base-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelf-soft-close-drawer-b36fwd-/1001598651",
+          "sku": "1001598651",
+          "priceCad": 959,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/thomasville-nouveau-cavette-36-inch-w-x-34-6-inch-h-x-24-inch-d-assembled-kitchen-base-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelf-soft-close-drawer-b36fwd-/1001598651"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Built in Canada, limited lifetime warranty per listing. Cavette is the slab-front sibling of Rhett."
+    },
+    {
+      "key": "thomasville-nouveau-cavette-bcc36-corner-lazy-susan",
+      "brand": "Thomasville Nouveau",
+      "name": "Cavette 36 in corner base with lazy susan, Lagoon Blue (BCC36FHLLS)",
+      "line": "Cavette",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": 34.6,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Lagoon Blue",
+          "hex": "#3b6a86"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-36-inch-w-x-34-6-inch-h-x-36-inch-d-assembled-kitchen-corner-base-cabinet-cupboard-in-lagoon-blue-with-lazy-susan-bcc36fhlls-/1001598652",
+          "sku": "1001598652",
+          "priceCad": 963,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/thomasville-nouveau-cavette-36-inch-w-x-34-6-inch-h-x-36-inch-d-assembled-kitchen-corner-base-cabinet-cupboard-in-lagoon-blue-with-lazy-susan-bcc36fhlls-/1001598652"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date."
+    },
+    {
+      "key": "thomasville-nouveau-cavette-t248424l-pantry",
+      "brand": "Thomasville Nouveau",
+      "name": "Cavette 24 x 84 in pantry cabinet, Lagoon Blue (T248424L)",
+      "line": "Cavette",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 24,
+      "depthIn": 24,
+      "heightIn": 84,
+      "widthOptionsIn": [
+        18,
+        24
+      ],
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Lagoon Blue",
+          "hex": "#3b6a86"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-24-inch-w-x-84-inch-h-x-24-inch-d-assembled-kitchen-pantry-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-t248424l-/1001598665",
+          "sku": "1001598665",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-18-inch-w-x-84-inch-h-x-24-inch-d-assembled-kitchen-pantry-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-t188424l-/1001598664",
+          "sku": "1001598664",
+          "priceCad": 1003,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/thomasville-nouveau-cavette-24-inch-w-x-84-inch-h-x-24-inch-d-assembled-kitchen-pantry-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-t248424l-/1001598665",
+        "https://www.homedepot.ca/product/thomasville-nouveau-cavette-18-inch-w-x-84-inch-h-x-24-inch-d-assembled-kitchen-pantry-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-t188424l-/1001598664"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Second store entry is the 18 in version (T188424L, CAD 1003 snapshot). Special order, long lead time per snippet."
+    },
+    {
+      "key": "thomasville-nouveau-cavette-w3018-wall",
+      "brand": "Thomasville Nouveau",
+      "name": "Cavette 30 x 18 in wall cabinet, Lagoon Blue (W3018)",
+      "line": "Cavette",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 11.75,
+      "heightIn": 18,
+      "widthOptionsIn": [
+        27,
+        30
+      ],
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Lagoon Blue",
+          "hex": "#3b6a86"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-30-inch-w-x-18-inch-h-x-11-75-inch-d-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-w3018-/1001598674",
+          "sku": "1001598674",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-27-inch-w-x-30-inch-h-x-11-75-inch-d-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-w2730-/1001598672",
+          "sku": "1001598672",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/thomasville-nouveau-cavette-30-inch-w-x-18-inch-h-x-11-75-inch-d-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-w3018-/1001598674",
+        "https://www.homedepot.ca/product/thomasville-nouveau-cavette-27-inch-w-x-30-inch-h-x-11-75-inch-d-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-w2730-/1001598672"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Second store entry is the 27 x 30 in W2730."
+    },
+    {
+      "key": "thomasville-nouveau-rhett-bs36-sink-base",
+      "brand": "Thomasville Nouveau",
+      "name": "Rhett 36 in sink base, Lagoon Blue (BS36)",
+      "line": "Rhett",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "sink-base",
+      "widthIn": 36,
+      "depthIn": 24,
+      "heightIn": 34.6,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Lagoon Blue",
+          "hex": "#3b6a86"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-rhett-36-inch-w-x-34-6-inch-h-x-24-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-lagoon-blue-bs36-/1001592266",
+          "sku": "1001592266",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/thomasville-nouveau-rhett-36-inch-w-x-34-6-inch-h-x-24-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-lagoon-blue-bs36-/1001592266"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Includes false front for the sink."
+    },
+    {
+      "key": "thomasville-nouveau-rhett-w3630-wall",
+      "brand": "Thomasville Nouveau",
+      "name": "Rhett 36 x 30 in shaker wall cabinet, Lagoon Blue (W3630)",
+      "line": "Rhett",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 36,
+      "depthIn": 11.75,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Lagoon Blue",
+          "hex": "#3b6a86"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/thomasville-nouveau-rhett-36-inch-w-x-30-inch-h-x-11-75-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-w3630-/1001592286",
+          "sku": "1001592286",
+          "priceCad": 597,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/thomasville-nouveau-rhett-36-inch-w-x-30-inch-h-x-11-75-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-w3630-/1001592286"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date."
+    },
+    {
+      "key": "eurostyle-base-cabinet-30-white-rta",
+      "brand": "Eurostyle",
+      "name": "30 in ready-to-assemble base cabinet, White",
+      "line": null,
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": 24,
+      "heightIn": 35,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f6f6f4"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/eurostyle-base-cabinet-30-white/1000683574",
+          "sku": "1000683574",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/eurostyle-base-cabinet-30-white/1000683574"
+      ],
+      "confidence": "low",
+      "notes": "Facts from the Home Depot Canada product title and search snippet; the page itself was not fetched (the site timed out). Prices, where given, are snapshots of unknown date. Ready to assemble (flat pack), not assembled. Door style is not stated in the title."
+    },
+    {
+      "key": "cabinetsmith-huntsville-base-36",
+      "brand": "CabinetSmith",
+      "name": "Huntsville assembled base cabinet 36 in, 2 doors, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 36,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": [
+        12,
+        15,
+        24,
+        36
+      ],
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/huntsville-assembled-base-cabinet-white-36-2-doors/p/2512006",
+          "sku": "2512006",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/huntsville-assembled-base-cabinet-white-36-2-doors/p/2512006"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from Home Hardware product titles and search snippets (the site returned HTTP 403 to automated fetches). Frameless, 2-piece square-routed shaker door; toe kick sold separately. Depth/height from the 24 in three-drawer sibling (24 x 24.5 x 34.5 in)."
+    },
+    {
+      "key": "cabinetsmith-huntsville-drawer-base-24",
+      "brand": "CabinetSmith",
+      "name": "Huntsville assembled base cabinet 24 in, 3 drawers, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 24,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": [
+        15,
+        24
+      ],
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/huntsville-assembled-base-cabinet-white-24-3-drawers/p/2512008",
+          "sku": "2512008",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/15-huntsville-white-three-drawer-assembled-base-cabinet/p/2512007",
+          "sku": "2512007",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/huntsville-assembled-base-cabinet-white-24-3-drawers/p/2512008",
+        "https://www.homehardware.ca/en/15-huntsville-white-three-drawer-assembled-base-cabinet/p/2512007"
+      ],
+      "confidence": "medium",
+      "notes": "Second store entry is the 15 in three-drawer version (2512007). Toe kick sold separately."
+    },
+    {
+      "key": "cabinetsmith-huntsville-base-12-lh",
+      "brand": "CabinetSmith",
+      "name": "Huntsville left-hand door assembled base cabinet 12 in, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 12,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/huntsville-left-hand-door-assembled-base-cabinet-white-12/p/2512002",
+          "sku": "2512002",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/huntsville-left-hand-door-assembled-base-cabinet-white-12/p/2512002"
+      ],
+      "confidence": "medium",
+      "notes": "Standard 107 degree, non-soft-close hinges per snippet. Depth/height assumed from the Huntsville 24 in base listing."
+    },
+    {
+      "key": "cabinetsmith-huntsville-easy-reach-base-36",
+      "brand": "CabinetSmith",
+      "name": "Huntsville assembled easy-reach (corner) base cabinet 36 in, right-hand door, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 36,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/36-assembled-easy-reach-base-cabinet-with-right-hand-door-huntsville-white/p/2512020",
+          "sku": "2512020",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/36-assembled-easy-reach-base-cabinet-with-right-hand-door-huntsville-white/p/2512020"
+      ],
+      "confidence": "low",
+      "notes": "Easy-reach is a corner base; footprint beyond the 36 in width was not verified."
+    },
+    {
+      "key": "cabinetsmith-huntsville-upper-24x30",
+      "brand": "CabinetSmith",
+      "name": "Huntsville assembled upper (wall) cabinet 24 x 30 in, 2 doors, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        24,
+        36
+      ],
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/huntsville-assembled-upper-cabinet-white-24-x-30-2-doors/p/2512017",
+          "sku": "2512017",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/36-x-30-assembled-wall-cabinet-with-soft-close-door-huntsville-white/p/2512028",
+          "sku": "2512028",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/huntsville-assembled-upper-cabinet-white-24-x-30-2-doors/p/2512017",
+        "https://www.homehardware.ca/en/36-x-30-assembled-wall-cabinet-with-soft-close-door-huntsville-white/p/2512028"
+      ],
+      "confidence": "medium",
+      "notes": "Second store entry is the 36 x 30 in wall cabinet with soft-close door (2512028). Depth not stated in the snippet."
+    },
+    {
+      "key": "cabinetsmith-huntsville-bridge-30x15",
+      "brand": "CabinetSmith",
+      "name": "Huntsville assembled bridge cabinet 30 x 15 in, 2 doors, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": 15,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/huntsville-assembled-bridge-cabinet-white-30-x-15-2-doors/p/2512015",
+          "sku": "2512015",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/huntsville-assembled-bridge-cabinet-white-30-x-15-2-doors/p/2512015"
+      ],
+      "confidence": "medium",
+      "notes": "Short cabinet above a range or fridge."
+    },
+    {
+      "key": "cabinetsmith-huntsville-pantry-15x84",
+      "brand": "CabinetSmith",
+      "name": "Huntsville left-hand door assembled pantry 15 x 84 in, White",
+      "line": "Huntsville",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 15,
+      "depthIn": 24,
+      "heightIn": 84,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/huntsville-left-hand-door-assembled-pantry-white-15-x-84/p/2512010",
+          "sku": "2512010",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/huntsville-left-hand-door-assembled-pantry-white-15-x-84/p/2512010"
+      ],
+      "confidence": "medium",
+      "notes": "Dimensions 15 W x 24 D x 84 H in as given in the snippet."
+    },
+    {
+      "key": "st-lawrence-fairbank-base-18-rta",
+      "brand": "St. Lawrence Cabinets",
+      "name": "Fairbank 1 door and 1 drawer knockdown base cabinet 18 in, White",
+      "line": "Fairbank",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 18,
+      "depthIn": 24,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/1-door-1-drawer-knockdown-base-cabinet-white-18/p/2517452",
+          "sku": "2517452",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/1-door-1-drawer-knockdown-base-cabinet-white-18/p/2517452"
+      ],
+      "confidence": "medium",
+      "notes": "Ready to assemble, ships flat; soft-close door and smooth-glide drawer; assembled size 18 x 34.5 x 24 in per snippet."
+    },
+    {
+      "key": "cabinet-basics-knockdown-base-30",
+      "brand": "Cabinet Basics",
+      "name": "Knockdown melamine base cabinet 30 in, White",
+      "line": "Cabinet Basics",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": [
+        21,
+        24,
+        30
+      ],
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White melamine",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/knockdown-base-cabinet-white-30/p/2516747",
+          "sku": "2516747",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/1-door-and-1-drawer-knockdown-base-cabinet-white-24/p/2516754",
+          "sku": "2516754",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/knockdown-base-cabinet-white-21/p/2516744",
+          "sku": "2516744",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/knockdown-base-cabinet-white-30/p/2516747",
+        "https://www.homehardware.ca/en/1-door-and-1-drawer-knockdown-base-cabinet-white-24/p/2516754",
+        "https://www.homehardware.ca/en/knockdown-base-cabinet-white-21/p/2516744"
+      ],
+      "confidence": "low",
+      "notes": "Budget ready-to-assemble melamine boxes (30 in base, 24 in door+drawer, 21 in base). Sink-base use with door/drawer fronts per snippet. Also a 21 x 30 in wall cabinet (2516724) and a 30 x 24 x 53.5 in pantry (2516761)."
+    },
+    {
+      "key": "ikea-sektion-base-24x24",
+      "brand": "IKEA",
+      "name": "SEKTION base cabinet frame, white, 24 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 24,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        12,
+        15,
+        18,
+        21,
+        24,
+        30,
+        36
+      ],
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White frame",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 63,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "high",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Price is the empty frame; with doors and shelves (Aspudden matt white) the listing showed CAD 219. Widths seen on product pages: 15, 18, 21, 24, 30, 36 in; 24 in deep and a shallow 14.75 in deep family exist."
+    },
+    {
+      "key": "ikea-sektion-base-18x24",
+      "brand": "IKEA",
+      "name": "SEKTION base cabinet, white, 18 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 18,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White frame",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-20265396/",
+          "sku": "202.653.96",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-20265396/"
+      ],
+      "confidence": "high",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. A customer review on the page said the base board measured about 22.5 in rather than 24 in, which matters for dishwasher fits."
+    },
+    {
+      "key": "ikea-sektion-base-21x24-frame",
+      "brand": "IKEA",
+      "name": "SEKTION base cabinet frame, white, 21 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 21,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White frame",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-frame-white-30265414/",
+          "sku": "302.654.14",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/sektion-base-cabinet-frame-white-30265414/"
+      ],
+      "confidence": "high",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages."
+    },
+    {
+      "key": "ikea-sektion-base-shallow-15",
+      "brand": "IKEA",
+      "name": "SEKTION shallow base cabinet, white, 15 x 14.75 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 15,
+      "depthIn": 14.75,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        15,
+        18,
+        24
+      ],
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White frame",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-30265391/",
+          "sku": "302.653.91",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-70265394/",
+          "sku": "702.653.94",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-40265395/",
+          "sku": "402.653.95",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-30265391/",
+        "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-70265394/",
+        "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-40265395/"
+      ],
+      "confidence": "high",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Three store entries: 15, 18 and 24 in wide shallow frames (all about 14.75 in deep)."
+    },
+    {
+      "key": "ikea-sektion-oven-base-30",
+      "brand": "IKEA",
+      "name": "SEKTION base cabinet for oven, white, 30 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White frame",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-for-oven-white-50298649/",
+          "sku": "502.986.49",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/sektion-base-cabinet-for-oven-white-50298649/"
+      ],
+      "confidence": "high",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Holds a built-in oven."
+    },
+    {
+      "key": "ikea-sektion-sink-base-30",
+      "brand": "IKEA",
+      "name": "SEKTION base cabinet for sink + 2 doors, white/Aspudden matt white, 30 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "sink-base",
+      "widthIn": 30,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        30,
+        36
+      ],
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White/Aspudden matt white",
+          "hex": "#f1f1ee"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 222,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Price includes the Aspudden doors. Sink-base article number not captured."
+    },
+    {
+      "key": "ikea-sektion-maximera-drawer-base-36",
+      "brand": "IKEA",
+      "name": "SEKTION / MAXIMERA base cabinet with 3 drawers, white/Aspudden matt white, 36 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 36,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White/Aspudden matt white",
+          "hex": "#f1f1ee"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 417,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Price includes drawers and fronts. A 24 in wide version with 4 drawers/3 fronts listed at CAD 404."
+    },
+    {
+      "key": "ikea-sektion-maximera-4-drawer-base-18",
+      "brand": "IKEA",
+      "name": "SEKTION / MAXIMERA base cabinet with 4 drawers, white/Nickebo matt anthracite, 18 x 15 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 18,
+      "depthIn": 15,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White/Nickebo matt anthracite",
+          "hex": "#3b3d40"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/sektion-maximera-base-cabinet-with-4-drawers-white-nickebo-matt-anthracite-s99497647/",
+          "sku": "S99497647",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/sektion-maximera-base-cabinet-with-4-drawers-white-nickebo-matt-anthracite-s99497647/"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Shallow (about 15 in deep) 4-drawer base."
+    },
+    {
+      "key": "ikea-sektion-corner-base-carousel-38",
+      "brand": "IKEA",
+      "name": "SEKTION corner base cabinet with carousel, white Enköping/white wood effect, 38 x 24 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 38,
+      "depthIn": 24,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White Enköping / white wood effect",
+          "hex": "#efede8"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 345,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages."
+    },
+    {
+      "key": "ikea-sektion-wall-30x30",
+      "brand": "IKEA",
+      "name": "SEKTION wall cabinet, white, 30 x 14.75 x 30 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 14.75,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        12,
+        15,
+        18,
+        21,
+        24,
+        30,
+        36
+      ],
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White frame",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 56,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "high",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages. Wall cabinets also come 15 in tall and 40 in tall; the 36 x 15 x 30 in version with 2 Aspudden doors listed at CAD 252."
+    },
+    {
+      "key": "ikea-sektion-top-cabinet-fridge-30x15",
+      "brand": "IKEA",
+      "name": "SEKTION top cabinet for fridge/freezer with 2 doors, white/Aspudden matt white, 30 x 24 x 15 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 24,
+      "heightIn": 15,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White/Aspudden matt white",
+          "hex": "#f1f1ee"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 179,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages."
+    },
+    {
+      "key": "ikea-sektion-maximera-high-cabinet-30x80",
+      "brand": "IKEA",
+      "name": "SEKTION / MAXIMERA high cabinet with 2 doors and 4 drawers, white/Aspudden matt white, 30 x 24 x 80 in",
+      "line": "SEKTION",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 30,
+      "depthIn": 24,
+      "heightIn": 80,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White/Aspudden matt white",
+          "hex": "#f1f1ee"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+          "sku": null,
+          "priceCad": 843,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/"
+      ],
+      "confidence": "medium",
+      "notes": "Facts from IKEA Canada category/product pages (IKEA allowed an automated read of the category page). SEKTION frames are 30 in high; legs (4.5 in) and a countertop are separate, so installed base height is about 34.5 in. Doors/fronts are sold separately unless named in the price note. IKEA does not publish a UPC on these pages."
+    },
+    {
+      "key": "ikea-voxtorp-fronts",
+      "brand": "IKEA",
+      "name": "VOXTORP kitchen fronts (matte white; high-gloss dark gray-brown)",
+      "line": "VOXTORP",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Matte white",
+          "hex": "#efefec"
+        },
+        {
+          "name": "High-gloss dark gray-brown",
+          "hex": "#4a4440"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/"
+      ],
+      "confidence": "medium",
+      "notes": "From IKEA Canada's front gallery: integrated handles, from about CAD 133 per linear foot. \"Slab\" is inferred from the integrated-handle flat front; the gallery did not name the door style."
+    },
+    {
+      "key": "ikea-havstorp-fronts",
+      "brand": "IKEA",
+      "name": "HAVSTORP kitchen fronts (light gray; deep green; matt beige)",
+      "line": "HAVSTORP",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Light gray",
+          "hex": "#b8bbbc"
+        },
+        {
+          "name": "Deep green",
+          "hex": "#2f4a40"
+        },
+        {
+          "name": "Matt beige",
+          "hex": "#d8cfbd"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/cat/havstorp-beige-fronts-700386/",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/cat/havstorp-beige-fronts-700386/"
+      ],
+      "confidence": "medium",
+      "notes": "From IKEA Canada: from about CAD 119 per linear foot. Door style is not stated on the page, so it is left null."
+    },
+    {
+      "key": "ikea-askersund-fronts",
+      "brand": "IKEA",
+      "name": "ASKERSUND kitchen fronts (light ash effect)",
+      "line": "ASKERSUND",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Light ash effect",
+          "hex": "#cdbb9d"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/"
+      ],
+      "confidence": "medium",
+      "notes": "From IKEA Canada's front gallery: from about CAD 99 per linear foot."
+    },
+    {
+      "key": "ikea-bodbyn-fronts",
+      "brand": "IKEA",
+      "name": "BODBYN kitchen fronts (off-white, framed with bevelled panel)",
+      "line": "BODBYN",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": "raised",
+      "finishes": [
+        {
+          "name": "Off-white",
+          "hex": "#ece7da"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/"
+      ],
+      "confidence": "medium",
+      "notes": "Gallery text: framed with bevelled panel, from about CAD 144 per linear foot. Door style \"raised\" is the closest app label for a bevelled panel."
+    },
+    {
+      "key": "ikea-lerhyttan-fronts",
+      "brand": "IKEA",
+      "name": "LERHYTTAN kitchen fronts (black stained; blue)",
+      "line": "LERHYTTAN",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black stained",
+          "hex": "#1f1f1f"
+        },
+        {
+          "name": "Blue",
+          "hex": "#44627a"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/"
+      ],
+      "confidence": "medium",
+      "notes": "Gallery text: solid wood frame with bevelled edges and inset veneer panel, from about CAD 177 per linear foot."
+    },
+    {
+      "key": "ikea-tistorp-fronts",
+      "brand": "IKEA",
+      "name": "TISTORP kitchen fronts (walnut, slab)",
+      "line": "TISTORP",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Walnut",
+          "hex": "#6e4f38"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/rooms/kitchen/kitchen-front-gallery-pubd2a6ecd0/"
+      ],
+      "confidence": "medium",
+      "notes": "Gallery text: slab door fronts, from about CAD 101 per linear foot. Other fronts on the page: VALLSTENA, VEDDINGE, ENKÖPING, NICKEBO, ASPUDDEN, RINGHULT, AXSTAD, SINARP, VEDHAMN."
+    },
+    {
+      "key": "landon-co-elite-rd-b15-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 1 Door 15 in (RD-B15-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 15,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-1-door-shaker-style-white-rd-b15-sd-75396480",
+          "sku": "75396480",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-1-door-shaker-style-white-rd-b15-sd-75396480"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-b24-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 2 Doors 24 in (RD-B24-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 24,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-white-rd-b24-sd-75396482",
+          "sku": "75396482",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-white-rd-b24-sd-75396482"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. A RONA spec table gives the true width as about 23.94 in."
+    },
+    {
+      "key": "landon-co-elite-rd-b30-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 2 Doors 30 in (RD-B30-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-shaker-style-white-rd-b30-sd-75396484",
+          "sku": "75396484",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-shaker-style-white-rd-b30-sd-75396484"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Spec table lists 30.25 in W and 24.38 in D; one adjustable centre shelf."
+    },
+    {
+      "key": "landon-co-elite-rd-b33-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 2 Doors 33 in (RD-B33-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 33,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-cabinet-33-in-shaker-style-white-rd-b33-sd-75396602",
+          "sku": "75396602",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-cabinet-33-in-shaker-style-white-rd-b33-sd-75396602"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-b30-gt",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 2 Doors 30 in (RD-B30-GT)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey (shaker, polymer satin)",
+          "hex": "#8c9093"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-gray-rd-b30-gt-75396483",
+          "sku": "75396483",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-gray-rd-b30-gt-75396483"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. RONA spells the finish \"Grey\" in some titles and \"Gray\" in others."
+    },
+    {
+      "key": "landon-co-elite-rd-b36-gt",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 2 Doors 36 in (RD-B36-GT)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 36,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey (shaker, polymer satin)",
+          "hex": "#8c9093"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-35-7-8-in-x-34-3-4-in-gray-rd-b36-gt-75396485",
+          "sku": "75396485",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-35-7-8-in-x-34-3-4-in-gray-rd-b36-gt-75396485"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Spec table lists 35.88 in W."
+    },
+    {
+      "key": "landon-co-elite-rd-b18-gt",
+      "brand": "Landon & Co",
+      "name": "ELITE Base Cabinet 1 Door 18 in (RD-B18-GT)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 18,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey (shaker, polymer satin)",
+          "hex": "#8c9093"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-base-cabinet-with-1-door-shaker-style-18-in-grey-rd-b18-gt-75396563",
+          "sku": "75396563",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-base-cabinet-with-1-door-shaker-style-18-in-grey-rd-b18-gt-75396563"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-b2t30-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Drawer Base 2 Drawers 30 in (RD-B2T30-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 30,
+      "depthIn": 24.38,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-base-cabinet-with-2-drawers-shaker-style-30-in-white-rd-b2t30-sd-75396599",
+          "sku": "75396599",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-base-cabinet-with-2-drawers-shaker-style-30-in-white-rd-b2t30-sd-75396599"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Spec table lists 30.25 x 34.75 x 24.38 in; soft-close drawers."
+    },
+    {
+      "key": "landon-co-elite-rd-b2t24-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Drawer Base 2 Drawers 24 in (RD-B2T24-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 24,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-drawers-shaker-style-white-rd-b2t24-sd-75396598",
+          "sku": "75396598",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-drawers-shaker-style-white-rd-b2t24-sd-75396598"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-b4t15-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Drawer Base 4 Drawers 15 in (RD-B4T15-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 15,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-elite-4-drawers-base-cabinet-15-in-shaker-style-white-rd-b4t15-sd-75396600",
+          "sku": "75396600",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-elite-4-drawers-base-cabinet-15-in-shaker-style-white-rd-b4t15-sd-75396600"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-b3t12-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Drawer Base 3 Drawers 12 in (RD-B3T12-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 12,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-elite-3-drawers-base-cabinet-3475-in-x-12-in-shaker-style-white-rd-b3t12-sd-75396623",
+          "sku": "75396623",
+          "priceCad": null,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-elite-3-drawers-base-cabinet-3475-in-x-12-in-shaker-style-white-rd-b3t12-sd-75396623"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Product page says it is order-in-store only (not available for immediate purchase)."
+    },
+    {
+      "key": "landon-co-elite-rd-bc36-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Corner Base Cabinet 36 in (RD-BC36-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 36,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-corner-kitchen-cabinet-36-1-4-in-x-34-3-4-in-shaker-style-white-rd-bc36-sd-75396490",
+          "sku": "75396490",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-elite-2-doors-corner-kitchen-cabinet-36-1-4-in-x-34-3-4-in-shaker-style-white-rd-bc36-sd-75396490"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Search snippets showed two prices ($404.99 and $474.99) for the 36 in white corner base, so none is recorded. The title says 1 door, the URL slug says 2 doors."
+    },
+    {
+      "key": "landon-co-elite-rd-bc36-gt",
+      "brand": "Landon & Co",
+      "name": "ELITE Corner Base Cabinet 2 Doors 36 in (RD-BC36-GT)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 36,
+      "depthIn": 24.5,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey (shaker, polymer satin)",
+          "hex": "#8c9093"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-corner-base-cabinet-with-2-doors-shaker-style-36-in-grey-rd-bc36-gt-75396489",
+          "sku": "75396489",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-corner-base-cabinet-with-2-doors-shaker-style-36-in-grey-rd-bc36-gt-75396489"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-hg12-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Wall Cabinet 1 Door 12 in (RD-HG12-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 12,
+      "depthIn": 12,
+      "heightIn": 30.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-kitchen-cabinet-wall-mount-12-in-x-30-1-4-in-shaker-style-white-rd-hg12-sd-75396496",
+          "sku": "75396496",
+          "priceCad": 99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-kitchen-cabinet-wall-mount-12-in-x-30-1-4-in-shaker-style-white-rd-hg12-sd-75396496"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Price is a search-snippet figure of unknown capture date."
+    },
+    {
+      "key": "landon-co-elite-rd-hg18-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Wall Cabinet 1 Door 18 in (RD-HG18-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 18,
+      "depthIn": 12,
+      "heightIn": 30.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-18-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-1-door-shaker-style-white-rd-hg18-sd-75396609",
+          "sku": "75396609",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-18-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-1-door-shaker-style-white-rd-hg18-sd-75396609"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-hg24-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Wall Cabinet 2 Doors 24 in (RD-HG24-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 24,
+      "depthIn": 12,
+      "heightIn": 30.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hg24-sd-75396500",
+          "sku": "75396500",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hg24-sd-75396500"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-hg30-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Wall Cabinet 2 Doors 30 in (RD-HG30-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 12,
+      "heightIn": 30.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hg30-sd-75396502",
+          "sku": "75396502",
+          "priceCad": 256.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hg30-sd-75396502"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Price is a search-snippet figure of unknown capture date. Two adjustable shelves."
+    },
+    {
+      "key": "landon-co-elite-rd-hg36-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Wall Cabinet 2 Doors 36 in (RD-HG36-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 36,
+      "depthIn": 12,
+      "heightIn": 30.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-wall-cabinet-with-2-doors-shaker-style-36-in-w-x-3025-in-h-x-12-in-d-white-rd-hg36-sd-75396770",
+          "sku": "75396770",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-wall-cabinet-with-2-doors-shaker-style-36-in-w-x-3025-in-h-x-12-in-d-white-rd-hg36-sd-75396770"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. "
+    },
+    {
+      "key": "landon-co-elite-rd-htg36-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Tall Wall Cabinet 2 Doors 36 in x 39.25 in (RD-HTG36-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 36,
+      "depthIn": 12,
+      "heightIn": 39.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-36-inch-w-x-3925-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-htg36-sd-75396720",
+          "sku": "75396720",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-36-inch-w-x-3925-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-htg36-sd-75396720"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. 39.25 in tall wall cabinet."
+    },
+    {
+      "key": "landon-co-elite-rd-htp30-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Over-Oven Wall Cabinet 2 Doors 30 x 15 in (RD-HTP30-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 12,
+      "heightIn": 15,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-15-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-htp30-sd-75396506",
+          "sku": "75396506",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-15-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-htp30-sd-75396506"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Short cabinet that sits above a range or hood."
+    },
+    {
+      "key": "landon-co-elite-rd-hpp36-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Over-Fridge Cabinet 2 Doors 36 x 18 in, 24 in deep (RD-HPP36-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 36,
+      "depthIn": 24,
+      "heightIn": 18,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-36-inch-w-x-18-inch-h-x-24-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hpp36-sd-75396736",
+          "sku": "75396736",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-36-inch-w-x-18-inch-h-x-24-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hpp36-sd-75396736"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. RONA describes it as an installation above the refrigerator; 24 in deep."
+    },
+    {
+      "key": "landon-co-elite-rd-hm30-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Microwave Wall Cabinet 2 Doors 30 x 24 in (RD-HM30-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": 12,
+      "heightIn": 24,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-x-24-x-12-in-assembled-2-door-shaker-style-kitchen-wall-cabinet-white-rd-hm30-sd-75396686",
+          "sku": "75396686",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-x-24-x-12-in-assembled-2-door-shaker-style-kitchen-wall-cabinet-white-rd-hm30-sd-75396686"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. 24 in tall wall cabinet for a microwave shelf."
+    },
+    {
+      "key": "landon-co-elite-rd-hc2424-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Corner Wall Cabinet 2 Doors 24 x 24 in (RD-HC2424-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 24,
+      "depthIn": 12,
+      "heightIn": 30.25,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doors-2-shelf-wall-corner-cabinet-24-in-x-30-in-shaker-style-white-rd-hc2424-sd-75396608",
+          "sku": "75396608",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doors-2-shelf-wall-corner-cabinet-24-in-x-30-in-shaker-style-white-rd-hc2424-sd-75396608"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. Wall corner cabinet, two shelves."
+    },
+    {
+      "key": "landon-co-elite-rd-gm1549-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Top Pantry Cabinet 2 Doors 15 x 49 in (RD-GM1549-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 15,
+      "depthIn": 24.5,
+      "heightIn": 49,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-49-inch-h-x-245-inch-d-assembled-kitchen-pantry-cabinet-2-doors-shaker-style-white-rd-gm1549-sd-75396607",
+          "sku": "75396607",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-49-inch-h-x-245-inch-d-assembled-kitchen-pantry-cabinet-2-doors-shaker-style-white-rd-gm1549-sd-75396607"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. 49 in \"top pantry\" unit, not full height. A grey version is also listed."
+    },
+    {
+      "key": "landon-co-elite-rd-gm1558-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Top Pantry Cabinet 2 Doors 15 x 58 in (RD-GM1558-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 15,
+      "depthIn": 24.5,
+      "heightIn": 58,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doorstop-pantry-tall-cabinet-15-in-x-58-in-shaker-style-white-rd-gm1558-sd-75396655",
+          "sku": "75396655",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doorstop-pantry-tall-cabinet-15-in-x-58-in-shaker-style-white-rd-gm1558-sd-75396655"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. 58 in \"top pantry\" unit; one fixed and two adjustable shelves per the spec table."
+    },
+    {
+      "key": "landon-co-elite-rd-gm2458-sd",
+      "brand": "Landon & Co",
+      "name": "ELITE Top Pantry Cabinet 4 Doors 24 x 58 in (RD-GM2458-SD)",
+      "line": "ELITE",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 24,
+      "depthIn": 24.5,
+      "heightIn": 58,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White (shaker, polymer satin)",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-4-doorstop-pantry-tall-cabinet-24-in-x-58-in-shaker-style-white-rd-gm2458-sd-75396647",
+          "sku": "75396647",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-landon-co-elite-4-doorstop-pantry-tall-cabinet-24-in-x-58-in-shaker-style-white-rd-gm2458-sd-75396647"
+      ],
+      "confidence": "high",
+      "notes": "Fully assembled stock cabinet, frameless, soft-close. Facts from the RONA product title and search snippet; RONA blocked automated page fetches (HTTP 403) so the page itself was not read. Dimensions are the nominal sizes in the title. 58 in \"top pantry\" unit."
+    },
+    {
+      "key": "landon-co-bellina-assembled-base-box",
+      "brand": "Landon & Co",
+      "name": "BELLINA base cabinet box, melamine, no doors (AOB series)",
+      "line": "BELLINA",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 24,
+      "depthIn": 23.6,
+      "heightIn": 30.25,
+      "widthOptionsIn": [
+        12,
+        15,
+        18,
+        24,
+        30,
+        36
+      ],
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "White melamine box",
+          "hex": "#f4f4f2"
+        },
+        {
+          "name": "Athena matte white door",
+          "hex": "#f1f1ee"
+        },
+        {
+          "name": "Boreas glossy white door",
+          "hex": "#fafafa"
+        },
+        {
+          "name": "Helios dark grey door",
+          "hex": "#4a4d52"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-bellina-24-x-3025-x-236-in-white-melamine-base-kitchen-cabinet-aob24w-84666315",
+          "sku": "84666315",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-bellina-24-x-3025-x-236-in-white-melamine-base-kitchen-cabinet-aob24w-84666315"
+      ],
+      "confidence": "medium",
+      "notes": "RONA sells the box (AOB24.W shown, 24 x 30.25 x 23.6 in) and the MDF slab/thermofoil doors separately; doors are sized to a box (for example 18 x 30 in). Other widths seen in search listings: 12, 15, 18 and a 36 in (35.87) base and a 36.25 in corner base. The 30 in listing text was inconsistent. The brochure PDF was too large to fetch, so door names come from search snippets and product titles. Box height 30.25 excludes legs/toe kick."
+    },
+    {
+      "key": "landon-co-bellina-wall-box",
+      "brand": "Landon & Co",
+      "name": "BELLINA wall cabinet box, melamine, no doors (AOW series)",
+      "line": "BELLINA",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": 30,
+      "widthOptionsIn": [
+        12,
+        18,
+        24,
+        30
+      ],
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "White melamine box",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-bellina-18-x-30-in-white-melamine-wall-kitchen-cabinet-aow1830w-84666323",
+          "sku": "84666323",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-bellina-24-x-30-in-white-melamine-wall-kitchen-cabinet-aow2430w-84666324",
+          "sku": "84666324",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-bellina-30-x-30-in-white-melamine-wall-kitchen-cabinet-aow3030w-84666326",
+          "sku": "84666326",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-bellina-wall-cabinet-in-melamine-12-x-30-in-no-doors-white-aow1230w-84666321",
+          "sku": "84666321",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-bellina-18-x-30-in-white-melamine-wall-kitchen-cabinet-aow1830w-84666323",
+        "https://www.rona.ca/en/product/landon-co-bellina-24-x-30-in-white-melamine-wall-kitchen-cabinet-aow2430w-84666324",
+        "https://www.rona.ca/en/product/landon-co-bellina-30-x-30-in-white-melamine-wall-kitchen-cabinet-aow3030w-84666326",
+        "https://www.rona.ca/en/product/landon-co-landon-co-bellina-wall-cabinet-in-melamine-12-x-30-in-no-doors-white-aow1230w-84666321"
+      ],
+      "confidence": "medium",
+      "notes": "Widths 12, 18, 24 and 30 in confirmed by separate RONA listings (AOW1230.W, AOW1830.W, AOW2430.W, AOW3030.W), all 30 in tall. Depth is not given in the titles, so it is left null. Each store entry here is a different width; the article number is the one in that URL."
+    },
+    {
+      "key": "landon-co-bellina-door-athena-boreas-helios",
+      "brand": "Landon & Co",
+      "name": "BELLINA slab doors in MDF: Athena (matte white), Boreas (glossy white), Helios (dark grey)",
+      "line": "BELLINA",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "cabinet-door",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": [
+        12,
+        15,
+        16.5,
+        18
+      ],
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Athena - matte white",
+          "hex": "#f1f1ee"
+        },
+        {
+          "name": "Boreas - glossy white",
+          "hex": "#fafafa"
+        },
+        {
+          "name": "Helios - dark grey",
+          "hex": "#4a4d52"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-bellina-gloss-white-mdf-12-x-30-in-door-cabinet-boreasb-84666340",
+          "sku": "84666340",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/landon-co-landon-co-bellina-cabinet-door-in-mdf-15-x-15-in-matte-white-athenad-84666331",
+          "sku": "84666331",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/landon-co-bellina-gloss-white-mdf-12-x-30-in-door-cabinet-boreasb-84666340",
+        "https://www.rona.ca/en/product/landon-co-landon-co-bellina-cabinet-door-in-mdf-15-x-15-in-matte-white-athenad-84666331"
+      ],
+      "confidence": "medium",
+      "notes": "Door widths seen: 12, 15, 16.5, 18 in by 15, 30 or 35 in tall. The brochure also names Kronos, Athena in light oak and Ares in soft grey, but those were not confirmed on product pages. Made in Canada per RONA wording."
+    },
+    {
+      "key": "landon-co-aurora-assembled-cabinets",
+      "brand": "Landon & Co",
+      "name": "AURORA assembled shaker cabinets (white)",
+      "line": "AURORA",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": [
+        12,
+        18,
+        24,
+        30,
+        36
+      ],
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White shaker",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/aurora-kitchen-cabinets",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/aurora-kitchen-cabinets"
+      ],
+      "confidence": "low",
+      "notes": "Only the RONA collection page was found (via search); individual SKUs, depth and height were not visible. Base widths 12 to 36 in; wall widths 12 to 36 in in 12, 15, 30 and 49.5 in heights. Snippets showed conflicting prices for a 30 in base ($244 for two doors, $179.99 for a two-door/one-drawer base), so none is recorded."
+    },
+    {
+      "key": "landon-co-summerhill-semi-custom",
+      "brand": "Landon & Co",
+      "name": "SUMMERHILL semi-custom cabinets (special order)",
+      "line": "SUMMERHILL",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/kitchen/kitchen-cabinets/custom-kitchen-cabinets",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/kitchen/kitchen-cabinets/custom-kitchen-cabinets"
+      ],
+      "confidence": "low",
+      "notes": "Special-order frameless line described by RONA as unlimited style/finish/material combinations. Brochure facts from a search summary: 5/8 in sides, 3/16 in hardboard back, 6-way hinges, full-extension soft-close drawers, optional plywood box. No door-style or finish list was verified; widths are special-order, so left null."
+    },
+    {
+      "key": "hugo-borg-lasalle-corner-lazy-susan",
+      "brand": "Hugo&Borg",
+      "name": "Lasalle 36 in lazy-susan corner base, Glacier White (LCBC36LSLA)",
+      "line": "Lasalle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-36-x-345-x-36-in-glacier-white-lazy-susan-corner-base-semi-custom-cabinet-lcbc36lsla-332014406",
+          "sku": "332014406",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-lasalle-36-x-345-x-36-in-glacier-white-lazy-susan-corner-base-semi-custom-cabinet-lcbc36lsla-332014406"
+      ],
+      "confidence": "medium",
+      "notes": "Semi-custom, frameless, fronts sold separately on many items. RONA listings give the country of origin as the United States. Slab style is from a search summary of the Lasalle line."
+    },
+    {
+      "key": "hugo-borg-lasalle-drawer-base-33",
+      "brand": "Hugo&Borg",
+      "name": "Lasalle 33 in six-drawer base, Glacier White (LCB6D33LA)",
+      "line": "Lasalle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 33,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-33-x-345-x-2488-in-glacier-white-drawer-base-semi-custom-cabinet-lcb6d33la-332014249",
+          "sku": "332014249",
+          "priceCad": 1228,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-lasalle-33-x-345-x-2488-in-glacier-white-drawer-base-semi-custom-cabinet-lcb6d33la-332014249"
+      ],
+      "confidence": "medium",
+      "notes": "Price is a search-snippet figure of unknown date. Page says order in store only."
+    },
+    {
+      "key": "hugo-borg-lasalle-drawer-base-21",
+      "brand": "Hugo&Borg",
+      "name": "Lasalle 21 in drawer base, Glacier White (LCB2D21I1LA)",
+      "line": "Lasalle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 21,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-21-x-345-x-2488-in-glacier-white-drawer-base-semi-custom-cabinet-lcb2d21i1la-332014453",
+          "sku": "332014453",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-lasalle-21-x-345-x-2488-in-glacier-white-drawer-base-semi-custom-cabinet-lcb2d21i1la-332014453"
+      ],
+      "confidence": "medium",
+      "notes": "Semi-custom frameless base."
+    },
+    {
+      "key": "hugo-borg-lasalle-door-drawer-base-18",
+      "brand": "Hugo&Borg",
+      "name": "Lasalle 18 in door and drawer base, Glacier White (LCB18FHI3LA)",
+      "line": "Lasalle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 18,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-18-x-345-x-2488-in-glacier-white-door-and-drawer-base-semi-custom-cabinet-lcb18fhi3la-332014235",
+          "sku": "332014235",
+          "priceCad": 808,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-lasalle-18-x-345-x-2488-in-glacier-white-door-and-drawer-base-semi-custom-cabinet-lcb18fhi3la-332014235"
+      ],
+      "confidence": "medium",
+      "notes": "Price is a search-snippet figure of unknown date."
+    },
+    {
+      "key": "hugo-borg-lasalle-pantry-30",
+      "brand": "Hugo&Borg",
+      "name": "Lasalle 30 in door and drawer pantry, 84.5 in tall, Glacier White (LCTO3D3084.5LA)",
+      "line": "Lasalle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 30,
+      "depthIn": 24.88,
+      "heightIn": 84.5,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-30-x-845-x-2488-in-glacier-white-door-and-drawer-pantry-semi-custom-cabinet-lcto3d30845la-332014164",
+          "sku": "332014164",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-lasalle-30-x-845-x-2488-in-glacier-white-door-and-drawer-pantry-semi-custom-cabinet-lcto3d30845la-332014164"
+      ],
+      "confidence": "medium",
+      "notes": "Full-height semi-custom pantry."
+    },
+    {
+      "key": "hugo-borg-lasalle-wall-27",
+      "brand": "Hugo&Borg",
+      "name": "Lasalle 27 in door wall cabinet, 30 in tall, Glacier White (LCW2730LA)",
+      "line": "Lasalle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 27,
+      "depthIn": 14.88,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-27-x-30-x-1488-in-glacier-white-door-wall-semi-custom-cabinet-lcw2730la-332014185",
+          "sku": "332014185",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-lasalle-27-x-30-x-1488-in-glacier-white-door-wall-semi-custom-cabinet-lcw2730la-332014185"
+      ],
+      "confidence": "medium",
+      "notes": "Semi-custom wall cabinet, 14.88 in deep."
+    },
+    {
+      "key": "hugo-borg-charlesberg-corner-lazy-susan",
+      "brand": "Hugo&Borg",
+      "name": "Charlesberg 36 in lazy-susan corner base, Light Grey (LCBC36LSCH)",
+      "line": "Charlesberg",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "corner-cabinet",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Light Grey",
+          "hex": "#b9bcbf"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-charlesberg-36-x-345-x-36-in-light-grey-lazy-susan-corner-base-semi-custom-cabinet-lcbc36lsch-332013434",
+          "sku": "332013434",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-charlesberg-36-x-345-x-36-in-light-grey-lazy-susan-corner-base-semi-custom-cabinet-lcbc36lsch-332013434"
+      ],
+      "confidence": "medium",
+      "notes": "Shaker-style front, laminate finish, per a search summary."
+    },
+    {
+      "key": "hugo-borg-rosemont-base-9",
+      "brand": "Hugo&Borg",
+      "name": "Rosemont 9 in door base, Glacier White (LCB9FHRM)",
+      "line": "Rosemont",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 9,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-rosemont-9-x-345-x-2488-glacier-white-door-base-semi-custom-cabinet-lcb9fhrm-332014894",
+          "sku": "332014894",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-rosemont-9-x-345-x-2488-glacier-white-door-base-semi-custom-cabinet-lcb9fhrm-332014894"
+      ],
+      "confidence": "medium",
+      "notes": "Narrow 9 in filler-width base."
+    },
+    {
+      "key": "hugo-borg-jolie-shallow-base-12",
+      "brand": "Hugo&Borg",
+      "name": "Jolie 12 in shallow base, 15 in deep, Warm White (LCB1214FHJO)",
+      "line": "Jolie",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 12,
+      "depthIn": 15,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Warm White (painted)",
+          "hex": "#efeadf"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/hugo-borg-jolie-15-d-x-345-h-x-12-in-w-warm-white-shallow-base-full-high-door-semi-custom-cabinet-lcb1214fhjo-332061341",
+          "sku": "332061341",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/hugo-borg-jolie-15-d-x-345-h-x-12-in-w-warm-white-shallow-base-full-high-door-semi-custom-cabinet-lcb1214fhjo-332061341"
+      ],
+      "confidence": "medium",
+      "notes": "Shallow base for peninsulas/island backs; wide-rail shaker, painted."
+    },
+    {
+      "key": "arcassa-richmond-sink-base-36",
+      "brand": "Arcassa",
+      "name": "Richmond 36 in sink base, Light Grey (RCSB36FHDSRC)",
+      "line": "Richmond",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "sink-base",
+      "widthIn": 36,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Light Grey",
+          "hex": "#b9bcbf"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-richmond-36-x-345-x-2488-in-light-grey-sink-base-semi-custom-cabinet-rcsb36fhdsrc-332013507",
+          "sku": "332013507",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-richmond-36-x-345-x-2488-in-light-grey-sink-base-semi-custom-cabinet-rcsb36fhdsrc-332013507"
+      ],
+      "confidence": "medium",
+      "notes": "Frameless, soft-close, limited lifetime warranty per listing; fronts sold separately. Door style not stated in the title."
+    },
+    {
+      "key": "arcassa-richmond-pantry-15",
+      "brand": "Arcassa",
+      "name": "Richmond 15 in door pantry, 89.5 in tall, Light Grey",
+      "line": "Richmond",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 15,
+      "depthIn": 24.88,
+      "heightIn": 89.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Light Grey",
+          "hex": "#b9bcbf"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-richmond-15-x-895-x-2488-in-light-grey-door-pantry-semi-custom-cabinet-332013559",
+          "sku": "332013559",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-richmond-15-x-895-x-2488-in-light-grey-door-pantry-semi-custom-cabinet-332013559"
+      ],
+      "confidence": "medium",
+      "notes": "Full-height pantry, 89.5 in."
+    },
+    {
+      "key": "arcassa-halton-door-base-33",
+      "brand": "Arcassa",
+      "name": "Halton 33 in door base, Painted Slate Grey (RCSB33FHDSHA)",
+      "line": "Halton",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 33,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Painted Slate Grey",
+          "hex": "#6e7479"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-halton-33-x-345-x-2488-in-painted-slate-grey-door-base-semi-custom-cabinet-rcsb33fhdsha-332012971",
+          "sku": "332012971",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-halton-33-x-345-x-2488-in-painted-slate-grey-door-base-semi-custom-cabinet-rcsb33fhdsha-332012971"
+      ],
+      "confidence": "medium",
+      "notes": "Wide-rail 8-step hand-painted shaker door per listing. Halton drawer bases ran about $1,002 to $1,014 on the category page."
+    },
+    {
+      "key": "arcassa-orillia-sink-base-36",
+      "brand": "Arcassa",
+      "name": "Orillia 36 in sink base, Glacier White (RCSB36FHDSOR)",
+      "line": "Orillia",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "sink-base",
+      "widthIn": 36,
+      "depthIn": 24.88,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-orillia-36-x-345-x-2488-in-glacier-white-sink-base-semi-custom-cabinet-rcsb36fhdsor-332014134",
+          "sku": "332014134",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-orillia-36-x-345-x-2488-in-glacier-white-sink-base-semi-custom-cabinet-rcsb36fhdsor-332014134"
+      ],
+      "confidence": "medium",
+      "notes": "Door style not stated in the title."
+    },
+    {
+      "key": "arcassa-orillia-bridge-wall-36",
+      "brand": "Arcassa",
+      "name": "Orillia 36 x 10 in door wall cabinet, 24.88 in deep, Glacier White (RCW361024DSOR)",
+      "line": "Orillia",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "wall-cabinet",
+      "widthIn": 36,
+      "depthIn": 24.88,
+      "heightIn": 10,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Glacier White",
+          "hex": "#f2f4f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-orillia-36-x-10-x-2488-in-glacier-white-door-wall-semi-custom-cabinet-rcw361024dsor-332014427",
+          "sku": "332014427",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-orillia-36-x-10-x-2488-in-glacier-white-door-wall-semi-custom-cabinet-rcw361024dsor-332014427"
+      ],
+      "confidence": "low",
+      "notes": "Title reads 36 x 10 x 24.88 in; the axes are read as W x H x D (a short deep over-fridge style box) and are not confirmed."
+    },
+    {
+      "key": "arcassa-windsor-three-drawer-base-24",
+      "brand": "Arcassa",
+      "name": "Windsor 24 in three-drawer base, Brown (RCB3DA24DSWN)",
+      "line": "Windsor",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Brown",
+          "hex": "#6b4f3a"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-windsor-24-w-x-345-in-h-brown-base-kitchen-cabinet-w-3x-10-in-drawers-rcb3da24dswn-332060862",
+          "sku": "332060862",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-windsor-24-w-x-345-in-h-brown-base-kitchen-cabinet-w-3x-10-in-drawers-rcb3da24dswn-332060862"
+      ],
+      "confidence": "medium",
+      "notes": "Three 10 in drawers."
+    },
+    {
+      "key": "arcassa-savane-shallow-base-24",
+      "brand": "Arcassa",
+      "name": "Hugo&Borg Savane 24 in shallow base, 14 in deep, Brown (RCB2414-2FHDSWN)",
+      "line": "Savane",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 24,
+      "depthIn": 14,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Brown",
+          "hex": "#6b4f3a"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/arcassa-hugo-borg-savane-14-d-x-345-h-x-24-in-w-brown-shallow-base-full-high-2-door-semi-custom-cabinet-rcb2414-2fhdswn-332061532",
+          "sku": "332061532",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/arcassa-hugo-borg-savane-14-d-x-345-h-x-24-in-w-brown-shallow-base-full-high-2-door-semi-custom-cabinet-rcb2414-2fhdswn-332061532"
+      ],
+      "confidence": "medium",
+      "notes": "RONA lists this under both ARCASSA and Hugo&Borg wording. Two doors, particleboard."
+    },
+    {
+      "key": "eklipse-perle-pantry-15",
+      "brand": "Eklipse",
+      "name": "Perle pantry kitchen cabinet 15 1/8 x 83 3/4 in, White (RD-GM15-SD)",
+      "line": "Perle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 15.125,
+      "depthIn": null,
+      "heightIn": 83.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/eklipse-pantry-kitchen-cabinet-perle-collection-15-1-8-in-x-83-3-4-in-rd-gm15-sd-75396492",
+          "sku": "75396492",
+          "priceCad": 329,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/eklipse-pantry-kitchen-cabinet-perle-collection-15-1-8-in-x-83-3-4-in-rd-gm15-sd-75396492"
+      ],
+      "confidence": "medium",
+      "notes": "Same RD-code family as the Landon & Co ELITE stock line. Price is a search-snippet figure of unknown date."
+    },
+    {
+      "key": "eklipse-perle-drawer-base-15",
+      "brand": "Eklipse",
+      "name": "Perle base cabinet with 3 drawers 15 1/8 in, White (RD-B3T15-SD)",
+      "line": "Perle",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "drawer-base",
+      "widthIn": 15.125,
+      "depthIn": null,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/eklipse-perle-base-kitchen-cabinet-with-drawers-15-1-8-in-x-34-3-4-in-white-rd-b3t15-sd-75396476",
+          "sku": "75396476",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/eklipse-perle-base-kitchen-cabinet-with-drawers-15-1-8-in-x-34-3-4-in-white-rd-b3t15-sd-75396476"
+      ],
+      "confidence": "medium",
+      "notes": "Assembled, soft-close, adjustable legs."
+    },
+    {
+      "key": "eklipse-saphir-base-36-woodgrain",
+      "brand": "Eklipse",
+      "name": "Saphir base kitchen cabinet 35 7/8 in, Woodgrain (RD-B36-FE)",
+      "line": "Saphir",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 35.875,
+      "depthIn": null,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": "slab",
+      "finishes": [
+        {
+          "name": "Woodgrain (walnut effect)",
+          "hex": "#7a5a3f"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/eklipse-saphir-base-kitchen-cabinet-35-7-8-in-x-34-3-4-in-woodgrain-rd-b36-fe-75396544",
+          "sku": "75396544",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/eklipse-saphir-base-kitchen-cabinet-35-7-8-in-x-34-3-4-in-woodgrain-rd-b36-fe-75396544"
+      ],
+      "confidence": "medium",
+      "notes": "Melamine door with walnut woodgrain per a search summary; a 24 in version (RD-B24-FE, 75396542) also exists. Slab style inferred from \"melamine door\" and not stated."
+    },
+    {
+      "key": "eklipse-onyx-base-30-black",
+      "brand": "Eklipse",
+      "name": "Onyx base kitchen cabinet 30 1/4 in, Black (RD-B30-NT)",
+      "line": "Onyx",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30.25,
+      "depthIn": null,
+      "heightIn": 34.75,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black",
+          "hex": "#222222"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/eklipse-onyx-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-black-rd-b30-nt-75396522",
+          "sku": "75396522",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/eklipse-onyx-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-black-rd-b30-nt-75396522"
+      ],
+      "confidence": "medium",
+      "notes": "Door style not stated."
+    },
+    {
+      "key": "eklipse-angelite-pantry-15-grey",
+      "brand": "Eklipse",
+      "name": "Angelite pantry kitchen cabinet 15 1/8 x 83 3/4 in, Grey (RD-GM15-GT)",
+      "line": "Angelite",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "tall-cabinet",
+      "widthIn": 15.125,
+      "depthIn": null,
+      "heightIn": 83.75,
+      "widthOptionsIn": null,
+      "doorStyle": "shaker",
+      "finishes": [
+        {
+          "name": "Grey",
+          "hex": "#8c9093"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/eklipse-pantry-kitchen-cabinet-angelite-15-1-8-in-x-83-3-4-in-rd-gm15-gt-75396491",
+          "sku": "75396491",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/eklipse-pantry-kitchen-cabinet-angelite-15-1-8-in-x-83-3-4-in-rd-gm15-gt-75396491"
+      ],
+      "confidence": "medium",
+      "notes": "Shaker style inferred from the -GT code family (ELITE grey shaker); not stated on the title."
+    },
+    {
+      "key": "eklipse-cristal-base-30-white",
+      "brand": "Eklipse (EBSU)",
+      "name": "Cristal base kitchen cabinet 2 doors 30 in, White (RD-B30-TW)",
+      "line": "Cristal",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f3f3ef"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/ebsu-eklipse-kitchen-cabinet-with-2-doors-cristal-collection-30-in-white-rd-b30-tw-65356588",
+          "sku": "65356588",
+          "priceCad": 184,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/ebsu-eklipse-kitchen-cabinet-with-2-doors-cristal-collection-30-in-white-rd-b30-tw-65356588"
+      ],
+      "confidence": "medium",
+      "notes": "Price is a search-snippet figure of unknown date; 5-year limited warranty per snippet."
+    },
+    {
+      "key": "eklipse-jasper-base-30-grey-beige",
+      "brand": "Eklipse (EBSU)",
+      "name": "Jasper base kitchen cabinet 2 doors 30 in, Grey-Beige (RD-B30-SP)",
+      "line": "Jasper",
+      "upc": null,
+      "category": "cabinets",
+      "kind": "base-cabinet",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Grey-Beige",
+          "hex": "#b3ab9f"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/ebsu-eklipse-kitchen-cabinet-with-2-doors-30-in-grey-beige-rd-b30-sp-65356554",
+          "sku": "65356554",
+          "priceCad": 189,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/ebsu-eklipse-kitchen-cabinet-with-2-doors-30-in-grey-beige-rd-b30-sp-65356554"
+      ],
+      "confidence": "medium",
+      "notes": "Price is a search-snippet figure of unknown date; order in store only per snippet. A 12 in one-door wall version (RD-HG12-SP, 65356559) was listed around $119."
+    }
+  ]
+}
