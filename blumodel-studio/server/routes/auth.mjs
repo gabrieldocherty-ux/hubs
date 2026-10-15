@@ -1,5 +1,17 @@
-// Accounts: sign up, sign in, sign out, the current user, rename, password change.
-// Messages are unchanged from the single-file server.
+// Accounts: sign up, sign in, sign out, the current user, rename, password change, and password
+// resets:
+//
+//   GET  /api/auth/forgot                    { emailEnabled, supportEmail }: how resets work here
+//   POST /api/auth/forgot {email}            emails a single-use link when a provider is on. The
+//                                            answer is the same whether or not the address has an
+//                                            account; limited per IP and per address
+//   POST /api/auth/reset/check {token}       { valid, email? } (the address masked) for the form
+//   POST /api/auth/reset {token, password}   sets the password, signs out every device, signs
+//                                            this browser in
+//   POST /api/admin/users/:id/reset-link     admin only, audited: { url, expiresAt }, shown once
+//                                            (how resets work with no email provider)
+//
+// Tokens are stored hashed and expire after an hour (server/auth/resets.mjs).
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -8,7 +20,9 @@ import { EMAIL_RE, makeUserWire } from '../auth/userWire.mjs';
 import { deviceLabel, deviceOf } from '../auth/device.mjs';
 import { createPrefsStore } from '../account/prefs.mjs';
 import { createMailer } from '../email/index.mjs';
-import { passwordChangedEmail, signInAlertEmail } from '../email/messages.mjs';
+import { passwordChangedEmail, resetEmail, signInAlertEmail } from '../email/messages.mjs';
+import { createResetStore, maskEmail, RESET_MINUTES } from '../auth/resets.mjs';
+import { audit } from '../lib/audit.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -16,6 +30,9 @@ const LOGIN_WINDOW = 15 * 60_000;
 const LOGIN_MAX_PER_IP_EMAIL = 8;
 /** Per email alone, so rotating addresses can't brute-force one account. */
 const LOGIN_MAX_PER_EMAIL = 30;
+const HOUR = 3_600_000;
+/** Reset emails per address per hour, whoever asks: nobody can flood an inbox. */
+const FORGOT_MAX_PER_EMAIL = 3;
 
 /** "2026-10-14 20:15 UTC": an unambiguous time for an email. */
 const utc = (ms) => `${new Date(ms).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
@@ -26,6 +43,8 @@ export default function routes(ctx) {
   const { sessions, limiter } = ctx.internal;
   const prefs = createPrefsStore(db, ctx.now);
   const mailer = createMailer({ config, fetch: ctx.fetch, log });
+  const resets = createResetStore({ db, now: ctx.now });
+  const resetUrl = (token) => `${config.PUBLIC_URL}/#/signin?reset=${token}`;
   for (const n of mailer.notes) log?.info?.(n);
 
   /**
@@ -157,9 +176,95 @@ export default function routes(ctx) {
         db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword(next), rc.user.id);
         // Sign out every other device; keep this one. Any reset link still outstanding stops working.
         sessions.endOthers(rc.req, rc.user.id);
-        db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(rc.user.id);
+        resets.revokeFor(rc.user.id);
         if (mailer.enabled) void mailer.send({ to: rc.user.email, ...passwordChangedEmail({ name: rc.user.name, supportEmail: config.legal?.supportEmail, viaReset: false }) });
         return { ok: true };
+      },
+    },
+
+    // ── password resets ─────────────────────────────────────────────────────
+    {
+      method: 'GET',
+      path: '/api/auth/forgot',
+      auth: 'none',
+      handler: () => ({ emailEnabled: mailer.enabled, supportEmail: config.legal?.supportEmail ?? null }),
+    },
+    {
+      method: 'POST',
+      path: '/api/auth/forgot',
+      auth: 'none',
+      maxBytes: 2_048,
+      rateLimit: { name: 'forgot-ip', max: 10, windowMs: HOUR, by: 'ip' },
+      handler: (rc) => {
+        const email = str(rc.body.email, 254).toLowerCase();
+        if (!EMAIL_RE.test(email) || /[
+,;<>]/.test(email)) throw new HttpError(400, 'That email address does not look right.', { field: 'email' });
+        // From here the answer is the same for every address: whether it has an account, whether
+        // this address has had its 3 an hour, whether the provider accepts the message.
+        if (!mailer.enabled) return { ok: true, emailEnabled: false };
+        if (!limiter.hit(`forgot-email:${email}`, FORGOT_MAX_PER_EMAIL, HOUR).ok) return { ok: true, emailEnabled: true };
+        const user = db.prepare('SELECT id, email, name FROM users WHERE email = ?').get(email);
+        if (user) {
+          const { token } = resets.issue(user.id);
+          void mailer.send({ to: user.email, ...resetEmail({ name: user.name, url: resetUrl(token), minutes: RESET_MINUTES }) });
+        }
+        return { ok: true, emailEnabled: true };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/auth/reset/check',
+      auth: 'none',
+      maxBytes: 1_024,
+      rateLimit: { name: 'reset-check', max: 60, windowMs: 15 * 60_000, by: 'ip' },
+      handler: (rc) => {
+        const found = resets.find(rc.body.token);
+        return found ? { valid: true, email: maskEmail(found.email) } : { valid: false };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/auth/reset',
+      auth: 'none',
+      maxBytes: 4_096,
+      rateLimit: { name: 'reset', max: 20, windowMs: 15 * 60_000, by: 'ip' },
+      handler: async (rc) => {
+        const token = rc.body.token;
+        const password = typeof rc.body.password === 'string' ? rc.body.password : '';
+        const gone = () => new HttpError(400, 'This reset link has expired or was already used. Ask for a new one.', { code: 'reset_invalid' });
+        if (!resets.find(token)) throw gone();
+        if (password.length < 8) throw new HttpError(400, 'Use at least 8 characters for your password.', { field: 'password' });
+        if (password.length > MAX_PASSWORD) throw new HttpError(400, 'That password is too long.', { field: 'password' });
+        const hash = await hashPassword(password);
+        // Used up here, atomically: two tabs racing with one link can't both set a password.
+        const userId = resets.consume(token);
+        if (!userId) throw gone();
+        db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
+        resets.revokeFor(userId);
+        sessions.endAll(userId);
+        limiter.reset(`login-email:${db.prepare('SELECT email FROM users WHERE id = ?').get(userId)?.email ?? ''}`);
+        const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(userId);
+        sessions.start(rc.req, rc.res, userId);
+        if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ name: user.name, supportEmail: config.legal?.supportEmail, viaReset: true }) });
+        log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
+        return { user: userWire(user) };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/users/:id/reset-link',
+      auth: 'admin',
+      body: 'none',
+      params: { id: /^[A-Za-z0-9_-]{1,64}$/ },
+      rateLimit: { name: 'admin-reset-link', max: 30, windowMs: HOUR, by: 'user' },
+      handler: (rc) => {
+        const target = db.prepare('SELECT id, email FROM users WHERE id = ?').get(rc.params.id);
+        if (!target) throw new HttpError(404, 'That user does not exist.');
+        const { token, expiresAt } = resets.issue(target.id, { createdBy: rc.user.id });
+        // The link itself is never logged or audited: only that one was made, by whom, for whom.
+        audit(db, { admin: rc.user, action: 'reset_link', targetUserId: target.id, targetEmail: target.email, detail: { expiresAt }, at: ctx.now() });
+        rc.res.setHeader('Cache-Control', 'no-store');
+        return { url: resetUrl(token), expiresAt };
       },
     },
   ];
