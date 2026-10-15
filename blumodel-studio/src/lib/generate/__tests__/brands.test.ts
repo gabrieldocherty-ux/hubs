@@ -5,6 +5,7 @@ import { composeNewKitchen } from '../../../data/compose';
 import { TEMPLATES } from '../../../data/templates';
 import { getProduct } from '../../../data/catalog';
 import { useCatalog } from '../../../store/useCatalog';
+import { useDesignStore } from '../../../store/useDesignStore';
 import { prepareDocForSave, sanitizeDoc } from '../../doc';
 import { BASICS_BRAND, brandOptions, brandPicker, brandPrefsLabel, brandShare, cleanBrandPrefs, filterToPrefs, isBasics } from '../brands';
 import type { Picked } from '../layout';
@@ -69,6 +70,21 @@ test('a chosen brand fills every slot it sells in that type and size; the rest s
     });
   }
   assert.ok(swapped > 10, `Testco took ${swapped} slots across the templates`);
+});
+
+test("a layout applied in the editor (a blank room's templates) uses the kitchen's brand choices", () => {
+  const S = useDesignStore.getState;
+  const blank = composeNewKitchen('Blank', ROOM, null, { cabinets: ['Testco'] });
+  assert.equal(blank.items.length, 0);
+  S().loadDoc(blank);
+  S().applyTemplate('l-island');
+  const branded = S().doc.items.filter((it) => getProduct(it.productId)?.brand === 'Testco');
+  assert.ok(branded.length > 0, 'the L + Island applied in the editor has Testco cabinets');
+  assert.deepEqual(S().doc.brandPrefs, { cabinets: ['Testco'] });
+  // A kitchen with no choices gets the Basics layout, as before.
+  S().loadDoc(composeNewKitchen('Plain', ROOM, null));
+  S().applyTemplate('l-island');
+  assert.equal(S().doc.items.filter((it) => getProduct(it.productId)?.brand === 'Testco').length, 0);
 });
 
 test('brand pieces wear their own finish; the share counts pieces from the chosen brands', () => {

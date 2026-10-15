@@ -69,6 +69,12 @@ export function SetupWizard() {
     }
   };
 
+  // Each step opens at its top: Continue sits at the bottom of a long step (the brands, or a
+  // phone's stacked layouts), and the next step would otherwise open scrolled past its heading.
+  useEffect(() => {
+    document.querySelector('.wizard')?.scrollIntoView({ block: 'start' });
+  }, [step]);
+
   const canNext = step !== 2 || layoutOk;
   const toggleBrand = (cat: BrandCategory, name: string) =>
     setBrands((b) => {

@@ -99,7 +99,8 @@ export function RoomPanel() {
       <section className="room-section room-palettes" aria-labelledby="room-palettes-title">
         <header>
           <h4 id="room-palettes-title">Colour palettes</h4>
-          <span className="sub">Whole-kitchen looks · Ctrl+Z to undo</span>
+          {/* Short enough to share the heading's line in the 300px panel (it wrapped to two). */}
+          <span className="sub" title="A palette changes the whole kitchen; Ctrl+Z undoes it">Whole-kitchen looks</span>
         </header>
         <div className="presets">
           {[PLAIN_PRESET, ...STYLE_PRESETS].map((p) => {

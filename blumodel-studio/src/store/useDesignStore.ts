@@ -497,7 +497,8 @@ export const useDesignStore = create<State>()(
         applyTemplate: (id) => {
           const { doc, readOnly } = get();
           if (readOnly) return;
-          const built = buildTemplate(id, doc.room, doc.surfaces);
+          // The kitchen's brand choices (setup wizard) fill the layout here too, as they did there.
+          const built = buildTemplate(id, doc.room, doc.surfaces, doc.brandPrefs);
           const { note } = built;
           const items = withFinishIds(built.items);
           if (!items.length) {
