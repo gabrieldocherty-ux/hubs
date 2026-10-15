@@ -129,7 +129,8 @@ export function createOrderService({ db, now, services, config, log = console, t
         lines: saved.lines.map((l) => ({ label: String(l.label), amountCents: Number(l.amountCents), ...(l.pack ? { pack: Number(l.pack) } : {}) })),
       };
     }
-    return legacyQuote({ items: items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, amountCents: it.amountCents, name: it.brief?.name })), rush, amountCents: row.amount_cents });
+    // In the order's own currency (every order from before 2026-10-15 is USD).
+    return { ...legacyQuote({ items: items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, amountCents: it.amountCents, name: it.brief?.name })), rush, amountCents: row.amount_cents }), currency: row.currency };
   };
 
   const titleOf = (row, items) => {

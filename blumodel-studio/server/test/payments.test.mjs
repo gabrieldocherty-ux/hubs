@@ -32,7 +32,7 @@ function stripeMock() {
     if (u.pathname === '/v1/checkout/sessions' && init.method === 'POST') {
       const id = `cs_test_${++n}`;
       const total = [...form.keys()].filter((k) => /^line_items\[\d+\]\[price_data\]\[unit_amount\]$/.test(k)).reduce((s, k) => s + Number(form.get(k)), 0);
-      sessions.set(id, { id, object: 'checkout.session', payment_status: 'unpaid', status: 'open', amount_total: total, currency: 'usd', client_reference_id: form.get('client_reference_id'), metadata: { kind: form.get('metadata[kind]'), order_id: form.get('metadata[order_id]') }, payment_intent: null });
+      sessions.set(id, { id, object: 'checkout.session', payment_status: 'unpaid', status: 'open', amount_total: total, currency: form.get('line_items[0][price_data][currency]'), client_reference_id: form.get('client_reference_id'), metadata: { kind: form.get('metadata[kind]'), order_id: form.get('metadata[order_id]') }, payment_intent: null });
       return json({ id, url: `https://checkout.stripe.com/c/pay/${id}` });
     }
     if (u.pathname.startsWith('/v1/checkout/sessions/') && init.method === 'GET') {
@@ -137,7 +137,7 @@ test('Stripe checkout is built on the server’s amount: form fields, idempotenc
     assert.equal(call.headers['Idempotency-Key'], `${o.id}-1`);
     const f = call.form;
     assert.equal(f.get('mode'), 'payment');
-    assert.equal(f.get('line_items[0][price_data][currency]'), 'usd');
+    assert.equal(f.get('line_items[0][price_data][currency]'), 'cad');
     assert.equal(f.get('line_items[0][price_data][unit_amount]'), '12900', 'the server’s quote; the client’s 50 is ignored');
     assert.equal(f.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Model pack: 1 product');
     assert.equal(f.get('line_items[0][quantity]'), '1');

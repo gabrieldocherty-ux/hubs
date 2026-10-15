@@ -40,14 +40,17 @@ export type PlanId = 'free' | 'kitchen_unlock' | 'unlimited' | 'contractor';
 /** What an account can be on. */
 export type AccountPlanId = 'free' | 'unlimited' | 'contractor';
 
-/** One entry of `src/data/plans.json`. */
+/** One entry of `src/data/plans.json`. Every price is in Canadian dollars since 2026-10-15. */
 export interface Plan {
   id: PlanId;
   name: string;
   priceCents: number;
+  currency: 'cad';
   interval: null | 'month';
   tagline: string;
   bullets: string[];
+  /** Contractor: custom 3D models a month, made by the BluModel studio. */
+  includedModels?: number;
 }
 
 export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'incomplete';
@@ -73,12 +76,15 @@ export interface Subscription {
   cancelAtPeriodEnd: boolean;
   graceUntil: number | null;
   createdAt: number;
+  /** What it renews at, in its own currency (a plan started before CAD stays in USD); null for a complimentary plan. */
+  amountCents?: number | null;
+  currency?: string | null;
 }
 
 /** What the editor needs to decide whether an export runs or the Unlock dialog opens. */
 export interface Entitlements {
   plan: AccountPlanId;
-  /** Kitchens unlocked with a one-time $5 payment. */
+  /** Kitchens unlocked with a one-time payment. */
   unlockedProjectIds: string[];
 }
 
@@ -355,8 +361,9 @@ export interface Order {
   tier: ModelTierId;
   extras: { extraFinishes: number; rush: boolean };
   amountCents: number;
-  currency: 'usd';
-  provider: 'demo' | 'stripe';
+  /** The order's own currency: 'usd' for every order placed before 2026-10-15. */
+  currency: string;
+  provider: 'demo' | 'stripe' | 'plan';
   brief: OrderBrief;
   refProductId: string | null;
   deliverableProductId: string | null;

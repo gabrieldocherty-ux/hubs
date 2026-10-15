@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ApiError } from '../../lib/api';
-import { billingApi, dollars, type ProviderStats } from './api';
+import { money } from '../../lib/money';
+import { billingApi, type ProviderStats } from './api';
 import './billing.css';
 
 /** Admin → Billing: subscriptions, MRR, unlocks and churn, with demo kept apart from real money. */
@@ -31,12 +32,17 @@ export default function AdminBillingTab() {
 }
 
 function Provider({ title, stats, demo = false }: { title: string; stats: ProviderStats; demo?: boolean }) {
+  // Money is shown per currency: anything paid or billed before prices moved to CAD stays in USD,
+  // and it gets its own tile rather than being added to the CAD figure.
+  const others = (by: Record<string, number> | undefined) => Object.entries(by ?? {}).filter(([cur, cents]) => cur !== 'cad' && cents > 0);
   const tiles: [string, string][] = [
-    ['MRR', dollars(stats.mrrCents)],
+    ['MRR', money(stats.mrrCents, 'cad')],
+    ...others(stats.mrrByCurrency).map(([cur, cents]): [string, string] => [`MRR still billed in ${cur.toUpperCase()}`, money(cents, cur)]),
     ['Unlimited', String(stats.active.unlimited)],
     ['Contractor', String(stats.active.contractor)],
-    ['Kitchen unlocks', `${stats.unlocks} · ${dollars(stats.unlockCents)}`],
-    ['Collected, 30 days', dollars(stats.collected30dCents)],
+    ['Kitchen unlocks', `${stats.unlocks} · ${money(stats.unlockCents, 'cad')}${others(stats.unlockByCurrency).map(([cur, cents]) => ` + ${money(cents, cur)}`).join('')}`],
+    ['Collected, 30 days', money(stats.collected30dCents, 'cad')],
+    ...others(stats.collected30dByCurrency).map(([cur, cents]): [string, string] => [`Collected, 30 days, ${cur.toUpperCase()}`, money(cents, cur)]),
     ['Churn, 30 days', `${Math.round(stats.churn30d * 1000) / 10}%`],
     ['Past due (in grace)', String(stats.pastDue)],
     ['Cancelling at period end', String(stats.cancelling)],

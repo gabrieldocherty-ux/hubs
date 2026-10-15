@@ -11,7 +11,8 @@ import { useDesignStore } from '../../store/useDesignStore';
 import { useSession } from '../../store/useSession';
 import type { ExportKind, Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
-import { billingApi, dollars, goToCheckout } from './api';
+import { amount, money, planPrice } from '../../lib/money';
+import { billingApi, goToCheckout } from './api';
 import { closeUnlock, loadEntitlements, openUnlock, saveIntent, type UnlockRequest } from './entitlements';
 import './billing.css';
 
@@ -28,9 +29,11 @@ const WHAT: Record<ExportKind, string> = {
 };
 
 /**
- * The Unlock dialog (PLANS_AND_CONTRACTORS §2): $5 for this kitchen, or $15/month for every
- * kitchen. Someone without an account (or designing on this device) first makes a free account,
- * and their draft is saved into it, so nothing is lost.
+ * The Unlock dialog (PLANS_AND_CONTRACTORS §2): "Unlock this kitchen - $5 CAD once" or
+ * "Unlimited - $15 CAD/month", side by side. This is the ONLY place the one-kitchen unlock and
+ * its price appear (since 2026-10-15 it isn't advertised anywhere else): a free user meets it
+ * when they try an export. Someone without an account (or designing on this device) first makes
+ * a free account, and their draft is saved into it, so nothing is lost.
  */
 export default function UnlockDialog({ request }: { request: UnlockRequest }) {
   const user = useSession((s) => s.user);
@@ -131,7 +134,7 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
             <PlanOption
               plan={plan('kitchen_unlock')}
               note="Every export for this kitchen, forever, including after you change it."
-              cta={soon ? SOON_LABEL : busy === 'kitchen_unlock' ? 'Starting…' : `Unlock this kitchen · ${dollars(plan('kitchen_unlock').priceCents)}`}
+              cta={soon ? SOON_LABEL : busy === 'kitchen_unlock' ? 'Starting…' : `Unlock this kitchen - ${money(plan('kitchen_unlock').priceCents)} once`}
               onChoose={() => buy('kitchen_unlock')}
               disabled={!!busy || soon}
               autoFocus={!soon}
@@ -139,7 +142,7 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
             <PlanOption
               plan={plan('unlimited')}
               note="Exports on all your kitchens, no watermarks. Cancel anytime."
-              cta={soon ? SOON_LABEL : busy === 'unlimited' ? 'Starting…' : `Go Unlimited · ${dollars(plan('unlimited').priceCents)}/month`}
+              cta={soon ? SOON_LABEL : busy === 'unlimited' ? 'Starting…' : `Unlimited - ${planPrice(plan('unlimited'))}`}
               onChoose={() => buy('unlimited')}
               disabled={!!busy || soon}
               featured
@@ -147,7 +150,7 @@ export default function UnlockDialog({ request }: { request: UnlockRequest }) {
           </div>
           {!soon && <AgreeToPay className="unlock-agree" />}
           <a className="unlock-contractor" href="#/pro" onClick={() => closeUnlock()}>
-            Are you a contractor? See the Contractor plan ({dollars(plan('contractor').priceCents)}/month) →
+            Are you a contractor? See the Contractor plan ({planPrice(plan('contractor'))}) →
           </a>
         </>
       )}
@@ -162,8 +165,8 @@ function PlanOption({ plan, note, cta, onChoose, disabled, featured = false, aut
       <span className="eyebrow">{plan.interval ? 'Monthly' : 'One time'}</span>
       <h4>{plan.name}</h4>
       <div className="plan-price">
-        <b>{dollars(plan.priceCents)}</b>
-        <span>{plan.interval ? '/ month' : 'once, for this kitchen'}</span>
+        <b>{amount(plan.priceCents)}</b>
+        <span>{plan.interval ? 'CAD / month' : 'CAD once, for this kitchen'}</span>
       </div>
       <p className="plan-note">{note}</p>
       <ul className="plan-bullets">

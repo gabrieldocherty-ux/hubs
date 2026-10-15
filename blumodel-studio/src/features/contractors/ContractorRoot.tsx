@@ -5,6 +5,7 @@ import { Toasts } from '../../components/Toasts';
 import { AgreeToPay, DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
 import { ApiError, call } from '../../lib/api';
 import { usePayments } from '../../lib/config';
+import { amount } from '../../lib/money';
 import { clearSessionId, markCheckout, paymentError, takeCheckoutReturn, type CheckoutReturn } from '../../lib/payments';
 import { hrefFor, navigateHash } from '../../lib/router';
 import { useSession } from '../../store/useSession';
@@ -285,8 +286,8 @@ function Pitch({ brand = false, back = null }: { brand?: boolean; back?: Checkou
           <section className="pro-pitch-card" aria-label="Contractor plan">
             <span className="eyebrow">Contractor</span>
             <div className="pro-pitch-price">
-              <b>${CONTRACTOR.priceCents / 100}</b>
-              <span>/ month</span>
+              <b>{amount(CONTRACTOR.priceCents)}</b>
+              <span>CAD / month</span>
             </div>
             <p>Set up your company, add the cabinets you sell, and price kitchens at your markup. Cancel anytime.</p>
             {back?.outcome === 'cancel' && (

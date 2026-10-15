@@ -206,7 +206,8 @@ function stripeMock(userIdRef) {
     customer: 'cus_1',
     cancel_at_period_end: state.cancel,
     metadata: { kind: 'subscription', user_id: userIdRef.id, plan: state.plan },
-    items: { data: [{ id: 'si_1', current_period_end: end, price: { unit_amount: state.plan === 'contractor' ? 4000 : 1500 } }] },
+    currency: 'cad',
+    items: { data: [{ id: 'si_1', current_period_end: end, price: { unit_amount: state.plan === 'contractor' ? 9900 : 1500, currency: 'cad' } }] },
   });
   const fetch = async (url, init = {}) => {
     const u = new URL(url);
@@ -239,7 +240,7 @@ test('Stripe chain: subscription checkout â†’ signed webhook (300 s tolerance) â
     const completed = (id) => ({
       id,
       type: 'checkout.session.completed',
-      data: { object: { id: 'cs_test_sub', payment_status: 'paid', amount_total: 1500, currency: 'usd', client_reference_id: c.body.ref, customer: 'cus_1', subscription: 'sub_live_1', metadata: { kind: 'subscription', checkout_ref: c.body.ref } } },
+      data: { object: { id: 'cs_test_sub', payment_status: 'paid', amount_total: 1500, currency: 'cad', client_reference_id: c.body.ref, customer: 'cus_1', subscription: 'sub_live_1', metadata: { kind: 'subscription', checkout_ref: c.body.ref } } },
     });
     const now = Math.floor(Date.now() / 1000);
 
@@ -268,7 +269,8 @@ test('Stripe chain: subscription checkout â†’ signed webhook (300 s tolerance) â
     assert.equal(up.body.plan.id, 'contractor');
     const upd = mock.calls.find((x) => x.method === 'POST' && x.path === '/v1/subscriptions/sub_live_1');
     assert.equal(upd.form.get('items[0][id]'), 'si_1');
-    assert.equal(upd.form.get('items[0][price_data][unit_amount]'), '4000');
+    assert.equal(upd.form.get('items[0][price_data][unit_amount]'), '9900');
+    assert.equal(upd.form.get('items[0][price_data][currency]'), 'cad');
     assert.equal(upd.form.get('items[0][price_data][product]'), 'prod_1');
     assert.equal(upd.form.get('items[0][price_data][recurring][interval]'), 'month');
     assert.equal(upd.form.get('proration_behavior'), 'create_prorations');
@@ -295,11 +297,11 @@ test('Stripe chain: subscription checkout â†’ signed webhook (300 s tolerance) â
     s.setNow(grace + 1);
     assert.equal((await ann.get('/api/billing/me')).body.plan.id, 'free', 'after the grace, Free until it pays');
     s.setNow(null);
-    await hook(s, signed({ id: 'evt_paid', type: 'invoice.paid', data: { object: { id: 'in_2', billing_reason: 'subscription_cycle', amount_paid: 4000, subscription: 'sub_live_1', lines: { data: [{ period: { end: mock.end + 30 * 86400 } }] } } } }));
+    await hook(s, signed({ id: 'evt_paid', type: 'invoice.paid', data: { object: { id: 'in_2', billing_reason: 'subscription_cycle', amount_paid: 9900, currency: 'cad', subscription: 'sub_live_1', lines: { data: [{ period: { end: mock.end + 30 * 86400 } }] } } } }));
     me = (await ann.get('/api/billing/me')).body;
     assert.equal(me.subscription.status, 'active');
     assert.equal(me.plan.id, 'contractor');
-    assert.ok(me.receipts.some((r) => r.kind === 'renewal' && r.amountCents === 4000));
+    assert.ok(me.receipts.some((r) => r.kind === 'renewal' && r.amountCents === 9900 && r.currency === 'cad'));
 
     // The customer portal comes back to PUBLIC_URL.
     const portal = await ann.post('/api/billing/portal');

@@ -1,8 +1,9 @@
-import type { PlacedItem, Product, Room, Rotation, Surfaces } from '../../types';
+import type { BrandPrefs, PlacedItem, Product, Room, Rotation, Surfaces } from '../../types';
 import { getProduct, isOpening } from '../../data/catalog';
 import { WALL_ROTATION, placeOnWall, resolveAll, findOverlaps, outsideRoom, type Wall } from '../geometry';
 import { defaultFinishIndex } from '../finish';
 import { makeId } from '../id';
+import { brandPicker, type BrandSwap } from './brands';
 
 /**
  * Declarative kitchen layouts (BUILD_PLAN D-T2). A `LayoutSpec` says what goes where in terms
@@ -154,7 +155,7 @@ const ROLE_CANDIDATES: Record<Role, string[]> = {
 export interface PickPrefs {
   variant?: string;
   widthIn?: number;
-  /** Product ids to try before the built-ins (the brand-preference hook; unused so far). */
+  /** Product ids to try before the built-ins. (Brand preference is `brandPicker`, applied after the pick.) */
   preferIds?: string[];
 }
 
@@ -274,12 +275,18 @@ type Working = Resolvedslot | GapSlot | 'flex';
 const isGap = (s: Slot | Working): s is GapSlot => typeof s === 'object' && 'gap' in s;
 const isRole = (s: Working): s is Resolvedslot => typeof s === 'object' && 'pick' in s;
 
+/** A Basics pick as a `Picked`, for the pieces the builder names by id (hood, uppers, island). */
+const asPick = (product: Product, widthIn: number): Picked => ({ productId: product.id, product, widthIn });
+/** How far from the wall a piece hung at `inset` for the Basics one sits, so its back stays on the wall. */
+const insetFor = (chosen: Product, basic: Product, inset: number) => (chosen === basic ? inset : inset + (chosen.depthIn - basic.depthIn) / 2);
+
 /**
  * Lays one run of base units along a wall, then the window over its sink and the uppers over it.
  * Too-long runs lose optional slots first, then the last fixed ones; flex slots are filled with
- * standard cabinet sizes.
+ * standard cabinet sizes. `swap` (the kitchen's brand preference) can replace any pick with a
+ * chosen brand's product of the same type and size, so the run's geometry is the same either way.
  */
-export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: string[] = []): PlacedItem[] {
+export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: string[] = [], swap?: BrandSwap): PlacedItem[] {
   const { wall, start, end, opts = {} } = run;
   let working: Working[] = [];
   for (const s of run.slots) {
@@ -287,7 +294,8 @@ export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: stri
       working.push(s);
       continue;
     }
-    const pick = pickProduct(s.role, { variant: s.variant, widthIn: s.widthIn });
+    const basic = pickProduct(s.role, { variant: s.variant, widthIn: s.widthIn });
+    const pick = basic && swap ? swap(basic, s.variant) : basic;
     if (!pick) {
       notes.push(`No product for a ${s.role}; left a gap.`);
       continue;
@@ -320,7 +328,10 @@ export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: stri
   /** `id: null` is empty space: filler strips the cabinet sizes can't cover. */
   const seq: { id: string | null; width: number }[] = [];
   const fillIds = (chunk: { role: 'base' | 'drawer'; width: number }[]) =>
-    chunk.map((c) => ({ id: pickProduct(c.role, { widthIn: c.width })?.productId ?? null, width: c.width }));
+    chunk.map((c) => {
+      const basic = pickProduct(c.role, { widthIn: c.width });
+      return { id: (basic && swap ? swap(basic) : basic)?.productId ?? null, width: c.width };
+    });
   let carry = 0;
   working.forEach((s, i) => {
     const side = isRange(working[i + 1]) ? 'end' : isRange(working[i - 1]) ? 'start' : null;
@@ -378,21 +389,24 @@ export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: stri
       const blocked = clear.some(([c0, c1]) => Math.min(s1, c1) - Math.max(s0, c0) > 0);
       if (p.product.kind === 'range') {
         if (opts.hood === 'none') continue;
-        const hood = getProduct('hood-chimney');
-        if (!hood) continue;
+        const basicHood = getProduct('hood-chimney');
+        if (!basicHood) continue;
         const hw = [30, 36, 48].find((w) => w >= p.width) ?? 48;
-        const pos = placeOnWall(wall, p.along, 10, room);
+        const hood = swap ? swap(asPick(basicHood, hw)).product : basicHood;
+        const pos = placeOnWall(wall, p.along, insetFor(hood, basicHood, 10), room);
         out.push(placed(hood, pos.x, pos.y, rotation, surfaces, hw));
       } else if (p.product.kind === 'fridge' && p.product.variant === 'french') {
-        const bridge = getProduct('bridge');
-        if (!bridge || blocked) continue;
-        const pos = placeOnWall(wall, p.along, 12, room);
+        const basicBridge = getProduct('bridge');
+        if (!basicBridge || blocked) continue;
+        const bridge = swap ? swap(asPick(basicBridge, p.width)).product : basicBridge;
+        const pos = placeOnWall(wall, p.along, insetFor(bridge, basicBridge, 12), room);
         out.push(placed(bridge, pos.x, pos.y, rotation, surfaces, p.width));
       } else if (['base', 'sink', 'dishwasher', 'wine'].includes(p.product.kind) && !blocked) {
         const glass = opts.glassUppers ? getProduct('wall-glass') : undefined;
-        const upper = glass?.widthOptions?.includes(p.width) ? glass : getProduct('wall');
-        if (!upper) continue;
-        const pos = placeOnWall(wall, p.along, 6, room);
+        const basicUpper = glass?.widthOptions?.includes(p.width) ? glass : getProduct('wall');
+        if (!basicUpper) continue;
+        const upper = swap ? swap(asPick(basicUpper, p.width)).product : basicUpper;
+        const pos = placeOnWall(wall, p.along, insetFor(upper, basicUpper, 6), room);
         out.push(placed(upper, pos.x, pos.y, rotation, surfaces, p.width));
       }
     }
@@ -421,11 +435,13 @@ export function prune(items: PlacedItem[], room: Room): { kept: PlacedItem[]; dr
   return { kept, dropped };
 }
 
-/** The island, its stools along the seating side and pendants over it. */
-export function layIsland(spec: IslandSpec, surfaces: Surfaces): PlacedItem[] {
-  const island = getProduct('island');
-  if (!island) return [];
-  const out: PlacedItem[] = [placed(island, spec.x, spec.y, spec.rotation ?? 0, surfaces, spec.widthIn, spec.finishIndex)];
+/** The island, its stools along the seating side and pendants over it (`swap`: the brand preference, as in `layRun`). */
+export function layIsland(spec: IslandSpec, surfaces: Surfaces, swap?: BrandSwap): PlacedItem[] {
+  const basicIsland = getProduct('island');
+  if (!basicIsland) return [];
+  const island = swap ? swap(asPick(basicIsland, spec.widthIn)).product : basicIsland;
+  // A brand's island or pendant wears its own first finish; the spec's finish index is the Basics piece's.
+  const out: PlacedItem[] = [placed(island, spec.x, spec.y, spec.rotation ?? 0, surfaces, spec.widthIn, island === basicIsland ? spec.finishIndex : undefined)];
   const ns = (spec.rotation ?? 0) === 0;
   const side: Wall = spec.seatSide ?? (ns ? 'south' : 'east');
   const W = spec.widthIn;
@@ -446,10 +462,11 @@ export function layIsland(spec: IslandSpec, surfaces: Surfaces): PlacedItem[] {
       out.push(placed(stool, at.x, at.y, at.r, surfaces, undefined, 1));
     }
   }
-  const pendant = getProduct('pendant-dome');
-  if (pendant) {
+  const basicPendant = getProduct('pendant-dome');
+  if (basicPendant) {
+    const pendant = swap ? swap(asPick(basicPendant, basicPendant.widthIn)).product : basicPendant;
     for (let l = 0; l < spec.pendants; l++) {
-      out.push(placed(pendant, ns ? alongX(l, spec.pendants) : spec.x, ns ? spec.y : alongY(l, spec.pendants), 0, surfaces, undefined, 1));
+      out.push(placed(pendant, ns ? alongX(l, spec.pendants) : spec.x, ns ? spec.y : alongY(l, spec.pendants), 0, surfaces, undefined, pendant === basicPendant ? 1 : undefined));
     }
   }
   return out;
@@ -464,24 +481,65 @@ function openingItem(o: OpeningSpec, room: Room, surfaces: Surfaces): PlacedItem
   return placeProduct(o.productId, pos.x, pos.y, WALL_ROTATION[o.wall], surfaces, o.widthIn, o.finishIndex);
 }
 
-/**
- * Builds a spec into placed items. Order (which decides who wins a collision in `prune`):
- * fixed pieces, then (with `openingsFirst`) the openings, the runs, the island, rugs, the
- * openings, then the rest of the decor.
- */
-export function buildFromSpec(spec: LayoutSpec, room: Room, surfaces: Surfaces): BuildResult {
-  const notes: string[] = [];
+/** Every piece of a spec in build order, before `prune`. */
+function collect(spec: LayoutSpec, room: Room, surfaces: Surfaces, notes: string[], swap?: BrandSwap): PlacedItem[] {
   const items: PlacedItem[] = [];
   const push = (it: PlacedItem | null) => it && items.push(it);
   const isRug = (f: FixedSpec) => getProduct(f.productId)?.kind === 'rug';
 
   for (const f of spec.fixed ?? []) push(fixedItem(f, surfaces));
   if (spec.openingsFirst) for (const o of spec.openings ?? []) push(openingItem(o, room, surfaces));
-  for (const run of spec.runs) items.push(...layRun(run, room, surfaces, notes));
-  if (spec.island) items.push(...layIsland(spec.island, surfaces));
+  for (const run of spec.runs) items.push(...layRun(run, room, surfaces, notes, swap));
+  if (spec.island) items.push(...layIsland(spec.island, surfaces, swap));
   for (const f of (spec.decor ?? []).filter(isRug)) push(fixedItem(f, surfaces));
   if (!spec.openingsFirst) for (const o of spec.openings ?? []) push(openingItem(o, room, surfaces));
   for (const f of (spec.decor ?? []).filter((d) => !isRug(d))) push(fixedItem(f, surfaces));
+  return items;
+}
+
+/**
+ * A brand piece must never cost the kitchen a piece the Basics build keeps. `branded` and `plain`
+ * are the same spec built with and without the brand preference: piece for piece the same slots
+ * (when a swap changed what else gets placed, the counts differ, and the plain build is used if
+ * the branded one keeps fewer pieces). A branded piece `prune` would drop where its Basics twin
+ * survives goes back to the Basics piece; a Basics piece pushed out by a brand piece before it
+ * gets the nearest such piece reverted. Repeats until nothing is lost.
+ */
+function keepEveryPiece(branded: PlacedItem[], plain: PlacedItem[], room: Room): PlacedItem[] {
+  const plainKept = new Set(prune(plain, room).kept);
+  if (branded.length !== plain.length) return prune(branded, room).kept.length >= plainKept.size ? branded : plain;
+  let items = branded;
+  for (let round = 0; round < 40; round++) {
+    const dropped = new Set(prune(items, room).dropped);
+    const lost = items.findIndex((it, i) => dropped.has(it) && plainKept.has(plain[i]));
+    if (lost < 0) return items;
+    let revert = lost;
+    if (items[lost] === plain[lost]) {
+      const at = items[lost];
+      const culprits = items
+        .map((it, j) => ({ j, d: Math.hypot(it.x - at.x, it.y - at.y) }))
+        .filter(({ j }) => j < lost && items[j] !== plain[j])
+        .sort((p, q) => p.d - q.d);
+      if (!culprits.length) return plain;
+      revert = culprits[0].j;
+    }
+    items = items.map((it, i) => (i === revert ? plain[i] : it));
+  }
+  return plain;
+}
+
+/**
+ * Builds a spec into placed items. Order (which decides who wins a collision in `prune`):
+ * fixed pieces, then (with `openingsFirst`) the openings, the runs, the island, rugs, the
+ * openings, then the rest of the decor. `brands` (the kitchen's preferred brands) puts a chosen
+ * brand's product in every run, upper, hood, island and pendant slot it sells in that size;
+ * without it the output is exactly the BluModel Basics build.
+ */
+export function buildFromSpec(spec: LayoutSpec, room: Room, surfaces: Surfaces, brands?: BrandPrefs): BuildResult {
+  const notes: string[] = [];
+  const swap = brandPicker(brands, { ceilingIn: room.ceilingIn });
+  let items = collect(spec, room, surfaces, notes, swap);
+  if (swap) items = keepEveryPiece(items, collect(spec, room, surfaces, [], undefined), room);
 
   const { kept, dropped } = prune(items, room);
   const solid = dropped.filter((i) => {

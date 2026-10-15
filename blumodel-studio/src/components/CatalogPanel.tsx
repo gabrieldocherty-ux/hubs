@@ -12,6 +12,7 @@ import { money } from '../lib/format';
 import { finishList } from '../lib/finish';
 import { hrefFor } from '../lib/router';
 import { useContractorCatalog, useKitchenPriceOf } from '../features/contractors';
+import { filterToPrefs, hasBrandPrefs } from '../lib/generate/brands';
 
 const ALL = 'all';
 
@@ -230,6 +231,9 @@ export function CatalogPanel() {
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<CategoryId | typeof ALL>(ALL);
   const [brand, setBrand] = useState<string>(ALL);
+  // "Your brands": on by default when the kitchen was set up with preferred brands (setup wizard).
+  const [mine, setMine] = useState(true);
+  const brandPrefs = useDesignStore((s) => s.doc.brandPrefs);
   // A contractor sees their own catalog first and only the brands they carry (§4.3).
   const products = useContractorCatalog(useCatalog((s) => s.products));
   const priceOf = useKitchenPriceOf();
@@ -255,15 +259,16 @@ export function CatalogPanel() {
   const inCategory = useMemo(() => products.filter((p) => cat === ALL || p.category === cat), [products, cat]);
   const brands = useMemo(() => brandFacets(inCategory), [inCategory]);
   const activeBrand = brand !== ALL && brands.includes(brand) ? brand : ALL;
+  const prefsOn = hasBrandPrefs(brandPrefs) && mine && activeBrand === ALL;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return inCategory.filter(
+    return (prefsOn ? filterToPrefs(inCategory, brandPrefs) : inCategory).filter(
       (p) =>
         (activeBrand === ALL || p.brand === activeBrand) &&
         (!q || `${p.name} ${p.brand} ${p.line ?? ''} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb}`.toLowerCase().includes(q)),
     );
-  }, [inCategory, activeBrand, query]);
+  }, [inCategory, activeBrand, query, prefsOn, brandPrefs]);
 
   const grouped = useMemo(() => {
     if (cat !== ALL || query || activeBrand !== ALL) return [{ id: 'results', label: '', items: results }];
@@ -321,9 +326,14 @@ export function CatalogPanel() {
           </button>
         ))}
       </div>
-      {brands.length > 1 && (
+      {(brands.length > 1 || hasBrandPrefs(brandPrefs)) && (
         <div className="chips chips--brands" role="group" aria-label="Brands">
-          <button aria-pressed={activeBrand === ALL} className={activeBrand === ALL ? 'chip on' : 'chip'} onClick={() => setBrand(ALL)}>
+          {hasBrandPrefs(brandPrefs) && (
+            <button aria-pressed={prefsOn} className={prefsOn ? 'chip on' : 'chip'} onClick={() => (setBrand(ALL), setMine(true))} title="The brands chosen when this kitchen was set up">
+              Your brands
+            </button>
+          )}
+          <button aria-pressed={activeBrand === ALL && !prefsOn} className={activeBrand === ALL && !prefsOn ? 'chip on' : 'chip'} onClick={() => (setBrand(ALL), setMine(false))}>
             All brands
           </button>
           {brands.map((b) => (

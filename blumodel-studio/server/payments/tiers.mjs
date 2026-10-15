@@ -39,8 +39,10 @@ export const REVISIONS = PACK.revisions;
 /** One request holds at most this many packs (40 products); a bigger job is two requests. */
 export const MAX_PACKS = 5;
 export const MAX_ITEMS = MAX_PACKS * PRODUCTS_PER_PACK;
-/** The app's currency (Stripe Checkout and every stored amount). */
-export const CURRENCY = 'usd';
+import { CURRENCY } from '../lib/plans.mjs';
+
+/** The app's currency for anything new (CAD since 2026-10-15); a stored order keeps its own. */
+export { CURRENCY };
 
 /**
  * The retired per-product tiers. Never used to price anything new: only to label and date

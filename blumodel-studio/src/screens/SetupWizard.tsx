@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import type { Room } from '../types';
+import { useEffect, useMemo, useState } from 'react';
+import type { BrandCategory, BrandPrefs, Room } from '../types';
 import { api, ApiError } from '../lib/api';
 import { hrefFor, navigate } from '../lib/router';
 import { TEMPLATES, type TemplateId } from '../data/templates';
@@ -12,9 +12,16 @@ import { AccountMenu } from '../components/AccountMenu';
 import { Check, Logo, Wordmark } from '../components/Icons';
 import { feetInches } from '../lib/format';
 import { CameraIcon } from '../features/generate/icons';
+import { useCatalog, useCatalogVersion } from '../store/useCatalog';
+import { brandsForCategory } from '../catalog/retail';
+import { BRAND_CATEGORIES, brandKey, brandOptions, brandPrefsLabel, brandShare, cleanBrandPrefs, hasBrandPrefs, type BrandCount, type BrandOption } from '../lib/generate/brands';
 import '../features/generate/generate.css';
+import './setupWizard.css';
 
-const STEPS = ['Basics', 'Room', 'Layout'] as const;
+const STEPS = ['Basics', 'Room', 'Layout', 'Brands'] as const;
+const BRAND_STEP = 3;
+/** Brand chips shown per category before "Show all". */
+const BRANDS_SHOWN = 6;
 
 const SIZES: { label: string; room: Room }[] = [
   { label: 'Compact · 10′ × 10′', room: { widthIn: 120, lengthIn: 120, ceilingIn: 96 } },
@@ -29,8 +36,11 @@ export function SetupWizard() {
   const [client, setClient] = useState('');
   const [room, setRoom] = useState<Room>(DEFAULT_ROOM);
   const [templateId, setTemplateId] = useState<TemplateId | null>('l-island');
+  const [brands, setBrands] = useState<BrandPrefs>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const retail = useRetailBrands();
+  const catalogVersion = useCatalogVersion();
 
   const fits = (t: (typeof TEMPLATES)[number]) => room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
   const layoutOk = templateId === null || fits(TEMPLATES.find((t) => t.id === templateId)!);
@@ -38,7 +48,14 @@ export function SetupWizard() {
 
   // New kitchens start plain: neutral finishes, no colour palette (those live in Room & finishes).
   const layoutPreviews = useMemo(() => TEMPLATES.map((t) => ({ t, doc: composeNewKitchen('', room, fits(t) ? t.id : null) })), [room]);
-  const preview = useMemo(() => composeNewKitchen(kitchenName, room, layoutOk ? templateId : null), [kitchenName, room, templateId, layoutOk]);
+  // The chosen brands fill every slot one of them sells in that size (see brandPicker). The
+  // catalog version is a dependency because the retail products register after the page opens.
+  const brandPrefs = useMemo(() => cleanBrandPrefs(brands), [brands]);
+  const preview = useMemo(
+    () => composeNewKitchen(kitchenName, room, layoutOk ? templateId : null, brandPrefs),
+    [kitchenName, room, templateId, layoutOk, brandPrefs, catalogVersion],
+  );
+  const share = useMemo(() => brandShare(preview, brandPrefs), [preview, brandPrefs]);
 
   const create = async () => {
     setBusy(true);
@@ -53,6 +70,13 @@ export function SetupWizard() {
   };
 
   const canNext = step !== 2 || layoutOk;
+  const toggleBrand = (cat: BrandCategory, name: string) =>
+    setBrands((b) => {
+      const list = b[cat] ?? [];
+      const on = list.some((n) => brandKey(n) === brandKey(name));
+      return { ...b, [cat]: on ? list.filter((n) => brandKey(n) !== brandKey(name)) : [...list, name] };
+    });
+  const anyBrand = (cat: BrandCategory) => setBrands((b) => ({ ...b, [cat]: [] }));
 
   return (
     <div className="wizard">
@@ -148,6 +172,16 @@ export function SetupWizard() {
             </>
           )}
 
+          {step === BRAND_STEP && (
+            <>
+              <h1>Choose your brands.</h1>
+              <p className="wizard-sub">
+                Optional. Pick brands you like and we use their products wherever one fits your {templateId && layoutOk ? 'layout' : 'kitchen'}; BluModel Basics fill in the rest. Add products shows your brands first.
+              </p>
+              <BrandStep retail={retail} brands={brands} onToggle={toggleBrand} onAny={anyBrand} />
+            </>
+          )}
+
           {error && <div className="auth-error">{error}</div>}
 
           <div className="wizard-nav">
@@ -182,10 +216,105 @@ export function SetupWizard() {
                 {feetInches(room.widthIn)} × {feetInches(room.lengthIn)} · {preview.items.length} pieces
               </span>
               <span className="muted">Plain finishes · palettes in Room &amp; finishes</span>
+              {step === BRAND_STEP && (
+                <span className="wiz-brand-share" data-testid="wiz-brand-share">
+                  {brandPrefsLabel(brandPrefs)}
+                  {hasBrandPrefs(brandPrefs) && share.inCategories > 0 ? ` · ${share.fromBrands} of ${share.inCategories} pieces from your brands` : ''}
+                </span>
+              )}
             </div>
           </div>
         </aside>
       </main>
     </div>
+  );
+}
+
+/**
+ * The retail catalog's brand counts per wizard category (`brandsForCategory`, which loads the
+ * retail chunk and registers its products so the layout can place them). Null while loading.
+ * Also asks for the server catalog, so partner brands are offered too.
+ */
+function useRetailBrands(): Partial<Record<BrandCategory, BrandCount[]>> | null {
+  const [retail, setRetail] = useState<Partial<Record<BrandCategory, BrandCount[]>> | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void useCatalog.getState().load();
+    Promise.all(BRAND_CATEGORIES.map((c) => brandsForCategory(c.id).then((list) => [c.id, list] as const)))
+      .then((rows) => alive && setRetail(Object.fromEntries(rows)))
+      .catch(() => alive && setRetail({}));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return retail;
+}
+
+/** "RONA, Home Depot +2" */
+function storesLabel(names: string[]): string {
+  return names.length > 2 ? `${names.slice(0, 2).join(', ')} +${names.length - 2}` : names.join(', ');
+}
+
+function BrandStep({
+  retail,
+  brands,
+  onToggle,
+  onAny,
+}: {
+  retail: Partial<Record<BrandCategory, BrandCount[]>> | null;
+  brands: BrandPrefs;
+  onToggle: (cat: BrandCategory, name: string) => void;
+  onAny: (cat: BrandCategory) => void;
+}) {
+  const products = useCatalog((s) => s.products);
+  const options = useMemo(() => brandOptions(products, retail ?? {}), [products, retail]);
+  const [open, setOpen] = useState<Partial<Record<BrandCategory, boolean>>>({});
+  return (
+    <div className="wiz-brands" aria-busy={retail === null}>
+      {BRAND_CATEGORIES.map((c) => {
+        const chosen = new Set((brands[c.id] ?? []).map(brandKey));
+        const list = options[c.id];
+        // A chosen brand stays visible when the list is folded.
+        const shown = open[c.id] ? list : list.filter((o, i) => i < BRANDS_SHOWN || chosen.has(o.key));
+        return (
+          <fieldset key={c.id} className="wiz-brand-cat" data-cat={c.id}>
+            <legend>
+              <b>{c.label}</b>
+              <span>{c.blurb}</span>
+            </legend>
+            <div className="wiz-brand-picks">
+              <button type="button" className={chosen.size === 0 ? 'wiz-brand on' : 'wiz-brand'} aria-pressed={chosen.size === 0} onClick={() => onAny(c.id)}>
+                <b>Any</b>
+                <span>No preference</span>
+              </button>
+              {shown.map((o) => (
+                <BrandChip key={o.key} option={o} on={chosen.has(o.key)} onClick={() => onToggle(c.id, o.brand)} />
+              ))}
+              {retail === null && <span className="wiz-brand-loading">Loading brands…</span>}
+            </div>
+            {list.length > BRANDS_SHOWN && (
+              <button type="button" className="wiz-brand-more" aria-expanded={!!open[c.id]} onClick={() => setOpen((o) => ({ ...o, [c.id]: !o[c.id] }))}>
+                {open[c.id] ? 'Show fewer' : `Show all ${list.length} brands`}
+              </button>
+            )}
+          </fieldset>
+        );
+      })}
+    </div>
+  );
+}
+
+function BrandChip({ option, on, onClick }: { option: BrandOption; on: boolean; onClick: () => void }) {
+  const count = `${option.products} product${option.products === 1 ? '' : 's'}`;
+  const stores = storesLabel(option.stores);
+  const title = option.stores.length ? `${option.brand}: ${count}, at ${option.stores.join(', ')}` : `${option.brand}: ${count}`;
+  return (
+    <button type="button" className={on ? 'wiz-brand on' : 'wiz-brand'} aria-pressed={on} onClick={onClick} title={title}>
+      <b>{option.brand}</b>
+      <span>
+        {count}
+        {stores ? ` · ${stores}` : ''}
+      </span>
+    </button>
   );
 }

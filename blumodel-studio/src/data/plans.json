@@ -3,6 +3,7 @@
     "id": "free",
     "name": "Free",
     "priceCents": 0,
+    "currency": "cad",
     "interval": null,
     "tagline": "For anyone designing a kitchen",
     "bullets": [
@@ -16,6 +17,7 @@
     "id": "kitchen_unlock",
     "name": "Kitchen unlock",
     "priceCents": 500,
+    "currency": "cad",
     "interval": null,
     "tagline": "One kitchen, every export, forever",
     "bullets": [
@@ -29,6 +31,7 @@
     "id": "unlimited",
     "name": "Unlimited",
     "priceCents": 1500,
+    "currency": "cad",
     "interval": "month",
     "tagline": "For designers and frequent users",
     "bullets": [
@@ -40,7 +43,8 @@
   {
     "id": "contractor",
     "name": "Contractor",
-    "priceCents": 4000,
+    "priceCents": 9900,
+    "currency": "cad",
     "interval": "month",
     "tagline": "Show your customers the exact cabinets you sell, in their kitchen, at your price.",
     "bullets": [

@@ -4,7 +4,8 @@ import { ApiError } from '../../lib/api';
 import { settleDemoCheckout } from '../../lib/payments';
 import { navigateHash } from '../../lib/router';
 import { useSession } from '../../store/useSession';
-import { billingApi, dollars, type CheckoutWire } from './api';
+import { money } from '../../lib/money';
+import { billingApi, type CheckoutWire } from './api';
 import { loadEntitlements } from './entitlements';
 import './billing.css';
 
@@ -77,7 +78,7 @@ export default function DemoPlanPay({ checkoutRef }: { checkoutRef: string }) {
             <span className="eyebrow">Checkout · Demo</span>
             <h1 id="demo-pay-title">{what}</h1>
             <div className="demo-pay-amount">
-              <b>{dollars(checkout.amountCents)}</b>
+              <b>{money(checkout.amountCents, checkout.currency)}</b>
               <span>{checkout.kind === 'subscription' ? 'per month, renews monthly until you cancel' : 'one time'}</span>
             </div>
             {checkout.status === 'completed' ? (

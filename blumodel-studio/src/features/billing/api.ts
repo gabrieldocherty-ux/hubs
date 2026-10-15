@@ -18,7 +18,7 @@ export interface Receipt {
 export interface BillingMe {
   plan: PlanState;
   subscription: Subscription | null;
-  unlocks: { projectId: string; name: string; amountCents: number; createdAt: number }[];
+  unlocks: { projectId: string; name: string; amountCents: number; currency: string; createdAt: number }[];
   receipts: Receipt[];
   payments: 'demo' | 'stripe';
   demo: boolean;
@@ -40,12 +40,16 @@ export interface CheckoutWire {
 
 export interface ProviderStats {
   active: { unlimited: number; contractor: number };
+  /** CAD; the `…ByCurrency` maps add anything still in USD from before 2026-10-15. */
   mrrCents: number;
+  mrrByCurrency?: Record<string, number>;
   pastDue: number;
   cancelling: number;
   unlocks: number;
   unlockCents: number;
+  unlockByCurrency?: Record<string, number>;
   collected30dCents: number;
+  collected30dByCurrency?: Record<string, number>;
   churn30d: number;
 }
 
@@ -76,5 +80,4 @@ export function goToCheckout(url: string) {
   } else location.assign(url);
 }
 
-export const dollars = (cents: number) =>
-  (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 });
+

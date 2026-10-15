@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
 import plansJson from '../../data/plans.json';
 import { call } from '../../lib/api';
+import { planPrice } from '../../lib/money';
 import type { PaymentsMode } from '../../lib/config';
 import { useSession } from '../../store/useSession';
 import type { Plan, PlanId } from '../../types/platform';
@@ -67,8 +68,8 @@ const dollars = (cents: number) => `$${(cents / 100).toLocaleString('en-US', { m
 
 function priceLine(p: Plan): { amount: string; per: string } {
   if (p.priceCents === 0) return { amount: '$0', per: 'free forever' };
-  if (p.interval === 'month') return { amount: dollars(p.priceCents), per: 'a month' };
-  return { amount: dollars(p.priceCents), per: p.id === 'kitchen_unlock' ? 'once, per kitchen' : 'once' };
+  if (p.interval === 'month') return { amount: dollars(p.priceCents), per: 'CAD a month' };
+  return { amount: dollars(p.priceCents), per: p.id === 'kitchen_unlock' ? 'CAD once, per kitchen' : 'CAD once' };
 }
 
 /** A plan card's button. `href: null` is a plan that can't be bought yet (payments not open). */
@@ -194,7 +195,7 @@ function ContractorProgram() {
     <section className="mk-band" id="contractor" aria-labelledby="contractor-title">
       <div className="mk-band-inner mk-band-inner--stack">
         <div className="mk-band-copy">
-          <span className="mk-eyebrow mk-eyebrow--light">The Contractor program · $40/month</span>
+          <span className="mk-eyebrow mk-eyebrow--light">The Contractor program · {planPrice(PLANS.find((p) => p.id === 'contractor')!)}</span>
           <h2 id="contractor-title">Show your customers the exact cabinets you sell, in their kitchen, at your price.</h2>
           <p className="mk-band-lede">For kitchen contractors, cabinet shops and remodelers. Everything in Unlimited, plus:</p>
         </div>

@@ -36,12 +36,13 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-export const LAST_UPDATED = '14 October 2026';
+export const LAST_UPDATED = '15 October 2026';
 
 const PLANS = plansJson as Plan[];
+/** "$15 CAD": every price is in Canadian dollars since 15 October 2026. */
 const price = (id: Plan['id']) => {
   const c = PLANS.find((p) => p.id === id)?.priceCents ?? 0;
-  return `US$${(c / 100).toFixed(c % 100 ? 2 : 0)}`;
+  return `$${(c / 100).toFixed(c % 100 ? 2 : 0)} CAD`;
 };
 
 /** The words that depend on who runs the site. */
@@ -148,8 +149,9 @@ export function termsDoc(w: LegalWords): LegalDoc {
               <b>Custom 3D models</b> are priced per product by complexity, with optional extra finishes and rush delivery. The order form shows the exact amount before you pay.
             </p>
             <p>
-              Prices are in US dollars and are shown before you pay; the checkout page shows the final amount, including any tax. Someone else’s plan never covers your exports,
-              even of a kitchen they shared with you.
+              Prices are in Canadian dollars (CAD) and are shown before you pay; the checkout page shows the final amount, including any tax. Payments made before 15 October 2026
+              were in US dollars: their receipts stay in US dollars, and a plan started then renews at its price in US dollars until you change or cancel it. Someone else’s plan
+              never covers your exports, even of a kitchen they shared with you.
             </p>
           </>
         ),

@@ -1,4 +1,5 @@
 import type { BrandCategory, BrandPrefs, DesignDoc, Kind, Product } from '../../types';
+import { BASICS_BRAND } from '../../data/builtins';
 import { getProduct, isBuiltin } from '../../data/catalog';
 import { useCatalog } from '../../store/useCatalog';
 import type { Picked } from './layout';
@@ -7,23 +8,21 @@ import type { Picked } from './layout';
  * Preferred brands: the setup wizard's "Choose your brands" step, the layout builder's brand
  * preference, and the default of Add products.
  *
- * Two sources feed the brand list. Products in the catalog registry (built-ins, the server's
- * catalog, a contractor's own lines) are what the layout can actually place. The retail catalog
- * (`catalog/retail/*.json`, researched by the retail package) adds how many products each brand
- * has and which stores carry it, through the summary in `src/data/retailBrands.json`. A brand the
- * layout can't place yet still counts as a preference: the builder uses it wherever one of its
- * products fits and falls back to BluModel Basics everywhere else.
+ * Two sources feed the brand list. Products in the catalog registry (built-ins, the retail
+ * catalog once `loadRetail` has registered it, the server's brand products, a contractor's own
+ * lines) are what the layout can actually place. The retail catalog's brand counts
+ * (`brandsForCategory` in `src/catalog/retail.ts`) add how many products each brand has and which
+ * stores carry it. A brand the layout can't place in some slot still counts as a preference: the
+ * builder uses it wherever one of its products fits and falls back to BluModel Basics elsewhere.
  */
 
 export type { BrandCategory, BrandPrefs };
-
-/** The name the built-in products go by (decision 2026-10-15: the fictional built-in brands are relabelled). */
-export const BASICS_BRAND = 'BluModel Basics';
+export { BASICS_BRAND };
 
 export const BRAND_CATEGORIES: { id: BrandCategory; label: string; blurb: string }[] = [
   { id: 'cabinets', label: 'Cabinets', blurb: 'Base, wall and tall cabinets' },
   { id: 'appliances', label: 'Appliances', blurb: 'Ranges, fridges, dishwashers and hoods' },
-  { id: 'sinks', label: 'Sinks & faucets', blurb: 'Sinks and the taps over them' },
+  { id: 'sinks', label: 'Sinks & faucets', blurb: 'The sink and the base it sits in' },
   { id: 'lighting', label: 'Lighting', blurb: 'Pendants over the island' },
 ];
 
@@ -44,6 +43,8 @@ export function brandKey(name: string): string {
     .trim()
     .toLowerCase();
 }
+
+const BASICS_KEY = brandKey(BASICS_BRAND);
 
 /** True for a BluModel Basics product: the built-ins, whatever brand name they carry this release. */
 export function isBasics(p: Product): boolean {
@@ -92,80 +93,36 @@ export function isPreferred(p: Product, prefs: BrandPrefs | undefined): boolean 
   return keys.size > 0 && keys.has(brandKey(brandName(p)));
 }
 
-// ─── The retail catalog's brand list ──────────────────────────────────────
-
-/** One brand of the retail catalog in one wizard category. */
-export interface RetailBrand {
-  brand: string;
-  category: BrandCategory;
-  /** Researched products of this brand in the category. */
-  products: number;
-  /** Stores that carry it, most products first. */
-  stores: string[];
-}
-
-export interface RetailBrandList {
-  /** The newest `checkedAt` of the retail files. */
-  checkedAt: string | null;
-  brands: RetailBrand[];
-}
-
-/** Retail-catalog categories → the wizard's four. Countertops, flooring and the rest aren't brand-picked here. */
-export const RETAIL_CATEGORY: Record<string, BrandCategory> = {
-  cabinets: 'cabinets',
-  appliances: 'appliances',
-  hoods: 'appliances',
-  sinks: 'sinks',
-  faucets: 'sinks',
-  lighting: 'lighting',
-};
-
-interface RetailFile {
-  checkedAt?: unknown;
-  products?: unknown;
-}
-
-/**
- * Summarises retail-catalog files (`{ checkedAt, products: [{ brand, category, stores: [{ store }] }] }`)
- * into one row per brand and wizard category. Spellings that share a `brandKey` merge under the
- * shortest one ("Eklipse (EBSU)" joins "Eklipse"). Sorted by category, then products, then name.
- */
-export function summarizeRetail(files: RetailFile[]): RetailBrandList {
-  let checkedAt: string | null = null;
-  const rows = new Map<string, { names: Map<string, number>; category: BrandCategory; products: number; stores: Map<string, number> }>();
-  for (const f of files) {
-    if (!f || typeof f !== 'object' || !Array.isArray(f.products)) continue;
-    if (typeof f.checkedAt === 'string' && /^\d{4}-\d{2}-\d{2}/.test(f.checkedAt) && (!checkedAt || f.checkedAt > checkedAt)) checkedAt = f.checkedAt.slice(0, 10);
-    for (const p of f.products as Record<string, unknown>[]) {
-      if (!p || typeof p !== 'object') continue;
-      const category = RETAIL_CATEGORY[String(p.category ?? '')];
-      const brand = typeof p.brand === 'string' ? p.brand.replace(/\s+/g, ' ').trim() : '';
-      if (!category || !brand) continue;
-      const id = `${category}|${brandKey(brand)}`;
-      const row = rows.get(id) ?? { names: new Map(), category, products: 0, stores: new Map() };
-      row.names.set(brand, (row.names.get(brand) ?? 0) + 1);
-      row.products++;
-      const stores = new Set<string>();
-      for (const s of Array.isArray(p.stores) ? (p.stores as Record<string, unknown>[]) : []) {
-        const name = s && typeof s.store === 'string' ? s.store.trim() : '';
-        if (name) stores.add(name);
-      }
-      for (const s of stores) row.stores.set(s, (row.stores.get(s) ?? 0) + 1);
-      rows.set(id, row);
+/** "3 brands" / "Any brand" summary of a kitchen's choices, for the wizard's preview card. */
+export function brandPrefsLabel(prefs: BrandPrefs | undefined): string {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const c of BRAND_CATEGORIES) {
+    for (const n of prefs?.[c.id] ?? []) {
+      if (seen.has(brandKey(n))) continue;
+      seen.add(brandKey(n));
+      names.push(n);
     }
   }
-  const order = BRAND_CATEGORIES.map((c) => c.id);
-  const brands = [...rows.values()].map((r) => ({
-    brand: [...r.names.keys()].sort((a, b) => a.length - b.length || a.localeCompare(b))[0],
-    category: r.category,
-    products: r.products,
-    stores: [...r.stores].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([s]) => s),
-  }));
-  brands.sort((a, b) => order.indexOf(a.category) - order.indexOf(b.category) || b.products - a.products || a.brand.localeCompare(b.brand));
-  return { checkedAt, brands };
+  if (!names.length) return 'Any brand';
+  return names.length <= 2 ? names.join(' & ') : `${names.length} chosen brands`;
 }
 
 // ─── What the wizard offers ───────────────────────────────────────────────
+
+/**
+ * One brand in one category as the retail catalog counts it: the shape `brandsForCategory`
+ * (src/catalog/retail.ts) and `GET /api/catalog/brands?category=` return.
+ */
+export interface BrandCount {
+  brand: string;
+  /** Products of this brand in the category. */
+  products: number;
+  /** Store names that list them, most listings first. */
+  stores: string[];
+  /** True for BluModel Basics. */
+  basics?: boolean;
+}
 
 export interface BrandOption {
   brand: string;
@@ -175,47 +132,44 @@ export interface BrandOption {
   products: number;
   /** Of those, the ones in the app's catalog that the layout can place today. */
   inCatalog: number;
+  /** Stores that carry it, most listings first. */
   stores: string[];
-  basics: boolean;
 }
 
 /** Catalog products that can stand for a brand: not placeholders for missing products, not other kitchens' snapshots. */
 const usable = (p: Product) => p.source !== 'missing' && p.source !== 'snapshot';
 
 /**
- * The brands to offer per category: every brand of the retail list and every brand with products
- * in the catalog, merged by `brandKey`; most products first, BluModel Basics last.
+ * The brands to offer per category: every brand of the retail catalog's counts and every brand
+ * with products in the catalog registry, merged by `brandKey`; most products first. BluModel
+ * Basics is not offered: it is what fills every slot no chosen brand can, and "Any" means it.
  */
-export function brandOptions(products: Product[], retail: RetailBrand[] = []): Record<BrandCategory, BrandOption[]> {
+export function brandOptions(products: Product[], retail: Partial<Record<BrandCategory, BrandCount[]>> = {}): Record<BrandCategory, BrandOption[]> {
   const out = {} as Record<BrandCategory, BrandOption[]>;
   for (const c of BRAND_CATEGORIES) {
     const byKey = new Map<string, BrandOption>();
-    const basics: BrandOption = { brand: BASICS_BRAND, key: brandKey(BASICS_BRAND), category: c.id, products: 0, inCatalog: 0, stores: [], basics: true };
-    for (const r of retail) {
-      if (r.category !== c.id || brandKey(r.brand) === basics.key) continue;
-      const key = brandKey(r.brand);
+    for (const r of retail[c.id] ?? []) {
+      const key = typeof r.brand === 'string' ? brandKey(r.brand) : '';
+      if (!key || key === BASICS_KEY || r.basics) continue;
+      const stores = Array.isArray(r.stores) ? r.stores.filter((x): x is string => typeof x === 'string' && !!x) : [];
+      const products = Number.isFinite(r.products) ? Math.max(0, r.products) : 0;
       const prev = byKey.get(key);
       if (prev) {
-        prev.products += r.products;
-        prev.stores = [...new Set([...prev.stores, ...r.stores])];
-      } else byKey.set(key, { brand: r.brand, key, category: c.id, products: r.products, inCatalog: 0, stores: [...r.stores], basics: false });
+        prev.products += products;
+        prev.stores = [...new Set([...prev.stores, ...stores])];
+      } else byKey.set(key, { brand: r.brand, key, category: c.id, products, inCatalog: 0, stores });
     }
     for (const p of products) {
-      if (p.category !== c.id || !usable(p)) continue;
-      if (isBasics(p)) {
-        basics.inCatalog++;
-        continue;
-      }
+      if (p.category !== c.id || !usable(p) || isBasics(p)) continue;
       const key = brandKey(p.brand);
-      if (!key) continue;
-      const o = byKey.get(key) ?? { brand: p.brand, key, category: c.id, products: 0, inCatalog: 0, stores: [], basics: false };
+      if (!key || key === BASICS_KEY) continue;
+      const o = byKey.get(key) ?? { brand: p.brand, key, category: c.id, products: 0, inCatalog: 0, stores: [] };
       o.inCatalog++;
       byKey.set(key, o);
     }
-    basics.products = basics.inCatalog;
     const list = [...byKey.values()].map((o) => ({ ...o, products: Math.max(o.products, o.inCatalog) }));
     list.sort((a, b) => b.products - a.products || a.brand.localeCompare(b.brand));
-    out[c.id] = basics.products ? [...list, basics] : list;
+    out[c.id] = list;
   }
   return out;
 }
@@ -228,6 +182,8 @@ const STYLE_ONLY = new Set<Kind>(['range', 'hood', 'fridge', 'dishwasher', 'micr
 const PLAIN_VARIANT: Partial<Record<Kind, string>> = { base: 'door-drawer', wall: 'door', tall: 'pantry' };
 /** Hung overhead with nothing beside it: any size will do. */
 const SIZE_FREE = new Set<Kind>(['pendant']);
+/** Pieces under the one countertop: a brand's must stand within 2″ of the Basics height. */
+const COUNTER_HEIGHT = new Set<Kind>(['base', 'corner', 'sink', 'dishwasher', 'range', 'wine', 'island']);
 
 /** Same kind, and the same variant where the variant changes what the piece is (drawers vs doors, glass vs solid). */
 function sameType(c: Product, base: Product, asked?: string): boolean {
@@ -236,31 +192,87 @@ function sameType(c: Product, base: Product, asked?: string): boolean {
   return (c.variant ?? PLAIN_VARIANT[c.kind]) === (base.variant ?? PLAIN_VARIANT[base.kind]);
 }
 
-/** Sold in the width the layout needs, and no deeper than the Basics piece by more than a little. */
-function fits(c: Product, base: Picked): boolean {
-  if (SIZE_FREE.has(base.product.kind)) return true;
+/**
+ * Takes the Basics piece's place without changing the layout around it: under the ceiling, sold in
+ * the width the layout needs, hung at the same height, within 3″ of its depth (a fridge may stand
+ * 6″ proud), a counter-height piece within 2″ of its height, and a fridge no taller (the cabinet
+ * over it sits right on top).
+ */
+function fits(c: Product, base: Picked, ceilingIn?: number): boolean {
+  const b = base.product;
+  if (ceilingIn && (c.elevationIn ?? 0) + c.heightIn > ceilingIn) return false;
+  if (SIZE_FREE.has(b.kind)) return true;
   const sizes = c.widthOptions?.length ? c.widthOptions : [c.widthIn];
   if (!sizes.includes(base.widthIn)) return false;
-  return c.depthIn <= base.product.depthIn + (base.product.kind === 'fridge' ? 6 : 3);
+  if (Math.abs((c.elevationIn ?? 0) - (b.elevationIn ?? 0)) > 1) return false;
+  const dd = c.depthIn - b.depthIn;
+  if (dd < -3 || dd > (b.kind === 'fridge' ? 6 : 3)) return false;
+  if (COUNTER_HEIGHT.has(b.kind) && Math.abs(c.heightIn - b.heightIn) > 2) return false;
+  if (b.kind === 'fridge' && c.heightIn > b.heightIn + 0.5) return false;
+  return true;
+}
+
+/** Swaps a BluModel Basics pick for one of the kitchen's chosen brands where it can. */
+export type BrandSwap = (base: Picked, asked?: string) => Picked;
+
+export interface BrandPickOptions {
+  /** The room's ceiling: a tall or wall piece must fit under it. */
+  ceilingIn?: number;
+  /** The products to choose from (tests); the catalog registry otherwise. */
+  catalog?: Product[];
+}
+
+/** A product's look within its brand: line and finish, so a kitchen's cabinets come from one line in one colour. */
+function lookOf(p: Product): string {
+  const finish = Array.isArray(p.finishes) ? (p.finishes[0]?.id ?? '') : p.finishes;
+  return `${brandKey(p.brand)}|${(p.line ?? '').toLowerCase()}|${finish}`;
 }
 
 /**
- * The layout builder's brand preference. `base` is the BluModel Basics pick for a slot; when the
- * kitchen prefers brands for that category and one of them sells the same type in the same size,
- * that product takes the slot (the chosen brands in order, then catalog order). Otherwise `base`
- * stands, so a layout's geometry never changes because of a brand choice.
+ * The layout builder's brand preference, for one build. Undefined when the kitchen chose no
+ * brands, so the builder's output is exactly what it was without this.
+ *
+ * For each slot, `base` is the BluModel Basics pick. When the kitchen prefers brands for that
+ * category and one of them sells the same type in the same size, that product takes the slot: the
+ * chosen brands in the order they were chosen; within a brand the look (line and finish) already
+ * used in this kitchen, else the look the brand sells most of. Otherwise `base` stands, so a
+ * layout's geometry never changes because of a brand choice.
  */
-export function preferBrand(base: Picked, prefs: BrandPrefs | undefined, asked?: string, catalog?: Product[]): Picked {
-  if (!prefs || !isBrandCategory(base.product.category)) return base;
-  const wanted = (prefs[base.product.category] ?? []).map(brandKey).filter((k) => k !== brandKey(BASICS_BRAND));
-  if (!wanted.length) return base;
-  const list = (catalog ?? useCatalog.getState().products).filter(
-    (c) => usable(c) && c.category === base.product.category && !isBasics(c) && wanted.includes(brandKey(c.brand)) && sameType(c, base.product, asked) && fits(c, base),
-  );
-  if (!list.length) return base;
-  list.sort((a, b) => wanted.indexOf(brandKey(a.brand)) - wanted.indexOf(brandKey(b.brand)));
-  const c = list[0];
-  return { productId: c.id, product: c, widthIn: SIZE_FREE.has(c.kind) ? c.widthIn : base.widthIn };
+export function brandPicker(prefs: BrandPrefs | undefined, opts: BrandPickOptions = {}): BrandSwap | undefined {
+  if (!hasBrandPrefs(prefs)) return undefined;
+  const wanted = new Map<BrandCategory, string[]>();
+  for (const c of BRAND_CATEGORIES) {
+    const keys = [...new Set((prefs[c.id] ?? []).map(brandKey))].filter((k) => k && k !== BASICS_KEY);
+    if (keys.length) wanted.set(c.id, keys);
+  }
+  if (!wanted.size) return undefined;
+  const pool = (opts.catalog ?? useCatalog.getState().products).filter((p) => usable(p) && !isBasics(p) && wanted.get(p.category as BrandCategory)?.includes(brandKey(p.brand)));
+  if (!pool.length) return undefined;
+  const lookSize = new Map<string, number>();
+  for (const p of pool) lookSize.set(lookOf(p), (lookSize.get(lookOf(p)) ?? 0) + 1);
+  const order = new Map(pool.map((p, i) => [p.id, i]));
+  const used = new Map<string, string>(); // brand key → look chosen first
+
+  return (base, asked) => {
+    const cat = base.product.category;
+    const keys = isBrandCategory(cat) ? wanted.get(cat) : undefined;
+    if (!keys) return base;
+    const list = pool.filter((c) => c.category === cat && sameType(c, base.product, asked) && fits(c, base, opts.ceilingIn));
+    if (!list.length) return base;
+    const rank = (c: Product): number[] => {
+      const brand = brandKey(c.brand);
+      const look = lookOf(c);
+      return [keys.indexOf(brand), used.get(brand) === look ? 0 : 1, -(lookSize.get(look) ?? 0), order.get(c.id) ?? 0];
+    };
+    const ranked = list.map((c) => ({ c, r: rank(c) }));
+    ranked.sort((a, b) => {
+      for (let i = 0; i < a.r.length; i++) if (a.r[i] !== b.r[i]) return a.r[i] - b.r[i];
+      return 0;
+    });
+    const c = ranked[0].c;
+    if (!used.has(brandKey(c.brand))) used.set(brandKey(c.brand), lookOf(c));
+    return { productId: c.id, product: c, widthIn: SIZE_FREE.has(c.kind) ? c.widthIn : base.widthIn };
+  };
 }
 
 /** How many of a kitchen's pieces come from its chosen brands, of the pieces in those categories. */

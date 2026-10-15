@@ -6,8 +6,13 @@ import { DEFAULT_SURFACES } from '../../data/defaults';
 import { initialDoc } from '../../store/useDesignStore';
 import type { Finish, Product } from '../../types';
 import { useHashQuery } from '../../lib/router';
+import { planPrice } from '../../lib/money';
+import plansJson from '../../data/plans.json';
+import type { Plan } from '../../types/platform';
 import { MarketingFooter, MarketingHeader, scrollIfHere, SectionHead, usePendingScroll } from './parts';
 import './marketing.css';
+
+const CONTRACTOR = (plansJson as Plan[]).find((p) => p.id === 'contractor')!;
 
 /**
  * The landing page (signed-out `#/` and `#/welcome`), PRODUCT_SPEC §5.1 as revised: the way in is
@@ -69,7 +74,7 @@ function Hero() {
           Start from a photo of your kitchen. Check the measurements, then try cabinets, appliances and finishes at their true size, in plan and in 3D. Designing, saving and sharing are free.
         </p>
         <Ctas where="top" />
-        <p className="mk-hero-fine">No card needed. Exports are $5 per kitchen, or $15 a month for every kitchen.</p>
+        <p className="mk-hero-fine">No card needed. Designing is free; exports are a paid feature.</p>
       </div>
       {art === 'render' ? (
         // The render is a real BluModel Studio 3D view of the starter kitchen (public/marketing/hero.webp).
@@ -156,10 +161,11 @@ function Contractors() {
     <section className="mk-band" id="contractors" aria-labelledby="pro-title">
       <div className="mk-band-inner">
         <div className="mk-band-copy">
-          <span className="mk-eyebrow mk-eyebrow--light">For kitchen contractors · $40/month</span>
+          <span className="mk-eyebrow mk-eyebrow--light">For kitchen contractors · {planPrice(CONTRACTOR)}</span>
           <h2 id="pro-title">Show your customers the exact cabinets you sell, in their kitchen, at your price.</h2>
           <ul className="mk-ticks">
-            <li>Add your own lines in an afternoon: quick-add with no 3D model, upload your own, or have us model them.</li>
+            <li>Add your own lines in an afternoon: quick-add with no 3D model, or upload your own.</li>
+            <li>{CONTRACTOR.includedModels ?? 3} custom 3D models a month, made by our studio from a UPC or a photo.</li>
             <li>A price book with your cost and markup. Clients only ever see your sell price.</li>
             <li>Branded share links and printable quotes with your logo, phone and email.</li>
             <li>Get found: put the cabinets you sell in front of homeowners designing their kitchens, with a verified brand page and leads.</li>

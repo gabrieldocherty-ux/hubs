@@ -296,7 +296,7 @@ test('Stripe mode: checkout is built on the server’s price with metadata, retu
     assert.equal(c1.headers['Idempotency-Key'], `${unlock.body.ref}-checkout`);
     assert.equal(c1.form.get('mode'), 'payment');
     assert.equal(c1.form.get('line_items[0][price_data][unit_amount]'), '500', 'server price; client amounts ignored');
-    assert.equal(c1.form.get('line_items[0][price_data][currency]'), 'usd');
+    assert.equal(c1.form.get('line_items[0][price_data][currency]'), 'cad');
     assert.match(c1.form.get('line_items[0][price_data][product_data][name]'), /^BluModel Studio - Kitchen unlock: /, 'what the buyer sees on Stripe');
     assert.equal(c1.form.get('metadata[kind]'), 'kitchen_unlock');
     assert.equal(c1.form.get('metadata[checkout_ref]'), unlock.body.ref);
@@ -308,7 +308,8 @@ test('Stripe mode: checkout is built on the server’s price with metadata, retu
     const sub = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
     const c2 = mock.calls[1];
     assert.equal(c2.form.get('mode'), 'subscription');
-    assert.equal(c2.form.get('line_items[0][price_data][unit_amount]'), '4000');
+    assert.equal(c2.form.get('line_items[0][price_data][unit_amount]'), '9900');
+    assert.equal(c2.form.get('line_items[0][price_data][currency]'), 'cad');
     assert.equal(c2.form.get('line_items[0][price_data][recurring][interval]'), 'month');
     assert.equal(c2.form.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Contractor');
     assert.equal(c2.form.get('subscription_data[metadata][plan]'), 'contractor');
@@ -334,7 +335,7 @@ test('Stripe webhooks: verified, deduplicated, amount-checked; subscription even
     const session = (over = {}) => ({
       id: `evt_${crypto.randomBytes(6).toString('hex')}`,
       type: 'checkout.session.completed',
-      data: { object: { id: 'cs_test_1', payment_status: 'paid', amount_total: 500, currency: 'usd', client_reference_id: ref, metadata: { kind: 'kitchen_unlock', checkout_ref: ref }, ...over } },
+      data: { object: { id: 'cs_test_1', payment_status: 'paid', amount_total: 500, currency: 'cad', client_reference_id: ref, metadata: { kind: 'kitchen_unlock', checkout_ref: ref }, ...over } },
     });
 
     // Unverified → 400 and nothing changes.
@@ -421,7 +422,7 @@ test('Stripe mode: return sync, cancel and the customer portal call Stripe with 
     const ref = (await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' })).body.ref;
     const end = Math.floor(Date.now() / 1000) + 31 * 86400;
     stripeMock.subscription = { id: 'sub_9', status: 'active', customer: 'cus_9', cancel_at_period_end: false, current_period_end: end, metadata: { kind: 'subscription', user_id: ann.id, plan: 'unlimited' } };
-    stripeMock.session = { id: 'cs_test_9', payment_status: 'paid', amount_total: 1500, currency: 'usd', client_reference_id: ref, customer: 'cus_9', subscription: stripeMock.subscription, metadata: { kind: 'subscription', checkout_ref: ref } };
+    stripeMock.session = { id: 'cs_test_9', payment_status: 'paid', amount_total: 1500, currency: 'cad', client_reference_id: ref, customer: 'cus_9', subscription: stripeMock.subscription, metadata: { kind: 'subscription', checkout_ref: ref } };
     const sync = await ann.post('/api/billing/sync', { sessionId: 'cs_test_9' });
     assert.equal(sync.status, 200, sync.text);
     assert.equal(sync.body.entitlements.plan, 'unlimited');

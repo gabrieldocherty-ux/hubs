@@ -1,4 +1,4 @@
-import type { PlacedItem, Room, Surfaces } from '../types';
+import type { BrandPrefs, PlacedItem, Room, Surfaces } from '../types';
 import { buildFromSpec, type LayoutSpec, type Slot } from '../lib/generate/layout';
 
 export type TemplateId = 'one-wall' | 'galley' | 'l-shape' | 'u-shape' | 'l-island';
@@ -106,7 +106,8 @@ export function templateSpec(id: TemplateId, room: Room): LayoutSpec {
   }
 }
 
-export function buildTemplate(id: TemplateId, room: Room, surfaces: Surfaces): { items: PlacedItem[]; note?: string } {
+/** A template's items for a room. `brands`: the kitchen's preferred brands (see `buildFromSpec`). */
+export function buildTemplate(id: TemplateId, room: Room, surfaces: Surfaces, brands?: BrandPrefs): { items: PlacedItem[]; note?: string } {
   const info = TEMPLATES.find((t) => t.id === id);
   if (!info) return { items: [] };
   if (room.widthIn < info.minWidth || room.lengthIn < info.minLength) {
@@ -115,6 +116,6 @@ export function buildTemplate(id: TemplateId, room: Room, surfaces: Surfaces): {
       note: `${info.name} needs a room at least ${Math.ceil(info.minWidth / 12)}′ × ${Math.ceil(info.minLength / 12)}′.`,
     };
   }
-  const { items, notes } = buildFromSpec(templateSpec(id, room), room, surfaces);
+  const { items, notes } = buildFromSpec(templateSpec(id, room), room, surfaces, brands);
   return { items, note: notes.length ? notes.join(' ') : undefined };
 }

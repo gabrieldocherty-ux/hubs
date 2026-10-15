@@ -11,7 +11,8 @@ import { navigateHash, useHashQuery } from '../../lib/router';
 import { useSession } from '../../store/useSession';
 import type { Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
-import { billingApi, dollars, goToCheckout, type BillingMe } from './api';
+import { amount, money, planPrice } from '../../lib/money';
+import { billingApi, goToCheckout, type BillingMe } from './api';
 import { loadEntitlements } from './entitlements';
 import './billing.css';
 
@@ -150,7 +151,7 @@ export default function BillingPage() {
                   <>
                     {!sub.cancelAtPeriodEnd && (
                       <button className="btn" onClick={() => run('change', () => billingApi.change(other))} disabled={!!busy}>
-                        {busy === 'change' ? 'Changing…' : `Switch to ${planName(other)} (${dollars(PLANS.find((p) => p.id === other)!.priceCents)}/mo)`}
+                        {busy === 'change' ? 'Changing…' : `Switch to ${planName(other)} (${planPrice(PLANS.find((p) => p.id === other)!)})`}
                       </button>
                     )}
                     {sub.cancelAtPeriodEnd ? (
@@ -190,8 +191,8 @@ export default function BillingPage() {
                         <span className="eyebrow">Monthly</span>
                         <h4>{p.name}</h4>
                         <div className="plan-price">
-                          <b>{dollars(p.priceCents)}</b>
-                          <span>/ month</span>
+                          <b>{amount(p.priceCents)}</b>
+                          <span>CAD / month</span>
                         </div>
                         <p className="plan-note">{p.tagline}</p>
                         <ul className="plan-bullets">
@@ -210,8 +211,7 @@ export default function BillingPage() {
                 </div>
                 {!soon && <AgreeToPay />}
                 <p className="fine">
-                  One kitchen only? Open it and choose Export: you can unlock just that kitchen for {dollars(PLANS.find((p) => p.id === 'kitchen_unlock')!.priceCents)}, once
-                  {soon ? ', when payments open.' : '.'}
+                  One kitchen only? Open it and choose Export to see your options{soon ? ' when payments open.' : '.'} Prices are in Canadian dollars.
                 </p>
               </section>
             )}
@@ -241,13 +241,12 @@ export default function BillingPage() {
               </section>
             )}
 
-            <section className="billing-card" aria-labelledby="unlocks-title">
-              <span className="eyebrow" id="unlocks-title">
-                Unlocked kitchens
-              </span>
-              {me.unlocks.length === 0 ? (
-                <p className="empty-note">None yet.{soon ? '' : ' Unlock one kitchen from its Export menu.'}</p>
-              ) : (
+            {/* Only for someone who has unlocked a kitchen: the one-kitchen unlock is offered at export time, not advertised. */}
+            {me.unlocks.length > 0 && (
+              <section className="billing-card" aria-labelledby="unlocks-title">
+                <span className="eyebrow" id="unlocks-title">
+                  Unlocked kitchens
+                </span>
                 <ul className="billing-list">
                   {me.unlocks.map((u) => (
                     <li key={u.projectId}>
@@ -256,8 +255,8 @@ export default function BillingPage() {
                     </li>
                   ))}
                 </ul>
-              )}
-            </section>
+              </section>
+            )}
 
             <section className="billing-card" aria-labelledby="receipts-title">
               <span className="eyebrow" id="receipts-title">
@@ -283,7 +282,7 @@ export default function BillingPage() {
                           {/* A receipt from the simulation says so, whatever mode the server is in now: nothing was charged. */}
                           {r.provider === 'demo' && <span className="demo-tag">Demo</span>}
                         </td>
-                        <td className="num mono">{dollars(r.amountCents)}</td>
+                        <td className="num mono">{money(r.amountCents, r.currency)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -301,7 +300,7 @@ export default function BillingPage() {
       {confirmCancel && sub && (
         <Dialog title="Cancel your plan?" onClose={() => setConfirmCancel(false)}>
           <p className="dialog-copy">
-            You keep {planName(sub.plan)} until <b>{date(sub.currentPeriodEnd)}</b>, then your account is Free. Kitchens you unlocked for {dollars(500)} stay unlocked forever.
+            You keep {planName(sub.plan)} until <b>{date(sub.currentPeriodEnd)}</b>, then your account is Free.{me && me.unlocks.length ? ' Kitchens you unlocked stay unlocked forever.' : ''}
             {sub.plan === 'contractor' ? ' Your catalog, price book and quotes become read-only, and your clients’ share links keep working.' : ''}
           </p>
           <div className="modal-actions">
@@ -369,10 +368,13 @@ function statusLine(me: BillingMe, comp: boolean): string {
   if (plan.id === 'free') {
     if (sub?.status === 'past_due') return `Your ${planName(sub.plan)} renewal failed and the ${me.graceDays}-day grace period has ended. Update your payment to restore it.`;
     if (sub?.status === 'canceled') return `Your ${planName(sub.plan)} plan ended. Exports are locked; everything you designed is still here.`;
-    return 'Design, save and share for free. Exports need a plan or a one-time kitchen unlock.';
+    return 'Design, save and share for free. Exports are a paid feature.';
   }
   if (comp) return plan.periodEnd ? `Complimentary, until ${date(plan.periodEnd)}. There is nothing to pay.` : 'Complimentary. There is nothing to pay.';
   if (plan.status === 'past_due') return `The last payment failed. You keep ${planName(plan.id)} until ${date(plan.graceUntil)} while it is retried.`;
   if (plan.cancelAtPeriodEnd) return `Cancelled. You keep ${planName(plan.id)} until ${date(plan.periodEnd)}.`;
-  return `Renews on ${date(plan.periodEnd)} for ${dollars(PLANS.find((p) => p.id === plan.id)?.priceCents ?? 0)}.`;
+  // What this subscription renews at: its own amount and currency (one started before prices moved
+  // to CAD renews in USD at its old price until it is changed or ends).
+  const cents = sub?.amountCents ?? PLANS.find((p) => p.id === plan.id)?.priceCents ?? 0;
+  return `Renews on ${date(plan.periodEnd)} for ${money(cents, sub?.currency)}.`;
 }

@@ -1,13 +1,15 @@
-// Package G (billing): the export paywall, the $5 kitchen unlock, the $15 and $40 monthly
-// plans, Account → Billing and Admin → Billing (PLANS_AND_CONTRACTORS §1–§3, §5).
+// Package G (billing): the export paywall, the kitchen unlock, the Unlimited and Contractor
+// monthly plans, Account → Billing and Admin → Billing (PLANS_AND_CONTRACTORS §1–§3, §5).
 //
 // Payments go through Stripe Checkout when the server has both Stripe keys, otherwise
 // through the clearly labelled DEMO provider, which moves no money and collects no card
 // details. Prices come only from src/data/plans.json; a client never sends an amount.
+// Every new checkout is in CAD; a Stripe customer that paid in another currency is never
+// reused for it (Stripe refuses mixed currencies), so the checkout starts a fresh customer.
 
 import { HttpError } from '../http/respond.mjs';
 import { randomId, PRODUCT_ID_RE } from '../lib/ids.mjs';
-import { planById, PLANS, SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
+import { CURRENCY, planById, PLANS, SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
 import { loadKit } from '../lib/kit.mjs';
 import { createBillingService, GRACE_MS } from '../billing/service.mjs';
 import { createStripe, idOf, periodEndOf } from '../billing/stripe.mjs';
@@ -124,7 +126,8 @@ export default function routes(ctx) {
   async function startStripeCheckout(c, user) {
     const sub = c.kind === 'subscription';
     const plan = sub ? planById(c.plan) : planById('kitchen_unlock');
-    const existing = billing.subRow(user.id);
+    // Only a customer that already pays in this checkout's currency; otherwise Stripe makes a new one.
+    const customer = billing.customerFor(user.id, c.currency);
     const meta = { kind: c.kind, checkout_ref: c.ref, user_id: user.id, ...(c.project_id ? { project_id: c.project_id } : {}), ...(c.plan ? { plan: c.plan } : {}) };
     const session = await stripe.createCheckoutSession(
       {
@@ -136,7 +139,7 @@ export default function routes(ctx) {
           {
             quantity: 1,
             price_data: {
-              currency: 'usd',
+              currency: c.currency,
               unit_amount: c.amount_cents,
               product_data: { name: sub ? `BluModel Studio - ${plan.name}` : `BluModel Studio - Kitchen unlock: ${c.project_name || 'kitchen'}`.slice(0, 120) },
               ...(sub ? { recurring: { interval: 'month' } } : {}),
@@ -144,7 +147,7 @@ export default function routes(ctx) {
           },
         ],
         metadata: meta,
-        ...(existing?.customer_ref ? { customer: existing.customer_ref } : { customer_email: user.email }),
+        ...(customer ? { customer } : { customer_email: user.email }),
         ...(sub ? { subscription_data: { metadata: meta } } : { payment_intent_data: { metadata: meta } }),
       },
       `${c.ref}-checkout`,
@@ -224,8 +227,8 @@ export default function routes(ctx) {
         const provider = config.paymentsProvider;
         db.prepare(
           `INSERT INTO billing_checkouts (ref, user_id, kind, project_id, project_name, plan, amount_cents, currency, status, provider, return_to, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'usd', 'pending', ?, ?, ?)`,
-        ).run(ref, user.id, kind, projectId, projectName, plan, amount, provider, returnTo, ctx.now());
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)`,
+        ).run(ref, user.id, kind, projectId, projectName, plan, amount, CURRENCY, provider, returnTo, ctx.now());
         const c = billing.checkout(ref);
         if (provider === 'demo') {
           requireDemo();
@@ -339,9 +342,19 @@ export default function routes(ctx) {
         if (!SUBSCRIPTION_PLANS.includes(plan)) throw new HttpError(400, 'Choose Unlimited or Contractor.');
         const r = activeSub(rc.user.id);
         if (r.plan === plan && !r.cancel_at_period_end) throw new HttpError(409, `You’re already on ${planById(plan).name}.`);
+        // A change is billed at today's price, in CAD (the old price stays only while nothing changes).
         if (r.provider === 'demo') {
-          db.prepare('UPDATE subscriptions SET plan = ?, cancel_at_period_end = 0, updated_at = ? WHERE id = ?').run(plan, ctx.now(), r.id);
+          db.prepare('UPDATE subscriptions SET plan = ?, cancel_at_period_end = 0, amount_cents = ?, currency = ?, updated_at = ? WHERE id = ?').run(plan, planById(plan).priceCents, CURRENCY, ctx.now(), r.id);
           return meWire(rc.user.id);
+        }
+        // A Stripe subscription can't change currency in place, so one started in US dollars is
+        // switched by cancelling it and choosing the new plan in CAD once it ends.
+        if (r.currency && r.currency !== CURRENCY) {
+          throw new HttpError(409, `Your plan is billed in ${r.currency.toUpperCase()} from before prices moved to Canadian dollars, so it can’t be switched in place. Cancel it here; it runs to the end of the period you paid for, and then you can choose ${planById(plan).name} in CAD.`, {
+            code: 'currency_change',
+            currency: r.currency,
+            periodEnd: r.current_period_end ?? null,
+          });
         }
         const sub = await stripe.retrieveSubscription(r.subscription_ref);
         const itemId = sub?.items?.data?.[0]?.id;
@@ -351,7 +364,7 @@ export default function routes(ctx) {
         const updated = await stripe.updateSubscription(
           r.subscription_ref,
           {
-            items: [{ id: itemId, price_data: { currency: 'usd', product: productId, unit_amount: planById(plan).priceCents, recurring: { interval: 'month' } } }],
+            items: [{ id: itemId, price_data: { currency: CURRENCY, product: productId, unit_amount: planById(plan).priceCents, recurring: { interval: 'month' } } }],
             proration_behavior: 'create_prorations',
             cancel_at_period_end: false,
             metadata: meta,

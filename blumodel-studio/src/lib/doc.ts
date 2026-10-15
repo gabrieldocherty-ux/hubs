@@ -3,6 +3,7 @@ import { DEFAULT_KITCHEN_NAME, DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/de
 import { getProduct, isBuiltin, isProductIdShape, missingProduct } from '../data/catalog';
 import { useCatalog } from '../store/useCatalog';
 import { finishAt, finishList } from './finish';
+import { cleanBrandPrefs } from './generate/brands';
 
 /**
  * Kitchen-document hygiene shared by every load and save path. Pure apart from the catalog
@@ -122,7 +123,8 @@ export function withFinishIds(items: PlacedItem[]): PlacedItem[] {
  * - keeps items whose product is unknown and registers a `missingProduct` placeholder for them,
  *   so autosave never turns a not-yet-loaded or unpublished product into a deletion;
  * - fills `finishId` from `finishIndex`;
- * - fills room and surfaces from `src/data/defaults.ts` (never builds a template).
+ * - fills room and surfaces from `src/data/defaults.ts` (never builds a template);
+ * - keeps the brands chosen in the setup wizard (`brandPrefs`), cleaned.
  * The returned doc is `version: 2` and carries no `products`; `prepareDocForSave` re-embeds them.
  */
 export function sanitizeDoc(doc: DesignDoc): DesignDoc {
@@ -133,6 +135,7 @@ export function sanitizeDoc(doc: DesignDoc): DesignDoc {
   const unknown = [...new Set(items.map((i) => i.productId).filter((id) => !getProduct(id)))];
   if (unknown.length) catalog.registerMissing(unknown.map(missingProduct));
   const extras = cleanExtras(d.extras);
+  const brandPrefs = cleanBrandPrefs(d.brandPrefs);
   return {
     name: typeof d.name === 'string' && d.name.trim() ? d.name : DEFAULT_KITCHEN_NAME,
     room: cleanRoom(d.room),
@@ -140,6 +143,7 @@ export function sanitizeDoc(doc: DesignDoc): DesignDoc {
     items: withFinishIds(items),
     version: 2,
     ...(extras.length ? { extras } : {}),
+    ...(brandPrefs ? { brandPrefs } : {}),
   };
 }
 

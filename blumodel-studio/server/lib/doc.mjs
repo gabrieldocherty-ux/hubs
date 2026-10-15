@@ -14,7 +14,13 @@ export const LIMITS = Object.freeze({
   extras: 50,
   extraLabel: 80,
   extraAmount: 10_000_000,
+  /** Preferred brands from the setup wizard: names per category, name length. */
+  brandsPerCategory: 20,
+  brandName: 80,
 });
+
+/** The categories a kitchen can name preferred brands for (src/lib/generate/brands.ts). */
+const BRAND_CATEGORIES = ['cabinets', 'appliances', 'sinks', 'lighting'];
 
 const ROTATIONS = new Set([0, 90, 180, 270]);
 const DOOR_STYLES = new Set(['shaker', 'slab', 'fluted']);
@@ -110,6 +116,34 @@ function normalizeExtra(x, i) {
 }
 
 /**
+ * The brands chosen in the setup wizard, as `cleanBrandPrefs` (src/lib/generate/brands.ts) keeps
+ * them: known categories only, trimmed names, no repeats (ignoring case), at most 20 a category.
+ * Null when nothing is left. Anything but an object of string lists is refused.
+ */
+function normalizeBrandPrefs(raw) {
+  if (!isObj(raw)) bad('brandPrefs', 'Preferred brands are not valid.');
+  const out = {};
+  for (const cat of BRAND_CATEGORIES) {
+    const list = raw[cat];
+    if (list === undefined || list === null) continue;
+    if (!Array.isArray(list) || list.length > 100) bad(`brandPrefs.${cat}`, 'Preferred brands are not valid.');
+    const seen = new Set();
+    const names = [];
+    for (const v of list) {
+      if (typeof v !== 'string') bad(`brandPrefs.${cat}`, 'Preferred brands are not valid.');
+      const name = v.replace(/\s+/g, ' ').trim();
+      const key = name.replace(/\s*\([^)]*\)\s*$/, '').trim().toLowerCase();
+      if (!name || name.length > LIMITS.brandName || seen.has(key)) continue;
+      seen.add(key);
+      names.push(name);
+      if (names.length >= LIMITS.brandsPerCategory) break;
+    }
+    if (names.length) out[cat] = names;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/**
  * Validates and normalises a DesignDoc. Returns `{ ok: true, doc }` or
  * `{ ok: false, field, message }`. `name` is set by the caller.
  */
@@ -155,6 +189,10 @@ export function normalizeDoc(doc) {
       if (!Array.isArray(doc.extras)) bad('extras', 'Extra estimate lines are not valid.');
       if (doc.extras.length > LIMITS.extras) bad('extras', `A kitchen can have at most ${LIMITS.extras} extra estimate lines.`);
       if (doc.extras.length) out.extras = doc.extras.map(normalizeExtra);
+    }
+    if (doc.brandPrefs !== undefined && doc.brandPrefs !== null) {
+      const brandPrefs = normalizeBrandPrefs(doc.brandPrefs);
+      if (brandPrefs) out.brandPrefs = brandPrefs;
     }
     return { ok: true, doc: out };
   } catch (err) {

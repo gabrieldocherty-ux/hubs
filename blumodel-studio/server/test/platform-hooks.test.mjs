@@ -38,7 +38,9 @@ test('platform-002 rebuilds products for the contractor source without losing a 
   db.prepare("DELETE FROM products WHERE id = 'p_aaaaaaaaaaaaaaaaaaaaaaaa'").run();
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM product_events').get().n, 0);
   assert.deepEqual(migrate(db), [], 'a second run is a no-op');
-  assert.deepEqual(MIGRATION_KEYS.slice(-4), ['billing', 'contractors', 'account', 'ops']);
+  const at = (k) => MIGRATION_KEYS.indexOf(k);
+  assert.deepEqual(MIGRATION_KEYS.slice(at('billing'), at('ops') + 1), ['billing', 'contractors', 'account', 'ops']);
+  assert.ok(at('pricing') > at('ops'), 'pricing changes billing and orders tables, so it runs after them (and after ops)');
 });
 
 test('a step that breaks a foreign key is rolled back and not recorded', () => {

@@ -13,6 +13,7 @@ import * as billing from './billing.mjs';
 import * as contractors from './contractors.mjs';
 import * as account from './account.mjs';
 import * as ops from './ops.mjs';
+import * as pricing from './pricing.mjs';
 
-export const MIGRATION_MODULES = [core, platform, viewer, brands, orders, generate, share, billing, contractors, account, ops];
-export const MIGRATION_KEYS = ['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'account', 'ops'];
+export const MIGRATION_MODULES = [core, platform, viewer, brands, orders, generate, share, billing, contractors, account, ops, pricing];
+export const MIGRATION_KEYS = ['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'account', 'ops', 'pricing'];
