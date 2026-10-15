@@ -522,7 +522,7 @@ export function RequestWizard() {
                   <span>
                     {count} custom 3D model{count === 1 ? '' : 's'}
                   </span>
-                  <span className="mono">Included</span>
+                  <span className="ord-included">Included</span>
                 </li>
                 <li>
                   <span>Left this month after this request</span>
@@ -534,6 +534,7 @@ export function RequestWizard() {
               <p className="ord-due">
                 Delivered in about {terms.businessDays} business days. {terms.revisions} revision rounds and up to {terms.finishesPerModel} finishes per model included.
               </p>
+              {!fits.ok && fits.message && <p className="ord-bad">{fits.message}</p>}
               <p className="fine">Your allowance resets on {resetDay(allowance.resetsAt)}; unused models don’t carry over.</p>
             </>
           )}

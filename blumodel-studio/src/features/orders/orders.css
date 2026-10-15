@@ -2002,3 +2002,9 @@
   margin: 4px 0 8px;
   padding-left: 18px;
 }
+
+/* "Included": a plan request's price, in words rather than figures. */
+.ord-included {
+  font-weight: 600;
+  color: var(--ok);
+}

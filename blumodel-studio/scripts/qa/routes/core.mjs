@@ -318,7 +318,7 @@ export default [
     check: async (h) => {
       await exportItem(h, 'Shopping list');
       await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock “QA Paywall Kitchen”', 'Unlock this kitchen · $5', 'Go Unlimited · $15/month']);
+      await h.waitForText(['Unlock “QA Paywall Kitchen”', 'Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month']);
       // The server agrees: a free user's export is refused (403, needs an unlock).
       const r = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
       if (r.status !== 403) throw new Error(`a free user's CSV export returned ${r.status}, expected 403`);
@@ -333,7 +333,7 @@ export default [
     check: async (h) => {
       await exportItem(h, 'Floor plan');
       await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText('Unlock this kitchen · $5');
+      await h.waitForText('Unlock this kitchen - $5 CAD once');
       const r = await h.evaluate(() => {
         const m = document.querySelector('.modal.unlock').getBoundingClientRect();
         return { left: m.left, right: m.right, w: innerWidth };

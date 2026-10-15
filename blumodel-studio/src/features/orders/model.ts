@@ -147,7 +147,7 @@ export function eventTitle(e: TimelineEvent): string {
     case 'expired':
       return 'Expired without payment';
     case 'cancelled':
-      return `${who} cancelled the order`;
+      return `${who} cancelled the request`;
     case 'started':
       return 'The studio started modelling';
     case 'note':

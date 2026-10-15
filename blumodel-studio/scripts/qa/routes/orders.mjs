@@ -1,35 +1,57 @@
 // Package C (orders) QA routes, BUILD_PLAN §3.7 / §7 C-T8. Run with
 //   node scripts/qa.mjs --pkg orders --port 8814 --dist .build/orders
 //
+// Since 2026-10-15 custom models come with the Contractor plan (3 a month): the request form is
+// the QA contractor's (qa-contractor@blumodel.test, on a DEMO Contractor subscription), and a
+// request goes to the studio with no payment. The allowance itself, withdrawing, the over-the-
+// allowance form and the admin grant are in scripts/qa/routes/pricing.mjs.
+//
 // Needs the orders seed (server/seed/orders.mjs): demo-customer@blumodel.test owns four DEMO
-// orders with fixed ids, one per state below. Checks only use `evaluate` (a JS expression run in
+// orders paid for before then, with fixed ids, one per state below. Checks only use `evaluate` (a JS expression run in
 // the page, awaited), so they work whatever else the runner's context provides. expectText avoids
 // text under `text-transform: uppercase` (eyebrows, banners' bold lead), so innerText and
 // textContent both match. That another user gets a 404 for an order is a server test
 // (orders.test.mjs), not a route here: the browser logs the 404 as a console error.
 
+import crypto from 'node:crypto';
+
 const DELIVERED = 'o_demoseedorder00000000003';
 const PHONE = { w: 390, h: 844, mobile: true };
 
-/** A fresh customer order (no uploads needed: it starts from a built-in catalog product). */
+/**
+ * An unpaid order made before 2026-10-15 (a Standard model at $279 USD) for the demo customer,
+ * as the live database holds them: new custom models aren't sold, so it goes straight into the
+ * DB. Optionally with its DEMO checkout started.
+ */
 async function newOrder({ api }, { checkout = false } = {}) {
   const customer = api.as('customer');
-  const r = await customer.post('/api/orders', {
-    target: 'customer',
-    rush: false,
-    items: [
-      {
-        brief: { productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', name: 'QA range (Demo)', upc: '200000041205', widthIn: 30, depthIn: 28, heightIn: 36, notes: 'QA', referenceFileIds: [], refProductId: 'range-30' },
-      },
-    ],
-  });
-  if (r.status !== 201) throw new Error(`creating an order failed: ${r.status} ${JSON.stringify(r.body)}`);
-  const id = r.body.order.id;
+  const userId = api.sql('SELECT id FROM users WHERE email = ?', 'demo-customer@blumodel.test')[0]?.id;
+  if (!userId) throw new Error('the demo customer does not exist (did the core seed run?)');
+  const id = `o_qaprior${crypto.randomUUID().replace(/-/g, '').slice(0, 17)}`;
+  const t = Date.now();
+  const brief = JSON.stringify({ productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', category: 'appliances', name: 'QA range (Demo)', upc: '200000041205', upcFormat: 'upc_a', widthIn: 30, depthIn: 28, heightIn: 36, notes: 'QA', referenceFileIds: [], refProductId: 'range-30' });
+  api.sql(
+    `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, ref_product_id, pending_since, created_at, updated_at)
+     VALUES (?, ?, 'customer', 'draft', 'standard', '{"rush":false,"extraFinishes":0}', 27900, 'usd', 'demo', ?, 'range-30', ?, ?, ?)`,
+    id, userId, brief, t, t, t,
+  );
+  api.sql("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 0, 27900)", id, brief);
+  api.sql("INSERT INTO order_events (order_id, type, to_status, by_user_id, created_at) VALUES (?, 'created', 'draft', ?, ?)", id, userId, t);
   if (checkout) {
     const c = await customer.post(`/api/orders/${id}/checkout`, {});
     if (c.status !== 200) throw new Error(`checkout failed: ${c.status} ${JSON.stringify(c.body)}`);
   }
   return id;
+}
+
+/** Makes sure the QA contractor has at least `n` models left this month (an admin grant if not). */
+async function ensureModels(api, n) {
+  const a = (await api.as('contractor').get('/api/orders/allowance')).body?.allowance;
+  if (!a?.active) throw new Error(`the QA contractor is not on the Contractor plan: ${JSON.stringify(a)}`);
+  if (a.left >= n) return a;
+  const g = await api.as('admin').post('/api/admin/model-grants', { email: 'qa-contractor@blumodel.test', models: n - a.left, note: 'QA' });
+  if (g.status !== 201) throw new Error(`granting QA models failed: ${g.status} ${JSON.stringify(g.body)}`);
+  return g.body.allowance;
 }
 
 /** Fails if any payment screen renders a card-like field (PRODUCT_SPEC §7.4: none at all). */
@@ -131,7 +153,8 @@ const waitFor = (expr, ms = 5000) => `(async () => {
 
 const SIDEWAYS = 'document.documentElement.scrollWidth > window.innerWidth + 1';
 // Parenthesised: `a ?? ''.includes(x)` would test only the '' and pass on any total.
-const quoteTotal = `(document.querySelector('.ord-quote .ord-total')?.textContent ?? '')`;
+const aside = `(document.querySelector('.ord-quote')?.textContent ?? '')`;
+const meter = `(document.querySelector('.ord-allowance')?.textContent ?? '')`;
 const bodyHas = (t) => `document.body.textContent.includes(${JSON.stringify(t)})`;
 
 /** Types `text` into the field `selector` the way a person does (focus, select all, insert). */
@@ -181,15 +204,19 @@ const SCAN_STUB = `(() => {
 export default [
   // ── Make custom models: the product list ──────────────────────────────
   {
-    // A blank request: one product open, the pack meter at 1 of 8, the server's $129 quote.
+    // A blank request: one product open, the plan's allowance ("N of 3 models left this month -
+    // resets …"), and the aside says it is included: no price, no payment.
     name: 'orders-new-products',
     path: '#/orders/new',
-    as: 'customer',
+    as: 'contractor',
+    setup: async ({ api }) => (await ensureModels(api, 1), {}),
     viewport: { w: 1440, h: 900 },
-    waitFor: ['.ord-wizard', '.ord-product.open'],
-    expectText: ['Make custom models', 'New request', 'Products to model', 'UPC or EAN', '1 of 8 products', '7 more fit in this pack', 'no card details are collected'],
+    waitFor: ['.ord-wizard', '.ord-product.open', '.ord-allowance'],
+    expectText: ['Make custom models', 'New request', 'Products to model', 'UPC or EAN', 'Your Contractor plan includes 3 custom 3D models a month', 'Included in your plan'],
     check: async ({ evaluate, note }) => {
-      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$129')`)))) throw new Error('the server quote never showed $129 for one product');
+      if (!(await evaluate(waitFor(`/\\d+ of \\d+ models? left this month - resets [A-Z][a-z]+ \\d+/.test(${meter})`)))) throw new Error(`the allowance meter does not read "N of 3 models left this month - resets <date>": ${await evaluate(meter)}`);
+      if (!(await evaluate(waitFor(`${aside}.includes('1 custom 3D model') && ${aside}.includes('Included')`)))) throw new Error('the aside does not say the model is included');
+      if (await evaluate(`/\\$\\d/.test(document.querySelector('.ord-wizard').textContent)`)) throw new Error('a price shows on the request form');
       // Headless Edge on Windows has no BarcodeDetector: the photo fallback is what it offers.
       const scan = await evaluate(`[...document.querySelectorAll('.ord-upc button')].map((b) => b.textContent.trim())`);
       note(`UPC buttons: ${JSON.stringify(scan)}`);
@@ -198,10 +225,11 @@ export default [
     },
   },
   {
-    // UPC checking as you type, a second product, the first-problem message, review and rush.
+    // UPC checking as you type, a second product, the first-problem message, then review & send.
     name: 'orders-new-upc',
     path: '#/orders/new?ref=range-30',
-    as: 'customer',
+    as: 'contractor',
+    setup: async ({ api }) => (await ensureModels(api, 2), {}),
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-product.open',
     expectText: ['Gas Range', 'Don’t use it'],
@@ -228,9 +256,8 @@ export default [
       await shot('upc');
       if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
       if (!(await evaluate(waitFor(`!!document.querySelector('#ord-product-1 .ord-product.open')`)))) throw new Error('the second product did not open');
-      if (!(await evaluate(waitFor(bodyHas('2 of 8 products'))))) throw new Error('the pack meter did not count 2');
-      // Two products are still one pack: the server's quote stays $129.
-      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$129')`)))) throw new Error('two products did not stay one $129 pack');
+      if (!(await evaluate(waitFor(`${meter}.includes('This request uses 2')`)))) throw new Error('the allowance meter did not count 2 products');
+      if (!(await evaluate(waitFor(`${aside}.includes('2 custom 3D models')`)))) throw new Error('the aside does not count 2 models');
       // Moving on with an empty product names the problem and marks the product.
       if (!(await evaluate(click('Review 2 products')))) throw new Error('no review button');
       if (!(await evaluate(waitFor(`${bodyHas('Product 2: Name the product.')} && !!document.querySelector('#ord-product-1 .ord-product.bad')`)))) throw new Error('the empty product was not flagged');
@@ -239,29 +266,28 @@ export default [
       await typeInto(h, '#ord-p1-upc', '4006381333931');
       if (!(await evaluate(waitFor(bodyHas('✓ EAN-13'))))) throw new Error('a good EAN-13 was not confirmed');
       if (!(await evaluate(click('Review 2 products')))) throw new Error('no review button');
-      if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & pay')`)))) throw new Error('review never showed');
+      if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & send')`)))) throw new Error('review never showed');
       if (!(await evaluate(waitFor(`${bodyHas('UPC 0 36000 29145 2')} && ${bodyHas('UPC 4 006381 333931')}`)))) throw new Error('the review does not list both UPCs');
-      await evaluate(`document.querySelector('.ord-rush input').click()`);
-      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$193.50')`)))) throw new Error('rush did not make the quote $193.50');
+      if (await evaluate(`!!document.querySelector('.ord-rush')`)) throw new Error('rush is still offered');
+      if (!(await evaluate(waitFor(bodyHas('Send 2 products to the studio'))))) throw new Error('no Send button for 2 products');
       if (await evaluate(NO_CARD_FIELDS)) throw new Error('a card-like field is on the request page');
     },
   },
   {
-    // Adding products fills pack 1, then the 9th starts pack 2: two packs, $258, one checkout.
-    name: 'orders-new-packs',
+    // Products can be added up to what is left this month: one model per product. Past that the
+    // add button gives way to "That's every model left this month".
+    name: 'orders-new-allowance-cap',
     path: '#/orders/new',
-    as: 'customer',
+    as: 'contractor',
+    setup: async ({ api }) => ({ left: (await ensureModels(api, 2)).left }),
     viewport: { w: 1440, h: 900 },
-    waitFor: '.ord-product.open',
-    expectText: ['1 of 8 products'],
-    check: async ({ evaluate, shot }) => {
-      for (let i = 0; i < 7; i++) if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
-      if (!(await evaluate(waitFor(bodyHas('This pack is full: the next product starts pack 2 (+$129)'))))) throw new Error('a full pack was not called out');
-      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$129')`)))) throw new Error('8 products did not stay one $129 pack');
-      if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
-      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$258')`)))) throw new Error('9 products did not quote two packs ($258)');
-      if (!(await evaluate(waitFor(`${bodyHas('Model pack 2 of 2: 1 product')} && !!document.querySelector('.ord-pack-divider')`)))) throw new Error('no pack 2 line or divider');
-      await shot('two-packs');
+    waitFor: ['.ord-product.open', '.ord-allowance'],
+    expectText: ['models left this month'],
+    check: async ({ evaluate, shot, data }) => {
+      for (let i = 1; i < Math.min(data.left, 40); i++) if (!(await evaluate(click('+ Add a product')))) throw new Error(`no add-a-product button at ${i} of ${data.left}`);
+      if (!(await evaluate(waitFor(bodyHas('That’s every model left this month'))))) throw new Error('the last model left was not called out');
+      if (await evaluate(`[...document.querySelectorAll('button')].some((b) => b.textContent.includes('+ Add a product'))`)) throw new Error('products can still be added past the allowance');
+      await shot('cap');
     },
   },
   {
@@ -269,7 +295,8 @@ export default [
     // the flow: Scan opens the camera dialog, a misread is skipped, the code fills in.
     name: 'orders-new-scan',
     path: '#/orders/new',
-    as: 'customer',
+    as: 'contractor',
+    setup: async ({ api }) => (await ensureModels(api, 1), {}),
     viewport: PHONE,
     waitFor: '.ord-product.open',
     expectText: ['UPC or EAN'],
@@ -293,7 +320,8 @@ export default [
     // but not its brand: a built-in's brand is BluModel's own line, not the real product's maker.
     name: 'orders-new-phone',
     path: '#/orders/new?ref=range-30',
-    as: 'customer',
+    as: 'contractor',
+    setup: async ({ api }) => (await ensureModels(api, 1), {}),
     viewport: PHONE,
     fullPage: true,
     waitFor: '.ord-product.open',
@@ -309,7 +337,8 @@ export default [
     // identifies the product. It uploads as a private reference image and the review says so.
     name: 'orders-new-barcode-photo',
     path: '#/orders/new',
-    as: 'customer',
+    as: 'contractor',
+    setup: async ({ api }) => (await ensureModels(api, 1), {}),
     viewport: PHONE,
     waitFor: '.ord-product.open',
     expectText: ['Upload a photo of the barcode'],
@@ -332,16 +361,16 @@ export default [
       const status = await evaluate(`fetch('/api/files/' + ${JSON.stringify(fileId)}, { credentials: 'same-origin' }).then((r) => r.status)`);
       if (status !== 200) throw new Error(`the buyer cannot read their own barcode photo (${status})`);
       if (!(await evaluate(click('Review 1 product')))) throw new Error('no review button');
-      if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & pay') && ${bodyHas('Barcode photo')}`)))) throw new Error('the review does not show the barcode photo');
+      if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & send') && ${bodyHas('Barcode photo')}`)))) throw new Error('the review does not show the barcode photo');
       if (await evaluate(SIDEWAYS)) throw new Error('the page scrolls sideways on a phone');
     },
   },
-  // ── contractors: the same pack flow, into My catalog ───────────────────
+  // ── contractors: the workspace page and My catalog ────────────────────
   {
     // (The workspace opens once the company has a business name and phone; scripts/qa/routes/
     // contractors.mjs saves its own company when it runs, so only fill one in if there is none.)
-    // The workspace's Make custom models page prices from the server and opens the same request
-    // form with My catalog chosen.
+    // The workspace's Make custom models page says what the plan includes and what is left, and
+    // opens the request form with My catalog chosen.
     name: 'orders-pro-modelling',
     path: '#/pro/modelling',
     as: 'contractor',
@@ -356,10 +385,10 @@ export default [
     },
     viewport: { w: 1440, h: 900 },
     waitFor: '.pro-modelling',
-    expectText: ['Have BluModel Studio model your products', 'Delivered models land straight in My catalog'],
+    expectText: ['Have BluModel Studio model your products', 'Your Contractor plan includes 3 custom 3D models a month', 'Delivered models land straight in My catalog'],
     check: async ({ evaluate, shot }) => {
-      if (!(await evaluate(waitFor(bodyHas('A Model pack covers up to 8 products for $129'))))) throw new Error('the page does not show the server’s Model pack');
-      if (await evaluate(bodyHas('per item'))) throw new Error('the page still prices per item');
+      if (!(await evaluate(waitFor(`/\\d+ of \\d+ models? left this month - resets|No models left this month/.test(document.querySelector('.pro-allowance')?.textContent ?? '')`)))) throw new Error('the page does not show what is left this month');
+      if (await evaluate(`/\\$\\d|Model pack|per item/.test(document.querySelector('.pro-modelling').textContent)`)) throw new Error('the page still shows a price or the Model pack');
       await shot('page');
       const go = await evaluate(`(() => {
         const a = [...document.querySelectorAll('.pro-modelling .btn.primary')].find((x) => x.textContent.trim() === 'Make custom models');
@@ -372,13 +401,14 @@ export default [
     },
   },
   {
-    // A contractor's line identified by UPC alone, reviewed: the same $129 pack, delivered to My catalog.
+    // A contractor's product identified by UPC alone, reviewed: included in the plan, into My catalog.
     name: 'orders-new-contractor',
     path: '#/orders/new?target=contractor',
     as: 'contractor',
+    setup: async ({ api }) => (await ensureModels(api, 1), {}),
     viewport: { w: 1440, h: 900 },
     waitFor: ['.ord-product.open', '.ord-target select'],
-    expectText: ['Who are the models for?', 'Products to model'],
+    expectText: ['Where should the models go?', 'Products to model'],
     check: async (h) => {
       const { evaluate, shot } = h;
       if ((await evaluate(`document.querySelector('.ord-target select').value`)) !== 'contractor') throw new Error('My catalog is not the target');
@@ -391,7 +421,7 @@ export default [
       await typeInto(h, '#ord-p0-upc', '036000291452');
       if (!(await evaluate(waitFor(bodyHas('✓ UPC-A 0 36000 29145 2'))))) throw new Error('the UPC was not confirmed');
       if (!(await evaluate(click('Review 1 product')))) throw new Error('no review button');
-      if (!(await evaluate(waitFor(`${bodyHas('Delivered models land privately in My catalog')} && ${quoteTotal}.includes('$129')`)))) throw new Error('the review does not say My catalog at $129');
+      if (!(await evaluate(waitFor(`${bodyHas('Delivered models land privately in My catalog')} && ${aside}.includes('Included')`)))) throw new Error('the review does not say My catalog, included in the plan');
       if (!(await evaluate(waitFor(bodyHas('Line or collection'))))) throw new Error('a contractor request has no line field');
       await shot('review');
     },
@@ -402,34 +432,34 @@ export default [
     as: 'contractor',
     viewport: PHONE,
     waitFor: ['.ord-product.open', '.ord-target select'],
-    expectText: ['Who are the models for?'],
+    expectText: ['Where should the models go?', 'models left this month'],
     check: async ({ evaluate }) => {
       if (await evaluate(SIDEWAYS)) throw new Error('the contractor request scrolls sideways on a phone');
     },
   },
   {
-    // The pricing page's custom-model section: the one offer, from the server.
-    name: 'pricing-model-pack',
+    // The pricing page's custom-model section: included in the Contractor plan, no price.
+    name: 'pricing-custom-models',
     path: '#/pricing',
     as: 'anon',
     viewport: { w: 1440, h: 900 },
     waitFor: '.mk-pack',
-    expectText: ['Model pack', 'up to 8 products', '9–16 products', 'What you send', 'exact amount before you pay'],
+    expectText: ['Not in the catalog? Our studio models it.', '3 models a month', 'in the Contractor plan', 'What you send', 'Don’t carry over'],
     check: async ({ evaluate, shot }) => {
       const n = await evaluate(`document.querySelectorAll('.mk-tiers .mk-tier').length`);
       if (n !== 3) throw new Error(`expected 3 custom-model cards, found ${n}`);
-      if (await evaluate(`document.querySelector('#models').textContent.includes('$279')`)) throw new Error('a retired tier price is still on the pricing page');
+      if (await evaluate(`/\\$\\d|Model pack|Rush/.test(document.querySelector('#models').textContent)`)) throw new Error('a custom-model price, pack or rush is still on the pricing page');
       await evaluate(`document.getElementById('models').scrollIntoView({ block: 'start' })`);
       await shot('models');
     },
   },
   {
-    name: 'pricing-model-pack-phone',
+    name: 'pricing-custom-models-phone',
     path: '#/pricing',
     as: 'anon',
     viewport: PHONE,
     waitFor: '.mk-pack',
-    expectText: ['Model pack'],
+    expectText: ['in the Contractor plan'],
     check: async ({ evaluate, shot }) => {
       if (await evaluate(SIDEWAYS)) throw new Error('the pricing page scrolls sideways on a phone');
       await evaluate(`document.getElementById('models').scrollIntoView({ block: 'start' })`);
@@ -439,12 +469,17 @@ export default [
 
   // ── list and detail ───────────────────────────────────────────────────
   {
+    // Not a contractor: their orders from before, read-only, with prices in their own currency,
+    // and a note that custom models come with the Contractor plan. No way to start a new one.
     name: 'orders-list',
     path: '#/orders',
     as: 'customer',
     viewport: { w: 1440, h: 900 },
-    waitFor: '.ord-list',
-    expectText: ['Make custom models', 'Fireclay apron-front sink (Demo)', 'Delivered', 'In progress'],
+    waitFor: ['.ord-list', '.ord-plan-note'],
+    expectText: ['Custom models', 'Fireclay apron-front sink (Demo)', 'Delivered', 'In progress', 'Custom 3D models come with the Contractor plan', '$279 USD'],
+    check: async ({ evaluate }) => {
+      if (await evaluate(`[...document.querySelectorAll('a')].some((a) => a.textContent.includes('Make a custom model'))`)) throw new Error('a non-contractor is offered a new custom model');
+    },
   },
   {
     name: 'orders-list-phone',
@@ -452,7 +487,7 @@ export default [
     as: 'customer',
     viewport: PHONE,
     waitFor: '.ord-list',
-    expectText: ['Make custom models'],
+    expectText: ['Custom models', 'Contractor plan'],
     check: async ({ evaluate }) => {
       if (await evaluate('document.documentElement.scrollWidth > window.innerWidth + 1')) throw new Error('the list scrolls sideways on a phone');
     },
@@ -464,7 +499,7 @@ export default [
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-deliverable',
     waitMs: 800,
-    expectText: ['Fireclay apron-front sink (Demo)', 'Accept the model', 'Request revision', 'Add to a kitchen', 'Timeline'],
+    expectText: ['Fireclay apron-front sink (Demo)', 'Accept the model', 'Request revision', 'Add to a kitchen', 'Timeline', '$279 USD'],
   },
   {
     name: 'orders-delivered-phone',
@@ -522,13 +557,14 @@ export default [
 
   // ── the full DEMO lifecycle (two routes, in order) ─────────────────────
   {
-    // The customer has paid (DEMO); the studio starts the order and delivers a GLB + thumbnail
-    // through the drawer's real upload inputs.
+    // The contractor sent a request (included in the plan, nothing paid); the studio starts it and
+    // delivers a GLB + thumbnail through the drawer's real upload inputs.
     name: 'orders-lifecycle-deliver',
     as: 'studio',
     viewport: { w: 1440, h: 900 },
     setup: async ({ api }) => {
-      const customer = api.as('customer');
+      await ensureModels(api, 1);
+      const customer = api.as('contractor');
       life.name = `QA lifecycle sink ${Date.now().toString(36)} (Demo)`;
       const r = await customer.post('/api/orders', {
         target: 'customer',
@@ -537,16 +573,13 @@ export default [
       });
       if (r.status !== 201) throw new Error(`creating the order failed: ${r.status} ${JSON.stringify(r.body)}`);
       life.id = r.body.order.id;
-      const c = await customer.post(`/api/orders/${life.id}/checkout`, {});
-      if (c.status !== 200) throw new Error(`checkout failed: ${c.status}`);
-      const p = await customer.post(`/api/payments/demo/${life.id}/complete`, { outcome: 'success' });
-      if (p.status !== 200 || p.body?.order?.status !== 'paid') throw new Error(`demo payment failed: ${p.status} ${JSON.stringify(p.body)}`);
+      if (r.body.order.status !== 'paid' || r.body.order.amountCents !== 0) throw new Error(`a plan request should go straight to the queue at no charge: ${JSON.stringify(r.body.order)}`);
       return { path: '#/admin/studio' };
     },
     waitFor: '.ord-queue',
     expectText: ['Studio queue'],
     check: async ({ evaluate, api }) => {
-      if (!(await evaluate(click(life.name)))) throw new Error('the paid order is not in the queue');
+      if (!(await evaluate(click(life.name)))) throw new Error('the submitted request is not in the queue');
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-drawer') && document.querySelector('.ord-drawer').textContent.includes('Start (assign to me)')`)))) throw new Error('the drawer did not offer Start');
       if (!(await evaluate(waitFor(`document.querySelector('.ord-drawer').textContent.includes('9638 5074 (EAN-8)')`)))) throw new Error('the drawer does not show the product’s UPC');
       await evaluate(click('Start (assign to me)'));
@@ -563,7 +596,7 @@ export default [
       })()`;
       if (!(await evaluate(waitFor(deliver)))) throw new Error('no enabled Deliver button');
       if (!(await evaluate(waitFor(`document.querySelector('.ord-drawer').textContent.includes('Delivered: ')`, 8000)))) throw new Error('the drawer did not show the delivery');
-      const o = await api.as('customer').get(`/api/orders/${life.id}`);
+      const o = await api.as('contractor').get(`/api/orders/${life.id}`);
       if (o.body?.order?.status !== 'delivered' || !o.body.deliverables?.length) throw new Error(`after delivery the order is ${o.body?.order?.status}`);
     },
   },
@@ -571,11 +604,11 @@ export default [
     // The buyer sees the model, places it in a kitchen, comes back and accepts. The model is in
     // the buyer's catalog and nobody else's.
     name: 'orders-lifecycle-accept',
-    as: 'customer',
+    as: 'contractor',
     viewport: { w: 1440, h: 900 },
     setup: async ({ api }) => {
       if (!life.id) throw new Error('orders-lifecycle-deliver must run first');
-      const k = await api.as('customer').post('/api/projects', {
+      const k = await api.as('contractor').post('/api/projects', {
         name: 'QA lifecycle kitchen',
         doc: {
           name: 'QA lifecycle kitchen',
@@ -590,12 +623,12 @@ export default [
     waitFor: '.ord-deliverable',
     expectText: ['Your model', 'Add to a kitchen', 'Accept the model'],
     check: async ({ evaluate, api }) => {
-      const d = await api.as('customer').get(`/api/orders/${life.id}`);
+      const d = await api.as('contractor').get(`/api/orders/${life.id}`);
       const productId = d.body?.deliverables?.[0]?.id;
       if (!productId) throw new Error('no deliverable on the order');
-      const mine = await api.as('customer').get('/api/catalog');
+      const mine = await api.as('contractor').get('/api/catalog');
       if (!mine.body.products.some((p) => p.id === productId)) throw new Error('the model is not in the buyer’s catalog');
-      for (const role of ['brand', 'studio']) {
+      for (const role of ['customer', 'brand', 'studio']) {
         const other = await api.as(role).get('/api/catalog');
         if (other.body.products.some((p) => p.id === productId)) throw new Error(`the private model is in ${role}’s catalog`);
       }
@@ -617,8 +650,11 @@ export default [
     as: 'admin',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-queue',
-    expectText: ['Studio queue', 'Enamel dome pendant (Demo)', 'Heritage 36″ dual-fuel range (Demo)', 'UPC 2 00000 04120 5'],
+    expectText: ['Studio queue', 'Enamel dome pendant (Demo)', 'Heritage 36″ dual-fuel range (Demo)', 'UPC 2 00000 04120 5', 'Alder Shaker base 30 (Demo)', 'Extra models for a contractor'],
     check: async ({ evaluate }) => {
+      // The demo contractor's request is included in the plan: "Submitted", not "Paid", and "Included".
+      const row = await evaluate(`(() => { const r = [...document.querySelectorAll('.ord-q-row')].find((x) => x.textContent.includes('Alder Shaker base 30 (Demo)')); return r ? r.textContent : null; })()`);
+      if (!row || !row.includes('Submitted') || !row.includes('Included')) throw new Error(`the plan request's queue row reads: ${row}`);
       if (!(await evaluate(click('Enamel dome pendant (Demo)')))) throw new Error('no queue row to open');
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-drawer') && document.querySelector('.ord-drawer').textContent.includes('Start (assign to me)')`)))) throw new Error('the drawer did not open with Start');
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-drawer img')`)))) throw new Error('the private reference photo is not shown to staff');

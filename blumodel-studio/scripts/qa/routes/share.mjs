@@ -220,30 +220,31 @@ export default [
     path: '#/pricing',
     as: 'anon',
     waitFor: ['.mk-plans', '.mk-tiers'],
+    // Since 2026-10-15: three plans (Free, Unlimited $15 CAD/month, Contractor $99 CAD/month with 3
+    // custom models a month). The one-kitchen unlock is offered only in the export dialog, so
+    // nothing here names it or its price.
     expectText: [
       'Design for free. Pay when you take it with you.',
       'Free',
-      'Kitchen unlock',
       'Unlimited',
       'Contractor',
-      '$5',
       '$15',
-      '$40',
+      '$99',
+      'CAD a month',
+      '3 custom 3D models a month, made by our studio',
       'Show your customers the exact cabinets you sell, in their kitchen, at your price.',
       'Why are exports paid?',
-      'What does the $5 unlock cover?',
       'Can I cancel?',
       'BluModel Studio is a visualizer',
     ],
     fullPage: true,
     check: async (h) => {
       const n = await h.evaluate(() => document.querySelectorAll('.mk-plans .mk-plan').length);
-      if (n !== 4) throw new Error(`expected the 4 plans from src/data/plans.json, found ${n} plan cards`);
+      if (n !== 3) throw new Error(`expected 3 plan cards (Free, Unlimited, Contractor), found ${n}`);
+      const text = await h.evaluate(() => document.querySelector('main').textContent);
+      for (const bad of ['Kitchen unlock', '$5 ', '$5.', '$5)', '$40', '$129', 'Model pack', 'unlock cover']) if (text.includes(bad)) throw new Error(`the pricing page still says "${bad}"`);
       const tiers = await h.evaluate(() => document.querySelectorAll('.mk-tiers .mk-tier').length);
-      if (tiers < 1) throw new Error('no custom-model tiers (neither GET /api/orders/tiers nor the fallback)');
-      const tierNote = await h.evaluate(() => document.querySelector('.mk-tiers-note')?.textContent ?? '');
-      h.note(`tiers: ${tierNote}`);
-      if (!/exact amount before you pay/.test(tierNote)) throw new Error(`the custom-model note lost its "exact amount" promise: ${tierNote}`);
+      if (tiers !== 3) throw new Error(`expected 3 custom-model cards, found ${tiers}`);
       const ctas = await h.evaluate(() => [...document.querySelectorAll('.mk-plan-cta a')].map((a) => a.getAttribute('href')));
       if (ctas.some((href) => !href || !href.startsWith('#/'))) throw new Error(`a plan button goes nowhere: ${JSON.stringify(ctas)}`);
       // No card fields anywhere: payments are Stripe-hosted (or demo).
@@ -257,7 +258,7 @@ export default [
     as: 'anon',
     viewport: PHONE_375,
     waitFor: ['.mk-plans', '.mk-tiers'],
-    expectText: ['Kitchen unlock', 'Why are exports paid?'],
+    expectText: ['Contractor', 'Why are exports paid?'],
     waitMs: 300,
     check: async (h) => {
       await noSideScroll(h);

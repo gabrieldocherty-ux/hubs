@@ -497,7 +497,7 @@ export default [
     check: async (h) => {
       await exportItem(h, 'Floor plan');
       await h.waitFor('.modal.unlock .pay-note--demo');
-      await h.waitForText(['Unlock this kitchen · $5', 'By paying you agree']);
+      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'By paying you agree']);
       await noCardFields(h);
     },
   },
@@ -510,7 +510,7 @@ export default [
     timeoutMs: 30_000,
     check: async (h) => {
       await exportItem(h, 'Shopping list');
-      await h.waitForText('Unlock this kitchen · $5');
+      await h.waitForText('Unlock this kitchen - $5 CAD once');
       await clickLabelled(h, 'Unlock this kitchen');
       await h.waitFor('.demo-pay-actions .btn.primary');
       await noCardFields(h);
@@ -560,7 +560,7 @@ export default [
     check: async (h) => {
       await exportItem(h, '3D render');
       await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock this kitchen · $5', 'Go Unlimited · $15/month', 'By paying you agree to the Terms and the Refund policy']);
+      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month', 'By paying you agree to the Terms and the Refund policy']);
       // The catalog panel behind it lists the QA seed's "(Demo)" brands: check the dialog and the Export menu's words.
       await noDemoWording(h, 'the Unlock dialog', '.modal.unlock');
       await noCardFields(h);
@@ -576,7 +576,7 @@ export default [
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
       await exportItem(h, 'Floor plan');
-      await h.waitForText(['Unlock this kitchen · $5', 'By paying you agree']);
+      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'By paying you agree']);
       await noDemoWording(h, 'the Unlock dialog', '.modal.unlock');
       const r = await h.evaluate(() => {
         const m = document.querySelector('.modal.unlock').getBoundingClientRect();

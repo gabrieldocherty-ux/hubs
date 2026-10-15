@@ -124,7 +124,7 @@ export function OrdersList() {
                       <StatusPill status={o.status} pricing={o.pricing} />
                       <span className="ord-row-meta">
                         {o.provider === 'demo' && <span className="ord-tag">Demo</span>}
-                        <span className="mono">{orderPrice(o)}</span>
+                        <span className={o.pricing === 'plan' ? 'ord-included' : 'mono'}>{orderPrice(o)}</span>
                       </span>
                       <span className="ord-row-when">{whenText(o)}</span>
                     </div>

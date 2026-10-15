@@ -126,7 +126,7 @@ export function OrderPage({ id }: { id: string }) {
           <h1>{o.title}</h1>
           <div className="ord-head-meta">
             <StatusPill status={o.status} pricing={o.pricing} />
-            <span className="mono">{orderPrice(o)}</span>
+            <span className={plan ? 'ord-included' : 'mono'}>{orderPrice(o)}</span>
             {demoOrder && <span className="ord-tag">Demo payment</span>}
             <span className="muted">Requested {shortDate(o.createdAt)}</span>
           </div>
@@ -297,7 +297,7 @@ export function OrderPage({ id }: { id: string }) {
                 {o.quote.lines.map((l, i) => (
                   <li key={i}>
                     <span>{l.label}</span>
-                    <span className="mono">Included</span>
+                    <span className="ord-included">Included</span>
                   </li>
                 ))}
               </ul>

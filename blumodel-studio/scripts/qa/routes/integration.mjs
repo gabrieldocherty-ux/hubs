@@ -722,7 +722,7 @@ export default [
       await h.waitFor('.topbar .menu[role="menu"]');
       await h.click(await mark(h, '.topbar .menu [role="menuitem"]', 'Shopping list', 'csv'));
       await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock “QA Unlock Kitchen”', 'Unlock this kitchen · $5']);
+      await h.waitForText(['Unlock “QA Unlock Kitchen”', 'Unlock this kitchen - $5 CAD once']);
       await h.click(await mark(h, '.modal.unlock button', 'Unlock this kitchen', 'unlock'));
       await h.waitUntil(() => location.hash.startsWith('#/pay/'), 10_000, 'the demo checkout');
       await h.waitForText(['DEMO PAYMENT', 'BluModel Studio never sees or stores card details']);

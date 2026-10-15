@@ -16,7 +16,7 @@ import './orders.css';
 
 const FILTERS: { id: StudioFilter; label: string; count?: OrderStatus[] }[] = [
   { id: 'active', label: 'Active', count: ['paid', 'in_progress', 'revision_requested'] },
-  { id: 'paid', label: 'Paid', count: ['paid'] },
+  { id: 'paid', label: 'To start', count: ['paid'] },
   { id: 'in_progress', label: 'In progress', count: ['in_progress'] },
   { id: 'revision_requested', label: 'Revisions', count: ['revision_requested'] },
   { id: 'delivered', label: 'Delivered', count: ['delivered'] },
@@ -128,7 +128,7 @@ export default function AdminStudioTab() {
                     {o.assignee ?? '—'}
                   </td>
                   <td className="ord-num ord-q-amt">
-                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className="mono">{orderPrice(o)}</span>
+                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className={o.pricing === 'plan' ? 'ord-included' : 'mono'}>{orderPrice(o)}</span>
                   </td>
                 </tr>
               );
