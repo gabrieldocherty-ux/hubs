@@ -3,6 +3,1746 @@
   "checkedAt": "2026-10-15",
   "products": [
     {
+      "key": "frigidaire-gallery-gccg3648as",
+      "brand": "Frigidaire",
+      "name": "Gallery 36 in gas cooktop, 5 burners incl. quick boil, stainless (GCCG3648AS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "cooktop",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/frigidaire-gallery-36-inch-gas-cooktop-in-stainless-steel-with-5-burners-including-quick-boil/1001759011",
+          "sku": "1001759011",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/frigidaire-gallery-36-inch-gas-cooktop-in-stainless-steel-with-5-burners-including-quick-boil/1001759011"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Cutout about 33.9 in wide x 19 in deep (not the product size)."
+    },
+    {
+      "key": "bosch-ngm5658uc",
+      "brand": "Bosch",
+      "name": "500 Series 36 in gas-on-glass cooktop, 5 burners, stainless (NGM5658UC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "cooktop",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/bosch-36-inch-gas-on-glass-gas-cooktop-in-stainless-steel-with-5-burners/1001697906",
+          "sku": "1001697906",
+          "priceCad": 2298,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/bosch-36-inch-gas-on-glass-gas-cooktop-in-stainless-steel-with-5-burners/1001697906"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "samsung-nz30k7880ug",
+      "brand": "Samsung",
+      "name": "30 in induction cooktop, 5 elements with flex zone, black stainless trim (NZ30K7880UG)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "cooktop",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black stainless trim",
+          "hex": "#2b2b2d"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/samsung-30-inch-induction-cooktop-in-black-stainless-steel-with-5-elements-and-flex-zone-element/1001033041",
+          "sku": "1001033041",
+          "priceCad": 2945,
+          "inStockOnline": null
+        },
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/shop/appliances/30-inch-induction-cooktop",
+          "sku": null,
+          "priceCad": 2595.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/samsung-30-inch-induction-cooktop-in-black-stainless-steel-with-5-elements-and-flex-zone-element/1001033041",
+        "https://www.bestbuy.ca/en-ca/shop/appliances/30-inch-induction-cooktop"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Cutout about 28.5 in x 19.4 in. The two retailers disagree on price by about $350. The Best Buy entry is a category page."
+    },
+    {
+      "key": "forno-spezia-36-rangetop",
+      "brand": "Forno",
+      "name": "Spezia Alta Qualita 36 in pro-style gas rangetop, 6 brass burners with griddle",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "cooktop",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/forno-spezia-alta-qualita-36-pro-style-gas-rangetop/1001862736",
+          "sku": "1001862736",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/forno-spezia-alta-qualita-36-pro-style-gas-rangetop/1001862736"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Rangetop with no oven; 120,000 BTU total per the summary."
+    },
+    {
+      "key": "whirlpool-wdt730hamz",
+      "brand": "Whirlpool",
+      "name": "24 in built-in dishwasher with third rack, 51 dBA, stainless (WDT730HAMZ)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 23.875,
+      "depthIn": 24.5,
+      "heightIn": 34.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/whirlpool-24-51db-built-in-dishwasher-with-third-rack-wdt730hamz-stainless-steel/16502080",
+          "sku": "16502080",
+          "priceCad": 699.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/whirlpool-51-dba-filtration-built-in-dishwasher-stainless-steel-24-in-energy-star-certified-wdt730hamz-30006775",
+          "sku": "30006775",
+          "priceCad": 699,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.ajmadison.com/cgi-bin/ajmadison/WDT730HAMZ.html",
+        "https://www.tascoappliance.ca/luxuryapplianceoutlet/home/brands/whirlpool/WDT730HAMZ"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Depth 24.5 in door closed without handle, 27.25 in with handle. Cutout 24 x 24 x 34 in. Best Buy showed $599.99 on the product page and $699.99 on a category page. One listing gave a UPC (883049622002) that no second source confirmed, so none is recorded."
+    },
+    {
+      "key": "bosch-shx5aem5n",
+      "brand": "Bosch",
+      "name": "100 Series Premium 24 in smart dishwasher with third rack, 46 dBA, stainless (SHX5AEM5N)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 23.5625,
+      "depthIn": 22.5625,
+      "heightIn": 33.875,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-third-rack-shx5aem5n-stainless-steel/17109440",
+          "sku": "17109440",
+          "priceCad": 899.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/bosch-100-series-3-rack-46-db-24-in-stainless-steel-built-in-dishwasher-shx5aem5n-30855415",
+          "sku": "30855415",
+          "priceCad": 799,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://bosch-home.com/us/en/mkt-product/dishwashers/top-controls/SHX5AEM5N"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Overall 33 7/8 x 23 9/16 x 22 9/16 in (Bosch US page); required cutout 33 7/8 x 24 x 24 in. No UPC found. A Home Depot Canada Bosch 100 Premium listing exists but its model number was not confirmed as SHX5AEM5N."
+    },
+    {
+      "key": "bosch-she53b75uc",
+      "brand": "Bosch",
+      "name": "300 Series 24 in built-in dishwasher with third rack, stainless (SHE53B75UC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-stainless-steel-tub-third-rack-she53b75uc-stainless-steel/16681222",
+          "sku": "16681222",
+          "priceCad": 999.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/300-series-24-built-in-dishwasher-she53b75uc-with-front-controls-third-rack-stainless-steel/p/3719158",
+          "sku": "3719158",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-stainless-steel-tub-third-rack-she53b75uc-stainless-steel/16681222",
+        "https://www.homehardware.ca/en/300-series-24-built-in-dishwasher-she53b75uc-with-front-controls-third-rack-stainless-steel/p/3719158"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Sold by both Best Buy Canada and Home Hardware."
+    },
+    {
+      "key": "frigidaire-ffid2426ts",
+      "brand": "Frigidaire",
+      "name": "24 in built-in dishwasher, top controls, stainless (FFID2426TS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/24-stainless-steel-built-in-dishwasher/p/3719325",
+          "sku": "3719325",
+          "priceCad": 549,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/24-stainless-steel-built-in-dishwasher/p/3719325"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "whirlpool-wrf535swhz",
+      "brand": "Whirlpool",
+      "name": "36 in 25.2 cu ft French door refrigerator with water dispenser, stainless (WRF535SWHZ)",
+      "line": null,
+      "upc": "883049442068",
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.625,
+      "depthIn": 35.5,
+      "heightIn": 70.125,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/whirlpool-36-25-2-cu-ft-french-door-refrigerator-w-water-dispenser-wrf535swhz-stainless-steel/11465164.aspx",
+          "sku": "11465164",
+          "priceCad": 1899.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/whirlpool-french-door-refrigerator-with-water-dispenser-25-cu-ft-stainless-steel-36-in-wrf535swhz-30005469",
+          "sku": "30005469",
+          "priceCad": 2495,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://greentoe.com/product/Whirlpool_WRF535SWHZ",
+        "https://leons.ca/products/whirlpool-stainless-steel-french-door-refrigerator-25-cu-ft-wrf535swhz?view=print"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Standard depth. Depth 35.5 in includes handles (33 in without). UPC from Greentoe and Leon's. Not found at Home Depot Canada. Designer Appliances flags the model as discontinued in the US."
+    },
+    {
+      "key": "ge-gne27jymfs",
+      "brand": "GE",
+      "name": "36 in 27 cu ft French door refrigerator with internal water dispenser, fingerprint-resistant stainless (GNE27JYMFS)",
+      "line": null,
+      "upc": "084691853800",
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.75,
+      "depthIn": 35.9,
+      "heightIn": 69.9,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Fingerprint-resistant stainless steel",
+          "hex": "#bfc3c6"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/ge-36-inch-27-0-cu-ft-french-door-refrigerator-fingerprint-resistant-stainless-steel-energy-star-/1001701015",
+          "sku": "1001701015",
+          "priceCad": 1898,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/36-27-cu-ft-french-door-bottom-freezer-refrigerator-gne27jymfs-fingerprint-resistant-stainless-steel/p/3760113",
+          "sku": "3760113",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://static.pcrichard.com/docs/GNE27JMMES_Quick_Specs.pdf",
+        "https://greentoe.com/product/GE_GNE27JYMFS"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Standard depth: case depth without door 29 in, 33.4 to 33.9 in without handles, 35.9 in with handles. UPC from The Brick and Greentoe listings. HD price is a 2026-10-12 snapshot. Black (GNE27JGMBB) and slate (GNE27JMMES) versions share the box."
+    },
+    {
+      "key": "samsung-rf28t5a01sr",
+      "brand": "Samsung",
+      "name": "36 in 28.2 cu ft 3-door French door refrigerator, stainless (RF28T5A01SR)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.75,
+      "depthIn": 35.375,
+      "heightIn": 70,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/samsung-36-28-2-cu-ft-french-door-refrigerator-rf28t5a01sr-stainless/14800542",
+          "sku": "14800542",
+          "priceCad": null,
+          "inStockOnline": false
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/samsung-french-door-refrigerator-with-ice-maker-36-in-282-cu-ft-stainless-steel-rf28t5a01sr-aa-22945292",
+          "sku": "22945292",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.canadianappliance.ca/pdf/samsung/refrigerator/RF28T5A01SR_specification-sheet.pdf",
+        "https://www.coastappliances.ca/products/samsung-35-8-inch-28-2-cu-ft-french-door-refrigerator-in-stainless-rf28t5a01sr"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Depth 35 3/8 in with handle, 32 7/8 in without (Tasco/Bonprix spec tables). Best Buy page was marked sold out and old. No UPC found."
+    },
+    {
+      "key": "lg-lrflc2706s",
+      "brand": "LG",
+      "name": "36 in 27 cu ft smart counter-depth MAX refrigerator with internal water dispenser, stainless (LRFLC2706S)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.75,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/lg-stainless-steel-bottom-freezer-refrigerator-36-in-27-cu-ft-internal-water-dispenser-lrflc2706s-30895370",
+          "sku": "30895370",
+          "priceCad": 2195,
+          "inStockOnline": false
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/lg-electronics-27-cu-ft-smart-counter-depth-refrigerator-in-stainless-steel/1001761787",
+          "sku": "1001761787",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Best Buy",
+          "url": "https://bestbuy.ca/en-ca/product/lg-36-27-cu-ft-smart-counter-depth-max-refrigerator-with-internal-water-dispenser-lrflc2706s-stainless-steel/16499205",
+          "sku": "16499205",
+          "priceCad": null,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/lg-stainless-steel-bottom-freezer-refrigerator-36-in-27-cu-ft-internal-water-dispenser-lrflc2706s-30895370",
+        "https://www.homedepot.ca/product/lg-electronics-27-cu-ft-smart-counter-depth-refrigerator-in-stainless-steel/1001761787",
+        "https://bestbuy.ca/en-ca/product/lg-36-27-cu-ft-smart-counter-depth-max-refrigerator-with-internal-water-dispenser-lrflc2706s-stainless-steel/16499205"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Counter-depth; depth was not captured. RONA labels it \"bottom freezer\", HD and Best Buy \"French door\"."
+    },
+    {
+      "key": "bosch-b36ct80sns",
+      "brand": "Bosch",
+      "name": "800 Series 36 in 21 cu ft counter-depth French door refrigerator, stainless (B36CT80SNS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://bestbuy.ca/en-ca/product/bosch-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583",
+          "sku": "13694583",
+          "priceCad": 5879.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://bestbuy.ca/en-ca/product/bosch-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "samsung-bespoke-rf23db990012ac",
+      "brand": "Samsung",
+      "name": "BESPOKE 36 in 22.5 cu ft counter-depth 4-door French door refrigerator with Family Hub, white (RF23DB990012AC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White glass",
+          "hex": "#f4f4f2"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/samsung-bespoke-36-22-5-cu-ft-counter-depth-4-door-french-door-refrigerator-w-family-hub-rf23db990012ac-white/17741592",
+          "sku": "17741592",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/samsung-bespoke-36-22-5-cu-ft-counter-depth-4-door-french-door-refrigerator-w-family-hub-rf23db990012ac-white/17741592"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "lg-lf24z6530s",
+      "brand": "LG",
+      "name": "36 in 23.7 cu ft French 3-door counter-depth MAX refrigerator with zero clearance, stainless (LF24Z6530S)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/lg-36-23-7-cu-ft-french-3-door-counter-depth-max-refrigerator-with-zero-clearance-lf24z6530s-stainless-steel/18658455",
+          "sku": "18658455",
+          "priceCad": 2594.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/lg-36-23-7-cu-ft-french-3-door-counter-depth-max-refrigerator-with-zero-clearance-lf24z6530s-stainless-steel/18658455"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Cutout 36 in wide x 33 in deep per the Best Buy listing."
+    },
+    {
+      "key": "maytag-mfc2062fez",
+      "brand": "Maytag",
+      "name": "36 in 20 cu ft counter-depth French door refrigerator, stainless (MFC2062FEZ)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": 29.5,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/maytag-36-20-cu-ft-counter-depth-french-door-refrigerator-mfc2062fez-stainless-steel/12307506",
+          "sku": "12307506",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/maytag-36-20-cu-ft-counter-depth-french-door-refrigerator-mfc2062fez-stainless-steel/12307506"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Listed depth 29.5 in."
+    },
+    {
+      "key": "frigidaire-gallery-grfc2353af",
+      "brand": "Frigidaire",
+      "name": "Gallery 36 in 22.6 cu ft French door bottom-freezer refrigerator, stainless (GRFC2353AF)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Hardware",
+          "url": "https://www.homehardware.ca/en/36-226-cu-ft-french-door-bottom-freezer-refrigerator-grfc2353af-stainless-steel/p/3760174",
+          "sku": "3760174",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homehardware.ca/en/36-226-cu-ft-french-door-bottom-freezer-refrigerator-grfc2353af-stainless-steel/p/3760174"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "smeg-fab28-retro-fridge",
+      "brand": "Smeg",
+      "name": "50's retro 24 in 9.2 cu ft all-fridge (FAB28 series)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 23.62,
+      "depthIn": 30.31,
+      "heightIn": 60.24,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black (FAB28URBL3)",
+          "hex": "#1d1d1f"
+        },
+        {
+          "name": "White (FAB28ULWH3)",
+          "hex": "#f1f1ee"
+        },
+        {
+          "name": "Pink (FAB28URPK3)",
+          "hex": "#f2b8c6"
+        },
+        {
+          "name": "Yellow (FAB28URYW3)",
+          "hex": "#f2d95c"
+        },
+        {
+          "name": "Pastel green (FAB28ULPG3)",
+          "hex": "#a9d5bf"
+        },
+        {
+          "name": "Pastel blue (FAB28ULPB3)",
+          "hex": "#a9cfe3"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/smeg-50-s-24-9-2-cu-ft-all-fridge-refrigerator-fab28urbl3-black/14950493",
+          "sku": "14950493",
+          "priceCad": 2859.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/smeg-50-s-24-9-2-cu-ft-all-fridge-refrigerator-fab28ulwh3-white/14950507",
+          "sku": "14950507",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/smeg-50-s-24-9-2-cu-ft-all-fridge-refrigerator-fab28urbl3-black/14950493",
+        "https://www.bestbuy.ca/en-ca/product/smeg-50-s-24-9-2-cu-ft-all-fridge-refrigerator-fab28ulwh3-white/14950507"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Dimensions are the Best Buy listing for the black unit (23.62 W x 60.24 H x 30.31 D in); right-hinged by default. The Smeg FAB28 colours were only found at Best Buy Canada in this search."
+    },
+    {
+      "key": "whirlpool-wuw55x24hs-wine-46",
+      "brand": "Whirlpool",
+      "name": "24 in undercounter wine fridge, 46 bottles, dual zone, stainless (WUW55X24HS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wine-cooler",
+      "widthIn": 23.81,
+      "depthIn": 23.75,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/whirlpool-24-inch-w-undercounter-wine-fridge-for-46-bottles-in-stainless-steel-reversible-door-swing/1001087777",
+          "sku": "1001087777",
+          "priceCad": 1648,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/whirlpool-24-inch-w-undercounter-wine-fridge-for-46-bottles-in-stainless-steel-reversible-door-swing/1001087777"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "whirlpool-wub35x24hz-beverage-center",
+      "brand": "Whirlpool",
+      "name": "24 in 5.2 cu ft wine and beverage cooler with glass door, fingerprint-resistant stainless (WUB35X24HZ)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "beverage-center",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Fingerprint-resistant stainless steel",
+          "hex": "#bfc3c6"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/whirlpool-24-inch-5-2-cu-ft-wine-beverage-cooler-with-glass-door-in-finger-print-resistant-stainless-steel/1001106612",
+          "sku": "1001106612",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/whirlpool-24-inch-5-2-cu-ft-wine-beverage-cooler-with-glass-door-in-finger-print-resistant-stainless-steel/1001106612"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "marathon-mwc56-dss-wine-cooler",
+      "brand": "Marathon",
+      "name": "24 in built-in dual-zone wine cooler, stainless (MWC56-DSS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wine-cooler",
+      "widthIn": 24,
+      "depthIn": 25,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/marathon-24-inch-built-in-dual-zone-stainless-steel-wine-cooler/1001523609",
+          "sku": "1001523609",
+          "priceCad": 1799,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/marathon-24-inch-built-in-dual-zone-stainless-steel-wine-cooler/1001523609"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Canadian-brand zero-clearance unit."
+    },
+    {
+      "key": "broan-nutone-bwp1304ss",
+      "brand": "Broan-NuTone",
+      "name": "30 in pyramid chimney wall-mount range hood, 450 max CFM, stainless (BWP1304SS)",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/broan-nutone-30-inch-pyramid-chimney-wall-mount-range-hood-450-max-cfm-in-stainless-steel-optional-non-duct-kit-separate/1001591249",
+          "sku": "1001591249",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/broan-nutone-30-inch-pyramid-chimney-wall-mount-range-hood-450-max-cfm-in-stainless-steel-optional-non-duct-kit-separate/1001591249"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Non-duct kit sold separately. RONA also lists a Broan 450 CFM convertible chimney hood (article 09095132) near $400 that is probably a sibling."
+    },
+    {
+      "key": "broan-nutone-ewp1306ss",
+      "brand": "Broan-NuTone",
+      "name": "30 in pyramid chimney wall-mount range hood, 640 max blower CFM, stainless (EWP1306SS)",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/broan-nutone-30-inch-pyramid-chimney-wall-mount-range-hood-640-max-blower-cfm-in-stainless-steel/1001768746",
+          "sku": "1001768746",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/broan-nutone-30-inch-pyramid-chimney-wall-mount-range-hood-640-max-blower-cfm-in-stainless-steel/1001768746"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "ge-30-convertible-wall-mount-hood",
+      "brand": "GE",
+      "name": "30 in convertible wall-mount range hood, 350 max CFM, stainless",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/ge-30-inch-convertible-wall-mount-range-hood-in-stainless-steel/1001036736",
+          "sku": "1001036736",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/ge-30-inch-convertible-wall-mount-range-hood-in-stainless-steel/1001036736"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Needs 30 in clearance above the cooktop per the summary."
+    },
+    {
+      "key": "vissani-30-320cfm-chimney-hood",
+      "brand": "Vissani",
+      "name": "30 in 320 CFM wall-mount chimney range hood, stainless",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": 18.9,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/vissani-30-inch-320-cfm-wall-mount-chimney-range-hood-in-stainless-steel/1000860269",
+          "sku": "1000860269",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/vissani-30-inch-320-cfm-wall-mount-chimney-range-hood-in-stainless-steel/1000860269"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Assembled depth 18.9 in; needs 24 in clearance above the cooktop. A 450 CFM sibling is SKU 1000860264."
+    },
+    {
+      "key": "cosmo-cos-668wrc75-vista-hood",
+      "brand": "Cosmo",
+      "name": "30 in 380 CFM Vista collection ducted wall-mount range hood, stainless (COS-668WRC75)",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/cosmo-wall-mount-range-hood-with-led-light-380-cfm-30-in-stainless-steel-cos-668wrc75-330716994",
+          "sku": "330716994",
+          "priceCad": 375,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/cosmo-wall-mount-range-hood-with-led-light-380-cfm-30-in-stainless-steel-cos-668wrc75-330716994"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Price looked like a sale price. Glass-canopy convertible hood; telescoping chimney for 7.5 to 8.5 ft ceilings."
+    },
+    {
+      "key": "cosmo-cos-63175s-hood",
+      "brand": "Cosmo",
+      "name": "30 in 380 CFM ducted range hood with touch controls, stainless (COS-63175S)",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/cosmo-30-in-stainless-steel-ducted-range-hood-with-touch-controls-led-lighting-and-permanent-filters-cos-63175s-332067323",
+          "sku": "332067323",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cosmo-30-in-ductless-wall-mount-range-hood-in-stainless-steel-with-touch-controls/1001595571",
+          "sku": "1001595571",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/cosmo-30-in-stainless-steel-ducted-range-hood-with-touch-controls-led-lighting-and-permanent-filters-cos-63175s-332067323",
+        "https://www.homedepot.ca/product/cosmo-30-in-ductless-wall-mount-range-hood-in-stainless-steel-with-touch-controls/1001595571"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. The Home Depot entry is the ductless (DL) variant of the same Cosmo hood, so the two stores do not sell the identical SKU."
+    },
+    {
+      "key": "cosmo-uc30-haven-under-cabinet-hood",
+      "brand": "Cosmo",
+      "name": "30 in 380 CFM Haven collection ducted under-cabinet range hood, stainless (UC30)",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/cosmo-30-in-380-cfm-haven-collection-ducted-under-cabinet-range-hood-w-led-lights-button-control-stainless-steel-uc30-332052206",
+          "sku": "332052206",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cosmo-30-in-ducted-under-cabinet-range-hood-in-stainless-steel-with-touch-display/1001518664",
+          "sku": "1001518664",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/cosmo-30-in-380-cfm-haven-collection-ducted-under-cabinet-range-hood-w-led-lights-button-control-stainless-steel-uc30-332052206",
+        "https://www.homedepot.ca/product/cosmo-30-in-ducted-under-cabinet-range-hood-in-stainless-steel-with-touch-display/1001518664"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. RONA lists button controls, Home Depot a touch display, so these may be two control variants of the Haven under-cabinet hood."
+    },
+    {
+      "key": "whirlpool-wvw57uc0fs-hood",
+      "brand": "Whirlpool",
+      "name": "30 in 400 CFM wall-mount chimney range hood, stainless (WVW57UC0FS)",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/wall-mount-chimney-range-hood-30-400-cfm-stainless-steel-30005801",
+          "sku": "30005801",
+          "priceCad": 799,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/wall-mount-chimney-range-hood-30-400-cfm-stainless-steel-30005801"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "broan-30-under-cabinet-350cfm-black-stainless",
+      "brand": "Broan",
+      "name": "30 in under-cabinet range hood, 350 max blower CFM, black stainless",
+      "line": null,
+      "upc": null,
+      "category": "hoods",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black stainless",
+          "hex": "#2a2b2d"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/broan-30-inch-under-cabinet-range-hood-energy-star-350-max-blower-cfm-black-stainless-steel/1001895102",
+          "sku": "1001895102",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/broan-30-inch-under-cabinet-range-hood-energy-star-350-max-blower-cfm-black-stainless-steel/1001895102"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. ENERGY STAR listed per the title."
+    },
+    {
+      "key": "ge-jvm2185smss",
+      "brand": "GE",
+      "name": "30 in 1.8 cu ft over-the-range microwave, 400 CFM, stainless (JVM2185SMSS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "microwave",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/ge-30-inch-1-8-cu-ft-over-the-range-microwave-oven-in-stainless-steel/1001485493",
+          "sku": "1001485493",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/ge-30-inch-1-8-cu-ft-over-the-range-microwave-oven-in-stainless-steel/1001485493"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "ge-jvm1635sfc",
+      "brand": "GE",
+      "name": "30 in 1.6 cu ft over-the-range microwave, 300 CFM, stainless (JVM1635SFC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "microwave",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/ge-30-inch-w-1-6-cu-ft-over-the-range-microwave-in-stainless-steel-with-sensor-cooking/1000727849",
+          "sku": "1000727849",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/ge-30-inch-w-1-6-cu-ft-over-the-range-microwave-in-stainless-steel-with-sensor-cooking/1000727849"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Model code taken from the search summary, not the title."
+    },
+    {
+      "key": "samsung-me11a7510ds",
+      "brand": "Samsung",
+      "name": "Smart SLIM 30 in 1.1 cu ft over-the-range microwave, 400 CFM, Wi-Fi, fingerprint-resistant stainless (ME11A7510DS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "microwave",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Fingerprint-resistant stainless steel",
+          "hex": "#bfc3c6"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/samsung-smart-slim-30-in-1-1-cu-ft-over-the-range-microwave-with-400-cfm-wi-fi-in-fingerprint-resistant-stainless-steel/1001660214",
+          "sku": "1001660214",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/samsung-smart-slim-30-in-1-1-cu-ft-over-the-range-microwave-with-400-cfm-wi-fi-in-fingerprint-resistant-stainless-steel/1001660214"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "samsung-ne63a6511ss",
+      "brand": "Samsung",
+      "name": "30 in 6.3 cu ft smart freestanding electric range with air fry, stainless (NE63A6511SS)",
+      "line": null,
+      "upc": "887276509426",
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 29.9375,
+      "depthIn": 28.6875,
+      "heightIn": 46.3125,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Fingerprint-resistant stainless steel",
+          "hex": "#bfc3c6"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/samsung-30-6-3-cu-ft-smart-fan-convection-electric-air-fry-range-ne63a6511ss-stainless/15268020",
+          "sku": "15268020",
+          "priceCad": 1024.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/samsung-electric-range-with-convection-oven-and-air-fry-in-fingerprint-resistant-stainless-steel/1001618161",
+          "sku": "1001618161",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/samsung-free-standing-convection-range-with-air-fry-and-wi-fi-connection-30-in-stainless-steel-ne63a6511ss-ac-22945318",
+          "sku": "22945318",
+          "priceCad": 1099,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ajmadison.com/cgi-bin/ajmadison/NE63A6511SS.html",
+        "https://www.townappliance.com/products/samsung-ne63a6511ss-freestanding-smoothtop-electric-range"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Sold by three Canadian retailers. Width 29 15/16 in, depth 28 11/16 in, height adjustable 46 5/16 to 47 1/16 in (US retailer spec tables). UPC 887276509426 is from two US retailer listings; the Canadian \"/AC\" model code may carry a different UPC. Home Depot Canada page metadata suggested about CAD 1,095 to 1,198 but that was not tied to a date, so no HD price is recorded."
+    },
+    {
+      "key": "ge-jcbp240dmww",
+      "brand": "GE",
+      "name": "30 in 5.0 cu ft self-clean freestanding coil-top electric range, white (JCBP240DMWW)",
+      "line": null,
+      "upc": "067732154975",
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 29.92,
+      "depthIn": 28.74,
+      "heightIn": 47.24,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White",
+          "hex": "#f1f1ee"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/ge-30-5-0-cu-ft-self-clean-freestanding-coil-top-electric-range-jcbp240dmww-white/13303938",
+          "sku": "13303938",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/ge-30-inch-free-standing-electric-range-with-self-cleaning-storage-drawer-oven-in-white/1001680632",
+          "sku": "1001680632",
+          "priceCad": 948,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/ge-appliances-ge-self-clean-electric-range-30-in-5-cu-ft-sensitemp-technology-white-jcbp240dmww-23085448",
+          "sku": "23085448",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.canadianappliance.ca/product/GE_JCBP240DMWW_Electric_Range_GE_JCBP240DMWW.html",
+        "https://leons.ca/products/ge-white-freestanding-electric-range-5-cu-ft-jcbp240dmww"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. UPC is the Canadian-market code listed by two Canadian retailers (the US JBP240DMWW uses a different one). Best Buy showed $799.99 on a page flagged as very old, and RONA showed $1,149 on a garbled category page, so neither price is recorded. The HD $948 is attributed to a white GE 5.0 cu ft range and is probably this listing."
+    },
+    {
+      "key": "frigidaire-fcre306cas",
+      "brand": "Frigidaire",
+      "name": "30 in 5.3 cu ft smart 5-element freestanding electric range with EvenTemp, stainless (FCRE306CAS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://bestbuy.ca/en-ca/product/frigidaire-30-5-3-cu-ft-5-element-freestanding-electric-range-fcre306cas-stainless-steel/17278864",
+          "sku": "17278864",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/frigidaire-electric-range-with-dual-expandable-element-eventemp-cooktop-and-steam-clean-oven-in-stainless-steel/1001833978",
+          "sku": "1001833978",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/frigidaire-30-in-smooth-surface-5-element-53-ft3-steam-cleaning-oven-freestanding-electric-range-in-stainless-steel-fcre306cas-10355746",
+          "sku": "10355746",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://secondshop.ca/products/frigidaire-30-in-5-3-cu-ft-electric-freestanding-range-with-eventemp-cooktop-fcre306cas"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Depth and height are left null: one reseller lists 30 x 26 x 48 in and another 29.88 x 25.75 x 47 in. Only a single third-party listing gave a UPC (012505513217), so none is recorded. Home Hardware sells the slide-in sibling FCFE306CAS, not this model."
+    },
+    {
+      "key": "whirlpool-ywfc150m0jb",
+      "brand": "Whirlpool",
+      "name": "30 in 4.8 cu ft freestanding electric coil-top range, black (YWFC150M0JB)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black",
+          "hex": "#1d1d1f"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/whirlpool-freestanding-electric-range-black-4-burner-coil-top-keep-warm-setting-48-cu-ft-ywfc150m0jb-30006515",
+          "sku": "30006515",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/whirlpool-4-8-cu-ft-electric-range-in-black/1001517579",
+          "sku": "1001517579",
+          "priceCad": null,
+          "inStockOnline": null
+        },
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/shop/best-coil-top-electric-range",
+          "sku": null,
+          "priceCad": 1049.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/whirlpool-freestanding-electric-range-black-4-burner-coil-top-keep-warm-setting-48-cu-ft-ywfc150m0jb-30006515",
+        "https://www.homedepot.ca/product/whirlpool-4-8-cu-ft-electric-range-in-black/1001517579",
+        "https://www.bestbuy.ca/en-ca/shop/best-coil-top-electric-range"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Manual-clean oven. The Best Buy entry is a category page (not a product page) that showed $1,049.99 for this model."
+    },
+    {
+      "key": "samsung-nx60a6711ss",
+      "brand": "Samsung",
+      "name": "30 in smart freestanding gas range with air fry and true convection, 6.0 cu ft, stainless (NX60A6711SS)",
+      "line": null,
+      "upc": "887276509617",
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 29.9375,
+      "depthIn": 28.6875,
+      "heightIn": 46.3125,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Fingerprint-resistant stainless steel",
+          "hex": "#bfc3c6"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/samsung-30-in-smart-freestanding-gas-range-with-air-fry-and-true-convection-6-cu-ft-stainless-steel-nx60a6711ss-aa-22945390",
+          "sku": "22945390",
+          "priceCad": 1599,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://image-us.samsung.com/SamsungUS/home/home-appliances/02-22-21/NX60A6711SS_V4.pdf",
+        "https://www.ajmadison.com/cgi-bin/ajmadison/NX60A6711SS.html"
+      ],
+      "confidence": "high",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Dimensions and UPC from Samsung's US spec sheet and AJ Madison. A Home Depot Canada listing mentioning the same model number was seen but could not be matched to a URL with confidence."
+    },
+    {
+      "key": "frigidaire-gallery-gcfg3060bfdisc",
+      "brand": "Frigidaire",
+      "name": "Gallery 30 in freestanding gas range with total convection, stainless (GCFG3060BFDISC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/frigidaire-gallery-30-in-freestanding-gas-range-total-convection-stainless-steel-gcfg3060bfdisc-10355712",
+          "sku": "10355712",
+          "priceCad": 1999,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/frigidaire-gallery-30-in-freestanding-gas-range-total-convection-stainless-steel-gcfg3060bfdisc-10355712"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Air fry and an 18,000 BTU quick-boil burner per the RONA summary."
+    },
+    {
+      "key": "ge-jcgb735spss",
+      "brand": "GE",
+      "name": "30 in 5-burner 5 cu ft self-clean convection gas range, stainless (JCGB735SPSS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/ge-30-in-5-burner-5-cu-ft-self-clean-convection-oven-gas-range-stainless-steel-jcgb735spss-23085850",
+          "sku": "23085850",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/ge-30-in-5-burner-5-cu-ft-self-clean-convection-oven-gas-range-stainless-steel-jcgb735spss-23085850"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "cosmo-48-haven-double-oven-gas-range",
+      "brand": "Cosmo",
+      "name": "48 in Haven collection 7 cu ft double-oven gas range with griddle, stainless",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 47.9,
+      "depthIn": 27.5,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cosmo-48-in-haven-coll-7-cu-ft-double-oven-gas-range-6-burners-griddle-knob-leds-stainless-steel/1001720461",
+          "sku": "1001720461",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cosmo-48-in-haven-coll-7-cu-ft-double-oven-gas-range-6-burners-griddle-knob-leds-stainless-steel/1001720461"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Six sealed burners plus a griddle; assembled width 47.9 in and depth 27.5 in per the Home Depot listing. Pro-style 48 in range (matches the app's griddle range)."
+    },
+    {
+      "key": "cosmo-36-vista-gas-range",
+      "brand": "Cosmo",
+      "name": "36 in Vista collection 4.5 cu ft gas range, 6 burners, convection, stainless",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cosmo-36-in-4-5-cu-ft-gas-range-with-6-italian-burners-in-stainless-steel/1001818526",
+          "sku": "1001818526",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cosmo-36-in-4-5-cu-ft-gas-range-with-6-italian-burners-in-stainless-steel/1001818526"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. 36 in six-burner range, no griddle."
+    },
+    {
+      "key": "bosch-hbl5351uc",
+      "brand": "Bosch",
+      "name": "500 Series 30 in single electric wall oven with thermal cooking, stainless (HBL5351UC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/bosch-500-series-30-inch-built-in-single-wall-oven-with-thermal-cooking/1001076305",
+          "sku": "1001076305",
+          "priceCad": 3898,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/bosch-500-series-30-inch-built-in-single-wall-oven-with-thermal-cooking/1001076305"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Left- and right-hinge versions are sold."
+    },
+    {
+      "key": "bosch-hbl5451uc",
+      "brand": "Bosch",
+      "name": "500 Series 30 in single electric wall oven with European convection, stainless (HBL5451UC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/bosch-500-series-30-inch-built-in-single-wall-oven-with-european-convection/1001076306",
+          "sku": "1001076306",
+          "priceCad": 4598,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/bosch-500-series-30-inch-built-in-single-wall-oven-with-european-convection/1001076306"
+      ],
+      "confidence": "medium",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. "
+    },
+    {
+      "key": "whirlpool-30-single-wall-oven-true-convection",
+      "brand": "Whirlpool",
+      "name": "30 in single electric wall oven with true convection and air fry, fingerprint-resistant stainless",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Fingerprint-resistant stainless steel",
+          "hex": "#bfc3c6"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/whirlpool-30-inch-single-electric-wall-oven-with-true-convection-and-air-fry-in-fingerprint-resistant-stainless-steel/1001817263",
+          "sku": "1001817263",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/whirlpool-30-inch-single-electric-wall-oven-with-true-convection-and-air-fry-in-fingerprint-resistant-stainless-steel/1001817263"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Model number not captured. RONA also lists a Whirlpool 30 in 5 cu ft single wall oven at $1,699, which may or may not be the same model."
+    },
+    {
+      "key": "samsung-30-wifi-wall-oven-convection",
+      "brand": "Samsung",
+      "name": "30 in electric Wi-Fi wall oven with convection and self/steam clean, stainless",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/samsung-30-inch-electric-wifi-enabled-wall-oven-with-convection-and-self-steam-cook-in-stainless-steel/1001847579",
+          "sku": "1001847579",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/samsung-30-inch-electric-wifi-enabled-wall-oven-with-convection-and-self-steam-cook-in-stainless-steel/1001847579"
+      ],
+      "confidence": "low",
+      "notes": "Retailer prices are search-snippet snapshots of unknown date; rona.ca, homehardware.ca and (intermittently) homedepot.ca refuse or time out on automated page fetches, so store facts come from titles and search summaries. Model number not captured."
+    },
+    {
       "key": "hampton-bay-edson-b30-white",
       "brand": "Hampton Bay",
       "name": "Edson 30 in assembled shaker base cabinet, White",
@@ -1584,6 +3324,1666 @@
       ],
       "confidence": "medium",
       "notes": "Gallery text: slab door fronts, from about CAD 101 per linear foot. Other fronts on the page: VALLSTENA, VEDDINGE, ENKÖPING, NICKEBO, ASPUDDEN, RINGHULT, AXSTAD, SINARP, VEDHAMN."
+    },
+    {
+      "key": "kraus-oletto-kpf-3104mb",
+      "brand": "Kraus",
+      "name": "Oletto contemporary single-handle pull-down kitchen faucet, matte black (KPF-3104MB)",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": 16.25,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kraus-oletto-contemporary-pull-down-single-handle-kitchen-faucet-in-matte-black/1001652047",
+          "sku": "1001652047",
+          "priceCad": 287,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kraus-oletto-contemporary-pull-down-single-handle-kitchen-faucet-in-matte-black/1001652047"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Single hole, high-arc spout, 360 degree swivel."
+    },
+    {
+      "key": "kraus-ansel-kpf-1675mb",
+      "brand": "Kraus",
+      "name": "Ansel single-handle pull-down kitchen faucet, matte black (KPF-1675MB)",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": 16.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kraus-ansel-single-handle-pull-down-sprayer-kitchen-faucet-in-matte-black/1001560033",
+          "sku": "1001560033",
+          "priceCad": 298,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kraus-ansel-single-handle-pull-down-sprayer-kitchen-faucet-in-matte-black/1001560033"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Single hole, 1.8 GPM."
+    },
+    {
+      "key": "kraus-bolden-18-kpf-1610mb",
+      "brand": "Kraus",
+      "name": "Bolden 18 in single-handle pull-down kitchen faucet, matte black (KPF-1610MB)",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": 18,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kraus-single-handle-18-inch-faucet-with-pull-down-sprayhead-in-matte-black-finish/1001553473",
+          "sku": "1001553473",
+          "priceCad": 391,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kraus-single-handle-18-inch-faucet-with-pull-down-sprayhead-in-matte-black-finish/1001553473"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Model code and price come from the search summary; the title only says 18 inch."
+    },
+    {
+      "key": "delta-trinsic-9159-bl-dst",
+      "brand": "Delta",
+      "name": "Trinsic single-handle pull-down kitchen faucet with MagnaTite docking, matte black (9159-BL-DST)",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/delta-trinsic-single-handle-pull-down-sprayer-kitchen-faucet-with-magnatite-docking-in-matte-black/1001119614",
+          "sku": "1001119614",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/delta-trinsic-single-handle-pull-down-sprayer-kitchen-faucet-with-magnatite-docking-in-matte-black/1001119614"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Snippets showed CAD 564 to 599 depending on page, so no single price is recorded. 1- or 3-hole install."
+    },
+    {
+      "key": "delta-marca-19780z-blsd-dst",
+      "brand": "Delta",
+      "name": "Marca single-handle pull-down kitchen faucet with ShieldSpray and soap dispenser, matte black (19780Z-BLSD-DST)",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/delta-marca-single-handle-pull-down-sprayer-kitchen-faucet-with-shieldspray-technology-in-matte-black/1001577801",
+          "sku": "1001577801",
+          "priceCad": 329,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/delta-marca-single-handle-pull-down-sprayer-kitchen-faucet-with-shieldspray-technology-in-matte-black/1001577801"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. "
+    },
+    {
+      "key": "moen-level-pulldown-stainless",
+      "brand": "Moen",
+      "name": "Level single-handle pulldown kitchen faucet with Reflex, stainless",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/moen-level-single-handle-pulldown-kitchen-faucet-featuring-reflex-in-stainless/1000760596",
+          "sku": "1000760596",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/moen-level-single-handle-pulldown-kitchen-faucet-featuring-reflex-in-stainless/1000760596"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. "
+    },
+    {
+      "key": "moen-adler-pulldown-spot-resistant-stainless",
+      "brand": "Moen",
+      "name": "Adler pull-down kitchen faucet, spot-resistant stainless (deckplate included)",
+      "line": null,
+      "upc": null,
+      "category": "faucets",
+      "kind": "faucet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Spot-resistant stainless",
+          "hex": "#c9cdd0"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/en/home/categories/kitchen/kitchen-and-bar-faucets/f/delta/1-handle/59b-v13-2l5o",
+          "sku": null,
+          "priceCad": 169,
+          "inStockOnline": null
+        },
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/kitchen/kitchen-faucets/moen--104-b21",
+          "sku": null,
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/en/home/categories/kitchen/kitchen-and-bar-faucets/f/delta/1-handle/59b-v13-2l5o",
+        "https://www.rona.ca/en/kitchen/kitchen-faucets/moen--104-b21"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Most-reviewed 1-handle faucet on Home Depot Canada's category page (about 3,600 reviews, CAD 169 there). Both store entries are category pages, not product pages, and the Moen model number was not captured."
+    },
+    {
+      "key": "merola-park-slope-subway-3x6-glossy-white",
+      "brand": "Merola Tile",
+      "name": "Park Slope subway 3 x 6 in glossy white ceramic wall tile",
+      "line": null,
+      "upc": null,
+      "category": "backsplash",
+      "kind": "backsplash-tile",
+      "widthIn": 3,
+      "depthIn": null,
+      "heightIn": 6,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Glossy white",
+          "hex": "#f7f7f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/merola-tile-park-slope-subway-glossy-white-3-inch-x-6-inch-ceramic-wall-tile-19-18-sq-ft-case-/1001129333",
+          "sku": "1001129333",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/merola-tile-park-slope-subway-glossy-white-3-inch-x-6-inch-ceramic-wall-tile-19-18-sq-ft-case-/1001129333"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Case is 11.18 sq ft / 86 pieces per the title text (the URL slug reads 19-18). Priced per case."
+    },
+    {
+      "key": "jeffrey-court-fresh-white-subway-3x6",
+      "brand": "Jeffrey Court",
+      "name": "Fresh White 3 x 6 in glossy beveled subway ceramic wall tile",
+      "line": null,
+      "upc": null,
+      "category": "backsplash",
+      "kind": "backsplash-tile",
+      "widthIn": 3,
+      "depthIn": null,
+      "heightIn": 6,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Glossy white",
+          "hex": "#f7f7f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/jeffrey-court-fresh-white-3-in-x-6-in-glossy-subway-beveled-ceramic-wall-tile-10-656-sq-ft-case-/1001673917",
+          "sku": "1001673917",
+          "priceCad": 74.38,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/jeffrey-court-fresh-white-3-in-x-6-in-glossy-subway-beveled-ceramic-wall-tile-10-656-sq-ft-case-/1001673917"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. CAD 74.38 is per case of 10.656 sq ft / 88 pieces (about $6.98/sq ft)."
+    },
+    {
+      "key": "merola-crown-heights-matte-white-3x6",
+      "brand": "Merola Tile",
+      "name": "Crown Heights 3 x 6 in matte white ceramic wall tile",
+      "line": null,
+      "upc": null,
+      "category": "backsplash",
+      "kind": "backsplash-tile",
+      "widthIn": 3,
+      "depthIn": null,
+      "heightIn": 6,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte white",
+          "hex": "#efefec"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/merola-tile-crown-heights-matte-white-3-inch-x-6-inch-ceramic-wall-tile-5-72-sq-ft-case-/1001568835",
+          "sku": "1001568835",
+          "priceCad": 80.03,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/merola-tile-crown-heights-matte-white-3-inch-x-6-inch-ceramic-wall-tile-5-72-sq-ft-case-/1001568835"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. CAD 80.03 is per case of 5.72 sq ft."
+    },
+    {
+      "key": "bravo-fesh0306gloswhit-subway-3x6",
+      "brand": "BRAVO",
+      "name": "Ceramic wall tiles 3 x 6 in, 136 per box, glossy white (FESH0306GLOSWHIT)",
+      "line": null,
+      "upc": null,
+      "category": "backsplash",
+      "kind": "backsplash-tile",
+      "widthIn": 3,
+      "depthIn": null,
+      "heightIn": 6,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Glossy white",
+          "hex": "#f7f7f5"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/bravo-ceramic-wall-tiles-3-x-6-136-box-glossy-white-fesh0306gloswhit-04775020",
+          "sku": "04775020",
+          "priceCad": null,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/bravo-ceramic-wall-tiles-3-x-6-136-box-glossy-white-fesh0306gloswhit-04775020"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. 136 tiles, 17 sq ft per box; order-in-store only per the page."
+    },
+    {
+      "key": "belanger-granite-finish-laminate-8ft-backsplash",
+      "brand": "Belanger Laminates",
+      "name": "Granite-finish moulded laminate countertop with backsplash, 8 ft x 25.5 in, Arctic Spirit",
+      "line": null,
+      "upc": null,
+      "category": "countertops",
+      "kind": "countertop",
+      "widthIn": 96,
+      "depthIn": 25.5,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Arctic Spirit granite look",
+          "hex": "#cfd0d1"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/belanger-laminates-granite-finish-moulded-laminate-kitchen-countertop-with-backsplash-8-ft-x-255-in-arctic-spirit-1132249089p421ca-58167042",
+          "sku": "58167042",
+          "priceCad": 178,
+          "inStockOnline": false
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/belanger-laminates-granite-finish-moulded-laminate-kitchen-countertop-with-backsplash-8-ft-x-255-in-arctic-spirit-1132249089p421ca-58167042"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Order-in-store only per the page."
+    },
+    {
+      "key": "belanger-silver-quartzite-laminate-8ft",
+      "brand": "Belanger Laminates",
+      "name": "Silver Quartzite finish moulded laminate countertop, 8 ft x 25.5 in",
+      "line": null,
+      "upc": null,
+      "category": "countertops",
+      "kind": "countertop",
+      "widthIn": 96,
+      "depthIn": 25.5,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Silver Quartzite",
+          "hex": "#b9bbbd"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/belanger-laminates-silver-quartzite-finish-moulded-laminate-kitchen-countertop-8-ft-x-255-in-1252349089949734-58167033",
+          "sku": "58167033",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/belanger-laminates-silver-quartzite-finish-moulded-laminate-kitchen-countertop-8-ft-x-255-in-1252349089949734-58167033"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. A $219.99 price seen was a promotion that ended 2025-11-19, so no price is recorded. This is laminate, not real quartz."
+    },
+    {
+      "key": "belanger-chateau-post-formed-laminate-8ft",
+      "brand": "Belanger Laminates",
+      "name": "Chateau post-formed laminate countertop, no backsplash, 8 ft x 25.5 in",
+      "line": null,
+      "upc": null,
+      "category": "countertops",
+      "kind": "countertop",
+      "widthIn": 96,
+      "depthIn": 25.5,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Chateau",
+          "hex": "#c8c0b4"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/belanger-laminates-belanger-lamines-kitchen-countertop-chateau-post-formed-laminate-no-backsplash-8-ft-l-x-255-in-d-1232249089p1023v-58167004",
+          "sku": "58167004",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/belanger-laminates-belanger-lamines-kitchen-countertop-chateau-post-formed-laminate-no-backsplash-8-ft-l-x-255-in-d-1232249089p1023v-58167004"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. "
+    },
+    {
+      "key": "msi-unfinished-birch-butcher-block-50x25",
+      "brand": "MSI Stone",
+      "name": "Unfinished birch standard butcher block countertop, 50 x 25 x 1.5 in",
+      "line": null,
+      "upc": null,
+      "category": "countertops",
+      "kind": "countertop",
+      "widthIn": 50,
+      "depthIn": 25,
+      "heightIn": 1.5,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Unfinished birch",
+          "hex": "#d8c19a"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/msi-stone-ulc-48-inch-x-25-inch-unfinished-birch-butcher-block-countertop/1001857406",
+          "sku": "1001857406",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/msi-stone-ulc-48-inch-x-25-inch-unfinished-birch-butcher-block-countertop/1001857406"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. The URL says 48 in but the title text says 50 in long; 50 in is used. A near-identical Hardwood Reflections birch 50 x 25 x 1.5 in top was seen at CAD 265."
+    },
+    {
+      "key": "hdc-palmer-oak-8mil-7in-lvp",
+      "brand": "Home Decorators Collection",
+      "name": "Palmer Oak 8 mil x 7.13 in x 48.03 in, 5 mm click-lock waterproof vinyl plank",
+      "line": null,
+      "upc": null,
+      "category": "flooring",
+      "kind": "floor-plank",
+      "widthIn": 7.13,
+      "depthIn": 48.03,
+      "heightIn": 0.2,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Palmer Oak (beige)",
+          "hex": "#c9b79c"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/home-decorators-collection-palmer-oak-8-mil-x-7-13-in-w-x-48-03-in-l-x-5-mm-click-lock-beige-wood-look-vinyl-plank-flooring-23-77-sq-ft-case-/1001688091",
+          "sku": "1001688091",
+          "priceCad": 47.12,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/home-decorators-collection-palmer-oak-8-mil-x-7-13-in-w-x-48-03-in-l-x-5-mm-click-lock-beige-wood-look-vinyl-plank-flooring-23-77-sq-ft-case-/1001688091"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. CAD 47.12 per case of 23.77 sq ft. Thickness 5 mm (about 0.2 in). Wear layer 8 mil, thinner than the 12 mil siblings."
+    },
+    {
+      "key": "hdc-gray-cloud-oak-12mil-7in-lvp",
+      "brand": "Home Decorators Collection",
+      "name": "Gray Cloud Oak 12 mil x 7 in x 48 in, 5 mm click-lock waterproof vinyl plank",
+      "line": null,
+      "upc": null,
+      "category": "flooring",
+      "kind": "floor-plank",
+      "widthIn": 7,
+      "depthIn": 48,
+      "heightIn": 0.2,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Gray Cloud Oak",
+          "hex": "#a7a49f"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/home-decorators-collection-gray-cloud-oak-5mm-x-7-in-w-x-48-in-l-12-mil-click-lock-waterproof-luxury-vinyl-plank-flooring-23-77-sq-ft-case-/1001544707",
+          "sku": "1001544707",
+          "priceCad": 78.06,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/home-decorators-collection-gray-cloud-oak-5mm-x-7-in-w-x-48-in-l-12-mil-click-lock-waterproof-luxury-vinyl-plank-flooring-23-77-sq-ft-case-/1001544707"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. CAD 78.06 per case of 23.77 sq ft."
+    },
+    {
+      "key": "hdc-lake-jasper-oak-12mil-7in-lvp",
+      "brand": "Home Decorators Collection",
+      "name": "Lake Jasper Oak 12 mil x 7 in x 48 in, 5 mm click-lock waterproof vinyl plank",
+      "line": null,
+      "upc": null,
+      "category": "flooring",
+      "kind": "floor-plank",
+      "widthIn": 7,
+      "depthIn": 48,
+      "heightIn": 0.2,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Lake Jasper Oak (brown)",
+          "hex": "#9a7b57"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/home-decorators-collection-lake-jasper-oak-5mm-x-7-in-w-x-48-in-l-12mil-click-lock-waterproof-luxury-vinyl-plank-flooring-23-77-sq-ft-case-/1001868227",
+          "sku": "1001868227",
+          "priceCad": 77.97,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/home-decorators-collection-lake-jasper-oak-5mm-x-7-in-w-x-48-in-l-12mil-click-lock-waterproof-luxury-vinyl-plank-flooring-23-77-sq-ft-case-/1001868227"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. CAD 77.97 per case of 23.77 sq ft. Listed colour family varies between pages."
+    },
+    {
+      "key": "lifeproof-sawn-oak-grey-7-5in-lvp",
+      "brand": "Lifeproof",
+      "name": "Sawn Oak Grey 22 mil x 7.5 in x 47.6 in, 7 mm click-lock waterproof vinyl plank",
+      "line": null,
+      "upc": null,
+      "category": "flooring",
+      "kind": "floor-plank",
+      "widthIn": 7.5,
+      "depthIn": 47.6,
+      "heightIn": 0.28,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Sawn Oak Grey",
+          "hex": "#8f8c87"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/lifeproof-sawn-oak-grey-7-5-inch-x-47-6-inch-luxury-vinyl-plank-flooring-19-8-sq-ft-case-/1001015599",
+          "sku": "1001015599",
+          "priceCad": 84.74,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/lifeproof-sawn-oak-grey-7-5-inch-x-47-6-inch-luxury-vinyl-plank-flooring-19-8-sq-ft-case-/1001015599"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. CAD 84.74 per case of 19.8 sq ft; 7 mm (about 0.28 in) thick."
+    },
+    {
+      "key": "richelieu-monceau-96mm-matte-black",
+      "brand": "Richelieu",
+      "name": "Monceau collection 3-3/4 in (96 mm) traditional curved cabinet pull, matte black",
+      "line": null,
+      "upc": null,
+      "category": "hardware",
+      "kind": "pull",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/richelieu-monceau-collection-3-3-4-in-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001020443",
+          "sku": "1001020443",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/richelieu-monceau-collection-3-3-4-in-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001020443"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Richelieu is a Canadian hardware maker; all are 96 mm (3-3/4 in) centre-to-centre pulls. Pull length is not in the title, so widthIn is left null."
+    },
+    {
+      "key": "richelieu-candiac-96mm-matte-black",
+      "brand": "Richelieu",
+      "name": "Candiac collection 3-3/4 in (96 mm) traditional round cabinet pull, matte black",
+      "line": null,
+      "upc": null,
+      "category": "hardware",
+      "kind": "pull",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/richelieu-candiac-collection-3-3-4-inch-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001532240",
+          "sku": "1001532240",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/richelieu-candiac-collection-3-3-4-inch-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001532240"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Richelieu is a Canadian hardware maker; all are 96 mm (3-3/4 in) centre-to-centre pulls. Pull length is not in the title, so widthIn is left null."
+    },
+    {
+      "key": "richelieu-nantes-96mm-matte-black",
+      "brand": "Richelieu",
+      "name": "Nantes collection 3-3/4 in (96 mm) traditional curved cabinet pull, matte black",
+      "line": null,
+      "upc": null,
+      "category": "hardware",
+      "kind": "pull",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Matte black",
+          "hex": "#1c1c1e"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/richelieu-nantes-collection-3-3-4-inch-96-mm-matte-black-traditional-curved-cabinet-pull/1001021527",
+          "sku": "1001021527",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/richelieu-nantes-collection-3-3-4-inch-96-mm-matte-black-traditional-curved-cabinet-pull/1001021527"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Richelieu is a Canadian hardware maker; all are 96 mm (3-3/4 in) centre-to-centre pulls. Pull length is not in the title, so widthIn is left null."
+    },
+    {
+      "key": "richelieu-ventura-96mm-brushed-nickel",
+      "brand": "Richelieu",
+      "name": "Ventura collection 3-3/4 in (96 mm) transitional rectangular cabinet pull, brushed nickel",
+      "line": null,
+      "upc": null,
+      "category": "hardware",
+      "kind": "pull",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Brushed nickel",
+          "hex": "#b4b6b8"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/richelieu-ventura-collection-3-3-4-inch-96-mm-brushed-nickel-transitional-rectangular-cabinet-pull/1001653619",
+          "sku": "1001653619",
+          "priceCad": 15.98,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/richelieu-ventura-collection-3-3-4-inch-96-mm-brushed-nickel-transitional-rectangular-cabinet-pull/1001653619"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Richelieu is a Canadian hardware maker; all are 96 mm (3-3/4 in) centre-to-centre pulls. Pull length is not in the title, so widthIn is left null."
+    },
+    {
+      "key": "richelieu-cambria-96mm-brushed-nickel",
+      "brand": "Richelieu",
+      "name": "Cambria collection 3-3/4 in (96 mm) modern arched cabinet pull, brushed nickel",
+      "line": null,
+      "upc": null,
+      "category": "hardware",
+      "kind": "pull",
+      "widthIn": 4.9375,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Brushed nickel",
+          "hex": "#b4b6b8"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/richelieu-cambria-collection-3-3-4-inch-96-mm-brushed-nickel-modern-arched-cabinet-pull/1000816906",
+          "sku": "1000816906",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/richelieu-cambria-collection-3-3-4-inch-96-mm-brushed-nickel-modern-arched-cabinet-pull/1000816906"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Richelieu is a Canadian hardware maker; all are 96 mm (3-3/4 in) centre-to-centre pulls. Pull length is not in the title, so widthIn is the 4 15/16 in length from the summary."
+    },
+    {
+      "key": "richelieu-greenwich-96mm-brushed-nickel-bar",
+      "brand": "Richelieu",
+      "name": "Greenwich collection 3-3/4 in (96 mm) modern bar pull, brushed nickel",
+      "line": null,
+      "upc": null,
+      "category": "hardware",
+      "kind": "pull",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Brushed nickel",
+          "hex": "#b4b6b8"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/richelieu-greenwich-collection-3-3-4-inch-96-mm-brushed-nickel-modern-cabinet-bar-pull/1001020989",
+          "sku": "1001020989",
+          "priceCad": 14.98,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/richelieu-greenwich-collection-3-3-4-inch-96-mm-brushed-nickel-modern-cabinet-bar-pull/1001020989"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Richelieu is a Canadian hardware maker; all are 96 mm (3-3/4 in) centre-to-centre pulls. Pull length is not in the title, so widthIn is left null."
+    },
+    {
+      "key": "ikea-ranarp-pendant-lamp-38cm",
+      "brand": "IKEA",
+      "name": "RANARP pendant lamp, 38 cm (15 in), off-white or black",
+      "line": null,
+      "upc": null,
+      "category": "lighting",
+      "kind": "pendant",
+      "widthIn": 15,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Off-white",
+          "hex": "#eeeae0"
+        },
+        {
+          "name": "Black",
+          "hex": "#1c1c1c"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/ranarp-pendant-lamp-off-white-10390975/",
+          "sku": "103.909.75",
+          "priceCad": 49.99,
+          "inStockOnline": null
+        },
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/ranarp-pendant-lamp-black-10390956/",
+          "sku": "103.909.56",
+          "priceCad": 49.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/ranarp-pendant-lamp-off-white-10390975/",
+        "https://www.ikea.com/ca/en/p/ranarp-pendant-lamp-black-10390956/"
+      ],
+      "confidence": "high",
+      "notes": "IKEA Canada, CAD 49.99 in both colours. Steel shade, 22 W max, 1.6 m cord, bulb sold separately. Diameter is the 38 cm / 15 in in the title. The IKEA HEKTAR pendant was only found on US/other regional IKEA sites, so it is not recorded."
+    },
+    {
+      "key": "uolfin-black-brass-clear-glass-pendant",
+      "brand": "Uolfin",
+      "name": "1-light modern kitchen island pendant, black and brass, clear glass shade",
+      "line": null,
+      "upc": null,
+      "category": "lighting",
+      "kind": "pendant",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black and brass",
+          "hex": "#4a3f2c"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/uolfin-modern-kitchen-island-pendant-light-1-light-black-and-brass-pendant-light-with-clear-glass-shade/1001820342",
+          "sku": "1001820342",
+          "priceCad": 191,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/uolfin-modern-kitchen-island-pendant-light-1-light-black-and-brass-pendant-light-with-clear-glass-shade/1001820342"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. "
+    },
+    {
+      "key": "westinghouse-one-light-flat-mini-pendant-kit",
+      "brand": "Westinghouse",
+      "name": "One-light flat mini pendant kit, black (no shade)",
+      "line": null,
+      "upc": null,
+      "category": "lighting",
+      "kind": "pendant",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black",
+          "hex": "#1c1c1c"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/westinghouse-one-light-flat-mini-pendant-kit-black/1001041220",
+          "sku": "1001041220",
+          "priceCad": 25,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/westinghouse-one-light-flat-mini-pendant-kit-black/1001041220"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Cord kit for a separate shade; 60 W max medium-base bulb."
+    },
+    {
+      "key": "yansun-3-light-cluster-glass-pendant",
+      "brand": "YANSUN",
+      "name": "10 in 3-light vintage kitchen island cluster glass pendant",
+      "line": null,
+      "upc": null,
+      "category": "lighting",
+      "kind": "pendant",
+      "widthIn": 10,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black with clear glass",
+          "hex": "#2b2b2b"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/yansun-10-in-3-light-vintage-kitchen-island-cluster-glass-pendant-lighting/1001813194",
+          "sku": "1001813194",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/yansun-10-in-3-light-vintage-kitchen-island-cluster-glass-pendant-lighting/1001813194"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. "
+    },
+    {
+      "key": "monteaux-8-light-linear-island-pendant",
+      "brand": "Monteaux Lighting",
+      "name": "8-light black linear kitchen island pendant with white opal glass shades",
+      "line": null,
+      "upc": null,
+      "category": "lighting",
+      "kind": "pendant",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black with white opal glass",
+          "hex": "#2b2b2b"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/monteaux-lighting-8-light-black-linear-kitchen-island-pendant-light-with-white-opal-glass-shades/1001846130",
+          "sku": "1001846130",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/monteaux-lighting-8-light-black-linear-kitchen-island-pendant-light-with-white-opal-glass-shades/1001846130"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Linear island fixture; length not captured."
+    },
+    {
+      "key": "ikea-franklin-bar-stool-counter-black",
+      "brand": "IKEA",
+      "name": "FRANKLIN bar stool with backrest, foldable, counter height, black/black",
+      "line": null,
+      "upc": null,
+      "category": "seating",
+      "kind": "stool",
+      "widthIn": 19.7,
+      "depthIn": 17.3,
+      "heightIn": 37.4,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black/black",
+          "hex": "#1c1c1c"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/franklin-bar-stool-with-backrest-foldable-counter-height-black-black-50406465/",
+          "sku": "504.064.65",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/franklin-bar-stool-with-backrest-foldable-counter-height-black-black-50406465/"
+      ],
+      "confidence": "high",
+      "notes": "IKEA Canada: 50 x 44 x 95 cm overall (19.7 x 17.3 x 37.4 in), seat height 63 cm (24.8 in), 110 kg rated. A 74 cm (29 in) bar-height version also exists. No price captured."
+    },
+    {
+      "key": "homy-casa-wichita-26-counter-stools",
+      "brand": "Homy Casa",
+      "name": "Wichita 26 in counter-height upholstered swivel stools, black, set of 2",
+      "line": null,
+      "upc": null,
+      "category": "seating",
+      "kind": "stool",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": 37.8,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Black",
+          "hex": "#1c1c1c"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/homy-casa-wichita-26-in-black-counter-height-upholstered-swivel-bar-stools-set-of-2-0000400016925-330845574",
+          "sku": "330845574",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/homy-casa-wichita-26-in-black-counter-height-upholstered-swivel-bar-stools-set-of-2-0000400016925-330845574"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Sold as a set of 2. Overall height 37.8 in; the 26 in in the name is probably seat height (not confirmed)."
+    },
+    {
+      "key": "monarch-specialties-counter-stool-white-grey-2pk",
+      "brand": "Monarch Specialties",
+      "name": "Upholstered swivel counter-height stool, white/grey, 2-pack",
+      "line": null,
+      "upc": null,
+      "category": "seating",
+      "kind": "stool",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White/grey",
+          "hex": "#c9c9c9"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/monarch-specialties-upholstered-swivel-counter-height-stool-white-grey-2-pack-330782472",
+          "sku": "330782472",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/monarch-specialties-upholstered-swivel-counter-height-stool-white-grey-2-pack-330782472"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Minimum seat height 23.25 in (adjustable); faux-leather seat on a wood frame per the summary."
+    },
+    {
+      "key": "homcom-835-506cg-adjustable-stool-2pk",
+      "brand": "HOMCOM",
+      "name": "Adjustable counter-height upholstered swivel bar stool, grey, 2-pack (835-506CG)",
+      "line": null,
+      "upc": null,
+      "category": "seating",
+      "kind": "stool",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Grey",
+          "hex": "#8c8f93"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/homcom-2-pack-grey-adjustable-counter-height-upholstered-swivel-bar-stool-835-506cg-330948353",
+          "sku": "330948353",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/homcom-2-pack-grey-adjustable-counter-height-upholstered-swivel-bar-stool-835-506cg-330948353"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Adjustable height; the range was not captured."
+    },
+    {
+      "key": "kraus-khu100-32-standart-pro",
+      "brand": "Kraus",
+      "name": "Standart PRO 32 in undermount single-bowl stainless sink (KHU100-32)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 32,
+      "depthIn": 19,
+      "heightIn": 10,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/kraus-standart-pro-undermount-kitchen-sink-single-bowl-32-in-x-19-in-stainless-steel-khu100-32-330717971",
+          "sku": "330717971",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/kraus-standart-pro-undermount-kitchen-sink-single-bowl-32-in-x-19-in-stainless-steel-khu100-32-330717971"
+      ],
+      "confidence": "high",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. 16 gauge, minimum cabinet 36 in, limited lifetime warranty. Height is bowl depth. The 33 in model KHU100-33 was not found."
+    },
+    {
+      "key": "kraus-khu102-33-double-equal",
+      "brand": "Kraus",
+      "name": "Standart PRO 32.75 in undermount double equal bowl stainless sink (KHU102-33)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 32.75,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/kraus-standart-pro-undermount-kitchen-sink-double-equal-bowl-3275-in-stainless-steel-khu102-33-330718045",
+          "sku": "330718045",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/kraus-standart-pro-undermount-kitchen-sink-double-equal-bowl-3275-in-stainless-steel-khu102-33-330718045"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. "
+    },
+    {
+      "key": "kraus-khu103-33-60-40-kit",
+      "brand": "Kraus",
+      "name": "Standart PRO 33 in undermount 60/40 double bowl stainless sink kit (KHU103-33)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 32.75,
+      "depthIn": 19,
+      "heightIn": 10.25,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kraus-undermount-stainless-steel-33-inch-60-40-double-bowl-kitchen-sink-kit/1000668147",
+          "sku": "1000668147",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kraus-undermount-stainless-steel-33-inch-60-40-double-bowl-kitchen-sink-kit/1000668147"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Fits a 36 in cabinet; the model code comes from the search summary and was not in the title."
+    },
+    {
+      "key": "kraus-khf410-33-farmhouse-stainless",
+      "brand": "Kraus",
+      "name": "Standart PRO 33 in farmhouse apron-front single-bowl stainless sink (KHF410-33)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 33,
+      "depthIn": 21,
+      "heightIn": 10,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kraus-standart-pro-farmhouse-apron-front-stainless-steel-33-inch-single-bowl-kitchen-sink/1001584058",
+          "sku": "1001584058",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kraus-standart-pro-farmhouse-apron-front-stainless-steel-33-inch-single-bowl-kitchen-sink/1001584058"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Minimum cabinet 36 in."
+    },
+    {
+      "key": "kraus-kfr1-33gwh-fireclay-farmhouse",
+      "brand": "Kraus",
+      "name": "Turino 33 in reversible farmhouse apron-front fireclay single-bowl sink, white (KFR1-33GWH)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 33,
+      "depthIn": 18.25,
+      "heightIn": 10,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Gloss white fireclay",
+          "hex": "#f6f6f3"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kraus-33-inch-reversible-farmhouse-apron-front-fireclay-single-bowl-kitchen-sink-with-bottom-grid/1001584054",
+          "sku": "1001584054",
+          "priceCad": 1276,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kraus-33-inch-reversible-farmhouse-apron-front-fireclay-single-bowl-kitchen-sink-with-bottom-grid/1001584054"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Reversible apron, bottom grid included, minimum cabinet 33 in."
+    },
+    {
+      "key": "sinkology-bradstreet-ii-sk493-33fc",
+      "brand": "Sinkology",
+      "name": "Bradstreet II 33 in crisp white fireclay single-bowl farmhouse sink (SK493-33FC)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 33,
+      "depthIn": 18,
+      "heightIn": 10,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Crisp white fireclay",
+          "hex": "#f7f7f4"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/sinkology-bradstreet-ii-crisp-white-fireclay-33-single-bowl-farmhouse-apron-front-undermount-kitchen-sink/1001536422",
+          "sku": "1001536422",
+          "priceCad": 1307,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/sinkology-bradstreet-ii-crisp-white-fireclay-33-single-bowl-farmhouse-apron-front-undermount-kitchen-sink/1001536422"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Straight apron, center drain, lifetime warranty per summary."
+    },
+    {
+      "key": "bocchi-contempo-36-fireclay-farmhouse",
+      "brand": "BOCCHI",
+      "name": "Contempo 36 in farmhouse apron-front fireclay single-bowl sink, white (1354-001-0120)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 36,
+      "depthIn": 19,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White fireclay",
+          "hex": "#f7f7f4"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/bocchi-contempo-farmhouse-apron-front-fireclay-36-inch-single-bowl-kitchen-sink-in-white/1001833019",
+          "sku": "1001833019",
+          "priceCad": 1495,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/bocchi-contempo-farmhouse-apron-front-fireclay-36-inch-single-bowl-kitchen-sink-in-white/1001833019"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Needs a base cabinet of at least 39 in wide per the listing."
+    },
+    {
+      "key": "blanco-profina-401808-36-apron",
+      "brand": "Blanco",
+      "name": "PROFINA 36 in single-bowl apron-front sink with cutting board, white (401808)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "White ceramic/fireclay",
+          "hex": "#f7f7f4"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/blanco-profina-ceramic-fireclay-farmhouse-kitchen-sink-ceramic-white/1001490815",
+          "sku": "1001490815",
+          "priceCad": 1663,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/blanco-profina-ceramic-fireclay-farmhouse-kitchen-sink-ceramic-white/1001490815"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Title says fireclay but the spec table says ceramic."
+    },
+    {
+      "key": "blanco-stellar-401026-60-40",
+      "brand": "Blanco",
+      "name": "STELLAR 32 in 60/40 double-bowl undermount stainless sink (401026)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 32.36,
+      "depthIn": null,
+      "heightIn": 9,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/blanco-stellar-32-in-60-40-double-bowl-undermount-stainless-steel-kitchen-sink/1000728910",
+          "sku": "1000728910",
+          "priceCad": 535,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/blanco-stellar-32-in-60-40-double-bowl-undermount-stainless-steel-kitchen-sink/1000728910"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Assembled width 32.36 in, 9 in bowls, fits a 36 in cabinet."
+    },
+    {
+      "key": "stylish-s-322xg-33-60-40",
+      "brand": "Stylish",
+      "name": "33 in reversible 60/40 double-bowl undermount stainless sink (S-322XG)",
+      "line": null,
+      "upc": null,
+      "category": "sinks",
+      "kind": "sink",
+      "widthIn": 33,
+      "depthIn": 18,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Brushed satin stainless",
+          "hex": "#c0c4c7"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/stylish-33-in-double-bowl-60-40-reversible-undermount-kitchen-sink-stainless-steel-s-322xg-330837964",
+          "sku": "330837964",
+          "priceCad": 595,
+          "inStockOnline": null
+        },
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/stylish-undermount-33-inch-stainless-steel-60-40-double-bowl-60-40-kitchen-sink/1001559742",
+          "sku": "1001559742",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/stylish-33-in-double-bowl-60-40-reversible-undermount-kitchen-sink-stainless-steel-s-322xg-330837964",
+        "https://www.homedepot.ca/product/stylish-undermount-33-inch-stainless-steel-60-40-double-bowl-60-40-kitchen-sink/1001559742"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. 16 gauge. The RONA price was a promotion that ended 2026-09-02. The Home Depot title is not explicitly model S-322XG."
+    },
+    {
+      "key": "ikea-kungsfors-kitchen-cart-stainless",
+      "brand": "IKEA",
+      "name": "KUNGSFORS kitchen cart, stainless steel, 60 x 40 cm (23-5/8 x 15-3/4 in)",
+      "line": null,
+      "upc": null,
+      "category": "storage",
+      "kind": "cart",
+      "widthIn": 23.6,
+      "depthIn": 15.75,
+      "heightIn": 35.4,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/kungsfors-kitchen-cart-stainless-steel-80334924/",
+          "sku": "803.349.24",
+          "priceCad": 199,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/kungsfors-kitchen-cart-stainless-steel-80334924/"
+      ],
+      "confidence": "high",
+      "notes": "IKEA Canada, CAD 199; three tiers on castors, 10 kg per tier, about 90 cm (35.4 in) high."
+    },
+    {
+      "key": "ikea-grillskar-kitchen-island-stainless",
+      "brand": "IKEA",
+      "name": "GRILLSKAR kitchen island with back panel, stainless steel, outdoor-rated, 86 x 61 x 176 cm",
+      "line": null,
+      "upc": null,
+      "category": "storage",
+      "kind": "island",
+      "widthIn": 33.9,
+      "depthIn": 24,
+      "heightIn": 69.25,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Stainless steel",
+          "hex": "#c4c8cb"
+        }
+      ],
+      "stores": [
+        {
+          "store": "IKEA",
+          "url": "https://www.ikea.com/ca/en/p/grillskaer-kitchen-island-w-back-panel-stainless-steel-outdoor-s79495244/",
+          "sku": "S79495244",
+          "priceCad": 260,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.ikea.com/ca/en/p/grillskaer-kitchen-island-w-back-panel-stainless-steel-outdoor-s79495244/"
+      ],
+      "confidence": "medium",
+      "notes": "IKEA Canada, CAD 260 per the search summary. Sold as an outdoor/indoor stainless unit; 176 cm height includes the back panel."
+    },
+    {
+      "key": "home-styles-nantucket-butcher-block-island",
+      "brand": "Home Styles",
+      "name": "Nantucket natural butcher block top kitchen island with 2 stools, 48 in",
+      "line": null,
+      "upc": null,
+      "category": "storage",
+      "kind": "island",
+      "widthIn": 48,
+      "depthIn": 27,
+      "heightIn": 36,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Natural butcher block",
+          "hex": "#caa57a"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/home-styles-nantucket-natural-butcher-block-top-kitchen-island-with-2-stools/1001186427",
+          "sku": "1001186427",
+          "priceCad": 2833,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/home-styles-nantucket-natural-butcher-block-top-kitchen-island-with-2-stools/1001186427"
+      ],
+      "confidence": "medium",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Not rolling. Drop leaf extends the work surface."
+    },
+    {
+      "key": "international-concepts-unfinished-butcher-block-island",
+      "brand": "International Concepts",
+      "name": "Unfinished kitchen island with food-safe butcher block top, two drawers",
+      "line": null,
+      "upc": null,
+      "category": "storage",
+      "kind": "island",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "doorStyle": null,
+      "finishes": [
+        {
+          "name": "Unfinished solid wood",
+          "hex": "#d9c3a0"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/international-concepts-unfinished-kitchen-island-with-food-safe-butcher-block-top/1001668555",
+          "sku": "1001668555",
+          "priceCad": 776,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/international-concepts-unfinished-kitchen-island-with-food-safe-butcher-block-top/1001668555"
+      ],
+      "confidence": "low",
+      "notes": "Prices are search-snippet snapshots of unknown date; rona.ca refuses automated page fetches and homedepot.ca timed out, so facts come from product titles and search summaries. Dimensions and caster status were not in the result."
     },
     {
       "key": "landon-co-elite-rd-b15-sd",
