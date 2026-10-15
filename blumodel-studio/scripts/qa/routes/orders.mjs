@@ -158,8 +158,9 @@ const SCAN_STUB = `(() => {
     constructor(opts) { this.formats = opts?.formats ?? []; this.n = 0; }
     async detect() {
       this.n += 1;
-      // A misread first (wrong check digit, skipped), then the real code.
-      return this.n < 3 ? [] : this.n === 3 ? [{ rawValue: '036000291453', format: 'upc_a' }] : [{ rawValue: '036000291452', format: 'upc_a' }];
+      // Nothing for ~2 s (so the open scanner can be photographed), a misread (wrong check
+      // digit, skipped), then the real code.
+      return this.n < 12 ? [] : this.n === 12 ? [{ rawValue: '036000291453', format: 'upc_a' }] : [{ rawValue: '036000291452', format: 'upc_a' }];
     }
   }
   window.BarcodeDetector = FakeBarcodeDetector;
@@ -207,8 +208,22 @@ export default [
       const { evaluate, shot } = h;
       await typeInto(h, '#ord-p0-upc', '036000291453');
       if (!(await evaluate(waitFor(bodyHas('doesn’t check out'))))) throw new Error('a wrong check digit was not flagged');
+      // The message reads as an error (red, not the label's bold grey).
+      /** [the message's colour, the theme token's colour], both as computed rgb(). */
+      const colors = (token) => `(() => {
+        const probe = document.createElement('span');
+        probe.style.color = 'var(${token})';
+        document.body.append(probe);
+        const want = getComputedStyle(probe).color;
+        probe.remove();
+        return [getComputedStyle(document.querySelector('#ord-p0-upc-msg')).color, want];
+      })()`;
+      const [bad, red] = await evaluate(colors('--bad'));
+      if (bad !== red) throw new Error(`the UPC error is ${bad}, not the error colour ${red}`);
       await typeInto(h, '#ord-p0-upc', '0 36000 29145 2');
       if (!(await evaluate(waitFor(bodyHas('✓ UPC-A 0 36000 29145 2'))))) throw new Error('a good UPC-A was not confirmed');
+      const [good, green] = await evaluate(colors('--ok'));
+      if (good !== green) throw new Error(`the UPC check is ${good}, not the ok colour ${green}`);
       await shot('upc');
       if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
       if (!(await evaluate(waitFor(`!!document.querySelector('#ord-product-1 .ord-product.open')`)))) throw new Error('the second product did not open');
@@ -258,25 +273,65 @@ export default [
     waitFor: '.ord-product.open',
     expectText: ['UPC or EAN'],
     check: async (h) => {
-      const { evaluate, send, reload, shot } = h;
+      const { evaluate, send, reload, shot, sleep } = h;
       await send('Page.addScriptToEvaluateOnNewDocument', { source: SCAN_STUB });
       await reload();
       if (!(await evaluate(waitFor(`[...document.querySelectorAll('.ord-upc button')].some((b) => b.textContent.trim() === 'Scan')`, 8000)))) throw new Error('no Scan button where BarcodeDetector exists');
       await evaluate(`[...document.querySelectorAll('.ord-upc button')].find((b) => b.textContent.trim() === 'Scan').click()`);
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-scan-video')`)))) throw new Error('the scanner did not open');
+      // The camera is live (no "Starting the camera…") and the dialog has finished fading in.
+      if (!(await evaluate(waitFor(`!document.querySelector('.ord-scan-status')`)))) throw new Error('the camera never started');
+      await sleep(400);
       await shot('scanner');
       if (!(await evaluate(waitFor(`document.querySelector('#ord-p0-upc')?.value === '0 36000 29145 2'`, 8000)))) throw new Error('the scanned code was not filled in');
       if (!(await evaluate(waitFor(`!document.querySelector('.ord-scan-video') && ${bodyHas('✓ UPC-A 0 36000 29145 2')}`)))) throw new Error('the scanner did not close with the code confirmed');
     },
   },
   {
+    // The whole form on a phone. Starting from a built-in product fills its type, name and size,
+    // but not its brand: a built-in's brand is BluModel's own line, not the real product's maker.
     name: 'orders-new-phone',
     path: '#/orders/new?ref=range-30',
     as: 'customer',
     viewport: PHONE,
+    fullPage: true,
     waitFor: '.ord-product.open',
-    expectText: ['Products to model', 'UPC or EAN'],
+    expectText: ['Products to model', 'UPC or EAN', 'Gas Range'],
     check: async ({ evaluate }) => {
+      if (await evaluate(SIDEWAYS)) throw new Error('the page scrolls sideways on a phone');
+      const brand = await evaluate(`document.querySelector('#ord-product-0 input[placeholder^="e.g. the maker"]')?.value`);
+      if (brand !== '') throw new Error(`a built-in product's brand was copied into the request: ${JSON.stringify(brand)}`);
+    },
+  },
+  {
+    // No camera scanning (headless Edge has no BarcodeDetector): a photo of the barcode alone
+    // identifies the product. It uploads as a private reference image and the review says so.
+    name: 'orders-new-barcode-photo',
+    path: '#/orders/new',
+    as: 'customer',
+    viewport: PHONE,
+    waitFor: '.ord-product.open',
+    expectText: ['Upload a photo of the barcode'],
+    check: async (h) => {
+      const { evaluate, shot } = h;
+      await evaluate(`(() => {
+        const s = document.querySelector('#ord-product-0 select');
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, 'range-gas');
+        s.dispatchEvent(new Event('change', { bubbles: true }));
+      })()`);
+      await typeInto(h, '#ord-product-0 input[maxlength="80"]', 'QA barcode range (Demo)');
+      if (!(await evaluate(putFile('Upload a photo of the barcode', PNG_FILE)))) throw new Error('no barcode photo input');
+      if (!(await evaluate(waitFor(`!!document.querySelector('.ord-barcode img') && ${bodyHas('The studio reads the code from the photo.')}`, 8000)))) throw new Error('the barcode photo did not upload');
+      const said = await evaluate(`document.querySelector('#ord-product-0').textContent.split('The studio reads the code from the photo.').length - 1`);
+      if (said !== 1) throw new Error(`the barcode note shows ${said} times`);
+      await shot('photo');
+      // The draft keeps the uploaded file's id; the buyer can read the private file.
+      const fileId = await evaluate(`JSON.parse(sessionStorage.getItem('blumodel.orders.request.v2')).items[0].barcodeFileId ?? null`);
+      if (!fileId) throw new Error('the draft has no barcode photo id');
+      const status = await evaluate(`fetch('/api/files/' + ${JSON.stringify(fileId)}, { credentials: 'same-origin' }).then((r) => r.status)`);
+      if (status !== 200) throw new Error(`the buyer cannot read their own barcode photo (${status})`);
+      if (!(await evaluate(click('Review 1 product')))) throw new Error('no review button');
+      if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & pay') && ${bodyHas('Barcode photo')}`)))) throw new Error('the review does not show the barcode photo');
       if (await evaluate(SIDEWAYS)) throw new Error('the page scrolls sideways on a phone');
     },
   },

@@ -86,13 +86,17 @@ function saveDraft(d: Draft | null) {
   }
 }
 
-/** A product prefilled from a catalog product (`?ref=`): its type, name, brand and size. */
+/**
+ * A product prefilled from a catalog product (`?ref=`): its type, name, brand and size. A built-in
+ * product's brand is BluModel's own placeholder line, not the maker of the real thing being
+ * modelled, so it is left for the buyer to fill in.
+ */
 function itemFromProduct(p: Product): DraftItem {
   const t = productTypeFor(p.kind, p.variant);
   return blankItem({
     productTypeId: t?.id ?? '',
     name: p.name.slice(0, NAME_MAX),
-    brand: (p.brand ?? '').slice(0, BRAND_MAX),
+    brand: p.source === 'builtin' ? '' : (p.brand ?? '').slice(0, BRAND_MAX),
     widthIn: p.widthIn,
     depthIn: p.depthIn,
     heightIn: p.heightIn,
@@ -875,7 +879,8 @@ function UpcField({
         )}
       </div>
       <span id={`${idp}-upc-msg`} className={shown ? 'ord-field-err' : 'ord-upc-ok'} role={shown ? 'alert' : undefined}>
-        {shown ?? (live?.ok ? `✓ ${UPC_FORMAT_LABEL[live.format]} ${formatUpc(live.code)}` : note ?? '')}
+        {/* With a barcode photo, its own box below carries the note. */}
+        {shown ?? (live?.ok ? `✓ ${UPC_FORMAT_LABEL[live.format]} ${formatUpc(live.code)}` : item.barcodeFileId ? '' : note ?? '')}
       </span>
       {!item.barcodeFileId ? (
         <button type="button" className="ord-linkish" onClick={() => photo.current?.click()} disabled={busy}>

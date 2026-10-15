@@ -1455,7 +1455,6 @@
   .ord-q-tier {
     grid-area: tier;
     color: var(--ink-2);
-    text-transform: capitalize;
   }
   .ord-q-who {
     grid-area: who;
@@ -1644,15 +1643,28 @@
   font-size: 12.5px;
 }
 
+/* A message under a field is a direct child of `.field`, whose `> span` rule (the field's label)
+   would otherwise make it bold label-grey: errors stay red and the UPC's check stays green. */
+.field > .ord-field-err {
+  color: var(--bad);
+  font-weight: 400;
+}
+
+.field > .ord-upc-ok {
+  color: var(--ok);
+  font-weight: 500;
+}
+
 .ord-product [aria-invalid='true'] {
   border-color: var(--bad);
 }
 
+/* Matches `.field > span` beside it in the grid, so the UPC box lines up with the Brand box. */
 .ord-upc label {
   display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  color: var(--ink-2);
 }
 
 .ord-upc-row {
@@ -1897,7 +1909,9 @@
     gap: 8px;
   }
 
-  .ord-dims {
+  /* The size is optional now: keep W / D / H on one row so it doesn't take a screen of its own. */
+  .ord-product .ord-dims {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
 }
