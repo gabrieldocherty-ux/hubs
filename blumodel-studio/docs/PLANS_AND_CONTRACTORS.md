@@ -75,7 +75,7 @@ Everything in My catalog is **private to that contractor**. Other contractors, t
 
    BluModel Studio's parametric models draw it at true size in the plan and in 3D, so most cabinet lines look right **without modelling anything**. A contractor can set up a whole line in an afternoon. This is the fastest route to "these are the cabinets you sell".
 2. **Upload your own model (GLB).** This is the same upload, validation report (size, triangles, bounding box vs declared dimensions, warnings) and 3D preview as the brand portal, saved to their private catalog.
-3. **Have BluModel Studio model it (paid).** This opens the custom-model request (PRODUCT_SPEC §7) with target **Contractor**: reference photos, dimensions, spec sheet and notes, at the existing per-model tiers. To model a **line**, one request can hold **several products of the same line**; each is priced per item at its tier, and there is one checkout. The delivered models land **straight in My catalog**, already linked to their price-book rows.
+3. **Have BluModel Studio model it (paid).** This opens **Make custom models** (`#/orders/new?target=contractor`), the same request every customer uses, with target **Contractor**: a product list where each product has a name, an optional brand, its UPC/EAN, an optional size, reference photos and notes. It is priced in **Model packs** (§8): up to 8 products for $129, more products add packs, one checkout. To model a **line**, list its pieces and name the line. The delivered models land **straight in My catalog**, already linked to their price-book rows.
 
 Collections/lines group products in the catalog panel, for example "Smith Shaker: 14 pieces".
 
@@ -152,7 +152,39 @@ A small tab of the workspace that publishes chosen My-catalog products as the co
 ## 7. Open questions for Gabe (decisions made while fleshing out; overrule freely)
 1. A duplicate of an unlocked kitchen is **not** unlocked, so $5 can't unlock a whole account.
 2. The renewal grace period is **7 days**.
-3. Multi-product modelling requests are priced **per item at the normal tiers**, with no volume discount yet.
+3. ~~Multi-product modelling requests are priced per item at the normal tiers.~~ Superseded 2026-10-14 by the Model pack (§8): products are priced in packs of 8.
 4. A contractor account is **one login** (no team seats yet).
 5. Quotes support an optional tax % and a "valid until" date. There are no e-signature or deposit payments yet.
 6. Contractor share links hide "Duplicate to my kitchens", so clients stay with the contractor.
+
+## 8. Make custom models: the Model pack (decided 2026-10-14)
+
+Supersedes PRODUCT_SPEC §7.2's per-product tiers (Simple $129 / Standard $279 / Complex $549, +$39 per extra finish). Those tiers are **retired**: no new request is priced with them.
+
+| | |
+|---|---|
+| **Model pack** | **$129** (the app's currency, USD today) for **up to 8 products** |
+| Per product | one true-to-size 3D model (GLB + thumbnail) |
+| Finishes | up to **3 per model**, included |
+| Revisions | **2 rounds per model**, included |
+| More products | 9–16 products are 2 packs ($258), 17–24 are 3 ($387), and so on, up to 5 packs (40 products) in one request |
+| Turnaround | 15 business days for the first pack, +5 per further pack |
+| Rush | **+50%** on every pack, for **half the turnaround** (rounded up) |
+
+A pack costs the same with 1 product or 8; the request form says so and shows how many products are left in the current pack.
+
+**What each product needs** (the request is a product list, 1 to 8 per pack, add more to add packs):
+- a **name** and a **product type** (so it can be placed in a kitchen);
+- optionally its **brand**;
+- its **UPC**: typed or pasted (UPC-A 12 digits, EAN-13 or EAN-8, check digit verified, stored as digits only; a 13-digit code starting with 0 is stored as the 12-digit UPC-A), or **scanned** with the phone camera where the browser has the BarcodeDetector API, otherwise a **photo of the barcode** (stored as a private reference image);
+- optionally its **size** (width, depth, height); without one the studio uses the model's measured size;
+- **reference photos** (up to 8) and **notes**.
+A product needs at least one way to identify it: a photo, a UPC, a barcode photo, or the catalog product it started from.
+
+**Rules the server enforces** (`server/payments/tiers.mjs` is the only price source):
+- A request's price is computed when it is created and **stored with the order** (the total, each product's share, and the receipt lines). Checkout charges the stored total; a later price change never re-prices an existing order.
+- Orders placed before packs keep their stored prices and turnarounds, and are labelled with their old tier.
+- Client-sent amounts, tiers and extra-finish counts are ignored.
+- Counts (1–40 products), UPC check digits, and ownership of every uploaded photo are checked on the server.
+
+Contractors use the same pack flow with target **Contractor**: their deliverables land in My catalog (§4.2).

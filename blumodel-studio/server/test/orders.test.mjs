@@ -8,6 +8,10 @@ import { startTestServer } from './helpers.mjs';
 import { makeGlb } from './fixtures/glb.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { seed } from '../seed/orders.mjs';
+import { openDb } from '../db/index.mjs';
+import { migrate } from '../db/migrate.mjs';
+import { MIGRATION_MODULES, MIGRATION_KEYS } from '../db/migrations/index.mjs';
+import { quote, packsFor, packBusinessDays, legacyQuote, MAX_ITEMS, PACK } from '../payments/tiers.mjs';
 
 const DAY = 86_400_000;
 let t;
@@ -104,6 +108,109 @@ test('the Model pack is public and the quote is the server’s: client amounts a
   assert.match(r.body.order.id, /^o_[a-z0-9]{24}$/);
   // Anonymous users can't order.
   assert.equal((await anon.post('/api/orders', { brief: brief(refs), tier: 'simple' })).status, 401);
+});
+
+test('Model pack quote math: 1–8 products one pack, 9–16 two, rush +50% for half the days, shares add up', () => {
+  assert.equal(PACK.priceCents, 12_900);
+  for (const [n, packs] of [[1, 1], [8, 1], [9, 2], [16, 2], [17, 3], [40, 5]]) {
+    assert.equal(packsFor(n), packs, `${n} products`);
+    const q = quote({ products: n });
+    assert.equal(q.packs, packs);
+    assert.equal(q.amountCents, packs * 12_900, `${n} products cost ${packs} packs`);
+    assert.equal(q.items.length, n);
+    assert.equal(q.items.reduce((s, it) => s + it.amountCents, 0), q.amountCents, 'item shares add up to the total');
+    assert.equal(q.lines.reduce((s, l) => s + l.amountCents, 0), q.amountCents, 'receipt lines add up to the total');
+    assert.equal(q.dueBusinessDays, 15 + (packs - 1) * 5);
+  }
+  // A pack costs the same with 1 product or 8.
+  assert.equal(quote({ products: 1 }).amountCents, quote({ products: 8 }).amountCents);
+  // Rush: +50% on each pack, half the turnaround rounded up.
+  const r = quote({ products: 9, rush: true });
+  assert.equal(r.amountCents, 2 * 19_350);
+  assert.equal(r.rushCents, 2 * 6_450);
+  assert.equal(r.dueBusinessDays, 10);
+  assert.equal(packBusinessDays(1, true), 8, '15 halved, rounded up');
+  assert.deepEqual(r.lines.map((l) => l.label), ['Model pack 1 of 2: 8 products', 'Model pack 2 of 2: 1 product', 'Rush (+50%, half the turnaround)']);
+  // Counts outside 1..40 are refused; only the number of items matters, never a tier.
+  assert.throws(() => quote({ products: 0 }));
+  assert.throws(() => quote({ products: MAX_ITEMS + 1 }));
+  assert.throws(() => quote({ products: 2.5 }));
+  assert.equal(quote({ items: [{ tier: 'complex', extraFinishes: 3 }] }).amountCents, 12_900);
+  // A pre-pack order's quote is rebuilt from its stored amounts, never re-priced.
+  const lq = legacyQuote({ items: [{ tier: 'standard', extraFinishes: 1, amountCents: 31_800, name: 'Range' }], amountCents: 31_800 });
+  assert.equal(lq.pricing, 'tiers');
+  assert.equal(lq.amountCents, 31_800);
+  assert.equal(lq.dueBusinessDays, 10);
+  assert.deepEqual(lq.lines, [{ label: 'Standard model: Range, 1 extra finish', amountCents: 31_800, item: 0 }]);
+});
+
+test('orders placed before Model packs keep their stored prices: the migration copies them and checkout charges them', async () => {
+  // 1. The migration (orders-002) keeps every row, price, status and event of an older database.
+  const db = openDb(':memory:');
+  const upToOrders001 = MIGRATION_MODULES.map((m, i) => (MIGRATION_KEYS[i] === 'orders' ? { steps: m.steps.filter((s) => s.id === 'orders-001-orders') } : m));
+  migrate(db, { modules: upToOrders001 });
+  const ts = Date.UTC(2026, 9, 1);
+  db.prepare("INSERT INTO users (id, email, name, password_hash, created_at) VALUES ('u_legacybuyer', 'old@example.test', 'Old buyer', 'x', ?)").run(ts);
+  const insOrder = db.prepare(
+    `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at, paid_at)
+     VALUES (?, 'u_legacybuyer', 'customer', ?, ?, ?, ?, 'usd', 'demo', '{"name":"Old"}', ?, ?, ?, ?)`,
+  );
+  insOrder.run('o_legacyorder0000000000001', 'paid', 'complex', '{"rush":true,"extraFinishes":0}', 82_350, ts, ts, ts, ts);
+  insOrder.run('o_legacyorder0000000000002', 'draft', 'simple', '{"rush":false,"extraFinishes":0}', 12_900, ts, ts, ts, null);
+  db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES ('o_legacyorder0000000000001', 0, '{\"name\":\"Old\"}', 'complex', 0, 82350)").run();
+  db.prepare("INSERT INTO order_events (order_id, type, to_status, created_at) VALUES ('o_legacyorder0000000000001', 'paid', 'paid', ?)").run(ts);
+  assert.deepEqual(migrate(db), ['orders-002-model-pack']);
+  const rows = db.prepare('SELECT id, status, tier, amount_cents FROM orders ORDER BY id').all().map((r) => ({ ...r }));
+  assert.deepEqual(rows, [
+    { id: 'o_legacyorder0000000000001', status: 'paid', tier: 'complex', amount_cents: 82_350 },
+    { id: 'o_legacyorder0000000000002', status: 'draft', tier: 'simple', amount_cents: 12_900 },
+  ]);
+  assert.equal(db.prepare('SELECT amount_cents FROM order_items WHERE order_id = ?').get('o_legacyorder0000000000001').amount_cents, 82_350);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM order_events').get().n, 1, 'events survive the rebuild');
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
+  // New rows can be packs now; the old CHECK would have refused 'pack'.
+  db.prepare("UPDATE orders SET tier = 'pack' WHERE id = 'o_legacyorder0000000000002'").run();
+  db.close();
+
+  // 2. Through the API: an old order reads, pays and dates at its own price and tier.
+  const ann = await t.user();
+  const now = Date.now();
+  const id = 'o_legacyorder0000000000003';
+  t.db
+    .prepare(
+      `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at)
+       VALUES (?, ?, 'customer', 'draft', 'standard', '{"rush":false,"extraFinishes":1}', 31800, 'usd', 'demo', ?, ?, ?, ?)`,
+    )
+    .run(id, ann.user.id, JSON.stringify(brief([])), now, now, now);
+  t.db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 1, 31800)").run(id, JSON.stringify(brief([])));
+  const g = await ann.get(`/api/orders/${id}`);
+  assert.equal(g.status, 200, g.text);
+  assert.equal(g.body.order.amountCents, 31_800);
+  assert.equal(g.body.order.pricing, 'tiers');
+  assert.equal(g.body.order.quote.amountCents, 31_800);
+  assert.deepEqual(g.body.order.quote.lines.map((l) => l.label), ['Standard model: My Old Range, 1 extra finish']);
+  const paid = await demoPay(ann, id);
+  assert.equal(paid.status, 'paid');
+  assert.equal(paid.amountCents, 31_800);
+  const row = t.db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+  assert.equal(row.amount_cents, 31_800);
+  assert.equal(row.tier, 'standard', 'still an old-tier order');
+  assert.equal(row.due_at - row.paid_at > 0, true);
+
+  // 3. A pack order keeps the price stored when it was made, even if the pack price changes later
+  //    (simulated by storing a different price on it, as an older price would have been).
+  const o = await newOrder(ann);
+  assert.equal(o.amountCents, 12_900);
+  const ex = JSON.parse(t.db.prepare('SELECT extras FROM orders WHERE id = ?').get(o.id).extras);
+  assert.equal(ex.quote.lines[0].amountCents, 12_900, 'the quote lines are stored with the order');
+  ex.quote.lines[0].amountCents = 9_900;
+  t.db.prepare('UPDATE orders SET amount_cents = 9900, extras = ? WHERE id = ?').run(JSON.stringify(ex), o.id);
+  t.db.prepare('UPDATE order_items SET amount_cents = 9900 WHERE order_id = ?').run(o.id);
+  const again = (await ann.get(`/api/orders/${o.id}`)).body.order;
+  assert.equal(again.amountCents, 9_900);
+  assert.equal(again.quote.lines[0].amountCents, 9_900);
+  const p2 = await demoPay(ann, o.id);
+  assert.equal(p2.status, 'paid', 'paid at its stored price, not re-quoted at today’s');
 });
 
 test('the brief is validated; reference files must be the caller’s own reference photos', async () => {

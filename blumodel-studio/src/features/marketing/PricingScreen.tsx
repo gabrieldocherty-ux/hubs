@@ -1,66 +1,66 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
 import plansJson from '../../data/plans.json';
 import { call } from '../../lib/api';
 import type { PaymentsMode } from '../../lib/config';
 import { useSession } from '../../store/useSession';
-import type { ModelTier, Plan, PlanId } from '../../types/platform';
+import type { Plan, PlanId } from '../../types/platform';
 import { MarketingFooter, MarketingHeader, SectionHead, usePaymentsMode, usePendingScroll } from './parts';
 import './marketing.css';
 
 const PLANS = plansJson as Plan[];
 
 /**
- * Custom-model tiers as published in PRODUCT_SPEC §7.2. Shown only when `GET /api/orders/tiers`
- * (package C) isn't answering, and labelled as such: the order form is always the real quote.
+ * The custom-model offer: one Model pack (docs/PLANS_AND_CONTRACTORS.md §8). The server's
+ * `GET /api/orders/tiers` is the source; this published copy is shown only when that endpoint
+ * isn't answering, and labelled as such. The order form is always the real quote.
  */
-const FALLBACK_TIERS: ModelTier[] = [
-  { id: 'simple', name: 'Simple', for: 'Hardware, faucets, decor, simple lights', priceCents: 12900, businessDays: 7, revisions: 2 },
-  { id: 'standard', name: 'Standard', for: 'Appliances, sinks, single cabinets, stools', priceCents: 27900, businessDays: 10, revisions: 2 },
-  { id: 'complex', name: 'Complex', for: 'Modular or multi-part products, pro ranges, chandeliers', priceCents: 54900, businessDays: 15, revisions: 2 },
-];
-
-/** The add-ons package C publishes next to its tiers (`GET /api/orders/tiers`). */
-interface TierExtras {
-  includedFinishes: number;
-  extraFinishCents: number;
+interface PackOffer {
+  priceCents: number;
+  productsPerPack: number;
+  finishesPerModel: number;
+  revisions: number;
+  businessDays: number;
+  extraPackBusinessDays: number;
   rushPct: number;
 }
 
-type Tiers = { live: true; tiers: ModelTier[]; extras: TierExtras | null } | { live: false; tiers: ModelTier[] } | null;
+const FALLBACK_PACK: PackOffer = { priceCents: 12900, productsPerPack: 8, finishesPerModel: 3, revisions: 2, businessDays: 15, extraPackBusinessDays: 5, rushPct: 50 };
 
-const FALLBACK_EXTRAS: TierExtras = { includedFinishes: 2, extraFinishCents: 3900, rushPct: 50 };
+type Pack = { live: boolean; pack: PackOffer } | null;
 
-function readExtras(r: unknown): TierExtras | null {
-  const x = r as Partial<TierExtras> | null;
-  const n = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
-  return x && n(x.includedFinishes) && n(x.extraFinishCents) && n(x.rushPct)
-    ? { includedFinishes: x.includedFinishes!, extraFinishCents: x.extraFinishCents!, rushPct: x.rushPct! }
-    : null;
+function readPack(r: unknown): PackOffer | null {
+  const x = r as { pack?: Partial<PackOffer>; rushPct?: unknown } | null;
+  const p = x?.pack;
+  const n = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+  if (!p || !n(p.priceCents) || !n(p.productsPerPack) || p.productsPerPack < 1 || !n(x.rushPct)) return null;
+  return {
+    priceCents: p.priceCents,
+    productsPerPack: p.productsPerPack,
+    finishesPerModel: n(p.finishesPerModel) ? p.finishesPerModel : FALLBACK_PACK.finishesPerModel,
+    revisions: n(p.revisions) ? p.revisions : FALLBACK_PACK.revisions,
+    businessDays: n(p.businessDays) ? p.businessDays : FALLBACK_PACK.businessDays,
+    extraPackBusinessDays: n(p.extraPackBusinessDays) ? p.extraPackBusinessDays : FALLBACK_PACK.extraPackBusinessDays,
+    rushPct: x.rushPct,
+  };
 }
 
-function isTier(t: unknown): t is ModelTier {
-  const x = t as ModelTier;
-  return !!x && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.priceCents === 'number' && Number.isFinite(x.priceCents);
-}
-
-/** Live tiers from package C, or the published list when that endpoint isn't there (yet). */
-function useTiers(): Tiers {
-  const [tiers, setTiers] = useState<Tiers>(null);
+/** The live Model pack from the orders API, or the published one when that endpoint isn't there. */
+function usePack(): Pack {
+  const [pack, setPack] = useState<Pack>(null);
   useEffect(() => {
     let live = true;
     call<unknown>('GET', '/api/orders/tiers')
       .then((r) => {
-        const list = Array.isArray(r) ? r : (r as { tiers?: unknown })?.tiers;
-        const ok = Array.isArray(list) ? list.filter(isTier) : [];
-        if (live) setTiers(ok.length ? { live: true, tiers: ok, extras: Array.isArray(r) ? null : readExtras(r) } : { live: false, tiers: FALLBACK_TIERS });
+        const p = readPack(r);
+        if (live) setPack(p ? { live: true, pack: p } : { live: false, pack: FALLBACK_PACK });
       })
-      .catch(() => live && setTiers({ live: false, tiers: FALLBACK_TIERS }));
+      .catch(() => live && setPack({ live: false, pack: FALLBACK_PACK }));
     return () => {
       live = false;
     };
   }, []);
-  return tiers;
+  return pack;
 }
 
 const dollars = (cents: number) => `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })}`;
@@ -100,7 +100,7 @@ function useCta(id: PlanId, soon: boolean): { label: string; href: string | null
 export default function PricingScreen() {
   usePendingScroll();
   const payments = usePaymentsMode();
-  const tiers = useTiers();
+  const pack = usePack();
   return (
     <div className="mk">
       <MarketingHeader active="pricing" />
@@ -130,7 +130,7 @@ export default function PricingScreen() {
         </section>
 
         <ContractorProgram />
-        <CustomModels tiers={tiers} soon={payments === 'none'} />
+        <CustomModels pack={pack} soon={payments === 'none'} />
         <Faq payments={payments} />
       </main>
       <MarketingFooter />
@@ -215,42 +215,69 @@ function ContractorProgram() {
   );
 }
 
-function CustomModels({ tiers, soon }: { tiers: Tiers; soon: boolean }) {
+function CustomModels({ pack: offer, soon }: { pack: Pack; soon: boolean }) {
+  const p = offer?.pack;
   return (
     <section className="mk-section" id="models" aria-labelledby="models-title">
-      <SectionHead eyebrow="Custom 3D models" title={<span id="models-title">Not in the catalog? We’ll model it.</span>}>
-        Send photos, the dimensions and a spec sheet. Our studio builds a true-to-size 3D model that appears in your kitchens. Priced per product; a line of cabinets is one order with one checkout.
+      <SectionHead eyebrow="Make custom models" title={<span id="models-title">Not in the catalog? We’ll model it.</span>}>
+        List the products: a name, the UPC from the box or a photo, and the size if you have it. Our studio builds a true-to-size 3D model of each one that appears in your kitchens. A whole cabinet line is one request with one checkout.
       </SectionHead>
-      {tiers === null ? (
+      {!offer || !p ? (
         <p className="mk-loading">Loading prices…</p>
       ) : (
         <>
-          <div className="mk-tiers">
-            {tiers.tiers.map((t) => (
-              <div key={t.id} className="mk-tier">
-                <h3>{t.name}</h3>
-                <p className="mk-tier-price">
-                  <b>{dollars(t.priceCents)}</b> <span>per product</span>
-                </p>
-                {t.for && <p className="mk-tier-for">{t.for}</p>}
-                <dl>
-                  {typeof t.businessDays === 'number' && (
-                    <>
-                      <dt>Turnaround</dt>
-                      <dd>{t.businessDays} business days</dd>
-                    </>
-                  )}
-                  {typeof t.revisions === 'number' && (
-                    <>
-                      <dt>Revisions</dt>
-                      <dd>{t.revisions} rounds included</dd>
-                    </>
-                  )}
-                </dl>
-              </div>
-            ))}
+          <div className="mk-tiers mk-pack">
+            <div className="mk-tier mk-pack-main">
+              <h3>Model pack</h3>
+              <p className="mk-tier-price">
+                <b>{dollars(p.priceCents)}</b> <span>up to {p.productsPerPack} products</span>
+              </p>
+              <p className="mk-tier-for">One 3D model per product, at true size, private to you.</p>
+              <dl>
+                <dt>Finishes</dt>
+                <dd>Up to {p.finishesPerModel} per model</dd>
+                <dt>Revisions</dt>
+                <dd>{p.revisions} rounds per model</dd>
+                <dt>Turnaround</dt>
+                <dd>
+                  {p.businessDays} business days{p.extraPackBusinessDays ? `, +${p.extraPackBusinessDays} per extra pack` : ''}
+                </dd>
+              </dl>
+            </div>
+            <div className="mk-tier mk-pack-more">
+              <h3>More products, more packs</h3>
+              <p className="mk-tier-for">Add products and the request adds packs. One checkout for all of them.</p>
+              <dl>
+                {[1, 2, 3].map((n) => (
+                  <Fragment key={n}>
+                    <dt>
+                      {(n - 1) * p.productsPerPack + 1}–{n * p.productsPerPack} products
+                    </dt>
+                    <dd>
+                      {n} pack{n === 1 ? '' : 's'}, {dollars(n * p.priceCents)}
+                    </dd>
+                  </Fragment>
+                ))}
+                <dt>Rush</dt>
+                <dd>+{p.rushPct}%, half the turnaround</dd>
+              </dl>
+            </div>
+            <div className="mk-tier mk-pack-how">
+              <h3>What you send</h3>
+              <p className="mk-tier-for">Per product, in one short form:</p>
+              <dl>
+                <dt>Name</dt>
+                <dd>What it is</dd>
+                <dt>UPC</dt>
+                <dd>Typed, pasted or scanned with your phone</dd>
+                <dt>Photos</dt>
+                <dd>Front, side, details</dd>
+                <dt>Optional</dt>
+                <dd>Brand, size, notes</dd>
+              </dl>
+            </div>
           </div>
-          <p className="mk-tiers-note">{tiersNote(tiers)}</p>
+          <p className="mk-tiers-note">{packNote(offer)}</p>
           <div className="mk-center">
             {soon ? (
               <button type="button" className="btn big" disabled title="Payments aren’t open yet">
@@ -268,15 +295,10 @@ function CustomModels({ tiers, soon }: { tiers: Tiers; soon: boolean }) {
   );
 }
 
-const NUMBER_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six'];
-
-function tiersNote(t: NonNullable<Tiers>): string {
+function packNote(t: NonNullable<Pack>): string {
   const exact = 'The order form always shows the exact amount before you pay.';
-  const e = t.live ? t.extras : FALLBACK_EXTRAS;
-  if (!e) return `Extra finishes and rush delivery are priced on the order form. ${exact}`;
-  const included = NUMBER_WORDS[e.includedFinishes] ?? String(e.includedFinishes);
-  const addOns = `+${dollars(e.extraFinishCents)} per extra finish beyond ${included}; rush delivery is +${e.rushPct}% for half the turnaround.`;
-  return t.live ? `${addOns} ${exact}` : `Published list prices: ${addOns} ${exact}`;
+  const same = `A pack costs the same with 1 product or ${t.pack.productsPerPack}.`;
+  return t.live ? `${same} ${exact}` : `Published list prices. ${same} ${exact}`;
 }
 
 const FAQ: { q: string; a: string }[] = [
@@ -306,7 +328,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Custom models: what do you need, and what do I get?',
-    a: 'Photos (PNG, JPEG or WebP, up to 8 MB each), the width, depth and height, and a spec sheet or link if you have one. You get a GLB model at true size with your finishes, plus a thumbnail, within the tier’s turnaround in business days. Two rounds of revisions are included.',
+    a: 'For each product: its name, the UPC or EAN from the box (type it, paste it, or scan the barcode with your phone), and photos (PNG, JPEG or WebP, up to 8 MB each). The brand, the width, depth and height and a spec-sheet link help but are optional. You get a GLB model at true size in up to three finishes, plus a thumbnail, within the pack’s turnaround in business days. Two rounds of revisions are included per model.',
   },
   {
     q: 'Who can see a model I paid for?',
