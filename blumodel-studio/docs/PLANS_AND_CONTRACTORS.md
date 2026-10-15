@@ -4,7 +4,14 @@
 **Supersedes:** PRODUCT_SPEC §1's "homeowners use BluModel Studio free" business model, §5.1's pricing copy and §15 decision 2. Everything else in PRODUCT_SPEC stands.
 **Packages:** G `billing` and H `contractors` (BUILD_PLAN §9b, §9c), plus small additions to F, A, C and E.
 
-Gabe's decisions, verbatim in substance. These are fixed; the flows below only connect them:
+> **Pricing change, 2026-10-15 (Gabe):** *"Raise the contractor price to 99 cad, remove the 129 modeling plan and then add 3 new models to the contractor plan a month that we model ourselves; let's not advertise the 5 dollar export fee, just throw it in their face once they try."*
+> - Every price is in **Canadian dollars**: kitchen unlock **$5 CAD**, Unlimited **$15 CAD/month**, Contractor **$99 CAD/month**. Rows stored before keep their own currency (US dollars) and amounts.
+> - The Contractor plan **includes 3 custom 3D models a month**, made by our studio (§8). Custom models are **not sold** any more: the $129 Model pack is gone (no checkout, no rush). *Make custom models* is a Contractor-plan feature.
+> - The $5 CAD kitchen unlock is **not advertised** (landing, pricing page, FAQ, home, editor hints, onboarding, Billing). A free user meets it only in the export dialog, next to Unlimited (§2).
+>
+> Where the original decisions below still say $5, $15 or $40 (USD), read the decisions above.
+
+Gabe's original decisions (2026-10-04), verbatim in substance. These are fixed; the flows below only connect them:
 
 1. Exports are not allowed unless paid.
 2. **$5 one time** unlocks **one kitchen's** exports, forever, including re-exports after edits.
@@ -16,24 +23,24 @@ Gabe's decisions, verbatim in substance. These are fixed; the flows below only c
 
 ## 1. Plans at a glance
 
-| Plan | Price | Who it's for | What it unlocks |
+| Plan | Price (CAD) | Who it's for | What it unlocks |
 |---|---|---|---|
 | **Free** | $0 | Anyone designing a kitchen | Design, save, generate, share without limits. Exports locked. Studio renders preview with a watermark |
-| **Kitchen unlock** | **$5 once, per kitchen** | A homeowner finishing one kitchen | Every export of *that* kitchen, forever, including re-exports after edits. Unwatermarked studio renders of that kitchen |
-| **Unlimited** | **$15 / month** | Designers and frequent users | Unlimited usage: every export of every kitchen, no watermarks |
-| **Contractor** | **$40 / month** | Kitchen contractors, cabinet shops, remodelers | Everything in Unlimited, **plus** the Contractor program (§4) |
+| **Kitchen unlock** | **$5 CAD once, per kitchen**, offered only in the export dialog (not advertised) | A homeowner finishing one kitchen | Every export of *that* kitchen, forever, including re-exports after edits. Unwatermarked studio renders of that kitchen |
+| **Unlimited** | **$15 CAD / month** | Designers and frequent users | Unlimited usage: every export of every kitchen, no watermarks |
+| **Contractor** | **$99 CAD / month** | Kitchen contractors, cabinet shops, remodelers | Everything in Unlimited, **plus** the Contractor program (§4) and **3 custom 3D models a month**, made by our studio (§8) |
 
-The prices live in one file, `src/data/plans.json`. The server is the authority on what is charged and the client only displays it, like `tiers.mjs` for custom models.
+The prices live in one file, `src/data/plans.json` (with `currency: "cad"` and the Contractor plan's `includedModels: 3`); `server/lib/plans.mjs` refuses to start if they change without it. The server is the authority on what is charged and the client only displays it. The Pricing page shows **Free, Unlimited and Contractor** only; the Free card says exports are locked and quotes no export price.
 
 **What counts as an export:** every item in the editor's Export menu: floor plan PNG, 3D view PNG, shopping list CSV, `.kitchen.json` design file, plus the studio render download (package A) and the contractor quote (§4.6).
 
 ## 2. The export paywall: flow
 
 1. **A free user clicks any Export item.** The item shows a small lock and the menu footer reads "Exports are a paid feature".
-2. **The Unlock dialog opens**, titled with the kitchen's name, and offers two cards side by side:
-   - **Unlock this kitchen: $5, one time.** "Every export for this kitchen, forever, including after you change it."
-   - **Go Unlimited: $15/month.** "Exports on all your kitchens, no watermarks. Cancel anytime."
-   - A text link underneath: "Are you a contractor? See the Contractor plan ($40/month) →".
+2. **The Unlock dialog opens**, titled with the kitchen's name, and offers two cards side by side. This is the **only** place the one-kitchen unlock and its price appear:
+   - **Unlock this kitchen - $5 CAD once.** "Every export for this kitchen, forever, including after you change it."
+   - **Unlimited - $15 CAD/month.** "Exports on all your kitchens, no watermarks. Cancel anytime."
+   - A text link underneath: "Are you a contractor? See the Contractor plan ($99 CAD/month) →".
 3. **Signed out, or in `#/local`:** the dialog first asks them to create a free account. The local draft is saved into the new account as a kitchen, and the dialog continues for that kitchen. Nothing is lost.
 4. **Payment** goes through the provider abstraction (§5): Stripe Checkout when keys are configured, otherwise the clearly labelled **DEMO** checkout page. It never asks for card fields in BluModel Studio.
 5. **On return**, the editor reopens the kitchen and **automatically finishes the export they clicked** (the "resume intent" is kept in the URL / sessionStorage), then shows a toast: "Unlocked: exports for *Kitchen name* are yours."
@@ -51,16 +58,16 @@ The prices live in one file, `src/data/plans.json`. The server is the authority 
 - **Download** is an export, so it follows §2. Once the kitchen is unlocked or the user is on a plan, the same dialog renders and downloads **without** the watermark.
 - The normal on-screen 2D plan and 3D view are **never** watermarked. Design freely is the free promise.
 
-## 4. The Contractor program ($40/month)
+## 4. The Contractor program ($99 CAD/month)
 
 **The promise on the pricing page:** *"Show your customers the exact cabinets you sell, in their kitchen, at your price."*
 
 ### 4.1 Becoming a contractor
-1. From Pricing or the Unlock dialog link, they choose **Contractor, $40/month** and check out. (The account menu shows *Contractor workspace* only to contractors; there is no "For contractors" entry for everyone else.)
+1. From Pricing or the Unlock dialog link, they choose **Contractor, $99 CAD/month** and check out. (The account menu shows *Contractor workspace* only to contractors; there is no "For contractors" entry for everyone else.)
 2. A three-step **company setup**:
    - **Company:** business name and business phone (**both required**, checked in the browser and again by the server; the phone is normalised the same way as everywhere else, "(905) 555-0142" or "+<country code><digits>"), then logo, email, website and service area (optional). Every later save of the company needs both too. A contractor whose company was saved before this rule, with either missing, sees a *Finish your company details* card instead of the workspace until they add them (a lapsed, read-only contractor is not asked, since they can't save).
    - **Pricing defaults:** default markup %, for example 30%. This can be changed any time.
-   - **Start your catalog:** quick-add a first product, upload a model, request modelling, or skip.
+   - **Start your catalog:** quick-add a first product, upload a model, have our studio model it (one of the plan's 3 included models a month), or skip.
 3. They land in the **Contractor workspace** (`#/pro`). Its tabs are Dashboard, My catalog, Price book, Brands I carry, Quotes, Make custom models and Company.
 
 An Unlimited subscriber who upgrades is moved to Contractor; Stripe prorates the change, and demo mode simulates it.
@@ -75,7 +82,7 @@ Everything in My catalog is **private to that contractor**. Other contractors, t
 
    BluModel Studio's parametric models draw it at true size in the plan and in 3D, so most cabinet lines look right **without modelling anything**. A contractor can set up a whole line in an afternoon. This is the fastest route to "these are the cabinets you sell".
 2. **Upload your own model (GLB).** This is the same upload, validation report (size, triangles, bounding box vs declared dimensions, warnings) and 3D preview as the brand portal, saved to their private catalog.
-3. **Have BluModel Studio model it (paid).** This opens **Make custom models** (`#/orders/new?target=contractor`), the same request every customer uses, with target **Contractor**: a product list where each product has a name, an optional brand, its UPC/EAN, an optional size, reference photos and notes. It is priced in **Model packs** (§8): up to 8 products for $129, more products add packs, one checkout. To model a **line**, list its pieces and name the line. The delivered models land **straight in My catalog**, already linked to their price-book rows.
+3. **Have BluModel Studio model it (included: 3 a month).** This opens **Make custom models** (`#/orders/new?target=contractor`) with target **My catalog**: a product list where each product has a name, an optional brand, its UPC/EAN, an optional size, reference photos and notes. Each product is one model from the month's allowance (§8); nothing is paid. To model a **line**, list its pieces and name the line (over several months, or with extra models from us). The delivered models land **straight in My catalog**, ready to price.
 
 Collections/lines group products in the catalog panel, for example "Smith Shaker: 14 pieces".
 
@@ -128,7 +135,7 @@ A small tab of the workspace that publishes chosen My-catalog products as the co
 ## 5. Billing mechanics
 
 - **Payments** reuse the provider abstraction from PRODUCT_SPEC §7.4:
-  - **Stripe**: Checkout `mode=payment` for the $5 unlock, `mode=subscription` for $15 and $40, a **customer portal** session for cards, invoices and cancellation, and webhooks for `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.paid` and `invoice.payment_failed`;
+  - **Stripe**: Checkout `mode=payment` for the $5 CAD unlock, `mode=subscription` for $15 CAD and $99 CAD (inline `price_data`, currency `cad`), a **customer portal** session for cards, invoices and cancellation, and webhooks for `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.paid` and `invoice.payment_failed`;
   - **DEMO** when keys are absent: a full-width DEMO banner, simulated success, decline, renewal and cancel, and no card fields anywhere.
 - **One Stripe webhook endpoint** (owned by package C). It verifies and dedupes each event, then dispatches by `metadata.kind` (`order` | `kitchen_unlock` | `subscription`) to handlers that each package registers.
 - **Account → Billing** (`#/account/billing`) shows:
@@ -137,7 +144,8 @@ A small tab of the workspace that publishes chosen My-catalog products as the co
   - a "Manage payment & invoices" button (the Stripe portal; simulated in demo);
   - the list of unlocked kitchens and receipts.
 - **Failed renewal:** a 7-day grace period with a banner, then the plan drops to Free (the §4.7 rules apply to contractors).
-- **Admin → Billing** shows active subscriptions by plan, MRR, unlock count, churn, and demo kept separate from Stripe, as in Revenue.
+- **Admin → Billing** shows active subscriptions by plan, MRR, unlock count, churn, and demo kept separate from Stripe, as in Revenue; money is summed per currency.
+- **Currency (2026-10-15):** every new checkout, subscription, unlock and receipt is CAD. A row stored before keeps its currency and amount (refunds and history in their own currency). An existing subscription is never silently repriced: it renews at what it was billed at, and a plan change or a new subscription takes the CAD price. A Stripe customer that paid in USD can't be charged in CAD, so `billing_customers` keeps one Stripe customer per user **and currency** and a CAD checkout starts a fresh one; a Stripe subscription still billed in USD can't be switched in place (`409 currency_change`: cancel, then subscribe).
 
 ## 6. Data (summary; exact DDL in BUILD_PLAN §9b/§9c)
 - `subscriptions`: user, plan (`unlimited` | `contractor`), status, provider + refs, current period end, cancel-at-period-end.
@@ -152,41 +160,42 @@ A small tab of the workspace that publishes chosen My-catalog products as the co
 ## 7. Open questions for Gabe (decisions made while fleshing out; overrule freely)
 1. A duplicate of an unlocked kitchen is **not** unlocked, so $5 can't unlock a whole account.
 2. The renewal grace period is **7 days**.
-3. ~~Multi-product modelling requests are priced per item at the normal tiers.~~ Superseded 2026-10-14 by the Model pack (§8): products are priced in packs of 8.
+3. ~~Multi-product modelling requests are priced per item at the normal tiers.~~ Superseded 2026-10-14 by the Model pack, which was itself superseded 2026-10-15: custom models are included in the Contractor plan (§8), 3 a month.
 4. A contractor account is **one login** (no team seats yet).
 5. Quotes support an optional tax % and a "valid until" date. There are no e-signature or deposit payments yet.
 6. Contractor share links hide "Duplicate to my kitchens", so clients stay with the contractor.
 
-## 8. Make custom models: the Model pack (decided 2026-10-14)
+## 8. Make custom models: included in the Contractor plan (decided 2026-10-15)
 
-Supersedes PRODUCT_SPEC §7.2's per-product tiers (Simple $129 / Standard $279 / Complex $549, +$39 per extra finish). Those tiers are **retired**: no new request is priced with them.
+Supersedes the Model pack ($129 for up to 8 products, 2026-10-14, never on the live site) and PRODUCT_SPEC §7.2's per-product tiers (Simple $129 / Standard $279 / Complex $549, +$39 per extra finish, rush +50%). **Custom models are not sold.** There is no checkout, no rush and no per-model price for anything new.
 
 | | |
 |---|---|
-| **Model pack** | **$129** (the app's currency, USD today) for **up to 8 products** |
-| Per product | one true-to-size 3D model (GLB + thumbnail) |
-| Finishes | up to **3 per model**, included |
-| Revisions | **2 rounds per model**, included |
-| More products | 9–16 products are 2 packs ($258), 17–24 are 3 ($387), and so on, up to 5 packs (40 products) in one request |
-| Turnaround | 15 business days for the first pack, +5 per further pack |
-| Rush | **+50%** on every pack, for **half the turnaround** (rounded up) |
+| **Included** | **3 custom 3D models a month** with the Contractor plan ($99 CAD/month), made by our studio |
+| Per product | one true-to-size 3D model (GLB + thumbnail): **one model per product** |
+| Finishes | up to **3 per model** |
+| Revisions | **2 rounds per model** |
+| Turnaround | about 15 business days after the request is sent |
+| More | *Need more? Contact us* (`SUPPORT_EMAIL`); an admin can grant extra models for the current month |
 
-A pack costs the same with 1 product or 8; the request form says so and shows how many products are left in the current pack.
+**The allowance** (`server/payments/allowance.mjs`; the server enforces all of it, the form only explains it):
+- The month is the subscription's **current billing period**; a complimentary plan (no period) uses the calendar month, UTC.
+- A model counts **when its request is sent**. It goes **back to the allowance** if the request is cancelled **before work starts**, by the contractor (*Withdraw request* on its page) or by the studio (*Cancel request…* in the queue drawer, with a reason the contractor sees). Once the studio starts, it counts.
+- **Unused models don't roll over.** Grants apply to the period they were given in only.
+- Past the allowance the form says how many are left and when it resets (*"N of 3 models left this month - resets November 15"*), lets the request be prepared but not sent, and offers *Need more? Contact us*. The server answers `409 { needs: 'allowance', allowance }` with the reset date.
+- `POST /api/orders` checks the plan, counts the period's models and inserts the order **in one transaction**, so two requests sent at once can't both take the last model. Without the plan it answers `403 { needs: 'contractor' }`.
+- **If the plan lapses**, requests already sent are still made and delivered; no new ones can be sent (the request page says so and points to Billing).
+- **Admin → Studio → Extra models for a contractor** (or the drawer of one of their requests): an admin grants 1-50 extra models for the contractor's **current** period, with a note. Every grant is in the admin audit log (`model_grant`). `GET /api/admin/model-allowance?email=`, `POST /api/admin/model-grants`.
 
-**What each product needs** (the request is a product list, 1 to 8 per pack, add more to add packs):
-- a **name** and a **product type** (so it can be placed in a kitchen);
-- optionally its **brand**;
-- its **UPC**: typed or pasted (UPC-A 12 digits, EAN-13 or EAN-8, check digit verified, stored as digits only; a 13-digit code starting with 0 is stored as the 12-digit UPC-A), or **scanned** with the phone camera where the browser has the BarcodeDetector API, otherwise a **photo of the barcode** (stored as a private reference image);
-- optionally its **size** (width, depth, height); without one the studio uses the model's measured size;
-- **reference photos** (up to 8) and **notes**.
-A product needs at least one way to identify it: a photo, a UPC, a barcode photo, or the catalog product it started from.
+**What each product needs** (unchanged from the pack): a **name** and a **product type**; optionally its **brand**; its **UPC** typed, pasted, scanned (BarcodeDetector) or as a **photo of the barcode** (UPC-A, EAN-13, EAN-8, check digit verified, stored as digits only); optionally its **size**; up to 8 **reference photos** and **notes**. A product needs at least one way to identify it: a photo, a UPC, a barcode photo, or the catalog product it started from.
 
-**Rules the server enforces** (`server/payments/tiers.mjs` is the only price source):
-- A request's price is computed when it is created and **stored with the order** (the total, each product's share, and the receipt lines). Checkout charges the stored total; a later price change never re-prices an existing order.
-- Orders placed before packs keep their stored prices and turnarounds, and are labelled with their old tier.
-- Client-sent amounts, tiers and extra-finish counts are ignored.
-- Counts (1–40 products), UPC check digits, and ownership of every uploaded photo are checked on the server.
+**Where it shows:**
+- Contractors: *Make custom models* in the account menu (`#/orders`: what is left this month, their requests) and the workspace tab (`#/pro/modelling`). Deliveries land privately in My catalog (§4.2), or, if they choose, privately in their own kitchens or as a draft in a partner brand they belong to.
+- Everyone else: **no menu entry**. `#/orders` (linked from Billing when they have orders) lists their earlier orders read-only, with receipts and refunds working, and a note that custom models come with the Contractor plan. `#/orders/new` shows that note instead of the form.
+- The Pricing page's Contractor card lists *"3 custom 3D models a month, made by our studio"*; its *Make custom models* section has no price.
 
-**The studio** sees each product's brand, UPC (grouped as printed, with its format) and barcode photo in the queue and the order drawer. A delivered model's description names the brand and UPC the buyer gave (products have no fields for them yet), so a contractor can match it to the stock it stands for. A built-in product a request starts from fills in its type, name and size but not its brand, which is BluModel's own line rather than the real product's maker.
+**Orders paid for before 2026-10-15** keep their stored prices, currency (USD), statuses, turnaround and refund paths: checkout of one still unpaid, the Stripe webhook and return sync, refunds and the revenue report all work as before. The retired tier names (and *Model pack* for the few development-database pack orders) only label them.
 
-Contractors use the same pack flow with target **Contractor** (the workspace's **Make custom models** tab, or **My catalog** in the form's "Who are the models for?"): the same $129 packs, rush and limits, priced by the same server quote. Their deliverables land privately in My catalog (§4.2), published and editable like any of their products.
+**Data:** a request is an order with `tier = provider = 'plan'`, `amount_cents = 0`, `currency = 'cad'`, status `paid` (the studio queue's "to start"), and `plan_period_start/end` (the period it counted against). `model_grants` holds the extra models (`pricing-002-included-models` rebuilt `orders`/`order_items` to allow tier `plan`, copying every existing row as is).
+
+**The studio** sees each product's brand, UPC (grouped as printed, with its format) and barcode photo in the queue and the drawer, and, on a plan request, where the contractor stands this month. A delivered model's description names the brand and UPC the buyer gave, so a contractor can match it to the stock it stands for.

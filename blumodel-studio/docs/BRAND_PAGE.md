@@ -4,7 +4,7 @@
 **Supersedes:** PRODUCT_SPEC §6 (self-serve brand portal for outside brands) and BUILD_PLAN §6 as a standalone product. The machinery built for §6 is kept: product editor, GLB report, moderation, brand page and analytics. **What changes is who uses it and where it lives.**
 **Package:** B2 `brand-in-pro` (BUILD_PLAN §16).
 
-There is no separate brand account and no portal for outsiders. **A contractor's company is the brand.** The Brand page is one tab of the Contractor workspace, included in the $40/month plan.
+There is no separate brand account and no portal for outsiders. **A contractor's company is the brand.** The Brand page is one tab of the Contractor workspace, included in the $99 CAD/month plan.
 
 ---
 
@@ -86,7 +86,7 @@ Last 7 / 30 / 90 days:
 These come from the existing `product_events` plus new `brand_view` and `lead` types. No IPs are stored. Demo brands show "demo data".
 
 ## 8. Plan rules
-- Included in the **$40/month Contractor plan**. No extra charge.
+- Included in the **$99 CAD/month Contractor plan**. No extra charge.
 - **Plan lapses:** the brand page and its live products are **hidden** from the public (`#/b/:slug` shows "This page is unavailable", and the products leave the public catalog). Homeowners' kitchens that already use them keep them through snapshots. The leads inbox becomes read-only.
 - **Renewal** restores everything that was live before, with **no re-review**.
 

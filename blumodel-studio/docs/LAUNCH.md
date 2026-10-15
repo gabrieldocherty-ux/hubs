@@ -76,8 +76,9 @@ Stripe Dashboard, live mode:
    one it finds).
 4. **Customer emails** (Settings → *Customer emails*): turn on *Successful payments* and *Refunds*.
    The app sends no email of its own; Stripe's receipts are the customer's record.
-5. **Tax:** prices are fixed in USD ($5 kitchen unlock, $15/month Unlimited, $40/month Contractor,
-   $129-$549 custom models) and checkout adds no tax. If you are required to collect sales tax/VAT
+5. **Tax:** prices are fixed in Canadian dollars since 2026-10-15 ($5 CAD kitchen unlock, offered only in
+   the export dialog; $15 CAD/month Unlimited; $99 CAD/month Contractor, which includes 3 custom models a
+   month; custom models aren't sold on their own) and checkout adds no tax. If you are required to collect sales tax/VAT
    where your customers are, register and turn on **Stripe Tax**, and ask for checkout to set
    `automatic_tax` (a code change: the server doesn't do it today). Get advice for your jurisdiction;
    this runbook can't decide it.
@@ -199,16 +200,16 @@ With your own card, on https://blumodel.studio from a normal browser window:
 
 1. Sign up with an email that is **not** your admin account (admins can export without paying, so
    an admin account would skip the paywall).
-2. Make a kitchen, press any **Export**, choose **Unlock this kitchen · $5**. You land on Stripe's
+2. Make a kitchen, press any **Export**, choose **Unlock this kitchen - $5 CAD once**. You land on Stripe's
    checkout page (`checkout.stripe.com`): pay.
 3. You return to the kitchen: *Payment received*; the export you clicked finishes; Account → Billing
    lists the receipt.
-4. Stripe Dashboard → **Payments**: the $5 payment. **Webhooks** → the endpoint → recent deliveries:
+4. Stripe Dashboard → **Payments**: the $5 CAD payment. **Webhooks** → the endpoint → recent deliveries:
    `checkout.session.completed` answered **200**.
 5. Refund it: the payment → **Refund** → full amount. The delivery `charge.refunded` answers 200 and
    Stripe emails a refund receipt. Note: the app **keeps the kitchen unlocked** after a refund made in
    the Stripe dashboard (only custom-model orders change state on a refund).
-6. Optional, the subscription path: **Unlimited $15/month** with the same account; then Billing →
+6. Optional, the subscription path: **Unlimited - $15 CAD/month** with the same account; then Billing →
    *Manage payment & invoices* opens the Stripe portal and comes back; *Cancel* keeps the plan to the
    end of the month; refund the charge in the dashboard.
 

@@ -1,5 +1,9 @@
 # Handoff: package C (orders: paid custom models, payments, studio queue, revenue)
 
+> **2026-10-15:** custom models are no longer sold. The Contractor plan includes 3 a month; the prices,
+> tiers, rush and checkout below describe orders paid for before then. See `docs/handoff/pricing.md`
+> and `docs/PLANS_AND_CONTRACTORS.md` §8.
+
 Built 2026-10-06 → 10-08 on `mise/orders`, branched from `claude/gallant-ptolemy-lm7fux` at `4f0a7a6`
 (port 8814). Plan: `docs/BUILD_PLAN.md` §7 and §13.3 C. Spec: `docs/PRODUCT_SPEC.md` §7.
 Everything stays inside the package's owned paths; changes needed elsewhere are listed under

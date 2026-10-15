@@ -22,7 +22,7 @@ There are three audiences, and each has its own entry point:
 | **Brands** (any user with a brand membership) | Self-serve portal, product uploads (GLB + images + finishes + dimensions + price + SKU + buy link), moderation, brand page, analytics | Free during beta. Paid listing plans are planned but not built (§15 Q2) |
 | **BluModel Studio staff** (roles `studio`, `admin`) | Moderation queue, custom-model studio queue, orders, revenue overview | n/a |
 
-**Business model — superseded 2026-10-04 by [PLANS_AND_CONTRACTORS.md](./PLANS_AND_CONTRACTORS.md):** designing is free, but exports are paid ($5 per kitchen, once), with an Unlimited plan ($15/month) and a Contractor program ($40/month). The original decision read: homeowners use BluModel Studio free, brands are the customers, and custom models are a paid service. This is how the kitchen sector already works: IKEA's planner is free and drives product sales [K1]; Roomvo is paid for by manufacturers and gives them view and save analytics [K6]; Marxent and 2020 build or syndicate manufacturer catalogs [K4][K5]. Drafted plans to charge homeowners about $1–2k per plan set [D3], but no kitchen tool charges homeowners that way, so we don't copy that part [R-money].
+**Business model — superseded 2026-10-04 by [PLANS_AND_CONTRACTORS.md](./PLANS_AND_CONTRACTORS.md), prices updated 2026-10-15:** designing is free, but exports are paid (a $5 CAD one-kitchen unlock, offered only in the export dialog), with an Unlimited plan ($15 CAD/month) and a Contractor program ($99 CAD/month) that includes 3 custom 3D models a month made by our studio. Custom models are no longer sold on their own. The original decision read: homeowners use BluModel Studio free, brands are the customers, and custom models are a paid service. This is how the kitchen sector already works: IKEA's planner is free and drives product sales [K1]; Roomvo is paid for by manufacturers and gives them view and save analytics [K6]; Marxent and 2020 build or syndicate manufacturer catalogs [K4][K5]. Drafted plans to charge homeowners about $1–2k per plan set [D3], but no kitchen tool charges homeowners that way, so we don't copy that part [R-money].
 
 **What "clone Drafted" means here (decision):** we copy Drafted's **UX patterns**: structured inputs, several generated options, regenerating with some choices locked, live 2D↔3D, and share links with permissions [D1][D2]. We do **not** copy its name, brand, copy, visuals or assets.
 
@@ -319,6 +319,8 @@ The dashboard shows the last 7 / 30 / 90 days: totals per event, a daily bar cha
 
 ## 7. Paid custom models (package: orders)
 
+> **Superseded 2026-10-15** ([PLANS_AND_CONTRACTORS.md §8](./PLANS_AND_CONTRACTORS.md)): custom models are not sold. The Contractor plan includes 3 a month, made by our studio, submitted against a monthly allowance with no payment. The tiers, extras and rush below are retired; orders paid for with them keep their stored prices, currency and refunds. The request form, studio queue, delivery and revisions below still describe how a request is made and fulfilled.
+
 ### 7.1 Who and why
 - A **customer** wants their actual range, sink or light in their kitchen and it isn't in the catalog. The delivered model becomes a **private** product that only they can see and place, and it renders for viewers of their share links.
 - A **brand** wants a model built for them, as Marxent, Cylindo and 2020 offer [K5][K7][K4]. The delivered model becomes a **draft product** in that brand's portal, and it goes through normal moderation before going live.
@@ -535,7 +537,7 @@ These are new SQLite tables, created through a real migration runner. Today ther
 
 1. **Name:** **BluModel Studio** (short form BluModel), at https://blumodel.studio. Built as "Mise"; renamed 2026-10-13 (see the README, *Renamed from Mise*). Drafted is the UX reference only.
 2. **Money (superseded by Gabe, 2026-10-04 — see PLANS_AND_CONTRACTORS.md):** free for homeowners; brands free during beta (cap of 50 products); brand plans not built.
-3. **Custom-model prices:** $129 / $279 / $549, +$39 per extra finish, rush +50%, 2 revisions. These are placeholders.
+3. **Custom-model prices:** ~~$129 / $279 / $549, +$39 per extra finish, rush +50%, 2 revisions.~~ Superseded 2026-10-15: 3 custom models a month are included in the Contractor plan ($99 CAD/month), 2 revisions and up to 3 finishes each; they aren't sold on their own.
 4. **Fulfilment:** BluModel Studio staff (role `studio`) for now, not a modeller marketplace (that would need Stripe Connect).
 5. **Payments:** Stripe test mode only once keys are set; DEMO otherwise. Going live needs your business entity, tax set-up and terms.
 6. **Custom models are private to the buyer** by default; brand-requested models become brand drafts.

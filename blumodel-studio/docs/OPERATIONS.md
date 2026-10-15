@@ -178,6 +178,30 @@ SHA-256 is stored, so a copy of the database can't be used to reset anyone. Usin
 password, signs the account out on **every** device and signs that browser in. Changing the password
 or the sign-in email in Account settings, or deleting the account, cancels any outstanding link.
 
+## Prices and custom models (since 2026-10-15)
+
+- **Prices are in Canadian dollars**: the $5 CAD kitchen unlock (offered only in the export dialog),
+  Unlimited $15 CAD/month, Contractor $99 CAD/month. They live in `src/data/plans.json`; the server
+  won't start if they change there without `server/lib/plans.mjs`. Checkout sends the amount and
+  currency inline, so **nothing needs setting up in Stripe**. A subscription started in US dollars
+  keeps renewing at its US price until the person changes or cancels it; a Stripe customer that paid
+  in USD gets a fresh customer for CAD automatically (Stripe can't mix currencies on one customer).
+- **Custom models aren't sold.** The Contractor plan includes **3 a month**, made by the studio. A
+  contractor's request lands in **Admin > Studio** as *To start* with no payment. Start it, deliver
+  it and handle revisions as before.
+- **Cancel a request you won't make** (before starting it): open it in the queue, *Cancel request…*,
+  give a reason (the contractor sees it). The model goes back to their allowance for that month.
+- **"Need more?"** The request form points contractors who run out to `SUPPORT_EMAIL`. To give
+  someone extra models for their **current** month: **Admin > Studio > Extra models for a
+  contractor**, look them up by email, enter how many (1-50) and a note, *Grant*. It's also in the
+  drawer of any of their requests. Every grant is in the audit log (`model_grant`). Extra models
+  don't carry over to the next month.
+- **Orders paid for before** keep their prices (in US dollars), receipts and refunds: refund one from
+  its drawer as before.
+- The first start of this version runs the `pricing-001` and `pricing-002` migrations: the second
+  rebuilds the `orders` and `order_items` tables (every row copied as is). The update procedure's
+  backup covers it; nothing else to do.
+
 ## Backups and restore
 
 Automatic, while the server runs:

@@ -102,9 +102,11 @@ production — put it behind a TLS-terminating proxy.
 
 `docs/PLANS_AND_CONTRACTORS.md` is the spec. Designing, saving and sharing are free; exports are not.
 
-- **Kitchen unlock, $5 once:** every export of that kitchen, forever, including after edits. A
-  duplicate is a new kitchen. **Unlimited, $15/month:** every kitchen you own. Cancelling keeps the
-  plan to the end of the paid month; a failed renewal gets 7 days' grace.
+- Prices are in **Canadian dollars** since 2026-10-15 (older receipts and subscriptions keep their
+  US dollars). **Kitchen unlock, $5 CAD once:** every export of that kitchen, forever, including after
+  edits; a duplicate is a new kitchen. It is **not advertised**: a free user is offered it in the
+  export dialog, next to Unlimited, and nowhere else. **Unlimited, $15 CAD/month:** every kitchen you
+  own. Cancelling keeps the plan to the end of the paid month; a failed renewal gets 7 days' grace.
 - Every export goes through the paywall. A free user gets the Unlock dialog; someone designing on
   this device first makes a free account and their draft is saved into it. After paying, the export
   they clicked finishes by itself. The server checks every export again and makes the CSV and the
@@ -112,7 +114,7 @@ production — put it behind a TLS-terminating proxy.
 - **Account → Billing** (`#/account/billing`): plan, change, cancel or resume, unlocked kitchens and
   receipts, plus demo controls for renewals. **Admin → Billing**: MRR, plans, unlocks and churn, with
   demo kept apart from real money.
-- **Contractor, $40/month** (`#/pro`): company setup; *My catalog* (quick-add a line by type, widths,
+- **Contractor, $99 CAD/month** (`#/pro`): 3 custom 3D models a month made by our studio (below); company setup; *My catalog* (quick-add a line by type, widths,
   door style and finishes, no 3D model needed; or upload a .glb, checked against the declared size);
   *Brands I carry*; a *price book* with cost per product or per width, % off list per brand, markup
   by product, line, brand or company, and supplier CSV import (preview, then all-or-nothing) and
@@ -137,9 +139,13 @@ production — put it behind a TLS-terminating proxy.
   brand. Publish My-catalog products to a public page (`#/b/:slug`) and the public catalog after an
   admin approves the page and each product; homeowners can try a product in their kitchen or send
   a lead, which only that contractor can read. `docs/BRAND_PAGE.md` is the spec.
-- **Custom models** (`#/orders`): order a 3D model of a product (Simple $129, Standard $279,
-  Complex $549, quoted by the server), pay (DEMO or Stripe), the studio delivers a GLB through
-  Admin > Studio, and it is private to the buyer.
+- **Make custom models** (`#/orders`, Contractor plan): 3 custom 3D models a month are included,
+  made by our studio. List the products (name, UPC typed, scanned or photographed, photos, size);
+  each is one model from the month's allowance, nothing is paid, and the server checks the plan and
+  the allowance. The studio delivers a GLB through Admin > Studio into the contractor's private My
+  catalog. Withdrawing (or the studio cancelling) before work starts gives the model back; admins can
+  grant extra models for the month. Orders paid for before 2026-10-15 keep their prices, receipts and
+  refunds. See `docs/PLANS_AND_CONTRACTORS.md` §8.
 
 ## The home server (deploy-local)
 
