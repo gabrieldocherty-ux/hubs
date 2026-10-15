@@ -8,11 +8,12 @@
 //
 // The Stripe webhook route is the foundation's (server/routes/webhooks.mjs): it verifies and
 // dedupes, then dispatches here through services.webhooks ('order' and 'charge.refunded').
-// Prices come only from server/payments/tiers.mjs; client-sent amounts are ignored.
+// Prices come only from server/payments/tiers.mjs (Model packs) when an order is created, and
+// from the order's own stored amounts after that; client-sent amounts are ignored.
 
 import { HttpError } from '../http/respond.mjs';
 import { paymentsUnavailable, selectProvider } from '../payments/index.mjs';
-import { quote, tiersWire, tierById, MAX_ITEMS } from '../payments/tiers.mjs';
+import { quote, tiersWire, MAX_ITEMS } from '../payments/tiers.mjs';
 import { createOrderService, ORDER_STATUSES, UNPAID, ACTIVE, REFUNDABLE } from '../payments/orders.mjs';
 import { idOf } from '../payments/stripe.mjs';
 
@@ -171,20 +172,19 @@ export default function routes(ctx) {
       handler: () => ({ ...tiersWire(), payments: config.paymentsProvider, demo: config.paymentsProvider === 'demo' }),
     },
     {
-      // A live quote for the request form; the order itself is re-quoted when it is created.
+      // A live quote for the request form: `{ products: n, rush }` (or `{ items: [...], rush }`,
+      // where only the count matters). The order itself is priced again when it is created.
       method: 'POST',
       path: '/api/orders/quote',
       auth: 'none',
       rateLimit: { name: 'order-quote', max: 600, windowMs: 3_600_000, by: 'ip' },
       handler: (rc) => {
         const b = rc.body;
-        const list = Array.isArray(b.items) ? b.items : [b];
-        if (!list.length || list.length > MAX_ITEMS) throw new HttpError(400, `Quote 1 to ${MAX_ITEMS} products.`);
-        const items = list.map((it, i) => {
-          if (!it || !tierById(it.tier)) throw new HttpError(400, 'Choose a model tier.', { errors: [{ field: `items[${i}].tier`, message: 'Choose a model tier.' }] });
-          return { tier: it.tier, extraFinishes: Number.isInteger(it.extraFinishes) ? it.extraFinishes : 0, name: typeof it.name === 'string' ? it.name : undefined };
-        });
-        return { quote: quote({ items, rush: b.rush === true }) };
+        const n = Array.isArray(b.items) ? b.items.length : b.products === undefined ? 1 : b.products;
+        if (!Number.isInteger(n) || n < 1 || n > MAX_ITEMS) throw new HttpError(400, `Quote 1 to ${MAX_ITEMS} products.`, { errors: [{ field: 'products', message: `Quote 1 to ${MAX_ITEMS} products.` }] });
+        if (b.rush != null && typeof b.rush !== 'boolean') throw new HttpError(400, 'Rush is on or off.', { errors: [{ field: 'rush', message: 'Rush is on or off.' }] });
+        const { items: _shares, ...q } = quote({ products: n, rush: b.rush === true });
+        return { quote: q };
       },
     },
 
@@ -246,21 +246,10 @@ export default function routes(ctx) {
         const providerId = config.paymentsProvider;
         if (providerId === 'demo') requireDemo();
         const attempt = o.checkout_attempts + 1;
-        const items = orders.itemsOf(o.id);
-        const q = orders.quoteOf(o, items);
         const provider = selectProvider(ctx, providerId);
-        const { url, ref } = await provider.createCheckout(
-          {
-            id: o.id,
-            amountCents: o.amount_cents,
-            currency: o.currency,
-            items: items.map((it, i) => ({
-              label: `BluModel Studio - Custom 3D model (${tierById(it.tier).name}): ${it.brief?.name ?? 'product'}`,
-              amountCents: q.items[i].amountCents,
-            })),
-          },
-          { attempt, email: rc.user.email },
-        );
+        // The stored price (orders.amount_cents) as the stored quote's lines: an order made before
+        // packs is charged what it was quoted, and a pack order what it was quoted at creation.
+        const { url, ref } = await provider.createCheckout({ id: o.id, amountCents: o.amount_cents, currency: o.currency, items: orders.checkoutLines(o) }, { attempt, email: rc.user.email });
         const changed = orders.transition(o.id, UNPAID, 'pending_payment', {
           by: rc.user.id,
           type: 'checkout',

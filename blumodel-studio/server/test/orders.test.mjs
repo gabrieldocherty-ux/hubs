@@ -67,33 +67,37 @@ async function studioDeliver(studio, id, { item = 0, glb = makeGlb({ w: 0.762, h
 
 const events = (id) => t.db.prepare('SELECT type FROM order_events WHERE order_id = ? ORDER BY id').all(id).map((r) => r.type);
 
-test('tiers are public and the quote is the server’s: client amounts are ignored', async () => {
+test('the Model pack is public and the quote is the server’s: client amounts and old tiers are ignored', async () => {
   const anon = t.agent();
   const tiers = await anon.get('/api/orders/tiers');
   assert.equal(tiers.status, 200);
-  assert.deepEqual(
-    tiers.body.tiers.map((x) => [x.id, x.priceCents, x.businessDays, x.revisions]),
-    [
-      ['simple', 12900, 7, 2],
-      ['standard', 27900, 10, 2],
-      ['complex', 54900, 15, 2],
-    ],
-  );
-  assert.equal(tiers.body.extraFinishCents, 3900);
+  assert.equal(tiers.body.pricing, 'pack');
+  const p = tiers.body.pack;
+  assert.deepEqual([p.id, p.priceCents, p.productsPerPack, p.finishesPerModel, p.revisions], ['pack', 12_900, 8, 3, 2]);
+  assert.equal(tiers.body.rushPct, 50);
+  assert.equal(tiers.body.maxItems, 40);
   assert.equal(tiers.body.payments, 'demo');
+  // The retired tiers are gone from what new requests are offered.
+  assert.deepEqual(tiers.body.tiers.map((x) => x.id), ['pack']);
 
-  const q = await anon.post('/api/orders/quote', { tier: 'complex', extraFinishes: 3, rush: true, amountCents: 1 });
+  const q = await anon.post('/api/orders/quote', { products: 9, rush: true, amountCents: 1 });
   assert.equal(q.status, 200);
-  // 54900 + 3 × 3900 = 66600; rush +50% = 33300 → 99900; 15 days → 8.
-  assert.equal(q.body.quote.amountCents, 99_900);
-  assert.equal(q.body.quote.dueBusinessDays, 8);
-  assert.equal((await anon.post('/api/orders/quote', { tier: 'gold' })).status, 400);
+  // 9 products are 2 packs: 2 × $129, rush +50% each → $387; 15 + 5 business days, halved → 10.
+  assert.equal(q.body.quote.amountCents, 38_700);
+  assert.equal(q.body.quote.packs, 2);
+  assert.equal(q.body.quote.dueBusinessDays, 10);
+  // A page from before packs still gets a price: its tier and extra finishes don't change it.
+  assert.equal((await anon.post('/api/orders/quote', { tier: 'complex', extraFinishes: 3 })).body.quote.amountCents, 12_900);
+  assert.equal((await anon.post('/api/orders/quote', { products: 41 })).status, 400);
+  assert.equal((await anon.post('/api/orders/quote', { products: 0 })).status, 400);
 
   const ann = await t.user();
   const refs = [await refPhoto(ann)];
-  const r = await ann.post('/api/orders', { target: 'customer', brief: brief(refs), tier: 'simple', extraFinishes: 4, amountCents: 100, amount: 1, price: 1, quote: { amountCents: 1 } });
+  const r = await ann.post('/api/orders', { target: 'customer', brief: brief(refs), tier: 'complex', extraFinishes: 4, amountCents: 100, amount: 1, price: 1, quote: { amountCents: 1 } });
   assert.equal(r.status, 201, r.text);
-  assert.equal(r.body.order.amountCents, 12_900 + 2 * 3_900 + 2 * 3_900);
+  assert.equal(r.body.order.amountCents, 12_900, 'one product is one pack, whatever tier the client names');
+  assert.equal(r.body.order.tier, 'pack');
+  assert.equal(r.body.order.pricing, 'pack');
   assert.equal(r.body.order.status, 'draft');
   assert.equal(r.body.quote.amountCents, r.body.order.amountCents);
   assert.equal(r.body.order.provider, 'demo');
@@ -132,7 +136,7 @@ test('the brief is validated; reference files must be the caller’s own referen
   });
   assert.equal(bad.status, 400);
   const fields = bad.body.errors.map((e) => e.field);
-  for (const f of ['items[0].brief.kind', 'items[0].brief.name', 'items[0].brief.widthIn', 'items[0].brief.notes', 'items[0].tier', 'items[0].extraFinishes']) {
+  for (const f of ['items[0].brief.kind', 'items[0].brief.name', 'items[0].brief.widthIn', 'items[0].brief.notes']) {
     assert.ok(fields.includes(f), `${f} in ${fields.join(', ')}`);
   }
   assert.equal((await ann.post('/api/orders', { target: 'nobody', brief: brief(mine), tier: 'simple' })).status, 400);
@@ -156,7 +160,7 @@ test('demo flow: draft → pending_payment → paid; a double complete is idempo
   assert.equal(ok1.status, 200);
   assert.equal(ok1.body.order.status, 'paid');
   assert.ok(ok1.body.order.paidAt);
-  assert.ok(ok1.body.order.dueAt > ok1.body.order.paidAt + 10 * DAY, '10 business days is at least 14 calendar days');
+  assert.ok(ok1.body.order.dueAt >= ok1.body.order.paidAt + 21 * DAY, 'a pack’s 15 business days are at least 21 calendar days');
   const ok2 = await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
   assert.equal(ok2.status, 200);
   assert.equal(ok2.body.order.paidAt, ok1.body.order.paidAt);
@@ -337,15 +341,19 @@ test('contractor target: plan required; one checkout for a multi-item line, deli
   assert.equal(c.status, 200, c.text);
   assert.equal((await pro.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
 
-  const piece = (name, w) => ({ brief: brief(refs, { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name, widthIn: w, depthIn: 24, heightIn: 34.5 }), tier: 'standard', extraFinishes: 1 });
+  const piece = (name, w) => ({ brief: brief(refs, { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name, widthIn: w, depthIn: 24, heightIn: 34.5 }) });
   const items = [piece('Smith Shaker Base 18', 18), piece('Smith Shaker Base 24', 24), piece('Smith Shaker Base 36', 36)];
-  const tooMany = await pro.post('/api/orders', { target: 'contractor', line: 'Smith Shaker', items: Array.from({ length: 21 }, () => items[0]) });
+  const tooMany = await pro.post('/api/orders', { target: 'contractor', line: 'Smith Shaker', items: Array.from({ length: 41 }, () => items[0]) });
   assert.equal(tooMany.status, 400);
+  assert.match(tooMany.body.errors[0].message, /up to 40 products/);
   const r = await pro.post('/api/orders', { target: 'contractor', line: 'Smith Shaker', rush: false, items });
   assert.equal(r.status, 201, r.text);
   const o = r.body.order;
   assert.equal(o.items.length, 3);
-  assert.equal(o.amountCents, 3 * (27_900 + 3_900), 'priced per item at the normal tier');
+  assert.equal(o.amountCents, 12_900, 'three products fit in one Model pack');
+  assert.equal(o.packs, 1);
+  assert.deepEqual(o.items.map((it) => it.pack), [1, 1, 1]);
+  assert.equal(o.items.reduce((s, it) => s + it.amountCents, 0), o.amountCents, 'the items’ shares add up to the price');
   assert.equal(o.title, 'Smith Shaker · 3 products');
 
   const studio = await t.user({ role: 'studio' });
@@ -488,11 +496,13 @@ test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept ap
     const studio = await s.user({ role: 'studio' });
     const admin = await s.user({ role: 'admin' });
     const ref = async () => (await ann.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id;
-    const make = async (tier, extraFinishes = 0, rush = false) =>
-      (await ann.post('/api/orders', { brief: brief([await ref()]), tier, extraFinishes, rush })).body.order;
-    const a = await make('simple'); // 12900
-    const b = await make('complex', 2); // 54900 + 7800 = 62700
-    const c = await make('standard', 0, true); // 27900 × 1.5 = 41850
+    const make = async (products, rush = false) => {
+      const r = await ref();
+      return (await ann.post('/api/orders', { items: Array.from({ length: products }, (_, i) => ({ brief: brief([r], { name: `Product ${i + 1}` }) })), rush })).body.order;
+    };
+    const a = await make(1); // one pack: 12900
+    const b = await make(9); // two packs: 25800
+    const c = await make(1, true); // one pack, rush: 12900 × 1.5 = 19350
     for (const o of [a, b, c]) {
       await ann.post(`/api/orders/${o.id}/checkout`);
       await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
@@ -505,26 +515,27 @@ test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept ap
     s.setNow(t0 + 5 * DAY);
     assert.equal((await admin.post(`/api/admin/orders/${c.id}/refund`)).status, 200);
     // An unpaid draft never counts.
-    await make('complex');
+    await make(3);
 
     const r = await admin.get('/api/admin/revenue?days=30');
     assert.equal(r.status, 200);
     assert.equal(r.body.provider, 'demo');
-    assert.equal(r.body.gross, 12_900 + 62_700 + 41_850);
-    assert.equal(r.body.refunds, 41_850);
-    assert.equal(r.body.net, 12_900 + 62_700);
+    assert.equal(r.body.gross, 12_900 + 25_800 + 19_350);
+    assert.equal(r.body.refunds, 19_350);
+    assert.equal(r.body.net, 12_900 + 25_800);
     assert.equal(r.body.count, 3);
     assert.equal(r.body.refundCount, 1);
     assert.deepEqual(r.body.byTier, [
-      { tier: 'simple', items: 1, gross: 12_900 },
-      { tier: 'standard', items: 1, gross: 41_850 },
-      { tier: 'complex', items: 1, gross: 62_700 },
+      { tier: 'pack', items: 11, gross: 12_900 + 25_800 + 19_350 },
+      { tier: 'simple', items: 0, gross: 0 },
+      { tier: 'standard', items: 0, gross: 0 },
+      { tier: 'complex', items: 0, gross: 0 },
     ]);
     assert.equal(r.body.avgTurnaroundDays, 3);
     assert.equal(r.body.byDay.length, 31);
     const day0 = r.body.byDay.find((d) => d.day === '2026-09-01');
-    assert.deepEqual(day0, { day: '2026-09-01', gross: 117_450, refunds: 0, count: 3 });
-    assert.equal(r.body.byDay.find((d) => d.day === '2026-09-06').refunds, 41_850);
+    assert.deepEqual(day0, { day: '2026-09-01', gross: 58_050, refunds: 0, count: 3 });
+    assert.equal(r.body.byDay.find((d) => d.day === '2026-09-06').refunds, 19_350);
     assert.equal(r.body.byProvider.stripe.gross, 0);
     assert.equal(r.body.byProvider.demo.gross, r.body.gross);
     // Outside the window: nothing.

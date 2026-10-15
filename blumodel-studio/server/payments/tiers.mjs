@@ -1,86 +1,150 @@
-// Custom-model tiers and quoting (PRODUCT_SPEC §7.2, BUILD_PLAN §7 C-T2, §13.3).
+// Custom-model pricing ("Make custom models"; docs/PLANS_AND_CONTRACTORS.md §8).
 //
 // This is the ONLY place prices for custom models come from. Routes, checkouts and the
-// revenue report all read amounts produced here; any amount a client sends is ignored.
-// Prices are placeholders Gabe may change (PRODUCT_SPEC §15 Q3).
+// revenue report read amounts produced here; any amount a client sends is ignored.
+//
+// One offer since 2026-10-14: the Model pack. Up to 8 products for $129 (the app's currency),
+// one 3D model per product, up to 3 finishes and 2 revision rounds per model. 9 to 16 products
+// are 2 packs, 17 to 24 are 3, and so on. Rush is +50% for half the turnaround (rounded up).
+//
+// The per-product tiers it replaced (Simple $129 / Standard $279 / Complex $549, +$39 per extra
+// finish beyond 2) are retired: no new order is priced with them. Every order stores its own
+// price when it is created (orders.amount_cents, order_items.amount_cents and, for packs, the
+// quote's lines in orders.extras), so a later price change never re-prices an existing order.
+// LEGACY_TIERS only names and dates the orders placed before packs; their amounts come from
+// the database.
 
-export const TIERS = Object.freeze([
-  Object.freeze({ id: 'simple', name: 'Simple', for: 'Hardware, faucets, decor, simple lights', priceCents: 12_900, businessDays: 7, revisions: 2 }),
-  Object.freeze({ id: 'standard', name: 'Standard', for: 'Appliances, sinks, single cabinets, stools', priceCents: 27_900, businessDays: 10, revisions: 2 }),
-  Object.freeze({ id: 'complex', name: 'Complex', for: 'Modular or multi-part products, pro ranges, chandeliers', priceCents: 54_900, businessDays: 15, revisions: 2 }),
-]);
+export const PACK = Object.freeze({
+  id: 'pack',
+  name: 'Model pack',
+  priceCents: 12_900,
+  /** Products (one 3D model each) one pack covers. */
+  productsPerPack: 8,
+  /** Finishes per model, included. */
+  finishesPerModel: 3,
+  /** Revision rounds per model, included. */
+  revisions: 2,
+  /** Turnaround for the first pack, in business days after payment. */
+  businessDays: 15,
+  /** Each further pack in the same request adds this many business days. */
+  extraPackBusinessDays: 5,
+});
 
-export const TIER_IDS = Object.freeze(TIERS.map((t) => t.id));
-const BY_ID = new Map(TIERS.map((t) => [t.id, t]));
-
-/** Finishes included in every tier; each one beyond this costs EXTRA_FINISH_CENTS. */
-export const INCLUDED_FINISHES = 2;
-export const EXTRA_FINISH_CENTS = 3_900;
-/** A product has at most 24 finishes, so at most 22 extra. */
-export const MAX_EXTRA_FINISHES = 22;
-/** Rush: +50% on the item price, for half the turnaround (rounded up). */
+export const PRODUCTS_PER_PACK = PACK.productsPerPack;
+export const MAX_FINISHES = PACK.finishesPerModel;
+/** Rush: +50% on every pack, for half the turnaround (rounded up). */
 export const RUSH_PCT = 50;
-/** Revision rounds included with every tier. */
-export const REVISIONS = 2;
-/** One request may hold up to this many products of the same line (§13.3). */
-export const MAX_ITEMS = 20;
+/** Revision rounds included with every model. */
+export const REVISIONS = PACK.revisions;
+/** One request holds at most this many packs (40 products); a bigger job is two requests. */
+export const MAX_PACKS = 5;
+export const MAX_ITEMS = MAX_PACKS * PRODUCTS_PER_PACK;
+/** The app's currency (Stripe Checkout and every stored amount). */
 export const CURRENCY = 'usd';
 
-export const tierById = (id) => BY_ID.get(id) ?? null;
+/**
+ * The retired per-product tiers. Never used to price anything new: only to label and date
+ * orders placed before the Model pack (their amounts are read from the database).
+ */
+export const LEGACY_TIERS = Object.freeze([
+  Object.freeze({ id: 'simple', name: 'Simple', businessDays: 7 }),
+  Object.freeze({ id: 'standard', name: 'Standard', businessDays: 10 }),
+  Object.freeze({ id: 'complex', name: 'Complex', businessDays: 15 }),
+]);
+const LEGACY_BY_ID = new Map(LEGACY_TIERS.map((t) => [t.id, t]));
+export const legacyTierById = (id) => LEGACY_BY_ID.get(id) ?? null;
 
-const money = (cents) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** How many packs `products` products need. */
+export const packsFor = (products) => Math.ceil(products / PRODUCTS_PER_PACK);
+
+/** Business days for `packs` packs: 15 for the first, +5 per further pack; rush halves it (rounded up). */
+export function packBusinessDays(packs, rush = false) {
+  const days = PACK.businessDays + Math.max(0, packs - 1) * PACK.extraPackBusinessDays;
+  return rush ? Math.ceil(days / 2) : days;
+}
+
+/** `total` cents in `n` shares that add up to it exactly (the first shares take the odd cents). */
+function split(total, n) {
+  const base = Math.floor(total / n);
+  const extra = total - base * n;
+  return Array.from({ length: n }, (_, i) => base + (i < extra ? 1 : 0));
+}
+
+/** How many products a quote input asks for: `items.length`, or `products`. */
+function productsOf(input) {
+  if (Array.isArray(input?.items)) return input.items.length;
+  if (input?.products !== undefined) return input.products;
+  return 1;
+}
 
 /**
- * The price of one item. `rush` is order-wide but priced per item, so a multi-item total is
- * always the sum of its items.
- * @param {{ tier: string, extraFinishes?: number }} item
- * @param {{ rush?: boolean }} [opts]
+ * Quotes a request: `{ items: [...], rush }` (only the number of items matters) or
+ * `{ products: n, rush }`. Returns
+ *   { pricing: 'pack', amountCents, currency, dueBusinessDays, rush, products, packs,
+ *     perPack, packCents, rushPct, rushCents,
+ *     items: [{ pack, amountCents }],          // each product's share; they sum to amountCents
+ *     lines: [{ label, amountCents, pack? }] } // the receipt and the Stripe line items
+ * A pack costs the same with 1 product or 8. Throws on a count outside 1..MAX_ITEMS.
  */
-export function quoteItem(item, { rush = false } = {}) {
-  const tier = tierById(item?.tier);
-  if (!tier) throw new Error(`Unknown model tier "${item?.tier}".`);
-  const extra = Number.isInteger(item.extraFinishes) ? Math.min(MAX_EXTRA_FINISHES, Math.max(0, item.extraFinishes)) : 0;
-  const baseCents = tier.priceCents;
-  const finishCents = extra * EXTRA_FINISH_CENTS;
-  const rushCents = rush ? Math.round(((baseCents + finishCents) * RUSH_PCT) / 100) : 0;
+export function quote(input) {
+  const rush = input?.rush === true;
+  const products = productsOf(input);
+  if (!Number.isInteger(products) || products < 1) throw new Error('A quote needs at least one product.');
+  if (products > MAX_ITEMS) throw new Error(`At most ${MAX_ITEMS} products per request.`);
+  const packs = packsFor(products);
+  const rushPerPack = rush ? Math.round((PACK.priceCents * RUSH_PCT) / 100) : 0;
+  const items = [];
+  const lines = [];
+  for (let p = 0; p < packs; p++) {
+    const size = Math.min(PRODUCTS_PER_PACK, products - p * PRODUCTS_PER_PACK);
+    const name = packs > 1 ? `${PACK.name} ${p + 1} of ${packs}` : PACK.name;
+    lines.push({ label: `${name}: ${plural(size, 'product')}`, amountCents: PACK.priceCents, pack: p + 1 });
+    for (const c of split(PACK.priceCents + rushPerPack, size)) items.push({ pack: p + 1, amountCents: c });
+  }
+  if (rush) lines.push({ label: `Rush (+${RUSH_PCT}%, half the turnaround)`, amountCents: rushPerPack * packs });
   return {
-    tier: tier.id,
-    extraFinishes: extra,
-    baseCents,
-    finishCents,
-    rushCents,
-    amountCents: baseCents + finishCents + rushCents,
-    businessDays: rush ? Math.ceil(tier.businessDays / 2) : tier.businessDays,
+    pricing: 'pack',
+    amountCents: packs * (PACK.priceCents + rushPerPack),
+    currency: CURRENCY,
+    dueBusinessDays: packBusinessDays(packs, rush),
+    rush,
+    products,
+    packs,
+    perPack: PRODUCTS_PER_PACK,
+    packCents: PACK.priceCents,
+    rushPct: RUSH_PCT,
+    rushCents: rushPerPack * packs,
+    items,
+    lines,
   };
 }
 
 /**
- * Quotes a whole request: `{ items: [{ tier, extraFinishes, name? }], rush }`, or a single
- * `{ tier, extraFinishes, rush }`. Returns
- * `{ amountCents, currency, dueBusinessDays, rush, items: [...], lines: [{ label, amountCents, item }] }`.
- * The due date is the slowest item's turnaround: the studio delivers the request together.
+ * The quote of an order placed before the Model pack, rebuilt from what is STORED on it: each
+ * item's amount_cents and the order's amount_cents are what was charged (or will be), never
+ * re-priced. The retired tier names and turnarounds only label the lines and date the order.
+ * @param {{ items: { tier: string, extraFinishes?: number, amountCents: number, name?: string }[], rush?: boolean, amountCents: number }} input
  */
-export function quote(input) {
-  const rush = input?.rush === true;
-  const list = Array.isArray(input?.items) ? input.items : [input ?? {}];
-  if (!list.length) throw new Error('A quote needs at least one item.');
-  if (list.length > MAX_ITEMS) throw new Error(`At most ${MAX_ITEMS} items per request.`);
-  const items = list.map((it) => quoteItem(it, { rush }));
-  const lines = [];
-  items.forEach((q, i) => {
-    const tier = tierById(q.tier);
-    const name = typeof list[i]?.name === 'string' && list[i].name.trim() ? list[i].name.trim().slice(0, 80) : null;
+export function legacyQuote({ items, rush = false, amountCents }) {
+  const lines = items.map((it, i) => {
+    const t = legacyTierById(it.tier);
     const prefix = items.length > 1 ? `${i + 1}. ` : '';
-    lines.push({ label: `${prefix}${tier.name} model${name ? `: ${name}` : ''}`, amountCents: q.baseCents, item: i });
-    if (q.extraFinishes) lines.push({ label: `${prefix}${q.extraFinishes} extra finish${q.extraFinishes === 1 ? '' : 'es'} at ${money(EXTRA_FINISH_CENTS)}`, amountCents: q.finishCents, item: i });
-    if (q.rushCents) lines.push({ label: `${prefix}Rush (+${RUSH_PCT}%)`, amountCents: q.rushCents, item: i });
+    const name = typeof it.name === 'string' && it.name.trim() ? `: ${it.name.trim().slice(0, 80)}` : '';
+    const extra = it.extraFinishes ? `, ${plural(it.extraFinishes, 'extra finish', 'extra finishes')}` : '';
+    return { label: `${prefix}${t?.name ?? 'Custom'} model${name}${extra}${rush ? ', rush' : ''}`, amountCents: it.amountCents, item: i };
   });
+  const days = Math.max(1, ...items.map((it) => legacyTierById(it.tier)?.businessDays ?? PACK.businessDays));
   return {
-    amountCents: items.reduce((s, q) => s + q.amountCents, 0),
+    pricing: 'tiers',
+    amountCents,
     currency: CURRENCY,
-    dueBusinessDays: Math.max(...items.map((q) => q.businessDays)),
+    dueBusinessDays: rush ? Math.ceil(days / 2) : days,
     rush,
-    items,
+    products: items.length,
+    packs: 0,
+    items: items.map((it) => ({ amountCents: it.amountCents })),
     lines,
   };
 }
@@ -97,15 +161,16 @@ export function addBusinessDays(ms, days) {
   return d.getTime();
 }
 
-/** What `GET /api/orders/tiers` serves: everything the request form needs to explain prices. */
+/** What `GET /api/orders/tiers` serves: everything the request form and the pricing page show. */
 export function tiersWire() {
   return {
-    tiers: TIERS.map((t) => ({ ...t })),
-    includedFinishes: INCLUDED_FINISHES,
-    extraFinishCents: EXTRA_FINISH_CENTS,
-    maxExtraFinishes: MAX_EXTRA_FINISHES,
+    pricing: 'pack',
+    pack: { ...PACK },
     rushPct: RUSH_PCT,
     maxItems: MAX_ITEMS,
+    maxPacks: MAX_PACKS,
     currency: CURRENCY,
+    // The one offer in the old `tiers` shape, for a page loaded before packs replaced the tiers.
+    tiers: [{ id: PACK.id, name: PACK.name, for: `Up to ${PRODUCTS_PER_PACK} products, one 3D model each`, priceCents: PACK.priceCents, businessDays: PACK.businessDays, revisions: PACK.revisions }],
   };
 }

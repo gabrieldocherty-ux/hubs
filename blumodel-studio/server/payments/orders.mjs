@@ -14,7 +14,9 @@ import fs from 'node:fs';
 import { HttpError } from '../http/respond.mjs';
 import { randomId, FILE_ID_RE, PRODUCT_ID_RE, BUILTIN_ID_RE } from '../lib/ids.mjs';
 import { KIND_SET, KIND_CATEGORY, VARIANTS } from '../catalog/kinds.mjs';
-import { quote, tierById, addBusinessDays, MAX_ITEMS, MAX_EXTRA_FINISHES, REVISIONS, CURRENCY } from './tiers.mjs';
+import { quote, legacyQuote, addBusinessDays, PACK, LEGACY_TIERS, PRODUCTS_PER_PACK, MAX_ITEMS, REVISIONS, CURRENCY } from './tiers.mjs';
+
+const LEGACY_IDS = LEGACY_TIERS.map((t) => t.id);
 
 export const ORDER_STATUSES = Object.freeze([
   'draft',
@@ -99,10 +101,33 @@ export function createOrderService({ db, now, services, config, log = console, t
         createdAt: r.created_at,
       }));
 
-  /** The request's quote, recomputed from its stored items (prices come only from tiers.mjs). */
+  /** A Model-pack order (tier 'pack'); everything else was priced with the retired tiers. */
+  const isPack = (row) => row.tier === PACK.id;
+
+  /**
+   * The order's quote, from what is STORED on it, never re-priced: a pack order keeps the lines
+   * and turnaround tiers.mjs gave it when it was created (in `extras.quote`), and an order from
+   * before packs is rebuilt from its items' stored amounts. Either way `amountCents` is
+   * `orders.amount_cents`, the one amount checkout charges and a payment must match.
+   */
   const quoteOf = (row, items = itemsOf(row.id)) => {
     const extras = parse(row.extras, {});
-    return quote({ items: items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, name: it.brief?.name })), rush: extras.rush === true });
+    const rush = extras.rush === true;
+    const saved = isObj(extras.quote) && Array.isArray(extras.quote.lines) ? extras.quote : null;
+    if (isPack(row) && saved) {
+      return {
+        pricing: 'pack',
+        amountCents: row.amount_cents,
+        currency: row.currency,
+        dueBusinessDays: Number(saved.dueBusinessDays) || PACK.businessDays,
+        rush,
+        products: items.length,
+        packs: Number(saved.packs) || 1,
+        items: items.map((it) => ({ pack: Math.floor(it.idx / PRODUCTS_PER_PACK) + 1, amountCents: it.amountCents })),
+        lines: saved.lines.map((l) => ({ label: String(l.label), amountCents: Number(l.amountCents), ...(l.pack ? { pack: Number(l.pack) } : {}) })),
+      };
+    }
+    return legacyQuote({ items: items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, amountCents: it.amountCents, name: it.brief?.name })), rush, amountCents: row.amount_cents });
   };
 
   const titleOf = (row, items) => {
@@ -110,11 +135,26 @@ export function createOrderService({ db, now, services, config, log = console, t
     return items[0]?.brief?.name || 'Custom model';
   };
 
+  /**
+   * What checkout sends the payment provider: the stored quote's lines when they add up to the
+   * order's amount (they always should), otherwise one line for the whole amount, so a provider
+   * can never be asked for anything but `orders.amount_cents`.
+   */
+  function checkoutLines(row, items = itemsOf(row.id)) {
+    const q = quoteOf(row, items);
+    const lines = q.lines.filter((l) => Number.isInteger(l.amountCents) && l.amountCents > 0);
+    const sum = lines.reduce((s, l) => s + l.amountCents, 0);
+    const what = isPack(row) ? `custom 3D models (${items.length} product${items.length === 1 ? '' : 's'})` : 'custom 3D model';
+    if (sum !== row.amount_cents || !lines.length) return [{ label: `BluModel Studio - ${what}: ${titleOf(row, items)}`, amountCents: row.amount_cents }];
+    return lines.map((l) => ({ label: `BluModel Studio - ${l.label}`, amountCents: l.amountCents }));
+  }
+
   /** The order as the client sees it (BUILD_PLAN §3.8 `Order`, plus items and a few derived fields). */
   function toWire(row, items = itemsOf(row.id)) {
     const extras = parse(row.extras, {});
     const q = quoteOf(row, items);
     const brand = row.brand_id ? brands.get(row.brand_id) : null;
+    const pack = isPack(row);
     return {
       id: row.id,
       userId: row.user_id ?? null,
@@ -123,6 +163,10 @@ export function createOrderService({ db, now, services, config, log = console, t
       brandName: brand?.name ?? null,
       status: row.status,
       tier: row.tier,
+      /** 'pack' (Model packs) or 'tiers' (an order placed before packs, at its stored price). */
+      pricing: q.pricing,
+      packs: pack ? q.packs : 0,
+      finishesPerModel: pack ? PACK.finishesPerModel : null,
       extras: { extraFinishes: Number(extras.extraFinishes) || 0, rush: extras.rush === true },
       amountCents: row.amount_cents,
       currency: row.currency,
@@ -135,8 +179,8 @@ export function createOrderService({ db, now, services, config, log = console, t
       revisionsAllowed: REVISIONS,
       line: row.line || null,
       title: titleOf(row, items),
-      items,
-      quote: { amountCents: q.amountCents, currency: q.currency, dueBusinessDays: q.dueBusinessDays, lines: q.lines },
+      items: pack ? items.map((it) => ({ ...it, pack: Math.floor(it.idx / PRODUCTS_PER_PACK) + 1 })) : items,
+      quote: { pricing: q.pricing, amountCents: q.amountCents, currency: q.currency, dueBusinessDays: q.dueBusinessDays, packs: q.packs, products: q.products, rush: q.rush, lines: q.lines },
       expiresAt: UNPAID.includes(row.status) ? row.pending_since + EXPIRY_MS : null,
       dueAt: row.due_at ?? null,
       paidAt: row.paid_at ?? null,
@@ -335,10 +379,11 @@ export function createOrderService({ db, now, services, config, log = console, t
   }
 
   /**
-   * Validates a request body: `{ target, brandId?, line?, rush?, items: [{ brief, tier, extraFinishes }] }`,
-   * or the single-item form `{ target, brief, tier, extraFinishes, rush }`. Any amount the client
-   * sends is ignored. Throws a 400 with field errors, a 404 for a brand the caller isn't in,
-   * or a 403 for a contractor request without the Contractor plan.
+   * Validates a request body: `{ target, brandId?, line?, rush?, items: [{ brief }] }`, or the
+   * single-item form `{ target, brief, rush }`. Every request is Model packs (tiers.mjs): a
+   * `tier` or `extraFinishes` sent by a page from before packs is ignored, as is any amount.
+   * Throws a 400 with field errors, a 404 for a brand the caller isn't in, or a 403 for a
+   * contractor request without the Contractor plan.
    */
   function readRequest(body, user) {
     const errors = [];
@@ -358,28 +403,29 @@ export function createOrderService({ db, now, services, config, log = console, t
       else line = body.line.trim();
     }
     if (body.rush != null && typeof body.rush !== 'boolean') errors.push({ field: 'rush', message: 'Rush is on or off.' });
-    const rawItems = Array.isArray(body.items) ? body.items : body.brief !== undefined ? [{ brief: body.brief, tier: body.tier, extraFinishes: body.extraFinishes }] : null;
+    const rawItems = Array.isArray(body.items) ? body.items : body.brief !== undefined ? [{ brief: body.brief }] : null;
     if (!rawItems || !rawItems.length) throw invalid([{ field: 'items', message: 'Add a product to model.' }]);
-    if (rawItems.length > MAX_ITEMS) throw invalid([{ field: 'items', message: `One request can hold up to ${MAX_ITEMS} products.` }]);
+    if (rawItems.length > MAX_ITEMS) throw invalid([{ field: 'items', message: `One request can hold up to ${MAX_ITEMS} products (${MAX_ITEMS / PRODUCTS_PER_PACK} model packs). Send the rest as another request.` }]);
     const items = rawItems.map((it, i) => {
       const at = `items[${i}]`;
       if (!isObj(it)) {
         errors.push({ field: at, message: 'Describe the product to model.' });
         return null;
       }
-      const brief = readBrief(it.brief, `${at}.brief`, errors, user);
-      if (!tierById(it.tier)) errors.push({ field: `${at}.tier`, message: 'Choose a model tier.' });
-      const ef = it.extraFinishes ?? 0;
-      if (!Number.isInteger(ef) || ef < 0 || ef > MAX_EXTRA_FINISHES) errors.push({ field: `${at}.extraFinishes`, message: `Extra finishes: a whole number from 0 to ${MAX_EXTRA_FINISHES}.` });
-      return { brief, tier: it.tier, extraFinishes: Number.isInteger(ef) ? ef : 0 };
+      return { brief: readBrief(it.brief, `${at}.brief`, errors, user) };
     });
     if (errors.length) throw invalid(errors);
     return { target, brandId, line, rush: body.rush === true, items };
   }
 
-  /** Creates a draft order from a validated request. Returns the row. (`id` is for seeds only.) */
+  /**
+   * Creates a draft order from a validated request, priced in Model packs. The quote's lines and
+   * turnaround are stored with it (`extras.quote`) and each item keeps its share of the price, so
+   * the order's price never changes after this, whatever tiers.mjs says later. Returns the row.
+   * (`id` is for seeds only.)
+   */
   function create(user, req, { id = randomId('o_') } = {}) {
-    const q = quote({ items: req.items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, name: it.brief.name })), rush: req.rush });
+    const q = quote({ products: req.items.length, rush: req.rush });
     const t = now();
     tx(() => {
       db.prepare(
@@ -391,8 +437,8 @@ export function createOrderService({ db, now, services, config, log = console, t
         user.id,
         req.target,
         req.brandId,
-        req.items[0].tier,
-        JSON.stringify({ rush: req.rush, extraFinishes: req.items.reduce((s, it) => s + it.extraFinishes, 0) }),
+        PACK.id,
+        JSON.stringify({ rush: req.rush, quote: { packs: q.packs, dueBusinessDays: q.dueBusinessDays, packCents: q.packCents, rushPct: q.rushPct, lines: q.lines } }),
         q.amountCents,
         CURRENCY,
         config.paymentsProvider,
@@ -403,9 +449,9 @@ export function createOrderService({ db, now, services, config, log = console, t
         t,
         t,
       );
-      const ins = db.prepare('INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, ?, ?, ?, ?, ?)');
-      req.items.forEach((it, i) => ins.run(id, i, JSON.stringify(it.brief), it.tier, it.extraFinishes, q.items[i].amountCents));
-      addEvent(id, { type: 'created', to: 'draft', by: user.id, data: { items: req.items.length, amountCents: q.amountCents } });
+      const ins = db.prepare('INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, ?, ?, ?, 0, ?)');
+      req.items.forEach((it, i) => ins.run(id, i, JSON.stringify(it.brief), PACK.id, q.items[i].amountCents));
+      addEvent(id, { type: 'created', to: 'draft', by: user.id, data: { items: req.items.length, packs: q.packs, amountCents: q.amountCents } });
     });
     return rowOf(id);
   }
@@ -572,7 +618,8 @@ export function createOrderService({ db, now, services, config, log = console, t
       net: gross - refunds,
       count: paid.length,
       refundCount: refunded.length,
-      byTier: ['simple', 'standard', 'complex'].map((id) => {
+      // Model packs first; the retired tiers stay listed so older orders still add up.
+      byTier: [PACK.id, ...LEGACY_IDS].map((id) => {
         const r = tiers.find((x) => x.tier === id);
         return { tier: id, items: r?.items ?? 0, gross: r?.gross ?? 0 };
       }),
@@ -585,7 +632,9 @@ export function createOrderService({ db, now, services, config, log = console, t
     rowOf,
     itemsOf,
     eventsOf,
+    isPack,
     quoteOf,
+    checkoutLines,
     toWire,
     addEvent,
     transition,
