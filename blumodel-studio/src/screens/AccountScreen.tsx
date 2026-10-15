@@ -1,9 +1,9 @@
 import { AccountMenu } from '../components/AccountMenu';
-import { AccountSettingsForm } from '../components/AccountSettings';
+import { AccountSettingsPage } from '../components/AccountSettings';
 import { Logo, Wordmark } from '../components/Icons';
 import { LegalLinks } from '../features/legal/LegalLinks';
 
-/** `#/account`: the same settings as the account menu's dialog, as a page the legal pages link to. */
+/** `#/account`: Account settings, in sections (src/components/AccountSettings.tsx). */
 export default function AccountScreen() {
   return (
     <div className="acct-page">
@@ -14,19 +14,14 @@ export default function AccountScreen() {
         </a>
         <AccountMenu />
       </header>
-      <main className="home-main acct-main">
+      <main className="home-main acct-main acct-main--settings">
         <div className="home-head">
           <div>
             <span className="eyebrow">Account</span>
             <h1>Account settings</h1>
           </div>
-          <a className="btn" href="#/account/billing">
-            Billing
-          </a>
         </div>
-        <div className="acct-card">
-          <AccountSettingsForm />
-        </div>
+        <AccountSettingsPage />
         <LegalLinks />
       </main>
     </div>

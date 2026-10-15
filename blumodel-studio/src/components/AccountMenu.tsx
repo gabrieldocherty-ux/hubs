@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../store/useSession';
 import { navigate } from '../lib/router';
-import { AccountSettingsForm } from './AccountSettings';
-import { Dialog } from './Dialog';
 
 function initials(name: string) {
   return name
@@ -17,7 +15,6 @@ export function AccountMenu() {
   const user = useSession((s) => s.user);
   const signOut = useSession((s) => s.signOut);
   const [open, setOpen] = useState(false);
-  const [settings, setSettings] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -73,7 +70,7 @@ export function AccountMenu() {
             </button>
           )}
           <div className="menu-sep" />
-          <button role="menuitem" onClick={() => (setOpen(false), setSettings(true))}>
+          <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'account' }))}>
             <b>Account settings</b>
           </button>
           <div className="menu-sep" />
@@ -100,15 +97,6 @@ export function AccountMenu() {
           </div>
         </div>
       )}
-      {settings && <AccountSettings onClose={() => setSettings(false)} />}
     </div>
-  );
-}
-
-function AccountSettings({ onClose }: { onClose: () => void }) {
-  return (
-    <Dialog title="Account settings" onClose={onClose} className="acct-modal">
-      <AccountSettingsForm onClose={onClose} />
-    </Dialog>
   );
 }
