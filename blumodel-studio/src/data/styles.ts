@@ -9,6 +9,30 @@ export interface StylePreset {
   island: string;
 }
 
+/**
+ * What a new kitchen starts in: light, neutral finishes with no colour palette applied. The
+ * setup wizard no longer asks for a style; the palettes below are one click away in
+ * Room & finishes. Deliberately not equal to any palette, so none shows as chosen.
+ */
+export const NEUTRAL_SURFACES: Surfaces = {
+  cabinetFinishId: 'warm-white',
+  doorStyle: 'shaker',
+  hardwareId: 'nickel',
+  countertopId: 'carrara',
+  backsplashId: 'subway-white',
+  flooringId: 'oak-natural',
+  paintId: 'chalk',
+};
+
+/** The plain start as a preset, so Room & finishes can go back to it. Islands match the cabinets. */
+export const PLAIN_PRESET: StylePreset = {
+  id: 'plain',
+  name: 'Plain',
+  blurb: 'Neutral whites, no palette',
+  surfaces: NEUTRAL_SURFACES,
+  island: NEUTRAL_SURFACES.cabinetFinishId,
+};
+
 /** Curated finish combinations that work together; each applies as a single undoable step. */
 export const STYLE_PRESETS: StylePreset[] = [
   {

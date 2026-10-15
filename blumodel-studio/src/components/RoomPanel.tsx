@@ -5,7 +5,7 @@ import { BACKSPLASHES, CABINET_BRAND, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES
 import { patternDataUrl } from '../lib/textures';
 import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
-import { STYLE_PRESETS } from '../data/styles';
+import { PLAIN_PRESET, STYLE_PRESETS } from '../data/styles';
 import { PresetStrip } from './PresetStrip';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
@@ -96,6 +96,33 @@ export function RoomPanel() {
 
   return (
     <div className="room-panel">
+      <section className="room-section room-palettes" aria-labelledby="room-palettes-title">
+        <header>
+          <h4 id="room-palettes-title">Colour palettes</h4>
+          <span className="sub">Whole-kitchen looks · Ctrl+Z to undo</span>
+        </header>
+        <div className="presets">
+          {[PLAIN_PRESET, ...STYLE_PRESETS].map((p) => {
+            const active = (Object.keys(p.surfaces) as (keyof Surfaces)[]).every((k) => p.surfaces[k] === surfaces[k]);
+            return (
+              <button
+                key={p.id}
+                className={active ? 'preset on' : 'preset'}
+                aria-pressed={active}
+                onClick={() => {
+                  useDesignStore.getState().applyStyle(p);
+                  useDesignStore.getState().toast(p.id === PLAIN_PRESET.id ? 'Back to plain finishes. Ctrl+Z to go back.' : `${p.name} applied. Ctrl+Z to go back.`, 'ok');
+                }}
+              >
+                <PresetStrip preset={p} />
+                <b>{p.name}</b>
+                <small>{p.blurb}</small>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section className="room-section">
         <header>
           <h4>Room</h4>
@@ -105,33 +132,6 @@ export function RoomPanel() {
           <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={72} max={480} onCommit={(v) => setRoom({ widthIn: v })} />
           <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={72} max={480} onCommit={(v) => setRoom({ lengthIn: v })} />
           <FeetInchesInput label="Ceiling" valueIn={room.ceilingIn} min={90} max={144} onCommit={(v) => setRoom({ ceilingIn: v })} />
-        </div>
-      </section>
-
-      <section className="room-section">
-        <header>
-          <h4>Style presets</h4>
-          <span className="sub">Whole-kitchen looks</span>
-        </header>
-        <div className="presets">
-          {STYLE_PRESETS.map((p) => {
-            const active = (Object.keys(p.surfaces) as (keyof Surfaces)[]).every((k) => p.surfaces[k] === surfaces[k]);
-            return (
-              <button
-                key={p.id}
-                className={active ? 'preset on' : 'preset'}
-                aria-pressed={active}
-                onClick={() => {
-                  useDesignStore.getState().applyStyle(p);
-                  useDesignStore.getState().toast(`${p.name} applied. Ctrl+Z to go back.`, 'ok');
-                }}
-              >
-                <PresetStrip preset={p} />
-                <b>{p.name}</b>
-                <small>{p.blurb}</small>
-              </button>
-            );
-          })}
         </div>
       </section>
 

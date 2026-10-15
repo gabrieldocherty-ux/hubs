@@ -3,12 +3,10 @@ import type { Room } from '../types';
 import { api, ApiError } from '../lib/api';
 import { hrefFor, navigate } from '../lib/router';
 import { TEMPLATES, type TemplateId } from '../data/templates';
-import { STYLE_PRESETS, type StylePreset } from '../data/styles';
-import { composeDoc } from '../data/compose';
+import { composeNewKitchen } from '../data/compose';
 import { DEFAULT_ROOM } from '../data/defaults';
 import { prepareDocForSave } from '../lib/doc';
 import { MiniPlan } from '../components/MiniPlan';
-import { PresetStrip } from '../components/PresetStrip';
 import { FeetInchesInput } from '../components/FeetInchesInput';
 import { AccountMenu } from '../components/AccountMenu';
 import { Check, Logo, Wordmark } from '../components/Icons';
@@ -16,7 +14,7 @@ import { feetInches } from '../lib/format';
 import { CameraIcon } from '../features/generate/icons';
 import '../features/generate/generate.css';
 
-const STEPS = ['Basics', 'Room', 'Layout', 'Style'] as const;
+const STEPS = ['Basics', 'Room', 'Layout'] as const;
 
 const SIZES: { label: string; room: Room }[] = [
   { label: 'Compact · 10′ × 10′', room: { widthIn: 120, lengthIn: 120, ceilingIn: 96 } },
@@ -31,7 +29,6 @@ export function SetupWizard() {
   const [client, setClient] = useState('');
   const [room, setRoom] = useState<Room>(DEFAULT_ROOM);
   const [templateId, setTemplateId] = useState<TemplateId | null>('l-island');
-  const [preset, setPreset] = useState<StylePreset | null>(STYLE_PRESETS[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,8 +36,9 @@ export function SetupWizard() {
   const layoutOk = templateId === null || fits(TEMPLATES.find((t) => t.id === templateId)!);
   const kitchenName = name.trim() || 'My Kitchen';
 
-  const layoutPreviews = useMemo(() => TEMPLATES.map((t) => ({ t, doc: composeDoc('', room, fits(t) ? t.id : null, preset) })), [room, preset]);
-  const preview = useMemo(() => composeDoc(kitchenName, room, layoutOk ? templateId : null, preset), [kitchenName, room, templateId, preset, layoutOk]);
+  // New kitchens start plain: neutral finishes, no colour palette (those live in Room & finishes).
+  const layoutPreviews = useMemo(() => TEMPLATES.map((t) => ({ t, doc: composeNewKitchen('', room, fits(t) ? t.id : null) })), [room]);
+  const preview = useMemo(() => composeNewKitchen(kitchenName, room, layoutOk ? templateId : null), [kitchenName, room, templateId, layoutOk]);
 
   const create = async () => {
     setBusy(true);
@@ -146,22 +144,7 @@ export function SetupWizard() {
                   <span>Start from scratch and drag everything in.</span>
                 </button>
               </div>
-            </>
-          )}
-
-          {step === 3 && (
-            <>
-              <h1>Choose a style.</h1>
-              <p className="wizard-sub">Sets cabinets, counters, tile, floor and paint together. Change any of it later.</p>
-              <div className="presets wide">
-                {STYLE_PRESETS.map((p) => (
-                  <button key={p.id} className={preset?.id === p.id ? 'preset on' : 'preset'} onClick={() => setPreset(p)}>
-                    <PresetStrip preset={p} />
-                    <b>{p.name}</b>
-                    <small>{p.blurb}</small>
-                  </button>
-                ))}
-              </div>
+              <p className="wizard-note wiz-plain-note">Your kitchen starts in plain, neutral finishes. Pick a colour palette any time in <b>Room &amp; finishes</b>.</p>
             </>
           )}
 
@@ -198,7 +181,7 @@ export function SetupWizard() {
                 {client.trim() ? `${client.trim()} · ` : ''}
                 {feetInches(room.widthIn)} × {feetInches(room.lengthIn)} · {preview.items.length} pieces
               </span>
-              {preset && <span className="muted">{preset.name}</span>}
+              <span className="muted">Plain finishes · palettes in Room &amp; finishes</span>
             </div>
           </div>
         </aside>

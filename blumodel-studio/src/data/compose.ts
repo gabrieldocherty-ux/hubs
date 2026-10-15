@@ -1,6 +1,6 @@
 import type { DesignDoc, PlacedItem, Room, Surfaces } from '../types';
 import { buildTemplate, type TemplateId } from './templates';
-import type { StylePreset } from './styles';
+import { PLAIN_PRESET, type StylePreset } from './styles';
 import { getProduct } from './catalog';
 import { DEFAULT_SURFACES } from './defaults';
 import { finishById } from '../lib/finish';
@@ -32,4 +32,13 @@ export function composeDoc(name: string, room: Room, layout: ComposeLayout, pres
     });
   }
   return { name, room, surfaces: s, items: withFinishIds(items), version: 2 };
+}
+
+/**
+ * A kitchen from the setup wizard: plain neutral finishes with no colour palette applied, and
+ * islands in the cabinet finish rather than a palette's accent. Palettes are chosen later in
+ * Room & finishes.
+ */
+export function composeNewKitchen(name: string, room: Room, layout: ComposeLayout): DesignDoc {
+  return composeDoc(name, room, layout, PLAIN_PRESET);
 }
