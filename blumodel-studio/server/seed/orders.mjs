@@ -1,7 +1,10 @@
 // Package C (orders) demo seed (BUILD_PLAN §7 C-T6): custom-model orders for
 // demo-customer@blumodel.test in `paid`, `in_progress`, `delivered` (with a fixture deliverable
 // product) and `completed`, all on the DEMO provider, so the studio queue, the order pages
-// and Admin → Revenue aren't empty.
+// and Admin → Revenue aren't empty. Since 2026-10-15 custom models aren't sold, so these stand for
+// orders paid before then (a retired tier, in US dollars): the history a non-contractor keeps.
+// The demo contractor (demo-brand@blumodel.test, seeded by brands.mjs) also gets one request
+// included in the Contractor plan, waiting in the studio queue, so its allowance reads 2 of 3.
 //
 //   export async function seed(ctx)   ctx = { db, config, services, now }
 //
@@ -53,6 +56,13 @@ const ORDERS = [
   },
 ];
 
+/** The demo contractor's included request (one product, so 2 of 3 models stay left). */
+const PLAN_ORDER = {
+  id: 'o_demoseedorder00000000005',
+  line: 'Alder Shaker (Demo)',
+  brief: { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name: 'Alder Shaker base 30 (Demo)', brand: 'Alder & Pine Cabinetry (Demo)', upc: '200000041229', widthIn: 30, depthIn: 24, heightIn: 34.5, notes: 'Our five-piece Shaker door in natural alder; one drawer over two doors.' },
+};
+
 /**
  * @param {{ db: any, config: any, services: any, now?: () => number, forceDemo?: boolean, log?: any }} ctx
  * @returns {Promise<{ created: number, skipped?: string }>}
@@ -79,7 +89,7 @@ export async function seed(ctx) {
       const ref = files.saveBuffer(makePng({ w: 32, h: 24, rgba: spec.rgba }), { kind: 'reference', visibility: 'private', ownerUserId: customer.id, originalName: 'reference-photo.png' });
       // Validated by the same rules as the API (category is derived from the kind).
       const valid = orders.readRequest({ target: 'customer', items: [{ brief: { ...spec.brief, referenceFileIds: [ref.id] } }] }, customer);
-      const row = orders.create(customer, valid, { id: spec.id });
+      const row = orders.createPriorOrder(customer, valid, { id: spec.id, tier: 'standard', amountCents: 27_900, currency: 'usd' });
       clock += 10 * 60_000;
       orders.transition(row.id, ['draft'], 'pending_payment', { by: customer.id, type: 'checkout', data: { provider: 'demo', attempt: 1 }, set: { provider_ref: `demo_${row.id}`, checkout_attempts: 1, pending_since: clock } });
       clock += 2 * 60_000;
@@ -107,6 +117,18 @@ export async function seed(ctx) {
 
       clock += 2 * DAY;
       orders.transition(row.id, ['delivered'], 'completed', { by: customer.id, type: 'completed', set: { completed_at: clock } });
+    });
+    created++;
+  }
+
+  // The demo contractor's request, included in the Contractor plan (no payment), in the queue.
+  const contractor = userBy('demo-brand@blumodel.test');
+  if (contractor && !orders.rowOf(PLAN_ORDER.id) && services.billing.planOf(contractor.id).id === 'contractor') {
+    clock = realNow() - 2 * DAY;
+    runTx(db, () => {
+      const ref = files.saveBuffer(makePng({ w: 32, h: 24, rgba: [196, 170, 128, 255] }), { kind: 'reference', visibility: 'private', ownerUserId: contractor.id, originalName: 'reference-photo.png' });
+      const valid = orders.readRequest({ target: 'contractor', line: PLAN_ORDER.line, items: [{ brief: { ...PLAN_ORDER.brief, referenceFileIds: [ref.id] } }] }, contractor);
+      orders.create(contractor, valid, { id: PLAN_ORDER.id });
     });
     created++;
   }

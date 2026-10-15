@@ -134,7 +134,6 @@ test('payments none: billing, checkout and order-payment endpoints answer 503 pa
       ['/api/billing/change', { plan: 'contractor' }],
       ['/api/billing/cancel', {}],
       ['/api/billing/resume', {}],
-      ['/api/orders', { tier: 'simple' }],
       ['/api/orders/ord_nothing/checkout', {}],
       ['/api/payments/demo/ord_nothing/complete', { outcome: 'success' }],
     ];
@@ -143,6 +142,10 @@ test('payments none: billing, checkout and order-payment endpoints answer 503 pa
       assert.equal(r.status, 503, `${p}: ${r.text}`);
       assert.deepEqual(r.body, { error: 'Payments are not available yet.', code: 'payments_unavailable' }, p);
     }
+    // Submitting a custom-model request is not a payment (since 2026-10-15 they come with the
+    // Contractor plan), so it never answers payments_unavailable; this user isn't a contractor.
+    const req = await u.post('/api/orders', { tier: 'simple' });
+    assert.notEqual(req.status, 503, req.text);
     const hook = await s.agent().request('POST', '/api/webhooks/stripe', { raw: '{}', contentType: 'application/json', headers: { 'Stripe-Signature': 't=1,v1=00' }, csrf: false });
     assert.equal(hook.status, 503);
     assert.equal(hook.body.code, 'payments_unavailable');

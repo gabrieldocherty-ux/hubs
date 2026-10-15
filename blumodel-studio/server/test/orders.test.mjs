@@ -1,6 +1,10 @@
-// Package C (orders): paid custom models end to end with the DEMO provider, the studio
-// queue, delivery into private / brand / contractor products, revisions, refunds, expiry,
-// revenue and the seed. Stripe-specific behaviour is in payments.test.mjs.
+// Package C (orders): custom models end to end. Since 2026-10-15 they are included in the
+// Contractor plan (3 a month, server/payments/allowance.mjs; the allowance rules themselves are in
+// pricing-models.test.mjs): a request goes straight to the studio queue, is delivered into private /
+// brand / contractor products, with revisions. Orders paid for before then (a retired tier, in US
+// dollars) keep their DEMO checkout, refunds, expiry and the revenue report; they are made here
+// with priorOrder(), as the live database holds them. Stripe-specific behaviour is in
+// payments.test.mjs.
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,8 +15,9 @@ import { seed } from '../seed/orders.mjs';
 import { openDb } from '../db/index.mjs';
 import { migrate } from '../db/migrate.mjs';
 import { MIGRATION_MODULES, MIGRATION_KEYS } from '../db/migrations/index.mjs';
-import { quote, packsFor, packBusinessDays, legacyQuote, MAX_ITEMS, PACK } from '../payments/tiers.mjs';
+import { includedQuote, legacyQuote, MAX_ITEMS, MODEL_TERMS } from '../payments/tiers.mjs';
 import { normalizeUpc, gs1CheckDigit } from '../payments/upc.mjs';
+import { createBillingService } from '../billing/service.mjs';
 
 const DAY = 86_400_000;
 let t;
@@ -43,14 +48,52 @@ const brief = (refs, over = {}) => ({
   ...over,
 });
 
+/** A new user on a complimentary Contractor plan (calendar-month allowance), plus `extra` models. */
+async function contractor(s = t, { extra = 0, ...opts } = {}) {
+  const pro = await s.user(opts);
+  createBillingService({ db: s.db, now: s.ctx.now }).grantComp(pro.id, { plan: 'contractor', note: 'test', adminId: null });
+  if (extra) grantModels(s, pro, extra);
+  return pro;
+}
+
+/** Extra models that apply in every period (straight into model_grants; the admin route is tested elsewhere). */
+let grantN = 0;
+function grantModels(s, agent, models) {
+  s.db
+    .prepare('INSERT INTO model_grants (id, user_id, models, period_start, period_end, note, granted_by, created_at) VALUES (?, ?, ?, 0, ?, ?, NULL, ?)')
+    .run(`mg_test${String(++grantN).padStart(18, '0')}`, agent.id, models, 8_640_000_000_000_000, 'test', Date.now());
+}
+
+/** A request included in the plan (the agent must be a contractor with models left). */
 async function newOrder(agent, body = {}) {
   const refs = body.refs ?? [await refPhoto(agent)];
-  const r = await agent.post('/api/orders', { target: 'customer', brief: brief(refs, body.brief), tier: 'standard', extraFinishes: 0, ...body.extra });
+  const r = await agent.post('/api/orders', { target: body.target ?? 'contractor', brief: brief(refs, body.brief), ...body.extra });
   assert.equal(r.status, 201, r.text);
   return r.body.order;
 }
 
-/** Checkout + "Simulate successful payment". */
+/**
+ * An order placed and priced before 2026-10-15, as the live database holds them: a retired tier
+ * at its stored price in US dollars, unpaid, on the DEMO provider.
+ */
+let priorN = 0;
+function priorOrder(s, agent, { tier = 'standard', amountCents = 27_900, currency = 'usd', items = 1, extraFinishes = 0 } = {}) {
+  const extras = JSON.stringify({ rush: false, extraFinishes });
+  const id = `o_prior${String(++priorN).padStart(19, '0')}`;
+  const now = s.ctx.now();
+  const b = JSON.stringify(brief([]));
+  s.db
+    .prepare(
+      `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at)
+       VALUES (?, ?, 'customer', 'draft', ?, ?, ?, ?, 'demo', ?, ?, ?, ?)`,
+    )
+    .run(id, agent.id, tier, extras, amountCents * items, currency, b, now, now, now);
+  for (let i = 0; i < items; i++) s.db.prepare('INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, ?, ?, ?, ?, ?)').run(id, i, b, tier, extraFinishes, amountCents);
+  s.db.prepare("INSERT INTO order_events (order_id, type, to_status, by_user_id, created_at) VALUES (?, 'created', 'draft', ?, ?)").run(id, agent.id, now);
+  return { id, amountCents: amountCents * items };
+}
+
+/** Checkout + "Simulate successful payment" (an order from before 2026-10-15). */
 async function demoPay(agent, id) {
   const c = await agent.post(`/api/orders/${id}/checkout`);
   assert.equal(c.status, 200, c.text);
@@ -72,146 +115,162 @@ async function studioDeliver(studio, id, { item = 0, glb = makeGlb({ w: 0.762, h
 
 const events = (id) => t.db.prepare('SELECT type FROM order_events WHERE order_id = ? ORDER BY id').all(id).map((r) => r.type);
 
-test('the Model pack is public and the quote is the server’s: client amounts and old tiers are ignored', async () => {
+test('custom models are included in the Contractor plan: no price, no pack, no rush, no checkout; client amounts are ignored', async () => {
   const anon = t.agent();
   const tiers = await anon.get('/api/orders/tiers');
   assert.equal(tiers.status, 200);
-  assert.equal(tiers.body.pricing, 'pack');
-  const p = tiers.body.pack;
-  assert.deepEqual([p.id, p.priceCents, p.productsPerPack, p.finishesPerModel, p.revisions], ['pack', 12_900, 8, 3, 2]);
-  assert.equal(tiers.body.rushPct, 50);
+  assert.equal(tiers.body.pricing, 'plan');
+  assert.equal(tiers.body.plan, 'contractor');
+  assert.deepEqual(tiers.body.models, { perMonth: 3, finishesPerModel: 3, revisions: 2, businessDays: 15 });
+  assert.deepEqual(tiers.body.tiers, [], 'nothing is for sale');
+  assert.equal(tiers.body.pack, undefined);
+  assert.equal(tiers.body.rushPct, undefined);
   assert.equal(tiers.body.maxItems, 40);
-  assert.equal(tiers.body.payments, 'demo');
-  // The retired tiers are gone from what new requests are offered.
-  assert.deepEqual(tiers.body.tiers.map((x) => x.id), ['pack']);
 
+  // A page from before still gets an answer: the included "quote" is 0, rush or not.
   const q = await anon.post('/api/orders/quote', { products: 9, rush: true, amountCents: 1 });
   assert.equal(q.status, 200);
-  // 9 products are 2 packs: 2 × $129, rush +50% each → $387; 15 + 5 business days, halved → 10.
-  assert.equal(q.body.quote.amountCents, 38_700);
-  assert.equal(q.body.quote.packs, 2);
-  assert.equal(q.body.quote.dueBusinessDays, 10);
-  // A page from before packs still gets a price: its tier and extra finishes don't change it.
-  assert.equal((await anon.post('/api/orders/quote', { tier: 'complex', extraFinishes: 3 })).body.quote.amountCents, 12_900);
+  assert.equal(q.body.quote.amountCents, 0);
+  assert.equal(q.body.quote.pricing, 'plan');
+  assert.equal(q.body.quote.rush, false);
   assert.equal((await anon.post('/api/orders/quote', { products: 41 })).status, 400);
-  assert.equal((await anon.post('/api/orders/quote', { products: 0 })).status, 400);
 
+  // Not on the Contractor plan: 403, and nothing is stored.
   const ann = await t.user();
   const refs = [await refPhoto(ann)];
-  const r = await ann.post('/api/orders', { target: 'customer', brief: brief(refs), tier: 'complex', extraFinishes: 4, amountCents: 100, amount: 1, price: 1, quote: { amountCents: 1 } });
+  const before = t.db.prepare('SELECT COUNT(*) AS n FROM orders').get().n;
+  const denied = await ann.post('/api/orders', { target: 'customer', brief: brief(refs) });
+  assert.equal(denied.status, 403);
+  assert.equal(denied.body.needs, 'contractor');
+  assert.equal(denied.body.allowance.active, false);
+  assert.match(denied.body.error, /Contractor plan/);
+  assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, before);
+  assert.equal((await t.agent().post('/api/orders', { brief: brief(refs) })).status, 401, 'signed out');
+
+  // A contractor submits: free, straight to the studio, in CAD, whatever a page from before sends.
+  const pro = await contractor();
+  const prefs = [await refPhoto(pro)];
+  const r = await pro.post('/api/orders', { brief: brief(prefs), tier: 'complex', extraFinishes: 4, rush: true, amountCents: 100, quote: { amountCents: 1 } });
   assert.equal(r.status, 201, r.text);
-  assert.equal(r.body.order.amountCents, 12_900, 'one product is one pack, whatever tier the client names');
-  assert.equal(r.body.order.tier, 'pack');
-  assert.equal(r.body.order.pricing, 'pack');
-  assert.equal(r.body.order.status, 'draft');
-  assert.equal(r.body.quote.amountCents, r.body.order.amountCents);
-  assert.equal(r.body.order.provider, 'demo');
-  assert.match(r.body.order.id, /^o_[a-z0-9]{24}$/);
-  // Anonymous users can't order.
-  assert.equal((await anon.post('/api/orders', { brief: brief(refs), tier: 'simple' })).status, 401);
+  const o = r.body.order;
+  assert.equal(o.target, 'contractor', 'My catalog is the default');
+  assert.equal(o.amountCents, 0);
+  assert.equal(o.currency, 'cad');
+  assert.equal(o.tier, 'plan');
+  assert.equal(o.provider, 'plan');
+  assert.equal(o.pricing, 'plan');
+  assert.equal(o.status, 'paid', 'in the studio queue');
+  assert.equal(o.extras.rush, false);
+  assert.equal(o.finishesPerModel, 3);
+  assert.equal(o.revisionsAllowed, 2);
+  assert.equal(o.cancellable, true);
+  assert.ok(o.planPeriod && o.planPeriod.start <= o.createdAt && o.createdAt < o.planPeriod.end);
+  assert.ok(o.dueAt >= o.paidAt + 21 * DAY, '15 business days are at least 21 calendar days');
+  assert.deepEqual(o.quote.lines, [{ label: '1 custom 3D model, included in the Contractor plan', amountCents: 0 }]);
+  assert.equal(r.body.allowance.left, 2);
+  assert.match(t.db.prepare("SELECT note FROM order_events WHERE order_id = ? AND type = 'created'").get(o.id).note, /2 of 3 left/);
+
+  // Nothing to pay, so nothing to check out, simulate or refund.
+  const c = await pro.post(`/api/orders/${o.id}/checkout`);
+  assert.equal(c.status, 409);
+  assert.match(c.body.error, /nothing to pay/);
+  assert.equal((await pro.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' })).status, 400);
+  const admin = await t.user({ role: 'admin' });
+  assert.equal((await admin.post(`/api/admin/orders/${o.id}/refund`)).status, 409);
+  assert.equal(t.db.prepare('SELECT status FROM orders WHERE id = ?').get(o.id).status, 'paid');
+  // Plan requests are never revenue.
+  assert.equal((await admin.get('/api/admin/revenue?days=30')).body.byProvider.demo.count, 0);
 });
 
-test('Model pack quote math: 1–8 products one pack, 9–16 two, rush +50% for half the days, shares add up', () => {
-  assert.equal(PACK.priceCents, 12_900);
-  for (const [n, packs] of [[1, 1], [8, 1], [9, 2], [16, 2], [17, 3], [40, 5]]) {
-    assert.equal(packsFor(n), packs, `${n} products`);
-    const q = quote({ products: n });
-    assert.equal(q.packs, packs);
-    assert.equal(q.amountCents, packs * 12_900, `${n} products cost ${packs} packs`);
-    assert.equal(q.items.length, n);
-    assert.equal(q.items.reduce((s, it) => s + it.amountCents, 0), q.amountCents, 'item shares add up to the total');
-    assert.equal(q.lines.reduce((s, l) => s + l.amountCents, 0), q.amountCents, 'receipt lines add up to the total');
-    assert.equal(q.dueBusinessDays, 15 + (packs - 1) * 5);
-  }
-  // A pack costs the same with 1 product or 8.
-  assert.equal(quote({ products: 1 }).amountCents, quote({ products: 8 }).amountCents);
-  // Rush: +50% on each pack, half the turnaround rounded up.
-  const r = quote({ products: 9, rush: true });
-  assert.equal(r.amountCents, 2 * 19_350);
-  assert.equal(r.rushCents, 2 * 6_450);
-  assert.equal(r.dueBusinessDays, 10);
-  assert.equal(packBusinessDays(1, true), 8, '15 halved, rounded up');
-  assert.deepEqual(r.lines.map((l) => l.label), ['Model pack 1 of 2: 8 products', 'Model pack 2 of 2: 1 product', 'Rush (+50%, half the turnaround)']);
-  // Counts outside 1..40 are refused; only the number of items matters, never a tier.
-  assert.throws(() => quote({ products: 0 }));
-  assert.throws(() => quote({ products: MAX_ITEMS + 1 }));
-  assert.throws(() => quote({ products: 2.5 }));
-  assert.equal(quote({ items: [{ tier: 'complex', extraFinishes: 3 }] }).amountCents, 12_900);
-  // A pre-pack order's quote is rebuilt from its stored amounts, never re-priced.
-  const lq = legacyQuote({ items: [{ tier: 'standard', extraFinishes: 1, amountCents: 31_800, name: 'Range' }], amountCents: 31_800 });
+test('the included quote and a prior order’s quote (pure)', () => {
+  assert.equal(MODEL_TERMS.perMonth, 3);
+  const q = includedQuote(2);
+  assert.deepEqual([q.pricing, q.amountCents, q.currency, q.dueBusinessDays, q.products, q.rush], ['plan', 0, 'cad', 15, 2, false]);
+  assert.deepEqual(q.lines, [{ label: '2 custom 3D models, included in the Contractor plan', amountCents: 0 }]);
+  assert.throws(() => includedQuote(0));
+  assert.throws(() => includedQuote(MAX_ITEMS + 1));
+  // An order from before is rebuilt from its stored amounts, in its own currency, never re-priced.
+  const lq = legacyQuote({ items: [{ tier: 'standard', extraFinishes: 1, amountCents: 31_800, name: 'Range' }], amountCents: 31_800, currency: 'usd' });
   assert.equal(lq.pricing, 'tiers');
   assert.equal(lq.amountCents, 31_800);
+  assert.equal(lq.currency, 'usd');
   assert.equal(lq.dueBusinessDays, 10);
   assert.deepEqual(lq.lines, [{ label: 'Standard model: Range, 1 extra finish', amountCents: 31_800, item: 0 }]);
 });
 
-test('orders placed before Model packs keep their stored prices: the migration copies them and checkout charges them', async () => {
-  // 1. The migration (orders-002) keeps every row, price, status and event of an older database.
+test('migrating the live database: orders paid before keep their prices, currency, status and events; new columns and the plan tier exist', async () => {
+  // The live database (b85ea81): no account, pricing or retail modules, and orders-001 only.
   const db = openDb(':memory:');
-  const upToOrders001 = MIGRATION_MODULES.map((m, i) => (MIGRATION_KEYS[i] === 'orders' ? { steps: m.steps.filter((s) => s.id === 'orders-001-orders') } : m));
-  migrate(db, { modules: upToOrders001 });
+  const live = new Set(['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'ops']);
+  const modules = [];
+  const keys = [];
+  MIGRATION_MODULES.forEach((m, i) => {
+    if (!live.has(MIGRATION_KEYS[i])) return;
+    modules.push(MIGRATION_KEYS[i] === 'orders' ? { steps: m.steps.filter((s) => s.id === 'orders-001-orders') } : m);
+    keys.push(MIGRATION_KEYS[i]);
+  });
+  migrate(db, { modules, keys });
   const ts = Date.UTC(2026, 9, 1);
   db.prepare("INSERT INTO users (id, email, name, password_hash, created_at) VALUES ('u_legacybuyer', 'old@example.test', 'Old buyer', 'x', ?)").run(ts);
   const insOrder = db.prepare(
-    `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at, paid_at)
-     VALUES (?, 'u_legacybuyer', 'customer', ?, ?, ?, ?, 'usd', 'demo', '{"name":"Old"}', ?, ?, ?, ?)`,
+    `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at, paid_at, refunded_at)
+     VALUES (?, 'u_legacybuyer', 'customer', ?, ?, ?, ?, 'usd', ?, '{"name":"Old"}', ?, ?, ?, ?, ?)`,
   );
-  insOrder.run('o_legacyorder0000000000001', 'paid', 'complex', '{"rush":true,"extraFinishes":0}', 82_350, ts, ts, ts, ts);
-  insOrder.run('o_legacyorder0000000000002', 'draft', 'simple', '{"rush":false,"extraFinishes":0}', 12_900, ts, ts, ts, null);
+  insOrder.run('o_legacyorder0000000000001', 'paid', 'complex', '{"rush":true,"extraFinishes":0}', 82_350, 'stripe', ts, ts, ts, ts, null);
+  insOrder.run('o_legacyorder0000000000002', 'draft', 'simple', '{"rush":false,"extraFinishes":0}', 12_900, 'demo', ts, ts, ts, null, null);
+  insOrder.run('o_legacyorder0000000000004', 'refunded', 'standard', '{"rush":false,"extraFinishes":1}', 31_800, 'stripe', ts, ts, ts, ts, ts + DAY);
   db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES ('o_legacyorder0000000000001', 0, '{\"name\":\"Old\"}', 'complex', 0, 82350)").run();
   db.prepare("INSERT INTO order_events (order_id, type, to_status, created_at) VALUES ('o_legacyorder0000000000001', 'paid', 'paid', ?)").run(ts);
-  assert.deepEqual(migrate(db), ['orders-002-model-pack']);
-  const rows = db.prepare('SELECT id, status, tier, amount_cents FROM orders ORDER BY id').all().map((r) => ({ ...r }));
+
+  const ran = migrate(db);
+  assert.ok(ran.indexOf('orders-002-model-pack') >= 0 && ran.indexOf('orders-002-model-pack') < ran.indexOf('pricing-002-included-models'), ran.join(', '));
+  const rows = db.prepare('SELECT id, status, tier, amount_cents, currency, provider, refunded_at FROM orders ORDER BY id').all().map((r) => ({ ...r }));
   assert.deepEqual(rows, [
-    { id: 'o_legacyorder0000000000001', status: 'paid', tier: 'complex', amount_cents: 82_350 },
-    { id: 'o_legacyorder0000000000002', status: 'draft', tier: 'simple', amount_cents: 12_900 },
+    { id: 'o_legacyorder0000000000001', status: 'paid', tier: 'complex', amount_cents: 82_350, currency: 'usd', provider: 'stripe', refunded_at: null },
+    { id: 'o_legacyorder0000000000002', status: 'draft', tier: 'simple', amount_cents: 12_900, currency: 'usd', provider: 'demo', refunded_at: null },
+    { id: 'o_legacyorder0000000000004', status: 'refunded', tier: 'standard', amount_cents: 31_800, currency: 'usd', provider: 'stripe', refunded_at: ts + DAY },
   ]);
   assert.equal(db.prepare('SELECT amount_cents FROM order_items WHERE order_id = ?').get('o_legacyorder0000000000001').amount_cents, 82_350);
-  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM order_events').get().n, 1, 'events survive the rebuild');
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM order_events').get().n, 1, 'events survive both rebuilds');
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
-  // New rows can be packs now; the old CHECK would have refused 'pack'.
-  db.prepare("UPDATE orders SET tier = 'pack' WHERE id = 'o_legacyorder0000000000002'").run();
+  const cols = db.prepare('PRAGMA table_info(orders)').all().map((c) => c.name);
+  assert.ok(cols.includes('plan_period_start') && cols.includes('plan_period_end'));
+  assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'orders_provider_paid'").get(), 'ops’ index is kept');
+  // The rebuilt CHECKs take a plan request; model_grants exists.
+  db.prepare("UPDATE orders SET tier = 'plan', provider = 'plan' WHERE id = 'o_legacyorder0000000000002'").run();
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM model_grants').get().n, 0);
+  assert.deepEqual(migrate(db), [], 'nothing left to run');
   db.close();
+});
 
-  // 2. Through the API: an old order reads, pays and dates at its own price and tier.
+test('an order paid for before reads, pays and refunds at its own stored price and currency', async () => {
   const ann = await t.user();
-  const now = Date.now();
-  const id = 'o_legacyorder0000000000003';
-  t.db
-    .prepare(
-      `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at)
-       VALUES (?, ?, 'customer', 'draft', 'standard', '{"rush":false,"extraFinishes":1}', 31800, 'usd', 'demo', ?, ?, ?, ?)`,
-    )
-    .run(id, ann.user.id, JSON.stringify(brief([])), now, now, now);
-  t.db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 1, 31800)").run(id, JSON.stringify(brief([])));
-  const g = await ann.get(`/api/orders/${id}`);
+  const admin = await t.user({ role: 'admin' });
+  const o = priorOrder(t, ann, { tier: 'standard', amountCents: 31_800, extraFinishes: 1 });
+  const g = await ann.get(`/api/orders/${o.id}`);
   assert.equal(g.status, 200, g.text);
   assert.equal(g.body.order.amountCents, 31_800);
+  assert.equal(g.body.order.currency, 'usd');
   assert.equal(g.body.order.pricing, 'tiers');
-  assert.equal(g.body.order.quote.amountCents, 31_800);
+  assert.equal(g.body.order.quote.currency, 'usd');
+  assert.equal(g.body.order.cancellable, true, 'an unpaid order can still be cancelled');
   assert.deepEqual(g.body.order.quote.lines.map((l) => l.label), ['Standard model: My Old Range, 1 extra finish']);
-  const paid = await demoPay(ann, id);
+  const paid = await demoPay(ann, o.id);
   assert.equal(paid.status, 'paid');
   assert.equal(paid.amountCents, 31_800);
-  const row = t.db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
-  assert.equal(row.amount_cents, 31_800);
-  assert.equal(row.tier, 'standard', 'still an old-tier order');
-  assert.equal(row.due_at - row.paid_at > 0, true);
-
-  // 3. A pack order keeps the price stored when it was made, even if the pack price changes later
-  //    (simulated by storing a different price on it, as an older price would have been).
-  const o = await newOrder(ann);
-  assert.equal(o.amountCents, 12_900);
-  const ex = JSON.parse(t.db.prepare('SELECT extras FROM orders WHERE id = ?').get(o.id).extras);
-  assert.equal(ex.quote.lines[0].amountCents, 12_900, 'the quote lines are stored with the order');
-  ex.quote.lines[0].amountCents = 9_900;
-  t.db.prepare('UPDATE orders SET amount_cents = 9900, extras = ? WHERE id = ?').run(JSON.stringify(ex), o.id);
-  t.db.prepare('UPDATE order_items SET amount_cents = 9900 WHERE order_id = ?').run(o.id);
-  const again = (await ann.get(`/api/orders/${o.id}`)).body.order;
-  assert.equal(again.amountCents, 9_900);
-  assert.equal(again.quote.lines[0].amountCents, 9_900);
-  const p2 = await demoPay(ann, o.id);
-  assert.equal(p2.status, 'paid', 'paid at its stored price, not re-quoted at today’s');
+  assert.equal(paid.currency, 'usd');
+  const row = t.db.prepare('SELECT * FROM orders WHERE id = ?').get(o.id);
+  assert.deepEqual([row.amount_cents, row.currency, row.tier], [31_800, 'usd', 'standard']);
+  assert.ok(row.due_at - row.paid_at > 0);
+  // Refunds keep working, in the order's own provider and currency.
+  const r = await admin.post(`/api/admin/orders/${o.id}/refund`, { note: 'Changed their mind.' });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.body.order.status, 'refunded');
+  assert.equal(r.body.order.currency, 'usd');
+  // A non-contractor keeps reading their history (and is told custom models come with the plan).
+  const list = await ann.get('/api/orders');
+  assert.deepEqual(list.body.orders.map((x) => x.id), [o.id]);
+  assert.equal(list.body.allowance.active, false);
 });
 
 test('UPCs: UPC-A, EAN-13 and EAN-8 with check digits, stored as digits only (pure)', () => {
@@ -238,8 +297,8 @@ test('UPCs: UPC-A, EAN-13 and EAN-8 with check digits, stored as digits only (pu
   for (const [body, check] of [['03600029145', 2], ['400638133393', 1], ['9638507', 4]]) assert.equal(gs1CheckDigit(body), check);
 });
 
-test('the product list: brand, UPC, optional size, barcode photos, ownership, identification and pack limits', async () => {
-  const ann = await t.user();
+test('the product list: brand, UPC, optional size, barcode photos, ownership, identification and request limits', async () => {
+  const ann = await contractor(t, { extra: 50 });
   const bob = await t.user();
   const ref = await refPhoto(ann);
   const product = (over = {}) => ({ brief: { productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', name: 'Range', notes: '', referenceFileIds: [], ...over } });
@@ -252,7 +311,7 @@ test('the product list: brand, UPC, optional size, barcode photos, ownership, id
   assert.equal(b0.upcFormat, 'upc_a');
   assert.equal(b0.brand, 'Acme');
   assert.equal(b0.widthIn, undefined, 'no size was given');
-  assert.equal(r.body.order.amountCents, 12_900);
+  assert.equal(r.body.order.amountCents, 0);
 
   // A bad check digit is a clear field error; so is a long brand or half a bad size.
   const bad = await ann.post('/api/orders', { items: [product({ upc: '036000291453', brand: 'x'.repeat(61), widthIn: 999, referenceFileIds: [ref] })] });
@@ -287,21 +346,19 @@ test('the product list: brand, UPC, optional size, barcode photos, ownership, id
   assert.equal((await ann.get(`/api/files/${barcode}`)).status, 200);
   assert.equal((await bob.get(`/api/files/${barcode}`)).status, 404);
 
-  // Pack limits: 9 products are 2 packs (one checkout); 40 is the most one request holds.
+  // Several products are one request; 40 is the most one request holds.
   const nine = Array.from({ length: 9 }, (_, i) => product({ name: `Cabinet ${i + 1}`, upc: '4006381333931' }));
   const o9 = await ann.post('/api/orders', { items: nine, line: 'Harbor Shaker' });
   assert.equal(o9.status, 201, o9.text);
-  assert.equal(o9.body.order.amountCents, 25_800);
-  assert.equal(o9.body.order.packs, 2);
-  assert.deepEqual(o9.body.order.items.map((it) => it.pack), [1, 1, 1, 1, 1, 1, 1, 1, 2]);
-  assert.equal((await ann.post('/api/orders', { items: Array.from({ length: 40 }, () => product({ upc: '96385074' })) })).status, 201);
+  assert.equal(o9.body.order.items.length, 9);
+  assert.equal(o9.body.order.packs, 0);
+  assert.ok(o9.body.order.items.every((it) => it.pack === undefined && it.amountCents === 0));
   const big = await ann.post('/api/orders', { items: Array.from({ length: 41 }, () => product({ upc: '96385074' })) });
   assert.equal(big.status, 400);
   assert.match(big.body.errors[0].message, /up to 40 products/);
   assert.equal((await ann.post('/api/orders', { items: [] })).status, 400);
 
   // The studio queue shows each product's UPC; delivery without a size uses the model's size.
-  await demoPay(ann, r.body.order.id);
   const studio = await t.user({ role: 'studio' });
   const q = await studio.get('/api/studio/orders?status=all');
   const row = q.body.orders.find((o) => o.id === r.body.order.id);
@@ -313,49 +370,49 @@ test('the product list: brand, UPC, optional size, barcode photos, ownership, id
 });
 
 test('the brief is validated; reference files must be the caller’s own reference photos', async () => {
-  const ann = await t.user();
-  const bob = await t.user();
+  const ann = await contractor(t, { extra: 10 });
+  const bob = await contractor();
   const bobs = await refPhoto(bob);
-  const r1 = await ann.post('/api/orders', { brief: brief([bobs]), tier: 'standard' });
+  const r1 = await ann.post('/api/orders', { brief: brief([bobs]) });
   assert.equal(r1.status, 400);
   assert.ok(r1.body.errors.some((e) => e.field === 'items[0].brief.referenceFileIds'));
 
   // An image upload (kind image) is not a reference.
   const img = await ann.putRaw('/api/files?kind=image&name=x.png', makePng(), 'image/png');
-  assert.equal((await ann.post('/api/orders', { brief: brief([img.body.file.id]), tier: 'standard' })).status, 400);
+  assert.equal((await ann.post('/api/orders', { brief: brief([img.body.file.id]) })).status, 400);
   // No reference at all, and no reference product.
-  const none = await ann.post('/api/orders', { brief: brief([]), tier: 'standard' });
+  const none = await ann.post('/api/orders', { brief: brief([]) });
   assert.equal(none.status, 400);
   assert.ok(none.body.errors.some((e) => /at least one reference/.test(e.message)));
   // A catalog product is enough of a reference.
-  assert.equal((await ann.post('/api/orders', { brief: brief([], { refProductId: 'range-30' }), tier: 'standard' })).status, 201);
+  assert.equal((await ann.post('/api/orders', { brief: brief([], { refProductId: 'range-30' }) })).status, 201);
   // Nine photos is one too many.
   const nine = [];
   for (let i = 0; i < 9; i++) nine.push(await refPhoto(ann, [i * 20, 10, 10, 255]));
-  assert.equal((await ann.post('/api/orders', { brief: brief(nine), tier: 'standard' })).status, 400);
+  assert.equal((await ann.post('/api/orders', { brief: brief(nine) })).status, 400);
 
   const mine = [await refPhoto(ann)];
-  const bad = await ann.post('/api/orders', {
-    brief: brief(mine, { kind: 'spaceship', name: '', widthIn: 0, notes: 'x'.repeat(4001) }),
-    tier: 'platinum',
-    extraFinishes: -1,
-  });
+  const bad = await ann.post('/api/orders', { brief: brief(mine, { kind: 'spaceship', name: '', widthIn: 0, notes: 'x'.repeat(4001) }), tier: 'platinum', extraFinishes: -1 });
   assert.equal(bad.status, 400);
   const fields = bad.body.errors.map((e) => e.field);
   for (const f of ['items[0].brief.kind', 'items[0].brief.name', 'items[0].brief.widthIn', 'items[0].brief.notes']) {
     assert.ok(fields.includes(f), `${f} in ${fields.join(', ')}`);
   }
-  assert.equal((await ann.post('/api/orders', { target: 'nobody', brief: brief(mine), tier: 'simple' })).status, 400);
+  assert.equal((await ann.post('/api/orders', { target: 'nobody', brief: brief(mine) })).status, 400);
+  // A bad request never takes a model from the allowance.
+  const used = (await ann.get('/api/orders/allowance')).body.allowance.used;
+  assert.equal(used, 1);
   // Someone else's order is a 404, for reading and for acting.
   const o = await newOrder(ann);
   assert.equal((await bob.get(`/api/orders/${o.id}`)).status, 404);
+  assert.equal((await bob.post(`/api/orders/${o.id}/cancel`)).status, 404);
   assert.equal((await bob.post(`/api/orders/${o.id}/checkout`)).status, 404);
   assert.equal((await bob.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' })).status, 404);
 });
 
-test('demo flow: draft → pending_payment → paid; a double complete is idempotent; decline → payment_failed → retry', async () => {
+test('demo flow for an order from before: draft → pending_payment → paid; a double complete is idempotent; decline → payment_failed → retry', async () => {
   const ann = await t.user();
-  const o = await newOrder(ann);
+  const o = priorOrder(t, ann);
   // Paying a draft directly is refused: checkout comes first.
   assert.equal((await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' })).status, 409);
   const c = await ann.post(`/api/orders/${o.id}/checkout`);
@@ -366,7 +423,7 @@ test('demo flow: draft → pending_payment → paid; a double complete is idempo
   assert.equal(ok1.status, 200);
   assert.equal(ok1.body.order.status, 'paid');
   assert.ok(ok1.body.order.paidAt);
-  assert.ok(ok1.body.order.dueAt >= ok1.body.order.paidAt + 21 * DAY, 'a pack’s 15 business days are at least 21 calendar days');
+  assert.ok(ok1.body.order.dueAt >= ok1.body.order.paidAt + 14 * DAY, 'Standard’s 10 business days are at least 14 calendar days');
   const ok2 = await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
   assert.equal(ok2.status, 200);
   assert.equal(ok2.body.order.paidAt, ok1.body.order.paidAt);
@@ -375,7 +432,7 @@ test('demo flow: draft → pending_payment → paid; a double complete is idempo
   assert.equal((await ann.post(`/api/orders/${o.id}/checkout`)).status, 409);
   assert.equal((await ann.post(`/api/orders/${o.id}/cancel`)).status, 409);
 
-  const o2 = await newOrder(ann);
+  const o2 = priorOrder(t, ann);
   await ann.post(`/api/orders/${o2.id}/checkout`);
   const dec = await ann.post(`/api/payments/demo/${o2.id}/complete`, { outcome: 'decline' });
   assert.equal(dec.body.order.status, 'payment_failed');
@@ -391,27 +448,26 @@ test('demo flow: draft → pending_payment → paid; a double complete is idempo
   assert.deepEqual(new Set(list.body.orders.map((x) => x.id)), new Set([o.id, o2.id]));
 });
 
-test('the demo route is refused in production without DEMO_PAYMENTS, and allowed with it', async () => {
+test('without payments a contractor still submits requests; the demo route is refused in production without DEMO_PAYMENTS', async () => {
   const prod = await startTestServer({ env: { PAYMENTS: 'demo', NODE_ENV: 'production' } });
   try {
-    // No Stripe and no demo: payments are 'none', and every order-payment endpoint is a 503.
-    const ann = await prod.user();
-    const refs = [(await ann.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id];
-    const created = await ann.post('/api/orders', { brief: brief(refs), tier: 'simple' });
-    assert.equal(created.status, 503);
-    assert.equal(created.body.code, 'payments_unavailable');
-    const c = await ann.post('/api/orders/ord_nothing/checkout');
+    // No Stripe and no demo: payments are 'none'. A plan request needs no payment, so it works…
+    const pro = await contractor(prod);
+    const refs = [(await pro.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id];
+    const created = await pro.post('/api/orders', { brief: brief(refs) });
+    assert.equal(created.status, 201, created.text);
+    assert.equal(created.body.order.status, 'paid');
+    // …while every order-payment endpoint is a 503.
+    const c = await pro.post('/api/orders/ord_nothing/checkout');
     assert.deepEqual([c.status, c.body.code], [503, 'payments_unavailable']);
-    assert.equal((await ann.post('/api/payments/demo/ord_nothing/complete', { outcome: 'success' })).status, 503);
-    assert.equal(prod.db.prepare('SELECT COUNT(*) AS n FROM orders').get().n, 0);
+    assert.equal((await pro.post('/api/payments/demo/ord_nothing/complete', { outcome: 'success' })).status, 503);
   } finally {
     await prod.close();
   }
   const allowed = await startTestServer({ env: { PAYMENTS: 'demo', NODE_ENV: 'production', DEMO_PAYMENTS: '1' } });
   try {
     const ann = await allowed.user();
-    const refs = [(await ann.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id];
-    const o = (await ann.post('/api/orders', { brief: brief(refs), tier: 'simple' })).body.order;
+    const o = priorOrder(allowed, ann);
     assert.equal((await ann.post(`/api/orders/${o.id}/checkout`)).status, 200);
     assert.equal((await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' })).body.order.status, 'paid');
   } finally {
@@ -419,16 +475,16 @@ test('the demo route is refused in production without DEMO_PAYMENTS, and allowed
   }
 });
 
-test('studio routes need the studio role; refunds and revenue need admin', async () => {
-  const ann = await t.user();
+test('studio routes need the studio role; refunds, revenue and model grants need admin', async () => {
+  const ann = await contractor();
   const studio = await t.user({ role: 'studio' });
   const o = await newOrder(ann);
-  await demoPay(ann, o.id);
   for (const [m, p] of [
     ['GET', '/api/studio/orders'],
     ['POST', `/api/studio/orders/${o.id}/start`],
     ['POST', `/api/studio/orders/${o.id}/note`],
     ['POST', `/api/studio/orders/${o.id}/deliver`],
+    ['POST', `/api/studio/orders/${o.id}/cancel`],
   ]) {
     const r = await ann.request(m, p, m === 'POST' ? { body: { note: 'x' } } : {});
     assert.equal(r.status, 403, `${m} ${p}`);
@@ -437,26 +493,31 @@ test('studio routes need the studio role; refunds and revenue need admin', async
   assert.equal((await studio.post(`/api/admin/orders/${o.id}/refund`)).status, 403);
   assert.equal((await studio.get('/api/admin/revenue')).status, 403);
   assert.equal((await ann.get('/api/admin/revenue')).status, 403);
-  // The studio can read any order (to fulfil it) and sees it in the queue.
-  assert.equal((await studio.get(`/api/orders/${o.id}`)).status, 200);
+  assert.equal((await studio.post('/api/admin/model-grants', { userId: ann.id, models: 1 })).status, 403);
+  assert.equal((await ann.get(`/api/admin/model-allowance?userId=${ann.id}`)).status, 403);
+  // The studio can read any order (to fulfil it), sees it in the queue, and where the contractor stands.
+  const view = await studio.get(`/api/orders/${o.id}`);
+  assert.equal(view.status, 200);
+  assert.equal(view.body.buyerAllowance.left, 2);
+  assert.equal((await ann.get(`/api/orders/${o.id}`)).body.buyerAllowance, undefined, 'staff only');
   const q = await studio.get('/api/studio/orders');
-  assert.ok(q.body.orders.some((x) => x.id === o.id));
+  assert.ok(q.body.orders.some((x) => x.id === o.id), 'a submitted request is in the active queue');
   assert.equal(q.body.orders.find((x) => x.id === o.id).buyer.email, ann.user.email);
   assert.equal((await studio.get('/api/studio/orders?status=nonsense')).status, 400);
 });
 
 test('deliver creates a private product only the buyer sees; its GLB is 404 to others and 200 to the buyer', async () => {
-  const ann = await t.user();
+  const ann = await contractor();
   const bob = await t.user();
   const studio = await t.user({ role: 'studio' });
-  const o = await newOrder(ann);
-  await demoPay(ann, o.id);
+  const o = await newOrder(ann, { target: 'customer' });
 
   // Deliver before start → 409; start → in_progress assigned to the studio user.
   assert.equal((await studioDeliver(studio, o.id)).status, 409);
   const s = await studio.post(`/api/studio/orders/${o.id}/start`);
   assert.equal(s.body.order.status, 'in_progress');
   assert.equal(s.body.order.assignedTo, studio.id);
+  assert.equal(s.body.order.cancellable, false, 'work has started');
   assert.equal((await studio.post(`/api/studio/orders/${o.id}/start`)).status, 409);
   const n = await studio.post(`/api/studio/orders/${o.id}/note`, { note: 'Modelling the knobs now.' });
   assert.equal(n.status, 200);
@@ -498,7 +559,7 @@ test('deliver creates a private product only the buyer sees; its GLB is 404 to o
   // The delivered files belong to the buyer.
   assert.equal(t.services.files.get(row.spec.modelFileId).ownerUserId, ann.id);
 
-  // The customer sees the deliverable and the studio's note, but not payment plumbing.
+  // The buyer sees the deliverable and the studio's note, but not the plumbing.
   const view = await ann.get(`/api/orders/${o.id}`);
   assert.equal(view.body.deliverables[0].id, pid);
   assert.ok(view.body.events.some((e) => e.type === 'note' && e.note === 'Modelling the knobs now.' && e.by === 'studio'));
@@ -511,18 +572,17 @@ test('deliver creates a private product only the buyer sees; its GLB is 404 to o
   assert.equal((await ann.post(`/api/orders/${o.id}/accept`)).status, 409);
 });
 
-test('a brand-target order needs membership and delivers a brand draft', async () => {
-  const owner = await t.user();
-  const outsider = await t.user();
+test('a brand-target request needs membership and delivers a brand draft', async () => {
+  const owner = await contractor();
+  const outsider = await contractor();
   const studio = await t.user({ role: 'studio' });
   const brand = t.brand(owner, { name: 'Fictional Ovens Co', status: 'active' });
   const refsO = [await refPhoto(outsider)];
-  assert.equal((await outsider.post('/api/orders', { target: 'brand', brandId: brand.id, brief: brief(refsO), tier: 'standard' })).status, 404);
+  assert.equal((await outsider.post('/api/orders', { target: 'brand', brandId: brand.id, brief: brief(refsO) })).status, 404);
   const refs = [await refPhoto(owner)];
-  const r = await owner.post('/api/orders', { target: 'brand', brandId: brand.id, brief: brief(refs), tier: 'standard' });
+  const r = await owner.post('/api/orders', { target: 'brand', brandId: brand.id, brief: brief(refs) });
   assert.equal(r.status, 201, r.text);
   assert.equal(r.body.order.brandName, 'Fictional Ovens Co');
-  await demoPay(owner, r.body.order.id);
   await studio.post(`/api/studio/orders/${r.body.order.id}/start`);
   const d = await studioDeliver(studio, r.body.order.id);
   assert.equal(d.status, 200, d.text);
@@ -535,35 +595,20 @@ test('a brand-target order needs membership and delivers a brand draft', async (
   assert.ok(!(await owner.get('/api/catalog')).body.products.some((p) => p.id === row.id), 'drafts are not in the catalog');
 });
 
-test('contractor target: plan required; one checkout for a multi-item line, delivered when every item is', async () => {
-  const pro = await t.user();
+test('a line of products into My catalog: one request, delivered when every product is; UPC-only products; brand and UPC in the description', async () => {
+  const pro = await contractor(t, { extra: 6 });
   const refs = [await refPhoto(pro)];
-  const denied = await pro.post('/api/orders', { target: 'contractor', brief: brief(refs), tier: 'simple' });
-  assert.equal(denied.status, 403);
-  assert.equal(denied.body.needs, 'contractor');
-
-  // Become a contractor through billing's DEMO checkout.
-  const c = await pro.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
-  assert.equal(c.status, 200, c.text);
-  assert.equal((await pro.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
-
   const piece = (name, w) => ({ brief: brief(refs, { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name, widthIn: w, depthIn: 24, heightIn: 34.5 }) });
   const items = [piece('Smith Shaker Base 18', 18), piece('Smith Shaker Base 24', 24), piece('Smith Shaker Base 36', 36)];
-  const tooMany = await pro.post('/api/orders', { target: 'contractor', line: 'Smith Shaker', items: Array.from({ length: 41 }, () => items[0]) });
-  assert.equal(tooMany.status, 400);
-  assert.match(tooMany.body.errors[0].message, /up to 40 products/);
-  const r = await pro.post('/api/orders', { target: 'contractor', line: 'Smith Shaker', rush: false, items });
+  const r = await pro.post('/api/orders', { target: 'contractor', line: 'Smith Shaker', items });
   assert.equal(r.status, 201, r.text);
   const o = r.body.order;
   assert.equal(o.items.length, 3);
-  assert.equal(o.amountCents, 12_900, 'three products fit in one Model pack');
-  assert.equal(o.packs, 1);
-  assert.deepEqual(o.items.map((it) => it.pack), [1, 1, 1]);
-  assert.equal(o.items.reduce((s, it) => s + it.amountCents, 0), o.amountCents, 'the items’ shares add up to the price');
+  assert.equal(o.amountCents, 0);
   assert.equal(o.title, 'Smith Shaker · 3 products');
+  assert.equal(r.body.allowance.used, 3);
 
   const studio = await t.user({ role: 'studio' });
-  await demoPay(pro, o.id);
   await studio.post(`/api/studio/orders/${o.id}/start`);
   for (const i of [2, 0]) {
     const d = await studioDeliver(studio, o.id, { item: i, glb: makeGlb({ w: items[i].brief.widthIn * 0.0254, h: 0.876, d: 0.61 }) });
@@ -587,75 +632,37 @@ test('contractor target: plan required; one checkout for a multi-item line, deli
     assert.equal(row.status, 'published', 'live in My catalog');
   }
   assert.equal(t.services.products.get(pids[1]).spec.price, 410);
-  const cat = (await pro.get('/api/catalog')).body.products.filter((p) => pids.includes(p.id));
-  assert.equal(cat.length, 3, 'all three in the contractor’s catalog');
   const other = await t.user();
   assert.ok(!(await other.get('/api/catalog')).body.products.some((p) => pids.includes(p.id)));
-  // My catalog lists them, and their files are the contractor's own, so they can edit them.
   assert.equal((await pro.put('/api/pro/profile', { company: 'Smith Kitchens (Test)', phone: '905-555-0100' })).status, 200);
   const mine = await pro.get('/api/pro/products');
   assert.equal(mine.status, 200, mine.text);
   for (const pid of pids) assert.ok(mine.body.products.some((p) => p.id === pid), `${pid} in My catalog`);
-  assert.equal(t.services.files.get(t.services.products.get(pids[0]).spec.modelFileId).ownerUserId, pro.id);
-  const edit = await pro.patch(`/api/pro/products/${pids[0]}`,{ spec: { price: 365 }, revision: t.services.products.get(pids[0]).revision });
+  const edit = await pro.patch(`/api/pro/products/${pids[0]}`, { spec: { price: 365 }, revision: t.services.products.get(pids[0]).revision });
   assert.equal(edit.status, 200, `the contractor can edit a delivered model like any of their products: ${edit.text}`);
-});
 
-test('contractors use the same Model pack flow: UPC-only products, 9 products are 2 packs, rush, all into My catalog', async () => {
-  const pro = await t.user();
-  const c = await pro.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
-  assert.equal((await pro.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
-
-  // A line of nine cabinets identified by UPC alone: no photos, no sizes. Client prices are ignored.
+  // Products identified by UPC alone, no photos or sizes; delivered with the model's size and the
+  // brand and UPC in the description.
   const upcs = ['036000291452', '4006381333931', '96385074'];
-  const items = Array.from({ length: 9 }, (_, i) => ({
-    brief: { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name: `Harbor Base ${12 + 3 * i}`, brand: 'Harbor Cabinets (Test)', upc: upcs[i % 3], notes: '', referenceFileIds: [] },
-    amountCents: 1,
-    tier: 'simple',
-  }));
-  const r = await pro.post('/api/orders', { target: 'contractor', line: 'Harbor Shaker', rush: true, items, amountCents: 100 });
-  assert.equal(r.status, 201, r.text);
-  const o = r.body.order;
-  assert.equal(o.pricing, 'pack');
-  assert.equal(o.packs, 2);
-  assert.equal(o.amountCents, 2 * (12_900 + 6_450), 'two packs, each +50% for rush');
-  assert.equal(r.body.quote.dueBusinessDays, Math.ceil((15 + 5) / 2), 'rush halves the two-pack turnaround');
-  assert.deepEqual(o.items.map((it) => it.pack), [1, 1, 1, 1, 1, 1, 1, 1, 2]);
-  assert.equal(o.items.reduce((s, it) => s + it.amountCents, 0), o.amountCents);
-  assert.equal(o.items[1].brief.upc, '4006381333931');
-  // The same quote a customer gets for the same count.
-  const q = await pro.post('/api/orders/quote', { rush: true, products: 9 });
-  assert.equal(q.body.quote.amountCents, o.amountCents);
-
-  // The studio sees the UPCs; a delivery without a size takes the model's, and lands in My catalog
-  // with the brand and UPC in its description.
-  await demoPay(pro, o.id);
-  const studio = await t.user({ role: 'studio' });
-  const row = (await studio.get('/api/studio/orders?status=all')).body.orders.find((x) => x.id === o.id);
-  assert.deepEqual(row.items.map((it) => it.brief.upc), items.map((it) => it.brief.upc));
-  assert.equal((await studio.post(`/api/studio/orders/${o.id}/start`)).status, 200);
-  const d = await studioDeliver(studio, o.id, { item: 8, glb: makeGlb({ w: 36 * 0.0254, h: 34.5 * 0.0254, d: 24 * 0.0254 }) });
+  const line = upcs.map((upc, i) => ({ brief: { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name: `Harbor Base ${12 + 3 * i}`, brand: 'Harbor Cabinets (Test)', upc, notes: '', referenceFileIds: [] } }));
+  const h = await pro.post('/api/orders', { target: 'contractor', line: 'Harbor Shaker', items: line });
+  assert.equal(h.status, 201, h.text);
+  assert.deepEqual(h.body.order.items.map((it) => it.brief.upc), upcs);
+  const row = (await studio.get('/api/studio/orders?status=all')).body.orders.find((x) => x.id === h.body.order.id);
+  assert.deepEqual(row.items.map((it) => it.brief.upc), upcs);
+  assert.equal((await studio.post(`/api/studio/orders/${h.body.order.id}/start`)).status, 200);
+  const d = await studioDeliver(studio, h.body.order.id, { item: 2, glb: makeGlb({ w: 36 * 0.0254, h: 34.5 * 0.0254, d: 24 * 0.0254 }) });
   assert.equal(d.status, 200, d.text);
   const p = t.services.products.get(d.body.product.id);
   assert.equal(p.source, 'contractor');
-  assert.equal(p.visibility, 'private');
-  assert.equal(p.ownerUserId, pro.id);
-  assert.equal(p.spec.line, 'Harbor Shaker');
   assert.deepEqual([p.spec.widthIn, p.spec.heightIn, p.spec.depthIn].map(Math.round), [36, 35, 24]);
   assert.match(p.spec.blurb, /Brand: Harbor Cabinets \(Test\) · UPC 96385074\./);
-  assert.ok((await pro.get('/api/catalog')).body.products.some((x) => x.id === p.id), 'in the contractor’s catalog');
-
-  // A customer can't send an order to My catalog.
-  const ann = await t.user();
-  const denied = await ann.post('/api/orders', { target: 'contractor', items: items.slice(0, 1) });
-  assert.equal(denied.status, 403);
 });
 
 test('two revision rounds, then no more; a redelivery updates the same product', async () => {
-  const ann = await t.user();
+  const ann = await contractor();
   const studio = await t.user({ role: 'studio' });
   const o = await newOrder(ann);
-  await demoPay(ann, o.id);
   await studio.post(`/api/studio/orders/${o.id}/start`);
   const first = await studioDeliver(studio, o.id);
   const pid = first.body.order.deliverableProductId;
@@ -677,32 +684,33 @@ test('two revision rounds, then no more; a redelivery updates the same product',
   const third = await ann.post(`/api/orders/${o.id}/revision`, { note: 'One more?' });
   assert.equal(third.status, 409);
   assert.equal(third.body.error, 'Both revision rounds have been used.');
-  // The first delivery date is kept for turnaround.
+  // The first delivery date is kept for turnaround, and revisions never take another model.
   assert.equal(t.db.prepare('SELECT delivered_at FROM orders WHERE id = ?').get(o.id).delivered_at, first.body.order.deliveredAt);
+  assert.equal((await ann.get('/api/orders/allowance')).body.allowance.used, 1);
 });
 
-test('cancel only before payment', async () => {
+test('an order from before can be cancelled only before payment', async () => {
   const ann = await t.user();
-  const o = await newOrder(ann);
+  const o = priorOrder(t, ann);
   const c = await ann.post(`/api/orders/${o.id}/cancel`);
   assert.equal(c.body.order.status, 'cancelled');
   assert.equal((await ann.post(`/api/orders/${o.id}/checkout`)).status, 409);
   assert.equal((await ann.post(`/api/orders/${o.id}/cancel`)).status, 409);
-  const o2 = await newOrder(ann);
+  const o2 = priorOrder(t, ann);
   await ann.post(`/api/orders/${o2.id}/checkout`);
   assert.equal((await ann.post(`/api/orders/${o2.id}/cancel`)).body.order.status, 'cancelled', 'pending payment can be cancelled');
-  const o3 = await newOrder(ann);
+  const o3 = priorOrder(t, ann);
   await demoPay(ann, o3.id);
   assert.equal((await ann.post(`/api/orders/${o3.id}/cancel`)).status, 409);
 });
 
-test('unpaid orders expire 24 hours after checkout started (on read)', async () => {
+test('unpaid orders from before expire 24 hours after checkout started (on read)', async () => {
   const t0 = Date.now();
   t.setNow(t0);
   try {
     const ann = await t.user();
-    const draft = await newOrder(ann);
-    const pending = await newOrder(ann);
+    const draft = priorOrder(t, ann);
+    const pending = priorOrder(t, ann);
     t.setNow(t0 + 20 * 3_600_000);
     await ann.post(`/api/orders/${pending.id}/checkout`); // restarts its 24 h window
     t.setNow(t0 + 25 * 3_600_000);
@@ -720,11 +728,11 @@ test('unpaid orders expire 24 hours after checkout started (on read)', async () 
   }
 });
 
-test('refund marks the order refunded and archives the custom product; refunded twice is a 409', async () => {
+test('refund marks a paid order refunded and archives the custom product; refunded twice is a 409', async () => {
   const ann = await t.user();
   const studio = await t.user({ role: 'studio' });
   const admin = await t.user({ role: 'admin' });
-  const o = await newOrder(ann);
+  const o = priorOrder(t, ann);
   await demoPay(ann, o.id);
   await studio.post(`/api/studio/orders/${o.id}/start`);
   const d = await studioDeliver(studio, o.id);
@@ -739,11 +747,11 @@ test('refund marks the order refunded and archives the custom product; refunded 
   assert.ok(!(await ann.get('/api/catalog')).body.products.some((p) => p.id === pid), 'its live catalog entry is gone');
   assert.equal((await admin.post(`/api/admin/orders/${o.id}/refund`)).status, 409);
   // Unpaid orders can't be refunded.
-  const o2 = await newOrder(ann);
+  const o2 = priorOrder(t, ann);
   assert.equal((await admin.post(`/api/admin/orders/${o2.id}/refund`)).status, 409);
 });
 
-test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept apart from Stripe', async () => {
+test('revenue: orders paid before (gross, refunds, net, by tier, by day, turnaround), demo apart from Stripe; plan requests never count', async () => {
   const s = await startTestServer({ env: { PAYMENTS: 'demo' } });
   try {
     const t0 = Date.UTC(2026, 8, 1, 15); // a Tuesday
@@ -751,14 +759,9 @@ test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept ap
     const ann = await s.user();
     const studio = await s.user({ role: 'studio' });
     const admin = await s.user({ role: 'admin' });
-    const ref = async () => (await ann.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id;
-    const make = async (products, rush = false) => {
-      const r = await ref();
-      return (await ann.post('/api/orders', { items: Array.from({ length: products }, (_, i) => ({ brief: brief([r], { name: `Product ${i + 1}` }) })), rush })).body.order;
-    };
-    const a = await make(1); // one pack: 12900
-    const b = await make(9); // two packs: 25800
-    const c = await make(1, true); // one pack, rush: 12900 × 1.5 = 19350
+    const a = priorOrder(s, ann, { tier: 'simple', amountCents: 12_900 });
+    const b = priorOrder(s, ann, { tier: 'standard', amountCents: 27_900, items: 2 });
+    const c = priorOrder(s, ann, { tier: 'complex', amountCents: 54_900 });
     for (const o of [a, b, c]) {
       await ann.post(`/api/orders/${o.id}/checkout`);
       await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
@@ -770,28 +773,30 @@ test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept ap
     assert.equal((await studio.post(`/api/studio/orders/${a.id}/deliver`, { modelFileId: m.body.file.id, thumbFileId: th.body.file.id })).status, 200);
     s.setNow(t0 + 5 * DAY);
     assert.equal((await admin.post(`/api/admin/orders/${c.id}/refund`)).status, 200);
-    // An unpaid draft never counts.
-    await make(3);
+    // An unpaid draft and a plan request never count.
+    priorOrder(s, ann);
+    const pro = await contractor(s);
+    const ref = (await pro.putRaw('/api/files?kind=reference&name=a.png', makePng(), 'image/png')).body.file.id;
+    assert.equal((await pro.post('/api/orders', { brief: brief([ref]) })).status, 201);
 
     const r = await admin.get('/api/admin/revenue?days=30');
     assert.equal(r.status, 200);
     assert.equal(r.body.provider, 'demo');
-    assert.equal(r.body.gross, 12_900 + 25_800 + 19_350);
-    assert.equal(r.body.refunds, 19_350);
-    assert.equal(r.body.net, 12_900 + 25_800);
+    assert.equal(r.body.gross, 12_900 + 55_800 + 54_900);
+    assert.equal(r.body.refunds, 54_900);
+    assert.equal(r.body.net, 12_900 + 55_800);
     assert.equal(r.body.count, 3);
     assert.equal(r.body.refundCount, 1);
     assert.deepEqual(r.body.byTier, [
-      { tier: 'pack', items: 11, gross: 12_900 + 25_800 + 19_350 },
-      { tier: 'simple', items: 0, gross: 0 },
-      { tier: 'standard', items: 0, gross: 0 },
-      { tier: 'complex', items: 0, gross: 0 },
+      { tier: 'pack', items: 0, gross: 0 },
+      { tier: 'simple', items: 1, gross: 12_900 },
+      { tier: 'standard', items: 2, gross: 55_800 },
+      { tier: 'complex', items: 1, gross: 54_900 },
     ]);
     assert.equal(r.body.avgTurnaroundDays, 3);
     assert.equal(r.body.byDay.length, 31);
-    const day0 = r.body.byDay.find((d) => d.day === '2026-09-01');
-    assert.deepEqual(day0, { day: '2026-09-01', gross: 58_050, refunds: 0, count: 3 });
-    assert.equal(r.body.byDay.find((d) => d.day === '2026-09-06').refunds, 19_350);
+    assert.deepEqual(r.body.byDay.find((d) => d.day === '2026-09-01'), { day: '2026-09-01', gross: 123_600, refunds: 0, count: 3 });
+    assert.equal(r.body.byDay.find((d) => d.day === '2026-09-06').refunds, 54_900);
     assert.equal(r.body.byProvider.stripe.gross, 0);
     assert.equal(r.body.byProvider.demo.gross, r.body.gross);
     // Outside the window: nothing.
@@ -807,24 +812,29 @@ test('revenue: gross, refunds, net, by tier, by day and turnaround, demo kept ap
   }
 });
 
-test('the seed creates paid, in-progress, delivered and completed demo orders, idempotently', async () => {
+test('the seed creates paid, in-progress, delivered and completed demo orders from before, and the demo contractor’s included request, idempotently', async () => {
   const s = await startTestServer({ env: { PAYMENTS: 'demo' } });
   try {
     const customer = await s.user({ email: 'demo-customer@blumodel.test' });
     await s.user({ email: 'demo-studio@blumodel.test', role: 'studio' });
+    const pro = await contractor(s, { email: 'demo-brand@blumodel.test' });
     const ctx = { db: s.db, config: s.config, services: s.services, now: s.ctx.now };
     const first = await seed(ctx);
     const second = await seed(ctx);
-    assert.ok(first.created >= 4, JSON.stringify(first));
+    assert.equal(first.created, 5, JSON.stringify(first));
     assert.equal(second.created, 0, 'idempotent');
-    const statuses = s.db.prepare('SELECT status FROM orders ORDER BY id').all().map((r) => r.status).sort();
+    const statuses = s.db.prepare("SELECT status FROM orders WHERE provider = 'demo' ORDER BY id").all().map((r) => r.status).sort();
     for (const st of ['paid', 'in_progress', 'delivered', 'completed']) assert.ok(statuses.includes(st), st);
-    assert.equal(s.db.prepare("SELECT COUNT(*) AS n FROM orders WHERE provider <> 'demo'").get().n, 0);
+    assert.deepEqual(s.db.prepare("SELECT DISTINCT tier, currency FROM orders WHERE provider = 'demo'").all().map((r) => ({ ...r })), [{ tier: 'standard', currency: 'usd' }]);
     const list = (await customer.get('/api/orders')).body.orders;
     assert.equal(list.length, statuses.length);
     const delivered = list.find((o) => o.status === 'delivered');
     assert.ok(delivered.deliverableProductId);
     assert.ok((await customer.get('/api/catalog')).body.products.some((p) => p.id === delivered.deliverableProductId), 'the fixture deliverable is the customer’s private product');
+    // The contractor's request is included in the plan and leaves 2 of 3.
+    const mine = await pro.get('/api/orders');
+    assert.deepEqual(mine.body.orders.map((o) => [o.pricing, o.status, o.amountCents]), [['plan', 'paid', 0]]);
+    assert.equal(mine.body.allowance.left, 2);
     // Without the demo users there is nothing to seed, and it says so.
     const empty = await startTestServer({ env: { PAYMENTS: 'demo' } });
     try {

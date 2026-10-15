@@ -2,9 +2,20 @@
 // validation, the status machine, the one idempotent markOrderPaid(), delivery into a
 // product, refunds, expiry and the revenue report. Routes live in server/routes/orders.mjs.
 //
-//   draft ─checkout─▶ pending_payment ─paid─▶ paid ─start─▶ in_progress ─deliver (all items)─▶ delivered ─accept─▶ completed
-//     │                  │ decline / 24 h                                 ▲                       │
-//     └─cancel─▶ cancelled ▼ payment_failed / expired                     └── revision (≤ 2) ◀─────┘
+// Since 2026-10-15 custom models are not sold: they come with the Contractor plan (INCLUDED_MODELS
+// a month, server/payments/allowance.mjs). A new request is an order with tier and provider 'plan',
+// amount 0, that goes straight to the studio's queue ('paid' is the queue's "ready to start"):
+//
+//   submit (allowance checked) ─▶ paid ─start─▶ in_progress ─deliver (all items)─▶ delivered ─accept─▶ completed
+//                                  │                ▲                                  │
+//        cancel before it starts ─▶ cancelled       └──────── revision (≤ 2) ◀─────────┘
+//        (the models go back to that period's allowance)
+//
+// Orders placed before then were paid for and keep their stored prices, currency and refund path:
+//
+//   draft ─checkout─▶ pending_payment ─paid─▶ paid ─start─▶ in_progress … (as above)
+//     │                  │ decline / 24 h
+//     └─cancel─▶ cancelled ▼ payment_failed / expired
 //   paid / in_progress / revision_requested / delivered ─refund─▶ refunded
 //
 // Every transition is a conditional UPDATE (… WHERE status IN (…)) and writes an
@@ -14,8 +25,11 @@ import fs from 'node:fs';
 import { HttpError } from '../http/respond.mjs';
 import { randomId, FILE_ID_RE, PRODUCT_ID_RE, BUILTIN_ID_RE } from '../lib/ids.mjs';
 import { KIND_SET, KIND_CATEGORY, VARIANTS } from '../catalog/kinds.mjs';
-import { quote, legacyQuote, addBusinessDays, PACK, LEGACY_TIERS, PRODUCTS_PER_PACK, MAX_ITEMS, REVISIONS, CURRENCY } from './tiers.mjs';
+import { includedQuote, legacyQuote, addBusinessDays, PACK, LEGACY_TIERS, MAX_ITEMS, REVISIONS, MODEL_TERMS, CURRENCY } from './tiers.mjs';
 import { normalizeUpc } from './upc.mjs';
+import { createAllowance } from './allowance.mjs';
+
+const PRODUCTS_PER_PACK = PACK.productsPerPack;
 
 const LEGACY_IDS = LEGACY_TIERS.map((t) => t.id);
 
@@ -43,6 +57,8 @@ export const PAYABLE = Object.freeze([...UNPAID, 'expired', 'cancelled']);
 export const REFUNDABLE = Object.freeze(['paid', 'in_progress', 'revision_requested', 'delivered']);
 /** What the studio queue shows by default. */
 export const ACTIVE = Object.freeze(['paid', 'in_progress', 'revision_requested']);
+/** The tier and provider of a request included in the Contractor plan (nothing paid). */
+export const PLAN = 'plan';
 export const EXPIRY_MS = 24 * 3_600_000;
 export const MAX_REFERENCES = 8;
 export const MAX_NOTES = 4_000;
@@ -71,6 +87,7 @@ const invalid = (errors, message = 'Some details of the request need fixing.') =
  */
 export function createOrderService({ db, now, services, config, log = console, tx }) {
   const { files, products, brands, auth, billing } = services;
+  const allowance = createAllowance({ db, now, billing, config });
 
   // ── reading ─────────────────────────────────────────────────────────────
   const rowOf = (id) => (typeof id === 'string' && /^o_[a-z0-9]{24}$/.test(id) ? db.prepare('SELECT * FROM orders WHERE id = ?').get(id) ?? null : null);
@@ -103,7 +120,9 @@ export function createOrderService({ db, now, services, config, log = console, t
         createdAt: r.created_at,
       }));
 
-  /** A Model-pack order (tier 'pack'); everything else was priced with the retired tiers. */
+  /** A request included in the Contractor plan: nothing was or will be paid for it. */
+  const isPlan = (row) => row.tier === PLAN || row.provider === PLAN;
+  /** A Model-pack order (tier 'pack', 14-15 October 2026, never live); older ones used the retired tiers. */
   const isPack = (row) => row.tier === PACK.id;
 
   /**
@@ -116,6 +135,10 @@ export function createOrderService({ db, now, services, config, log = console, t
     const extras = parse(row.extras, {});
     const rush = extras.rush === true;
     const saved = isObj(extras.quote) && Array.isArray(extras.quote.lines) ? extras.quote : null;
+    if (isPlan(row)) {
+      const q = includedQuote(Math.max(1, Math.min(MAX_ITEMS, items.length || 1)), row.currency);
+      return { ...q, products: items.length, amountCents: row.amount_cents, dueBusinessDays: Number(saved?.dueBusinessDays) || q.dueBusinessDays, items: items.map(() => ({ amountCents: 0 })) };
+    }
     if (isPack(row) && saved) {
       return {
         pricing: 'pack',
@@ -130,7 +153,7 @@ export function createOrderService({ db, now, services, config, log = console, t
       };
     }
     // In the order's own currency (every order from before 2026-10-15 is USD).
-    return { ...legacyQuote({ items: items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, amountCents: it.amountCents, name: it.brief?.name })), rush, amountCents: row.amount_cents }), currency: row.currency };
+    return legacyQuote({ items: items.map((it) => ({ tier: it.tier, extraFinishes: it.extraFinishes, amountCents: it.amountCents, name: it.brief?.name })), rush, amountCents: row.amount_cents, currency: row.currency });
   };
 
   const titleOf = (row, items) => {
@@ -158,6 +181,7 @@ export function createOrderService({ db, now, services, config, log = console, t
     const q = quoteOf(row, items);
     const brand = row.brand_id ? brands.get(row.brand_id) : null;
     const pack = isPack(row);
+    const plan = isPlan(row);
     return {
       id: row.id,
       userId: row.user_id ?? null,
@@ -166,10 +190,17 @@ export function createOrderService({ db, now, services, config, log = console, t
       brandName: brand?.name ?? null,
       status: row.status,
       tier: row.tier,
-      /** 'pack' (Model packs) or 'tiers' (an order placed before packs, at its stored price). */
+      /**
+       * 'plan' (included in the Contractor plan, nothing paid), or for an order placed before
+       * 2026-10-15 'pack' / 'tiers' (paid, at its stored price and currency).
+       */
       pricing: q.pricing,
       packs: pack ? q.packs : 0,
-      finishesPerModel: pack ? PACK.finishesPerModel : null,
+      finishesPerModel: plan ? MODEL_TERMS.finishesPerModel : pack ? PACK.finishesPerModel : null,
+      /** The allowance period a plan request counted against (null for a paid order). */
+      planPeriod: plan && row.plan_period_start ? { start: row.plan_period_start, end: row.plan_period_end } : null,
+      /** Whether the buyer can still withdraw it (a plan request the studio hasn't started). */
+      cancellable: plan ? row.status === 'paid' : UNPAID.includes(row.status),
       extras: { extraFinishes: Number(extras.extraFinishes) || 0, rush: extras.rush === true },
       amountCents: row.amount_cents,
       currency: row.currency,
@@ -247,6 +278,7 @@ export function createOrderService({ db, now, services, config, log = console, t
     return tx(() => {
       const o = rowOf(orderId);
       if (!o) return { ok: false, changed: false, reason: 'unknown_order' };
+      if (isPlan(o)) return { ok: false, changed: false, reason: 'not_payable' }; // included in the plan: nothing to pay
       const cur = String(currency ?? '').toLowerCase();
       if (amountCents !== o.amount_cents || cur !== o.currency) {
         log.warn?.(`order ${orderId}: payment of ${amountCents} ${cur} does not match ${o.amount_cents} ${o.currency}; not fulfilled`);
@@ -410,33 +442,29 @@ export function createOrderService({ db, now, services, config, log = console, t
   }
 
   /**
-   * Validates a request body: `{ target, brandId?, line?, rush?, items: [{ brief }] }`, or the
-   * single-item form `{ target, brief, rush }`. Every request is Model packs (tiers.mjs): a
-   * `tier` or `extraFinishes` sent by a page from before packs is ignored, as is any amount.
-   * Throws a 400 with field errors, a 404 for a brand the caller isn't in, or a 403 for a
-   * contractor request without the Contractor plan.
+   * Validates a request body: `{ target, brandId?, line?, items: [{ brief }] }`, or the
+   * single-item form `{ target, brief }`. Nothing in it is priced: a `tier`, `extraFinishes`,
+   * `rush` or amount sent by a page from before 2026-10-15 is ignored. Throws a 400 with field
+   * errors or a 404 for a brand the caller isn't in. Whether the caller may submit at all (the
+   * Contractor plan and its allowance) is checked by create(), in the same transaction as the insert.
    */
   function readRequest(body, user) {
     const errors = [];
-    const target = body.target ?? 'customer';
+    const target = body.target ?? 'contractor';
     if (!TARGETS.includes(target)) throw invalid([{ field: 'target', message: 'Choose who the model is for.' }]);
     let brandId = null;
     if (target === 'brand') {
       brandId = typeof body.brandId === 'string' ? body.brandId : '';
       if (!brandId || !auth.isBrandMember(user.id, brandId)) throw new HttpError(404, 'Not found.');
     }
-    if (target === 'contractor' && billing.planOf(user.id).id !== 'contractor') {
-      throw new HttpError(403, 'Modelling for My catalog is part of the Contractor plan.', { needs: 'contractor' });
-    }
     let line = '';
     if (body.line != null && body.line !== '') {
       if (typeof body.line !== 'string' || body.line.trim().length > 60) errors.push({ field: 'line', message: 'Keep the line name to 60 characters or fewer.' });
       else line = body.line.trim();
     }
-    if (body.rush != null && typeof body.rush !== 'boolean') errors.push({ field: 'rush', message: 'Rush is on or off.' });
     const rawItems = Array.isArray(body.items) ? body.items : body.brief !== undefined ? [{ brief: body.brief }] : null;
     if (!rawItems || !rawItems.length) throw invalid([{ field: 'items', message: 'Add a product to model.' }]);
-    if (rawItems.length > MAX_ITEMS) throw invalid([{ field: 'items', message: `One request can hold up to ${MAX_ITEMS} products (${MAX_ITEMS / PRODUCTS_PER_PACK} model packs). Send the rest as another request.` }]);
+    if (rawItems.length > MAX_ITEMS) throw invalid([{ field: 'items', message: `One request can hold up to ${MAX_ITEMS} products. Send the rest as another request.` }]);
     const items = rawItems.map((it, i) => {
       const at = `items[${i}]`;
       if (!isObj(it)) {
@@ -446,43 +474,107 @@ export function createOrderService({ db, now, services, config, log = console, t
       return { brief: readBrief(it.brief, `${at}.brief`, errors, user) };
     });
     if (errors.length) throw invalid(errors);
-    return { target, brandId, line, rush: body.rush === true, items };
+    return { target, brandId, line, items };
   }
 
+  /** "November 3, 2026": when an allowance period ends (UTC, as the server counts it). */
+  const resetDay = (ms) => new Date(ms).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  const models = (n) => `${n} model${n === 1 ? '' : 's'}`;
+
   /**
-   * Creates a draft order from a validated request, priced in Model packs. The quote's lines and
-   * turnaround are stored with it (`extras.quote`) and each item keeps its share of the price, so
-   * the order's price never changes after this, whatever tiers.mjs says later. Returns the row.
-   * (`id` is for seeds only.)
+   * Submits a validated request against the Contractor plan's allowance: one model per product.
+   * In ONE transaction it checks the plan, counts what this period has used and inserts the order,
+   * so two requests sent at once can't both take the last model. The order goes straight to the
+   * studio's queue (status 'paid', amount 0, provider 'plan') and remembers its period. Throws a 403
+   * without the Contractor plan and a 409 when the request is bigger than what is left. Returns the
+   * row. (`id` is for seeds only.)
    */
   function create(user, req, { id = randomId('o_') } = {}) {
-    const q = quote({ products: req.items.length, rush: req.rush });
-    const t = now();
-    tx(() => {
+    const n = req.items.length;
+    return tx(() => {
+      const a = allowance.of(user.id);
+      if (!a.active) {
+        throw new HttpError(403, 'Custom 3D models come with the Contractor plan: 3 a month, made by our studio.', { needs: 'contractor', allowance: a });
+      }
+      if (n > a.left) {
+        const when = resetDay(a.resetsAt);
+        const msg = a.left
+          ? `You have ${models(a.left)} left this month and this request has ${n} products. Remove ${n - a.left}, or send the rest after your allowance resets on ${when}.`
+          : `You’ve used this month’s ${models(a.total)}. Your allowance resets on ${when}.`;
+        throw new HttpError(409, msg, { needs: 'allowance', allowance: a });
+      }
+      const q = includedQuote(n, CURRENCY);
+      const t = now();
       db.prepare(
         `INSERT INTO orders (id, user_id, target, brand_id, status, tier, extras, amount_cents, currency, provider, brief, line, ref_product_id,
-                             pending_since, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                             pending_since, created_at, updated_at, paid_at, due_at, plan_period_start, plan_period_end)
+         VALUES (?, ?, ?, ?, 'paid', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         user.id,
         req.target,
         req.brandId,
-        PACK.id,
-        JSON.stringify({ rush: req.rush, quote: { packs: q.packs, dueBusinessDays: q.dueBusinessDays, packCents: q.packCents, rushPct: q.rushPct, lines: q.lines } }),
-        q.amountCents,
+        PLAN,
+        JSON.stringify({ included: true, quote: { dueBusinessDays: q.dueBusinessDays, lines: q.lines } }),
         CURRENCY,
-        config.paymentsProvider,
+        PLAN,
         JSON.stringify(req.items[0].brief),
         req.line,
         req.items[0].brief.refProductId ?? null,
         t,
         t,
         t,
+        t,
+        addBusinessDays(t, q.dueBusinessDays),
+        a.periodStart,
+        a.periodEnd,
       );
+      const ins = db.prepare('INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, ?, ?, ?, 0, 0)');
+      req.items.forEach((it, i) => ins.run(id, i, JSON.stringify(it.brief), PLAN));
+      addEvent(id, {
+        type: 'created',
+        to: 'paid',
+        by: user.id,
+        note: `Included in the Contractor plan: ${models(n)} from this month’s allowance (${a.left - n} of ${a.total} left).`,
+        data: { items: n, included: true, periodStart: a.periodStart, periodEnd: a.periodEnd },
+      });
+      return rowOf(id);
+    });
+  }
+
+  /**
+   * Withdraws a plan request before the studio starts it (by its buyer, the studio or an admin):
+   * it becomes 'cancelled' and its models go back to the period's allowance. Returns true when it
+   * changed; false when it isn't a plan request or work has started.
+   */
+  function cancelPlanRequest(orderId, { by = null, note = '' } = {}) {
+    const o = rowOf(orderId);
+    if (!o || !isPlan(o)) return false;
+    return transition(orderId, ['paid'], 'cancelled', {
+      by,
+      type: 'cancelled',
+      note: note || 'Cancelled before work started; the models went back to this month’s allowance.',
+      data: { included: true },
+    });
+  }
+
+  /**
+   * FOR SEEDS AND TESTS ONLY (no route calls it): an order as one placed and priced before
+   * 2026-10-15, at a retired tier's stored price in US dollars, left as a draft to be paid through
+   * the old checkout. Shows paid history (receipts, refunds, revenue) on a demo database.
+   */
+  function createPriorOrder(user, req, { id = randomId('o_'), tier = 'standard', amountCents = 27_900, currency = 'usd', provider = 'demo' } = {}) {
+    if (!LEGACY_IDS.includes(tier)) throw new Error(`createPriorOrder: "${tier}" is not a retired tier.`);
+    const t = now();
+    tx(() => {
+      db.prepare(
+        `INSERT INTO orders (id, user_id, target, brand_id, status, tier, extras, amount_cents, currency, provider, brief, line, ref_product_id,
+                             pending_since, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'draft', ?, '{"rush":false,"extraFinishes":0}', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(id, user.id, req.target, req.brandId, tier, amountCents * req.items.length, currency, provider, JSON.stringify(req.items[0].brief), req.line, req.items[0].brief.refProductId ?? null, t, t, t);
       const ins = db.prepare('INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, ?, ?, ?, 0, ?)');
-      req.items.forEach((it, i) => ins.run(id, i, JSON.stringify(it.brief), PACK.id, q.items[i].amountCents));
-      addEvent(id, { type: 'created', to: 'draft', by: user.id, data: { items: req.items.length, packs: q.packs, amountCents: q.amountCents } });
+      req.items.forEach((it, i) => ins.run(id, i, JSON.stringify(it.brief), tier, amountCents));
+      addEvent(id, { type: 'created', to: 'draft', by: user.id, data: { items: req.items.length, amountCents: amountCents * req.items.length } });
     });
     return rowOf(id);
   }
@@ -684,6 +776,10 @@ export function createOrderService({ db, now, services, config, log = console, t
     sweepExpired,
     readRequest,
     create,
+    cancelPlanRequest,
+    createPriorOrder,
+    allowance,
+    isPlan,
     deliver,
     glbReport,
     revenue,

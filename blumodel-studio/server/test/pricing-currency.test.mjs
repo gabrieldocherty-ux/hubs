@@ -78,7 +78,7 @@ test('pricing-001 marks every older row as USD and keeps its amount; old Stripe 
   db.prepare("INSERT INTO kitchen_unlocks (project_id, user_id, provider, payment_ref, amount_cents, created_at) VALUES ('k_old1', 'u_oldunlimited', 'demo', 'bc_old', 500, ?)").run(ts);
   db.prepare("INSERT INTO billing_payments (id, user_id, kind, plan, amount_cents, provider, ref, created_at) VALUES ('pay_old', 'u_oldcontractor', 'subscription', 'contractor', 4000, 'stripe', 'cs_old', ?)").run(ts);
 
-  assert.deepEqual(migrate(db), ['pricing-001-cad']);
+  assert.deepEqual(migrate(db), ['pricing-001-cad', 'pricing-002-included-models']);
   const subs = db.prepare('SELECT id, amount_cents, currency FROM subscriptions ORDER BY id').all().map((r) => ({ ...r }));
   assert.deepEqual(subs, [
     { id: 'sub_a', amount_cents: 4000, currency: 'usd' },

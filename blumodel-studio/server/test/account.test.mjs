@@ -32,15 +32,23 @@ async function demoBuy(agent, body) {
   assert.equal(c.status, 200, c.text);
   assert.equal((await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
 }
-async function paidOrder(agent) {
+/**
+ * A paid custom-model order. Custom models aren't sold since 2026-10-15 (they come with the
+ * Contractor plan), so this is one made before then, as the live database holds it: a Standard
+ * model at its stored $279 USD, then paid through the DEMO checkout.
+ */
+async function paidOrder(s, agent) {
   const ref = await upload(agent, makePng({ rgba: [9, 9, 9, 255] }), 'reference');
-  const r = await agent.post('/api/orders', {
-    target: 'customer',
-    brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: 'Old farmhouse sink', widthIn: 33, depthIn: 22, heightIn: 36, notes: '', referenceFileIds: [ref.id] },
-    tier: 'standard',
-  });
-  assert.equal(r.status, 201, r.text);
-  const o = r.body.order;
+  const o = { id: randomId('o_') };
+  const t0 = s.ctx.now();
+  const brief = JSON.stringify({ productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: 'Old farmhouse sink', widthIn: 33, depthIn: 22, heightIn: 36, notes: '', referenceFileIds: [ref.id] });
+  s.db
+    .prepare(
+      `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at)
+       VALUES (?, ?, 'customer', 'draft', 'standard', '{"rush":false,"extraFinishes":0}', 27900, 'usd', 'demo', ?, ?, ?, ?)`,
+    )
+    .run(o.id, agent.id, brief, t0, t0, t0);
+  s.db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 0, 27900)").run(o.id, brief);
   assert.equal((await agent.post(`/api/orders/${o.id}/checkout`)).status, 200);
   const done = await agent.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
   assert.equal(done.status, 200, done.text);
@@ -77,7 +85,7 @@ test('export: a JSON download of everything that is theirs, nobody else’s data
     await kitchen(ann, 'Ann Island');
     const annShare = await share(ann, k1.id);
     await upload(ann, makePng({ rgba: [1, 2, 3, 255] }));
-    const order = await paidOrder(ann);
+    const order = await paidOrder(s, ann);
     const bk = await kitchen(bob, 'Bob Secret Kitchen');
     const bobShare = await share(bob, bk.id);
     await upload(bob, makePng({ rgba: [4, 5, 6, 255] }));
@@ -195,7 +203,7 @@ test('delete: their kitchens, shares, uploads, sessions and brand page go; order
     const k = await kitchen(ann, 'Ann Galley');
     const annShare = await share(ann, k.id);
     await demoBuy(ann, { kind: 'kitchen_unlock', projectId: k.id });
-    const order = await paidOrder(ann);
+    const order = await paidOrder(s, ann);
     // The same bytes uploaded by both: one blob on disk, two rows. Ann's own photo is hers alone.
     const same = makePng({ rgba: [77, 77, 77, 255] });
     const annSame = await upload(ann, same);

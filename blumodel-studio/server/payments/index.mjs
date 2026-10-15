@@ -14,7 +14,7 @@ import { paymentsUnavailable } from './stripeApi.mjs';
 
 export { paymentsUnavailable };
 
-export { PACK, quote, legacyQuote, tiersWire, addBusinessDays } from './tiers.mjs';
+export { PACK, includedQuote, legacyQuote, tiersWire, addBusinessDays } from './tiers.mjs';
 
 /**
  * @param {{ config: any, fetch?: typeof fetch, log?: any }} ctx

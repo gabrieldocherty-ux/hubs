@@ -1,4 +1,7 @@
 // Package C (orders): payment security and the Stripe path for custom-model orders.
+// Since 2026-10-15 custom models aren't sold (they come with the Contractor plan), so the only
+// orders that can still be paid are ones made and priced before then: an unpaid one keeps its
+// stored price and currency, and its checkout, webhooks, return sync and refunds keep working.
 // Stripe is only ever a mocked fetch here; no real Stripe call is made anywhere.
 
 import { test } from 'node:test';
@@ -7,7 +10,8 @@ import crypto from 'node:crypto';
 import { startTestServer } from './helpers.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { verifyStripeSignature } from '../lib/validators.mjs';
-import { quote, addBusinessDays } from '../payments/tiers.mjs';
+import { addBusinessDays, legacyTierById } from '../payments/tiers.mjs';
+import { createBillingService } from '../billing/service.mjs';
 
 const SECRET = 'whsec_orders_test';
 const STRIPE_ENV = { STRIPE_SECRET_KEY: 'sk_test_orders', STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_URL: 'https://blumodel.example' };
@@ -54,17 +58,24 @@ async function stripeServer() {
   return { s, mock, hook };
 }
 
-async function order(s, agent, over = {}) {
-  const ref = (await agent.putRaw('/api/files?kind=reference&name=p.png', makePng(), 'image/png')).body.file.id;
-  const r = await agent.post('/api/orders', {
-    target: 'customer',
-    brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: 'Old farmhouse sink', widthIn: 33, depthIn: 22, heightIn: 36, notes: '', referenceFileIds: [ref] },
-    tier: 'standard',
-    extraFinishes: 1,
-    amountCents: 1,
-    ...over,
-  });
-  assert.equal(r.status, 201, r.text);
+/**
+ * An unpaid order made before 2026-10-15 on the Stripe provider, as the live database holds them:
+ * a Standard model with one extra finish at its stored $318 USD.
+ */
+let n = 0;
+async function order(s, agent) {
+  const id = `o_stripeprior${String(++n).padStart(13, '0')}`;
+  const t0 = s.ctx.now();
+  const b = JSON.stringify({ productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: 'Old farmhouse sink', widthIn: 33, depthIn: 22, heightIn: 36, notes: '', referenceFileIds: [] });
+  s.db
+    .prepare(
+      `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at)
+       VALUES (?, ?, 'customer', 'draft', 'standard', ?, 31800, 'usd', 'stripe', ?, ?, ?, ?)`,
+    )
+    .run(id, agent.id, JSON.stringify({ rush: false, extraFinishes: 1 }), b, t0, t0, t0);
+  s.db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 1, 31800)").run(id, b);
+  const r = await agent.get(`/api/orders/${id}`);
+  assert.equal(r.status, 200, r.text);
   return r.body.order;
 }
 
@@ -126,7 +137,7 @@ test('Stripe checkout is built on the server’s amount: form fields, idempotenc
   try {
     const ann = await s.user();
     const o = await order(s, ann);
-    assert.equal(o.amountCents, 12_900, 'one product is one Model pack; the old tier and extra finish in the body change nothing');
+    assert.equal(o.amountCents, 31_800, 'its stored price');
     const c = await ann.post(`/api/orders/${o.id}/checkout`, { amountCents: 50 });
     assert.equal(c.status, 200, c.text);
     const call = mock.calls[0];
@@ -137,11 +148,11 @@ test('Stripe checkout is built on the server’s amount: form fields, idempotenc
     assert.equal(call.headers['Idempotency-Key'], `${o.id}-1`);
     const f = call.form;
     assert.equal(f.get('mode'), 'payment');
-    assert.equal(f.get('line_items[0][price_data][currency]'), 'cad');
-    assert.equal(f.get('line_items[0][price_data][unit_amount]'), '12900', 'the server’s quote; the client’s 50 is ignored');
-    assert.equal(f.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Model pack: 1 product');
+    assert.equal(f.get('line_items[0][price_data][currency]'), 'usd', 'the order’s own currency, not today’s');
+    assert.equal(f.get('line_items[0][price_data][unit_amount]'), '31800', 'the stored price; the client’s 50 is ignored');
+    assert.equal(f.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Standard model: Old farmhouse sink, 1 extra finish');
     assert.equal(f.get('line_items[0][quantity]'), '1');
-    assert.equal(f.get('line_items[1][price_data][unit_amount]'), null, 'one pack, one line');
+    assert.equal(f.get('line_items[1][price_data][unit_amount]'), null, 'one product, one line');
     assert.equal(f.get('client_reference_id'), o.id);
     assert.equal(f.get('metadata[order_id]'), o.id);
     assert.equal(f.get('metadata[kind]'), 'order');
@@ -159,35 +170,16 @@ test('Stripe checkout is built on the server’s amount: form fields, idempotenc
     await ann.post(`/api/orders/${o.id}/checkout`);
     assert.equal(mock.calls[1].headers['Idempotency-Key'], `${o.id}-2`);
 
-    // A multi-product request with rush: one line per pack plus the rush line, one session.
+    // A request included in the Contractor plan never reaches Stripe: nothing to pay.
     const pro = await s.user();
+    createBillingService({ db: s.db, now: s.ctx.now }).grantComp(pro.id, { plan: 'contractor', note: 'test', adminId: null });
     const ref = (await pro.putRaw('/api/files?kind=reference&name=p.png', makePng(), 'image/png')).body.file.id;
-    const b = (n) => ({ brief: { productTypeId: 'pendant-globe', kind: 'pendant', variant: 'globe', name: `Globe ${n}`, widthIn: 12, depthIn: 12, heightIn: 12, notes: '', referenceFileIds: [ref] }, tier: 'simple' });
-    const multi = (await pro.post('/api/orders', { items: [b(1), b(2)], rush: true })).body.order;
-    await pro.post(`/api/orders/${multi.id}/checkout`);
-    const mf = mock.calls[2].form;
-    assert.equal(mf.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Model pack: 2 products');
-    assert.equal(mf.get('line_items[0][price_data][unit_amount]'), '12900');
-    assert.equal(mf.get('line_items[1][price_data][product_data][name]'), 'BluModel Studio - Rush (+50%, half the turnaround)');
-    assert.equal(mf.get('line_items[1][price_data][unit_amount]'), '6450');
-    assert.equal(multi.amountCents, 19_350);
-
-    // An order placed before Model packs is charged the price it was quoted, line for line.
-    const legacyId = 'o_legacystripeorder0000001';
-    const t0 = Date.now();
-    s.db
-      .prepare(
-        `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, pending_since, created_at, updated_at)
-         VALUES (?, ?, 'customer', 'draft', 'standard', ?, 31800, 'usd', 'stripe', ?, ?, ?, ?)`,
-      )
-      .run(legacyId, ann.user.id, JSON.stringify({ rush: false, extraFinishes: 1 }), JSON.stringify({ name: 'Old farmhouse sink' }), t0, t0, t0);
-    s.db.prepare("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 1, 31800)").run(legacyId, JSON.stringify({ name: 'Old farmhouse sink' }));
-    const lc = await ann.post(`/api/orders/${legacyId}/checkout`);
-    assert.equal(lc.status, 200, lc.text);
-    const lf = mock.calls[3].form;
-    assert.equal(lf.get('line_items[0][price_data][unit_amount]'), '31800');
-    assert.equal(lf.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Standard model: Old farmhouse sink, 1 extra finish');
-    assert.equal(lf.get('line_items[1][price_data][unit_amount]'), null);
+    const b = (k) => ({ brief: { productTypeId: 'pendant-globe', kind: 'pendant', variant: 'globe', name: `Globe ${k}`, widthIn: 12, depthIn: 12, heightIn: 12, notes: '', referenceFileIds: [ref] }, tier: 'simple' });
+    const plan = await pro.post('/api/orders', { items: [b(1), b(2)], rush: true });
+    assert.equal(plan.status, 201, plan.text);
+    assert.deepEqual([plan.body.order.amountCents, plan.body.order.provider, plan.body.order.status], [0, 'plan', 'paid']);
+    assert.equal((await pro.post(`/api/orders/${plan.body.order.id}/checkout`)).status, 409);
+    assert.equal(mock.calls.length, 2, 'no Stripe call for a plan request');
     // Demo completion is refused when Stripe is the provider.
     const demo = await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
     assert.equal(demo.status, 403);
@@ -213,7 +205,7 @@ test('webhook: verified, deduplicated (one fulfilment), no X-BluModel needed; ev
     const row = orderRow(s, o.id);
     assert.equal(row.status, 'paid');
     assert.equal(row.payment_intent, 'pi_for_cs_test_1');
-    assert.equal(row.due_at, addBusinessDays(row.paid_at, quote({ tier: 'standard', extraFinishes: 1 }).dueBusinessDays));
+    assert.equal(row.due_at, addBusinessDays(row.paid_at, legacyTierById('standard').businessDays), 'a Standard model’s 10 business days');
     // The same event again: acknowledged, not fulfilled twice.
     const r2 = await hook(signed(JSON.parse(ev.body)));
     assert.equal(r2.status, 200);

@@ -1,23 +1,33 @@
-// Package C (orders): paid custom 3D models (PRODUCT_SPEC §7, BUILD_PLAN §7, §13.3).
+// Package C (orders): custom 3D models (PRODUCT_SPEC §7, BUILD_PLAN §7, §13.3).
 //
-//   customer  /api/orders/tiers · /api/orders/quote · /api/orders (create, list) · /api/orders/:id
-//             (?sync=1 after Stripe) · checkout · cancel · revision · accept
+// Since 2026-10-15 they are not sold: the Contractor plan includes 3 a month, made by our studio
+// (server/payments/allowance.mjs). A request is submitted against that allowance and goes straight
+// to the studio. Orders paid for before then keep their stored prices, checkout and refunds.
+//
+//   buyer     /api/orders/tiers (the included models' terms) · /api/orders/allowance ·
+//             /api/orders (submit, list) · /api/orders/:id (?sync=1 after Stripe) · checkout (an
+//             older unpaid order only) · cancel · revision · accept
 //   demo      /api/payments/demo/:id/complete   (refused unless the DEMO provider is allowed)
-//   studio    /api/studio/orders · start · note · deliver
-//   admin     /api/admin/orders/:id/refund · /api/admin/revenue
+//   studio    /api/studio/orders · start · note · deliver · cancel (a plan request not yet started)
+//   admin     /api/admin/orders/:id/refund · /api/admin/revenue ·
+//             /api/admin/model-allowance · /api/admin/model-grants (extra models, audit-logged)
 //
 // The Stripe webhook route is the foundation's (server/routes/webhooks.mjs): it verifies and
 // dedupes, then dispatches here through services.webhooks ('order' and 'charge.refunded').
-// Prices come only from server/payments/tiers.mjs (Model packs) when an order is created, and
-// from the order's own stored amounts after that; client-sent amounts are ignored.
+// Nothing new is priced: a request's amount is 0 and client-sent amounts, tiers and rush are
+// ignored. A paid order's amount is the one stored on it when it was made.
 
 import { HttpError } from '../http/respond.mjs';
 import { paymentsUnavailable, selectProvider } from '../payments/index.mjs';
-import { quote, tiersWire, MAX_ITEMS } from '../payments/tiers.mjs';
+import { includedQuote, tiersWire, MAX_ITEMS } from '../payments/tiers.mjs';
 import { createOrderService, ORDER_STATUSES, UNPAID, ACTIVE, REFUNDABLE } from '../payments/orders.mjs';
+import { MAX_GRANT, MAX_GRANT_NOTE } from '../payments/allowance.mjs';
+import { audit } from '../lib/audit.mjs';
 import { idOf } from '../payments/stripe.mjs';
 
 const SESSION_RE = /^cs_[A-Za-z0-9_]{1,200}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USER_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const STAFF = new Set(['studio', 'admin']);
 
 /** @param {any} ctx */
@@ -127,6 +137,8 @@ export default function routes(ctx) {
       const u = db.prepare('SELECT id, name, email FROM users WHERE id = ?').get(o.user_id);
       buyer = u ? { id: u.id, name: u.name, email: u.email } : null;
     }
+    // A plan request: the staff see where the contractor stands this period (and admins can grant more).
+    const buyerAllowance = staff && o.user_id && orders.isPlan(o) ? { ...orders.allowance.of(o.user_id), grants: orders.allowance.currentGrants(o.user_id) } : null;
     let assignee = null;
     if (o.assigned_to) {
       const a = db.prepare('SELECT name FROM users WHERE id = ?').get(o.assigned_to);
@@ -137,7 +149,7 @@ export default function routes(ctx) {
       events,
       references,
       deliverables,
-      ...(staff ? { buyer } : {}),
+      ...(staff ? { buyer, buyerAllowance } : {}),
       assignee,
       payments: config.paymentsProvider,
       demo: config.paymentsProvider === 'demo',
@@ -157,6 +169,16 @@ export default function routes(ctx) {
     return Number.isInteger(n) && n >= 1 && n <= 730 ? n : def;
   };
 
+  /** An account by id or email (admin tools), or a 400/404. */
+  const findUser = (userId, email) => {
+    let u = null;
+    if (typeof userId === 'string' && USER_ID_RE.test(userId)) u = db.prepare('SELECT id, email, name FROM users WHERE id = ?').get(userId);
+    else if (typeof email === 'string' && EMAIL_RE.test(email.trim())) u = db.prepare('SELECT id, email, name FROM users WHERE email = ?').get(email.trim().toLowerCase().slice(0, 254));
+    else throw new HttpError(400, 'Enter the account’s email address.', { errors: [{ field: 'email', message: 'Enter the account’s email address.' }] });
+    if (!u) throw new HttpError(404, 'No account has that email address.', { code: 'no_such_user' });
+    return { id: u.id, email: u.email, name: u.name };
+  };
+
   const note = (v, { required = false, field = 'note' } = {}) => {
     const s = typeof v === 'string' ? v.trim() : '';
     if (required && !s) throw new HttpError(400, 'Add a note.', { errors: [{ field, message: 'Add a note.' }] });
@@ -173,8 +195,8 @@ export default function routes(ctx) {
       handler: () => ({ ...tiersWire(), payments: config.paymentsProvider, demo: config.paymentsProvider === 'demo' }),
     },
     {
-      // A live quote for the request form: `{ products: n, rush }` (or `{ items: [...], rush }`,
-      // where only the count matters). The order itself is priced again when it is created.
+      // Kept for a page loaded before 2026-10-15: a request isn't priced any more, so the "quote" is
+      // the included one (amount 0, the turnaround). Rush is gone and ignored.
       method: 'POST',
       path: '/api/orders/quote',
       auth: 'none',
@@ -183,23 +205,23 @@ export default function routes(ctx) {
         const b = rc.body;
         const n = Array.isArray(b.items) ? b.items.length : b.products === undefined ? 1 : b.products;
         if (!Number.isInteger(n) || n < 1 || n > MAX_ITEMS) throw new HttpError(400, `Quote 1 to ${MAX_ITEMS} products.`, { errors: [{ field: 'products', message: `Quote 1 to ${MAX_ITEMS} products.` }] });
-        if (b.rush != null && typeof b.rush !== 'boolean') throw new HttpError(400, 'Rush is on or off.', { errors: [{ field: 'rush', message: 'Rush is on or off.' }] });
-        const { items: _shares, ...q } = quote({ products: n, rush: b.rush === true });
+        const { items: _shares, ...q } = includedQuote(n);
         return { quote: q };
       },
     },
 
     // ── the buyer ───────────────────────────────────────────────────────────
     {
+      // Submits a request against the Contractor plan's allowance (no payment, so it works whatever
+      // the server's payments are). 403 without the plan, 409 past the allowance (both carry it).
       method: 'POST',
       path: '/api/orders',
       rateLimit: { name: 'order-create', max: 30, windowMs: 3_600_000, by: 'user' },
       handler: (rc) => {
-        requirePayments();
         const req = orders.readRequest(rc.body, rc.user);
         const row = orders.create(rc.user, req);
         const w = orders.toWire(row);
-        rc.send(201, { order: w, quote: w.quote });
+        rc.send(201, { order: w, quote: w.quote, allowance: orders.allowance.of(rc.user.id) });
       },
     },
     {
@@ -208,8 +230,15 @@ export default function routes(ctx) {
       handler: (rc) => {
         orders.sweepExpired();
         const rows = db.prepare('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC, id').all(rc.user.id);
-        return { orders: rows.map((o) => orders.toWire(o)), payments: config.paymentsProvider, demo: config.paymentsProvider === 'demo' };
+        return { orders: rows.map((o) => orders.toWire(o)), allowance: orders.allowance.of(rc.user.id), payments: config.paymentsProvider, demo: config.paymentsProvider === 'demo' };
       },
+    },
+    {
+      // Where the caller stands: `{ active, included, granted, used, total, left, periodStart,
+      // periodEnd, resetsAt, supportEmail }` (active is false without the Contractor plan).
+      method: 'GET',
+      path: '/api/orders/allowance',
+      handler: (rc) => ({ allowance: orders.allowance.of(rc.user.id), terms: tiersWire().models }),
     },
     {
       method: 'GET',
@@ -240,6 +269,7 @@ export default function routes(ctx) {
         requirePayments();
         orders.sweepExpired();
         const o = ownOrder(rc, rc.params.id);
+        if (orders.isPlan(o)) throw new HttpError(409, 'This request is included in your Contractor plan: there is nothing to pay.', { status: o.status });
         if (!UNPAID.includes(o.status)) {
           const why = o.status === 'expired' ? 'This order expired. Start a new request.' : o.status === 'cancelled' ? 'This order was cancelled.' : 'This order is already paid.';
           throw new HttpError(409, why, { status: o.status });
@@ -266,6 +296,14 @@ export default function routes(ctx) {
       path: '/api/orders/:id/cancel',
       handler: (rc) => {
         const o = ownOrder(rc, rc.params.id);
+        if (orders.isPlan(o)) {
+          // A plan request can be withdrawn until the studio starts it; its models go back to the allowance.
+          if (o.status === 'cancelled') throw new HttpError(409, 'This request is already cancelled.', { status: o.status });
+          if (!orders.cancelPlanRequest(o.id, { by: rc.user.id, note: 'Withdrawn before work started; the models went back to this month’s allowance.' })) {
+            throw new HttpError(409, 'The studio has started on this request, so it can’t be withdrawn. Add a note for the studio instead.', { status: o.status });
+          }
+          return detail(orders.rowOf(o.id), rc.user);
+        }
         if (!UNPAID.includes(o.status)) throw new HttpError(409, o.status === 'cancelled' ? 'This order is already cancelled.' : 'Paid orders can’t be cancelled here. Contact BluModel Studio for a refund.', { status: o.status });
         orders.transition(o.id, UNPAID, 'cancelled', { by: rc.user.id, type: 'cancelled' });
         return detail(orders.rowOf(o.id), rc.user);
@@ -374,6 +412,22 @@ export default function routes(ctx) {
       },
     },
     {
+      // The studio cancels a plan request it won't make (before starting it): the models go back
+      // to the contractor's allowance for that period. A paid order is refunded instead.
+      method: 'POST',
+      path: '/api/studio/orders/:id/cancel',
+      auth: 'studio',
+      handler: (rc) => {
+        const o = visibleOrder(rc, rc.params.id);
+        const text = note(rc.body.note);
+        if (!orders.isPlan(o)) throw new HttpError(409, 'Only a request included in the Contractor plan can be cancelled here; a paid order is refunded.', { status: o.status });
+        if (!orders.cancelPlanRequest(o.id, { by: rc.user.id, note: text ? `Cancelled by the studio: ${text} The models went back to this month’s allowance.` : '' })) {
+          throw new HttpError(409, o.status === 'cancelled' ? 'This request is already cancelled.' : 'Work has started on this request, so it can’t be cancelled.', { status: o.status });
+        }
+        return detail(orders.rowOf(o.id), rc.user);
+      },
+    },
+    {
       method: 'POST',
       path: '/api/studio/orders/:id/deliver',
       auth: 'studio',
@@ -406,6 +460,7 @@ export default function routes(ctx) {
       auth: 'admin',
       handler: async (rc) => {
         const o = visibleOrder(rc, rc.params.id);
+        if (orders.isPlan(o)) throw new HttpError(409, 'Nothing was paid for this request: it is included in the Contractor plan. Cancel it before work starts instead.', { status: o.status });
         if (!REFUNDABLE.includes(o.status)) throw new HttpError(409, o.status === 'refunded' ? 'This order is already refunded.' : 'Only paid, in-progress or delivered orders can be refunded.', { status: o.status });
         const text = note(rc.body.note);
         // The order's own provider: a DEMO order stays a DEMO refund even after Stripe is set up.
@@ -425,6 +480,44 @@ export default function routes(ctx) {
         const stripe = orders.revenue({ days: n, provider: 'stripe' });
         const current = config.paymentsProvider === 'stripe' ? stripe : demo;
         return { provider: config.paymentsProvider, days: n, currency: 'usd', ...current, byProvider: { demo, stripe } };
+      },
+    },
+
+    // ── the Contractor plan's included models (admin) ───────────────────────
+    {
+      // `?email=` or `?userId=`: where a contractor stands this period, and the grants that apply.
+      method: 'GET',
+      path: '/api/admin/model-allowance',
+      auth: 'admin',
+      handler: (rc) => {
+        const u = findUser(rc.query.get('userId'), rc.query.get('email'));
+        return { user: u, allowance: orders.allowance.of(u.id), grants: orders.allowance.currentGrants(u.id) };
+      },
+    },
+    {
+      // Gives a contractor extra models for their CURRENT period only (they don't roll over).
+      // `{ userId | email, models: 1..50, note }`. Audit-logged.
+      method: 'POST',
+      path: '/api/admin/model-grants',
+      auth: 'admin',
+      rateLimit: { name: 'admin-model-grant', max: 120, windowMs: 3_600_000, by: 'user' },
+      handler: (rc) => {
+        const b = rc.body;
+        const u = findUser(b.userId, b.email);
+        const models = b.models;
+        if (!Number.isInteger(models) || models < 1 || models > MAX_GRANT) {
+          throw new HttpError(400, `Grant 1 to ${MAX_GRANT} models.`, { errors: [{ field: 'models', message: `Grant 1 to ${MAX_GRANT} models.` }] });
+        }
+        const text = typeof b.note === 'string' ? b.note.trim() : '';
+        if (text.length > MAX_GRANT_NOTE) throw new HttpError(400, `Keep the note to ${MAX_GRANT_NOTE} characters or fewer.`, { errors: [{ field: 'note', message: `Keep the note to ${MAX_GRANT_NOTE} characters or fewer.` }] });
+        const out = ctx.tx(() => {
+          const before = orders.allowance.of(u.id);
+          if (!before.active) throw new HttpError(409, 'That account isn’t on the Contractor plan, so extra models would do nothing.', { code: 'not_contractor' });
+          const grant = orders.allowance.grant(u.id, { models, note: text, adminId: rc.user.id });
+          audit(db, { admin: rc.user, action: 'model_grant', targetUserId: u.id, targetEmail: u.email, detail: { models, note: text, grantId: grant.id, periodStart: grant.periodStart, periodEnd: grant.periodEnd }, at: ctx.now() });
+          return grant;
+        });
+        rc.send(201, { grant: out, allowance: orders.allowance.of(u.id), grants: orders.allowance.currentGrants(u.id) });
       },
     },
   ];
