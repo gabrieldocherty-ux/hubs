@@ -55,7 +55,7 @@ export function shareDoc(name = 'Maple Street Kitchen') {
 }
 
 const PHONE_375 = { w: 375, h: 812, mobile: true };
-const COMPANY = { company: 'Birch & Bevel Kitchens', phone: '555-0142', email: 'hello@birchbevel.example', website: 'https://birchbevel.example' };
+const COMPANY = { company: 'Birch & Bevel Kitchens', phone: '905-555-0142', email: 'hello@birchbevel.example', website: 'https://birchbevel.example' };
 
 const must = (r, what) => {
   if (r.status >= 300) throw new Error(`${what} failed (${r.status}): ${r.body?.error ?? String(r.text ?? '').slice(0, 200)}`);

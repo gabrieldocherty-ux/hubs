@@ -10,7 +10,7 @@
 
 import { makePng } from '../../../server/test/fixtures/images.mjs';
 
-const COMPANY = { company: 'Quinn & Co. Kitchens (QA)', serviceArea: 'Testville', defaultMarkupPct: 30 };
+const COMPANY = { company: 'Quinn & Co. Kitchens (QA)', phone: '905-555-0164', serviceArea: 'Testville', defaultMarkupPct: 30 };
 const PRODUCT_NAME = 'Quinn Maple Base 24 (QA)';
 const COST_CENTS = 27182; // $271.82: a number that must never reach the client's view
 const COST_TEXT = ['271.82', '27182'];

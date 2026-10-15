@@ -213,7 +213,7 @@ export default [
       // have set one earlier in a --pkg all run): give it one, and compare with whichever it has.
       let p = await me.get('/api/pro/profile');
       if (!p.body?.profile?.company) {
-        const r = await me.put('/api/pro/profile', { company: 'Quinn Kitchens (QA)', phone: '555-0188', email: 'quinn@example.test', website: 'quinn.test', serviceArea: 'Hamilton', defaultMarkupPct: 30 });
+        const r = await me.put('/api/pro/profile', { company: 'Quinn Kitchens (QA)', phone: '905-555-0188', email: 'quinn@example.test', website: 'quinn.test', serviceArea: 'Hamilton', defaultMarkupPct: 30 });
         if (r.status !== 200) throw new Error(`setting the QA contractor's company failed (${r.status})`);
         p = await me.get('/api/pro/profile');
       }

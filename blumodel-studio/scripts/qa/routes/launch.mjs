@@ -310,7 +310,7 @@ const PASS_GROUPS = [
     setup: async ({ me }) => {
       const p = await me.get('/api/pro/profile');
       if (!p.body?.profile) {
-        const r = await me.put('/api/pro/profile', { company: 'Quinn & Co. Kitchens (QA)', serviceArea: 'Testville', defaultMarkupPct: 30 });
+        const r = await me.put('/api/pro/profile', { company: 'Quinn & Co. Kitchens (QA)', phone: '905-555-0164', serviceArea: 'Testville', defaultMarkupPct: 30 });
         if (r.status !== 200) throw new Error(`saving the company failed (${r.status})`);
       }
       return { path: '#/pro' };

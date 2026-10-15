@@ -379,7 +379,7 @@ export default [
     path: '#/pro',
     as: 'contractor',
     setup: async ({ me }) => {
-      const r = await me.put('/api/pro/profile', { company: 'Quinn & Co. Kitchens (QA)', serviceArea: 'Testville', defaultMarkupPct: 30 });
+      const r = await me.put('/api/pro/profile', { company: 'Quinn & Co. Kitchens (QA)', phone: '905-555-0164', serviceArea: 'Testville', defaultMarkupPct: 30 });
       if (r.status !== 200) throw new Error(`saving the company failed (${r.status}): ${r.body?.error ?? r.text}`);
       return {};
     },

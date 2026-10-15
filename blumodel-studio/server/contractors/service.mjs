@@ -5,6 +5,7 @@
 
 import { HttpError } from '../http/respond.mjs';
 import { PRODUCT_ID_RE } from '../lib/ids.mjs';
+import { normalizePhone } from '../account/phone.mjs';
 
 export const PRODUCT_LIMIT = 500;
 const BRAND_ID_RE = /^b_[a-z0-9]{6,40}$/;
@@ -161,6 +162,23 @@ export function createContractorService({ db, now, services }) {
 }
 
 // ── validation of contractor input ───────────────────────────────────────
+
+/**
+ * The business name and phone, both required on every save of the company profile (the setup that
+ * opens the workspace, and every edit after it): clients see them on quotes and share links. The
+ * phone is normalised like every phone here (server/account/phone.mjs): "(905) 555-0142", or
+ * "+<country code><digits>" outside North America.
+ * @returns {{ company: string, phone: string }}
+ */
+export function readCompanyContact(body) {
+  const company = typeof body?.company === 'string' ? body.company.trim().slice(0, 80) : '';
+  if (!company) throw new HttpError(400, 'Enter your business name.', { field: 'company' });
+  const p = normalizePhone(typeof body?.phone === 'string' ? body.phone : '');
+  if (!p.ok) throw new HttpError(400, p.reason, { field: 'phone' });
+  if (!p.value) throw new HttpError(400, 'Enter a business phone number. Clients see it on your quotes.', { field: 'phone' });
+  return { company, phone: p.value };
+}
+
 
 export function readCents(v, field) {
   if (v === undefined) return undefined;

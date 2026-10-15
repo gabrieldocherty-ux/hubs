@@ -26,7 +26,7 @@ async function buy(agent, body) {
 async function contractor(profile = {}) {
   const a = await t.user();
   await buy(a, { kind: 'subscription', plan: 'contractor' });
-  const r = await a.put('/api/pro/profile', { company: 'Smith Kitchens', phone: '555-0100', email: 'hello@smith.test', website: 'smith.test', defaultMarkupPct: 30, ...profile });
+  const r = await a.put('/api/pro/profile', { company: 'Smith Kitchens', phone: '905-555-0100', email: 'hello@smith.test', website: 'smith.test', defaultMarkupPct: 30, ...profile });
   assert.equal(r.status, 200, r.text);
   return a;
 }
@@ -120,9 +120,9 @@ test('the setup creates a profile; a contractor needs one before the catalog', a
   assert.equal(before.body.profile, null);
   assert.equal((await a.get('/api/pro/products')).status, 409);
   assert.equal((await a.put('/api/pro/profile', { company: '' })).status, 400);
-  assert.equal((await a.put('/api/pro/profile', { company: 'A', email: 'nope' })).status, 400);
-  assert.equal((await a.put('/api/pro/profile', { company: 'A', defaultMarkupPct: -5 })).status, 400);
-  const r = await a.put('/api/pro/profile', { company: '  Acme Remodel ', website: 'acme.test', taxPct: 8.25 });
+  assert.equal((await a.put('/api/pro/profile', { company: 'A', phone: '905-555-0100', email: 'nope' })).status, 400);
+  assert.equal((await a.put('/api/pro/profile', { company: 'A', phone: '905-555-0100', defaultMarkupPct: -5 })).status, 400);
+  const r = await a.put('/api/pro/profile', { company: '  Acme Remodel ', phone: '905-555-0100', website: 'acme.test', taxPct: 8.25 });
   assert.equal(r.status, 200);
   assert.equal(r.body.profile.company, 'Acme Remodel');
   assert.equal(r.body.profile.website, 'https://acme.test/');
@@ -292,7 +292,7 @@ test('costs never leave: other users’ catalog, exports, quotes and the share p
   assert.equal(shared.products[0].price, 161.72);
   assert.equal(shared.prices[own.id].price, 161.72);
   assert.equal(shared.prices['range-30'].price, 882.58);
-  assert.deepEqual(shared.preparedBy, { company: 'Smith Kitchens', phone: '555-0100', email: 'hello@smith.test', website: 'https://smith.test/' });
+  assert.deepEqual(shared.preparedBy, { company: 'Smith Kitchens', phone: '(905) 555-0100', email: 'hello@smith.test', website: 'https://smith.test/' });
 
   // Another user's catalog never lists the product, let alone a cost.
   const other = await t.user();

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { ApiError } from '../../lib/api';
 import { useDesignStore } from '../../store/useDesignStore';
 import { proApi } from './api';
-import { CompanyFields, draftToInput, PricingFields, type CompanyDraft } from './CompanyFields';
+import { checkCompany, CompanyFields, companyErrorsFrom, draftToInput, PricingFields, type CompanyDraft, type CompanyErrors } from './CompanyFields';
 import { useWorkspace } from './ContractorRoot';
 
 /** `#/pro/company`: branding, contact details, default markup and tax. */
@@ -22,17 +22,25 @@ export default function Company() {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<CompanyErrors>({});
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true);
+    // Business name and phone are required (checked again by the server).
+    const checked = checkCompany(draft);
+    setDraft(checked.draft);
+    setFieldErrors(checked.errors);
     setError(null);
+    if (checked.errors.company || checked.errors.phone) return;
+    setBusy(true);
     try {
-      await proApi.saveProfile(draftToInput(draft));
+      await proApi.saveProfile(draftToInput(checked.draft));
       await refresh();
       toast('Company details saved.', 'ok');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save.');
+      const fields = companyErrorsFrom(err);
+      if (fields) setFieldErrors(fields);
+      else setError(err instanceof ApiError ? err.message : 'Could not save.');
     } finally {
       setBusy(false);
     }
@@ -48,7 +56,7 @@ export default function Company() {
         </div>
       </div>
       <section className="pro-card">
-        <CompanyFields draft={draft} onChange={setDraft} disabled={readOnly} />
+        <CompanyFields draft={draft} onChange={setDraft} disabled={readOnly} errors={fieldErrors} />
       </section>
       <section className="pro-card">
         <span className="eyebrow">Pricing defaults</span>

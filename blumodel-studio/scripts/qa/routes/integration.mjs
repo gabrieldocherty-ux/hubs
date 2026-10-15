@@ -29,7 +29,7 @@ import { makeGlb } from '../../../server/test/fixtures/glb.mjs';
 import { makePng } from '../../../server/test/fixtures/images.mjs';
 import { kitchenPhoto } from './generate.mjs';
 
-const COMPANY = { company: 'Cedar & Sill Millwork (QA)', phone: '555-0173', email: 'hello@cedarsill.example', website: 'https://cedarsill.example', serviceArea: 'Hamilton and Burlington', defaultMarkupPct: 40 };
+const COMPANY = { company: 'Cedar & Sill Millwork (QA)', phone: '905-555-0173', email: 'hello@cedarsill.example', website: 'https://cedarsill.example', serviceArea: 'Hamilton and Burlington', defaultMarkupPct: 40 };
 const PRODUCT_NAME = 'Cedar Sill Walnut Base 24 (QA)';
 const COST_CENTS = 31337; // $313.37: a number that must never reach a public wire or a client's screen
 const COST_TEXT = ['313.37', '31337'];

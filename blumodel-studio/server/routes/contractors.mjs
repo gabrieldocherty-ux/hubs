@@ -8,7 +8,7 @@
 import { HttpError } from '../http/respond.mjs';
 import { PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { kitIfLoaded, loadKit } from '../lib/kit.mjs';
-import { createContractorService, brandKey, readCents, readCostByWidth, readPct } from '../contractors/service.mjs';
+import { createContractorService, brandKey, readCents, readCompanyContact, readCostByWidth, readPct } from '../contractors/service.mjs';
 import { columnsOf, csvCell, parseCsv, parseMoney, parseWidth } from '../contractors/csv.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -286,12 +286,10 @@ export default function routes(ctx) {
       handler: (rc) => {
         const a = gate(rc, { write: true, profile: false });
         const b = rc.body;
-        const company = str(b.company, 80);
-        if (!company) throw new HttpError(400, 'Enter your company name.', { field: 'company' });
+        // Business name and phone are required, the phone normalised (contractors/service.mjs).
+        const { company, phone } = readCompanyContact(b);
         const email = str(b.email, 254);
         if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'That email address does not look right.', { field: 'email' });
-        const phone = str(b.phone, 40);
-        if (phone && !/^[0-9+().\-\s]{3,40}$/.test(phone)) throw new HttpError(400, 'That phone number doesn’t look right.', { field: 'phone' });
         const website = httpsOrEmpty(b.website, 'website');
         const serviceArea = str(b.serviceArea, 120);
         const markup = readPct(b.defaultMarkupPct ?? a.profile?.default_markup_pct ?? 30, 'defaultMarkupPct') ?? 0;

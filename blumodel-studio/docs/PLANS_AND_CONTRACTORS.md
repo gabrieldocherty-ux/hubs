@@ -58,7 +58,7 @@ The prices live in one file, `src/data/plans.json`. The server is the authority 
 ### 4.1 Becoming a contractor
 1. From Pricing or the Unlock dialog link, they choose **Contractor, $40/month** and check out. (The account menu shows *Contractor workspace* only to contractors; there is no "For contractors" entry for everyone else.)
 2. A three-step **company setup**:
-   - **Company:** name, logo, phone, email, website, service area.
+   - **Company:** business name and business phone (**both required**, checked in the browser and again by the server; the phone is normalised the same way as everywhere else, "(905) 555-0142" or "+<country code><digits>"), then logo, email, website and service area (optional). Every later save of the company needs both too. A contractor whose company was saved before this rule, with either missing, sees a *Finish your company details* card instead of the workspace until they add them (a lapsed, read-only contractor is not asked, since they can't save).
    - **Pricing defaults:** default markup %, for example 30%. This can be changed any time.
    - **Start your catalog:** quick-add a first product, upload a model, request modelling, or skip.
 3. They land in the **Contractor workspace** (`#/pro`). Its tabs are Dashboard, My catalog, Price book, Brands I carry, Quotes, Modelling requests and Company.

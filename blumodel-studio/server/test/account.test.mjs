@@ -50,7 +50,7 @@ async function paidOrder(agent) {
 async function contractorWithPage(s, company) {
   const c = await s.user();
   await demoBuy(c, { kind: 'subscription', plan: 'contractor' });
-  assert.equal((await c.put('/api/pro/profile', { company, phone: '555-0100', email: `hello@${company.toLowerCase().replace(/\W+/g, '')}.test`, website: '', serviceArea: 'Hamilton', defaultMarkupPct: 30 })).status, 200);
+  assert.equal((await c.put('/api/pro/profile', { company, phone: '905-555-0100', email: `hello@${company.toLowerCase().replace(/\W+/g, '')}.test`, website: '', serviceArea: 'Hamilton', defaultMarkupPct: 30 })).status, 200);
   const page = await c.put('/api/pro/brand', { tagline: `${company} cabinets`, about: 'Family shop.' });
   assert.equal(page.status, 200, page.text);
   const brand = s.db.prepare("SELECT * FROM brands WHERE owner_user_id = ? AND kind = 'contractor'").get(c.id);

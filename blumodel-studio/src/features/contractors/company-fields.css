@@ -1,0 +1,22 @@
+/*
+ * The company form's required fields (business name and phone): the inline message under a field
+ * the server or the client refused. Design tokens only, so the dark theme restyles it.
+ */
+
+.pro-fields .field input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.pro-fields .field input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px var(--bad-soft);
+}
+
+.pro-field-error {
+  color: var(--bad);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.pro-complete-note {
+  margin: 0 0 16px;
+}

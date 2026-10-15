@@ -342,7 +342,7 @@ test('a contractor’s share: sell prices, “Prepared by”, no duplicate, and 
   const ck = await c.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
   assert.equal(ck.status, 200, ck.text);
   assert.equal((await c.post(`/api/billing/demo/${ck.body.ref}/complete`, { outcome: 'success' })).status, 200);
-  const prof = await c.put('/api/pro/profile', { company: 'Birch & Bevel', phone: '555-0199', email: 'studio@birch.test', website: 'birch.test', defaultMarkupPct: 25 });
+  const prof = await c.put('/api/pro/profile', { company: 'Birch & Bevel', phone: '905-555-0199', email: 'studio@birch.test', website: 'birch.test', defaultMarkupPct: 25 });
   assert.equal(prof.status, 200, prof.text);
   const made = await c.post('/api/pro/products', {
     spec: {
@@ -385,7 +385,7 @@ test('a contractor’s share: sell prices, “Prepared by”, no duplicate, and 
   }
   assert.equal(r.status, 200, r.text);
   assertClean(r.body, ['Riley Homeowner', c.user.email, c.id, 246.8, 24680, 975.31, 97531, 1111.25], 'contractor share wire');
-  assert.deepEqual(r.body.preparedBy, { company: 'Birch & Bevel', phone: '555-0199', email: 'studio@birch.test', website: 'https://birch.test/' });
+  assert.deepEqual(r.body.preparedBy, { company: 'Birch & Bevel', phone: '(905) 555-0199', email: 'studio@birch.test', website: 'https://birch.test/' });
   assert.equal(r.body.hideDuplicate, true);
   // Sell = cost × (1 + markup): 246.80 × 1.25 = 308.50; 975.31 × 1.25 = 1219.14.
   assert.equal(r.body.products.find((p) => p.id === own.id).price, 308.5);

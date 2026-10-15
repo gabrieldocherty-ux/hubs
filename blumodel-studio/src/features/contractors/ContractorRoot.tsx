@@ -11,6 +11,7 @@ import { useSession } from '../../store/useSession';
 import type { ContractorProfile, Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
 import { proApi } from './api';
+import { needsCompanyDetails } from './CompanyFields';
 import { loadPriceBook } from './pricing';
 import { ProBrandTab } from '../brands';
 import { useBrandSummary } from '../brands/summary';
@@ -130,16 +131,18 @@ export default function ContractorRoot({ rest }: { rest: string }) {
         <a className="btn" href="#/">Back to my kitchens</a>
       </div>
     );
-  if (!state.profile) {
+  // No company yet, or (while the plan is active) one saved before the business name and phone were
+  // both required: the setup asks for them before the workspace opens.
+  if (!state.profile || (!state.readOnly && needsCompanyDetails(state.profile))) {
     return (
       <>
-        {back && back.outcome === 'success' && (
+        {!state.profile && back && back.outcome === 'success' && (
           <div className="auth-ok pro-return" role="status">
             Payment received: you’re on the Contractor plan. Set up your company to open the workspace.
           </div>
         )}
         <Suspense fallback={<div className="screen-msg">Loading…</div>}>
-          <Setup onDone={refresh} />
+          <Setup onDone={refresh} existing={state.profile} />
         </Suspense>
       </>
     );

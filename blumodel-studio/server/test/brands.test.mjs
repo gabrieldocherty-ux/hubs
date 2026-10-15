@@ -32,7 +32,7 @@ async function buy(agent, body) {
 async function contractor(profile = {}, server = t) {
   const a = await server.user();
   await buy(a, { kind: 'subscription', plan: 'contractor' });
-  const r = await a.put('/api/pro/profile', { company: 'Hollis Cabinet Co', phone: '555-0100', email: 'hello@hollis.test', website: 'hollis.test', serviceArea: 'Hamilton and Burlington', defaultMarkupPct: 30, ...profile });
+  const r = await a.put('/api/pro/profile', { company: 'Hollis Cabinet Co', phone: '905-555-0100', email: 'hello@hollis.test', website: 'hollis.test', serviceArea: 'Hamilton and Burlington', defaultMarkupPct: 30, ...profile });
   assert.equal(r.status, 200, r.text);
   return a;
 }
@@ -144,7 +144,7 @@ test('setup is pre-filled from Company; the address can change until the page fi
   assert.equal(s0.body.brand, null);
   assert.equal(s0.body.defaults.name, 'Larkspur Joinery');
   assert.equal(s0.body.defaults.slug, 'larkspur-joinery');
-  assert.equal(s0.body.defaults.phone, '555-0100');
+  assert.equal(s0.body.defaults.phone, '(905) 555-0100');
 
   const s1 = await c.put('/api/pro/brand', {});
   assert.equal(s1.status, 200, s1.text);
@@ -202,7 +202,7 @@ test('setup is pre-filled from Company; the address can change until the page fi
   // Contact toggles show phone and email.
   await c.put('/api/pro/brand', { showPhone: true, showEmail: true });
   const pub2 = await t.agent().get('/api/brands/by-slug/larkspur');
-  assert.equal(pub2.body.brand.phone, '555-0100');
+  assert.equal(pub2.body.brand.phone, '(905) 555-0100');
   assert.equal(pub2.body.brand.email, 'hello@hollis.test');
 });
 

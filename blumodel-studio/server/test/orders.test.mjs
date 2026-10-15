@@ -592,7 +592,7 @@ test('contractor target: plan required; one checkout for a multi-item line, deli
   const other = await t.user();
   assert.ok(!(await other.get('/api/catalog')).body.products.some((p) => pids.includes(p.id)));
   // My catalog lists them, and their files are the contractor's own, so they can edit them.
-  assert.equal((await pro.put('/api/pro/profile', { company: 'Smith Kitchens (Test)' })).status, 200);
+  assert.equal((await pro.put('/api/pro/profile', { company: 'Smith Kitchens (Test)', phone: '905-555-0100' })).status, 200);
   const mine = await pro.get('/api/pro/products');
   assert.equal(mine.status, 200, mine.text);
   for (const pid of pids) assert.ok(mine.body.products.some((p) => p.id === pid), `${pid} in My catalog`);
