@@ -369,6 +369,9 @@ const LIST: Product[] = [
   },
 ];
 
+/** The brand every built-in shows: BluModel Studio's own plain range, next to the real retail brands. */
+export const BASICS_BRAND = 'BluModel Basics';
+
 /** Every built-in, tagged `source: 'builtin'`. */
 export const BUILTIN_PRODUCTS: Product[] = LIST.map((p) => ({ ...p, source: 'builtin' as const }));
 

@@ -1,0 +1,7484 @@
+{
+ "version": 1,
+ "checkedAt": "2026-10-15",
+ "researched": 190,
+ "stores": [
+  {
+   "slug": "rona",
+   "name": "RONA",
+   "domain": "rona.ca"
+  },
+  {
+   "slug": "home-depot",
+   "name": "Home Depot",
+   "domain": "homedepot.ca"
+  },
+  {
+   "slug": "home-hardware",
+   "name": "Home Hardware",
+   "domain": "homehardware.ca"
+  },
+  {
+   "slug": "ikea",
+   "name": "IKEA",
+   "domain": "ikea.com"
+  },
+  {
+   "slug": "best-buy",
+   "name": "Best Buy",
+   "domain": "bestbuy.ca"
+  }
+ ],
+ "products": [
+  {
+   "id": "r-arcassa-halton-door-base-33",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Arcassa",
+   "name": "Halton 33 in door base, Painted Slate Grey",
+   "code": "RCSB33FHDSHA",
+   "widthIn": 33,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "painted-slate-grey",
+     "name": "Painted Slate Grey",
+     "hex": "#6e7479",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Halton",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "arcassa-halton-door-base-33",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-halton-33-x-345-x-2488-in-painted-slate-grey-door-base-semi-custom-cabinet-rcsb33fhdsha-332012971",
+      "sku": "332012971",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-arcassa-savane-shallow-base-24",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Arcassa",
+   "name": "Hugo&Borg Savane 24 in shallow base, 14 in deep, Brown",
+   "code": "RCB2414-2FHDSWN",
+   "widthIn": 24,
+   "depthIn": 14,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "brown",
+     "name": "Brown",
+     "hex": "#6b4f3a",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Savane",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "arcassa-savane-shallow-base-24",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 14,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-hugo-borg-savane-14-d-x-345-h-x-24-in-w-brown-shallow-base-full-high-2-door-semi-custom-cabinet-rcb2414-2fhdswn-332061532",
+      "sku": "332061532",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinet-basics-knockdown-base-30",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Cabinet Basics",
+   "name": "Knockdown melamine base cabinet 30 in, White",
+   "code": "2516747",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "widthOptions": [
+    21,
+    24,
+    30
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-melamine",
+     "name": "White melamine",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Cabinet Basics",
+   "retail": {
+    "key": "cabinet-basics-knockdown-base-30",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/knockdown-base-cabinet-white-30/p/2516747",
+      "sku": "2516747",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/1-door-and-1-drawer-knockdown-base-cabinet-white-24/p/2516754",
+      "sku": "2516754",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/knockdown-base-cabinet-white-21/p/2516744",
+      "sku": "2516744",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-base-36",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville assembled base cabinet 36 in, 2 doors, White",
+   "code": "2512006",
+   "widthIn": 36,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "widthOptions": [
+    12,
+    15,
+    24,
+    36
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-base-36",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/huntsville-assembled-base-cabinet-white-36-2-doors/p/2512006",
+      "sku": "2512006",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-easy-re-c86421",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville assembled easy-reach (corner) base cabinet 36 in, right-hand door, White",
+   "code": "2512020",
+   "widthIn": 36,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-easy-reach-base-36",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/36-assembled-easy-reach-base-cabinet-with-right-hand-door-huntsville-white/p/2512020",
+      "sku": "2512020",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-base-12-lh",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville left-hand door assembled base cabinet 12 in, White",
+   "code": "2512002",
+   "widthIn": 12,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-base-12-lh",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 12,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/huntsville-left-hand-door-assembled-base-cabinet-white-12/p/2512002",
+      "sku": "2512002",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-cristal-base-30-white",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Cristal base kitchen cabinet 2 doors 30 in, White",
+   "code": "RD-B30-TW",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 184,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Cristal",
+   "retail": {
+    "key": "eklipse-cristal-base-30-white",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/ebsu-eklipse-kitchen-cabinet-with-2-doors-cristal-collection-30-in-white-rd-b30-tw-65356588",
+      "sku": "65356588",
+      "priceCad": 184,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-jasper-base-30-grey-beige",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Jasper base kitchen cabinet 2 doors 30 in, Grey-Beige",
+   "code": "RD-B30-SP",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 189,
+   "finishes": [
+    {
+     "id": "grey-beige",
+     "name": "Grey-Beige",
+     "hex": "#b3ab9f",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Jasper",
+   "retail": {
+    "key": "eklipse-jasper-base-30-grey-beige",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/ebsu-eklipse-kitchen-cabinet-with-2-doors-30-in-grey-beige-rd-b30-sp-65356554",
+      "sku": "65356554",
+      "priceCad": 189,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-onyx-base-30-black",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Onyx base kitchen cabinet 30 1/4 in, Black",
+   "code": "RD-B30-NT",
+   "widthIn": 30.25,
+   "depthIn": 24,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "black",
+     "name": "Black",
+     "hex": "#222222",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Onyx",
+   "retail": {
+    "key": "eklipse-onyx-base-30-black",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30.25,
+     "d": null,
+     "h": 34.75
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/eklipse-onyx-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-black-rd-b30-nt-75396522",
+      "sku": "75396522",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-saphir-base-36-woodgrain",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Saphir base kitchen cabinet 35 7/8 in, Woodgrain",
+   "code": "RD-B36-FE",
+   "widthIn": 35.875,
+   "depthIn": 24,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "woodgrain-walnut-effect",
+     "name": "Woodgrain (walnut effect)",
+     "hex": "#7a5a3f",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Saphir",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "eklipse-saphir-base-36-woodgrain",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 35.875,
+     "d": null,
+     "h": 34.75
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/eklipse-saphir-base-kitchen-cabinet-35-7-8-in-x-34-3-4-in-woodgrain-rd-b36-fe-75396544",
+      "sku": "75396544",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eurostyle-base-cabinet-30-white-rta",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Eurostyle",
+   "name": "30 in ready-to-assemble base cabinet, White",
+   "code": "1000683574",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 35,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f6f6f4",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "eurostyle-base-cabinet-30-white-rta",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24,
+     "h": 35
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/eurostyle-base-cabinet-30-white/1000683574",
+      "sku": "1000683574",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-b30-grey",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 30 in assembled shaker base cabinet, Grey",
+   "code": "1001818776",
+   "widthIn": 30,
+   "depthIn": 24.4,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey",
+     "name": "Grey",
+     "hex": "#8c9093",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-b30-grey",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.4,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-grey/1001818776",
+      "sku": "1001818776",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-b30-white",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 30 in assembled shaker base cabinet, White",
+   "code": "1001818777",
+   "widthIn": 30,
+   "depthIn": 24.4,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": 309,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-b30-white",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.4,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-white/1001818777",
+      "sku": "1001818777",
+      "priceCad": 309,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-jolie-shallow-base-12",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Jolie 12 in shallow base, 15 in deep, Warm White",
+   "code": "LCB1214FHJO",
+   "widthIn": 12,
+   "depthIn": 15,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "warm-white-painted",
+     "name": "Warm White (painted)",
+     "hex": "#efeadf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Jolie",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hugo-borg-jolie-shallow-base-12",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 12,
+     "d": 15,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-jolie-15-d-x-345-h-x-12-in-w-warm-white-shallow-base-full-high-door-semi-custom-cabinet-lcb1214fhjo-332061341",
+      "sku": "332061341",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-lasalle-door-drawer-base-18",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Lasalle 18 in door and drawer base, Glacier White",
+   "code": "LCB18FHI3LA",
+   "widthIn": 18,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": 808,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Lasalle",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "hugo-borg-lasalle-door-drawer-base-18",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 18,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-18-x-345-x-2488-in-glacier-white-door-and-drawer-base-semi-custom-cabinet-lcb18fhi3la-332014235",
+      "sku": "332014235",
+      "priceCad": 808,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-rosemont-base-9",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Rosemont 9 in door base, Glacier White",
+   "code": "LCB9FHRM",
+   "widthIn": 9,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Rosemont",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hugo-borg-rosemont-base-9",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 9,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-rosemont-9-x-345-x-2488-glacier-white-door-base-semi-custom-cabinet-lcb9fhrm-332014894",
+      "sku": "332014894",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-oven-base-30",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION base cabinet for oven, white, 30 x 24 x 30 in",
+   "code": "502.986.49",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-frame",
+     "name": "White frame",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-oven-base-30",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-for-oven-white-50298649/",
+      "sku": "502.986.49",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-base-21x24-frame",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION base cabinet frame, white, 21 x 24 x 30 in",
+   "code": "302.654.14",
+   "widthIn": 21,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-frame",
+     "name": "White frame",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-base-21x24-frame",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 21,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-frame-white-30265414/",
+      "sku": "302.654.14",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-base-24x24",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION base cabinet frame, white, 24 x 24 x 30 in",
+   "code": "IKEA-SEKTION-BASE-24X24",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "widthOptions": [
+    12,
+    15,
+    18,
+    21,
+    24,
+    30,
+    36
+   ],
+   "price": 63,
+   "finishes": [
+    {
+     "id": "white-frame",
+     "name": "White frame",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-base-24x24",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 63,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-base-18x24",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION base cabinet, white, 18 x 24 x 30 in",
+   "code": "202.653.96",
+   "widthIn": 18,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-frame",
+     "name": "White frame",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-base-18x24",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 18,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-20265396/",
+      "sku": "202.653.96",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-corner-base-carousel-38",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION corner base cabinet with carousel, white Enköping/white wood effect, 38 x 24 x 30 in",
+   "code": "IKEA-SEKTION-CORNER-BASE-CAROU",
+   "widthIn": 38,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": 345,
+   "finishes": [
+    {
+     "id": "white-enkoping-white-wood-effect",
+     "name": "White Enköping / white wood effect",
+     "hex": "#efede8",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-corner-base-carousel-38",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 38,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 345,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-base-shallow-15",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION shallow base cabinet, white, 15 x 14.75 x 30 in",
+   "code": "302.653.91",
+   "widthIn": 15,
+   "depthIn": 14.75,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "widthOptions": [
+    15,
+    18,
+    24
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-frame",
+     "name": "White frame",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-base-shallow-15",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 14.75,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-30265391/",
+      "sku": "302.653.91",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-70265394/",
+      "sku": "702.653.94",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-base-cabinet-white-40265395/",
+      "sku": "402.653.95",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-aurora-assembled-cabinets",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "AURORA assembled shaker cabinets (white)",
+   "code": "LANDON-CO-AURORA-ASSEMBLED-CAB",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "widthOptions": [
+    12,
+    18,
+    24,
+    30,
+    36
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker",
+     "name": "White shaker",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "AURORA",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-aurora-assembled-cabinets",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/aurora-kitchen-cabinets",
+      "sku": null,
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-bellina-assembled-base-box",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "BELLINA base cabinet box, melamine, no doors (AOB series)",
+   "code": "84666315",
+   "widthIn": 24,
+   "depthIn": 23.6,
+   "heightIn": 30.25,
+   "elevationIn": 0,
+   "widthOptions": [
+    12,
+    15,
+    18,
+    24,
+    30,
+    36
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-melamine-box",
+     "name": "White melamine box",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    },
+    {
+     "id": "athena-matte-white-door",
+     "name": "Athena matte white door",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    },
+    {
+     "id": "boreas-glossy-white-door",
+     "name": "Boreas glossy white door",
+     "hex": "#fafafa",
+     "material": "paint"
+    },
+    {
+     "id": "helios-dark-grey-door",
+     "name": "Helios dark grey door",
+     "hex": "#4a4d52",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "BELLINA",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "landon-co-bellina-assembled-base-box",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 23.6,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-bellina-24-x-3025-x-236-in-white-melamine-base-kitchen-cabinet-aob24w-84666315",
+      "sku": "84666315",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b15-sd",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 1 Door 15 in",
+   "code": "RD-B15-SD",
+   "widthIn": 15,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b15-sd",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-1-door-shaker-style-white-rd-b15-sd-75396480",
+      "sku": "75396480",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b18-gt",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 1 Door 18 in",
+   "code": "RD-B18-GT",
+   "widthIn": 18,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey-shaker-polymer-satin",
+     "name": "Grey (shaker, polymer satin)",
+     "hex": "#8c9093",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b18-gt",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 18,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-base-cabinet-with-1-door-shaker-style-18-in-grey-rd-b18-gt-75396563",
+      "sku": "75396563",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b24-sd",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 2 Doors 24 in",
+   "code": "RD-B24-SD",
+   "widthIn": 24,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b24-sd",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-white-rd-b24-sd-75396482",
+      "sku": "75396482",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b30-sd",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 2 Doors 30 in",
+   "code": "RD-B30-SD",
+   "widthIn": 30,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b30-sd",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-shaker-style-white-rd-b30-sd-75396484",
+      "sku": "75396484",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b30-gt",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 2 Doors 30 in",
+   "code": "RD-B30-GT",
+   "widthIn": 30,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey-shaker-polymer-satin",
+     "name": "Grey (shaker, polymer satin)",
+     "hex": "#8c9093",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b30-gt",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-gray-rd-b30-gt-75396483",
+      "sku": "75396483",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b33-sd",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 2 Doors 33 in",
+   "code": "RD-B33-SD",
+   "widthIn": 33,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b33-sd",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-cabinet-33-in-shaker-style-white-rd-b33-sd-75396602",
+      "sku": "75396602",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b36-gt",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Base Cabinet 2 Doors 36 in",
+   "code": "RD-B36-GT",
+   "widthIn": 36,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey-shaker-polymer-satin",
+     "name": "Grey (shaker, polymer satin)",
+     "hex": "#8c9093",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b36-gt",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-35-7-8-in-x-34-3-4-in-gray-rd-b36-gt-75396485",
+      "sku": "75396485",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-bc36-gt",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Corner Base Cabinet 2 Doors 36 in",
+   "code": "RD-BC36-GT",
+   "widthIn": 36,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey-shaker-polymer-satin",
+     "name": "Grey (shaker, polymer satin)",
+     "hex": "#8c9093",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-bc36-gt",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-corner-base-cabinet-with-2-doors-shaker-style-36-in-grey-rd-bc36-gt-75396489",
+      "sku": "75396489",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-bc36-sd",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Corner Base Cabinet 36 in",
+   "code": "RD-BC36-SD",
+   "widthIn": 36,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-bc36-sd",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-corner-kitchen-cabinet-36-1-4-in-x-34-3-4-in-shaker-style-white-rd-bc36-sd-75396490",
+      "sku": "75396490",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-st-lawrence-fairbank-base-18-rta",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "St. Lawrence Cabinets",
+   "name": "Fairbank 1 door and 1 drawer knockdown base cabinet 18 in, White",
+   "code": "2517452",
+   "widthIn": 18,
+   "depthIn": 24,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Fairbank",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "st-lawrence-fairbank-base-18-rta",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 18,
+     "d": 24,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/1-door-1-drawer-knockdown-base-cabinet-white-18/p/2517452",
+      "sku": "2517452",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-thomasville-nouveau-cavette-b36-41772a",
+   "kind": "base",
+   "variant": "door-drawer",
+   "category": "cabinets",
+   "brand": "Thomasville Nouveau",
+   "name": "Cavette 36 in base cabinet, Lagoon Blue",
+   "code": "B36FWD",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 34.6,
+   "elevationIn": 0,
+   "price": 959,
+   "finishes": [
+    {
+     "id": "lagoon-blue",
+     "name": "Lagoon Blue",
+     "hex": "#3b6a86",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Cavette",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "thomasville-nouveau-cavette-b36fwd-base",
+    "type": "base-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24,
+     "h": 34.6
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-36-inch-w-x-34-6-inch-h-x-24-inch-d-assembled-kitchen-base-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelf-soft-close-drawer-b36fwd-/1001598651",
+      "sku": "1001598651",
+      "priceCad": 959,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-arcassa-windsor-three-drawer-base-24",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Arcassa",
+   "name": "Windsor 24 in three-drawer base, Brown",
+   "code": "RCB3DA24DSWN",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "brown",
+     "name": "Brown",
+     "hex": "#6b4f3a",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Windsor",
+   "retail": {
+    "key": "arcassa-windsor-three-drawer-base-24",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": 34.5
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-windsor-24-w-x-345-in-h-brown-base-kitchen-cabinet-w-3x-10-in-drawers-rcb3da24dswn-332060862",
+      "sku": "332060862",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-drawer-base-24",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville assembled base cabinet 24 in, 3 drawers, White",
+   "code": "2512008",
+   "widthIn": 24,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "widthOptions": [
+    15,
+    24
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-drawer-base-24",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/huntsville-assembled-base-cabinet-white-24-3-drawers/p/2512008",
+      "sku": "2512008",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/15-huntsville-white-three-drawer-assembled-base-cabinet/p/2512007",
+      "sku": "2512007",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-perle-drawer-base-15",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Perle base cabinet with 3 drawers 15 1/8 in, White",
+   "code": "RD-B3T15-SD",
+   "widthIn": 15.125,
+   "depthIn": 24,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Perle",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "eklipse-perle-drawer-base-15",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15.125,
+     "d": null,
+     "h": 34.75
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/eklipse-perle-base-kitchen-cabinet-with-drawers-15-1-8-in-x-34-3-4-in-white-rd-b3t15-sd-75396476",
+      "sku": "75396476",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-bd303v-3-drawer-base",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 30 in three-drawer base cabinet, Solid White",
+   "code": "BD303V",
+   "widthIn": 30,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": 710,
+   "finishes": [
+    {
+     "id": "solid-white",
+     "name": "Solid White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-bd303v-3-drawer-base",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-base-cabinet-cupboard-in-solid-white-with-3-soft-close-drawers-bd303v-/1001515353",
+      "sku": "1001515353",
+      "priceCad": 710,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-lasalle-drawer-base-21",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Lasalle 21 in drawer base, Glacier White",
+   "code": "LCB2D21I1LA",
+   "widthIn": 21,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Lasalle",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "hugo-borg-lasalle-drawer-base-21",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 21,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-21-x-345-x-2488-in-glacier-white-drawer-base-semi-custom-cabinet-lcb2d21i1la-332014453",
+      "sku": "332014453",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-lasalle-drawer-base-33",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Lasalle 33 in six-drawer base, Glacier White",
+   "code": "LCB6D33LA",
+   "widthIn": 33,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": 1228,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Lasalle",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "hugo-borg-lasalle-drawer-base-33",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-33-x-345-x-2488-in-glacier-white-drawer-base-semi-custom-cabinet-lcb6d33la-332014249",
+      "sku": "332014249",
+      "priceCad": 1228,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-maximera-drawer-base-36",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION / MAXIMERA base cabinet with 3 drawers, white/Aspudden matt white, 36 x 24 x 30 in",
+   "code": "IKEA-SEKTION-MAXIMERA-DRAWER-B",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": 417,
+   "finishes": [
+    {
+     "id": "white-aspudden-matt-white",
+     "name": "White/Aspudden matt white",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-maximera-drawer-base-36",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 417,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-maximera-4-drawer-base-18",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION / MAXIMERA base cabinet with 4 drawers, white/Nickebo matt anthracite, 18 x 15 x 30 in",
+   "code": "S99497647",
+   "widthIn": 18,
+   "depthIn": 15,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-nickebo-matt-anthracite",
+     "name": "White/Nickebo matt anthracite",
+     "hex": "#3b3d40",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-maximera-4-drawer-base-18",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 18,
+     "d": 15,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/sektion-maximera-base-cabinet-with-4-drawers-white-nickebo-matt-anthracite-s99497647/",
+      "sku": "S99497647",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b2t24-sd",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Drawer Base 2 Drawers 24 in",
+   "code": "RD-B2T24-SD",
+   "widthIn": 24,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b2t24-sd",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-drawers-shaker-style-white-rd-b2t24-sd-75396598",
+      "sku": "75396598",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b2t30-sd",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Drawer Base 2 Drawers 30 in",
+   "code": "RD-B2T30-SD",
+   "widthIn": 30,
+   "depthIn": 24.38,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b2t30-sd",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.38,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-base-cabinet-with-2-drawers-shaker-style-30-in-white-rd-b2t30-sd-75396599",
+      "sku": "75396599",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b3t12-sd",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Drawer Base 3 Drawers 12 in",
+   "code": "RD-B3T12-SD",
+   "widthIn": 12,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b3t12-sd",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 12,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-elite-3-drawers-base-cabinet-3475-in-x-12-in-shaker-style-white-rd-b3t12-sd-75396623",
+      "sku": "75396623",
+      "priceCad": null,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-b4t15-sd",
+   "kind": "base",
+   "variant": "drawers",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Drawer Base 4 Drawers 15 in",
+   "code": "RD-B4T15-SD",
+   "widthIn": 15,
+   "depthIn": 24.5,
+   "heightIn": 34.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-b4t15-sd",
+    "type": "drawer-base",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 24.5,
+     "h": 34.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-elite-4-drawers-base-cabinet-15-in-shaker-style-white-rd-b4t15-sd-75396600",
+      "sku": "75396600",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-lazy-susan-co-c8a9e8",
+   "kind": "corner",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 27.6 in corner base cabinet with lazy susan, Grey",
+   "code": "1001509798",
+   "widthIn": 27.6,
+   "depthIn": 27.6,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey",
+     "name": "Grey",
+     "hex": "#8c9093",
+     "material": "paint"
+    },
+    {
+     "id": "dusk-cocoa-brown",
+     "name": "Dusk Cocoa Brown",
+     "hex": "#6a5648",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-lazy-susan-corner-base",
+    "type": "corner-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 27.6,
+     "d": 27.6,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-assembled-27-6-x-34-5-x-27-6-inch-lazy-susan-corner-base-cabinet-in-grey/1001509798",
+      "sku": "1001509798",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-charlesberg-corner-la-067a5e",
+   "kind": "corner",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Charlesberg 36 in lazy-susan corner base, Light Grey",
+   "code": "LCBC36LSCH",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "light-grey",
+     "name": "Light Grey",
+     "hex": "#b9bcbf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Charlesberg",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hugo-borg-charlesberg-corner-lazy-susan",
+    "type": "corner-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-charlesberg-36-x-345-x-36-in-light-grey-lazy-susan-corner-base-semi-custom-cabinet-lcbc36lsch-332013434",
+      "sku": "332013434",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-lasalle-corner-lazy-susan",
+   "kind": "corner",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Lasalle 36 in lazy-susan corner base, Glacier White",
+   "code": "LCBC36LSLA",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Lasalle",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "hugo-borg-lasalle-corner-lazy-susan",
+    "type": "corner-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-36-x-345-x-36-in-glacier-white-lazy-susan-corner-base-semi-custom-cabinet-lcbc36lsla-332014406",
+      "sku": "332014406",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-thomasville-nouveau-cavette-bcc-f93d67",
+   "kind": "corner",
+   "category": "cabinets",
+   "brand": "Thomasville Nouveau",
+   "name": "Cavette 36 in corner base with lazy susan, Lagoon Blue",
+   "code": "BCC36FHLLS",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 34.6,
+   "elevationIn": 0,
+   "price": 963,
+   "finishes": [
+    {
+     "id": "lagoon-blue",
+     "name": "Lagoon Blue",
+     "hex": "#3b6a86",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Cavette",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "thomasville-nouveau-cavette-bcc36-corner-lazy-susan",
+    "type": "corner-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": 34.6
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-36-inch-w-x-34-6-inch-h-x-36-inch-d-assembled-kitchen-corner-base-cabinet-cupboard-in-lagoon-blue-with-lazy-susan-bcc36fhlls-/1001598652",
+      "sku": "1001598652",
+      "priceCad": 963,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-upper-24x30",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville assembled upper (wall) cabinet 24 x 30 in, 2 doors, White",
+   "code": "2512017",
+   "widthIn": 24,
+   "depthIn": 12,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "widthOptions": [
+    24,
+    36
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-upper-24x30",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": 30
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/huntsville-assembled-upper-cabinet-white-24-x-30-2-doors/p/2512017",
+      "sku": "2512017",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/36-x-30-assembled-wall-cabinet-with-soft-close-door-huntsville-white/p/2512028",
+      "sku": "2512028",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-wa2430l-corner-wall",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 24 in assembled corner wall cabinet, White",
+   "code": "WA2430L",
+   "widthIn": 24,
+   "depthIn": 13,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-wa2430l-corner-wall",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 13,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-24-in-w-x-30-h-x-13-d-assembled-kitchen-corner-wall-cabinet-white-wa2430l-/1001421149",
+      "sku": "1001421149",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-w3030-wall-white",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 30 x 30 in assembled wall cabinet, Solid White",
+   "code": "W3030",
+   "widthIn": 30,
+   "depthIn": 12.5,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "widthOptions": [
+    24,
+    30,
+    36
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "solid-white",
+     "name": "Solid White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-w3030-wall-white",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 12.5,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-30-inch-h-x-12-5-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-solid-white-with-adjustable-shelves-w3030-/1001447095",
+      "sku": "1001447095",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-lasalle-wall-27",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Lasalle 27 in door wall cabinet, 30 in tall, Glacier White",
+   "code": "LCW2730LA",
+   "widthIn": 27,
+   "depthIn": 14.88,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Lasalle",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "hugo-borg-lasalle-wall-27",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 27,
+     "d": 14.88,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-27-x-30-x-1488-in-glacier-white-door-wall-semi-custom-cabinet-lcw2730la-332014185",
+      "sku": "332014185",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-wall-30x30",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION wall cabinet, white, 30 x 14.75 x 30 in",
+   "code": "IKEA-SEKTION-WALL-30X30",
+   "widthIn": 30,
+   "depthIn": 14.75,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "widthOptions": [
+    12,
+    15,
+    18,
+    21,
+    24,
+    30,
+    36
+   ],
+   "price": 56,
+   "finishes": [
+    {
+     "id": "white-frame",
+     "name": "White frame",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-wall-30x30",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 14.75,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 56,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-bellina-wall-box",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "BELLINA wall cabinet box, melamine, no doors (AOW series)",
+   "code": "84666323",
+   "widthIn": 30,
+   "depthIn": 12,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "widthOptions": [
+    12,
+    18,
+    24,
+    30
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-melamine-box",
+     "name": "White melamine box",
+     "hex": "#f4f4f2",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "BELLINA",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "landon-co-bellina-wall-box",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": 30
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-bellina-18-x-30-in-white-melamine-wall-kitchen-cabinet-aow1830w-84666323",
+      "sku": "84666323",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-bellina-24-x-30-in-white-melamine-wall-kitchen-cabinet-aow2430w-84666324",
+      "sku": "84666324",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-bellina-30-x-30-in-white-melamine-wall-kitchen-cabinet-aow3030w-84666326",
+      "sku": "84666326",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-bellina-wall-cabinet-in-melamine-12-x-30-in-no-doors-white-aow1230w-84666321",
+      "sku": "84666321",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hc2424-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Corner Wall Cabinet 2 Doors 24 x 24 in",
+   "code": "RD-HC2424-SD",
+   "widthIn": 24,
+   "depthIn": 12,
+   "heightIn": 30.25,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hc2424-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 12,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doors-2-shelf-wall-corner-cabinet-24-in-x-30-in-shaker-style-white-rd-hc2424-sd-75396608",
+      "sku": "75396608",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-htg36-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Tall Wall Cabinet 2 Doors 36 in x 39.25 in",
+   "code": "RD-HTG36-SD",
+   "widthIn": 36,
+   "depthIn": 12,
+   "heightIn": 39.25,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-htg36-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 12,
+     "h": 39.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-36-inch-w-x-3925-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-htg36-sd-75396720",
+      "sku": "75396720",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hg12-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Wall Cabinet 1 Door 12 in",
+   "code": "RD-HG12-SD",
+   "widthIn": 12,
+   "depthIn": 12,
+   "heightIn": 30.25,
+   "elevationIn": 54,
+   "price": 99,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hg12-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 12,
+     "d": 12,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-kitchen-cabinet-wall-mount-12-in-x-30-1-4-in-shaker-style-white-rd-hg12-sd-75396496",
+      "sku": "75396496",
+      "priceCad": 99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hg18-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Wall Cabinet 1 Door 18 in",
+   "code": "RD-HG18-SD",
+   "widthIn": 18,
+   "depthIn": 12,
+   "heightIn": 30.25,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hg18-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 18,
+     "d": 12,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-18-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-1-door-shaker-style-white-rd-hg18-sd-75396609",
+      "sku": "75396609",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hg24-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Wall Cabinet 2 Doors 24 in",
+   "code": "RD-HG24-SD",
+   "widthIn": 24,
+   "depthIn": 12,
+   "heightIn": 30.25,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hg24-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 12,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-24-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hg24-sd-75396500",
+      "sku": "75396500",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hg30-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Wall Cabinet 2 Doors 30 in",
+   "code": "RD-HG30-SD",
+   "widthIn": 30,
+   "depthIn": 12,
+   "heightIn": 30.25,
+   "elevationIn": 54,
+   "price": 257,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hg30-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 12,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3025-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hg30-sd-75396502",
+      "sku": "75396502",
+      "priceCad": 256.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hg36-sd",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Wall Cabinet 2 Doors 36 in",
+   "code": "RD-HG36-SD",
+   "widthIn": 36,
+   "depthIn": 12,
+   "heightIn": 30.25,
+   "elevationIn": 54,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hg36-sd",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 12,
+     "h": 30.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-wall-cabinet-with-2-doors-shaker-style-36-in-w-x-3025-in-h-x-12-in-d-white-rd-hg36-sd-75396770",
+      "sku": "75396770",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-thomasville-nouveau-rhett-w3630-wall",
+   "kind": "wall",
+   "variant": "door",
+   "category": "cabinets",
+   "brand": "Thomasville Nouveau",
+   "name": "Rhett 36 x 30 in shaker wall cabinet, Lagoon Blue",
+   "code": "W3630",
+   "widthIn": 36,
+   "depthIn": 11.75,
+   "heightIn": 30,
+   "elevationIn": 54,
+   "price": 597,
+   "finishes": [
+    {
+     "id": "lagoon-blue",
+     "name": "Lagoon Blue",
+     "hex": "#3b6a86",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Rhett",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "thomasville-nouveau-rhett-w3630-wall",
+    "type": "wall-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 11.75,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-rhett-36-inch-w-x-30-inch-h-x-11-75-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-w3630-/1001592286",
+      "sku": "1001592286",
+      "priceCad": 597,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-arcassa-orillia-bridge-wall-36",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "Arcassa",
+   "name": "Orillia 36 x 10 in door wall cabinet, 24.88 in deep, Glacier White",
+   "code": "RCW361024DSOR",
+   "widthIn": 36,
+   "depthIn": 24.88,
+   "heightIn": 10,
+   "elevationIn": 72,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Orillia",
+   "retail": {
+    "key": "arcassa-orillia-bridge-wall-36",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.88,
+     "h": 10
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-orillia-36-x-10-x-2488-in-glacier-white-door-wall-semi-custom-cabinet-rcw361024dsor-332014427",
+      "sku": "332014427",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-bridge-30x15",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville assembled bridge cabinet 30 x 15 in, 2 doors, White",
+   "code": "2512015",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 15,
+   "elevationIn": 72,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-bridge-30x15",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": 15
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/huntsville-assembled-bridge-cabinet-white-30-x-15-2-doors/p/2512015",
+      "sku": "2512015",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-w3018-wall-white",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "Hampton Bay",
+   "name": "Edson 30 x 18 in assembled wall cabinet, Solid White",
+   "code": "W3018",
+   "widthIn": 30,
+   "depthIn": 12.5,
+   "heightIn": 18,
+   "elevationIn": 72,
+   "price": null,
+   "finishes": [
+    {
+     "id": "solid-white",
+     "name": "Solid White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-w3018-wall-white",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 12.5,
+     "h": 18
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-18-inch-h-x-12-5-inch-d-shaker-style-assembled-kitchen-wall-cabinet-cupboard-in-solid-white-w3018-/1001431678",
+      "sku": "1001431678",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-top-cabinet-fridge-30x15",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION top cabinet for fridge/freezer with 2 doors, white/Aspudden matt white, 30 x 24 x 15 in",
+   "code": "IKEA-SEKTION-TOP-CABINET-FRIDG",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 15,
+   "elevationIn": 72,
+   "price": 179,
+   "finishes": [
+    {
+     "id": "white-aspudden-matt-white",
+     "name": "White/Aspudden matt white",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-top-cabinet-fridge-30x15",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24,
+     "h": 15
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 179,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hm30-sd",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Microwave Wall Cabinet 2 Doors 30 x 24 in",
+   "code": "RD-HM30-SD",
+   "widthIn": 30,
+   "depthIn": 12,
+   "heightIn": 24,
+   "elevationIn": 72,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hm30-sd",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 12,
+     "h": 24
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-x-24-x-12-in-assembled-2-door-shaker-style-kitchen-wall-cabinet-white-rd-hm30-sd-75396686",
+      "sku": "75396686",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-hpp36-sd",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Over-Fridge Cabinet 2 Doors 36 x 18 in, 24 in deep",
+   "code": "RD-HPP36-SD",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 18,
+   "elevationIn": 72,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-hpp36-sd",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24,
+     "h": 18
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-36-inch-w-x-18-inch-h-x-24-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-hpp36-sd-75396736",
+      "sku": "75396736",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-htp30-sd",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Over-Oven Wall Cabinet 2 Doors 30 x 15 in",
+   "code": "RD-HTP30-SD",
+   "widthIn": 30,
+   "depthIn": 12,
+   "heightIn": 15,
+   "elevationIn": 72,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-htp30-sd",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 12,
+     "h": 15
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-15-inch-h-x-12-inch-d-assembled-kitchen-wall-cabinet-2-doors-shaker-style-white-rd-htp30-sd-75396506",
+      "sku": "75396506",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-thomasville-nouveau-cavette-w3018-wall",
+   "kind": "wall",
+   "variant": "bridge",
+   "category": "cabinets",
+   "brand": "Thomasville Nouveau",
+   "name": "Cavette 30 x 18 in wall cabinet, Lagoon Blue",
+   "code": "W3018",
+   "widthIn": 30,
+   "depthIn": 11.75,
+   "heightIn": 18,
+   "elevationIn": 72,
+   "widthOptions": [
+    27,
+    30
+   ],
+   "price": null,
+   "finishes": [
+    {
+     "id": "lagoon-blue",
+     "name": "Lagoon Blue",
+     "hex": "#3b6a86",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Cavette",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "thomasville-nouveau-cavette-w3018-wall",
+    "type": "bridge-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 11.75,
+     "h": 18
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-30-inch-w-x-18-inch-h-x-11-75-inch-d-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-w3018-/1001598674",
+      "sku": "1001598674",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-27-inch-w-x-30-inch-h-x-11-75-inch-d-assembled-kitchen-wall-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-w2730-/1001598672",
+      "sku": "1001598672",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-arcassa-richmond-pantry-15",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Arcassa",
+   "name": "Richmond 15 in door pantry, 89.5 in tall, Light Grey",
+   "code": "332013559",
+   "widthIn": 15,
+   "depthIn": 24.88,
+   "heightIn": 89.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "light-grey",
+     "name": "Light Grey",
+     "hex": "#b9bcbf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Richmond",
+   "retail": {
+    "key": "arcassa-richmond-pantry-15",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 24.88,
+     "h": 89.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-richmond-15-x-895-x-2488-in-light-grey-door-pantry-semi-custom-cabinet-332013559",
+      "sku": "332013559",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cabinetsmith-huntsville-pantry-15x84",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "CabinetSmith",
+   "name": "Huntsville left-hand door assembled pantry 15 x 84 in, White",
+   "code": "2512010",
+   "widthIn": 15,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "line": "Huntsville",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "cabinetsmith-huntsville-pantry-15x84",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 24,
+     "h": 84
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/huntsville-left-hand-door-assembled-pantry-white-15-x-84/p/2512010",
+      "sku": "2512010",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-angelite-pantry-15-grey",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Angelite pantry kitchen cabinet 15 1/8 x 83 3/4 in, Grey",
+   "code": "RD-GM15-GT",
+   "widthIn": 15.125,
+   "depthIn": 24,
+   "heightIn": 83.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey",
+     "name": "Grey",
+     "hex": "#8c9093",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Angelite",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "eklipse-angelite-pantry-15-grey",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15.125,
+     "d": null,
+     "h": 83.75
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/eklipse-pantry-kitchen-cabinet-angelite-15-1-8-in-x-83-3-4-in-rd-gm15-gt-75396491",
+      "sku": "75396491",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eklipse-perle-pantry-15",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Eklipse",
+   "name": "Perle pantry kitchen cabinet 15 1/8 x 83 3/4 in, White",
+   "code": "RD-GM15-SD",
+   "widthIn": 15.125,
+   "depthIn": 24,
+   "heightIn": 83.75,
+   "elevationIn": 0,
+   "price": 329,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Perle",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "eklipse-perle-pantry-15",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15.125,
+     "d": null,
+     "h": 83.75
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/eklipse-pantry-kitchen-cabinet-perle-collection-15-1-8-in-x-83-3-4-in-rd-gm15-sd-75396492",
+      "sku": "75396492",
+      "priceCad": 329,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hugo-borg-lasalle-pantry-30",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Hugo&Borg",
+   "name": "Lasalle 30 in door and drawer pantry, 84.5 in tall, Glacier White",
+   "code": "LCTO3D3084.5LA",
+   "widthIn": 30,
+   "depthIn": 24.88,
+   "heightIn": 84.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Lasalle",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "hugo-borg-lasalle-pantry-30",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.88,
+     "h": 84.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/hugo-borg-lasalle-30-x-845-x-2488-in-glacier-white-door-and-drawer-pantry-semi-custom-cabinet-lcto3d30845la-332014164",
+      "sku": "332014164",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-maximera-high-cabi-8914b1",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "SEKTION / MAXIMERA high cabinet with 2 doors and 4 drawers, white/Aspudden matt white, 30 x 24 x 80 in",
+   "code": "IKEA-SEKTION-MAXIMERA-HIGH-CAB",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 80,
+   "elevationIn": 0,
+   "price": 843,
+   "finishes": [
+    {
+     "id": "white-aspudden-matt-white",
+     "name": "White/Aspudden matt white",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-maximera-high-cabinet-30x80",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24,
+     "h": 80
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 843,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-gm1549-sd",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Top Pantry Cabinet 2 Doors 15 x 49 in",
+   "code": "RD-GM1549-SD",
+   "widthIn": 15,
+   "depthIn": 24.5,
+   "heightIn": 49,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-gm1549-sd",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 24.5,
+     "h": 49
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-49-inch-h-x-245-inch-d-assembled-kitchen-pantry-cabinet-2-doors-shaker-style-white-rd-gm1549-sd-75396607",
+      "sku": "75396607",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-gm1558-sd",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Top Pantry Cabinet 2 Doors 15 x 58 in",
+   "code": "RD-GM1558-SD",
+   "widthIn": 15,
+   "depthIn": 24.5,
+   "heightIn": 58,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-gm1558-sd",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": 24.5,
+     "h": 58
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doorstop-pantry-tall-cabinet-15-in-x-58-in-shaker-style-white-rd-gm1558-sd-75396655",
+      "sku": "75396655",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-landon-co-elite-rd-gm2458-sd",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Landon & Co",
+   "name": "ELITE Top Pantry Cabinet 4 Doors 24 x 58 in",
+   "code": "RD-GM2458-SD",
+   "widthIn": 24,
+   "depthIn": 24.5,
+   "heightIn": 58,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-shaker-polymer-satin",
+     "name": "White (shaker, polymer satin)",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "ELITE",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "landon-co-elite-rd-gm2458-sd",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 24.5,
+     "h": 58
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-4-doorstop-pantry-tall-cabinet-24-in-x-58-in-shaker-style-white-rd-gm2458-sd-75396647",
+      "sku": "75396647",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-thomasville-nouveau-cavette-t24-ddd400",
+   "kind": "tall",
+   "variant": "pantry",
+   "category": "cabinets",
+   "brand": "Thomasville Nouveau",
+   "name": "Cavette 24 x 84 in pantry cabinet, Lagoon Blue",
+   "code": "T248424L",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "widthOptions": [
+    18,
+    24
+   ],
+   "price": 1003,
+   "finishes": [
+    {
+     "id": "lagoon-blue",
+     "name": "Lagoon Blue",
+     "hex": "#3b6a86",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Cavette",
+   "doorStyle": "slab",
+   "retail": {
+    "key": "thomasville-nouveau-cavette-t248424l-pantry",
+    "type": "pantry",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 24,
+     "h": 84
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-24-inch-w-x-84-inch-h-x-24-inch-d-assembled-kitchen-pantry-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-t248424l-/1001598665",
+      "sku": "1001598665",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-cavette-18-inch-w-x-84-inch-h-x-24-inch-d-assembled-kitchen-pantry-cabinet-cupboard-in-lagoon-blue-with-adjustable-shelves-t188424l-/1001598664",
+      "sku": "1001598664",
+      "priceCad": 1003,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-home-styles-nantucket-butcher-b-8413b9",
+   "kind": "island",
+   "category": "cabinets",
+   "brand": "Home Styles",
+   "name": "Nantucket natural butcher block top kitchen island with 2 stools, 48 in",
+   "code": "1001186427",
+   "widthIn": 48,
+   "depthIn": 27,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2833,
+   "finishes": [
+    {
+     "id": "natural-butcher-block",
+     "name": "Natural butcher block",
+     "hex": "#caa57a",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "home-styles-nantucket-butcher-block-island",
+    "type": "island",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 48,
+     "d": 27,
+     "h": 36
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/home-styles-nantucket-natural-butcher-block-top-kitchen-island-with-2-stools/1001186427",
+      "sku": "1001186427",
+      "priceCad": 2833,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-kungsfors-kitchen-cart-stainless",
+   "kind": "island",
+   "category": "cabinets",
+   "brand": "IKEA",
+   "name": "KUNGSFORS kitchen cart, stainless steel, 60 x 40 cm (23-5/8 x 15-3/4 in)",
+   "code": "803.349.24",
+   "widthIn": 23.6,
+   "depthIn": 15.75,
+   "heightIn": 35.4,
+   "elevationIn": 0,
+   "price": 199,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "retail": {
+    "key": "ikea-kungsfors-kitchen-cart-stainless",
+    "type": "island",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 23.6,
+     "d": 15.75,
+     "h": 35.4
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/kungsfors-kitchen-cart-stainless-steel-80334924/",
+      "sku": "803.349.24",
+      "priceCad": 199,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-frigidaire-gallery-gcfg3060bfdisc",
+   "kind": "range",
+   "variant": "gas-4",
+   "category": "appliances",
+   "brand": "Frigidaire",
+   "name": "Gallery 30 in freestanding gas range with total convection, stainless",
+   "code": "GCFG3060BFDISC",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1999,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "retail": {
+    "key": "frigidaire-gallery-gcfg3060bfdisc",
+    "type": "range-gas",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/frigidaire-gallery-30-in-freestanding-gas-range-total-convection-stainless-steel-gcfg3060bfdisc-10355712",
+      "sku": "10355712",
+      "priceCad": 1999,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ge-jcgb735spss",
+   "kind": "range",
+   "variant": "gas-4",
+   "category": "appliances",
+   "brand": "GE",
+   "name": "30 in 5-burner 5 cu ft self-clean convection gas range, stainless",
+   "code": "JCGB735SPSS",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "retail": {
+    "key": "ge-jcgb735spss",
+    "type": "range-gas",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/ge-30-in-5-burner-5-cu-ft-self-clean-convection-oven-gas-range-stainless-steel-jcgb735spss-23085850",
+      "sku": "23085850",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-nx60a6711ss",
+   "kind": "range",
+   "variant": "gas-4",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "30 in smart freestanding gas range with air fry and true convection, 6.0 cu ft, stainless",
+   "code": "NX60A6711SS",
+   "widthIn": 29.938,
+   "depthIn": 28.688,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1599,
+   "finishes": [
+    {
+     "id": "fingerprint-resistant-stainless-steel",
+     "name": "Fingerprint-resistant stainless steel",
+     "hex": "#bfc3c6",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA. Drawn at its 36″ cooking height; the listed 46.31″ includes the back control panel.",
+   "flags": {
+    "backguard": true
+   },
+   "retail": {
+    "key": "samsung-nx60a6711ss",
+    "type": "range-gas",
+    "upc": "887276509617",
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 29.938,
+     "d": 28.688,
+     "h": 46.313
+    },
+    "typical": [],
+    "note": "Drawn at its 36″ cooking height; the listed 46.31″ includes the back control panel.",
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/samsung-30-in-smart-freestanding-gas-range-with-air-fry-and-true-convection-6-cu-ft-stainless-steel-nx60a6711ss-aa-22945390",
+      "sku": "22945390",
+      "priceCad": 1599,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-ngm5658uc",
+   "kind": "range",
+   "variant": "gas-6",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "500 Series 36 in gas-on-glass cooktop, 5 burners, stainless",
+   "code": "NGM5658UC",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2298,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+   "retail": {
+    "key": "bosch-ngm5658uc",
+    "type": "range-gas-6",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/bosch-36-inch-gas-on-glass-gas-cooktop-in-stainless-steel-with-5-burners/1001697906",
+      "sku": "1001697906",
+      "priceCad": 2298,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cosmo-36-vista-gas-range",
+   "kind": "range",
+   "variant": "gas-6",
+   "category": "appliances",
+   "brand": "Cosmo",
+   "name": "36 in Vista collection 4.5 cu ft gas range, 6 burners, convection, stainless",
+   "code": "1001818526",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cosmo-36-vista-gas-range",
+    "type": "range-gas-6",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cosmo-36-in-4-5-cu-ft-gas-range-with-6-italian-burners-in-stainless-steel/1001818526",
+      "sku": "1001818526",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-frigidaire-gallery-gccg3648as",
+   "kind": "range",
+   "variant": "gas-6",
+   "category": "appliances",
+   "brand": "Frigidaire",
+   "name": "Gallery 36 in gas cooktop, 5 burners incl. quick boil, stainless",
+   "code": "GCCG3648AS",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+   "retail": {
+    "key": "frigidaire-gallery-gccg3648as",
+    "type": "range-gas-6",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/frigidaire-gallery-36-inch-gas-cooktop-in-stainless-steel-with-5-burners-including-quick-boil/1001759011",
+      "sku": "1001759011",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cosmo-48-haven-double-oven-gas-range",
+   "kind": "range",
+   "variant": "griddle",
+   "category": "appliances",
+   "brand": "Cosmo",
+   "name": "48 in Haven collection 7 cu ft double-oven gas range with griddle, stainless",
+   "code": "1001720461",
+   "widthIn": 47.9,
+   "depthIn": 27.5,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cosmo-48-haven-double-oven-gas-range",
+    "type": "range-griddle",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 47.9,
+     "d": 27.5,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cosmo-48-in-haven-coll-7-cu-ft-double-oven-gas-range-6-burners-griddle-knob-leds-stainless-steel/1001720461",
+      "sku": "1001720461",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-forno-spezia-36-rangetop",
+   "kind": "range",
+   "variant": "griddle",
+   "category": "appliances",
+   "brand": "Forno",
+   "name": "Spezia Alta Qualita 36 in pro-style gas rangetop, 6 brass burners with griddle",
+   "code": "1001862736",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+   "retail": {
+    "key": "forno-spezia-36-rangetop",
+    "type": "range-griddle",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/forno-spezia-alta-qualita-36-pro-style-gas-rangetop/1001862736",
+      "sku": "1001862736",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-frigidaire-fcre306cas",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "Frigidaire",
+   "name": "30 in 5.3 cu ft smart 5-element freestanding electric range with EvenTemp, stainless",
+   "code": "FCRE306CAS",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy, Home Depot and RONA.",
+   "retail": {
+    "key": "frigidaire-fcre306cas",
+    "type": "range-induction",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://bestbuy.ca/en-ca/product/frigidaire-30-5-3-cu-ft-5-element-freestanding-electric-range-fcre306cas-stainless-steel/17278864",
+      "sku": "17278864",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/frigidaire-electric-range-with-dual-expandable-element-eventemp-cooktop-and-steam-clean-oven-in-stainless-steel/1001833978",
+      "sku": "1001833978",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/frigidaire-30-in-smooth-surface-5-element-53-ft3-steam-cleaning-oven-freestanding-electric-range-in-stainless-steel-fcre306cas-10355746",
+      "sku": "10355746",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ge-jcbp240dmww",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "GE",
+   "name": "30 in 5.0 cu ft self-clean freestanding coil-top electric range, white",
+   "code": "JCBP240DMWW",
+   "widthIn": 29.92,
+   "depthIn": 28.74,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 948,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Best Buy, Home Depot and RONA. Drawn at its 36″ cooking height; the listed 47.24″ includes the back control panel.",
+   "flags": {
+    "backguard": true
+   },
+   "retail": {
+    "key": "ge-jcbp240dmww",
+    "type": "range-induction",
+    "upc": "067732154975",
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 29.92,
+     "d": 28.74,
+     "h": 47.24
+    },
+    "typical": [],
+    "note": "Drawn at its 36″ cooking height; the listed 47.24″ includes the back control panel.",
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/ge-30-5-0-cu-ft-self-clean-freestanding-coil-top-electric-range-jcbp240dmww-white/13303938",
+      "sku": "13303938",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/ge-30-inch-free-standing-electric-range-with-self-cleaning-storage-drawer-oven-in-white/1001680632",
+      "sku": "1001680632",
+      "priceCad": 948,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/ge-appliances-ge-self-clean-electric-range-30-in-5-cu-ft-sensitemp-technology-white-jcbp240dmww-23085448",
+      "sku": "23085448",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-ne63a6511ss",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "30 in 6.3 cu ft smart freestanding electric range with air fry, stainless",
+   "code": "NE63A6511SS",
+   "widthIn": 29.938,
+   "depthIn": 28.688,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1025,
+   "finishes": [
+    {
+     "id": "fingerprint-resistant-stainless-steel",
+     "name": "Fingerprint-resistant stainless steel",
+     "hex": "#bfc3c6",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy, Home Depot and RONA. Drawn at its 36″ cooking height; the listed 46.31″ includes the back control panel.",
+   "flags": {
+    "backguard": true
+   },
+   "retail": {
+    "key": "samsung-ne63a6511ss",
+    "type": "range-induction",
+    "upc": "887276509426",
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 29.938,
+     "d": 28.688,
+     "h": 46.313
+    },
+    "typical": [],
+    "note": "Drawn at its 36″ cooking height; the listed 46.31″ includes the back control panel.",
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/samsung-30-6-3-cu-ft-smart-fan-convection-electric-air-fry-range-ne63a6511ss-stainless/15268020",
+      "sku": "15268020",
+      "priceCad": 1024.99,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/samsung-electric-range-with-convection-oven-and-air-fry-in-fingerprint-resistant-stainless-steel/1001618161",
+      "sku": "1001618161",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/samsung-free-standing-convection-range-with-air-fry-and-wi-fi-connection-30-in-stainless-steel-ne63a6511ss-ac-22945318",
+      "sku": "22945318",
+      "priceCad": 1099,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-nz30k7880ug",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "30 in induction cooktop, 5 elements with flex zone, black stainless trim",
+   "code": "NZ30K7880UG",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2596,
+   "finishes": [
+    {
+     "id": "black-stainless-trim",
+     "name": "Black stainless trim",
+     "hex": "#2b2b2d",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot and Best Buy. A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+   "retail": {
+    "key": "samsung-nz30k7880ug",
+    "type": "range-induction",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/samsung-30-inch-induction-cooktop-in-black-stainless-steel-with-5-elements-and-flex-zone-element/1001033041",
+      "sku": "1001033041",
+      "priceCad": 2945,
+      "inStock": null
+     },
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/shop/appliances/30-inch-induction-cooktop",
+      "sku": null,
+      "priceCad": 2595.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-ywfc150m0jb",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "30 in 4.8 cu ft freestanding electric coil-top range, black",
+   "code": "YWFC150M0JB",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1050,
+   "finishes": [
+    {
+     "id": "black",
+     "name": "Black",
+     "hex": "#1d1d1f",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA, Home Depot and Best Buy.",
+   "retail": {
+    "key": "whirlpool-ywfc150m0jb",
+    "type": "range-induction",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/whirlpool-freestanding-electric-range-black-4-burner-coil-top-keep-warm-setting-48-cu-ft-ywfc150m0jb-30006515",
+      "sku": "30006515",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/whirlpool-4-8-cu-ft-electric-range-in-black/1001517579",
+      "sku": "1001517579",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/shop/best-coil-top-electric-range",
+      "sku": null,
+      "priceCad": 1049.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-broan-30-under-cabinet-350cfm-b-5fdeea",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Broan",
+   "name": "30 in under-cabinet range hood, 350 max blower CFM, black stainless",
+   "code": "1001895102",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "black-stainless",
+     "name": "Black stainless",
+     "hex": "#2a2b2d",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "broan-30-under-cabinet-350cfm-black-stainless",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/broan-30-inch-under-cabinet-range-hood-energy-star-350-max-blower-cfm-black-stainless-steel/1001895102",
+      "sku": "1001895102",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-broan-nutone-bwp1304ss",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Broan-NuTone",
+   "name": "30 in pyramid chimney wall-mount range hood, 450 max CFM, stainless",
+   "code": "BWP1304SS",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "broan-nutone-bwp1304ss",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/broan-nutone-30-inch-pyramid-chimney-wall-mount-range-hood-450-max-cfm-in-stainless-steel-optional-non-duct-kit-separate/1001591249",
+      "sku": "1001591249",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-broan-nutone-ewp1306ss",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Broan-NuTone",
+   "name": "30 in pyramid chimney wall-mount range hood, 640 max blower CFM, stainless",
+   "code": "EWP1306SS",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "broan-nutone-ewp1306ss",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/broan-nutone-30-inch-pyramid-chimney-wall-mount-range-hood-640-max-blower-cfm-in-stainless-steel/1001768746",
+      "sku": "1001768746",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cosmo-cos-63175s-hood",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Cosmo",
+   "name": "30 in 380 CFM ducted range hood with touch controls, stainless",
+   "code": "COS-63175S",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA and Home Depot.",
+   "retail": {
+    "key": "cosmo-cos-63175s-hood",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/cosmo-30-in-stainless-steel-ducted-range-hood-with-touch-controls-led-lighting-and-permanent-filters-cos-63175s-332067323",
+      "sku": "332067323",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cosmo-30-in-ductless-wall-mount-range-hood-in-stainless-steel-with-touch-controls/1001595571",
+      "sku": "1001595571",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cosmo-uc30-haven-under-cabinet-hood",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Cosmo",
+   "name": "30 in 380 CFM Haven collection ducted under-cabinet range hood, stainless",
+   "code": "UC30",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA and Home Depot.",
+   "retail": {
+    "key": "cosmo-uc30-haven-under-cabinet-hood",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/cosmo-30-in-380-cfm-haven-collection-ducted-under-cabinet-range-hood-w-led-lights-button-control-stainless-steel-uc30-332052206",
+      "sku": "332052206",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cosmo-30-in-ducted-under-cabinet-range-hood-in-stainless-steel-with-touch-display/1001518664",
+      "sku": "1001518664",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cosmo-cos-668wrc75-vista-hood",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Cosmo",
+   "name": "30 in 380 CFM Vista collection ducted wall-mount range hood, stainless",
+   "code": "COS-668WRC75",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": 375,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "retail": {
+    "key": "cosmo-cos-668wrc75-vista-hood",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/cosmo-wall-mount-range-hood-with-led-light-380-cfm-30-in-stainless-steel-cos-668wrc75-330716994",
+      "sku": "330716994",
+      "priceCad": 375,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ge-30-convertible-wall-mount-hood",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "GE",
+   "name": "30 in convertible wall-mount range hood, 350 max CFM, stainless",
+   "code": "1001036736",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "ge-30-convertible-wall-mount-hood",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/ge-30-inch-convertible-wall-mount-range-hood-in-stainless-steel/1001036736",
+      "sku": "1001036736",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-vissani-30-320cfm-chimney-hood",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Vissani",
+   "name": "30 in 320 CFM wall-mount chimney range hood, stainless",
+   "code": "1000860269",
+   "widthIn": 30,
+   "depthIn": 18.9,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "vissani-30-320cfm-chimney-hood",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 18.9,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/vissani-30-inch-320-cfm-wall-mount-chimney-range-hood-in-stainless-steel/1000860269",
+      "sku": "1000860269",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-wvw57uc0fs-hood",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "30 in 400 CFM wall-mount chimney range hood, stainless",
+   "code": "WVW57UC0FS",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": 799,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "retail": {
+    "key": "whirlpool-wvw57uc0fs-hood",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/wall-mount-chimney-range-hood-30-400-cfm-stainless-steel-30005801",
+      "sku": "30005801",
+      "priceCad": 799,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-b36ct80sns",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "800 Series 36 in 21 cu ft counter-depth French door refrigerator, stainless",
+   "code": "B36CT80SNS",
+   "widthIn": 36,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": 5880,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "bosch-b36ct80sns",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://bestbuy.ca/en-ca/product/bosch-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583",
+      "sku": "13694583",
+      "priceCad": 5879.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-frigidaire-gallery-grfc2353af",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Frigidaire",
+   "name": "Gallery 36 in 22.6 cu ft French door bottom-freezer refrigerator, stainless",
+   "code": "GRFC2353AF",
+   "widthIn": 36,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "retail": {
+    "key": "frigidaire-gallery-grfc2353af",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/36-226-cu-ft-french-door-bottom-freezer-refrigerator-grfc2353af-stainless-steel/p/3760174",
+      "sku": "3760174",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ge-gne27jymfs",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "GE",
+   "name": "36 in 27 cu ft French door refrigerator with internal water dispenser, fingerprint-resistant stainless",
+   "code": "GNE27JYMFS",
+   "widthIn": 35.75,
+   "depthIn": 35.9,
+   "heightIn": 69.9,
+   "elevationIn": 0,
+   "price": 1898,
+   "finishes": [
+    {
+     "id": "fingerprint-resistant-stainless-steel",
+     "name": "Fingerprint-resistant stainless steel",
+     "hex": "#bfc3c6",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot and Home Hardware.",
+   "retail": {
+    "key": "ge-gne27jymfs",
+    "type": "fridge-french",
+    "upc": "084691853800",
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 35.75,
+     "d": 35.9,
+     "h": 69.9
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/ge-36-inch-27-0-cu-ft-french-door-refrigerator-fingerprint-resistant-stainless-steel-energy-star-/1001701015",
+      "sku": "1001701015",
+      "priceCad": 1898,
+      "inStock": null
+     },
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/36-27-cu-ft-french-door-bottom-freezer-refrigerator-gne27jymfs-fingerprint-resistant-stainless-steel/p/3760113",
+      "sku": "3760113",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-lg-lf24z6530s",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "LG",
+   "name": "36 in 23.7 cu ft French 3-door counter-depth MAX refrigerator with zero clearance, stainless",
+   "code": "LF24Z6530S",
+   "widthIn": 36,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": 2595,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "lg-lf24z6530s",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/lg-36-23-7-cu-ft-french-3-door-counter-depth-max-refrigerator-with-zero-clearance-lf24z6530s-stainless-steel/18658455",
+      "sku": "18658455",
+      "priceCad": 2594.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-lg-lrflc2706s",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "LG",
+   "name": "36 in 27 cu ft smart counter-depth MAX refrigerator with internal water dispenser, stainless",
+   "code": "LRFLC2706S",
+   "widthIn": 35.75,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": 2195,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA, Home Depot and Best Buy.",
+   "retail": {
+    "key": "lg-lrflc2706s",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 35.75,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/lg-stainless-steel-bottom-freezer-refrigerator-36-in-27-cu-ft-internal-water-dispenser-lrflc2706s-30895370",
+      "sku": "30895370",
+      "priceCad": 2195,
+      "inStock": false
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/lg-electronics-27-cu-ft-smart-counter-depth-refrigerator-in-stainless-steel/1001761787",
+      "sku": "1001761787",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "best-buy",
+      "url": "https://bestbuy.ca/en-ca/product/lg-36-27-cu-ft-smart-counter-depth-max-refrigerator-with-internal-water-dispenser-lrflc2706s-stainless-steel/16499205",
+      "sku": "16499205",
+      "priceCad": null,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maytag-mfc2062fez",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Maytag",
+   "name": "36 in 20 cu ft counter-depth French door refrigerator, stainless",
+   "code": "MFC2062FEZ",
+   "widthIn": 36,
+   "depthIn": 29.5,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "maytag-mfc2062fez",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 29.5,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/maytag-36-20-cu-ft-counter-depth-french-door-refrigerator-mfc2062fez-stainless-steel/12307506",
+      "sku": "12307506",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-rf28t5a01sr",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "36 in 28.2 cu ft 3-door French door refrigerator, stainless",
+   "code": "RF28T5A01SR",
+   "widthIn": 35.75,
+   "depthIn": 35.375,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy and RONA.",
+   "retail": {
+    "key": "samsung-rf28t5a01sr",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 35.75,
+     "d": 35.375,
+     "h": 70
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/samsung-36-28-2-cu-ft-french-door-refrigerator-rf28t5a01sr-stainless/14800542",
+      "sku": "14800542",
+      "priceCad": null,
+      "inStock": false
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/samsung-french-door-refrigerator-with-ice-maker-36-in-282-cu-ft-stainless-steel-rf28t5a01sr-aa-22945292",
+      "sku": "22945292",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-bespoke-rf23db990012ac",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "BESPOKE 36 in 22.5 cu ft counter-depth 4-door French door refrigerator with Family Hub, white",
+   "code": "RF23DB990012AC",
+   "widthIn": 36,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white-glass",
+     "name": "White glass",
+     "hex": "#f4f4f2",
+     "material": "glass"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "samsung-bespoke-rf23db990012ac",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/samsung-bespoke-36-22-5-cu-ft-counter-depth-4-door-french-door-refrigerator-w-family-hub-rf23db990012ac-white/17741592",
+      "sku": "17741592",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-wrf535swhz",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "36 in 25.2 cu ft French door refrigerator with water dispenser, stainless",
+   "code": "WRF535SWHZ",
+   "widthIn": 35.625,
+   "depthIn": 35.5,
+   "heightIn": 70.125,
+   "elevationIn": 0,
+   "price": 1900,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy and RONA.",
+   "retail": {
+    "key": "whirlpool-wrf535swhz",
+    "type": "fridge-french",
+    "upc": "883049442068",
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 35.625,
+     "d": 35.5,
+     "h": 70.125
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/whirlpool-36-25-2-cu-ft-french-door-refrigerator-w-water-dispenser-wrf535swhz-stainless-steel/11465164.aspx",
+      "sku": "11465164",
+      "priceCad": 1899.99,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/whirlpool-french-door-refrigerator-with-water-dispenser-25-cu-ft-stainless-steel-36-in-wrf535swhz-30005469",
+      "sku": "30005469",
+      "priceCad": 2495,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-smeg-fab28-retro-fridge",
+   "kind": "fridge",
+   "variant": "retro",
+   "category": "appliances",
+   "brand": "Smeg",
+   "name": "50's retro 24 in 9.2 cu ft all-fridge (FAB28 series)",
+   "code": "14950493",
+   "widthIn": 23.62,
+   "depthIn": 30.31,
+   "heightIn": 60.24,
+   "elevationIn": 0,
+   "price": 2860,
+   "finishes": [
+    {
+     "id": "black-fab28urbl3",
+     "name": "Black (FAB28URBL3)",
+     "hex": "#1d1d1f",
+     "material": "paint"
+    },
+    {
+     "id": "white-fab28ulwh3",
+     "name": "White (FAB28ULWH3)",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    },
+    {
+     "id": "pink-fab28urpk3",
+     "name": "Pink (FAB28URPK3)",
+     "hex": "#f2b8c6",
+     "material": "metal"
+    },
+    {
+     "id": "yellow-fab28uryw3",
+     "name": "Yellow (FAB28URYW3)",
+     "hex": "#f2d95c",
+     "material": "metal"
+    },
+    {
+     "id": "pastel-green-fab28ulpg3",
+     "name": "Pastel green (FAB28ULPG3)",
+     "hex": "#a9d5bf",
+     "material": "metal"
+    },
+    {
+     "id": "pastel-blue-fab28ulpb3",
+     "name": "Pastel blue (FAB28ULPB3)",
+     "hex": "#a9cfe3",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "smeg-fab28-retro-fridge",
+    "type": "fridge-retro",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 23.62,
+     "d": 30.31,
+     "h": 60.24
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/smeg-50-s-24-9-2-cu-ft-all-fridge-refrigerator-fab28urbl3-black/14950493",
+      "sku": "14950493",
+      "priceCad": 2859.99,
+      "inStock": null
+     },
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/smeg-50-s-24-9-2-cu-ft-all-fridge-refrigerator-fab28ulwh3-white/14950507",
+      "sku": "14950507",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-hbl5451uc",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "500 Series 30 in single electric wall oven with European convection, stainless",
+   "code": "HBL5451UC",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": 4598,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "bosch-hbl5451uc",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/bosch-500-series-30-inch-built-in-single-wall-oven-with-european-convection/1001076306",
+      "sku": "1001076306",
+      "priceCad": 4598,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-hbl5351uc",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "500 Series 30 in single electric wall oven with thermal cooking, stainless",
+   "code": "HBL5351UC",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": 3898,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "bosch-hbl5351uc",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/bosch-500-series-30-inch-built-in-single-wall-oven-with-thermal-cooking/1001076305",
+      "sku": "1001076305",
+      "priceCad": 3898,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-30-wifi-wall-oven-convection",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "30 in electric Wi-Fi wall oven with convection and self/steam clean, stainless",
+   "code": "1001847579",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "samsung-30-wifi-wall-oven-convection",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/samsung-30-inch-electric-wifi-enabled-wall-oven-with-convection-and-self-steam-cook-in-stainless-steel/1001847579",
+      "sku": "1001847579",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-30-single-wall-oven-t-251d99",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "30 in single electric wall oven with true convection and air fry, fingerprint-resistant stainless",
+   "code": "1001817263",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "fingerprint-resistant-stainless-steel",
+     "name": "Fingerprint-resistant stainless steel",
+     "hex": "#bfc3c6",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "whirlpool-30-single-wall-oven-true-convection",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/whirlpool-30-inch-single-electric-wall-oven-with-true-convection-and-air-fry-in-fingerprint-resistant-stainless-steel/1001817263",
+      "sku": "1001817263",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-shx5aem5n",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "100 Series Premium 24 in smart dishwasher with third rack, 46 dBA, stainless",
+   "code": "SHX5AEM5N",
+   "widthIn": 23.563,
+   "depthIn": 22.563,
+   "heightIn": 33.875,
+   "elevationIn": 0,
+   "price": 799,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy and RONA.",
+   "retail": {
+    "key": "bosch-shx5aem5n",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 23.563,
+     "d": 22.563,
+     "h": 33.875
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-third-rack-shx5aem5n-stainless-steel/17109440",
+      "sku": "17109440",
+      "priceCad": 899.99,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/bosch-100-series-3-rack-46-db-24-in-stainless-steel-built-in-dishwasher-shx5aem5n-30855415",
+      "sku": "30855415",
+      "priceCad": 799,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-she53b75uc",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "300 Series 24 in built-in dishwasher with third rack, stainless",
+   "code": "SHE53B75UC",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1000,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy and Home Hardware.",
+   "retail": {
+    "key": "bosch-she53b75uc",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-stainless-steel-tub-third-rack-she53b75uc-stainless-steel/16681222",
+      "sku": "16681222",
+      "priceCad": 999.99,
+      "inStock": null
+     },
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/300-series-24-built-in-dishwasher-she53b75uc-with-front-controls-third-rack-stainless-steel/p/3719158",
+      "sku": "3719158",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-frigidaire-ffid2426ts",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Frigidaire",
+   "name": "24 in built-in dishwasher, top controls, stainless",
+   "code": "FFID2426TS",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 549,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Hardware.",
+   "retail": {
+    "key": "frigidaire-ffid2426ts",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/24-stainless-steel-built-in-dishwasher/p/3719325",
+      "sku": "3719325",
+      "priceCad": 549,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-wdt730hamz",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "24 in built-in dishwasher with third rack, 51 dBA, stainless",
+   "code": "WDT730HAMZ",
+   "widthIn": 23.875,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": 699,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy and RONA.",
+   "retail": {
+    "key": "whirlpool-wdt730hamz",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 23.875,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/whirlpool-24-51db-built-in-dishwasher-with-third-rack-wdt730hamz-stainless-steel/16502080",
+      "sku": "16502080",
+      "priceCad": 699.99,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/whirlpool-51-dba-filtration-built-in-dishwasher-stainless-steel-24-in-energy-star-certified-wdt730hamz-30006775",
+      "sku": "30006775",
+      "priceCad": 699,
+      "inStock": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ge-jvm1635sfc",
+   "kind": "microwave",
+   "category": "appliances",
+   "brand": "GE",
+   "name": "30 in 1.6 cu ft over-the-range microwave, 300 CFM, stainless",
+   "code": "JVM1635SFC",
+   "widthIn": 30,
+   "depthIn": 16,
+   "heightIn": 17,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "ge-jvm1635sfc",
+    "type": "microwave",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/ge-30-inch-w-1-6-cu-ft-over-the-range-microwave-in-stainless-steel-with-sensor-cooking/1000727849",
+      "sku": "1000727849",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ge-jvm2185smss",
+   "kind": "microwave",
+   "category": "appliances",
+   "brand": "GE",
+   "name": "30 in 1.8 cu ft over-the-range microwave, 400 CFM, stainless",
+   "code": "JVM2185SMSS",
+   "widthIn": 30,
+   "depthIn": 16,
+   "heightIn": 17,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "ge-jvm2185smss",
+    "type": "microwave",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/ge-30-inch-1-8-cu-ft-over-the-range-microwave-oven-in-stainless-steel/1001485493",
+      "sku": "1001485493",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-samsung-me11a7510ds",
+   "kind": "microwave",
+   "category": "appliances",
+   "brand": "Samsung",
+   "name": "Smart SLIM 30 in 1.1 cu ft over-the-range microwave, 400 CFM, Wi-Fi, fingerprint-resistant stainless",
+   "code": "ME11A7510DS",
+   "widthIn": 30,
+   "depthIn": 16,
+   "heightIn": 17,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "fingerprint-resistant-stainless-steel",
+     "name": "Fingerprint-resistant stainless steel",
+     "hex": "#bfc3c6",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "samsung-me11a7510ds",
+    "type": "microwave",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/samsung-smart-slim-30-in-1-1-cu-ft-over-the-range-microwave-with-400-cfm-wi-fi-in-fingerprint-resistant-stainless-steel/1001660214",
+      "sku": "1001660214",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-marathon-mwc56-dss-wine-cooler",
+   "kind": "wine",
+   "variant": "wine",
+   "category": "appliances",
+   "brand": "Marathon",
+   "name": "24 in built-in dual-zone wine cooler, stainless",
+   "code": "MWC56-DSS",
+   "widthIn": 24,
+   "depthIn": 25,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1799,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "marathon-mwc56-dss-wine-cooler",
+    "type": "wine-column",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": 25,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/marathon-24-inch-built-in-dual-zone-stainless-steel-wine-cooler/1001523609",
+      "sku": "1001523609",
+      "priceCad": 1799,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-wuw55x24hs-wine-46",
+   "kind": "wine",
+   "variant": "wine",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "24 in undercounter wine fridge, 46 bottles, dual zone, stainless",
+   "code": "WUW55X24HS",
+   "widthIn": 23.81,
+   "depthIn": 23.75,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1648,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "whirlpool-wuw55x24hs-wine-46",
+    "type": "wine-column",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 23.81,
+     "d": 23.75,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/whirlpool-24-inch-w-undercounter-wine-fridge-for-46-bottles-in-stainless-steel-reversible-door-swing/1001087777",
+      "sku": "1001087777",
+      "priceCad": 1648,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-whirlpool-wub35x24hz-beverage-center",
+   "kind": "wine",
+   "variant": "beverage",
+   "category": "appliances",
+   "brand": "Whirlpool",
+   "name": "24 in 5.2 cu ft wine and beverage cooler with glass door, fingerprint-resistant stainless",
+   "code": "WUB35X24HZ",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "fingerprint-resistant-stainless-steel",
+     "name": "Fingerprint-resistant stainless steel",
+     "hex": "#bfc3c6",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "whirlpool-wub35x24hz-beverage-center",
+    "type": "beverage-center",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/whirlpool-24-inch-5-2-cu-ft-wine-beverage-cooler-with-glass-door-in-finger-print-resistant-stainless-steel/1001106612",
+      "sku": "1001106612",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-arcassa-orillia-sink-base-36",
+   "kind": "sink",
+   "variant": "undermount",
+   "category": "sinks",
+   "brand": "Arcassa",
+   "name": "Orillia 36 in sink base, Glacier White",
+   "code": "RCSB36FHDSOR",
+   "widthIn": 36,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glacier-white",
+     "name": "Glacier White",
+     "hex": "#f2f4f5",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Orillia",
+   "retail": {
+    "key": "arcassa-orillia-sink-base-36",
+    "type": "sink-undermount",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-orillia-36-x-345-x-2488-in-glacier-white-sink-base-semi-custom-cabinet-rcsb36fhdsor-332014134",
+      "sku": "332014134",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-arcassa-richmond-sink-base-36",
+   "kind": "sink",
+   "variant": "undermount",
+   "category": "sinks",
+   "brand": "Arcassa",
+   "name": "Richmond 36 in sink base, Light Grey",
+   "code": "RCSB36FHDSRC",
+   "widthIn": 36,
+   "depthIn": 24.88,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "light-grey",
+     "name": "Light Grey",
+     "hex": "#b9bcbf",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Richmond",
+   "retail": {
+    "key": "arcassa-richmond-sink-base-36",
+    "type": "sink-undermount",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24.88,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/arcassa-richmond-36-x-345-x-2488-in-light-grey-sink-base-semi-custom-cabinet-rcsb36fhdsrc-332013507",
+      "sku": "332013507",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hampton-bay-edson-bs30-sink-base-white",
+   "kind": "sink",
+   "variant": "undermount",
+   "category": "sinks",
+   "brand": "Hampton Bay",
+   "name": "Edson 30 in sink base cabinet, Solid White",
+   "code": "BS30",
+   "widthIn": 30,
+   "depthIn": 24.5,
+   "heightIn": 34.5,
+   "elevationIn": 0,
+   "widthOptions": [
+    30,
+    36
+   ],
+   "price": 458,
+   "finishes": [
+    {
+     "id": "solid-white",
+     "name": "Solid White",
+     "hex": "#f3f3ef",
+     "material": "paint"
+    },
+    {
+     "id": "taupe-grey",
+     "name": "Taupe Grey",
+     "hex": "#9b948b",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Edson",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "hampton-bay-edson-bs30-sink-base-white",
+    "type": "sink-undermount",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24.5,
+     "h": 34.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-solid-white-bs30-/1001469565",
+      "sku": "1001469565",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-36-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-solid-white-bs36-/1001469566",
+      "sku": "1001469566",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-5-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-taupe-grey-bs30-/1001505058",
+      "sku": "1001505058",
+      "priceCad": 458,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-sektion-sink-base-30",
+   "kind": "sink",
+   "variant": "undermount",
+   "category": "sinks",
+   "brand": "IKEA",
+   "name": "SEKTION base cabinet for sink + 2 doors, white/Aspudden matt white, 30 x 24 x 30 in",
+   "code": "IKEA-SEKTION-SINK-BASE-30",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "widthOptions": [
+    30,
+    36
+   ],
+   "price": 222,
+   "finishes": [
+    {
+     "id": "white-aspudden-matt-white",
+     "name": "White/Aspudden matt white",
+     "hex": "#f1f1ee",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "line": "SEKTION",
+   "retail": {
+    "key": "ikea-sektion-sink-base-30",
+    "type": "sink-undermount",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 30,
+     "d": 24,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
+      "sku": null,
+      "priceCad": 222,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-khu100-32-standart-pro",
+   "kind": "sink",
+   "variant": "undermount",
+   "category": "sinks",
+   "brand": "Kraus",
+   "name": "Standart PRO 32 in undermount single-bowl stainless sink",
+   "code": "KHU100-32",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA. The 32″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "kraus-khu100-32-standart-pro",
+    "type": "sink-undermount",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 32,
+     "d": 19,
+     "h": 10
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 32″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/kraus-standart-pro-undermount-kitchen-sink-single-bowl-32-in-x-19-in-stainless-steel-khu100-32-330717971",
+      "sku": "330717971",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-thomasville-nouveau-rhett-bs36-ccf9bb",
+   "kind": "sink",
+   "variant": "undermount",
+   "category": "sinks",
+   "brand": "Thomasville Nouveau",
+   "name": "Rhett 36 in sink base, Lagoon Blue",
+   "code": "BS36",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 34.6,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "lagoon-blue",
+     "name": "Lagoon Blue",
+     "hex": "#3b6a86",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Rhett",
+   "doorStyle": "shaker",
+   "retail": {
+    "key": "thomasville-nouveau-rhett-bs36-sink-base",
+    "type": "sink-undermount",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 24,
+     "h": 34.6
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/thomasville-nouveau-rhett-36-inch-w-x-34-6-inch-h-x-24-inch-d-shaker-style-assembled-kitchen-sink-base-cabinet-cupboard-in-lagoon-blue-bs36-/1001592266",
+      "sku": "1001592266",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-blanco-profina-401808-36-apron",
+   "kind": "sink",
+   "variant": "farmhouse",
+   "category": "sinks",
+   "brand": "Blanco",
+   "name": "PROFINA 36 in single-bowl apron-front sink with cutting board, white",
+   "code": "401808",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1663,
+   "finishes": [
+    {
+     "id": "white-ceramic-fireclay",
+     "name": "White ceramic/fireclay",
+     "hex": "#f7f7f4",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 36″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "blanco-profina-401808-36-apron",
+    "type": "sink-farmhouse",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 36″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/blanco-profina-ceramic-fireclay-farmhouse-kitchen-sink-ceramic-white/1001490815",
+      "sku": "1001490815",
+      "priceCad": 1663,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bocchi-contempo-36-fireclay-farmhouse",
+   "kind": "sink",
+   "variant": "farmhouse",
+   "category": "sinks",
+   "brand": "BOCCHI",
+   "name": "Contempo 36 in farmhouse apron-front fireclay single-bowl sink, white",
+   "code": "1354-001-0120",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1495,
+   "finishes": [
+    {
+     "id": "white-fireclay",
+     "name": "White fireclay",
+     "hex": "#f7f7f4",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 36″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "bocchi-contempo-36-fireclay-farmhouse",
+    "type": "sink-farmhouse",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 36,
+     "d": 19,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 36″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/bocchi-contempo-farmhouse-apron-front-fireclay-36-inch-single-bowl-kitchen-sink-in-white/1001833019",
+      "sku": "1001833019",
+      "priceCad": 1495,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-khf410-33-farmhouse-stainless",
+   "kind": "sink",
+   "variant": "farmhouse",
+   "category": "sinks",
+   "brand": "Kraus",
+   "name": "Standart PRO 33 in farmhouse apron-front single-bowl stainless sink",
+   "code": "KHF410-33",
+   "widthIn": 33,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 33″ sink, drawn in a 33″ sink base cabinet.",
+   "retail": {
+    "key": "kraus-khf410-33-farmhouse-stainless",
+    "type": "sink-farmhouse",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 21,
+     "h": 10
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 33″ sink, drawn in a 33″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kraus-standart-pro-farmhouse-apron-front-stainless-steel-33-inch-single-bowl-kitchen-sink/1001584058",
+      "sku": "1001584058",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-kfr1-33gwh-fireclay-farmhouse",
+   "kind": "sink",
+   "variant": "farmhouse",
+   "category": "sinks",
+   "brand": "Kraus",
+   "name": "Turino 33 in reversible farmhouse apron-front fireclay single-bowl sink, white",
+   "code": "KFR1-33GWH",
+   "widthIn": 33,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1276,
+   "finishes": [
+    {
+     "id": "gloss-white-fireclay",
+     "name": "Gloss white fireclay",
+     "hex": "#f6f6f3",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 33″ sink, drawn in a 33″ sink base cabinet.",
+   "retail": {
+    "key": "kraus-kfr1-33gwh-fireclay-farmhouse",
+    "type": "sink-farmhouse",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 18.25,
+     "h": 10
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 33″ sink, drawn in a 33″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kraus-33-inch-reversible-farmhouse-apron-front-fireclay-single-bowl-kitchen-sink-with-bottom-grid/1001584054",
+      "sku": "1001584054",
+      "priceCad": 1276,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-sinkology-bradstreet-ii-sk493-33fc",
+   "kind": "sink",
+   "variant": "farmhouse",
+   "category": "sinks",
+   "brand": "Sinkology",
+   "name": "Bradstreet II 33 in crisp white fireclay single-bowl farmhouse sink",
+   "code": "SK493-33FC",
+   "widthIn": 33,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1307,
+   "finishes": [
+    {
+     "id": "crisp-white-fireclay",
+     "name": "Crisp white fireclay",
+     "hex": "#f7f7f4",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 33″ sink, drawn in a 33″ sink base cabinet.",
+   "retail": {
+    "key": "sinkology-bradstreet-ii-sk493-33fc",
+    "type": "sink-farmhouse",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 18,
+     "h": 10
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 33″ sink, drawn in a 33″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/sinkology-bradstreet-ii-crisp-white-fireclay-33-single-bowl-farmhouse-apron-front-undermount-kitchen-sink/1001536422",
+      "sku": "1001536422",
+      "priceCad": 1307,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-blanco-stellar-401026-60-40",
+   "kind": "sink",
+   "variant": "double",
+   "category": "sinks",
+   "brand": "Blanco",
+   "name": "STELLAR 32 in 60/40 double-bowl undermount stainless sink",
+   "code": "401026",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 535,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 32.36″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "blanco-stellar-401026-60-40",
+    "type": "sink-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 32.36,
+     "d": null,
+     "h": 9
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 32.36″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/blanco-stellar-32-in-60-40-double-bowl-undermount-stainless-steel-kitchen-sink/1000728910",
+      "sku": "1000728910",
+      "priceCad": 535,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-khu102-33-double-equal",
+   "kind": "sink",
+   "variant": "double",
+   "category": "sinks",
+   "brand": "Kraus",
+   "name": "Standart PRO 32.75 in undermount double equal bowl stainless sink",
+   "code": "KHU102-33",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA. The 32.75″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "kraus-khu102-33-double-equal",
+    "type": "sink-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 32.75,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 32.75″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/kraus-standart-pro-undermount-kitchen-sink-double-equal-bowl-3275-in-stainless-steel-khu102-33-330718045",
+      "sku": "330718045",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-khu103-33-60-40-kit",
+   "kind": "sink",
+   "variant": "double",
+   "category": "sinks",
+   "brand": "Kraus",
+   "name": "Standart PRO 33 in undermount 60/40 double bowl stainless sink kit",
+   "code": "KHU103-33",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. The 32.75″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "kraus-khu103-33-60-40-kit",
+    "type": "sink-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 32.75,
+     "d": 19,
+     "h": 10.25
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 32.75″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kraus-undermount-stainless-steel-33-inch-60-40-double-bowl-kitchen-sink-kit/1000668147",
+      "sku": "1000668147",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylish-s-322xg-33-60-40",
+   "kind": "sink",
+   "variant": "double",
+   "category": "sinks",
+   "brand": "Stylish",
+   "name": "33 in reversible 60/40 double-bowl undermount stainless sink",
+   "code": "S-322XG",
+   "widthIn": 36,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 595,
+   "finishes": [
+    {
+     "id": "brushed-satin-stainless",
+     "name": "Brushed satin stainless",
+     "hex": "#c0c4c7",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at RONA and Home Depot. The 33″ sink, drawn in a 36″ sink base cabinet.",
+   "retail": {
+    "key": "stylish-s-322xg-33-60-40",
+    "type": "sink-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 33,
+     "d": 18,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "The 33″ sink, drawn in a 36″ sink base cabinet.",
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/stylish-33-in-double-bowl-60-40-reversible-undermount-kitchen-sink-stainless-steel-s-322xg-330837964",
+      "sku": "330837964",
+      "priceCad": 595,
+      "inStock": null
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylish-undermount-33-inch-stainless-steel-60-40-double-bowl-60-40-kitchen-sink/1001559742",
+      "sku": "1001559742",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-ranarp-pendant-lamp-38cm",
+   "kind": "pendant",
+   "variant": "dome",
+   "category": "lighting",
+   "brand": "IKEA",
+   "name": "RANARP pendant lamp, 38 cm (15 in), off-white or black",
+   "code": "103.909.75",
+   "widthIn": 15,
+   "depthIn": 15,
+   "heightIn": 10,
+   "elevationIn": 68,
+   "price": 50,
+   "finishes": [
+    {
+     "id": "off-white",
+     "name": "Off-white",
+     "hex": "#eeeae0",
+     "material": "paint"
+    },
+    {
+     "id": "black",
+     "name": "Black",
+     "hex": "#1c1c1c",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "retail": {
+    "key": "ikea-ranarp-pendant-lamp-38cm",
+    "type": "pendant-dome",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 15,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/ranarp-pendant-lamp-off-white-10390975/",
+      "sku": "103.909.75",
+      "priceCad": 49.99,
+      "inStock": null
+     },
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/ranarp-pendant-lamp-black-10390956/",
+      "sku": "103.909.56",
+      "priceCad": 49.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-yansun-3-light-cluster-glass-pendant",
+   "kind": "pendant",
+   "variant": "globe",
+   "category": "lighting",
+   "brand": "YANSUN",
+   "name": "10 in 3-light vintage kitchen island cluster glass pendant",
+   "code": "1001813194",
+   "widthIn": 10,
+   "depthIn": 10,
+   "heightIn": 12,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "black-with-clear-glass",
+     "name": "Black with clear glass",
+     "hex": "#2b2b2b",
+     "material": "glass"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "yansun-3-light-cluster-glass-pendant",
+    "type": "pendant-globe",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 10,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/yansun-10-in-3-light-vintage-kitchen-island-cluster-glass-pendant-lighting/1001813194",
+      "sku": "1001813194",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ikea-franklin-bar-stool-counter-black",
+   "kind": "stool",
+   "variant": "backed",
+   "category": "seating",
+   "brand": "IKEA",
+   "name": "FRANKLIN bar stool with backrest, foldable, counter height, black/black",
+   "code": "504.064.65",
+   "widthIn": 19.7,
+   "depthIn": 17.3,
+   "heightIn": 37.4,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "black-black",
+     "name": "Black/black",
+     "hex": "#1c1c1c",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at IKEA.",
+   "retail": {
+    "key": "ikea-franklin-bar-stool-counter-black",
+    "type": "stool-backed",
+    "upc": null,
+    "confidence": "high",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 19.7,
+     "d": 17.3,
+     "h": 37.4
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "ikea",
+      "url": "https://www.ikea.com/ca/en/p/franklin-bar-stool-with-backrest-foldable-counter-height-black-black-50406465/",
+      "sku": "504.064.65",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  }
+ ],
+ "leftOut": {
+  "count": 41,
+  "byReason": {
+   "cabinet fronts only (no box to place)": 7,
+   "faucet (no faucet shape: the sink draws its own)": 7,
+   "backsplash tile (a surface, set in Room & finishes)": 4,
+   "countertop (a surface, drawn on the cabinets)": 4,
+   "flooring (a surface, set in Room & finishes)": 4,
+   "cabinet hardware (set kitchen-wide in Room & finishes)": 6,
+   "no published width": 8,
+   "not a counter-height island (69.25″ tall)": 1
+  }
+ }
+}
