@@ -1,4 +1,5 @@
 import type { OrderStatus } from '../../types/platform';
+import { normalizeUpc } from './upc';
 
 /**
  * Pure helpers for the orders screens: labels, money, dates, the timeline wording and the request
@@ -157,82 +158,103 @@ export function eventTitle(e: TimelineEvent): string {
 export const MAX_REFERENCES = 8;
 export const MAX_NOTES = 4000;
 export const NAME_MAX = 80;
+export const BRAND_MAX = 60;
 
+/** One product on the request form (Make custom models: a product list priced in Model packs). */
 export interface DraftItem {
   productTypeId: string;
   name: string;
+  brand: string;
+  /** As typed, pasted or scanned; normalised (and checked again) by the server. */
+  upc: string;
+  /** A private reference photo of the barcode, when it couldn't be typed or scanned. */
+  barcodeFileId?: string;
   widthIn: number | null;
   depthIn: number | null;
   heightIn: number | null;
   notes: string;
   referenceFileIds: string[];
   refProductId?: string;
-  tier: 'simple' | 'standard' | 'complex' | null;
-  extraFinishes: number;
 }
 
-export type Step = 'what' | 'size' | 'photos' | 'notes' | 'tier' | 'review';
+export type ItemField = 'productTypeId' | 'name' | 'brand' | 'upc' | 'widthIn' | 'depthIn' | 'heightIn' | 'referenceFileIds' | 'notes';
+
+export type Step = 'products' | 'review';
 export const STEPS: { id: Step; label: string }[] = [
-  { id: 'what', label: 'What' },
-  { id: 'size', label: 'Size' },
-  { id: 'photos', label: 'Photos' },
-  { id: 'notes', label: 'Notes' },
-  { id: 'tier', label: 'Tier' },
+  { id: 'products', label: 'Products' },
   { id: 'review', label: 'Review & pay' },
 ];
 
 const LIMITS = { widthIn: [1, 240], depthIn: [1, 120], heightIn: [0.25, 144] } as const;
+const DIM_LABEL = { widthIn: 'Width', depthIn: 'Depth', heightIn: 'Height' } as const;
 
-/** The first problem with an item at a given step, or null. Mirrors the server's checks. */
-export function stepProblem(item: DraftItem, step: Step): string | null {
-  switch (step) {
-    case 'what':
-      if (!item.productTypeId) return 'Choose a product type.';
-      if (!item.name.trim()) return 'Name the product.';
-      if (item.name.trim().length > NAME_MAX) return `Keep the name to ${NAME_MAX} characters or fewer.`;
-      return null;
-    case 'size':
-      for (const [k, [lo, hi]] of Object.entries(LIMITS) as [keyof typeof LIMITS, readonly [number, number]][]) {
-        const v = item[k];
-        const label = k === 'widthIn' ? 'Width' : k === 'depthIn' ? 'Depth' : 'Height';
-        if (v == null || !Number.isFinite(v)) return `Enter the ${label.toLowerCase()}.`;
-        if (v < lo || v > hi) return `${label} must be between ${lo} and ${hi} inches.`;
-      }
-      return null;
-    case 'photos':
-      if (item.referenceFileIds.length > MAX_REFERENCES) return `Add up to ${MAX_REFERENCES} photos.`;
-      if (!item.referenceFileIds.length && !item.refProductId) return 'Add at least one reference photo.';
-      return null;
-    case 'notes':
-      return item.notes.length > MAX_NOTES ? `Keep notes to ${MAX_NOTES.toLocaleString('en-US')} characters or fewer.` : null;
-    case 'tier':
-      return item.tier ? null : 'Choose a tier.';
-    case 'review':
-      for (const s of ['what', 'size', 'photos', 'notes', 'tier'] as Step[]) {
-        const p = stepProblem(item, s);
-        if (p) return p;
-      }
-      return null;
+/**
+ * Every problem with a product, by field (empty when it can be sent). Mirrors the server's checks;
+ * the server checks again. The size is optional, but a size that is given must be in range.
+ */
+export function itemProblems(item: DraftItem): Partial<Record<ItemField, string>> {
+  const out: Partial<Record<ItemField, string>> = {};
+  if (!item.productTypeId) out.productTypeId = 'Choose what kind of product it is.';
+  const name = item.name.trim();
+  if (!name) out.name = 'Name the product.';
+  else if (name.length > NAME_MAX) out.name = `Keep the name to ${NAME_MAX} characters or fewer.`;
+  if (item.brand.trim().length > BRAND_MAX) out.brand = `Keep the brand to ${BRAND_MAX} characters or fewer.`;
+  const upc = item.upc.trim() ? normalizeUpc(item.upc) : null;
+  if (upc && !upc.ok) out.upc = upc.message;
+  for (const k of Object.keys(LIMITS) as (keyof typeof LIMITS)[]) {
+    const v = item[k];
+    const [lo, hi] = LIMITS[k];
+    if (v != null && (!Number.isFinite(v) || v < lo || v > hi)) out[k] = `${DIM_LABEL[k]} must be between ${lo} and ${hi} inches.`;
   }
+  if (item.referenceFileIds.length > MAX_REFERENCES) out.referenceFileIds = `Add up to ${MAX_REFERENCES} photos.`;
+  else if (!item.referenceFileIds.length && !item.refProductId && !upc?.ok && !item.barcodeFileId && !out.upc) {
+    out.referenceFileIds = 'Add a photo or the UPC, so the studio can identify it.';
+  }
+  if (item.notes.length > MAX_NOTES) out.notes = `Keep notes to ${MAX_NOTES.toLocaleString('en-US')} characters or fewer.`;
+  return out;
 }
 
-/** The tier a product type most likely needs (a starting point; the buyer can change it). */
-export function suggestedTier(kind: string | undefined): 'simple' | 'standard' | 'complex' {
-  switch (kind) {
-    case 'pendant':
-    case 'plant':
-    case 'rug':
-    case 'shelf':
-    case 'chair':
-    case 'stool':
-      return 'simple';
-    case 'island':
-    case 'corner':
-    case 'oven-tower':
-      return 'complex';
-    default:
-      return 'standard';
-  }
+/** The first problem with a product, or null. */
+export function itemProblem(item: DraftItem): string | null {
+  return Object.values(itemProblems(item))[0] ?? null;
+}
+
+/** Where a server field error (`items[3].brief.upc`) points: the product and the field. */
+export function errorTarget(field: string): { item: number; field: string } | null {
+  const m = field.match(/^items\[(\d+)\](?:\.brief)?\.?(\w*)/);
+  return m ? { item: Number(m[1]), field: m[2] || 'name' } : null;
+}
+
+/**
+ * How a count of products fills Model packs: how many packs, and how many products the last
+ * pack still has room for. Counts only; every price comes from the server's quote.
+ */
+export function packFill(products: number, perPack: number): { packs: number; inLast: number; roomInLast: number } {
+  const n = Math.max(0, Math.floor(products));
+  const packs = Math.max(1, Math.ceil(n / perPack));
+  const inLast = n === 0 ? 0 : n - (packs - 1) * perPack;
+  return { packs, inLast, roomInLast: perPack - inLast };
+}
+
+/** Which pack (1-based) the product at `index` falls in. */
+export const packOf = (index: number, perPack: number) => Math.floor(index / perPack) + 1;
+
+/** "33″ W × 22″ D", "Size not given": a brief's size, whatever of it was given. */
+export function briefSize(b: { widthIn?: number | null; depthIn?: number | null; heightIn?: number | null }): string {
+  const parts = [
+    b.widthIn != null ? `${Math.round(b.widthIn * 100) / 100}″ W` : null,
+    b.depthIn != null ? `${Math.round(b.depthIn * 100) / 100}″ D` : null,
+    b.heightIn != null ? `${Math.round(b.heightIn * 100) / 100}″ H` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' × ') : 'Size not given';
+}
+
+const LEGACY_TIER_NAME: Record<string, string> = { simple: 'Simple', standard: 'Standard', complex: 'Complex' };
+
+/** What an order's pricing is called: "Model pack", "2 Model packs", or an old tier for orders made before packs. */
+export function pricingLabel(o: { tier: string; packs?: number; pricing?: string }): string {
+  if (o.pricing === 'pack' || o.tier === 'pack') return (o.packs ?? 1) > 1 ? `${o.packs} Model packs` : 'Model pack';
+  return `${LEGACY_TIER_NAME[o.tier] ?? 'Custom'} model`;
 }
 
 /** Parses a typed inch value: "33", "33.5", "2' 9" or 2'9". Null when it isn't a size. */

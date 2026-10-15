@@ -1466,3 +1466,438 @@
     display: inline;
   }
 }
+
+/* ─── Make custom models: the product list (Model packs) ───────────── */
+
+.ord-target {
+  max-width: 420px;
+}
+
+.ord-products {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.ord-product-slot {
+  scroll-margin-top: 80px;
+}
+
+.ord-pack-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ord-pack-divider::before,
+.ord-pack-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.ord-product {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+
+.ord-product.open {
+  border-color: var(--line-2);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.ord-product.bad {
+  border-color: var(--bad);
+}
+
+.ord-product-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+}
+
+.ord-product-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ord-product-n {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ord-product.open .ord-product-n {
+  background: var(--ink);
+  color: var(--panel);
+}
+
+.ord-product-title {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ord-product-title b,
+.ord-product-title > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ord-product-title > span {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.ord-bad-inline {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.ord-product-chev {
+  flex: none;
+  width: 18px;
+  color: var(--ink-3);
+  font-size: 18px;
+  text-align: center;
+}
+
+.ord-product-remove {
+  flex: none;
+}
+
+.ord-product-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 16px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.ord-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+  margin-top: 10px;
+}
+
+.ord-fieldset {
+  min-width: 0;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.ord-fieldset legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ord-fieldset legend em,
+.ord-upc label em,
+.ord-photos > span em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.ord-fieldset .fine {
+  margin: 0 0 8px;
+}
+
+.ord-field-err {
+  display: block;
+  margin-top: 4px;
+  color: var(--bad);
+  font-size: 12.5px;
+}
+
+.ord-product [aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.ord-upc label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ord-upc-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ord-upc-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+}
+
+.ord-scan-btn {
+  flex: none;
+}
+
+.ord-upc-ok {
+  display: block;
+  min-height: 18px;
+  margin-top: 4px;
+  color: var(--ok);
+  font-size: 12.5px;
+}
+
+.ord-linkish {
+  align-self: flex-start;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.ord-linkish:hover {
+  color: var(--ink);
+}
+
+.ord-linkish:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.ord-barcode {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 6px 34px 6px 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.ord-barcode img,
+.ord-barcode .ord-thumb-missing {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: var(--paper);
+}
+
+.ord-barcode .fine {
+  margin: 0;
+}
+
+.ord-barcode .ord-thumb-x {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ord-drop.compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  border-width: 1.5px;
+  border-radius: 12px;
+}
+
+.ord-drop[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.ord-photos > span:first-child {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ord-thumbs.small {
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ord-pack-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.ord-pack-meter p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.ord-pack-meter b {
+  color: var(--ink);
+}
+
+.ord-pack-bar {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(8, 8px);
+  gap: 3px;
+}
+
+.ord-pack-bar span {
+  height: 18px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.ord-pack-bar span.on {
+  background: var(--accent);
+}
+
+.ord-pack-badge {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ord-add-note {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.ord-review-n {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+.ord-q-upcs {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.ord-q-upcs .ord-q-label {
+  display: inline;
+}
+
+.ord-upc-value {
+  letter-spacing: 0.02em;
+}
+
+/* The barcode scanner (BarcodeDetector + the phone camera). */
+.ord-scan {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: #111;
+}
+
+.ord-scan-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ord-scan-guide {
+  position: absolute;
+  inset: 30% 12%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+}
+
+.ord-scan-status {
+  position: absolute;
+  inset: auto 0 12px;
+  margin: 0;
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .ord-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ord-product-toggle {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .ord-product-body {
+    padding: 4px 12px 14px;
+  }
+
+  .ord-product-remove {
+    padding-inline: 10px;
+  }
+
+  .ord-pack-meter {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ord-dims {
+    gap: 8px;
+  }
+}

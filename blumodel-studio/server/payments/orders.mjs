@@ -15,6 +15,7 @@ import { HttpError } from '../http/respond.mjs';
 import { randomId, FILE_ID_RE, PRODUCT_ID_RE, BUILTIN_ID_RE } from '../lib/ids.mjs';
 import { KIND_SET, KIND_CATEGORY, VARIANTS } from '../catalog/kinds.mjs';
 import { quote, legacyQuote, addBusinessDays, PACK, LEGACY_TIERS, PRODUCTS_PER_PACK, MAX_ITEMS, REVISIONS, CURRENCY } from './tiers.mjs';
+import { normalizeUpc } from './upc.mjs';
 
 const LEGACY_IDS = LEGACY_TIERS.map((t) => t.id);
 
@@ -45,6 +46,7 @@ export const ACTIVE = Object.freeze(['paid', 'in_progress', 'revision_requested'
 export const EXPIRY_MS = 24 * 3_600_000;
 export const MAX_REFERENCES = 8;
 export const MAX_NOTES = 4_000;
+export const MAX_BRAND = 60;
 const DAY = 86_400_000;
 
 const IMAGE_EXTS = new Set(['png', 'jpg', 'webp']);
@@ -327,11 +329,27 @@ export function createOrderService({ db, now, services, config, log = console, t
     if (!name) err('name', 'Name the product.');
     else if (name.length > 80) err('name', 'Keep the name to 80 characters or fewer.');
     else b.name = name;
+    if (input.brand != null && input.brand !== '') {
+      const brand = typeof input.brand === 'string' ? input.brand.trim() : null;
+      if (brand === null || brand.length > MAX_BRAND) err('brand', `Keep the brand to ${MAX_BRAND} characters or fewer.`);
+      else if (brand) b.brand = brand;
+    }
+    if (input.upc != null && input.upc !== '') {
+      const u = normalizeUpc(input.upc);
+      if (!u.ok) err('upc', u.message);
+      else {
+        b.upc = u.code;
+        b.upcFormat = u.format;
+      }
+    }
+    // The size is optional since Model packs: give all of it, some of it or none. Without it the
+    // studio uses the delivered model's measured size.
     for (const [k, lo, hi, label] of [
       ['widthIn', 1, 240, 'Width'],
       ['depthIn', 1, 120, 'Depth'],
       ['heightIn', 0.25, 144, 'Height'],
     ]) {
+      if (input[k] == null || input[k] === '') continue;
       if (!isNum(input[k]) || input[k] < lo || input[k] > hi) err(k, `${label} must be between ${lo} and ${hi} inches.`);
       else b[k] = round2(input[k]);
     }
@@ -344,23 +362,32 @@ export function createOrderService({ db, now, services, config, log = console, t
     else if (notes.length > MAX_NOTES) err('notes', `Keep notes to ${MAX_NOTES.toLocaleString('en-US')} characters or fewer.`);
     else b.notes = notes;
 
+    /** Why an uploaded file can't be used as this caller's reference photo, or null if it can. */
+    const notOwnPhoto = (id) => {
+      const f = files.get(id);
+      // Only the caller's own uploads, of kind `reference`, and only photos.
+      if (!f || f.ownerUserId !== user.id || f.kind !== 'reference') return 'can’t be used here. Upload it again.';
+      if (!IMAGE_EXTS.has(f.ext)) return 'must be a PNG, JPEG or WebP image.';
+      return null;
+    };
     const refs = input.referenceFileIds ?? [];
     if (!Array.isArray(refs) || refs.length > MAX_REFERENCES || !refs.every((id) => typeof id === 'string' && FILE_ID_RE.test(id))) {
       err('referenceFileIds', `Add up to ${MAX_REFERENCES} reference photos.`);
     } else {
       b.referenceFileIds = [...new Set(refs)];
       for (const id of b.referenceFileIds) {
-        const f = files.get(id);
-        // Only the caller's own uploads, of kind `reference`, and only photos.
-        if (!f || f.ownerUserId !== user.id || f.kind !== 'reference') {
-          err('referenceFileIds', 'One of the reference photos can’t be used here. Upload it again.');
-          break;
-        }
-        if (!IMAGE_EXTS.has(f.ext)) {
-          err('referenceFileIds', 'Reference photos must be PNG, JPEG or WebP images.');
+        const why = notOwnPhoto(id);
+        if (why) {
+          err('referenceFileIds', why.startsWith('must') ? 'Reference photos must be PNG, JPEG or WebP images.' : 'One of the reference photos can’t be used here. Upload it again.');
           break;
         }
       }
+    }
+    if (input.barcodeFileId != null && input.barcodeFileId !== '') {
+      const id = input.barcodeFileId;
+      const why = typeof id === 'string' && FILE_ID_RE.test(id) ? notOwnPhoto(id) : 'can’t be used here. Upload it again.';
+      if (why) err('barcodeFileId', `The barcode photo ${why}`);
+      else b.barcodeFileId = id;
     }
     if (input.refProductId != null && input.refProductId !== '') {
       const id = input.refProductId;
@@ -372,8 +399,11 @@ export function createOrderService({ db, now, services, config, log = console, t
       } else if (BUILTIN_ID_RE.test(id)) b.refProductId = id;
       else err('refProductId', 'That reference product isn’t valid.');
     }
-    if (b.referenceFileIds && !b.referenceFileIds.length && !b.refProductId && !errors.some((e) => e.field.startsWith(`${at}.reference`))) {
-      err('referenceFileIds', 'Add at least one reference photo (or start from a catalog product).');
+    // The studio needs one way to identify the product: a photo, its UPC, a photo of its barcode,
+    // or the catalog product it started from.
+    const failed = (f) => errors.some((e) => e.field === `${at}.${f}`);
+    if (b.referenceFileIds && !b.referenceFileIds.length && !b.refProductId && !b.upc && !b.barcodeFileId && !failed('upc') && !failed('barcodeFileId') && !failed('refProductId')) {
+      err('referenceFileIds', 'Add at least one reference photo or the product’s UPC, so the studio can identify it.');
     }
     return b;
   }
@@ -475,7 +505,8 @@ export function createOrderService({ db, now, services, config, log = console, t
         ['height', bb.h, dims.heightIn],
         ['depth', bb.d, dims.depthIn],
       ]) {
-        const off = want > 0 ? Math.abs(got - want) / want : 0;
+        if (!isNum(want) || want <= 0) continue; // a size the request didn't give
+        const off = Math.abs(got - want) / want;
         axes.push({ axis, modelIn: round2(got), declaredIn: want, offPct: Math.round(off * 1000) / 10 });
         if (off > 0.05) warnings.push(`The model’s ${axis} is ${round2(got)}″ but the brief says ${want}″ (${Math.round(off * 100)}% off). It is scaled to fit in kitchens.`);
       }
@@ -505,12 +536,18 @@ export function createOrderService({ db, now, services, config, log = console, t
 
     const brief = item.brief;
     const d = isObj(body.dims) ? body.dims : {};
+    // The studio's size, else the request's, else the model's own measured size (a request
+    // may come without a size since Model packs).
+    const bb = model.meta?.bboxIn ?? null;
+    const pick = (k, bbKey) => (isNum(d[k]) && d[k] > 0 ? d[k] : isNum(brief[k]) ? brief[k] : bb && isNum(bb[bbKey]) && bb[bbKey] > 0 ? round2(bb[bbKey]) : null);
     const dims = {
-      widthIn: isNum(d.widthIn) ? d.widthIn : brief.widthIn,
-      depthIn: isNum(d.depthIn) ? d.depthIn : brief.depthIn,
-      heightIn: isNum(d.heightIn) ? d.heightIn : brief.heightIn,
+      widthIn: pick('widthIn', 'w'),
+      depthIn: pick('depthIn', 'd'),
+      heightIn: pick('heightIn', 'h'),
       elevationIn: isNum(d.elevationIn) ? d.elevationIn : brief.elevationIn ?? 0,
     };
+    const missing = ['widthIn', 'depthIn', 'heightIn'].filter((k) => dims[k] == null);
+    if (missing.length) throw invalid(missing.map((k) => ({ field: `dims.${k}`, message: 'The request has no size and the model has none to measure: enter the width, depth and height.' })));
     let price = 0;
     if (body.price != null) {
       if (!isNum(body.price) || body.price < 0 || body.price > 1_000_000) throw invalid([{ field: 'price', message: 'Price must be between $0 and $1,000,000.' }]);

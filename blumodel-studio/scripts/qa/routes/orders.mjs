@@ -19,9 +19,7 @@ async function newOrder({ api }, { checkout = false } = {}) {
     rush: false,
     items: [
       {
-        tier: 'standard',
-        extraFinishes: 0,
-        brief: { productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', name: 'QA range (Demo)', widthIn: 30, depthIn: 28, heightIn: 36, notes: 'QA', referenceFileIds: [], refProductId: 'range-30' },
+        brief: { productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', name: 'QA range (Demo)', upc: '200000041205', widthIn: 30, depthIn: 28, heightIn: 36, notes: 'QA', referenceFileIds: [], refProductId: 'range-30' },
       },
     ],
   });
@@ -131,37 +129,144 @@ const waitFor = (expr, ms = 5000) => `(async () => {
   return false;
 })()`;
 
+const SIDEWAYS = 'document.documentElement.scrollWidth > window.innerWidth + 1';
+const quoteTotal = `document.querySelector('.ord-quote .ord-total')?.textContent ?? ''`;
+const bodyHas = (t) => `document.body.textContent.includes(${JSON.stringify(t)})`;
+
+/** Types `text` into the field `selector` the way a person does (focus, select all, insert). */
+async function typeInto({ evaluate, send }, selector, text) {
+  const ok = await evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    if (!el) return false;
+    el.scrollIntoView({ block: 'center' });
+    el.focus();
+    el.select?.();
+    return true;
+  })()`);
+  if (!ok) throw new Error(`no field ${selector}`);
+  await send('Input.insertText', { text });
+}
+
+/**
+ * A stand-in camera and BarcodeDetector, installed before the app loads: the camera is a canvas
+ * stream and the detector reads a fixed UPC-A, so the scan flow runs in headless Edge (which has
+ * neither). Only for the scan route.
+ */
+const SCAN_STUB = `(() => {
+  class FakeBarcodeDetector {
+    static async getSupportedFormats() { return ['upc_a', 'ean_13', 'ean_8', 'upc_e', 'qr_code']; }
+    constructor(opts) { this.formats = opts?.formats ?? []; this.n = 0; }
+    async detect() {
+      this.n += 1;
+      // A misread first (wrong check digit, skipped), then the real code.
+      return this.n < 3 ? [] : this.n === 3 ? [{ rawValue: '036000291453', format: 'upc_a' }] : [{ rawValue: '036000291452', format: 'upc_a' }];
+    }
+  }
+  window.BarcodeDetector = FakeBarcodeDetector;
+  const md = navigator.mediaDevices || {};
+  md.getUserMedia = async () => {
+    const c = document.createElement('canvas');
+    c.width = 320; c.height = 240;
+    const g = c.getContext('2d');
+    const draw = () => { g.fillStyle = '#fff'; g.fillRect(0, 0, 320, 240); for (let x = 40; x < 280; x += 6) { g.fillStyle = (x / 6) % 2 ? '#000' : '#fff'; g.fillRect(x, 70, 3, 100); } };
+    draw();
+    setInterval(draw, 100);
+    return c.captureStream(10);
+  };
+  if (!navigator.mediaDevices) Object.defineProperty(navigator, 'mediaDevices', { value: md });
+})();`;
+
 export default [
-  // ── the request wizard, each step ─────────────────────────────────────
+  // ── Make custom models: the product list ──────────────────────────────
   {
-    name: 'orders-new-what',
+    // A blank request: one product open, the pack meter at 1 of 8, the server's $129 quote.
+    name: 'orders-new-products',
     path: '#/orders/new',
     as: 'customer',
     viewport: { w: 1440, h: 900 },
-    waitFor: '.ord-wizard',
-    expectText: ['New request', 'What should we model?', 'no card details are collected'],
+    waitFor: ['.ord-wizard', '.ord-product.open'],
+    expectText: ['Make custom models', 'New request', 'Products to model', 'UPC or EAN', '1 of 8 products', '7 more fit in this pack', 'no card details are collected'],
+    check: async ({ evaluate, note }) => {
+      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$129')`)))) throw new Error('the server quote never showed $129 for one product');
+      // Headless Edge on Windows has no BarcodeDetector: the photo fallback is what it offers.
+      const scan = await evaluate(`[...document.querySelectorAll('.ord-upc button')].map((b) => b.textContent.trim())`);
+      note(`UPC buttons: ${JSON.stringify(scan)}`);
+      if (!scan.some((t) => /photo of the barcode/.test(t))) throw new Error('no "Upload a photo of the barcode" offer');
+      if (await evaluate(NO_CARD_FIELDS)) throw new Error('a card-like field is on the request page');
+    },
   },
   {
-    name: 'orders-new-steps',
+    // UPC checking as you type, a second product, the first-problem message, review and rush.
+    name: 'orders-new-upc',
     path: '#/orders/new?ref=range-30',
     as: 'customer',
     viewport: { w: 1440, h: 900 },
-    waitFor: '.ord-wizard',
+    waitFor: '.ord-product.open',
     expectText: ['Gas Range', 'Don’t use it'],
-    check: async ({ evaluate }) => {
-      // what → size → photos (optional with a catalog product) → notes → tier → review
-      for (const [label, heading] of [
-        ['Next', 'How big is it?'],
-        ['Next', 'Reference photos'],
-        ['Next', 'Notes for the studio'],
-        ['Next', 'Tier and extras'],
-        ['Next', 'Review & pay'],
-      ]) {
-        if (!(await evaluate(click(label)))) throw new Error(`no "${label}" button`);
-        if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes(${JSON.stringify(heading)})`)))) throw new Error(`step "${heading}" never showed`);
-      }
-      if (!(await evaluate(waitFor(`document.querySelector('.ord-quote .ord-total')?.textContent.includes('$279')`)))) throw new Error('the live quote never showed $279');
+    check: async (h) => {
+      const { evaluate, shot } = h;
+      await typeInto(h, '#ord-p0-upc', '036000291453');
+      if (!(await evaluate(waitFor(bodyHas('doesn’t check out'))))) throw new Error('a wrong check digit was not flagged');
+      await typeInto(h, '#ord-p0-upc', '0 36000 29145 2');
+      if (!(await evaluate(waitFor(bodyHas('✓ UPC-A 0 36000 29145 2'))))) throw new Error('a good UPC-A was not confirmed');
+      await shot('upc');
+      if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
+      if (!(await evaluate(waitFor(`!!document.querySelector('#ord-product-1 .ord-product.open')`)))) throw new Error('the second product did not open');
+      if (!(await evaluate(waitFor(bodyHas('2 of 8 products'))))) throw new Error('the pack meter did not count 2');
+      // Two products are still one pack: the server's quote stays $129.
+      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$129')`)))) throw new Error('two products did not stay one $129 pack');
+      // Moving on with an empty product names the problem and marks the product.
+      if (!(await evaluate(click('Review 2 products')))) throw new Error('no review button');
+      if (!(await evaluate(waitFor(`${bodyHas('Product 2: Name the product.')} && !!document.querySelector('#ord-product-1 .ord-product.bad')`)))) throw new Error('the empty product was not flagged');
+      await shot('problem');
+      await typeInto(h, '#ord-product-1 .ord-grid-2 input[maxlength="80"]', 'QA wall oven (Demo)');
+      await typeInto(h, '#ord-p1-upc', '4006381333931');
+      if (!(await evaluate(waitFor(bodyHas('✓ EAN-13'))))) throw new Error('a good EAN-13 was not confirmed');
+      if (!(await evaluate(click('Review 2 products')))) throw new Error('no review button');
+      if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & pay')`)))) throw new Error('review never showed');
+      if (!(await evaluate(waitFor(`${bodyHas('UPC 0 36000 29145 2')} && ${bodyHas('UPC 4 006381 333931')}`)))) throw new Error('the review does not list both UPCs');
+      await evaluate(`document.querySelector('.ord-rush input').click()`);
+      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$193.50')`)))) throw new Error('rush did not make the quote $193.50');
       if (await evaluate(NO_CARD_FIELDS)) throw new Error('a card-like field is on the request page');
+    },
+  },
+  {
+    // Adding products fills pack 1, then the 9th starts pack 2: two packs, $258, one checkout.
+    name: 'orders-new-packs',
+    path: '#/orders/new',
+    as: 'customer',
+    viewport: { w: 1440, h: 900 },
+    waitFor: '.ord-product.open',
+    expectText: ['1 of 8 products'],
+    check: async ({ evaluate, shot }) => {
+      for (let i = 0; i < 7; i++) if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
+      if (!(await evaluate(waitFor(bodyHas('This pack is full: the next product starts pack 2 (+$129)'))))) throw new Error('a full pack was not called out');
+      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$129')`)))) throw new Error('8 products did not stay one $129 pack');
+      if (!(await evaluate(click('+ Add a product')))) throw new Error('no add-a-product button');
+      if (!(await evaluate(waitFor(`${quoteTotal}.includes('$258')`)))) throw new Error('9 products did not quote two packs ($258)');
+      if (!(await evaluate(waitFor(`${bodyHas('Model pack 2 of 2: 1 product')} && !!document.querySelector('.ord-pack-divider')`)))) throw new Error('no pack 2 line or divider');
+      await shot('two-packs');
+    },
+  },
+  {
+    // The camera scan: a stand-in BarcodeDetector and camera (headless Edge has neither) prove
+    // the flow: Scan opens the camera dialog, a misread is skipped, the code fills in.
+    name: 'orders-new-scan',
+    path: '#/orders/new',
+    as: 'customer',
+    viewport: PHONE,
+    waitFor: '.ord-product.open',
+    expectText: ['UPC or EAN'],
+    check: async (h) => {
+      const { evaluate, send, reload, shot } = h;
+      await send('Page.addScriptToEvaluateOnNewDocument', { source: SCAN_STUB });
+      await reload();
+      if (!(await evaluate(waitFor(`[...document.querySelectorAll('.ord-upc button')].some((b) => b.textContent.trim() === 'Scan')`, 8000)))) throw new Error('no Scan button where BarcodeDetector exists');
+      await evaluate(`[...document.querySelectorAll('.ord-upc button')].find((b) => b.textContent.trim() === 'Scan').click()`);
+      if (!(await evaluate(waitFor(`!!document.querySelector('.ord-scan-video')`)))) throw new Error('the scanner did not open');
+      await shot('scanner');
+      if (!(await evaluate(waitFor(`document.querySelector('#ord-p0-upc')?.value === '0 36000 29145 2'`, 8000)))) throw new Error('the scanned code was not filled in');
+      if (!(await evaluate(waitFor(`!document.querySelector('.ord-scan-video') && ${bodyHas('✓ UPC-A 0 36000 29145 2')}`)))) throw new Error('the scanner did not close with the code confirmed');
     },
   },
   {
@@ -169,10 +274,39 @@ export default [
     path: '#/orders/new?ref=range-30',
     as: 'customer',
     viewport: PHONE,
-    waitFor: '.ord-wizard',
-    expectText: ['What should we model?'],
+    waitFor: '.ord-product.open',
+    expectText: ['Products to model', 'UPC or EAN'],
     check: async ({ evaluate }) => {
-      if (await evaluate('document.documentElement.scrollWidth > window.innerWidth + 1')) throw new Error('the page scrolls sideways on a phone');
+      if (await evaluate(SIDEWAYS)) throw new Error('the page scrolls sideways on a phone');
+    },
+  },
+  {
+    // The pricing page's custom-model section: the one offer, from the server.
+    name: 'pricing-model-pack',
+    path: '#/pricing',
+    as: 'anon',
+    viewport: { w: 1440, h: 900 },
+    waitFor: '.mk-pack',
+    expectText: ['Model pack', 'up to 8 products', '9–16 products', 'What you send', 'exact amount before you pay'],
+    check: async ({ evaluate, shot }) => {
+      const n = await evaluate(`document.querySelectorAll('.mk-tiers .mk-tier').length`);
+      if (n !== 3) throw new Error(`expected 3 custom-model cards, found ${n}`);
+      if (await evaluate(`document.querySelector('#models').textContent.includes('$279')`)) throw new Error('a retired tier price is still on the pricing page');
+      await evaluate(`document.getElementById('models').scrollIntoView({ block: 'start' })`);
+      await shot('models');
+    },
+  },
+  {
+    name: 'pricing-model-pack-phone',
+    path: '#/pricing',
+    as: 'anon',
+    viewport: PHONE,
+    waitFor: '.mk-pack',
+    expectText: ['Model pack'],
+    check: async ({ evaluate, shot }) => {
+      if (await evaluate(SIDEWAYS)) throw new Error('the pricing page scrolls sideways on a phone');
+      await evaluate(`document.getElementById('models').scrollIntoView({ block: 'start' })`);
+      await shot('models');
     },
   },
 
@@ -271,7 +405,8 @@ export default [
       life.name = `QA lifecycle sink ${Date.now().toString(36)} (Demo)`;
       const r = await customer.post('/api/orders', {
         target: 'customer',
-        items: [{ tier: 'simple', extraFinishes: 0, brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: life.name, widthIn: 33, depthIn: 22, heightIn: 36, notes: 'QA lifecycle', referenceFileIds: [], refProductId: 'sink-farm' } }],
+        // No size: the studio's delivery takes it from the model.
+        items: [{ brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: life.name, brand: 'QA Sinks (Demo)', upc: '96385074', notes: 'QA lifecycle', referenceFileIds: [], refProductId: 'sink-farm' } }],
       });
       if (r.status !== 201) throw new Error(`creating the order failed: ${r.status} ${JSON.stringify(r.body)}`);
       life.id = r.body.order.id;
@@ -286,6 +421,7 @@ export default [
     check: async ({ evaluate, api }) => {
       if (!(await evaluate(click(life.name)))) throw new Error('the paid order is not in the queue');
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-drawer') && document.querySelector('.ord-drawer').textContent.includes('Start (assign to me)')`)))) throw new Error('the drawer did not offer Start');
+      if (!(await evaluate(waitFor(`document.querySelector('.ord-drawer').textContent.includes('9638 5074 (EAN-8)')`)))) throw new Error('the drawer does not show the product’s UPC');
       await evaluate(click('Start (assign to me)'));
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-drawer input[type=file]')`)))) throw new Error('no deliver form after Start');
       if (!(await evaluate(putFile('GLB model for', GLB_FILE)))) throw new Error('no GLB input');
@@ -354,7 +490,7 @@ export default [
     as: 'admin',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-queue',
-    expectText: ['Studio queue', 'Enamel dome pendant (Demo)', 'Heritage 36″ dual-fuel range (Demo)'],
+    expectText: ['Studio queue', 'Enamel dome pendant (Demo)', 'Heritage 36″ dual-fuel range (Demo)', 'UPC 2 00000 04120 5'],
     check: async ({ evaluate }) => {
       if (!(await evaluate(click('Enamel dome pendant (Demo)')))) throw new Error('no queue row to open');
       if (!(await evaluate(waitFor(`!!document.querySelector('.ord-drawer') && document.querySelector('.ord-drawer').textContent.includes('Start (assign to me)')`)))) throw new Error('the drawer did not open with Start');
@@ -383,6 +519,6 @@ export default [
     as: 'admin',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-kpis',
-    expectText: ['Revenue', 'Custom-model orders only', 'simulated orders, not money', 'Simple', 'Table view'],
+    expectText: ['Revenue', 'Custom-model orders only', 'simulated orders, not money', 'Model pack', 'Simple (retired)', 'Table view'],
   },
 ];

@@ -10,7 +10,8 @@ import { productType } from '../../data/productTypes';
 import type { Product } from '../../types';
 import { ProductStage } from '../viewer';
 import { goToCheckout, ordersApi, type OrderDetail, type OrderWire } from './api';
-import { dollars, isUnpaid, relative, shortDate, sizeText } from './model';
+import { briefSize, dollars, isUnpaid, pricingLabel, relative, shortDate, sizeText } from './model';
+import { formatUpc } from './upc';
 import { OrdersPayNote, OrdersShell, StatusPill, Timeline } from './parts';
 
 /**
@@ -114,7 +115,8 @@ export function OrderPage({ id }: { id: string }) {
       <div className="ord-head">
         <div>
           <span className="eyebrow">
-            Custom model · {o.target === 'brand' ? `for ${o.brandName ?? 'your brand'}` : o.target === 'contractor' ? 'for My catalog' : 'private to you'}
+            {pricingLabel(o)}
+            {o.items.length > 1 ? ` · ${o.items.length} products` : ''} · {o.target === 'brand' ? `for ${o.brandName ?? 'your brand'}` : o.target === 'contractor' ? 'for My catalog' : 'private to you'}
           </span>
           <h1>{o.title}</h1>
           <div className="ord-head-meta">
@@ -214,22 +216,36 @@ export function OrderPage({ id }: { id: string }) {
                     {o.items.length > 1 ? `${it.idx + 1}. ` : ''}
                     {it.brief.name}
                   </b>
-                  <span className="mono">{dollars(it.amountCents)}</span>
+                  {/* A pack's price is per pack, on the receipt; an older order priced each product. */}
+                  {o.pricing === 'pack' ? <span className="ord-pack-badge">{o.packs > 1 ? `Pack ${it.pack ?? 1}` : 'Model pack'}</span> : <span className="mono">{dollars(it.amountCents)}</span>}
                 </div>
                 <dl className="ord-dl">
                   <div>
                     <dt>Type</dt>
                     <dd>{t?.label ?? it.brief.productTypeId}</dd>
                   </div>
+                  {it.brief.brand && (
+                    <div>
+                      <dt>Brand</dt>
+                      <dd>{it.brief.brand}</dd>
+                    </div>
+                  )}
+                  {(it.brief.upc || it.brief.barcodeFileId) && (
+                    <div>
+                      <dt>UPC</dt>
+                      <dd className={it.brief.upc ? 'mono' : undefined}>{it.brief.upc ? formatUpc(it.brief.upc) : 'From the barcode photo'}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>Size</dt>
-                    <dd>{sizeText(it.brief.widthIn, it.brief.depthIn, it.brief.heightIn)}</dd>
+                    <dd>{briefSize(it.brief)}</dd>
                   </div>
                   <div>
-                    <dt>Tier</dt>
+                    <dt>{o.pricing === 'pack' ? 'Includes' : 'Tier'}</dt>
                     <dd>
-                      {it.tier[0]!.toUpperCase() + it.tier.slice(1)}
-                      {it.extraFinishes ? ` + ${it.extraFinishes} extra finish${it.extraFinishes === 1 ? '' : 'es'}` : ''}
+                      {o.pricing === 'pack'
+                        ? `Up to ${o.finishesPerModel ?? 3} finishes, ${o.revisionsAllowed} revision rounds`
+                        : `${pricingLabel({ tier: it.tier })}${it.extraFinishes ? ` + ${it.extraFinishes} extra finish${it.extraFinishes === 1 ? '' : 'es'}` : ''}`}
                       {o.extras.rush ? ' · rush' : ''}
                     </dd>
                   </div>

@@ -12,6 +12,7 @@ import { openDb } from '../db/index.mjs';
 import { migrate } from '../db/migrate.mjs';
 import { MIGRATION_MODULES, MIGRATION_KEYS } from '../db/migrations/index.mjs';
 import { quote, packsFor, packBusinessDays, legacyQuote, MAX_ITEMS, PACK } from '../payments/tiers.mjs';
+import { normalizeUpc, gs1CheckDigit } from '../payments/upc.mjs';
 
 const DAY = 86_400_000;
 let t;
@@ -211,6 +212,104 @@ test('orders placed before Model packs keep their stored prices: the migration c
   assert.equal(again.quote.lines[0].amountCents, 9_900);
   const p2 = await demoPay(ann, o.id);
   assert.equal(p2.status, 'paid', 'paid at its stored price, not re-quoted at today’s');
+});
+
+test('UPCs: UPC-A, EAN-13 and EAN-8 with check digits, stored as digits only (pure)', () => {
+  const ok = (raw, code, format) => assert.deepEqual(normalizeUpc(raw), { ok: true, code, format }, raw);
+  ok('036000291452', '036000291452', 'upc_a');
+  ok(' 0 36000-29145 2 ', '036000291452', 'upc_a');
+  ok('0036000291452', '036000291452', 'upc_a'); // an EAN-13 with a leading 0 is that UPC-A
+  ok('4006381333931', '4006381333931', 'ean_13');
+  ok('400-638133393-1', '4006381333931', 'ean_13');
+  ok('96385074', '96385074', 'ean_8');
+  const bad = (raw, re) => {
+    const r = normalizeUpc(raw);
+    assert.equal(r.ok, false, raw);
+    assert.match(r.message, re, raw);
+  };
+  bad('036000291453', /doesn’t check out/);
+  bad('4006381333932', /doesn’t check out/);
+  bad('96385075', /doesn’t check out/);
+  bad('12345', /5 digits/);
+  bad('03600029145', /11 digits.*12, an EAN 13 or 8/);
+  bad('0360002914AB', /digits only/);
+  bad('', /Enter the UPC/);
+  bad(12345, /Enter the UPC/);
+  for (const [body, check] of [['03600029145', 2], ['400638133393', 1], ['9638507', 4]]) assert.equal(gs1CheckDigit(body), check);
+});
+
+test('the product list: brand, UPC, optional size, barcode photos, ownership, identification and pack limits', async () => {
+  const ann = await t.user();
+  const bob = await t.user();
+  const ref = await refPhoto(ann);
+  const product = (over = {}) => ({ brief: { productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', name: 'Range', notes: '', referenceFileIds: [], ...over } });
+
+  // A UPC alone identifies a product: no photo, no size needed. Stored normalised.
+  const r = await ann.post('/api/orders', { items: [product({ upc: '0 36000 29145 2', brand: '  Acme  ' })] });
+  assert.equal(r.status, 201, r.text);
+  const b0 = r.body.order.items[0].brief;
+  assert.equal(b0.upc, '036000291452');
+  assert.equal(b0.upcFormat, 'upc_a');
+  assert.equal(b0.brand, 'Acme');
+  assert.equal(b0.widthIn, undefined, 'no size was given');
+  assert.equal(r.body.order.amountCents, 12_900);
+
+  // A bad check digit is a clear field error; so is a long brand or half a bad size.
+  const bad = await ann.post('/api/orders', { items: [product({ upc: '036000291453', brand: 'x'.repeat(61), widthIn: 999, referenceFileIds: [ref] })] });
+  assert.equal(bad.status, 400);
+  const byField = Object.fromEntries(bad.body.errors.map((e) => [e.field, e.message]));
+  assert.match(byField['items[0].brief.upc'], /doesn’t check out/);
+  assert.match(byField['items[0].brief.brand'], /60 characters/);
+  assert.match(byField['items[0].brief.widthIn'], /between 1 and 240/);
+  // Part of a size is fine.
+  assert.equal((await ann.post('/api/orders', { items: [product({ widthIn: 30, referenceFileIds: [ref] })] })).status, 201);
+
+  // Nothing to identify it by.
+  const none = await ann.post('/api/orders', { items: [product()] });
+  assert.equal(none.status, 400);
+  assert.match(none.body.errors[0].message, /reference photo or the product’s UPC/);
+
+  // A barcode photo identifies it too, but only the caller's own reference photo.
+  const barcode = await refPhoto(ann, [250, 250, 250, 255]);
+  const withPhoto = await ann.post('/api/orders', { items: [product({ barcodeFileId: barcode })] });
+  assert.equal(withPhoto.status, 201, withPhoto.text);
+  assert.equal(withPhoto.body.order.items[0].brief.barcodeFileId, barcode);
+  const bobs = await refPhoto(bob);
+  const stolen = await ann.post('/api/orders', { items: [product({ barcodeFileId: bobs })] });
+  assert.equal(stolen.status, 400);
+  assert.ok(stolen.body.errors.some((e) => e.field === 'items[0].brief.barcodeFileId'));
+  assert.equal((await ann.post('/api/orders', { items: [product({ barcodeFileId: 'not-a-file' })] })).status, 400);
+  const img = (await ann.putRaw('/api/files?kind=image&name=x.png', makePng(), 'image/png')).body.file.id;
+  assert.equal((await ann.post('/api/orders', { items: [product({ barcodeFileId: img })] })).status, 400, 'an image upload is not a reference photo');
+  // The barcode photo shows with the order's references, to the buyer and not to others.
+  const det = await ann.get(`/api/orders/${withPhoto.body.order.id}`);
+  assert.ok(det.body.references.some((f) => f.id === barcode));
+  assert.equal((await ann.get(`/api/files/${barcode}`)).status, 200);
+  assert.equal((await bob.get(`/api/files/${barcode}`)).status, 404);
+
+  // Pack limits: 9 products are 2 packs (one checkout); 40 is the most one request holds.
+  const nine = Array.from({ length: 9 }, (_, i) => product({ name: `Cabinet ${i + 1}`, upc: '4006381333931' }));
+  const o9 = await ann.post('/api/orders', { items: nine, line: 'Harbor Shaker' });
+  assert.equal(o9.status, 201, o9.text);
+  assert.equal(o9.body.order.amountCents, 25_800);
+  assert.equal(o9.body.order.packs, 2);
+  assert.deepEqual(o9.body.order.items.map((it) => it.pack), [1, 1, 1, 1, 1, 1, 1, 1, 2]);
+  assert.equal((await ann.post('/api/orders', { items: Array.from({ length: 40 }, () => product({ upc: '96385074' })) })).status, 201);
+  const big = await ann.post('/api/orders', { items: Array.from({ length: 41 }, () => product({ upc: '96385074' })) });
+  assert.equal(big.status, 400);
+  assert.match(big.body.errors[0].message, /up to 40 products/);
+  assert.equal((await ann.post('/api/orders', { items: [] })).status, 400);
+
+  // The studio queue shows each product's UPC; delivery without a size uses the model's size.
+  await demoPay(ann, r.body.order.id);
+  const studio = await t.user({ role: 'studio' });
+  const q = await studio.get('/api/studio/orders?status=all');
+  const row = q.body.orders.find((o) => o.id === r.body.order.id);
+  assert.equal(row.items[0].brief.upc, '036000291452');
+  assert.equal((await studio.post(`/api/studio/orders/${r.body.order.id}/start`)).status, 200);
+  const del = await studioDeliver(studio, r.body.order.id);
+  assert.equal(del.status, 200, del.text);
+  assert.deepEqual([del.body.product.widthIn, del.body.product.depthIn, del.body.product.heightIn].map(Math.round), [30, 28, 36]);
 });
 
 test('the brief is validated; reference files must be the caller’s own reference photos', async () => {

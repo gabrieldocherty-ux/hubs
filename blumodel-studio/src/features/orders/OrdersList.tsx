@@ -3,7 +3,7 @@ import { ApiError } from '../../lib/api';
 import { usePayments } from '../../lib/config';
 import { hrefFor } from '../../lib/router';
 import { ordersApi, type OrderWire } from './api';
-import { dollars, inFilter, isUnpaid, LIST_FILTERS, relative, shortDate, type ListFilter } from './model';
+import { dollars, inFilter, isUnpaid, LIST_FILTERS, pricingLabel, relative, shortDate, type ListFilter } from './model';
 import { OrdersPayNote, OrdersShell, StatusPill } from './parts';
 
 /** `#/orders` ("Make custom models"): the buyer's custom-model requests, newest first, with status chips. */
@@ -52,7 +52,7 @@ export function OrdersList() {
       {orders && orders.length === 0 && (
         <section className="ord-empty">
           <h2>No custom models yet</h2>
-          <p>Send a few photos and the size, pick a tier and the studio builds an accurate model. Simple models start at $129.</p>
+          <p>List the products you want: a name, the UPC from the box and a photo or two. The studio builds a true-to-size 3D model of each. A Model pack covers up to 8 products.</p>
           <a className="btn primary" href={hrefFor({ name: 'orders', rest: 'new' })}>
             Make your first custom model
           </a>
@@ -77,7 +77,8 @@ export function OrdersList() {
                     <div className="ord-row-main">
                       <b className="ord-row-title">{o.title}</b>
                       <span className="ord-row-sub">
-                        {o.items.length > 1 ? `${o.items.length} products` : tierName(o.tier)}
+                        {o.items.length > 1 ? `${o.items.length} products · ` : ''}
+                        {pricingLabel(o)}
                         {o.target === 'brand' && o.brandName ? ` · for ${o.brandName}` : o.target === 'contractor' ? ' · for My catalog' : ''}
                         {' · '}requested {shortDate(o.createdAt)}
                       </span>
@@ -100,8 +101,6 @@ export function OrdersList() {
     </OrdersShell>
   );
 }
-
-const tierName = (t: string) => `${t[0]!.toUpperCase()}${t.slice(1)} model`;
 
 function whenText(o: OrderWire): string {
   if (isUnpaid(o.status) && o.expiresAt) return `Expires ${relative(o.expiresAt)}`;

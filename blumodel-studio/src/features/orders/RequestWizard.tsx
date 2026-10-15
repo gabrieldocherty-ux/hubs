@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { AgreeToPay } from '../../components/PaymentNotice';
 import { usePayments } from '../../lib/config';
@@ -8,14 +8,38 @@ import { useSession } from '../../store/useSession';
 import { getProduct, CATEGORIES } from '../../data/catalog';
 import { PRODUCT_TYPES, productType, productTypeFor } from '../../data/productTypes';
 import type { Product } from '../../types';
-import type { ModelTierId } from '../../types/platform';
 import { goToCheckout, ordersApi, type OrderRequest, type OrderTarget, type QuoteWire, type TiersWire } from './api';
-import { dollars, MAX_NOTES, MAX_REFERENCES, NAME_MAX, parseInches, stepProblem, STEPS, suggestedTier, type DraftItem, type Step } from './model';
+import { BarcodeScanDialog, readBarcodeFromImage, useCanScan } from './BarcodeScan';
+import {
+  BRAND_MAX,
+  briefSize,
+  dollars,
+  errorTarget,
+  itemProblem,
+  itemProblems,
+  MAX_NOTES,
+  MAX_REFERENCES,
+  NAME_MAX,
+  packFill,
+  packOf,
+  parseInches,
+  STEPS,
+  type DraftItem,
+  type ItemField,
+  type Step,
+} from './model';
+import { formatUpc, normalizeUpc, UPC_FORMAT_LABEL, upcWhileTyping } from './upc';
 import { OrdersPayNote, OrdersShell } from './parts';
 
-const DRAFT_KEY = 'blumodel.orders.request';
+/** v2: the product list (Model packs). A v1 draft (tiers) is left alone and simply not loaded. */
+const DRAFT_KEY = 'blumodel.orders.request.v2';
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+/** Counts only, until the server's pack loads; every price shown comes from the server. */
+const DEFAULT_PER_PACK = 8;
+const DEFAULT_MAX_ITEMS = 40;
+
+type Thumbs = Record<string, { url: string; name: string }>;
 
 interface Draft {
   target: OrderTarget;
@@ -23,22 +47,23 @@ interface Draft {
   line: string;
   rush: boolean;
   items: DraftItem[];
-  cur: number;
+  /** The product whose form is open (-1: none). */
+  open: number;
   step: Step;
-  /** Thumbnails of uploaded reference photos, by file id. */
-  files: Record<string, { url: string; name: string }>;
+  /** Thumbnails of uploaded photos, by file id. */
+  files: Thumbs;
 }
 
 const blankItem = (from?: Partial<DraftItem>): DraftItem => ({
   productTypeId: '',
   name: '',
+  brand: '',
+  upc: '',
   widthIn: null,
   depthIn: null,
   heightIn: null,
   notes: '',
   referenceFileIds: [],
-  tier: null,
-  extraFinishes: 0,
   ...from,
 });
 
@@ -46,7 +71,8 @@ function loadDraft(): Draft | null {
   try {
     const raw = sessionStorage.getItem(DRAFT_KEY);
     const d = raw ? (JSON.parse(raw) as Draft) : null;
-    return d && Array.isArray(d.items) && d.items.length ? d : null;
+    if (!d || !Array.isArray(d.items) || !d.items.length) return null;
+    return { ...d, items: d.items.map((it) => blankItem(it)), step: d.step === 'review' ? 'review' : 'products', open: Number.isInteger(d.open) ? d.open : 0 };
   } catch {
     return null;
   }
@@ -60,24 +86,24 @@ function saveDraft(d: Draft | null) {
   }
 }
 
-/** An item prefilled from a catalog product (`?ref=`): its type, name and size. */
+/** A product prefilled from a catalog product (`?ref=`): its type, name, brand and size. */
 function itemFromProduct(p: Product): DraftItem {
   const t = productTypeFor(p.kind, p.variant);
   return blankItem({
     productTypeId: t?.id ?? '',
     name: p.name.slice(0, NAME_MAX),
+    brand: (p.brand ?? '').slice(0, BRAND_MAX),
     widthIn: p.widthIn,
     depthIn: p.depthIn,
     heightIn: p.heightIn,
     refProductId: p.id,
-    tier: suggestedTier(p.kind),
   });
 }
 
 /**
- * `#/orders/new?ref=&brand=&target=` (PRODUCT_SPEC §7.3): what, size, photos, notes, tier and
- * extras with the live server quote, then review & pay. One request may hold up to 20 products of
- * the same line (§13.3), each priced per item, with one checkout.
+ * `#/orders/new?ref=&brand=&target=`: Make custom models. A product list (name, brand, UPC, size,
+ * photos and notes for each), priced by the server in Model packs of up to 8 products, then
+ * review & pay with one checkout. Contractors use the same form with target "My catalog".
  */
 export function RequestWizard() {
   const query = useHashQuery();
@@ -102,7 +128,7 @@ export function RequestWizard() {
     } else if (askedTarget === 'contractor' && isContractor) target = 'contractor';
     const ref = refId ? getProduct(refId) : undefined;
     const item = ref && ref.source !== 'missing' ? itemFromProduct(ref) : blankItem();
-    return { target, brandId, line: '', rush: false, items: [item], cur: 0, step: 'what', files: {} };
+    return { target, brandId, line: '', rush: false, items: [item], open: 0, step: 'products', files: {} };
   };
 
   const [d, setD] = useState<Draft>(initial);
@@ -110,13 +136,26 @@ export function RequestWizard() {
   const [quote, setQuote] = useState<QuoteWire | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
+  /** Field errors are shown once someone tries to move on (or the server sends some back). */
+  const [showErrors, setShowErrors] = useState(false);
+  const [serverErrors, setServerErrors] = useState<Record<number, Partial<Record<string, string>>>>({});
   const [paying, setPaying] = useState(false);
   const [refProduct, setRefProduct] = useState<Product | null>(() => (refId ? getProduct(refId) ?? null : null));
 
-  const item = d.items[d.cur] ?? d.items[0]!;
+  const perPack = tiers?.pack.productsPerPack ?? DEFAULT_PER_PACK;
+  const maxItems = tiers?.maxItems ?? DEFAULT_MAX_ITEMS;
   const update = (patch: Partial<Draft>) => setD((x) => ({ ...x, ...patch }));
-  const updateItem = (patch: Partial<DraftItem>) => setD((x) => ({ ...x, items: x.items.map((it, i) => (i === x.cur ? { ...it, ...patch } : it)) }));
+  const updateItem = (i: number, patch: Partial<DraftItem>) => {
+    setD((x) => ({ ...x, items: x.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) }));
+    // A field the buyer changes is no longer the server's complaint.
+    setServerErrors((s) => {
+      if (!s[i]) return s;
+      const next = { ...s[i] };
+      for (const k of Object.keys(patch)) delete next[k];
+      return { ...s, [i]: next };
+    });
+  };
+  const addFiles = (f: Thumbs) => setD((x) => ({ ...x, files: { ...x.files, ...f } }));
 
   useEffect(() => saveDraft(d), [d]);
 
@@ -124,7 +163,7 @@ export function RequestWizard() {
     ordersApi
       .tiers()
       .then(setTiers)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Could not load the model tiers.'));
+      .catch((e) => setError(e instanceof ApiError ? e.message : 'Could not load the Model pack price.'));
   }, []);
 
   // `?ref=` for a server product the registry hasn't loaded yet.
@@ -144,18 +183,13 @@ export function RequestWizard() {
     };
   }, [refId, refProduct]);
 
-  // The live quote: the server prices every item; nothing here computes a price.
-  const quoteKey = JSON.stringify({ rush: d.rush, items: d.items.filter((it) => it.tier).map((it) => [it.tier, it.extraFinishes, it.name.trim()]) });
+  // The live quote: the server prices the request from its product count and rush; nothing here computes a price.
+  const count = d.items.length;
   useEffect(() => {
-    const priced = d.items.filter((it) => it.tier);
-    if (!priced.length) {
-      setQuote(null);
-      return;
-    }
     const ctl = new AbortController();
     const t = setTimeout(() => {
       ordersApi
-        .quote({ rush: d.rush, items: priced.map((it) => ({ tier: it.tier as ModelTierId, extraFinishes: it.extraFinishes, name: it.name.trim() || undefined })) }, ctl.signal)
+        .quote({ rush: d.rush, products: count }, ctl.signal)
         .then((r) => {
           setQuote(r.quote);
           setQuoteError(null);
@@ -164,13 +198,12 @@ export function RequestWizard() {
           if (e instanceof DOMException && e.name === 'AbortError') return;
           setQuoteError(e instanceof ApiError ? e.message : 'Couldn’t get a price.');
         });
-    }, 200);
+    }, 150);
     return () => {
       clearTimeout(t);
       ctl.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quoteKey]);
+  }, [count, d.rush]);
 
   const payments = usePayments();
   const demo = payments === 'demo';
@@ -178,40 +211,49 @@ export function RequestWizard() {
   const soon = payments === 'none';
 
   const stepIndex = STEPS.findIndex((s) => s.id === d.step);
-  const problem = stepProblem(item, d.step);
-  const firstBad = (it: DraftItem) => STEPS.find((s) => s.id !== 'review' && stepProblem(it, s.id))?.id ?? null;
+  const firstBad = d.items.findIndex((it) => itemProblem(it));
+  const fill = packFill(count, perPack);
 
   const go = (step: Step) => {
-    setTouched(false);
     setError(null);
     update({ step });
     window.scrollTo?.({ top: 0 });
   };
-  const next = () => {
-    if (problem) {
-      setTouched(true);
+  const toReview = () => {
+    if (firstBad >= 0) {
+      setShowErrors(true);
+      update({ open: firstBad, step: 'products' });
+      focusItem(firstBad);
       return;
     }
-    if (stepIndex < STEPS.length - 1) go(STEPS[stepIndex + 1]!.id);
+    go('review');
   };
-  const back = () => stepIndex > 0 && go(STEPS[stepIndex - 1]!.id);
+
+  const focusItem = (i: number) =>
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`ord-product-${i}`);
+      el?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+      el?.querySelector<HTMLElement>('[aria-invalid="true"], select, input')?.focus({ preventScroll: true });
+    });
 
   const addItem = () => {
-    if (tiers && d.items.length >= tiers.maxItems) return;
-    setD((x) => ({ ...x, items: [...x.items, blankItem({ productTypeId: item.productTypeId, tier: item.tier })], cur: x.items.length, step: 'what' }));
-    setTouched(false);
+    if (count >= maxItems) return;
+    const prev = d.items[d.items.length - 1];
+    // A line of products usually shares its type and brand: start the next one from them.
+    setD((x) => ({ ...x, items: [...x.items, blankItem({ productTypeId: prev?.productTypeId ?? '', brand: prev?.brand ?? '' })], open: x.items.length, step: 'products' }));
+    setShowErrors(false);
+    focusItem(count);
   };
-  const editItem = (i: number, step: Step = 'what') => {
-    setD((x) => ({ ...x, cur: i, step }));
-    setTouched(false);
+  const removeItem = (i: number) => {
+    setD((x) => (x.items.length < 2 ? x : { ...x, items: x.items.filter((_, j) => j !== i), open: -1 }));
+    setServerErrors({});
   };
-  const removeItem = (i: number) => setD((x) => (x.items.length < 2 ? x : { ...x, items: x.items.filter((_, j) => j !== i), cur: 0 }));
 
   const pay = async () => {
-    const badIdx = d.items.findIndex((it) => firstBad(it));
-    if (badIdx >= 0) {
-      editItem(badIdx, firstBad(d.items[badIdx]!)!);
-      setTouched(true);
+    if (firstBad >= 0) {
+      setShowErrors(true);
+      update({ step: 'products', open: firstBad });
+      focusItem(firstBad);
       return;
     }
     if (soon) {
@@ -227,17 +269,19 @@ export function RequestWizard() {
       rush: d.rush,
       items: d.items.map((it) => {
         const t = productType(it.productTypeId);
+        const upc = it.upc.trim() ? normalizeUpc(it.upc) : null;
         return {
-          tier: it.tier as ModelTierId,
-          extraFinishes: it.extraFinishes,
           brief: {
             productTypeId: it.productTypeId,
             kind: t?.kind,
             ...(t?.variant ? { variant: t.variant } : {}),
             name: it.name.trim(),
-            widthIn: it.widthIn!,
-            depthIn: it.depthIn!,
-            heightIn: it.heightIn!,
+            ...(it.brand.trim() ? { brand: it.brand.trim() } : {}),
+            ...(upc?.ok ? { upc: upc.code } : {}),
+            ...(it.barcodeFileId ? { barcodeFileId: it.barcodeFileId } : {}),
+            ...(it.widthIn != null ? { widthIn: it.widthIn } : {}),
+            ...(it.depthIn != null ? { depthIn: it.depthIn } : {}),
+            ...(it.heightIn != null ? { heightIn: it.heightIn } : {}),
             ...(t && t.defaults.elevationIn > 0 ? { elevationIn: t.defaults.elevationIn } : {}),
             notes: it.notes.trim(),
             referenceFileIds: it.referenceFileIds,
@@ -261,13 +305,19 @@ export function RequestWizard() {
         return;
       }
       const msg = isPaymentsUnavailable(e) ? PAYMENTS_SOON : e instanceof ApiError ? e.message : 'Could not send the request.';
-      const field = e instanceof ApiError ? (e.body as { errors?: { field: string; message: string }[] } | undefined)?.errors?.[0] : undefined;
-      setError(field ? `${field.message}` : msg);
-      const m = field?.field.match(/^items\[(\d+)\]\.(?:brief\.)?(\w+)/);
-      if (m) {
-        const k = m[2]!;
-        const step: Step = k === 'tier' || k === 'extraFinishes' ? 'tier' : k === 'referenceFileIds' || k === 'refProductId' ? 'photos' : k === 'notes' ? 'notes' : /In$/.test(k) ? 'size' : 'what';
-        editItem(Number(m[1]), step);
+      const errors = e instanceof ApiError ? ((e.body as { errors?: { field: string; message: string }[] } | undefined)?.errors ?? []) : [];
+      const byItem: Record<number, Record<string, string>> = {};
+      for (const fe of errors) {
+        const at = errorTarget(fe.field);
+        if (at) (byItem[at.item] ??= {})[at.field] = fe.message;
+      }
+      const firstItem = Object.keys(byItem).map(Number).sort((a, b) => a - b)[0];
+      setError(errors[0]?.message ?? msg);
+      if (firstItem != null) {
+        setServerErrors(byItem);
+        setShowErrors(true);
+        update({ step: 'products', open: firstItem });
+        focusItem(firstItem);
       }
     }
   };
@@ -275,11 +325,12 @@ export function RequestWizard() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (d.step === 'review') void pay();
-    else next();
+    else toReview();
   };
 
   const showTarget = brands.length > 0 || isContractor;
-  const lineMatters = d.target !== 'customer' || d.items.length > 1;
+  const lineMatters = d.target !== 'customer' || count > 1;
+  const packPrice = tiers ? dollars(tiers.pack.priceCents) : null;
 
   return (
     <OrdersShell wide>
@@ -287,114 +338,152 @@ export function RequestWizard() {
         <div>
           <span className="eyebrow">Make custom models</span>
           <h1>New request</h1>
-          <p className="muted">The BluModel 3D studio models it to real scale with 2 revision rounds. Prices come from the tier you pick.</p>
+          <p className="muted">
+            List the products you want modelled. A Model pack covers up to {perPack} products{packPrice ? ` for ${packPrice}` : ''}: one true-to-size 3D model each, up to{' '}
+            {tiers?.pack.finishesPerModel ?? 3} finishes and {tiers?.pack.revisions ?? 2} revision rounds per model.
+          </p>
         </div>
       </div>
       <OrdersPayNote payments={payments} />
       {askedTarget === 'contractor' && !isContractor && (
         <div className="auth-note">
-          Modelling straight into My catalog is part of the Contractor plan. <a href={hrefFor({ name: 'pro', rest: '' })}>See the Contractor plan</a>, or request a model for your own kitchens below.
+          Modelling straight into My catalog is part of the Contractor plan. <a href={hrefFor({ name: 'pro', rest: '' })}>See the Contractor plan</a>, or request models for your own kitchens below.
         </div>
       )}
 
       <ol className="ord-steps" aria-label="Steps">
-        {STEPS.map((s, i) => {
-          const reachable = i <= stepIndex || STEPS.slice(0, i).every((p) => p.id === 'review' || !stepProblem(item, p.id));
-          return (
-            <li key={s.id}>
-              <button type="button" className={s.id === d.step ? 'ord-step on' : 'ord-step'} aria-current={s.id === d.step ? 'step' : undefined} disabled={!reachable} onClick={() => go(s.id)}>
-                <span className="ord-step-n">{i + 1}</span>
-                {s.label}
-              </button>
-            </li>
-          );
-        })}
+        {STEPS.map((s, i) => (
+          <li key={s.id}>
+            <button
+              type="button"
+              className={s.id === d.step ? 'ord-step on' : 'ord-step'}
+              aria-current={s.id === d.step ? 'step' : undefined}
+              onClick={() => (s.id === 'review' ? toReview() : go(s.id))}
+            >
+              <span className="ord-step-n">{i + 1}</span>
+              {s.label}
+            </button>
+          </li>
+        ))}
       </ol>
 
       <div className="ord-wizard">
         <form className="ord-card ord-form" onSubmit={onSubmit} noValidate>
-          {d.items.length > 1 && d.step !== 'review' && (
-            <div className="ord-item-tabs" role="group" aria-label="Products in this request">
-              {d.items.map((it, i) => (
-                <button key={i} type="button" className={i === d.cur ? 'chip on' : 'chip'} aria-pressed={i === d.cur} onClick={() => editItem(i, d.step)}>
-                  {i + 1}. {it.name.trim() || 'New product'}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {d.step === 'what' && (
-            <WhatStep
-              item={item}
-              updateItem={updateItem}
-              refProduct={refProduct && item.refProductId === refProduct.id ? refProduct : null}
-              target={showTarget && d.cur === 0 ? { value: d.target, brandId: d.brandId, brands, isContractor, onChange: (target, brandId) => update({ target, brandId }) } : null}
-            />
-          )}
-          {d.step === 'size' && <SizeStep item={item} updateItem={updateItem} />}
-          {d.step === 'photos' && <PhotosStep item={item} updateItem={updateItem} files={d.files} addFiles={(f) => setD((x) => ({ ...x, files: { ...x.files, ...f } }))} />}
-          {d.step === 'notes' && (
+          {d.step === 'products' && (
             <section>
-              <h2>Notes for the studio</h2>
-              <p className="muted">Materials, finishes, anything the photos don’t show, and links to the manufacturer’s page.</p>
-              <label className="field">
-                <span>
-                  Notes <em>(optional)</em>
-                </span>
-                <textarea className="ord-textarea" rows={8} maxLength={MAX_NOTES} value={item.notes} onChange={(e) => updateItem({ notes: e.target.value })} />
-              </label>
-              <p className="ord-count mono">
-                {item.notes.length.toLocaleString('en-US')} / {MAX_NOTES.toLocaleString('en-US')}
-              </p>
+              <h2>Products to model</h2>
+              {showTarget && (
+                <TargetPicker
+                  value={d.target}
+                  brandId={d.brandId}
+                  brands={brands}
+                  isContractor={isContractor}
+                  onChange={(target, brandId) => update({ target, brandId })}
+                />
+              )}
+              {refProduct && d.items.some((it) => it.refProductId === refProduct.id) && (
+                <div className="ord-ref">
+                  {refProduct.thumbnailUrl && <img src={refProduct.thumbnailUrl} alt="" />}
+                  <div>
+                    <span className="mini-label">Starting from</span>
+                    <b>{refProduct.name}</b>
+                    <span className="muted"> · {refProduct.brand}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setD((x) => ({ ...x, items: x.items.map((it) => (it.refProductId === refProduct.id ? { ...it, refProductId: undefined } : it)) }))}
+                  >
+                    Don’t use it
+                  </button>
+                </div>
+              )}
+
+              <ol className="ord-products" aria-label="Products in this request">
+                {d.items.map((it, i) => {
+                  const startsPack = i > 0 && i % perPack === 0;
+                  return (
+                    <li key={i} id={`ord-product-${i}`} className="ord-product-slot">
+                      {startsPack && (
+                        <p className="ord-pack-divider">
+                          <span>Pack {packOf(i, perPack)}</span>
+                        </p>
+                      )}
+                      <ProductCard
+                        index={i}
+                        item={it}
+                        pack={count > perPack ? packOf(i, perPack) : 0}
+                        open={d.open === i}
+                        onToggle={() => update({ open: d.open === i ? -1 : i })}
+                        onChange={(patch) => updateItem(i, patch)}
+                        onRemove={count > 1 ? () => removeItem(i) : undefined}
+                        files={d.files}
+                        addFiles={addFiles}
+                        showErrors={showErrors}
+                        serverErrors={serverErrors[i] ?? {}}
+                      />
+                    </li>
+                  );
+                })}
+              </ol>
+
+              <PackMeter count={count} perPack={perPack} maxItems={maxItems} packPrice={packPrice} />
+              {count < maxItems ? (
+                <button type="button" className="btn ord-add-item" onClick={addItem}>
+                  + Add a product
+                  {fill.roomInLast === 0 ? <span className="ord-add-note"> · starts pack {fill.packs + 1}</span> : null}
+                </button>
+              ) : (
+                <p className="fine">One request holds up to {maxItems} products. Send the rest as another request.</p>
+              )}
             </section>
           )}
-          {d.step === 'tier' && <TierStep item={item} updateItem={updateItem} tiers={tiers} rush={d.rush} setRush={(rush) => update({ rush })} />}
+
           {d.step === 'review' && (
             <section>
               <h2>Review &amp; pay</h2>
               <ul className="ord-review">
                 {d.items.map((it, i) => {
                   const t = productType(it.productTypeId);
-                  const bad = firstBad(it);
+                  const upc = it.upc.trim() ? normalizeUpc(it.upc) : null;
+                  const thumb = it.referenceFileIds.find((id) => d.files[id]);
                   return (
-                    <li key={i} className={bad ? 'ord-review-item bad' : 'ord-review-item'}>
-                      <div className="ord-review-thumbs">
-                        {it.referenceFileIds.slice(0, 3).map((id) => (d.files[id] ? <img key={id} src={d.files[id]!.url} alt="" /> : null))}
-                      </div>
+                    <li key={i} className="ord-review-item">
+                      <div className="ord-review-thumbs">{thumb ? <img src={d.files[thumb]!.url} alt="" /> : <span className="ord-review-n">{i + 1}</span>}</div>
                       <div className="ord-review-text">
                         <b>
-                          {d.items.length > 1 ? `${i + 1}. ` : ''}
+                          {count > 1 ? `${i + 1}. ` : ''}
                           {it.name.trim() || 'Unnamed product'}
                         </b>
                         <span>
-                          {t?.label ?? 'No type'} · {it.widthIn ?? '?'}″ W × {it.depthIn ?? '?'}″ D × {it.heightIn ?? '?'}″ H
+                          {[it.brand.trim(), t?.label, briefSize(it)].filter(Boolean).join(' · ')}
                         </span>
                         <span>
-                          {it.tier ? `${tiers?.tiers.find((x) => x.id === it.tier)?.name ?? it.tier} tier` : 'No tier'}
-                          {it.extraFinishes ? ` · ${it.extraFinishes} extra finish${it.extraFinishes === 1 ? '' : 'es'}` : ''} · {it.referenceFileIds.length} photo
+                          {upc?.ok ? <span className="mono">UPC {formatUpc(upc.code)}</span> : it.barcodeFileId ? 'Barcode photo' : 'No UPC'} · {it.referenceFileIds.length} photo
                           {it.referenceFileIds.length === 1 ? '' : 's'}
+                          {count > perPack ? ` · Pack ${packOf(i, perPack)}` : ''}
                         </span>
-                        {bad && <span className="ord-bad">{stepProblem(it, bad)}</span>}
                       </div>
                       <div className="ord-review-actions">
-                        <button type="button" className="btn" onClick={() => editItem(i, bad ?? 'what')}>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => {
+                            update({ step: 'products', open: i });
+                            focusItem(i);
+                          }}
+                          aria-label={`Edit ${it.name.trim() || `product ${i + 1}`}`}
+                        >
                           Edit
                         </button>
-                        {d.items.length > 1 && (
-                          <button type="button" className="btn" onClick={() => removeItem(i)} aria-label={`Remove ${it.name || `product ${i + 1}`}`}>
-                            Remove
-                          </button>
-                        )}
                       </div>
                     </li>
                   );
                 })}
               </ul>
-              {tiers && d.items.length < tiers.maxItems && (
-                <button type="button" className="btn ord-add-item" onClick={addItem}>
-                  + Add another product{lineMatters ? ' from this line' : ''}
-                </button>
-              )}
+              <button type="button" className="btn ord-add-item" onClick={addItem} disabled={count >= maxItems}>
+                + Add a product
+              </button>
               {lineMatters && (
                 <label className="field ord-line">
                   <span>
@@ -403,6 +492,15 @@ export function RequestWizard() {
                   <input value={d.line} maxLength={60} onChange={(e) => update({ line: e.target.value })} />
                 </label>
               )}
+              <label className="ord-extra ord-rush">
+                <div>
+                  <b>Rush</b>
+                  <p className="fine">
+                    +{tiers?.rushPct ?? 50}% on every pack for half the turnaround <em>(applies to every product in this request)</em>.
+                  </p>
+                </div>
+                <input type="checkbox" checked={d.rush} onChange={(e) => update({ rush: e.target.checked })} />
+              </label>
               <p className="muted">
                 {d.target === 'brand'
                   ? `Delivered models become drafts in ${brands.find((b) => b.id === d.brandId)?.name ?? 'your brand'}, ready for review before they go live.`
@@ -413,16 +511,20 @@ export function RequestWizard() {
             </section>
           )}
 
-          {error && <div className="auth-error" role="alert">{error}</div>}
-          {touched && problem && d.step !== 'review' && (
+          {error && (
             <div className="auth-error" role="alert">
-              {problem}
+              {error}
+            </div>
+          )}
+          {showErrors && firstBad >= 0 && d.step === 'products' && !error && (
+            <div className="auth-error" role="alert">
+              Product {firstBad + 1}: {itemProblem(d.items[firstBad]!)}
             </div>
           )}
 
           <div className="ord-form-actions">
             {stepIndex > 0 ? (
-              <button type="button" className="btn big" onClick={back}>
+              <button type="button" className="btn big" onClick={() => go('products')}>
                 Back
               </button>
             ) : (
@@ -436,7 +538,7 @@ export function RequestWizard() {
               </button>
             ) : (
               <button type="submit" className="btn primary big">
-                Next
+                Review {count} product{count === 1 ? '' : 's'}
               </button>
             )}
           </div>
@@ -446,7 +548,7 @@ export function RequestWizard() {
         <aside className="ord-card ord-quote" aria-live="polite" aria-label="Price">
           <span className="eyebrow">Your quote{demo ? ' · demo payments' : ''}</span>
           {!quote ? (
-            <p className="muted">Pick a tier to see the price.</p>
+            <p className="muted">Getting the price…</p>
           ) : (
             <>
               <ul className="ord-lines">
@@ -462,13 +564,14 @@ export function RequestWizard() {
                 <b className="mono">{dollars(quote.amountCents)}</b>
               </div>
               <p className="ord-due">
-                Delivered in about {quote.dueBusinessDays} business days after payment{d.rush ? ' (rush)' : ''}. 2 revision rounds included.
+                Delivered in about {quote.dueBusinessDays} business days after payment{d.rush ? ' (rush)' : ''}. {tiers?.pack.revisions ?? 2} revision rounds and up to{' '}
+                {tiers?.pack.finishesPerModel ?? 3} finishes per model included.
               </p>
             </>
           )}
           {quoteError && <p className="ord-bad">{quoteError}</p>}
           <p className="fine">
-            Prices are set by BluModel Studio’s servers from the tier and extras.
+            Prices are set by BluModel Studio’s servers: a pack costs the same with 1 product or {perPack}.
             {demo ? ' Demo payments: no money moves.' : soon ? ' Payments open soon.' : ' You pay on Stripe’s secure page; BluModel Studio never sees card details.'}
           </p>
         </aside>
@@ -477,106 +580,349 @@ export function RequestWizard() {
   );
 }
 
-// ─── Steps ──────────────────────────────────────────────────────────────
+// ─── Pieces ─────────────────────────────────────────────────────────────
 
-interface TargetPicker {
+function TargetPicker({
+  value,
+  brandId,
+  brands,
+  isContractor,
+  onChange,
+}: {
   value: OrderTarget;
   brandId: string;
   brands: { id: string; name: string }[];
   isContractor: boolean;
   onChange: (target: OrderTarget, brandId: string) => void;
+}) {
+  const v = value === 'brand' ? `brand:${brandId}` : value;
+  return (
+    <label className="field ord-target">
+      <span>Who are the models for?</span>
+      <select
+        className="ord-select"
+        value={v}
+        onChange={(e) => {
+          const x = e.target.value;
+          if (x.startsWith('brand:')) onChange('brand', x.slice(6));
+          else onChange(x as OrderTarget, '');
+        }}
+      >
+        <option value="customer">My kitchens (private to me)</option>
+        {isContractor && <option value="contractor">My catalog (Contractor)</option>}
+        {brands.map((b) => (
+          <option key={b.id} value={`brand:${b.id}`}>
+            My brand: {b.name}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
-function WhatStep({
+/** "Pack 1: 3 of 8 products. 5 more fit at no extra cost." Counts only; prices come from the quote. */
+function PackMeter({ count, perPack, maxItems, packPrice }: { count: number; perPack: number; maxItems: number; packPrice: string | null }) {
+  const { packs, inLast, roomInLast } = packFill(count, perPack);
+  const full = roomInLast === 0;
+  return (
+    <div className="ord-pack-meter" aria-live="polite">
+      <div className="ord-pack-bar" aria-hidden>
+        {Array.from({ length: perPack }, (_, i) => (
+          <span key={i} className={i < inLast ? 'on' : ''} />
+        ))}
+      </div>
+      <p>
+        <b>
+          {packs > 1 ? `Pack ${packs}: ` : ''}
+          {inLast} of {perPack} products
+        </b>
+        {packs > 1 ? ` · ${count} products in ${packs} packs` : ''}.{' '}
+        {full
+          ? count >= maxItems
+            ? 'This request is full.'
+            : `This pack is full: the next product starts pack ${packs + 1}${packPrice ? ` (+${packPrice})` : ''}.`
+          : `${roomInLast} more fit in this pack at no extra cost.`}
+      </p>
+    </div>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message?: string | null }) {
+  if (!message) return null;
+  return (
+    <span id={id} className="ord-field-err" role="alert">
+      {message}
+    </span>
+  );
+}
+
+function ProductCard({
+  index,
   item,
-  updateItem,
-  refProduct,
-  target,
+  pack,
+  open,
+  onToggle,
+  onChange,
+  onRemove,
+  files,
+  addFiles,
+  showErrors,
+  serverErrors,
+}: {
+  index: number;
+  item: DraftItem;
+  /** Which pack it is in, shown once there is more than one (0: don't show). */
+  pack: number;
+  open: boolean;
+  onToggle: () => void;
+  onChange: (patch: Partial<DraftItem>) => void;
+  onRemove?: () => void;
+  files: Thumbs;
+  addFiles: (f: Thumbs) => void;
+  showErrors: boolean;
+  serverErrors: Partial<Record<string, string>>;
+}) {
+  const problems = itemProblems(item);
+  const errOf = (f: ItemField | 'barcodeFileId' | 'refProductId') => serverErrors[f] ?? (showErrors ? problems[f as ItemField] : undefined) ?? null;
+  const hasProblem = Object.keys(problems).length > 0 || Object.values(serverErrors).some(Boolean);
+  const t = productType(item.productTypeId);
+  const upc = item.upc.trim() ? normalizeUpc(item.upc) : null;
+  const n = index + 1;
+  const idp = `ord-p${index}`;
+  const groups = useMemo(() => CATEGORIES.map((c) => ({ ...c, types: PRODUCT_TYPES.filter((pt) => pt.category === c.id) })).filter((g) => g.types.length), []);
+  const summary = [item.brand.trim(), t?.label, upc?.ok ? `UPC ${formatUpc(upc.code)}` : item.barcodeFileId ? 'Barcode photo' : null, `${item.referenceFileIds.length} photo${item.referenceFileIds.length === 1 ? '' : 's'}`]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <div className={`ord-product${open ? ' open' : ''}${showErrors && hasProblem ? ' bad' : ''}`}>
+      <div className="ord-product-head">
+        <button type="button" className="ord-product-toggle" aria-expanded={open} aria-controls={`${idp}-body`} onClick={onToggle}>
+          <span className="ord-product-n" aria-hidden>
+            {n}
+          </span>
+          <span className="ord-product-title">
+            <b>{item.name.trim() || `Product ${n}`}</b>
+            <span>{showErrors && hasProblem ? <span className="ord-bad-inline">Needs a fix</span> : summary}</span>
+          </span>
+          {pack > 0 && <span className="ord-pack-badge">Pack {pack}</span>}
+          <span className="ord-product-chev" aria-hidden>
+            {open ? '−' : '+'}
+          </span>
+        </button>
+        {onRemove && (
+          <button type="button" className="btn ord-product-remove" onClick={onRemove} aria-label={`Remove ${item.name.trim() || `product ${n}`}`}>
+            Remove
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div className="ord-product-body" id={`${idp}-body`}>
+          <div className="ord-grid-2">
+            <label className="field">
+              <span>What is it?</span>
+              <select
+                className="ord-select"
+                value={item.productTypeId}
+                aria-invalid={!!errOf('productTypeId')}
+                aria-describedby={`${idp}-type-err`}
+                onChange={(e) => onChange({ productTypeId: e.target.value })}
+              >
+                <option value="">Choose…</option>
+                {groups.map((g) => (
+                  <optgroup key={g.id} label={g.label}>
+                    {g.types.map((pt) => (
+                      <option key={pt.id} value={pt.id}>
+                        {pt.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <FieldError id={`${idp}-type-err`} message={errOf('productTypeId')} />
+            </label>
+            <label className="field">
+              <span>Product name</span>
+              <input
+                value={item.name}
+                maxLength={NAME_MAX}
+                placeholder="e.g. 36″ dual-fuel range in cream"
+                aria-invalid={!!errOf('name')}
+                aria-describedby={`${idp}-name-err`}
+                onChange={(e) => onChange({ name: e.target.value })}
+              />
+              <FieldError id={`${idp}-name-err`} message={errOf('name')} />
+            </label>
+            <label className="field">
+              <span>
+                Brand <em>(optional)</em>
+              </span>
+              <input value={item.brand} maxLength={BRAND_MAX} placeholder="e.g. the maker on the box" autoComplete="off" aria-invalid={!!errOf('brand')} aria-describedby={`${idp}-brand-err`} onChange={(e) => onChange({ brand: e.target.value })} />
+              <FieldError id={`${idp}-brand-err`} message={errOf('brand')} />
+            </label>
+            <UpcField item={item} idp={idp} onChange={onChange} files={files} addFiles={addFiles} error={errOf('upc') ?? errOf('barcodeFileId')} />
+          </div>
+
+          <fieldset className="ord-fieldset">
+            <legend>
+              Size <em>(optional: leave it blank if you don’t know; the studio sizes the model from the photos and spec)</em>
+            </legend>
+            <div className="ord-dims">
+              <InchField label="Width" value={item.widthIn} onChange={(widthIn) => onChange({ widthIn })} error={errOf('widthIn')} id={`${idp}-w`} />
+              <InchField label="Depth" value={item.depthIn} onChange={(depthIn) => onChange({ depthIn })} error={errOf('depthIn')} id={`${idp}-d`} />
+              <InchField label="Height" value={item.heightIn} onChange={(heightIn) => onChange({ heightIn })} error={errOf('heightIn')} id={`${idp}-h`} />
+            </div>
+            {t && (
+              <p className="fine">
+                A typical {t.label.toLowerCase()} is {t.defaults.widthIn}″ W × {t.defaults.depthIn}″ D × {t.defaults.heightIn}″ H.
+              </p>
+            )}
+          </fieldset>
+
+          <PhotoDrop item={item} onChange={onChange} files={files} addFiles={addFiles} error={errOf('referenceFileIds') ?? errOf('refProductId')} idp={idp} />
+
+          <label className="field">
+            <span>
+              Notes <em>(optional: finishes you want, links to the maker’s page, anything the photos don’t show)</em>
+            </span>
+            <textarea className="ord-textarea" rows={3} maxLength={MAX_NOTES} value={item.notes} aria-invalid={!!errOf('notes')} onChange={(e) => onChange({ notes: e.target.value })} />
+          </label>
+          <FieldError id={`${idp}-notes-err`} message={errOf('notes')} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The UPC: typed or pasted (checked as you type), scanned with the camera, or a photo of the barcode. */
+function UpcField({
+  item,
+  idp,
+  onChange,
+  files,
+  addFiles,
+  error,
 }: {
   item: DraftItem;
-  updateItem: (p: Partial<DraftItem>) => void;
-  refProduct: Product | null;
-  target: TargetPicker | null;
+  idp: string;
+  onChange: (patch: Partial<DraftItem>) => void;
+  files: Thumbs;
+  addFiles: (f: Thumbs) => void;
+  error: string | null;
 }) {
-  const groups = useMemo(
-    () => CATEGORIES.map((c) => ({ ...c, types: PRODUCT_TYPES.filter((t) => t.category === c.id) })).filter((g) => g.types.length),
-    [],
-  );
-  const setType = (id: string) => {
-    const t = productType(id);
-    const prev = productType(item.productTypeId);
-    // Sizes follow the type until the buyer types their own.
-    const untouched = !prev || (item.widthIn === prev.defaults.widthIn && item.depthIn === prev.defaults.depthIn && item.heightIn === prev.defaults.heightIn) || item.widthIn == null;
-    updateItem({
-      productTypeId: id,
-      ...(t && untouched && !item.refProductId ? { widthIn: t.defaults.widthIn, depthIn: t.defaults.depthIn, heightIn: t.defaults.heightIn } : {}),
-      ...(t && !item.tier ? { tier: suggestedTier(t.kind) } : {}),
-    });
+  const canScan = useCanScan();
+  const [scanning, setScanning] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [upErr, setUpErr] = useState<string | null>(null);
+  const photo = useRef<HTMLInputElement>(null);
+  const live = upcWhileTyping(item.upc);
+  const shown = error ?? (live && !live.ok ? live.message : null);
+
+  const takePhoto = async (f: File) => {
+    setUpErr(null);
+    setNote(null);
+    if (!IMAGE_TYPES.includes(f.type)) return setUpErr('Use a PNG, JPEG or WebP photo of the barcode.');
+    if (f.size > MAX_IMAGE_BYTES) return setUpErr('That photo is over 8 MB.');
+    setBusy(true);
+    try {
+      const { file } = await ordersApi.uploadFile(f, 'reference', f.name || 'barcode.jpg');
+      addFiles({ [file.id]: { url: file.url, name: 'Barcode photo' } });
+      onChange({ barcodeFileId: file.id });
+      // Where the browser can read barcodes, fill the code in from the photo too.
+      const code = item.upc.trim() ? null : await readBarcodeFromImage(f);
+      if (code) {
+        onChange({ upc: code });
+        setNote(`Read ${formatUpc(code)} from the photo.`);
+      } else setNote('The studio reads the code from the photo.');
+    } catch (e) {
+      setUpErr(e instanceof ApiError ? e.message : 'The photo didn’t upload.');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const targetValue = target ? (target.value === 'brand' ? `brand:${target.brandId}` : target.value) : 'customer';
   return (
-    <section>
-      <h2>What should we model?</h2>
-      {target && (
-        <label className="field">
-          <span>Who is it for?</span>
-          <select
-            className="ord-select"
-            value={targetValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v.startsWith('brand:')) target.onChange('brand', v.slice(6));
-              else target.onChange(v as OrderTarget, '');
-            }}
-          >
-            <option value="customer">My kitchens (private to me)</option>
-            {target.isContractor && <option value="contractor">My catalog (Contractor)</option>}
-            {target.brands.map((b) => (
-              <option key={b.id} value={`brand:${b.id}`}>
-                My brand: {b.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      {refProduct && (
-        <div className="ord-ref">
-          {refProduct.thumbnailUrl && <img src={refProduct.thumbnailUrl} alt="" />}
-          <div>
-            <span className="mini-label">Starting from</span>
-            <b>{refProduct.name}</b>
-            <span className="muted"> · {refProduct.brand}</span>
-          </div>
-          <button type="button" className="btn" onClick={() => updateItem({ refProductId: undefined })}>
-            Don’t use it
+    <div className="field ord-upc">
+      <label htmlFor={`${idp}-upc`}>
+        UPC or EAN <em>(the number under the barcode)</em>
+      </label>
+      <div className="ord-upc-row">
+        <input
+          id={`${idp}-upc`}
+          value={item.upc}
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={20}
+          placeholder="e.g. 0 36000 29145 2"
+          aria-invalid={!!shown}
+          aria-describedby={`${idp}-upc-msg`}
+          onChange={(e) => {
+            setNote(null);
+            onChange({ upc: e.target.value });
+          }}
+          onBlur={() => {
+            // Tidy a good code into its printed grouping.
+            const r = item.upc.trim() ? normalizeUpc(item.upc) : null;
+            if (r?.ok) onChange({ upc: formatUpc(r.code) });
+          }}
+        />
+        {canScan && (
+          <button type="button" className="btn ord-scan-btn" onClick={() => setScanning(true)}>
+            Scan
+          </button>
+        )}
+      </div>
+      <span id={`${idp}-upc-msg`} className={shown ? 'ord-field-err' : 'ord-upc-ok'} role={shown ? 'alert' : undefined}>
+        {shown ?? (live?.ok ? `✓ ${UPC_FORMAT_LABEL[live.format]} ${formatUpc(live.code)}` : note ?? '')}
+      </span>
+      {!item.barcodeFileId ? (
+        <button type="button" className="ord-linkish" onClick={() => photo.current?.click()} disabled={busy}>
+          {busy ? 'Uploading…' : canScan ? 'Or upload a photo of the barcode' : 'Upload a photo of the barcode'}
+        </button>
+      ) : (
+        <div className="ord-barcode">
+          {files[item.barcodeFileId] ? <img src={files[item.barcodeFileId]!.url} alt="Barcode photo" /> : <span className="ord-thumb-missing">Barcode</span>}
+          <span className="fine">{note ?? 'Barcode photo added. It stays private to you and the studio.'}</span>
+          <button type="button" className="ord-thumb-x" aria-label="Remove the barcode photo" onClick={() => onChange({ barcodeFileId: undefined })}>
+            ×
           </button>
         </div>
       )}
-      <label className="field">
-        <span>Product type</span>
-        <select className="ord-select" value={item.productTypeId} onChange={(e) => setType(e.target.value)}>
-          <option value="">Choose…</option>
-          {groups.map((g) => (
-            <optgroup key={g.id} label={g.label}>
-              {g.types.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.label}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-      <label className="field">
-        <span>Product name</span>
-        <input value={item.name} maxLength={NAME_MAX} placeholder="e.g. 36″ dual-fuel range in cream" onChange={(e) => updateItem({ name: e.target.value })} />
-      </label>
-    </section>
+      <input
+        ref={photo}
+        type="file"
+        accept={IMAGE_TYPES.join(',')}
+        capture="environment"
+        hidden
+        aria-label="Upload a photo of the barcode"
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (f) void takePhoto(f);
+        }}
+      />
+      {upErr && <span className="ord-field-err">{upErr}</span>}
+      {scanning && (
+        <BarcodeScanDialog
+          onCode={(code) => {
+            setScanning(false);
+            onChange({ upc: formatUpc(code) });
+            setNote(`Scanned ${formatUpc(code)}.`);
+          }}
+          onClose={() => setScanning(false)}
+          onFallback={() => {
+            setScanning(false);
+            photo.current?.click();
+          }}
+        />
+      )}
+    </div>
   );
 }
 
-function InchField({ label, value, onChange, hint }: { label: string; value: number | null; onChange: (v: number | null) => void; hint?: string }) {
+function InchField({ label, value, onChange, error, id }: { label: string; value: number | null; onChange: (v: number | null) => void; error: string | null; id: string }) {
   const [raw, setRaw] = useState(value == null ? '' : String(value));
   const last = useRef(value);
   useEffect(() => {
@@ -585,15 +931,17 @@ function InchField({ label, value, onChange, hint }: { label: string; value: num
       setRaw(value == null ? '' : String(value));
     }
   }, [value]);
+  const unreadable = raw.trim() !== '' && parseInches(raw) == null;
+  const msg = unreadable ? 'Inches, like 33 or 2′ 9″.' : error;
   return (
     <label className="field">
-      <span>
-        {label} {hint && <em>{hint}</em>}
-      </span>
+      <span>{label}</span>
       <div className="ord-inch">
         <input
           inputMode="decimal"
           value={raw}
+          aria-invalid={!!msg}
+          aria-describedby={`${id}-err`}
           onChange={(e) => {
             setRaw(e.target.value);
             const v = parseInches(e.target.value);
@@ -604,41 +952,25 @@ function InchField({ label, value, onChange, hint }: { label: string; value: num
         />
         <span aria-hidden>in</span>
       </div>
+      <FieldError id={`${id}-err`} message={msg} />
     </label>
   );
 }
 
-function SizeStep({ item, updateItem }: { item: DraftItem; updateItem: (p: Partial<DraftItem>) => void }) {
-  const t = productType(item.productTypeId);
-  return (
-    <section>
-      <h2>How big is it?</h2>
-      <p className="muted">Measure the real product, or copy the spec sheet. Inches, or feet and inches like 2′ 9″. The model is built to this size.</p>
-      <div className="ord-dims">
-        <InchField label="Width" value={item.widthIn} onChange={(widthIn) => updateItem({ widthIn })} />
-        <InchField label="Depth" value={item.depthIn} onChange={(depthIn) => updateItem({ depthIn })} />
-        <InchField label="Height" value={item.heightIn} onChange={(heightIn) => updateItem({ heightIn })} />
-      </div>
-      {t && (
-        <p className="fine">
-          A typical {t.label.toLowerCase()} is {t.defaults.widthIn}″ W × {t.defaults.depthIn}″ D × {t.defaults.heightIn}″ H
-          {t.defaults.elevationIn > 0 ? `, mounted ${t.defaults.elevationIn}″ off the floor` : ''}.
-        </p>
-      )}
-    </section>
-  );
-}
-
-function PhotosStep({
+function PhotoDrop({
   item,
-  updateItem,
+  onChange,
   files,
   addFiles,
+  error,
+  idp,
 }: {
   item: DraftItem;
-  updateItem: (p: Partial<DraftItem>) => void;
-  files: Record<string, { url: string; name: string }>;
-  addFiles: (f: Record<string, { url: string; name: string }>) => void;
+  onChange: (p: Partial<DraftItem>) => void;
+  files: Thumbs;
+  addFiles: (f: Thumbs) => void;
+  error: string | null;
+  idp: string;
 }) {
   const [busy, setBusy] = useState(0);
   const [err, setErr] = useState<string | null>(null);
@@ -661,17 +993,17 @@ function PhotosStep({
         setErr(`${f.name} is over 8 MB.`);
         continue;
       }
-      setBusy((n) => n + 1);
+      setBusy((x) => x + 1);
       try {
         const { file } = await ordersApi.uploadFile(f, 'reference', f.name);
         addFiles({ [file.id]: { url: file.url, name: f.name } });
         const next = [...new Set([...ids.current, file.id])];
         ids.current = next;
-        updateItem({ referenceFileIds: next });
+        onChange({ referenceFileIds: next });
       } catch (e) {
         setErr(e instanceof ApiError ? `${f.name}: ${e.message}` : `${f.name} didn’t upload.`);
       } finally {
-        setBusy((n) => n - 1);
+        setBusy((x) => x - 1);
       }
     }
   };
@@ -681,41 +1013,51 @@ function PhotosStep({
     setOver(false);
     if (e.dataTransfer.files.length) void take(e.dataTransfer.files);
   };
-  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.length) void take(e.target.files);
-    e.target.value = '';
-  };
 
+  const label: ReactNode = (
+    <>
+      Photos <em>(up to {MAX_REFERENCES}: front, side, details, the spec-sheet drawing. Private to you and the studio.)</em>
+    </>
+  );
   return (
-    <section>
-      <h2>Reference photos</h2>
-      <p className="muted">1 to 8 photos: front, side, details and the spec-sheet drawing if you have one. They stay private to you and the BluModel 3D studio.</p>
+    <div className="field ord-photos">
+      <span id={`${idp}-photos-label`}>{label}</span>
       <div
-        className={over ? 'ord-drop over' : 'ord-drop'}
+        className={over ? 'ord-drop compact over' : 'ord-drop compact'}
         onDragOver={(e) => {
           e.preventDefault();
           setOver(true);
         }}
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
+        aria-invalid={!!error}
       >
-        <p>
-          <b>Drop photos here</b> or
-        </p>
-        <button type="button" className="btn" onClick={() => input.current?.click()} disabled={item.referenceFileIds.length >= MAX_REFERENCES}>
-          Choose photos
+        <button type="button" className="btn" onClick={() => input.current?.click()} disabled={item.referenceFileIds.length >= MAX_REFERENCES} aria-describedby={`${idp}-photos-label`}>
+          Add photos
         </button>
-        <input ref={input} type="file" accept={IMAGE_TYPES.join(',')} multiple hidden onChange={onPick} aria-label="Choose reference photos" />
-        <span className="fine">PNG, JPEG or WebP, up to 8 MB each.</span>
+        <span className="fine">or drop them here · PNG, JPEG or WebP, up to 8 MB each</span>
+        <input
+          ref={input}
+          type="file"
+          accept={IMAGE_TYPES.join(',')}
+          multiple
+          hidden
+          onChange={(e) => {
+            if (e.target.files?.length) void take(e.target.files);
+            e.target.value = '';
+          }}
+          aria-label="Choose reference photos"
+        />
       </div>
       {busy > 0 && <p className="muted">Uploading {busy} photo{busy === 1 ? '' : 's'}…</p>}
-      {err && <div className="auth-error">{err}</div>}
+      {err && <span className="ord-field-err">{err}</span>}
+      <FieldError id={`${idp}-photos-err`} message={error} />
       {item.referenceFileIds.length > 0 && (
-        <ul className="ord-thumbs">
+        <ul className="ord-thumbs small">
           {item.referenceFileIds.map((id) => (
             <li key={id}>
               {files[id] ? <img src={files[id]!.url} alt={files[id]!.name} /> : <span className="ord-thumb-missing">Photo</span>}
-              <button type="button" className="ord-thumb-x" aria-label={`Remove ${files[id]?.name ?? 'photo'}`} onClick={() => updateItem({ referenceFileIds: item.referenceFileIds.filter((x) => x !== id) })}>
+              <button type="button" className="ord-thumb-x" aria-label={`Remove ${files[id]?.name ?? 'photo'}`} onClick={() => onChange({ referenceFileIds: item.referenceFileIds.filter((x) => x !== id) })}>
                 ×
               </button>
             </li>
@@ -723,80 +1065,6 @@ function PhotosStep({
         </ul>
       )}
       {item.refProductId && item.referenceFileIds.length === 0 && <p className="fine">Photos are optional when you start from a catalog product, but they help the studio match it.</p>}
-    </section>
-  );
-}
-
-function TierStep({
-  item,
-  updateItem,
-  tiers,
-  rush,
-  setRush,
-}: {
-  item: DraftItem;
-  updateItem: (p: Partial<DraftItem>) => void;
-  tiers: TiersWire | null;
-  rush: boolean;
-  setRush: (v: boolean) => void;
-}) {
-  if (!tiers) return <p className="muted">Loading the tiers…</p>;
-  return (
-    <section>
-      <h2>Tier and extras</h2>
-      <div className="ord-tiers" role="radiogroup" aria-label="Model tier">
-        {tiers.tiers.map((t) => {
-          const on = item.tier === t.id;
-          return (
-            <button key={t.id} type="button" role="radio" aria-checked={on} className={on ? 'ord-tier on' : 'ord-tier'} onClick={() => updateItem({ tier: t.id })}>
-              <span className="ord-tier-name">
-                {t.name}
-                {on && <span className="ord-tier-check"> · selected</span>}
-              </span>
-              <b className="ord-tier-price">{dollars(t.priceCents)}</b>
-              <span className="ord-tier-days">{t.businessDays} business days</span>
-              <span className="ord-tier-for">{t.for}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div className="ord-extras">
-        <div className="ord-extra">
-          <div>
-            <b>Extra finishes</b>
-            <p className="fine">
-              {tiers.includedFinishes} finishes are included. Each extra one is {dollars(tiers.extraFinishCents)}.
-            </p>
-          </div>
-          <div className="ord-stepper">
-            <button type="button" className="btn" aria-label="One fewer extra finish" disabled={item.extraFinishes <= 0} onClick={() => updateItem({ extraFinishes: item.extraFinishes - 1 })}>
-              −
-            </button>
-            <span className="mono" aria-live="polite" aria-label="Extra finishes">
-              {item.extraFinishes}
-            </span>
-            <button
-              type="button"
-              className="btn"
-              aria-label="One more extra finish"
-              disabled={item.extraFinishes >= tiers.maxExtraFinishes}
-              onClick={() => updateItem({ extraFinishes: item.extraFinishes + 1 })}
-            >
-              +
-            </button>
-          </div>
-        </div>
-        <label className="ord-extra ord-rush">
-          <div>
-            <b>Rush</b>
-            <p className="fine">
-              +{tiers.rushPct}% for half the turnaround{' '}
-              <em>(applies to every product in this request)</em>.
-            </p>
-          </div>
-          <input type="checkbox" checked={rush} onChange={(e) => setRush(e.target.checked)} />
-        </label>
-      </div>
-    </section>
+    </div>
   );
 }

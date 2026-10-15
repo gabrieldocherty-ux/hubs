@@ -104,7 +104,8 @@ export default function routes(ctx) {
     const items = orders.itemsOf(o.id);
     const wire = orders.toWire(o, items);
     const staff = isStaff(viewer);
-    const refIds = [...new Set(items.flatMap((it) => it.brief?.referenceFileIds ?? []))];
+    // Reference photos and barcode photos: private to the buyer and the studio (files.canRead).
+    const refIds = [...new Set(items.flatMap((it) => [...(it.brief?.referenceFileIds ?? []), ...(it.brief?.barcodeFileId ? [it.brief.barcodeFileId] : [])]))];
     const references = refIds
       .map((id) => services.files.get(id))
       .filter((f) => f && services.files.canRead(viewer, f, null))

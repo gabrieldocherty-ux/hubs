@@ -8,7 +8,8 @@ import type { Product } from '../../types';
 import type { FileWire, GlbMeta, OrderStatus } from '../../types/platform';
 import { ProductStage } from '../viewer';
 import { ordersApi, type GlbReport, type OrderDetail, type OrderItemWire, type QueueOrder, type StudioFilter } from './api';
-import { dollars, shortDate, sizeText, STUDIO_STATUS_LABEL } from './model';
+import { briefSize, dollars, pricingLabel, shortDate, sizeText, STUDIO_STATUS_LABEL } from './model';
+import { formatUpc, UPC_FORMAT_LABEL } from './upc';
 import { StatusPill, Timeline } from './parts';
 import './orders.css';
 
@@ -76,7 +77,7 @@ export default function AdminStudioTab() {
             <tr>
               <th>Due</th>
               <th>Order</th>
-              <th>Tier</th>
+              <th>Pack</th>
               <th>Status</th>
               <th>Assignee</th>
               <th className="ord-num">Amount</th>
@@ -102,10 +103,12 @@ export default function AdminStudioTab() {
                         {o.target === 'brand' ? ` · brand: ${o.brandName ?? '?'}` : o.target === 'contractor' ? ' · contractor' : ''}
                         {o.items.length > 1 ? ` · ${o.delivered}/${o.items.length} delivered` : ''}
                       </span>
+                      <QueueUpcs order={o} />
                     </div>
                   </td>
                   <td className="ord-q-tier">
-                    {o.items.length > 1 ? `${o.items.length} items` : o.tier}
+                    {o.items.length > 1 ? `${o.items.length} products · ` : ''}
+                    {pricingLabel(o)}
                     {o.extras.rush ? ' · rush' : ''}
                   </td>
                   <td className="ord-q-status">
@@ -311,6 +314,7 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
                   orderId={id}
                   item={it}
                   multi={o.items.length > 1}
+                  includedFinishes={o.finishesPerModel}
                   onDelivered={(r) => {
                     setData(r);
                     setDelivered({ product: r.product, report: r.report });
@@ -361,7 +365,7 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
                     {it.brief.name}
                   </b>
                   <span>
-                    {it.tier}
+                    {o.pricing === 'pack' ? (o.packs > 1 ? `Pack ${it.pack ?? 1}` : 'Model pack') : pricingLabel({ tier: it.tier })}
                     {it.extraFinishes ? ` + ${it.extraFinishes} finishes` : ''}
                   </span>
                 </div>
@@ -370,9 +374,21 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
                     <dt>Type</dt>
                     <dd>{productType(it.brief.productTypeId)?.label ?? it.brief.productTypeId}</dd>
                   </div>
+                  {it.brief.brand && (
+                    <div>
+                      <dt>Brand</dt>
+                      <dd>{it.brief.brand}</dd>
+                    </div>
+                  )}
+                  <div>
+                    <dt>UPC</dt>
+                    <dd className={it.brief.upc ? 'mono ord-upc-value' : undefined}>
+                      {it.brief.upc ? `${formatUpc(it.brief.upc)}${it.brief.upcFormat ? ` (${UPC_FORMAT_LABEL[it.brief.upcFormat]})` : ''}` : it.brief.barcodeFileId ? 'Read it from the barcode photo below' : 'Not given'}
+                    </dd>
+                  </div>
                   <div>
                     <dt>Size</dt>
-                    <dd>{sizeText(it.brief.widthIn, it.brief.depthIn, it.brief.heightIn)}</dd>
+                    <dd>{briefSize(it.brief)}</dd>
                   </div>
                   {it.brief.refProductId && (
                     <div>
@@ -438,7 +454,38 @@ interface FinishRow {
   material: (typeof MATERIALS)[number];
 }
 
-function DeliverForm({ orderId, item, multi, onDelivered }: { orderId: string; item: OrderItemWire; multi: boolean; onDelivered: (r: OrderDetail & { product: Product; report: GlbReport }) => void }) {
+/** The queue row's UPCs, one per product (the studio looks the products up by them). */
+function QueueUpcs({ order }: { order: QueueOrder }) {
+  const codes = order.items.map((it) => (it.brief.upc ? formatUpc(it.brief.upc) : it.brief.barcodeFileId ? 'barcode photo' : null));
+  const given = codes.filter(Boolean) as string[];
+  if (!given.length) return null;
+  const shown = given.slice(0, 2);
+  return (
+    <span className="ord-q-upcs" title={codes.map((c, i) => `${i + 1}. ${c ?? 'no UPC'}`).join('\n')}>
+      <span className="ord-q-label">UPC </span>
+      <span className="mono">{shown.join(', ')}</span>
+      {given.length > shown.length ? ` +${given.length - shown.length} more` : ''}
+      {given.length < codes.length ? ` · ${codes.length - given.length} without` : ''}
+    </span>
+  );
+}
+
+type Dims = { widthIn: number | null; depthIn: number | null; heightIn: number | null };
+
+function DeliverForm({
+  orderId,
+  item,
+  multi,
+  includedFinishes,
+  onDelivered,
+}: {
+  orderId: string;
+  item: OrderItemWire;
+  multi: boolean;
+  /** A Model pack includes this many finishes per model; null on an order from before packs. */
+  includedFinishes: number | null;
+  onDelivered: (r: OrderDetail & { product: Product; report: GlbReport }) => void;
+}) {
   const [model, setModel] = useState<FileWire | null>(null);
   const [thumb, setThumb] = useState<FileWire | null>(null);
   const [report, setReport] = useState<GlbReport | null>(null);
@@ -446,7 +493,8 @@ function DeliverForm({ orderId, item, multi, onDelivered }: { orderId: string; i
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState(item.brief.name);
-  const [dims, setDims] = useState({ widthIn: item.brief.widthIn, depthIn: item.brief.depthIn, heightIn: item.brief.heightIn });
+  // The request's size where it gave one; the rest comes from the model once it's uploaded.
+  const [dims, setDims] = useState<Dims>({ widthIn: item.brief.widthIn ?? null, depthIn: item.brief.depthIn ?? null, heightIn: item.brief.heightIn ?? null });
   const [finishes, setFinishes] = useState<FinishRow[]>([{ name: 'As modelled', hex: '#d6d0c6', material: 'paint' }]);
 
   const up = async (e: ChangeEvent<HTMLInputElement>, kind: 'model' | 'image') => {
@@ -459,6 +507,10 @@ function DeliverForm({ orderId, item, multi, onDelivered }: { orderId: string; i
       const { file } = await ordersApi.uploadFile(f, kind, f.name);
       if (kind === 'model') {
         setModel(file);
+        // Fill any size the request didn't give from the model's measured size.
+        const bb = (file.meta as GlbMeta | undefined)?.bboxIn;
+        const r2 = (n: number) => Math.round(n * 100) / 100;
+        if (bb) setDims((d) => ({ widthIn: d.widthIn ?? r2(bb.w), depthIn: d.depthIn ?? r2(bb.d), heightIn: d.heightIn ?? r2(bb.h) }));
         setReport((await ordersApi.report(orderId, item.idx, file.id)).report);
       } else setThumb(file);
     } catch (err) {
@@ -483,7 +535,12 @@ function DeliverForm({ orderId, item, multi, onDelivered }: { orderId: string; i
         modelFileId: model.id,
         thumbFileId: thumb.id,
         name: name.trim() || item.brief.name,
-        dims,
+        // Only the sizes that are known; the server falls back to the model's measured size.
+        dims: {
+          ...(dims.widthIn ? { widthIn: dims.widthIn } : {}),
+          ...(dims.depthIn ? { depthIn: dims.depthIn } : {}),
+          ...(dims.heightIn ? { heightIn: dims.heightIn } : {}),
+        },
         finishes: finishes.map((f, i) => ({ id: slug(f.name, i), name: f.name.trim() || `Finish ${i + 1}`, hex: f.hex, material: f.material })),
       });
       onDelivered(r);
@@ -526,11 +583,18 @@ function DeliverForm({ orderId, item, multi, onDelivered }: { orderId: string; i
         {(['widthIn', 'depthIn', 'heightIn'] as const).map((k) => (
           <label key={k} className="field">
             <span>{k === 'widthIn' ? 'Width' : k === 'depthIn' ? 'Depth' : 'Height'} (in)</span>
-            <input type="number" step="0.25" min={0.25} value={dims[k]} onChange={(e) => setDims((d) => ({ ...d, [k]: Number(e.target.value) }))} />
+            <input
+              type="number"
+              step="0.25"
+              min={0.25}
+              value={dims[k] ?? ''}
+              placeholder="From the model"
+              onChange={(e) => setDims((d) => ({ ...d, [k]: e.target.value === '' ? null : Number(e.target.value) }))}
+            />
           </label>
         ))}
       </div>
-      <span className="mini-label">Finishes</span>
+      <span className="mini-label">Finishes{includedFinishes ? ` (the Model pack includes up to ${includedFinishes})` : ''}</span>
       {finishes.map((f, i) => (
         <div key={i} className="ord-finish-row">
           <label className="field">
@@ -554,7 +618,7 @@ function DeliverForm({ orderId, item, multi, onDelivered }: { orderId: string; i
         </div>
       ))}
       <div className="ord-actions">
-        {finishes.length < 24 && (
+        {finishes.length < (includedFinishes ?? 24) && (
           <button type="button" className="btn" onClick={() => setFinishes((l) => [...l, { name: '', hex: '#888888', material: 'paint' }])}>
             + Finish
           </button>

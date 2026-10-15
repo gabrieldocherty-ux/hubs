@@ -24,18 +24,14 @@ const ORDERS = [
     id: 'o_demoseedorder00000000001',
     state: 'paid',
     ageDays: 1,
-    tier: 'simple',
-    extraFinishes: 0,
-    brief: { productTypeId: 'pendant-dome', kind: 'pendant', variant: 'dome', name: 'Enamel dome pendant (Demo)', widthIn: 14, depthIn: 14, heightIn: 10, elevationIn: 68, notes: 'Matte forest-green enamel shade, brass cap and cord grip. 14 in across. Photo from the shop listing attached.' },
+    brief: { productTypeId: 'pendant-dome', kind: 'pendant', variant: 'dome', name: 'Enamel dome pendant (Demo)', brand: 'Northlight (Demo)', upc: '200000041205', widthIn: 14, depthIn: 14, heightIn: 10, elevationIn: 68, notes: 'Matte forest-green enamel shade, brass cap and cord grip. 14 in across. Photo from the shop listing attached.' },
     rgba: [52, 84, 64, 255],
   },
   {
     id: 'o_demoseedorder00000000002',
     state: 'in_progress',
     ageDays: 4,
-    tier: 'complex',
-    extraFinishes: 1,
-    brief: { productTypeId: 'range-gas-6', kind: 'range', variant: 'gas-6', name: 'Heritage 36″ dual-fuel range (Demo)', widthIn: 36, depthIn: 28, heightIn: 36, notes: 'Six burners, two oven doors, chrome rails. I want it in cream and in matte black (3 finishes total with stainless).' },
+    brief: { productTypeId: 'range-gas-6', kind: 'range', variant: 'gas-6', name: 'Heritage 36″ dual-fuel range (Demo)', brand: 'Heritage Ranges (Demo)', upc: '200000041212', widthIn: 36, depthIn: 28, heightIn: 36, notes: 'Six burners, two oven doors, chrome rails. I want it in cream and in matte black (3 finishes total with stainless).' },
     rgba: [228, 220, 200, 255],
     note: 'Blocking out the oven doors and rail now. Expect a first look in a few days.',
   },
@@ -43,8 +39,6 @@ const ORDERS = [
     id: 'o_demoseedorder00000000003',
     state: 'delivered',
     ageDays: 12,
-    tier: 'standard',
-    extraFinishes: 0,
     brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: 'Fireclay apron-front sink (Demo)', widthIn: 33, depthIn: 22, heightIn: 36, notes: 'Single bowl, 10 in deep, slightly rounded apron. White glaze.' },
     rgba: [240, 240, 236, 255],
     deliver: { w: 33, h: 36, d: 22, hex: '#f2f1ec', material: 'ceramic', finish: 'White glaze' },
@@ -53,8 +47,6 @@ const ORDERS = [
     id: 'o_demoseedorder00000000004',
     state: 'completed',
     ageDays: 30,
-    tier: 'simple',
-    extraFinishes: 1,
     brief: { productTypeId: 'stool-backed', kind: 'stool', variant: 'backed', name: 'Walnut counter stool (Demo)', widthIn: 19, depthIn: 20, heightIn: 38, notes: 'Low curved back, walnut with a natural oil finish; also in ebonised black.' },
     rgba: [110, 74, 48, 255],
     deliver: { w: 19, h: 38, d: 20, hex: '#6e4a30', material: 'wood', finish: 'Natural walnut' },
@@ -86,7 +78,7 @@ export async function seed(ctx) {
     runTx(db, () => {
       const ref = files.saveBuffer(makePng({ w: 32, h: 24, rgba: spec.rgba }), { kind: 'reference', visibility: 'private', ownerUserId: customer.id, originalName: 'reference-photo.png' });
       // Validated by the same rules as the API (category is derived from the kind).
-      const valid = orders.readRequest({ target: 'customer', items: [{ brief: { ...spec.brief, referenceFileIds: [ref.id] }, tier: spec.tier, extraFinishes: spec.extraFinishes }] }, customer);
+      const valid = orders.readRequest({ target: 'customer', items: [{ brief: { ...spec.brief, referenceFileIds: [ref.id] } }] }, customer);
       const row = orders.create(customer, valid, { id: spec.id });
       clock += 10 * 60_000;
       orders.transition(row.id, ['draft'], 'pending_payment', { by: customer.id, type: 'checkout', data: { provider: 'demo', attempt: 1 }, set: { provider_ref: `demo_${row.id}`, checkout_attempts: 1, pending_since: clock } });

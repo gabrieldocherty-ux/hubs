@@ -1,29 +1,46 @@
 import { call, upload } from '../../lib/api';
 import type { Product } from '../../types';
-import type { FileWire, ModelTier, ModelTierId, Order, OrderBrief, OrderEvent, OrderStatus } from '../../types/platform';
+import type { FileWire, ModelTierId, Order, OrderBrief, OrderEvent, OrderStatus } from '../../types/platform';
 
 /**
  * Package C's calls (BUILD_PLAN §7 C-T4). Every amount comes from the server: the client only
- * sends tiers, extra-finish counts and the rush flag, and shows what the server quotes back.
+ * sends the products and the rush flag, and shows what the server quotes back.
  */
 
 export type OrderTarget = 'customer' | 'brand' | 'contractor';
 export type PaymentsProvider = 'demo' | 'stripe';
+/** 'pack' since Model packs; the retired per-product tiers on orders placed before them. */
+export type ItemTier = 'pack' | ModelTierId;
+export type UpcFormat = 'upc_a' | 'ean_13' | 'ean_8';
 
-/** The server's brief: the platform `OrderBrief` plus the kind it maps onto (BUILD_PLAN §3.4). */
-export interface OrderBriefWire extends OrderBrief {
+/**
+ * The server's brief: the platform `OrderBrief` plus the kind it maps onto (BUILD_PLAN §3.4), the
+ * product's brand and UPC, and a photo of its barcode. The size is optional since Model packs.
+ */
+export interface OrderBriefWire extends Omit<OrderBrief, 'widthIn' | 'depthIn' | 'heightIn'> {
   kind?: string;
   variant?: string;
   category?: string;
+  widthIn?: number;
+  depthIn?: number;
+  heightIn?: number;
   elevationIn?: number;
+  brand?: string;
+  /** Digits only: 12 (UPC-A), 13 (EAN-13) or 8 (EAN-8), check digit verified. */
+  upc?: string;
+  upcFormat?: UpcFormat;
+  /** A private reference photo of the barcode, when it couldn't be typed or scanned. */
+  barcodeFileId?: string;
 }
 
 export interface OrderItemWire {
   idx: number;
   brief: OrderBriefWire;
-  tier: ModelTierId;
+  tier: ItemTier;
   extraFinishes: number;
   amountCents: number;
+  /** Which Model pack the product is in (1-based); absent on orders from before packs. */
+  pack?: number;
   deliverableProductId: string | null;
   deliveredAt: number | null;
 }
@@ -31,23 +48,32 @@ export interface OrderItemWire {
 export interface QuoteLine {
   label: string;
   amountCents: number;
-  item: number;
+  item?: number;
+  pack?: number;
 }
 
 export interface QuoteWire {
+  pricing?: 'pack' | 'tiers';
   amountCents: number;
   currency: 'usd';
   dueBusinessDays: number;
   lines: QuoteLine[];
   rush?: boolean;
+  products?: number;
+  packs?: number;
 }
 
 /**
  * An order as `GET /api/orders` returns it: the platform `Order` widened with the §13.3 fields
  * (contractor target, multi-item lines) and a few derived ones the server computes.
  */
-export interface OrderWire extends Omit<Order, 'target' | 'brief'> {
+export interface OrderWire extends Omit<Order, 'target' | 'brief' | 'tier'> {
   target: OrderTarget;
+  tier: ItemTier;
+  /** 'pack' for a Model-pack order, 'tiers' for one placed before packs (kept at its own price). */
+  pricing: 'pack' | 'tiers';
+  packs: number;
+  finishesPerModel: number | null;
   brief: OrderBriefWire;
   brandName: string | null;
   revisionsAllowed: number;
@@ -79,13 +105,25 @@ export interface OrderDetail {
   demo: boolean;
 }
 
+/** The Model pack as the server publishes it. */
+export interface PackWire {
+  id: 'pack';
+  name: string;
+  priceCents: number;
+  productsPerPack: number;
+  finishesPerModel: number;
+  revisions: number;
+  businessDays: number;
+  extraPackBusinessDays: number;
+}
+
+/** `GET /api/orders/tiers`: the one offer (a Model pack) and the request limits. */
 export interface TiersWire {
-  tiers: ModelTier[];
-  includedFinishes: number;
-  extraFinishCents: number;
-  maxExtraFinishes: number;
+  pricing: 'pack';
+  pack: PackWire;
   rushPct: number;
   maxItems: number;
+  maxPacks: number;
   currency: 'usd';
   payments: PaymentsProvider;
   demo: boolean;
@@ -93,8 +131,6 @@ export interface TiersWire {
 
 export interface RequestItem {
   brief: OrderBriefWire;
-  tier: ModelTierId;
-  extraFinishes: number;
 }
 
 export interface OrderRequest {
@@ -129,7 +165,7 @@ export interface RevenueSlice {
   net: number;
   count: number;
   refundCount: number;
-  byTier: { tier: ModelTierId; items: number; gross: number }[];
+  byTier: { tier: ItemTier; items: number; gross: number }[];
   byDay: { day: string; gross: number; refunds: number; count: number }[];
   avgTurnaroundDays: number | null;
 }
@@ -146,7 +182,8 @@ export interface DeliverBody {
   modelFileId: string;
   thumbFileId: string;
   name?: string;
-  dims?: { widthIn: number; depthIn: number; heightIn: number; elevationIn?: number };
+  /** Any size left out comes from the request, then from the model's measured size. */
+  dims?: { widthIn?: number; depthIn?: number; heightIn?: number; elevationIn?: number };
   finishes?: { id: string; name: string; hex: string; material: string }[];
   price?: number;
 }
@@ -157,7 +194,7 @@ const enc = encodeURIComponent;
 
 export const ordersApi = {
   tiers: () => call<TiersWire>('GET', '/api/orders/tiers'),
-  quote: (body: { rush: boolean; items: { tier: ModelTierId; extraFinishes: number; name?: string }[] }, signal?: AbortSignal) =>
+  quote: (body: { rush: boolean; products: number }, signal?: AbortSignal) =>
     call<{ quote: QuoteWire }>('POST', '/api/orders/quote', body, { signal }),
   create: (body: OrderRequest) => call<{ order: OrderWire; quote: QuoteWire }>('POST', '/api/orders', body),
   list: () => call<{ orders: OrderWire[]; payments: PaymentsProvider; demo: boolean }>('GET', '/api/orders'),
