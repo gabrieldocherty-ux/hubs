@@ -8,6 +8,7 @@ import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
 import { usePayments } from '../lib/config';
 import { AccountMenu } from './AccountMenu';
+import { useShowEstimator } from '../lib/prefs';
 import { Check } from './Icons';
 import { RenderButton } from '../features/viewer';
 import { ShareButton } from '../features/share';
@@ -67,6 +68,9 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   const canRedo = useDesignStore((s) => s.future.length > 0);
   const { setName, setUI, undo, redo, toast, importDoc } = useDesignStore.getState();
   const est = useEstimate();
+  // The Est. chip is the cost estimator: a setting, off by default (Account settings > Preferences).
+  // A shared kitchen (view) follows its link's own price setting.
+  const showEstimator = useShowEstimator();
   const signedIn = useSession((s) => s.status === 'signedIn' && !!s.projectId);
   const hasUser = useSession((s) => !!s.user);
   const [menu, setMenu] = useState(false);
@@ -194,7 +198,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
             <button className="icon-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><Redo width={compact ? 20 : 16} height={compact ? 20 : 16} /></button>
           </>
         )}
-        {showPrices && (
+        {showPrices && (view || showEstimator) && (
           <button className="total-chip" onClick={() => setUI({ rightTab: 'estimate' })} title="Open the estimate">
             <span>Est.</span>
             <b className="mono">{est.total.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}</b>

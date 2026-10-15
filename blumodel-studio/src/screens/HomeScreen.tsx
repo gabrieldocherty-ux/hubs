@@ -11,6 +11,7 @@ import { buildEstimate } from '../lib/estimate';
 import { feetInches, money } from '../lib/format';
 import { Toasts } from '../components/Toasts';
 import { usePriceBook } from '../features/contractors';
+import { useShowEstimator } from '../lib/prefs';
 import { LegalLinks } from '../features/legal/LegalLinks';
 
 export function HomeScreen() {
@@ -47,6 +48,8 @@ export function HomeScreen() {
 
   // A contractor's cards show their sell prices, like their quotes.
   const { isContractor, priceOf } = usePriceBook();
+  // Each card's estimated total is part of the cost estimator, a setting that is off by default.
+  const showEstimator = useShowEstimator();
   const totals = useMemo(
     () => new Map((projects ?? []).map((p) => [p.id, buildEstimate(p.doc, isContractor ? { priceOf } : {}).total])),
     [projects, catalogVersion, isContractor, priceOf],
@@ -190,7 +193,7 @@ export function HomeScreen() {
                     </span>
                     <span className="project-foot">
                       <span>Edited {timeAgo(p.updatedAt)}</span>
-                      <b className="mono">{money(totals.get(p.id) ?? 0)}</b>
+                      {showEstimator && <b className="mono">{money(totals.get(p.id) ?? 0)}</b>}
                     </span>
                   </div>
                   <div className="project-actions">

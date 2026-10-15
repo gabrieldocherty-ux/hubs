@@ -91,7 +91,10 @@ production — put it behind a TLS-terminating proxy.
   hood coverage, landing counter beside the range and fridge, dishwasher-to-sink
   distance, and door swings.
 - **Estimate.** Itemized by product, plus countertop/backsplash/flooring areas,
-  paint gallons and cabinet pulls.
+  paint gallons and cabinet pulls. It is the **cost estimator**, a switch in Account settings >
+  Preferences that is **off by default** (and always off when designing on this device): off hides
+  the Est. chip, the Estimate tab and the totals on the kitchen cards. A share link with prices
+  shows them either way, and a contractor's quotes and price book work either way.
 - **Export.** Floor plan PNG, 3D render PNG, shopping list CSV, and a
   `.kitchen.json` project file you can re-import. Exports are paid (below).
 

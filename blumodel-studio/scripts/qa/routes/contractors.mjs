@@ -146,6 +146,8 @@ export default [
     as: 'contractor',
     setup: async ({ api }) => {
       const s = await ensureWorkspace(api);
+      // The Estimate tab is the cost estimator: off by default, a switch in Account settings.
+      must(await api.as('contractor').patch('/api/account/prefs', { showEstimator: true }), 'Turning the cost estimator on');
       return { path: `#/k/${s.kitchenId}` };
     },
     waitFor: ['.topbar', '.plan-view canvas'],
