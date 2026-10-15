@@ -498,7 +498,10 @@ export function buildRetailCatalog(files) {
       if (f) l.finish = f.id;
     }
     const prices = listings.map((l) => l.priceCad).filter((p) => p !== null);
-    const code = e.model ?? (e.upc ? `UPC ${e.upc}` : null) ?? listings.find((l) => l.sku)?.sku ?? e.key.toUpperCase().slice(0, 30);
+    // With no model number, UPC or store SKU: a short type code like the built-ins' ("BC{w}" for a
+    // base cabinet), not the research key, which ran 30 characters across the plan and the inspector.
+    const typeCode = typeId.split('-').map((x) => x[0]).join('').toUpperCase() + (widthOptions.length > 1 ? '{w}' : String(w));
+    const code = e.model ?? (e.upc ? `UPC ${e.upc}` : null) ?? listings.find((l) => l.sku)?.sku ?? typeCode;
     const name = (e.model ? e.name.replace(/\s*\([^)]*\)\s*$/, '') : e.name).slice(0, 120);
     let id = retailId(e.key);
     if (usedIds.has(id)) id = `${ID_PREFIX}${slugify(e.key).slice(0, 31).replace(/-+$/, '')}-${hash6(`${e.key}#${usedIds.size}`)}`;

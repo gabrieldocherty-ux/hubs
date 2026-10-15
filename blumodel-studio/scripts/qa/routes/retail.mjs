@@ -184,13 +184,13 @@ export default [
       await h.sleep(300);
       const list = await cards(h, '.sheet');
       if (!list.length || !list.every((c) => c.title.includes('Home Depot'))) throw new Error(`the Home Depot filter on a phone: ${JSON.stringify(list.slice(0, 3))}`);
-      // The filters fit beside each other inside the sheet.
+      // The two filters sit side by side on one line, inside the sheet.
       const fit = await h.evaluate(() => {
-        const row = document.querySelector('.sheet .catalog-filters').getBoundingClientRect();
+        const [a, b] = [...document.querySelectorAll('.sheet .catalog-filter')].map((x) => x.getBoundingClientRect());
         const sheet = document.querySelector('.sheet--catalog').getBoundingClientRect();
-        return { right: row.right, sheet: sheet.right, h: row.height };
+        return { aTop: a.top, bTop: b.top, right: b.right, sheet: sheet.right };
       });
-      if (fit.right > fit.sheet + 1 || fit.h > 44) throw new Error(`the filter row overflows on a phone: ${JSON.stringify(fit)}`);
+      if (Math.abs(fit.aTop - fit.bTop) > 1 || fit.right > fit.sheet + 1) throw new Error(`the brand and store filters don't fit on one line on a phone: ${JSON.stringify(fit)}`);
       await h.shot('home-depot');
       // Tap to place: a tap arms the product and gets the sheet out of the way.
       const id = list[0].id;
