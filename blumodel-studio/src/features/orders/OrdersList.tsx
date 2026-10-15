@@ -6,7 +6,7 @@ import { ordersApi, type OrderWire } from './api';
 import { dollars, inFilter, isUnpaid, LIST_FILTERS, relative, shortDate, type ListFilter } from './model';
 import { OrdersPayNote, OrdersShell, StatusPill } from './parts';
 
-/** `#/orders`: the buyer's custom-model orders, newest first, with status chips. */
+/** `#/orders` ("Make custom models"): the buyer's custom-model requests, newest first, with status chips. */
 export function OrdersList() {
   const [orders, setOrders] = useState<OrderWire[] | null>(null);
   const payments = usePayments();
@@ -21,7 +21,7 @@ export function OrdersList() {
         if (!live) return;
         setOrders(r.orders);
       })
-      .catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load your orders.'));
+      .catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load your custom models.'));
     return () => {
       live = false;
     };
@@ -39,28 +39,28 @@ export function OrdersList() {
       <div className="ord-head">
         <div>
           <span className="eyebrow">Custom 3D models</span>
-          <h1>My orders</h1>
+          <h1>Make custom models</h1>
           <p className="muted">Can’t find your range, sink or light in the catalog? The BluModel 3D studio models it to scale, and it lands privately in your catalog.</p>
         </div>
         <a className="btn primary big" href={hrefFor({ name: 'orders', rest: 'new' })}>
-          Request a custom model
+          Make a custom model
         </a>
       </div>
       <OrdersPayNote payments={payments} />
       {error && <div className="auth-error">{error}</div>}
-      {!orders && !error && <div className="ord-loading">Loading your orders…</div>}
+      {!orders && !error && <div className="ord-loading">Loading your custom models…</div>}
       {orders && orders.length === 0 && (
         <section className="ord-empty">
-          <h2>No orders yet</h2>
+          <h2>No custom models yet</h2>
           <p>Send a few photos and the size, pick a tier and the studio builds an accurate model. Simple models start at $129.</p>
           <a className="btn primary" href={hrefFor({ name: 'orders', rest: 'new' })}>
-            Request your first model
+            Make your first custom model
           </a>
         </section>
       )}
       {orders && orders.length > 0 && (
         <>
-          <div className="chips ord-chips" role="group" aria-label="Filter orders">
+          <div className="chips ord-chips" role="group" aria-label="Filter requests">
             {LIST_FILTERS.map((f) => (
               <button key={f.id} type="button" className={f.id === filter ? 'chip on' : 'chip'} aria-pressed={f.id === filter} onClick={() => setFilter(f.id)}>
                 {f.label} <span className="ord-chip-n">{counts[f.id]}</span>
@@ -68,7 +68,7 @@ export function OrdersList() {
             ))}
           </div>
           {shown.length === 0 ? (
-            <p className="empty-note">No orders here.</p>
+            <p className="empty-note">Nothing here.</p>
           ) : (
             <ul className="ord-list">
               {shown.map((o) => (

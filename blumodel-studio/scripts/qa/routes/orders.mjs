@@ -139,7 +139,7 @@ export default [
     as: 'customer',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-wizard',
-    expectText: ['Request a model', 'What should we model?', 'no card details are collected'],
+    expectText: ['New request', 'What should we model?', 'no card details are collected'],
   },
   {
     name: 'orders-new-steps',
@@ -183,7 +183,7 @@ export default [
     as: 'customer',
     viewport: { w: 1440, h: 900 },
     waitFor: '.ord-list',
-    expectText: ['My orders', 'Fireclay apron-front sink (Demo)', 'Delivered', 'In progress'],
+    expectText: ['Make custom models', 'Fireclay apron-front sink (Demo)', 'Delivered', 'In progress'],
   },
   {
     name: 'orders-list-phone',
@@ -191,7 +191,7 @@ export default [
     as: 'customer',
     viewport: PHONE,
     waitFor: '.ord-list',
-    expectText: ['My orders'],
+    expectText: ['Make custom models'],
     check: async ({ evaluate }) => {
       if (await evaluate('document.documentElement.scrollWidth > window.innerWidth + 1')) throw new Error('the list scrolls sideways on a phone');
     },

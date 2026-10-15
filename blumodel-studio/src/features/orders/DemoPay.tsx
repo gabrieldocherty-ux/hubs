@@ -73,7 +73,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
           <div className="screen-msg">
             <p>{error}</p>
             <a className="btn" href={hrefFor({ name: 'orders', rest: '' })}>
-              Go to my orders
+              Go to my custom models
             </a>
           </div>
         )}
@@ -99,7 +99,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
               <>
                 <div className="auth-note">This order isn’t on the demo provider, so it can’t be paid here.</div>
                 <button className="btn" onClick={toOrder}>
-                  Back to the order
+                  Back to the request
                 </button>
               </>
             ) : payable ? (
@@ -130,7 +130,7 @@ export default function DemoPay({ orderId }: { orderId: string }) {
                   </span>
                 </div>
                 <button className="btn primary big" onClick={toOrder} data-autofocus>
-                  Go to the order
+                  Go to the request
                 </button>
               </>
             )}

@@ -374,8 +374,8 @@ export default [
       const soon = await buttonsLabelled(h, 'Opens soon');
       if (soon.length !== 2 || soon.some((b) => !b.disabled)) throw new Error(`Unlimited and Contractor should show a disabled “Opens soon”: ${JSON.stringify(soon)}`);
       if ((await buttonsLabelled(h, 'Go Unlimited')).length) throw new Error('“Go Unlimited” is still offered while payments are not open');
-      const models = await buttonsLabelled(h, 'Model orders open soon');
-      if (models.length !== 1 || !models[0].disabled) throw new Error('the custom-model button is not “Model orders open soon” (disabled)');
+      const models = await buttonsLabelled(h, 'Custom models open soon');
+      if (models.length !== 1 || !models[0].disabled) throw new Error('the custom-model button is not “Custom models open soon” (disabled)');
       if (!(await buttonsLabelled(h, 'Start free')).length) throw new Error('“Start free” must stay: designing is unaffected');
       await noSideScroll(h);
     },
@@ -446,14 +446,14 @@ export default [
     name: 'pay-none-orders-new',
     path: '#/orders/new?qa-payments=none',
     as: 'customer',
-    expectText: ['Request a model', 'Model orders open soon'],
+    expectText: ['Make custom models', 'Custom models open soon'],
     check: noSideScroll,
   },
   {
     name: 'pay-none-order-unpaid',
     as: 'customer',
     setup: async ({ api }) => ({ path: `#/orders/${await newOrder(api)}?qa-payments=none` }),
-    expectText: ['QA launch range', 'Model orders open soon', 'Payments open soon'],
+    expectText: ['QA launch range', 'Custom models open soon', 'Payments open soon'],
     check: async (h) => {
       const b = await buttonsLabelled(h, 'Payments open soon');
       if (!b.length || b.some((x) => !x.disabled)) throw new Error(`the Pay button should be a disabled “Payments open soon”: ${JSON.stringify(b)}`);
@@ -532,7 +532,7 @@ export default [
     path: '#/pricing?qa-payments=stripe',
     as: 'anon',
     waitFor: ['.mk-plans'],
-    expectText: ['Go Unlimited', 'Become a BluModel Studio contractor', 'Request a model'],
+    expectText: ['Go Unlimited', 'Become a BluModel Studio contractor', 'Make custom models'],
     check: async (h) => {
       await h.evaluate(() => document.querySelectorAll('.mk-faq details').forEach((d) => (d.open = true)));
       await h.waitForText('Through Stripe’s hosted checkout');
@@ -589,7 +589,7 @@ export default [
     name: 'pay-stripe-orders-new',
     path: '#/orders/new?qa-payments=stripe',
     as: 'customer',
-    expectText: ['Request a model', 'You pay on Stripe’s secure page'],
+    expectText: ['Make custom models', 'You pay on Stripe’s secure page'],
     check: async (h) => {
       await noDemoWording(h, 'the model request');
       await noCardFields(h);

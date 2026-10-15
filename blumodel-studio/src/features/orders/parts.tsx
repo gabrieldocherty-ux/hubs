@@ -8,7 +8,10 @@ import type { OrderStatus } from '../../types/platform';
 import type { OrderEventWire } from './api';
 import { dateTime, eventTitle, STATUS_LABEL, statusTone } from './model';
 
-/** The page frame for `#/orders/*`: the app bar, a "Custom models" link and the account menu. */
+/**
+ * The page frame for `#/orders/*` ("Make custom models"; the route keeps its old name): the app
+ * bar, a link back to the list, a "New request" button and the account menu.
+ */
 export function OrdersShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   return (
     <div className="ord-page">
@@ -18,9 +21,9 @@ export function OrdersShell({ children, wide = false }: { children: ReactNode; w
           <Wordmark />
         </a>
         <nav className="ord-nav" aria-label="Custom models">
-          <a href={hrefFor({ name: 'orders', rest: '' })}>My orders</a>
+          <a href={hrefFor({ name: 'orders', rest: '' })}>Make custom models</a>
           <a className="btn primary" href={hrefFor({ name: 'orders', rest: 'new' })}>
-            Request a model
+            New request
           </a>
         </nav>
         <AccountMenu />
@@ -43,7 +46,7 @@ export function OrdersPayNote({ payments }: { payments: PaymentsMode | null }) {
   if (payments === 'demo') return <DemoBanner compact />;
   if (payments === 'none')
     return (
-      <PaymentsSoon compact title="Model orders open soon">
+      <PaymentsSoon compact title="Custom models open soon">
         You can fill in a request and see its price, but it can’t be paid for or sent to the studio yet. Designing, saving and sharing your kitchens are free and work today.
       </PaymentsSoon>
     );

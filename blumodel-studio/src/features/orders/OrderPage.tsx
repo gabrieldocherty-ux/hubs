@@ -44,7 +44,7 @@ export function OrderPage({ id }: { id: string }) {
       if (!live) return;
       setData(d);
       if (ret) setBack(ret);
-    })().catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load this order.'));
+    })().catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load this request.'));
     return () => {
       live = false;
     };
@@ -87,7 +87,7 @@ export function OrderPage({ id }: { id: string }) {
         <div className="screen-msg">
           <p>{error}</p>
           <a className="btn" href={hrefFor({ name: 'orders', rest: '' })}>
-            Back to my orders
+            Back to my custom models
           </a>
         </div>
       </OrdersShell>
@@ -95,7 +95,7 @@ export function OrderPage({ id }: { id: string }) {
   if (!data)
     return (
       <OrdersShell>
-        <div className="ord-loading">Loading the order…</div>
+        <div className="ord-loading">Loading the request…</div>
       </OrdersShell>
     );
 
@@ -109,7 +109,7 @@ export function OrderPage({ id }: { id: string }) {
   return (
     <OrdersShell>
       <a className="ord-back" href={hrefFor({ name: 'orders', rest: '' })}>
-        ← My orders
+        ← Make custom models
       </a>
       <div className="ord-head">
         <div>
@@ -142,7 +142,7 @@ export function OrderPage({ id }: { id: string }) {
                 {soon ? 'Payments open soon' : busy === 'pay' ? 'Starting checkout…' : `Pay ${dollars(o.amountCents)}${payments === 'demo' ? ' (demo)' : ''}`}
               </button>
               <button className="btn big" onClick={() => setDialog('cancel')} disabled={!!busy}>
-                Cancel order
+                Cancel request
               </button>
             </>
           )}
@@ -280,14 +280,14 @@ export function OrderPage({ id }: { id: string }) {
       </div>
 
       {dialog === 'cancel' && (
-        <Dialog title="Cancel this order?" onClose={() => setDialog(null)}>
+        <Dialog title="Cancel this request?" onClose={() => setDialog(null)}>
           <p className="dialog-copy">It hasn’t been paid, so nothing is charged. You can start a new request any time.</p>
           <div className="modal-actions">
             <button className="btn" onClick={() => setDialog(null)} data-autofocus>
               Keep it
             </button>
             <button className="btn primary" onClick={() => void run('cancel', () => ordersApi.cancel(id))} disabled={busy === 'cancel'}>
-              {busy === 'cancel' ? 'Cancelling…' : 'Cancel order'}
+              {busy === 'cancel' ? 'Cancelling…' : 'Cancel request'}
             </button>
           </div>
         </Dialog>

@@ -254,11 +254,11 @@ function CustomModels({ tiers, soon }: { tiers: Tiers; soon: boolean }) {
           <div className="mk-center">
             {soon ? (
               <button type="button" className="btn big" disabled title="Payments aren’t open yet">
-                Model orders open soon
+                Custom models open soon
               </button>
             ) : (
               <a className="btn big" href="#/orders/new">
-                Request a model
+                Make custom models
               </a>
             )}
           </div>

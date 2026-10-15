@@ -285,8 +285,8 @@ export function RequestWizard() {
     <OrdersShell wide>
       <div className="ord-head">
         <div>
-          <span className="eyebrow">Custom 3D model</span>
-          <h1>Request a model</h1>
+          <span className="eyebrow">Make custom models</span>
+          <h1>New request</h1>
           <p className="muted">The BluModel 3D studio models it to real scale with 2 revision rounds. Prices come from the tier you pick.</p>
         </div>
       </div>

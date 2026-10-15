@@ -19,7 +19,7 @@ export default function OrdersRoot({ rest }: { rest: string }) {
       <div className="screen-msg">
         <p>That page doesn’t exist.</p>
         <a className="btn" href="#/orders">
-          Back to my orders
+          Back to my custom models
         </a>
       </div>
     </OrdersShell>
