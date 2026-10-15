@@ -49,7 +49,8 @@ const STORE_BY_NAME = new Map(STORES.flatMap((s) => [normStore(s.name), normStor
 
 /**
  * The product types a retail entry can become: a copy of the rows in src/data/productTypes.ts
- * (kind, variant and typical size in inches). src/catalog/retail.test.ts checks they still match.
+ * (kind, variant and typical size in inches). src/catalog/retail.test.ts checks the generated data
+ * against productTypes.ts, so a drift between the two fails the tests.
  */
 export const TYPES = {
   'base-cabinet': ['base', 'door-drawer', 24, 24, 36, 0],
@@ -264,7 +265,57 @@ function cleanListing(s) {
   url.hash = '';
   const price = isNum(s.priceCad) && s.priceCad > 0 && s.priceCad < 100_000 ? Math.round(s.priceCad * 100) / 100 : null;
   const sku = typeof s.sku === 'string' && s.sku.trim() ? s.sku.trim().slice(0, 40) : null;
-  return { listing: { store: store.slug, url: url.toString(), sku, priceCad: price, inStock: typeof s.inStockOnline === 'boolean' ? s.inStockOnline : null } };
+  const listing = { store: store.slug, url: url.toString(), sku, priceCad: price, inStock: typeof s.inStockOnline === 'boolean' ? s.inStockOnline : null };
+  if (typeof s.finish === 'string' && s.finish) listing.finishName = s.finish;
+  return { listing };
+}
+
+/** The name without its model number and, when it names the finish, without ", White". */
+function baseName(e) {
+  let n = e.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const m = /,\s*([^,]+)$/.exec(n);
+  if (m) {
+    const tail = m[1].toLowerCase();
+    if (e.finishes.some((f) => { const fn = String(f?.name ?? '').toLowerCase(); return fn && (fn.startsWith(tail) || tail.startsWith(fn.split(' (')[0])); })) n = n.slice(0, m.index);
+  }
+  return n;
+}
+
+/**
+ * One product sold in several finishes is often researched as one entry per finish ("Edson 30 in
+ * base cabinet, White" and "…, Grey"; two RONA model numbers for the white and grey ELITE base).
+ * Same brand, same name apart from the finish, same kind and size: one product with each finish,
+ * and every store listing remembers which finish it sells. Only single-finish entries merge.
+ */
+function mergeFinishVariants(entries, log) {
+  const first = new Map();
+  const out = [];
+  for (const e of entries) {
+    if (e.finishes.length !== 1) {
+      out.push(e);
+      continue;
+    }
+    const finish = String(e.finishes[0]?.name ?? '');
+    e.stores = e.stores.map((s) => ({ ...s, finish }));
+    const k = [e.brand.toLowerCase(), baseName(e).toLowerCase(), e.kind, e.widthIn, e.depthIn, e.heightIn].join('|');
+    const f = first.get(k);
+    if (!f) {
+      first.set(k, e);
+      out.push(e);
+      continue;
+    }
+    const another = !f.finishes.some((x) => String(x?.name ?? '').toLowerCase() === finish.toLowerCase());
+    if (another && !f.variants) {
+      f.variants = true;
+      f.name = baseName(f);
+    }
+    if (another) f.finishes.push(...e.finishes);
+    f.stores.push(...e.stores);
+    for (const key of ['upc', 'line', 'doorStyle']) if (f[key] == null && e[key] != null) f[key] = e[key];
+    if ((CONFIDENCE[e.confidence] ?? 0) < (CONFIDENCE[f.confidence] ?? 0)) f.confidence = e.confidence;
+    log.merged.push(`${e.key} → ${f.key} (${another ? 'another finish' : 'the same product'})`);
+  }
+  return out;
 }
 
 /** Merges research entries that are the same product (same brand and model number, or UPC). */
@@ -339,7 +390,7 @@ export function buildRetailCatalog(files) {
     }
   }
 
-  const merged = dedupe(entries, log);
+  const merged = mergeFinishVariants(dedupe(entries, log), log);
   const products = [];
   const usedIds = new Set();
   const usedStores = new Set();
@@ -348,6 +399,10 @@ export function buildRetailCatalog(files) {
     const drop = (reason) => log.dropped.push({ key: e.key, reason });
     if (UNPLACEABLE[e.kind]) {
       drop(UNPLACEABLE[e.kind]);
+      continue;
+    }
+    if (/\btop pantry\b/i.test(e.name)) {
+      drop('the top half of a stacked pantry (nothing in the app to stand it on)');
       continue;
     }
     const opts = [...new Set((e.widthOptionsIn ?? []).map((v) => pos(v, 6, 96)).filter((v) => v !== null))].sort((a, b) => a - b);
@@ -427,10 +482,21 @@ export function buildRetailCatalog(files) {
       typical.splice(typical.indexOf('depth'), 1);
     } else if (kind === 'wall' && variant !== 'bridge' && pub.h !== null && pub.h > 30) {
       elev = 54;
+    } else if (kind === 'wall' && variant === 'bridge') {
+      elev = Math.min(telev, 84 - h); // a short wall cabinet lines up with the tops of the 30″ uppers
+    } else if (kind === 'hood' && has(/under[- ]cabinet|insert/, e.name)) {
+      note = 'An under-cabinet hood, drawn with the chimney hood shape (there is no under-cabinet shape yet).';
     }
 
     const widthOptions = kind === 'base' || kind === 'wall' || kind === 'tall' || kind === 'corner' || (kind === 'sink' && e.kind !== 'sink') ? (opts.includes(w) ? opts : [...new Set([...opts, w])].sort((a, b) => a - b)) : [];
     const finishes = cleanFinishes(e.finishes, kind);
+    // A listing names its finish only when the product comes in more than one.
+    for (const l of listings) {
+      const fname = typeof l.finishName === 'string' ? l.finishName.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+      delete l.finishName;
+      const f = finishes.length > 1 && fname ? finishes.find((x) => x.name === fname) : undefined;
+      if (f) l.finish = f.id;
+    }
     const prices = listings.map((l) => l.priceCad).filter((p) => p !== null);
     const code = e.model ?? (e.upc ? `UPC ${e.upc}` : null) ?? listings.find((l) => l.sku)?.sku ?? e.key.toUpperCase().slice(0, 30);
     const name = (e.model ? e.name.replace(/\s*\([^)]*\)\s*$/, '') : e.name).slice(0, 120);

@@ -581,59 +581,12 @@
    }
   },
   {
-   "id": "r-hampton-bay-edson-b30-grey",
-   "kind": "base",
-   "variant": "door-drawer",
-   "category": "cabinets",
-   "brand": "Hampton Bay",
-   "name": "Edson 30 in assembled shaker base cabinet, Grey",
-   "code": "1001818776",
-   "widthIn": 30,
-   "depthIn": 24.4,
-   "heightIn": 34.5,
-   "elevationIn": 0,
-   "price": null,
-   "finishes": [
-    {
-     "id": "grey",
-     "name": "Grey",
-     "hex": "#8c9093",
-     "material": "paint"
-    }
-   ],
-   "blurb": "Listed at Home Depot.",
-   "line": "Edson",
-   "doorStyle": "shaker",
-   "retail": {
-    "key": "hampton-bay-edson-b30-grey",
-    "type": "base-cabinet",
-    "upc": null,
-    "confidence": "medium",
-    "checkedAt": "2026-10-15",
-    "size": {
-     "w": 30,
-     "d": 24.4,
-     "h": 34.5
-    },
-    "typical": [],
-    "stores": [
-     {
-      "store": "home-depot",
-      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-grey/1001818776",
-      "sku": "1001818776",
-      "priceCad": null,
-      "inStock": null
-     }
-    ]
-   }
-  },
-  {
    "id": "r-hampton-bay-edson-b30-white",
    "kind": "base",
    "variant": "door-drawer",
    "category": "cabinets",
    "brand": "Hampton Bay",
-   "name": "Edson 30 in assembled shaker base cabinet, White",
+   "name": "Edson 30 in assembled shaker base cabinet",
    "code": "1001818777",
    "widthIn": 30,
    "depthIn": 24.4,
@@ -645,6 +598,12 @@
      "id": "white",
      "name": "White",
      "hex": "#f3f3ef",
+     "material": "paint"
+    },
+    {
+     "id": "grey",
+     "name": "Grey",
+     "hex": "#8c9093",
      "material": "paint"
     }
    ],
@@ -669,7 +628,16 @@
       "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-white/1001818777",
       "sku": "1001818777",
       "priceCad": 309,
-      "inStock": null
+      "inStock": null,
+      "finish": "white"
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hampton-bay-edson-30-inch-w-x-34-5-inch-h-x-24-4-inch-d-shaker-style-assembled-kitchen-base-cabinet-in-grey/1001818776",
+      "sku": "1001818776",
+      "priceCad": null,
+      "inStock": null,
+      "finish": "grey"
      }
     ]
    }
@@ -1409,6 +1377,12 @@
      "name": "White (shaker, polymer satin)",
      "hex": "#f3f3ef",
      "material": "paint"
+    },
+    {
+     "id": "grey-shaker-polymer-satin",
+     "name": "Grey (shaker, polymer satin)",
+     "hex": "#8c9093",
+     "material": "paint"
     }
    ],
    "blurb": "Listed at RONA.",
@@ -1432,54 +1406,16 @@
       "url": "https://www.rona.ca/en/product/landon-co-elite-2-doors-base-kitchen-cabinet-30-1-4-in-x-34-3-4-in-shaker-style-white-rd-b30-sd-75396484",
       "sku": "75396484",
       "priceCad": null,
-      "inStock": null
-     }
-    ]
-   }
-  },
-  {
-   "id": "r-landon-co-elite-rd-b30-gt",
-   "kind": "base",
-   "variant": "door-drawer",
-   "category": "cabinets",
-   "brand": "Landon & Co",
-   "name": "ELITE Base Cabinet 2 Doors 30 in",
-   "code": "RD-B30-GT",
-   "widthIn": 30,
-   "depthIn": 24.5,
-   "heightIn": 34.75,
-   "elevationIn": 0,
-   "price": null,
-   "finishes": [
-    {
-     "id": "grey-shaker-polymer-satin",
-     "name": "Grey (shaker, polymer satin)",
-     "hex": "#8c9093",
-     "material": "paint"
-    }
-   ],
-   "blurb": "Listed at RONA.",
-   "line": "ELITE",
-   "doorStyle": "shaker",
-   "retail": {
-    "key": "landon-co-elite-rd-b30-gt",
-    "type": "base-cabinet",
-    "upc": null,
-    "confidence": "high",
-    "checkedAt": "2026-10-15",
-    "size": {
-     "w": 30,
-     "d": 24.5,
-     "h": 34.75
-    },
-    "typical": [],
-    "stores": [
+      "inStock": null,
+      "finish": "white-shaker-polymer-satin"
+     },
      {
       "store": "rona",
       "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-30-inch-w-x-3475-inch-h-x-245-inch-d-assembled-kitchen-base-cabinet-2-doors-shaker-style-gray-rd-b30-gt-75396483",
       "sku": "75396483",
       "priceCad": null,
-      "inStock": null
+      "inStock": null,
+      "finish": "grey-shaker-polymer-satin"
      }
     ]
    }
@@ -3302,7 +3238,7 @@
    "widthIn": 30,
    "depthIn": 24,
    "heightIn": 15,
-   "elevationIn": 72,
+   "elevationIn": 69,
    "price": null,
    "finishes": [
     {
@@ -3351,7 +3287,7 @@
    "widthIn": 30,
    "depthIn": 12.5,
    "heightIn": 18,
-   "elevationIn": 72,
+   "elevationIn": 66,
    "price": null,
    "finishes": [
     {
@@ -3398,7 +3334,7 @@
    "widthIn": 30,
    "depthIn": 24,
    "heightIn": 15,
-   "elevationIn": 72,
+   "elevationIn": 69,
    "price": 179,
    "finishes": [
     {
@@ -3444,7 +3380,7 @@
    "widthIn": 30,
    "depthIn": 12,
    "heightIn": 24,
-   "elevationIn": 72,
+   "elevationIn": 60,
    "price": null,
    "finishes": [
     {
@@ -3491,7 +3427,7 @@
    "widthIn": 36,
    "depthIn": 24,
    "heightIn": 18,
-   "elevationIn": 72,
+   "elevationIn": 66,
    "price": null,
    "finishes": [
     {
@@ -3538,7 +3474,7 @@
    "widthIn": 30,
    "depthIn": 12,
    "heightIn": 15,
-   "elevationIn": 72,
+   "elevationIn": 69,
    "price": null,
    "finishes": [
     {
@@ -3585,7 +3521,7 @@
    "widthIn": 30,
    "depthIn": 11.75,
    "heightIn": 18,
-   "elevationIn": 72,
+   "elevationIn": 66,
    "widthOptions": [
     27,
     30
@@ -3911,147 +3847,6 @@
       "url": "https://www.ikea.com/ca/en/cat/sektion-cabinets-23598/",
       "sku": null,
       "priceCad": 843,
-      "inStock": null
-     }
-    ]
-   }
-  },
-  {
-   "id": "r-landon-co-elite-rd-gm1549-sd",
-   "kind": "tall",
-   "variant": "pantry",
-   "category": "cabinets",
-   "brand": "Landon & Co",
-   "name": "ELITE Top Pantry Cabinet 2 Doors 15 x 49 in",
-   "code": "RD-GM1549-SD",
-   "widthIn": 15,
-   "depthIn": 24.5,
-   "heightIn": 49,
-   "elevationIn": 0,
-   "price": null,
-   "finishes": [
-    {
-     "id": "white-shaker-polymer-satin",
-     "name": "White (shaker, polymer satin)",
-     "hex": "#f3f3ef",
-     "material": "paint"
-    }
-   ],
-   "blurb": "Listed at RONA.",
-   "line": "ELITE",
-   "doorStyle": "shaker",
-   "retail": {
-    "key": "landon-co-elite-rd-gm1549-sd",
-    "type": "pantry",
-    "upc": null,
-    "confidence": "high",
-    "checkedAt": "2026-10-15",
-    "size": {
-     "w": 15,
-     "d": 24.5,
-     "h": 49
-    },
-    "typical": [],
-    "stores": [
-     {
-      "store": "rona",
-      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-15-inch-w-x-49-inch-h-x-245-inch-d-assembled-kitchen-pantry-cabinet-2-doors-shaker-style-white-rd-gm1549-sd-75396607",
-      "sku": "75396607",
-      "priceCad": null,
-      "inStock": null
-     }
-    ]
-   }
-  },
-  {
-   "id": "r-landon-co-elite-rd-gm1558-sd",
-   "kind": "tall",
-   "variant": "pantry",
-   "category": "cabinets",
-   "brand": "Landon & Co",
-   "name": "ELITE Top Pantry Cabinet 2 Doors 15 x 58 in",
-   "code": "RD-GM1558-SD",
-   "widthIn": 15,
-   "depthIn": 24.5,
-   "heightIn": 58,
-   "elevationIn": 0,
-   "price": null,
-   "finishes": [
-    {
-     "id": "white-shaker-polymer-satin",
-     "name": "White (shaker, polymer satin)",
-     "hex": "#f3f3ef",
-     "material": "paint"
-    }
-   ],
-   "blurb": "Listed at RONA.",
-   "line": "ELITE",
-   "doorStyle": "shaker",
-   "retail": {
-    "key": "landon-co-elite-rd-gm1558-sd",
-    "type": "pantry",
-    "upc": null,
-    "confidence": "high",
-    "checkedAt": "2026-10-15",
-    "size": {
-     "w": 15,
-     "d": 24.5,
-     "h": 58
-    },
-    "typical": [],
-    "stores": [
-     {
-      "store": "rona",
-      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-2-doorstop-pantry-tall-cabinet-15-in-x-58-in-shaker-style-white-rd-gm1558-sd-75396655",
-      "sku": "75396655",
-      "priceCad": null,
-      "inStock": null
-     }
-    ]
-   }
-  },
-  {
-   "id": "r-landon-co-elite-rd-gm2458-sd",
-   "kind": "tall",
-   "variant": "pantry",
-   "category": "cabinets",
-   "brand": "Landon & Co",
-   "name": "ELITE Top Pantry Cabinet 4 Doors 24 x 58 in",
-   "code": "RD-GM2458-SD",
-   "widthIn": 24,
-   "depthIn": 24.5,
-   "heightIn": 58,
-   "elevationIn": 0,
-   "price": null,
-   "finishes": [
-    {
-     "id": "white-shaker-polymer-satin",
-     "name": "White (shaker, polymer satin)",
-     "hex": "#f3f3ef",
-     "material": "paint"
-    }
-   ],
-   "blurb": "Listed at RONA.",
-   "line": "ELITE",
-   "doorStyle": "shaker",
-   "retail": {
-    "key": "landon-co-elite-rd-gm2458-sd",
-    "type": "pantry",
-    "upc": null,
-    "confidence": "high",
-    "checkedAt": "2026-10-15",
-    "size": {
-     "w": 24,
-     "d": 24.5,
-     "h": 58
-    },
-    "typical": [],
-    "stores": [
-     {
-      "store": "rona",
-      "url": "https://www.rona.ca/en/product/landon-co-landon-co-elite-4-doorstop-pantry-tall-cabinet-24-in-x-58-in-shaker-style-white-rd-gm2458-sd-75396647",
-      "sku": "75396647",
-      "priceCad": null,
       "inStock": null
      }
     ]
@@ -4917,7 +4712,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot.",
+   "blurb": "Listed at Home Depot. An under-cabinet hood, drawn with the chimney hood shape (there is no under-cabinet shape yet).",
    "retail": {
     "key": "broan-30-under-cabinet-350cfm-black-stainless",
     "type": "hood-chimney",
@@ -4933,6 +4728,7 @@
      "depth",
      "height"
     ],
+    "note": "An under-cabinet hood, drawn with the chimney hood shape (there is no under-cabinet shape yet).",
     "stores": [
      {
       "store": "home-depot",
@@ -5116,7 +4912,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at RONA and Home Depot.",
+   "blurb": "Listed at RONA and Home Depot. An under-cabinet hood, drawn with the chimney hood shape (there is no under-cabinet shape yet).",
    "retail": {
     "key": "cosmo-uc30-haven-under-cabinet-hood",
     "type": "hood-chimney",
@@ -5132,6 +4928,7 @@
      "depth",
      "height"
     ],
+    "note": "An under-cabinet hood, drawn with the chimney hood shape (there is no under-cabinet shape yet).",
     "stores": [
      {
       "store": "rona",
@@ -7469,7 +7266,7 @@
   }
  ],
  "leftOut": {
-  "count": 41,
+  "count": 44,
   "byReason": {
    "cabinet fronts only (no box to place)": 7,
    "faucet (no faucet shape: the sink draws its own)": 7,
@@ -7478,7 +7275,8 @@
    "flooring (a surface, set in Room & finishes)": 4,
    "cabinet hardware (set kitchen-wide in Room & finishes)": 6,
    "no published width": 8,
-   "not a counter-height island (69.25″ tall)": 1
+   "not a counter-height island (69.25″ tall)": 1,
+   "the top half of a stacked pantry (nothing in the app to stand it on)": 3
   }
  }
 }

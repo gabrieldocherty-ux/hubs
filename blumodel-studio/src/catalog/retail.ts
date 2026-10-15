@@ -29,6 +29,8 @@ export interface RetailListing {
   sku: string | null;
   priceCad: number | null;
   inStock: boolean | null;
+  /** The finish id this listing sells, when the product comes in more than one. */
+  finish?: string;
 }
 
 export interface RetailInfo {
@@ -215,28 +217,34 @@ export function cad(n: number): string {
 
 // ── brand lists for the new-kitchen wizard's brand step ──
 
-export interface BrandCount {
-  name: string;
-  source: 'basics' | 'retail';
-  productCount: number;
-  /** Store slugs that list this brand's products in the category, most listings first. */
+/** One brand in one category: the shape of `GET /api/catalog/brands?category=` → `retailBrands`. */
+export interface RetailBrandCount {
+  brand: string;
+  /** Products of this brand in the category. */
+  products: number;
+  /** Store names that list them ("RONA", "Home Depot"), most listings first. */
   stores: string[];
+  /** The same stores as slugs (`rona`, `home-depot`). */
+  storeSlugs: string[];
+  /** True for BluModel Basics (the built-ins; never on the server's list). */
+  basics?: boolean;
 }
 
 /**
  * The brands with products in a category (or every category), with product counts and the stores
- * that carry them: BluModel Basics first, then the retail brands by product count. Works offline
- * (the same numbers as `GET /api/catalog/brands?category=`, minus partner brands on the server).
+ * that carry them: the retail brands by product count, then BluModel Basics. Works offline: the
+ * same retail numbers as `GET /api/catalog/brands?category=` (the server leaves Basics to the client).
  */
-export async function brandsForCategory(category: CategoryId | 'all'): Promise<BrandCount[]> {
+export async function brandsForCategory(category: CategoryId | 'all'): Promise<RetailBrandCount[]> {
   await loadRetail();
   return brandCounts(category, useRetail.getState().data, BUILTIN_PRODUCTS);
 }
 
 /** The pure part of `brandsForCategory` (shared with the tests). */
-export function brandCounts(category: CategoryId | 'all', data: RetailData | null, builtins: Product[]): BrandCount[] {
+export function brandCounts(category: CategoryId | 'all', data: RetailData | null, builtins: Product[]): RetailBrandCount[] {
   const inCat = (c: string) => category === 'all' || c === category;
   const basics = builtins.filter((p) => inCat(p.category)).length;
+  const storeNames = new Map((data?.stores ?? []).map((s) => [s.slug, s.name]));
   const map = new Map<string, { n: number; stores: Map<string, number> }>();
   for (const p of data?.products ?? []) {
     if (!inCat(p.category)) continue;
@@ -245,8 +253,11 @@ export function brandCounts(category: CategoryId | 'all', data: RetailData | nul
     for (const s of new Set(p.retail.stores.map((l) => l.store))) e.stores.set(s, (e.stores.get(s) ?? 0) + 1);
     map.set(p.brand, e);
   }
-  const retail = [...map]
-    .map(([name, e]) => ({ name, source: 'retail' as const, productCount: e.n, stores: [...e.stores].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([s]) => s) }))
-    .sort((a, b) => b.productCount - a.productCount || a.name.localeCompare(b.name));
-  return [...(basics ? [{ name: BASICS_BRAND, source: 'basics' as const, productCount: basics, stores: [] }] : []), ...retail];
+  const retail: RetailBrandCount[] = [...map]
+    .map(([brand, e]) => {
+      const storeSlugs = [...e.stores].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([s]) => s);
+      return { brand, products: e.n, stores: storeSlugs.map((s) => storeNames.get(s) ?? s), storeSlugs };
+    })
+    .sort((a, b) => b.products - a.products || a.brand.localeCompare(b.brand));
+  return [...retail, ...(basics ? [{ brand: BASICS_BRAND, products: basics, stores: [], storeSlugs: [], basics: true }] : [])];
 }
