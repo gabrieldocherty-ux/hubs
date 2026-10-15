@@ -406,6 +406,10 @@ function serverEnv(extra) {
     'ANTHROPIC_API_KEY',
     'BLUMODEL_LLM_MODEL',
     'MISE_LLM_MODEL', // the deprecated name, still read by the server
+    // Outgoing email: the QA server never calls a real provider.
+    'RESEND_API_KEY',
+    'POSTMARK_TOKEN',
+    'EMAIL_FROM',
     // A private settings file would hand the QA server real keys.
     'BLUMODEL_ENV_FILE',
     'MISE_ENV_FILE',

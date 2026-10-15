@@ -13,7 +13,8 @@
 //   - the admin audit log stays as written.
 // Everything else that is theirs goes: kitchens (with their unlocks, photo refs, quotes and share
 // links), share links they made, their contractor brand page (with its listings, leads and
-// events), their own catalog products, their sessions, subscriptions and checkouts, export
+// events), their own catalog products, their sessions, preferences and unused reset links,
+// subscriptions and checkouts, export
 // records, and every upload only they own (the file on disk and its mirror copy go too, unless
 // another upload row still points at the same bytes). An upload someone else still uses (granted
 // to another account, a partner brand's logo, a product that stays) is kept, without its owner.
@@ -34,7 +35,11 @@ const parse = (s, d) => {
  *   files: any, billing?: { subscriptionWire?: (id: string) => any, receiptsOf?: (id: string) => any[], unlocksOf?: (id: string) => any[] } }} deps
  */
 export function createAccountService({ db, config, now = Date.now, tx, files }) {
-  const userRow = (userId) => db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(userId) ?? null;
+  const userRow = (userId) => db.prepare('SELECT id, email, name, phone, role, created_at FROM users WHERE id = ?').get(userId) ?? null;
+  const prefsOf = (userId) => {
+    const row = db.prepare('SELECT prefs FROM user_prefs WHERE user_id = ?').get(userId);
+    return row ? parse(row.prefs, {}) : {};
+  };
 
   /** Brands this user owns outright as a contractor (their brand page). */
   const ownBrands = (userId) => db.prepare("SELECT * FROM brands WHERE owner_user_id = ? AND kind = 'contractor'").all(userId);
@@ -102,7 +107,8 @@ export function createAccountService({ db, config, now = Date.now, tx, files }) 
     const out = {
       exportedAt: new Date(now()).toISOString(),
       app: 'blumodel-studio',
-      user: { email: u.email, name: u.name, createdAt: u.created_at },
+      user: { email: u.email, name: u.name, phone: u.phone ?? '', createdAt: u.created_at },
+      preferences: prefsOf(userId),
       projects,
       shares,
       orders,
@@ -212,6 +218,9 @@ export function createAccountService({ db, config, now = Date.now, tx, files }) 
       c.shares += db.prepare('DELETE FROM share_links WHERE created_by = ? OR project_id IN (SELECT id FROM projects WHERE user_id = ?)').run(userId, userId).changes;
       c.projects += db.prepare('DELETE FROM projects WHERE user_id = ?').run(userId).changes;
       c.sessions += db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId).changes;
+      // Account settings: preferences and any reset link still outstanding (account-001).
+      db.prepare('DELETE FROM user_prefs WHERE user_id = ?').run(userId);
+      db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(userId);
       db.prepare('DELETE FROM export_events WHERE user_id = ?').run(userId);
       db.prepare('UPDATE product_events SET user_id = NULL WHERE user_id = ?').run(userId);
       db.prepare('UPDATE brand_events SET user_id = NULL WHERE user_id = ?').run(userId);

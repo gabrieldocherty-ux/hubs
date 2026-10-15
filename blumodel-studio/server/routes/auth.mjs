@@ -4,8 +4,12 @@
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { hashPassword, verifyPassword, dummyHash, MAX_PASSWORD } from '../auth/passwords.mjs';
+import { EMAIL_RE, makeUserWire } from '../auth/userWire.mjs';
+import { deviceLabel, deviceOf } from '../auth/device.mjs';
+import { createPrefsStore } from '../account/prefs.mjs';
+import { createMailer } from '../email/index.mjs';
+import { passwordChangedEmail, signInAlertEmail } from '../email/messages.mjs';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 const LOGIN_WINDOW = 15 * 60_000;
@@ -13,25 +17,22 @@ const LOGIN_MAX_PER_IP_EMAIL = 8;
 /** Per email alone, so rotating addresses can't brute-force one account. */
 const LOGIN_MAX_PER_EMAIL = 30;
 
+/** "2026-10-14 20:15 UTC": an unambiguous time for an email. */
+const utc = (ms) => `${new Date(ms).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
+
 /** @param {any} ctx */
 export default function routes(ctx) {
-  const { db, config, services } = ctx;
+  const { db, config, services, log } = ctx;
   const { sessions, limiter } = ctx.internal;
+  const prefs = createPrefsStore(db, ctx.now);
+  const mailer = createMailer({ config, fetch: ctx.fetch, log });
+  for (const n of mailer.notes) log?.info?.(n);
 
   /**
    * `{ id, email, name, role, brands, plan, contractor }`: the shape every auth response
-   * returns. `plan` comes from services.billing (Free until package G registers);
-   * `contractor` is `{ company, active }` once the user has set up a contractor company.
+   * returns (server/auth/userWire.mjs).
    */
-  const userWire = (u) => ({
-    id: u.id,
-    email: u.email,
-    name: u.name,
-    role: u.role || 'customer',
-    brands: services.auth.membershipsOf(u.id),
-    plan: services.billing.planOf(u.id),
-    contractor: services.contractors.summaryFor(u.id),
-  });
+  const userWire = makeUserWire(services);
 
   /** ADMIN_EMAILS promotes on signup and login. Returns the (possibly updated) role. */
   const promote = (user) => {
@@ -40,6 +41,27 @@ export default function routes(ctx) {
       return 'admin';
     }
     return user.role || 'customer';
+  };
+
+  /**
+   * Email notifications > Sign-in alerts: when email is on, the person hasn't turned alerts off,
+   * and none of their signed-in sessions is the same browser on the same system, tell them.
+   * Decided before the new session exists; sent without waiting, so a sign-in never waits on the
+   * provider and its timing says nothing about the account.
+   */
+  const alertNewDevice = (req, user) => {
+    if (!mailer.enabled || !prefs.get(user.id).prefs.signInAlerts) return;
+    const { browser, os } = deviceOf(req);
+    const known = db.prepare('SELECT 1 FROM sessions WHERE user_id = ? AND browser = ? AND os = ? AND expires_at >= ?').get(user.id, browser, os, ctx.now());
+    if (known) return;
+    const msg = signInAlertEmail({
+      name: user.name,
+      device: deviceLabel({ browser, os }),
+      when: utc(ctx.now()),
+      settingsUrl: `${config.PUBLIC_URL}/#/account`,
+      supportEmail: config.legal?.supportEmail,
+    });
+    void mailer.send({ to: user.email, ...msg });
   };
 
   return [
@@ -97,6 +119,7 @@ export default function routes(ctx) {
         }
         limiter.reset(keyPair);
         const role = promote(user);
+        alertNewDevice(rc.req, user);
         sessions.start(rc.req, rc.res, user.id);
         return { user: userWire({ ...user, role }) };
       },
@@ -138,8 +161,10 @@ export default function routes(ctx) {
         if (!(await verifyPassword(current.slice(0, MAX_PASSWORD), row.password_hash))) throw new HttpError(400, 'Your current password is not right.');
         if (next.length < 8 || next.length > MAX_PASSWORD) throw new HttpError(400, 'Use at least 8 characters for your new password.');
         db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword(next), rc.user.id);
-        // Sign out every other device; keep this one.
+        // Sign out every other device; keep this one. Any reset link still outstanding stops working.
         sessions.endOthers(rc.req, rc.user.id);
+        db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(rc.user.id);
+        if (mailer.enabled) void mailer.send({ to: rc.user.email, ...passwordChangedEmail({ name: rc.user.name, supportEmail: config.legal?.supportEmail, viaReset: false }) });
         return { ok: true };
       },
     },

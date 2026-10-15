@@ -236,6 +236,14 @@ LEGAL_JURISDICTION=
 # Optional: Start from a photo reads the photos with Claude when both are set.
 ANTHROPIC_API_KEY=
 BLUMODEL_LLM_MODEL=
+
+# Optional: email password-reset links and account notices. Set ONE provider key (Resend: re_...;
+# Postmark: the server API token) and EMAIL_FROM, a sender that provider has verified, in quotes
+# when it has a name: EMAIL_FROM="BluModel Studio <hello@blumodel.studio>". Without them, admins
+# make reset links in Admin > Users.
+RESEND_API_KEY=
+POSTMARK_TOKEN=
+EMAIL_FROM=
 `;
   return crlf(t);
 }

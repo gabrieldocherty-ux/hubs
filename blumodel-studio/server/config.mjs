@@ -79,6 +79,12 @@ export function loadConfig(env = process.env, argv = process.argv) {
   const SUPPORT_EMAIL = String(env.SUPPORT_EMAIL || '').trim();
   const LEGAL_JURISDICTION = String(env.LEGAL_JURISDICTION || '').trim();
 
+  // Outgoing email (password-reset links, account notices): server/email/index.mjs decides the
+  // provider from these. All optional; with none, admins make reset links.
+  const RESEND_API_KEY = String(env.RESEND_API_KEY || '').trim();
+  const POSTMARK_TOKEN = String(env.POSTMARK_TOKEN || '').trim();
+  const EMAIL_FROM = String(env.EMAIL_FROM || '').trim();
+
   const ANTHROPIC_API_KEY = env.ANTHROPIC_API_KEY || '';
   // MISE_LLM_MODEL is the deprecated name from before the rename; still read.
   const BLUMODEL_LLM_MODEL = env.BLUMODEL_LLM_MODEL || env.MISE_LLM_MODEL || '';
@@ -111,6 +117,9 @@ export function loadConfig(env = process.env, argv = process.argv) {
     LEGAL_NAME,
     SUPPORT_EMAIL,
     LEGAL_JURISDICTION,
+    RESEND_API_KEY,
+    POSTMARK_TOKEN,
+    EMAIL_FROM,
     BACKUP_DIR,
     BACKUPS,
     BACKUP_KEEP,
