@@ -262,7 +262,7 @@ function UsersTab() {
             </button>
           </div>
           <p>
-            Works once, until {new Date(link.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Using it signs the account out everywhere. Send it only to the address above, from the support address. It won’t be shown again; any older link for this account has stopped working.
+            Works once, until {new Date(link.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}, and using it signs the account out everywhere. Send it only to the address above, from the support address. It won’t be shown again; any older link for this account has stopped working.
           </p>
           <div className="admin-reset-url">
             <input readOnly value={link.url} aria-label="Reset link" onFocus={(e) => e.currentTarget.select()} />

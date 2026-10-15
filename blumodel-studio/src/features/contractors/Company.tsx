@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { ApiError } from '../../lib/api';
 import { useDesignStore } from '../../store/useDesignStore';
 import { proApi } from './api';
-import { checkCompany, CompanyFields, companyErrorsFrom, draftToInput, PricingFields, type CompanyDraft, type CompanyErrors } from './CompanyFields';
+import { checkCompany, CompanyFields, companyErrorsFrom, draftToInput, focusFirstError, PricingFields, type CompanyDraft, type CompanyErrors } from './CompanyFields';
 import { useWorkspace } from './ContractorRoot';
 
 /** `#/pro/company`: branding, contact details, default markup and tax. */
@@ -31,7 +31,7 @@ export default function Company() {
     setDraft(checked.draft);
     setFieldErrors(checked.errors);
     setError(null);
-    if (checked.errors.company || checked.errors.phone) return;
+    if (checked.errors.company || checked.errors.phone) return focusFirstError();
     setBusy(true);
     try {
       await proApi.saveProfile(draftToInput(checked.draft));
@@ -39,7 +39,7 @@ export default function Company() {
       toast('Company details saved.', 'ok');
     } catch (err) {
       const fields = companyErrorsFrom(err);
-      if (fields) setFieldErrors(fields);
+      if (fields) (setFieldErrors(fields), focusFirstError());
       else setError(err instanceof ApiError ? err.message : 'Could not save.');
     } finally {
       setBusy(false);

@@ -80,7 +80,17 @@ server.on('error', (err) => {
 server.listen(config.PORT, config.HOST, () => {
   const where = config.HOST.includes(':') ? `[${config.HOST}]` : config.HOST;
   console.log(`BluModel Studio listening on http://${where}:${config.PORT} (payments: ${config.paymentsProvider}${config.PROD ? ', production' : ''})`);
-  const report = startupReport(config, { adminCount: db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n });
+  // How many admins exist, for the "run make-admin" hint. Unknown (no hint) when the database can't
+  // be read: a corrupt file must not take the server down here (see the integrity check above).
+  let adminCount;
+  if (integrity.ok) {
+    try {
+      adminCount = db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n;
+    } catch {
+      adminCount = undefined;
+    }
+  }
+  const report = startupReport(config, { adminCount });
   for (const l of report.info) console.log(l);
   for (const l of report.warn) console.warn(`Warning: ${l}`);
   if (config.BACKUPS === 'on') scheduleBackups({ db, config, log: console, paused: () => !integrity.ok });

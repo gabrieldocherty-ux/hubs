@@ -38,6 +38,11 @@ export function checkCompany(d: CompanyDraft): { errors: CompanyErrors; draft: C
   return { errors, draft: p.ok && p.value ? { ...d, phone: p.value } : d };
 }
 
+/** Moves focus to the first refused field once the errors have rendered, so a phone shows it. */
+export function focusFirstError() {
+  requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.pro-fields input[aria-invalid="true"]')?.focus());
+}
+
 /** A company saved before the name and phone were both required: the workspace asks for them first. */
 export const needsCompanyDetails = (p: Pick<ContractorProfile, 'company' | 'phone'>) => !p.company.trim() || !p.phone.trim();
 

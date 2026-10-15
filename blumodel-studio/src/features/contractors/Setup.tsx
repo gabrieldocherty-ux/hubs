@@ -5,7 +5,7 @@ import { ApiError } from '../../lib/api';
 import { hrefFor, navigateHash } from '../../lib/router';
 import { proApi } from './api';
 import type { ContractorProfile } from '../../types/platform';
-import { checkCompany, CompanyFields, companyErrorsFrom, draftToInput, emptyCompany, PricingFields, type CompanyDraft, type CompanyErrors } from './CompanyFields';
+import { checkCompany, CompanyFields, companyErrorsFrom, draftToInput, emptyCompany, focusFirstError, PricingFields, type CompanyDraft, type CompanyErrors } from './CompanyFields';
 
 const STEPS = ['Company', 'Pricing', 'Your catalog'] as const;
 
@@ -39,7 +39,7 @@ function NewCompany({ onDone }: { onDone: () => Promise<void> }) {
       setDraft(checked.draft);
       setFieldErrors(checked.errors);
       setError(null);
-      if (checked.errors.company || checked.errors.phone) return;
+      if (checked.errors.company || checked.errors.phone) return focusFirstError();
     }
     setError(null);
     setStep((s) => Math.min(2, s + 1));
@@ -54,7 +54,7 @@ function NewCompany({ onDone }: { onDone: () => Promise<void> }) {
       navigateHash(to, true);
     } catch (e) {
       const fields = companyErrorsFrom(e);
-      if (fields) setFieldErrors(fields);
+      if (fields) (setFieldErrors(fields), focusFirstError());
       setError(fields ? null : e instanceof ApiError ? e.message : 'Could not save. Try again.');
       if (e instanceof ApiError && (e.body as { field?: string } | undefined)?.field && ['company', 'email', 'phone', 'website'].includes((e.body as { field: string }).field)) setStep(0);
     } finally {
@@ -81,7 +81,7 @@ function NewCompany({ onDone }: { onDone: () => Promise<void> }) {
         <AccountMenu />
       </header>
       <main className="pro-setup-main">
-        <form className="pro-setup-card" onSubmit={next}>
+        <form className="pro-setup-card" onSubmit={next} noValidate>
           <span className="eyebrow">Contractor setup · step {step + 1} of 3</span>
           {step === 0 && (
             <>
@@ -163,14 +163,14 @@ function CompleteCompany({ profile, onDone }: { profile: ContractorProfile; onDo
     setDraft(checked.draft);
     setFieldErrors(checked.errors);
     setError(null);
-    if (checked.errors.company || checked.errors.phone) return;
+    if (checked.errors.company || checked.errors.phone) return focusFirstError();
     setBusy(true);
     try {
       await proApi.saveProfile(draftToInput(checked.draft));
       await onDone();
     } catch (err) {
       const fields = companyErrorsFrom(err);
-      if (fields) setFieldErrors(fields);
+      if (fields) (setFieldErrors(fields), focusFirstError());
       else setError(err instanceof ApiError ? err.message : 'Could not save. Try again.');
     } finally {
       setBusy(false);
