@@ -94,6 +94,11 @@ export default function routes(ctx) {
     ofOwner: (userId) => pages.ofOwner(userId),
     summaryFor: (userId) => pages.summary(pages.ofOwner(userId)),
     syncVisibilityDue: () => pages.syncVisibilityDue(),
+    /** A brand's public header, as its page shows it: no costs; phone and email only if shown. */
+    publicWire: (id) => {
+      const b = pages.get(id);
+      return b ? pages.publicWire(b) : null;
+    },
     /**
      * Re-projects a contractor's live products after a My-catalog or price-book write: new prices
      * go straight to the page, content edits go back to review (the live version stays public).
