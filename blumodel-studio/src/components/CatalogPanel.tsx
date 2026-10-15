@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { create } from 'zustand';
-import { CATEGORIES, getProduct, isBuiltin, priceFor } from '../data/catalog';
+import { CATEGORIES, getProduct, priceFor } from '../data/catalog';
 import type { CategoryId, Product, Surfaces } from '../types';
 import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog } from '../store/useCatalog';
@@ -13,18 +13,39 @@ import { finishList } from '../lib/finish';
 import { hrefFor } from '../lib/router';
 import { useContractorCatalog, useKitchenPriceOf } from '../features/contractors';
 import { filterToPrefs, hasBrandPrefs } from '../lib/generate/brands';
+import { BASICS_BRAND } from '../data/builtins';
+import { loadRetail, retailOf, retailPriceKnown, storesOf, useRetail } from '../catalog/retail';
+import '../catalog/retail.css';
 
 const ALL = 'all';
 
-/** Brand facets: server (uploaded) brands first, in catalog order, then the built-in demo brands A–Z. */
-function brandFacets(list: Product[]): string[] {
-  const server: string[] = [];
-  const builtin = new Set<string>();
-  for (const p of list) {
-    if (isBuiltin(p.id)) builtin.add(p.brand);
-    else if (!server.includes(p.brand)) server.push(p.brand);
-  }
-  return [...server, ...[...builtin].filter((b) => !server.includes(b)).sort((a, b) => a.localeCompare(b))];
+interface Facet {
+  id: string;
+  label: string;
+  n: number;
+}
+
+/** Brand facets with product counts: BluModel Basics first, then every other brand A–Z. */
+function brandFacets(list: Product[]): Facet[] {
+  const n = new Map<string, number>();
+  for (const p of list) n.set(p.brand, (n.get(p.brand) ?? 0) + 1);
+  return [...n]
+    .map(([id, count]) => ({ id, label: id, n: count }))
+    .sort((a, b) => (a.id === BASICS_BRAND ? -1 : b.id === BASICS_BRAND ? 1 : a.label.localeCompare(b.label)));
+}
+
+/** Store facets: the real-retailer stores the listed products are sold at, most products first. */
+function storeFacets(list: Product[], names: Map<string, { name: string }>): Facet[] {
+  const n = new Map<string, number>();
+  for (const p of list) for (const s of storesOf(retailOf(p.id))) n.set(s, (n.get(s) ?? 0) + 1);
+  return [...n].map(([id, count]) => ({ id, label: names.get(id)?.name ?? id, n: count })).sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
+}
+
+/** "at RONA", "at RONA and IKEA", "at RONA + 2 more" for a card. */
+function storeLine(slugs: string[], names: Map<string, { name: string }>): string {
+  const label = (s: string) => names.get(s)?.name ?? s;
+  if (slugs.length <= 2) return `at ${slugs.map(label).join(' and ')}`;
+  return `at ${label(slugs[0])} + ${slugs.length - 1} more`;
 }
 
 import { CATALOG_DRAG_CLASS, isCompact, useCompact, useMobileUI } from './MobileState';
@@ -256,22 +277,35 @@ export function CatalogPanel() {
     return () => el.removeEventListener('touchmove', guard);
   }, []);
 
+  // The real-retailer products (RONA, Home Depot…) load as their own chunk the first time the
+  // catalog opens, then sit in the registry with everything else. Offline they still load (bundled).
+  useEffect(() => {
+    void loadRetail();
+  }, []);
+  const stores = useRetail((s) => s.stores);
+  const [store, setStore] = useState<string>(ALL);
+
   const inCategory = useMemo(() => products.filter((p) => cat === ALL || p.category === cat), [products, cat]);
   const brands = useMemo(() => brandFacets(inCategory), [inCategory]);
-  const activeBrand = brand !== ALL && brands.includes(brand) ? brand : ALL;
+  const activeBrand = brand !== ALL && brands.some((b) => b.id === brand) ? brand : ALL;
   const prefsOn = hasBrandPrefs(brandPrefs) && mine && activeBrand === ALL;
+  const storeList = useMemo(() => storeFacets(inCategory, stores), [inCategory, stores]);
+  const activeStore = store !== ALL && storeList.some((s) => s.id === store) ? store : ALL;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return (prefsOn ? filterToPrefs(inCategory, brandPrefs) : inCategory).filter(
-      (p) =>
-        (activeBrand === ALL || p.brand === activeBrand) &&
-        (!q || `${p.name} ${p.brand} ${p.line ?? ''} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb}`.toLowerCase().includes(q)),
-    );
-  }, [inCategory, activeBrand, query, prefsOn, brandPrefs]);
+    return (prefsOn ? filterToPrefs(inCategory, brandPrefs) : inCategory).filter((p) => {
+      if (activeBrand !== ALL && p.brand !== activeBrand) return false;
+      const sold = storesOf(retailOf(p.id));
+      if (activeStore !== ALL && !sold.includes(activeStore)) return false;
+      if (!q) return true;
+      const where = sold.map((s) => stores.get(s)?.name ?? s).join(' ');
+      return `${p.name} ${p.brand} ${p.line ?? ''} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb} ${where}`.toLowerCase().includes(q);
+    });
+  }, [inCategory, activeBrand, activeStore, query, prefsOn, brandPrefs, stores]);
 
   const grouped = useMemo(() => {
-    if (cat !== ALL || query || activeBrand !== ALL) return [{ id: 'results', label: '', items: results }];
+    if (cat !== ALL || query || activeBrand !== ALL || activeStore !== ALL) return [{ id: 'results', label: '', items: results }];
     // A contractor's own products come first, one group per line ("Smith Shaker: 14 pieces").
     const own = results.filter((p) => p.source === 'contractor');
     const lines = new Map<string, Product[]>();
@@ -282,7 +316,7 @@ export function CatalogPanel() {
     const groups = CATEGORIES.map((c) => ({ id: c.id as string, label: c.label, items: rest.filter((p) => p.category === c.id) }));
     const other = rest.filter((p) => !known.has(p.category));
     return [...mine, ...groups, ...(other.length ? [{ id: 'other', label: 'Other', items: other }] : [])];
-  }, [results, cat, query, activeBrand]);
+  }, [results, cat, query, activeBrand, activeStore]);
 
   const pick = (p: Product) => {
     if (performance.now() < swallowClickUntil) return;
@@ -326,21 +360,51 @@ export function CatalogPanel() {
           </button>
         ))}
       </div>
-      {(brands.length > 1 || hasBrandPrefs(brandPrefs)) && (
-        <div className="chips chips--brands" role="group" aria-label="Brands">
+      {(brands.length > 1 || storeList.length > 0 || hasBrandPrefs(brandPrefs)) && (
+        <div className="catalog-filters" role="group" aria-label="Filter products">
           {hasBrandPrefs(brandPrefs) && (
-            <button aria-pressed={prefsOn} className={prefsOn ? 'chip on' : 'chip'} onClick={() => (setBrand(ALL), setMine(true))} title="The brands chosen when this kitchen was set up">
+            <button
+              type="button"
+              aria-pressed={prefsOn}
+              className={prefsOn ? 'chip on' : 'chip'}
+              onClick={() => (prefsOn ? setMine(false) : (setBrand(ALL), setMine(true)))}
+              title="The brands chosen when this kitchen was set up"
+            >
               Your brands
             </button>
           )}
-          <button aria-pressed={activeBrand === ALL && !prefsOn} className={activeBrand === ALL && !prefsOn ? 'chip on' : 'chip'} onClick={() => (setBrand(ALL), setMine(false))}>
-            All brands
-          </button>
-          {brands.map((b) => (
-            <button key={b} aria-pressed={activeBrand === b} className={activeBrand === b ? 'chip on' : 'chip'} onClick={() => setBrand(b)}>
-              {b}
-            </button>
-          ))}
+          {brands.length > 1 && (
+            <span className={activeBrand !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
+              <select
+                id="catalog-brand"
+                aria-label="Brand"
+                value={activeBrand}
+                onChange={(e) => {
+                  setBrand(e.target.value);
+                  if (e.target.value === ALL) setMine(false);
+                }}
+              >
+                <option value={ALL}>All brands</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.label} ({b.n})
+                  </option>
+                ))}
+              </select>
+            </span>
+          )}
+          {storeList.length > 0 && (
+            <span className={activeStore !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
+              <select id="catalog-store" aria-label="Store" value={activeStore} onChange={(e) => setStore(e.target.value)}>
+                <option value={ALL}>Any store</option>
+                {storeList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label} ({s.n})
+                  </option>
+                ))}
+              </select>
+            </span>
+          )}
         </div>
       )}
       <p className="catalog-hint">
@@ -359,6 +423,10 @@ export function CatalogPanel() {
                   const from = p.widthOptions?.length ? Math.min(...p.widthOptions.map(at)) : at(p.widthIn);
                   const custom = p.source === 'custom';
                   const mine = p.source === 'contractor';
+                  const info = retailOf(p.id);
+                  const sold = storesOf(info);
+                  // A real product with no checked store price shows none rather than a made-up one.
+                  const priceText = info && !priceOf && !retailPriceKnown(info) ? 'See store' : `${money(from)}${p.widthOptions?.length ? '+' : ''}`;
                   return (
                     <div key={p.id} className="product-card-wrap">
                       <button
@@ -386,6 +454,7 @@ export function CatalogPanel() {
                           <span>{p.brandKind === 'contractor' ? `by ${p.brand}` : p.brand}</span>
                           <span className="mono">{p.widthOptions?.length ? `${Math.min(...p.widthOptions)}–${Math.max(...p.widthOptions)}″` : `${p.widthIn}″`}</span>
                         </span>
+                        {sold.length > 0 && <span className="product-stores">{storeLine(sold, stores)}</span>}
                         <span className="product-foot">
                           <span className="dots">
                             {finishes.slice(0, 4).map((f) => (
@@ -393,7 +462,7 @@ export function CatalogPanel() {
                             ))}
                             {finishes.length > 4 && <em>+{finishes.length - 4}</em>}
                           </span>
-                          <span className="price">{money(from)}{p.widthOptions?.length ? '+' : ''}</span>
+                          <span className={priceText === 'See store' ? 'price price--store' : 'price'}>{priceText}</span>
                         </span>
                       </button>
                       <a className="product-info" href={hrefFor({ name: 'product', id: p.id })} aria-label={`About ${p.name}`} title="Product details">

@@ -30,6 +30,22 @@ import { dimText, pickWidth, productHash, widthChoices } from './stageMath';
 import type { StageStill } from './ProductStage';
 import './viewer.css';
 import { LegalLinks } from '../legal/LegalLinks';
+import {
+  cad,
+  checkedLabel,
+  countClick,
+  isRetailId,
+  loadRetail,
+  loadRetailers,
+  retailOf,
+  sortListings,
+  storeLink,
+  storeName,
+  useRetail,
+  useRetailers,
+  type RetailInfo,
+} from '../../catalog/retail';
+import '../../catalog/retail.css';
 
 const StageView = lazy(() => import('./ProductStage').then((m) => ({ default: m.StageView })));
 
@@ -50,6 +66,18 @@ function useProduct(id: string): [Load, () => void] {
       return;
     }
     let live = true;
+    if (isRetailId(id)) {
+      // A real-retailer product: from the bundled retail chunk, never the server.
+      void loadRetail().then(() => {
+        if (!live) return;
+        const p = getProduct(id);
+        if (useRetail.getState().status === 'error') setLoad({ status: 'error', message: 'This product didn’t load. Try again.' });
+        else setLoad(p && retailOf(id) ? { status: 'ready', product: p } : { status: 'missing' });
+      });
+      return () => {
+        live = false;
+      };
+    }
     api
       .catalogProduct(id)
       .then(({ product }) => {
@@ -226,6 +254,90 @@ function Gallery({ product }: { product: Product }) {
   );
 }
 
+// ── where to buy (real-retailer products) ───────────────────────────────
+
+/** The lowest checked store price, or a pointer to the stores when none was checked. */
+function RetailPrice({ info }: { info: RetailInfo }) {
+  const priced = info.stores.filter((l) => l.priceCad !== null);
+  if (!priced.length)
+    return (
+      <div className="pp-price">
+        <span className="pp-price-store">Price at the store: see Where to buy</span>
+      </div>
+    );
+  const low = priced.reduce((a, b) => ((b.priceCad as number) < (a.priceCad as number) ? b : a));
+  return (
+    <div className="pp-price">
+      <b>{cad(low.priceCad as number)}</b>
+      <span>
+        {priced.length > 1 ? 'Lowest checked price' : 'Checked price'}, at {storeName(low.store)}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The stores that list this product: sponsored stores first (labelled), then the lowest checked
+ * price. Links are plain navigations with the store's tracking parameter when an admin set one;
+ * a click is counted per store and product only.
+ */
+function WhereToBuy({ product, info }: { product: Product; info: RetailInfo }) {
+  const bySlug = useRetailers((s) => s.bySlug);
+  useEffect(() => {
+    void loadRetailers();
+  }, []);
+  const finishes = finishList(product);
+  const rows = sortListings(info.stores, bySlug);
+  const about: string[] = [];
+  if (info.note) about.push(info.note);
+  if (info.typical.length) about.push(`The ${info.typical.join(' and ')} shown ${info.typical.length > 1 ? 'are' : 'is'} typical for this kind of product; the listing didn’t give ${info.typical.length > 1 ? 'them' : 'it'}.`);
+  if (info.upc) about.push(`UPC ${info.upc}.`);
+  return (
+    <section className="pp-buy" aria-labelledby="pp-buy-title">
+      <div className="pp-buy-head">
+        <span className="mini-label" id="pp-buy-title">
+          Where to buy
+        </span>
+        <small>Prices in CAD</small>
+      </div>
+      <ul className="pp-buy-list">
+        {rows.map((l) => {
+          const cfg = bySlug.get(l.store);
+          const name = storeName(l.store);
+          const finish = finishes.length > 1 && l.finish ? finishes.find((f) => f.id === l.finish)?.name : undefined;
+          const count = () => countClick(product.id, l.store);
+          return (
+            <li key={l.url} className="pp-buy-row" data-store={l.store}>
+              <span className="pp-buy-store">
+                {name}
+                {cfg?.sponsored && <span className="pp-buy-sponsored">Sponsored</span>}
+              </span>
+              <span className="pp-buy-facts">
+                <span className="pp-buy-price">{l.priceCad !== null ? cad(l.priceCad) : 'Price not listed'}</span>
+                {finish && <span>{finish}</span>}
+                {l.inStock === false && <span>Out of stock online</span>}
+                <span>checked {checkedLabel(info.checkedAt)}</span>
+              </span>
+              <a
+                className="btn small pp-buy-link"
+                href={storeLink(l.url, cfg?.affiliate)}
+                target="_blank"
+                rel="sponsored nofollow noopener"
+                onClick={count}
+                onAuxClick={(e) => e.button === 1 && count()}
+              >
+                View at {name} <span aria-hidden>↗</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="pp-buy-note">Prices and availability change – confirm with the store.</p>
+      {about.length > 0 && <p className="pp-buy-about">{about.join(' ')}</p>}
+    </section>
+  );
+}
+
 // ── the page ─────────────────────────────────────────────────────────────
 
 function ProductView({ product, finishParam, widthParam }: { product: Product; finishParam?: string; widthParam: string | null }) {
@@ -248,6 +360,7 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
     still.current = r;
   }, []);
   const isServer = !isBuiltin(product.id);
+  const retail = useRetail((s) => s.byId.get(product.id));
 
   useEffect(() => {
     track(product.id, 'view');
@@ -329,11 +442,15 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
           <span className="mono">{productCode(product, width)}</span>
           <span>{category}</span>
         </div>
-        <div className="pp-price">
-          <b>{money(price)}</b>
-          {widths.length > 1 && <span>from {money(fromPrice)} · this is the {width}″ width</span>}
-          {product.isDemo && <span>Illustrative price</span>}
-        </div>
+        {retail ? (
+          <RetailPrice info={retail} />
+        ) : (
+          <div className="pp-price">
+            <b>{money(price)}</b>
+            {widths.length > 1 && <span>from {money(fromPrice)} · this is the {width}″ width</span>}
+            {product.isDemo && <span>Illustrative price</span>}
+          </div>
+        )}
 
         <div className="pp-block">
           <span className="mini-label">Finish · {finish.name}</span>
@@ -408,7 +525,9 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
           </a>
         </div>
 
-        {product.blurb && <p className="pp-blurb">{product.blurb}</p>}
+        {retail && <WhereToBuy product={product} info={retail} />}
+
+        {product.blurb && !retail && <p className="pp-blurb">{product.blurb}</p>}
 
         <table className="pp-specs">
           <tbody>
