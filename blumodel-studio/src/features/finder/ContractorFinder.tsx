@@ -228,6 +228,11 @@ function FinderLink({ where, onExpire }: { where: FinderPlace; onExpire?: () => 
       onPointerEnter={where === 'export' ? onPopPointerEnter : undefined}
       onPointerLeave={where === 'export' ? onPointerLeave : undefined}
     >
+      {where === 'share' && (
+        <span className="finder-sep" aria-hidden="true">
+          ·{' '}
+        </span>
+      )}
       <button
         ref={linkRef}
         type="button"
@@ -244,6 +249,7 @@ function FinderLink({ where, onExpire }: { where: FinderPlace; onExpire?: () => 
       >
         Need a contractor?
       </button>
+      {where === 'share' && ' '}
       {open &&
         createPortal(
           <Popover

@@ -29,12 +29,6 @@
 /* In the shared kitchen's fine print: "View only · Terms · Privacy · Need a contractor? · …". */
 .finder--share {
   display: inline;
-  margin-right: 0.3em;
-}
-
-.finder--share::before {
-  content: '·';
-  margin-right: 0.3em;
 }
 
 /*
@@ -49,8 +43,8 @@
   .share-bar-note:has(.finder--share) > a {
     display: none;
   }
-  .share-bar-note .finder--share::before {
-    content: none;
+  .share-bar-note .finder-sep {
+    display: none;
   }
   .share-bar-note .finder--share .finder-link {
     font-size: 12px;
@@ -154,10 +148,10 @@
 
 .finder-item {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 2px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: start;
+  gap: 6px 10px;
+  padding: 10px 2px;
 }
 
 .finder-item + .finder-item {
@@ -197,19 +191,15 @@
 }
 
 .finder-name {
-  overflow: hidden;
   font-size: 13.5px;
   font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .finder-area {
-  overflow: hidden;
   font-size: 12px;
   color: var(--ink-3);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
 }
 
 .finder-tag {
@@ -228,6 +218,8 @@
 
 .finder-actions {
   display: flex;
+  flex-wrap: wrap;
+  grid-column: 2;
   gap: 6px;
 }
 
@@ -235,11 +227,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 9px;
+  padding: 4px 10px;
   border: 1px solid var(--line-2);
   border-radius: 7px;
   background: var(--card);
-  color: var(--ink);
+  color: var(--ink-2);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
@@ -250,16 +242,13 @@
 
 .finder-btn:hover {
   background: var(--paper);
+  color: var(--ink);
 }
 
+/* The one to act on: outlined in ink, still not a filled button (it's a quiet popover). */
 .finder-btn--ask {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--panel);
-}
-
-.finder-btn--ask:hover {
-  background: var(--ink-2);
+  border-color: var(--ink-2);
+  color: var(--ink);
 }
 
 .finder-btn:focus-visible,
@@ -290,17 +279,6 @@
   margin: 4px 2px 0;
   font-size: 11px;
   color: var(--ink-3);
-}
-
-/* A phone: the buttons go under the name, and are big enough for a thumb. */
-@media (max-width: 420px) {
-  .finder-item {
-    grid-template-columns: 36px minmax(0, 1fr);
-    row-gap: 8px;
-  }
-  .finder-actions {
-    grid-column: 2;
-  }
 }
 
 @media (pointer: coarse) {
