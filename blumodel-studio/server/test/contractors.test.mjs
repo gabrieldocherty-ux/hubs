@@ -246,7 +246,7 @@ test('CSV import previews updated / new / unchanged / unmatched rows and applies
   const exp = await c.get('/api/pro/price-book/export');
   assert.equal(exp.body.filename, 'smith-kitchens-price-book.csv');
   assert.match(exp.body.content.split('\n')[0], /^SKU,Name,Brand,Line,Width \(in\),List price,Your cost,Markup %,Sell price$/);
-  assert.match(exp.body.content, /\nR30,Gas Range 30″,Corviq,,30,1899,900,30,1170\n/);
+  assert.match(exp.body.content, /\nR30,Gas Range 30″,BluModel Basics,,30,1899,900,30,1170\n/);
 });
 
 test('costs never leave: other users’ catalog, exports, quotes and the share pricing carry none', async () => {

@@ -1,13 +1,14 @@
 import type { DoorStyle, Finish } from '../types';
 import type { PatternSpec } from '../lib/textures';
+import { BASICS_BRAND } from './builtins';
 
 /**
  * Brand names throughout are invented placeholders, not real manufacturers.
  * Prices are illustrative estimates so the budget view has something to add up.
  */
 
-/** The (fictional) maker of the kitchen-wide cabinet line, shown in Room & Finishes. */
-export const CABINET_BRAND = 'Nordwell';
+/** The kitchen-wide cabinet line, shown in Room & Finishes: BluModel Basics, like the built-in cabinets. */
+export const CABINET_BRAND = BASICS_BRAND;
 
 export const CABINET_FINISHES: Finish[] = [
   { id: 'white-oak', name: 'Rift White Oak', hex: '#c9a57a', material: 'wood' },

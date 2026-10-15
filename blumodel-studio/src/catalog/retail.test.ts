@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import raw from '../data/retail.json';
 import { productType } from '../data/productTypes';
 import { BASICS_BRAND, BUILTIN_PRODUCTS } from '../data/builtins';
+import { CABINET_BRAND } from '../data/finishes';
 import { getProduct, isProductIdShape } from '../data/catalog';
 import { useCatalog } from '../store/useCatalog';
 import { applyRetailData, brandCounts, checkedLabel, isRetailId, retailOf, retailPriceKnown, sortListings, storeLink, toProduct, type RetailData, type RetailerConfig, type RetailListing } from './retail';
@@ -45,6 +46,12 @@ test('applying the data registers every retail product in the catalog and keeps 
   // A forced catalog reload re-lists only built-ins and server products; the retail ones come back.
   useCatalog.setState((s) => ({ products: BUILTIN_PRODUCTS, version: s.version + 1 }));
   assert.ok(useCatalog.getState().products.some((x) => x.id === p.id));
+});
+
+test('the built-ins are BluModel Basics, and so is the kitchen-wide cabinet line; their ids are unchanged', () => {
+  assert.ok(BUILTIN_PRODUCTS.every((p) => p.brand === BASICS_BRAND));
+  assert.equal(CABINET_BRAND, BASICS_BRAND);
+  for (const id of ['base', 'drawer-base', 'wall', 'island', 'range-30', 'fridge-36', 'sink-under', 'pendant-dome', 'stool', 'window', 'fig']) assert.ok(getProduct(id), id);
 });
 
 test('store links: the affiliate parameter is added (replacing one of the same name) and nothing else changes', () => {
