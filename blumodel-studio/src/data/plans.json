@@ -46,10 +46,12 @@
     "priceCents": 9900,
     "currency": "cad",
     "interval": "month",
+    "includedModels": 3,
     "tagline": "Show your customers the exact cabinets you sell, in their kitchen, at your price.",
     "bullets": [
       "Everything in Unlimited",
-      "Your own private catalog: quick-add a line, upload models, or have us model them",
+      "3 custom 3D models a month, made by our studio",
+      "Your own private catalog: quick-add a cabinet line or upload your own models",
       "A price book with your cost and markup; clients only ever see your sell price",
       "Branded quotes, client and contractor estimate views, and presentation mode",
       "Get found: a brand page with your products in 3D, and a leads inbox"

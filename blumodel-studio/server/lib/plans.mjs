@@ -33,6 +33,15 @@ for (const [id, cents] of Object.entries(EXPECTED)) {
   if (p.currency !== CURRENCY) throw new Error(`src/data/plans.json: plan "${id}" is priced in "${p.currency}", expected "${CURRENCY}".`);
 }
 
+/**
+ * Custom 3D models a month the Contractor plan includes, made by the BluModel studio (since
+ * 2026-10-15 custom models aren't sold; server/payments/allowance.mjs counts them).
+ */
+export const INCLUDED_MODELS = 3;
+if (PLANS.find((p) => p.id === 'contractor')?.includedModels !== INCLUDED_MODELS) {
+  throw new Error(`src/data/plans.json: the Contractor plan must include ${INCLUDED_MODELS} custom models a month (includedModels).`);
+}
+
 /** Plans a user can subscribe to (monthly). */
 export const SUBSCRIPTION_PLANS = Object.freeze(['unlimited', 'contractor']);
 
