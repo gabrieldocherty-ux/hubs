@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { ADMIN_TABS, hrefFor, navigate, type AdminTab } from '../lib/router';
 import { timeAgo, useSession } from '../store/useSession';
@@ -11,10 +11,14 @@ import { AdminBillingTab } from '../features/billing';
 import { accountApi } from '../lib/accountApi';
 import './admin-users.css';
 
+// Real-retailer link settings and link-out counts (its own chunk: admins only).
+const AdminRetailersTab = lazy(() => import('../catalog/retailAdmin'));
+
 const LABELS: Record<AdminTab, string> = {
   overview: 'Overview',
   moderation: 'Moderation',
   brands: 'Brands',
+  retailers: 'Retailers',
   studio: 'Studio',
   revenue: 'Revenue',
   billing: 'Billing',
@@ -72,6 +76,7 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
             {tab === 'users' && <UsersTab />}
             {tab === 'moderation' && <AdminModerationTab />}
             {tab === 'brands' && <AdminBrandsTab />}
+            {tab === 'retailers' && <AdminRetailersTab />}
             {tab === 'studio' && <AdminStudioTab />}
             {tab === 'revenue' && <AdminRevenueTab />}
             {tab === 'billing' && <AdminBillingTab />}
