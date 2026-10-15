@@ -106,6 +106,8 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `TRUST_PROXY` | `1` | believe `CF-Connecting-IP` / `X-Forwarded-For` / `X-Forwarded-Proto` from 127.0.0.1 (per-visitor rate limits, Secure cookies, HSTS) |
 | `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION` | the business's legal name, a support address, where it's established | the terms, privacy and refund pages, receipts and the footer's Contact link |
 | `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional | *Start from a photo* reads photos with Claude when both are set |
+| `RESEND_API_KEY` **or** `POSTMARK_TOKEN` | optional: a Resend API key (`re_…`) or a Postmark server API token | emails password-reset links and account notices (see *Password resets*). Set one; with both, Resend is used |
+| `EMAIL_FROM` | `"BluModel Studio <hello@blumodel.studio>"` (quoted, since it has spaces) | the sender; the provider must have verified that address or domain. Without it no email is sent even with a key |
 
 Payments are decided at start, and the log says why: **`stripe`** when both Stripe values are set and
 valid (a live key also needs production mode and an https `PUBLIC_URL`); otherwise **`demo`** if
@@ -126,6 +128,20 @@ Other variables the server reads (set by `run-server.cmd` or left at their defau
 
 Check the Stripe side any time with `npm run stripe:check` (read-only; prints PASS / FIX lines, never a key).
 
+A home folder made before email existed has no email lines in `blumodel.env`. To turn email on, add
+them yourself with Notepad (the deploy never edits an existing settings file):
+
+```
+# Optional: email password-reset links and account notices. ONE provider key, and the sender.
+RESEND_API_KEY=
+POSTMARK_TOKEN=
+EMAIL_FROM="BluModel Studio <hello@blumodel.studio>"
+```
+
+At start the log says which is in use, e.g. `Email: Resend (password-reset links and account notices
+are emailed).` or `Email: none (…)`, never a key. A failed send is logged as the provider and the
+HTTP status only.
+
 ## Admins
 
 Nobody becomes an admin by signing up or signing in, whatever `ADMIN_EMAILS` says: the site has no
@@ -143,6 +159,24 @@ makes a studio member instead; `--role customer` takes a role away. Admin > User
 too, but never your own. Until an admin exists, the server log says `Warning: No admin account
 exists: run node server/scripts/make-admin.mjs <email>` at every start. Run it only for an account
 you know is the right person's: you signed it up yourself and can sign in to it.
+
+## Password resets
+
+*Forgot password?* on the sign-in page works two ways, depending on whether email is set up:
+
+- **With a provider** (`RESEND_API_KEY` or `POSTMARK_TOKEN`, plus `EMAIL_FROM`): the person types
+  their address and gets a single-use link (`PUBLIC_URL/#/signin?reset=…`). The page answers the same
+  whether or not an account uses that address. Limits: 3 emails an hour per address, 10 requests an
+  hour per visitor.
+- **With none:** the page tells them to write to `SUPPORT_EMAIL`. Check the request comes **from the
+  account's own address**, then in **Admin > Users** search for them and press **Create reset link**.
+  The link is shown once, with a Copy button; reply with it from the support address. The audit log
+  records that you made one, for whom, never the link.
+
+Either way a link works **once, for 60 minutes**; only the newest link for an account works; only its
+SHA-256 is stored, so a copy of the database can't be used to reset anyone. Using it sets the new
+password, signs the account out on **every** device and signs that browser in. Changing the password
+or the sign-in email in Account settings, or deleting the account, cancels any outstanding link.
 
 ## Backups and restore
 

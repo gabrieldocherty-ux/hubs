@@ -8,6 +8,8 @@ import { Logo, Wordmark, Search } from '../components/Icons';
 import { AdminBrandsTab, AdminModerationTab } from '../features/brands';
 import { AdminRevenueTab, AdminStudioTab } from '../features/orders';
 import { AdminBillingTab } from '../features/billing';
+import { accountApi } from '../lib/accountApi';
+import './admin-users.css';
 
 const LABELS: Record<AdminTab, string> = {
   overview: 'Overview',
@@ -180,6 +182,10 @@ function UsersTab() {
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  /** The reset link just made: shown once, here, and never again. */
+  const [link, setLink] = useState<{ email: string; url: string; expiresAt: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [making, setMaking] = useState<string | null>(null);
 
   const search = async (query: string) => {
     setError(null);
@@ -213,6 +219,31 @@ function UsersTab() {
     }
   };
 
+  /** Password resets with no email provider: the admin makes a single-use link and sends it themself. */
+  const makeResetLink = async (u: AdminUser) => {
+    setMaking(u.id);
+    setError(null);
+    setCopied(false);
+    try {
+      const { url, expiresAt } = await accountApi.adminResetLink(u.id);
+      setLink({ email: u.email, url, expiresAt });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not make a reset link.');
+    } finally {
+      setMaking(null);
+    }
+  };
+
+  const copyLink = async () => {
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link.url);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
     <div className="admin-users">
       <h1>Users</h1>
@@ -222,6 +253,25 @@ function UsersTab() {
         <button className="btn" type="submit">Search</button>
       </form>
       {error && <div className="auth-error">{error}</div>}
+      {link && (
+        <div className="admin-reset" role="status">
+          <div className="admin-reset-head">
+            <b>Reset link for {link.email}</b>
+            <button type="button" className="btn small" onClick={() => setLink(null)}>
+              Done
+            </button>
+          </div>
+          <p>
+            Works once, until {new Date(link.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}. Using it signs the account out everywhere. Send it only to the address above, from the support address. It won’t be shown again; any older link for this account has stopped working.
+          </p>
+          <div className="admin-reset-url">
+            <input readOnly value={link.url} aria-label="Reset link" onFocus={(e) => e.currentTarget.select()} />
+            <button type="button" className="btn small" onClick={() => void copyLink()}>
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+        </div>
+      )}
       {users === null ? (
         <div className="screen-msg">Loading users…</div>
       ) : users.length === 0 ? (
@@ -234,6 +284,7 @@ function UsersTab() {
               <th>Email</th>
               <th>Joined</th>
               <th>Role</th>
+              <th>Password</th>
             </tr>
           </thead>
           <tbody>
@@ -256,6 +307,11 @@ function UsersTab() {
                       </option>
                     ))}
                   </select>
+                </td>
+                <td>
+                  <button type="button" className="btn small" disabled={making === u.id} onClick={() => void makeResetLink(u)} aria-label={`Create a reset link for ${u.email}`}>
+                    {making === u.id ? 'Making…' : 'Create reset link'}
+                  </button>
                 </td>
               </tr>
             ))}

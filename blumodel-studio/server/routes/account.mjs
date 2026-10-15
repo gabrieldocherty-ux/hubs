@@ -168,6 +168,8 @@ export default function routes(ctx) {
           throw err;
         }
         const signedOut = sessions.endOthers(rc.req, rc.user.id);
+        // A reset link mailed to the old address stops working with it.
+        db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(rc.user.id);
         if (mailer.enabled) {
           const msg = emailChangedEmail({ name: old.name, newEmail: email, supportEmail: config.legal?.supportEmail });
           void mailer.send({ to: old.email, ...msg });

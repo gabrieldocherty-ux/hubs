@@ -197,8 +197,7 @@ export default function routes(ctx) {
       rateLimit: { name: 'forgot-ip', max: 10, windowMs: HOUR, by: 'ip' },
       handler: (rc) => {
         const email = str(rc.body.email, 254).toLowerCase();
-        if (!EMAIL_RE.test(email) || /[
-,;<>]/.test(email)) throw new HttpError(400, 'That email address does not look right.', { field: 'email' });
+        if (!EMAIL_RE.test(email) || /[\r\n,;<>]/.test(email)) throw new HttpError(400, 'That email address does not look right.', { field: 'email' });
         // From here the answer is the same for every address: whether it has an account, whether
         // this address has had its 3 an hour, whether the provider accepts the message.
         if (!mailer.enabled) return { ok: true, emailEnabled: false };
