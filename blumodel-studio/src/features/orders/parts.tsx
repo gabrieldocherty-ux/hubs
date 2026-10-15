@@ -3,9 +3,10 @@ import { AccountMenu } from '../../components/AccountMenu';
 import { Logo, Wordmark } from '../../components/Icons';
 import { PaymentsSoon } from '../../components/PaymentNotice';
 import type { PaymentsMode } from '../../lib/config';
+import { hrefFor } from '../../lib/router';
 import type { OrderStatus } from '../../types/platform';
 import type { OrderEventWire } from './api';
-import { dateTime, eventTitle, STATUS_LABEL, statusTone } from './model';
+import { dateTime, eventTitle, statusLabel, statusTone } from './model';
 
 /**
  * The page frame for `#/orders/*` ("Make custom models"; the route keeps its old name): the app
@@ -28,8 +29,8 @@ export function OrdersShell({ children, wide = false }: { children: ReactNode; w
 }
 
 /** A status pill: the label always travels with the colour. */
-export function StatusPill({ status, label }: { status: OrderStatus; label?: string }) {
-  return <span className={`ord-pill ord-pill--${statusTone(status)}`}>{label ?? STATUS_LABEL[status]}</span>;
+export function StatusPill({ status, label, pricing }: { status: OrderStatus; label?: string; pricing?: string }) {
+  return <span className={`ord-pill ord-pill--${statusTone(status)}`}>{label ?? statusLabel({ status, pricing })}</span>;
 }
 
 /**
@@ -40,11 +41,37 @@ export function OrdersPayNote({ payments }: { payments: PaymentsMode | null }) {
   if (payments === 'demo') return <DemoBanner compact />;
   if (payments === 'none')
     return (
-      <PaymentsSoon compact title="Custom models open soon">
-        You can fill in a request and see its price, but it can’t be paid for or sent to the studio yet. Designing, saving and sharing your kitchens are free and work today.
+      <PaymentsSoon compact title="Payments open soon">
+        This order can’t be paid for yet. Designing, saving and sharing your kitchens are free and work today.
       </PaymentsSoon>
     );
   return null;
+}
+
+/**
+ * For anyone not on the Contractor plan: custom 3D models come with it (3 a month, made by our
+ * studio). A contractor whose plan lapsed is told their requests already sent are still delivered.
+ */
+export function PlanOnlyNote({ lapsed = false, terms }: { lapsed?: boolean; terms?: { perMonth: number } }) {
+  const n = terms?.perMonth ?? 3;
+  if (lapsed) {
+    return (
+      <div className="ord-plan-note" role="note">
+        <b>Your Contractor plan has lapsed, so new requests are paused.</b>
+        <span>
+          Requests you already sent are still being made and delivered. Renew in <a href={hrefFor({ name: 'billing' })}>Billing</a> to get {n} custom models a month again.
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="ord-plan-note" role="note">
+      <b>Custom 3D models come with the Contractor plan.</b>
+      <span>
+        It includes {n} a month, made by our studio from your product’s name, UPC and a photo, and they land privately in your catalog. <a href={hrefFor({ name: 'pricing' })}>See the Contractor plan</a>
+      </span>
+    </div>
+  );
 }
 
 /** The banner every payment screen carries while the DEMO provider is active (PRODUCT_SPEC §7.4). */

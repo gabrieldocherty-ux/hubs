@@ -1,43 +1,40 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError } from '../../lib/api';
-import { AgreeToPay } from '../../components/PaymentNotice';
-import { usePayments } from '../../lib/config';
-import { isPaymentsUnavailable, markCheckout, PAYMENTS_SOON } from '../../lib/payments';
 import { hrefFor, navigate, useHashQuery } from '../../lib/router';
 import { useSession } from '../../store/useSession';
 import { getProduct, CATEGORIES } from '../../data/catalog';
 import { PRODUCT_TYPES, productType, productTypeFor } from '../../data/productTypes';
 import type { Product } from '../../types';
-import { goToCheckout, ordersApi, type OrderRequest, type OrderTarget, type QuoteWire, type TiersWire } from './api';
+import { ordersApi, type Allowance, type ModelTerms, type OrderRequest, type OrderTarget } from './api';
 import { BarcodeScanDialog, readBarcodeFromImage, useCanScan } from './BarcodeScan';
 import {
+  allowanceCheck,
   BRAND_MAX,
   briefSize,
-  dollars,
   errorTarget,
   itemProblem,
   itemProblems,
   MAX_NOTES,
   MAX_REFERENCES,
+  modelsLeftText,
   NAME_MAX,
-  packFill,
-  packOf,
   parseInches,
+  resetDay,
   STEPS,
   type DraftItem,
   type ItemField,
   type Step,
 } from './model';
 import { formatUpc, normalizeUpc, UPC_FORMAT_LABEL, upcWhileTyping } from './upc';
-import { OrdersPayNote, OrdersShell } from './parts';
+import { OrdersShell, PlanOnlyNote } from './parts';
 
-/** v2: the product list (Model packs). A v1 draft (tiers) is left alone and simply not loaded. */
+/** v2: the product list. A v1 draft (tiers) is left alone and simply not loaded; a v2 draft's old rush flag is ignored. */
 const DRAFT_KEY = 'blumodel.orders.request.v2';
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-/** Counts only, until the server's pack loads; every price shown comes from the server. */
-const DEFAULT_PER_PACK = 8;
 const DEFAULT_MAX_ITEMS = 40;
+/** What the plan includes, until the server's terms load (the server is the authority). */
+const DEFAULT_TERMS: ModelTerms = { perMonth: 3, finishesPerModel: 3, revisions: 2, businessDays: 15 };
 
 type Thumbs = Record<string, { url: string; name: string }>;
 
@@ -45,7 +42,6 @@ interface Draft {
   target: OrderTarget;
   brandId: string;
   line: string;
-  rush: boolean;
   items: DraftItem[];
   /** The product whose form is open (-1: none). */
   open: number;
@@ -70,9 +66,10 @@ const blankItem = (from?: Partial<DraftItem>): DraftItem => ({
 function loadDraft(): Draft | null {
   try {
     const raw = sessionStorage.getItem(DRAFT_KEY);
-    const d = raw ? (JSON.parse(raw) as Draft) : null;
+    const d = raw ? (JSON.parse(raw) as Draft & { rush?: boolean }) : null;
     if (!d || !Array.isArray(d.items) || !d.items.length) return null;
-    return { ...d, items: d.items.map((it) => blankItem(it)), step: d.step === 'review' ? 'review' : 'products', open: Number.isInteger(d.open) ? d.open : 0 };
+    const { rush: _rush, ...rest } = d;
+    return { ...rest, items: d.items.map((it) => blankItem(it)), step: d.step === 'review' ? 'review' : 'products', open: Number.isInteger(d.open) ? d.open : 0 };
   } catch {
     return null;
   }
@@ -105,9 +102,10 @@ function itemFromProduct(p: Product): DraftItem {
 }
 
 /**
- * `#/orders/new?ref=&brand=&target=`: Make custom models. A product list (name, brand, UPC, size,
- * photos and notes for each), priced by the server in Model packs of up to 8 products, then
- * review & pay with one checkout. Contractors use the same form with target "My catalog".
+ * `#/orders/new?ref=&brand=&target=`: Make custom models, a Contractor-plan feature. A product list
+ * (name, brand, UPC, size, photos and notes for each); each product is one of the plan's included
+ * models (3 a month, made by our studio). Nothing is paid: the request goes straight to the studio,
+ * and the server checks the plan and the allowance again when it arrives.
  */
 export function RequestWizard() {
   const query = useHashQuery();
@@ -119,35 +117,32 @@ export function RequestWizard() {
   // A contractor's own brand page is fed from My catalog (Brand page → Products), so the only brand
   // drafts an order can target are partner brands the user belongs to.
   const brands = (user?.brands ?? []).filter((b) => b.kind !== 'contractor' && b.status !== 'rejected' && b.status !== 'suspended');
-  const isContractor = user?.plan?.id === 'contractor';
 
   const initial = (): Draft => {
     const saved = refId || askedBrand || askedTarget ? null : loadDraft();
     if (saved) return saved;
-    let target: OrderTarget = 'customer';
+    let target: OrderTarget = 'contractor';
     let brandId = '';
     if (askedBrand && brands.some((b) => b.id === askedBrand)) {
       target = 'brand';
       brandId = askedBrand;
-    } else if (askedTarget === 'contractor' && isContractor) target = 'contractor';
+    } else if (askedTarget === 'customer') target = 'customer';
     const ref = refId ? getProduct(refId) : undefined;
     const item = ref && ref.source !== 'missing' ? itemFromProduct(ref) : blankItem();
-    return { target, brandId, line: '', rush: false, items: [item], open: 0, step: 'products', files: {} };
+    return { target, brandId, line: '', items: [item], open: 0, step: 'products', files: {} };
   };
 
   const [d, setD] = useState<Draft>(initial);
-  const [tiers, setTiers] = useState<TiersWire | null>(null);
-  const [quote, setQuote] = useState<QuoteWire | null>(null);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [allowance, setAllowance] = useState<Allowance | null>(null);
+  const [terms, setTerms] = useState<ModelTerms>(DEFAULT_TERMS);
   const [error, setError] = useState<string | null>(null);
   /** Field errors are shown once someone tries to move on (or the server sends some back). */
   const [showErrors, setShowErrors] = useState(false);
   const [serverErrors, setServerErrors] = useState<Record<number, Partial<Record<string, string>>>>({});
-  const [paying, setPaying] = useState(false);
+  const [sending, setSending] = useState(false);
   const [refProduct, setRefProduct] = useState<Product | null>(() => (refId ? getProduct(refId) ?? null : null));
 
-  const perPack = tiers?.pack.productsPerPack ?? DEFAULT_PER_PACK;
-  const maxItems = tiers?.maxItems ?? DEFAULT_MAX_ITEMS;
+  const maxItems = DEFAULT_MAX_ITEMS;
   const update = (patch: Partial<Draft>) => setD((x) => ({ ...x, ...patch }));
   const updateItem = (i: number, patch: Partial<DraftItem>) => {
     setD((x) => ({ ...x, items: x.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) }));
@@ -164,10 +159,18 @@ export function RequestWizard() {
   useEffect(() => saveDraft(d), [d]);
 
   useEffect(() => {
+    let live = true;
     ordersApi
-      .tiers()
-      .then(setTiers)
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Could not load the Model pack price.'));
+      .allowance()
+      .then((r) => {
+        if (!live) return;
+        setAllowance(r.allowance);
+        setTerms(r.terms);
+      })
+      .catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load your Contractor plan’s models.'));
+    return () => {
+      live = false;
+    };
   }, []);
 
   // `?ref=` for a server product the registry hasn't loaded yet.
@@ -187,36 +190,12 @@ export function RequestWizard() {
     };
   }, [refId, refProduct]);
 
-  // The live quote: the server prices the request from its product count and rush; nothing here computes a price.
   const count = d.items.length;
-  useEffect(() => {
-    const ctl = new AbortController();
-    const t = setTimeout(() => {
-      ordersApi
-        .quote({ rush: d.rush, products: count }, ctl.signal)
-        .then((r) => {
-          setQuote(r.quote);
-          setQuoteError(null);
-        })
-        .catch((e) => {
-          if (e instanceof DOMException && e.name === 'AbortError') return;
-          setQuoteError(e instanceof ApiError ? e.message : 'Couldn’t get a price.');
-        });
-    }, 150);
-    return () => {
-      clearTimeout(t);
-      ctl.abort();
-    };
-  }, [count, d.rush]);
-
-  const payments = usePayments();
-  const demo = payments === 'demo';
-  /** Payments aren't open: the request can be filled in and priced, not paid for. */
-  const soon = payments === 'none';
-
+  const fits = allowanceCheck(count, allowance);
   const stepIndex = STEPS.findIndex((s) => s.id === d.step);
   const firstBad = d.items.findIndex((it) => itemProblem(it));
-  const fill = packFill(count, perPack);
+  /** Products can be added up to what is left (or to the request limit). */
+  const room = allowance?.active ? Math.min(maxItems, Math.max(allowance.left, 1)) : maxItems;
 
   const go = (step: Step) => {
     setError(null);
@@ -241,7 +220,7 @@ export function RequestWizard() {
     });
 
   const addItem = () => {
-    if (count >= maxItems) return;
+    if (count >= room) return;
     const prev = d.items[d.items.length - 1];
     // A line of products usually shares its type and brand: start the next one from them.
     setD((x) => ({ ...x, items: [...x.items, blankItem({ productTypeId: prev?.productTypeId ?? '', brand: prev?.brand ?? '' })], open: x.items.length, step: 'products' }));
@@ -253,24 +232,23 @@ export function RequestWizard() {
     setServerErrors({});
   };
 
-  const pay = async () => {
+  const send = async () => {
     if (firstBad >= 0) {
       setShowErrors(true);
       update({ step: 'products', open: firstBad });
       focusItem(firstBad);
       return;
     }
-    if (soon) {
-      setError(PAYMENTS_SOON);
+    if (!fits.ok) {
+      setError(fits.message);
       return;
     }
-    setPaying(true);
+    setSending(true);
     setError(null);
     const body: OrderRequest = {
       target: d.target,
       ...(d.target === 'brand' ? { brandId: d.brandId } : {}),
       ...(d.line.trim() ? { line: d.line.trim() } : {}),
-      rush: d.rush,
       items: d.items.map((it) => {
         const t = productType(it.productTypeId);
         const upc = it.upc.trim() ? normalizeUpc(it.upc) : null;
@@ -294,29 +272,23 @@ export function RequestWizard() {
         };
       }),
     };
-    let orderId: string | null = null;
     try {
-      orderId = (await ordersApi.create(body)).order.id;
+      const r = await ordersApi.create(body);
       saveDraft(null);
-      const { url } = await ordersApi.checkout(orderId);
-      markCheckout('order', hrefFor({ name: 'orders', rest: orderId }));
-      goToCheckout(url);
+      navigate({ name: 'orders', rest: r.order.id });
     } catch (e) {
-      setPaying(false);
-      if (orderId) {
-        // The order exists; its page can retry the payment.
-        navigate({ name: 'orders', rest: orderId }, true);
-        return;
-      }
-      const msg = isPaymentsUnavailable(e) ? PAYMENTS_SOON : e instanceof ApiError ? e.message : 'Could not send the request.';
-      const errors = e instanceof ApiError ? ((e.body as { errors?: { field: string; message: string }[] } | undefined)?.errors ?? []) : [];
+      setSending(false);
+      const b = e instanceof ApiError ? (e.body as { errors?: { field: string; message: string }[]; allowance?: Allowance } | undefined) : undefined;
+      // The server is the authority on the allowance: take what it says (another request may have used it).
+      if (b?.allowance) setAllowance(b.allowance);
+      const errors = b?.errors ?? [];
       const byItem: Record<number, Record<string, string>> = {};
       for (const fe of errors) {
         const at = errorTarget(fe.field);
         if (at) (byItem[at.item] ??= {})[at.field] = fe.message;
       }
-      const firstItem = Object.keys(byItem).map(Number).sort((a, b) => a - b)[0];
-      setError(errors[0]?.message ?? msg);
+      const firstItem = Object.keys(byItem).map(Number).sort((a, b2) => a - b2)[0];
+      setError(errors[0]?.message ?? (e instanceof ApiError ? e.message : 'Could not send the request.'));
       if (firstItem != null) {
         setServerErrors(byItem);
         setShowErrors(true);
@@ -328,13 +300,30 @@ export function RequestWizard() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (d.step === 'review') void pay();
+    if (d.step === 'review') void send();
     else toReview();
   };
 
-  const showTarget = brands.length > 0 || isContractor;
+  // Not on the Contractor plan (or it lapsed): custom models come with it. Nothing to fill in.
+  if (allowance && !allowance.active) {
+    return (
+      <OrdersShell>
+        <div className="ord-head">
+          <div>
+            <span className="eyebrow">Make custom models</span>
+            <h1>New request</h1>
+          </div>
+        </div>
+        <PlanOnlyNote lapsed={!!user?.contractor} terms={terms} />
+        <p className="fine">
+          <a href={hrefFor({ name: 'orders', rest: '' })}>Back to your custom models</a>
+        </p>
+      </OrdersShell>
+    );
+  }
+
+  const showTarget = brands.length > 0;
   const lineMatters = d.target !== 'customer' || count > 1;
-  const packPrice = tiers ? dollars(tiers.pack.priceCents) : null;
 
   return (
     <OrdersShell wide>
@@ -343,17 +332,11 @@ export function RequestWizard() {
           <span className="eyebrow">Make custom models</span>
           <h1>New request</h1>
           <p className="muted">
-            List the products you want modelled. A Model pack covers up to {perPack} products{packPrice ? ` for ${packPrice}` : ''}: one true-to-size 3D model each, up to{' '}
-            {tiers?.pack.finishesPerModel ?? 3} finishes and {tiers?.pack.revisions ?? 2} revision rounds per model.
+            List the products you want modelled. Your Contractor plan includes {terms.perMonth} custom 3D models a month, made by our studio: one true-to-size model per product, with up to{' '}
+            {terms.finishesPerModel} finishes and {terms.revisions} revision rounds each.
           </p>
         </div>
       </div>
-      <OrdersPayNote payments={payments} />
-      {askedTarget === 'contractor' && !isContractor && (
-        <div className="auth-note">
-          Modelling straight into My catalog is part of the Contractor plan. <a href={hrefFor({ name: 'pro', rest: '' })}>See the Contractor plan</a>, or request models for your own kitchens below.
-        </div>
-      )}
 
       <ol className="ord-steps" aria-label="Steps">
         {STEPS.map((s, i) => (
@@ -376,15 +359,7 @@ export function RequestWizard() {
           {d.step === 'products' && (
             <section>
               <h2>Products to model</h2>
-              {showTarget && (
-                <TargetPicker
-                  value={d.target}
-                  brandId={d.brandId}
-                  brands={brands}
-                  isContractor={isContractor}
-                  onChange={(target, brandId) => update({ target, brandId })}
-                />
-              )}
+              <TargetPicker value={d.target} brandId={d.brandId} brands={brands} show={showTarget} onChange={(target, brandId) => update({ target, brandId })} />
               {refProduct && d.items.some((it) => it.refProductId === refProduct.id) && (
                 <div className="ord-ref">
                   {refProduct.thumbnailUrl && <img src={refProduct.thumbnailUrl} alt="" />}
@@ -404,39 +379,33 @@ export function RequestWizard() {
               )}
 
               <ol className="ord-products" aria-label="Products in this request">
-                {d.items.map((it, i) => {
-                  const startsPack = i > 0 && i % perPack === 0;
-                  return (
-                    <li key={i} id={`ord-product-${i}`} className="ord-product-slot">
-                      {startsPack && (
-                        <p className="ord-pack-divider">
-                          <span>Pack {packOf(i, perPack)}</span>
-                        </p>
-                      )}
-                      <ProductCard
-                        index={i}
-                        item={it}
-                        pack={count > perPack ? packOf(i, perPack) : 0}
-                        open={d.open === i}
-                        onToggle={() => update({ open: d.open === i ? -1 : i })}
-                        onChange={(patch) => updateItem(i, patch)}
-                        onRemove={count > 1 ? () => removeItem(i) : undefined}
-                        files={d.files}
-                        addFiles={addFiles}
-                        showErrors={showErrors}
-                        serverErrors={serverErrors[i] ?? {}}
-                      />
-                    </li>
-                  );
-                })}
+                {d.items.map((it, i) => (
+                  <li key={i} id={`ord-product-${i}`} className="ord-product-slot">
+                    <ProductCard
+                      index={i}
+                      item={it}
+                      open={d.open === i}
+                      onToggle={() => update({ open: d.open === i ? -1 : i })}
+                      onChange={(patch) => updateItem(i, patch)}
+                      onRemove={count > 1 ? () => removeItem(i) : undefined}
+                      files={d.files}
+                      addFiles={addFiles}
+                      showErrors={showErrors}
+                      serverErrors={serverErrors[i] ?? {}}
+                    />
+                  </li>
+                ))}
               </ol>
 
-              <PackMeter count={count} perPack={perPack} maxItems={maxItems} packPrice={packPrice} />
-              {count < maxItems ? (
+              <AllowanceMeter allowance={allowance} count={count} />
+              {count < room ? (
                 <button type="button" className="btn ord-add-item" onClick={addItem}>
                   + Add a product
-                  {fill.roomInLast === 0 ? <span className="ord-add-note"> · starts pack {fill.packs + 1}</span> : null}
                 </button>
+              ) : allowance?.active ? (
+                <p className="fine">
+                  That’s every model left this month. <NeedMore allowance={allowance} />
+                </p>
               ) : (
                 <p className="fine">One request holds up to {maxItems} products. Send the rest as another request.</p>
               )}
@@ -445,7 +414,7 @@ export function RequestWizard() {
 
           {d.step === 'review' && (
             <section>
-              <h2>Review &amp; pay</h2>
+              <h2>Review &amp; send</h2>
               <ul className="ord-review">
                 {d.items.map((it, i) => {
                   const t = productType(it.productTypeId);
@@ -459,13 +428,10 @@ export function RequestWizard() {
                           {count > 1 ? `${i + 1}. ` : ''}
                           {it.name.trim() || 'Unnamed product'}
                         </b>
-                        <span>
-                          {[it.brand.trim(), t?.label, briefSize(it)].filter(Boolean).join(' · ')}
-                        </span>
+                        <span>{[it.brand.trim(), t?.label, briefSize(it)].filter(Boolean).join(' · ')}</span>
                         <span>
                           {upc?.ok ? <span className="mono">UPC {formatUpc(upc.code)}</span> : it.barcodeFileId ? 'Barcode photo' : 'No UPC'} · {it.referenceFileIds.length} photo
                           {it.referenceFileIds.length === 1 ? '' : 's'}
-                          {count > perPack ? ` · Pack ${packOf(i, perPack)}` : ''}
                         </span>
                       </div>
                       <div className="ord-review-actions">
@@ -485,7 +451,7 @@ export function RequestWizard() {
                   );
                 })}
               </ul>
-              <button type="button" className="btn ord-add-item" onClick={addItem} disabled={count >= maxItems}>
+              <button type="button" className="btn ord-add-item" onClick={addItem} disabled={count >= room}>
                 + Add a product
               </button>
               {lineMatters && (
@@ -496,15 +462,6 @@ export function RequestWizard() {
                   <input value={d.line} maxLength={60} onChange={(e) => update({ line: e.target.value })} />
                 </label>
               )}
-              <label className="ord-extra ord-rush">
-                <div>
-                  <b>Rush</b>
-                  <p className="fine">
-                    +{tiers?.rushPct ?? 50}% on every pack for half the turnaround <em>(applies to every product in this request)</em>.
-                  </p>
-                </div>
-                <input type="checkbox" checked={d.rush} onChange={(e) => update({ rush: e.target.checked })} />
-              </label>
               <p className="muted">
                 {d.target === 'brand'
                   ? `Delivered models become drafts in ${brands.find((b) => b.id === d.brandId)?.name ?? 'your brand'}, ready for review before they go live.`
@@ -518,6 +475,12 @@ export function RequestWizard() {
           {error && (
             <div className="auth-error" role="alert">
               {error}
+              {allowance?.active && !fits.ok && (
+                <>
+                  {' '}
+                  <NeedMore allowance={allowance} />
+                </>
+              )}
             </div>
           )}
           {showErrors && firstBad >= 0 && d.step === 'products' && !error && (
@@ -537,8 +500,8 @@ export function RequestWizard() {
               </a>
             )}
             {d.step === 'review' ? (
-              <button type="submit" className="btn primary big" disabled={paying || !quote || soon} title={soon ? 'Payments aren’t open yet' : undefined}>
-                {soon ? 'Payments open soon' : paying ? 'Starting checkout…' : quote ? `Pay ${dollars(quote.amountCents)}${demo ? ' (demo)' : ''}` : 'Pay'}
+              <button type="submit" className="btn primary big" disabled={sending || !allowance || !fits.ok} title={!fits.ok && fits.message ? fits.message : undefined}>
+                {sending ? 'Sending…' : `Send ${count} product${count === 1 ? '' : 's'} to the studio`}
               </button>
             ) : (
               <button type="submit" className="btn primary big">
@@ -546,38 +509,34 @@ export function RequestWizard() {
               </button>
             )}
           </div>
-          {d.step === 'review' && !soon && <AgreeToPay className="ord-agree" />}
         </form>
 
-        <aside className="ord-card ord-quote" aria-live="polite" aria-label="Price">
-          <span className="eyebrow">Your quote{demo ? ' · demo payments' : ''}</span>
-          {!quote ? (
-            <p className="muted">Getting the price…</p>
+        <aside className="ord-card ord-quote" aria-live="polite" aria-label="Your plan’s models">
+          <span className="eyebrow">Included in your plan</span>
+          {!allowance ? (
+            <p className="muted">Checking your models…</p>
           ) : (
             <>
               <ul className="ord-lines">
-                {quote.lines.map((l, i) => (
-                  <li key={i}>
-                    <span>{l.label}</span>
-                    <span className="mono">{dollars(l.amountCents)}</span>
-                  </li>
-                ))}
+                <li>
+                  <span>
+                    {count} custom 3D model{count === 1 ? '' : 's'}
+                  </span>
+                  <span className="mono">Included</span>
+                </li>
+                <li>
+                  <span>Left this month after this request</span>
+                  <span className="mono">
+                    {Math.max(0, allowance.left - count)} of {allowance.total}
+                  </span>
+                </li>
               </ul>
-              <div className="ord-total">
-                <span>Total</span>
-                <b className="mono">{dollars(quote.amountCents)}</b>
-              </div>
               <p className="ord-due">
-                Delivered in about {quote.dueBusinessDays} business days after payment{d.rush ? ' (rush)' : ''}. {tiers?.pack.revisions ?? 2} revision rounds and up to{' '}
-                {tiers?.pack.finishesPerModel ?? 3} finishes per model included.
+                Delivered in about {terms.businessDays} business days. {terms.revisions} revision rounds and up to {terms.finishesPerModel} finishes per model included.
               </p>
+              <p className="fine">Your allowance resets on {resetDay(allowance.resetsAt)}; unused models don’t carry over.</p>
             </>
           )}
-          {quoteError && <p className="ord-bad">{quoteError}</p>}
-          <p className="fine">
-            Prices are set by BluModel Studio’s servers: a pack costs the same with 1 product or {perPack}.
-            {demo ? ' Demo payments: no money moves.' : soon ? ' Payments open soon.' : ' You pay on Stripe’s secure page; BluModel Studio never sees card details.'}
-          </p>
         </aside>
       </div>
     </OrdersShell>
@@ -586,23 +545,68 @@ export function RequestWizard() {
 
 // ─── Pieces ─────────────────────────────────────────────────────────────
 
+/** "Need more? Contact us": the support address when this server has one. */
+function NeedMore({ allowance }: { allowance: Allowance }) {
+  if (!allowance.supportEmail) return <span>Need more? Contact BluModel Studio.</span>;
+  return (
+    <span>
+      Need more?{' '}
+      <a href={`mailto:${allowance.supportEmail}?subject=${encodeURIComponent('More custom models this month')}`}>Contact us</a>
+    </span>
+  );
+}
+
+/** "2 of 3 models left this month · resets November 15", and what this request uses. */
+function AllowanceMeter({ allowance, count }: { allowance: Allowance | null; count: number }) {
+  if (!allowance) return <div className="ord-pack-meter">Checking your models…</div>;
+  const over = count > allowance.left;
+  return (
+    <div className={over ? 'ord-pack-meter ord-allowance over' : 'ord-pack-meter ord-allowance'} aria-live="polite">
+      <div className="ord-pack-bar" aria-hidden>
+        {Array.from({ length: Math.max(allowance.total, 1) }, (_, i) => {
+          const usedBefore = allowance.total - allowance.left;
+          const cls = i < usedBefore ? 'used' : i < usedBefore + count ? 'on' : '';
+          return <span key={i} className={cls} />;
+        })}
+      </div>
+      <p>
+        <b>
+          {modelsLeftText(allowance)} - resets {resetDay(allowance.resetsAt)}
+        </b>
+        {allowance.granted > 0 ? ` (includes ${allowance.granted} extra from BluModel)` : ''}.{' '}
+        {over
+          ? allowance.left > 0
+            ? `This request has ${count} products: remove ${count - allowance.left} to send it.`
+            : 'You can prepare this request now and send it after the reset.'
+          : `This request uses ${count}.`}
+        {over && (
+          <>
+            {' '}
+            <NeedMore allowance={allowance} />
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
 function TargetPicker({
   value,
   brandId,
   brands,
-  isContractor,
+  show,
   onChange,
 }: {
   value: OrderTarget;
   brandId: string;
   brands: { id: string; name: string }[];
-  isContractor: boolean;
+  show: boolean;
   onChange: (target: OrderTarget, brandId: string) => void;
 }) {
   const v = value === 'brand' ? `brand:${brandId}` : value;
   return (
     <label className="field ord-target">
-      <span>Who are the models for?</span>
+      <span>Where should the models go?</span>
       <select
         className="ord-select"
         value={v}
@@ -612,42 +616,16 @@ function TargetPicker({
           else onChange(x as OrderTarget, '');
         }}
       >
-        <option value="customer">My kitchens (private to me)</option>
-        {isContractor && <option value="contractor">My catalog (Contractor)</option>}
-        {brands.map((b) => (
-          <option key={b.id} value={`brand:${b.id}`}>
-            My brand: {b.name}
-          </option>
-        ))}
+        <option value="contractor">My catalog (ready to price and place)</option>
+        <option value="customer">Just my kitchens (private to me)</option>
+        {show &&
+          brands.map((b) => (
+            <option key={b.id} value={`brand:${b.id}`}>
+              My brand: {b.name}
+            </option>
+          ))}
       </select>
     </label>
-  );
-}
-
-/** "Pack 1: 3 of 8 products. 5 more fit at no extra cost." Counts only; prices come from the quote. */
-function PackMeter({ count, perPack, maxItems, packPrice }: { count: number; perPack: number; maxItems: number; packPrice: string | null }) {
-  const { packs, inLast, roomInLast } = packFill(count, perPack);
-  const full = roomInLast === 0;
-  return (
-    <div className="ord-pack-meter" aria-live="polite">
-      <div className="ord-pack-bar" aria-hidden>
-        {Array.from({ length: perPack }, (_, i) => (
-          <span key={i} className={i < inLast ? 'on' : ''} />
-        ))}
-      </div>
-      <p>
-        <b>
-          {packs > 1 ? `Pack ${packs}: ` : ''}
-          {inLast} of {perPack} products
-        </b>
-        {packs > 1 ? ` · ${count} products in ${packs} packs` : ''}.{' '}
-        {full
-          ? count >= maxItems
-            ? 'This request is full.'
-            : `This pack is full: the next product starts pack ${packs + 1}${packPrice ? ` (+${packPrice})` : ''}.`
-          : `${roomInLast} more fit in this pack at no extra cost.`}
-      </p>
-    </div>
   );
 }
 
@@ -663,7 +641,6 @@ function FieldError({ id, message }: { id: string; message?: string | null }) {
 function ProductCard({
   index,
   item,
-  pack,
   open,
   onToggle,
   onChange,
@@ -675,8 +652,6 @@ function ProductCard({
 }: {
   index: number;
   item: DraftItem;
-  /** Which pack it is in, shown once there is more than one (0: don't show). */
-  pack: number;
   open: boolean;
   onToggle: () => void;
   onChange: (patch: Partial<DraftItem>) => void;
@@ -709,7 +684,6 @@ function ProductCard({
             <b>{item.name.trim() || `Product ${n}`}</b>
             <span>{showErrors && hasProblem ? <span className="ord-bad-inline">Needs a fix</span> : summary}</span>
           </span>
-          {pack > 0 && <span className="ord-pack-badge">Pack {pack}</span>}
           <span className="ord-product-chev" aria-hidden>
             {open ? '−' : '+'}
           </span>

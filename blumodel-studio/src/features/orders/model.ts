@@ -1,4 +1,5 @@
 import type { OrderStatus } from '../../types/platform';
+import { money } from '../../lib/money';
 import { normalizeUpc } from './upc';
 
 /**
@@ -25,6 +26,15 @@ export const STUDIO_STATUS_LABEL: Record<OrderStatus, string> = {
   ...STATUS_LABEL,
   paid: 'Paid',
 };
+
+/**
+ * An order's status as its buyer reads it. A request included in the Contractor plan was never
+ * paid for, so its queued state is "Submitted", not "Paid".
+ */
+export function statusLabel(o: { status: OrderStatus; pricing?: string }, studio = false): string {
+  if (o.pricing === 'plan' && o.status === 'paid') return studio ? 'Submitted' : 'Submitted · in the queue';
+  return (studio ? STUDIO_STATUS_LABEL : STATUS_LABEL)[o.status];
+}
 
 export type Tone = 'neutral' | 'active' | 'ok' | 'warn' | 'bad';
 
@@ -76,10 +86,16 @@ export function inFilter(s: OrderStatus, f: ListFilter): boolean {
   }
 }
 
-/** $129, $1,234.50: whole dollars stay whole. */
+/** $129, $1,234.50: whole dollars stay whole (no currency code; see orderPrice for an order's). */
 export function dollars(cents: number): string {
   const whole = cents % 100 === 0;
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
+}
+
+/** What an order cost: "Included" for a plan request, else its stored amount in its own currency ("$279 USD"). */
+export function orderPrice(o: { pricing?: string; amountCents: number; currency?: string | null }): string {
+  if (o.pricing === 'plan') return 'Included';
+  return money(o.amountCents, o.currency || 'usd');
 }
 
 export function shortDate(ms: number | null | undefined): string {
@@ -160,7 +176,7 @@ export const MAX_NOTES = 4000;
 export const NAME_MAX = 80;
 export const BRAND_MAX = 60;
 
-/** One product on the request form (Make custom models: a product list priced in Model packs). */
+/** One product on the request form (Make custom models: one model per product, from the plan's allowance). */
 export interface DraftItem {
   productTypeId: string;
   name: string;
@@ -182,7 +198,7 @@ export type ItemField = 'productTypeId' | 'name' | 'brand' | 'upc' | 'widthIn' |
 export type Step = 'products' | 'review';
 export const STEPS: { id: Step; label: string }[] = [
   { id: 'products', label: 'Products' },
-  { id: 'review', label: 'Review & pay' },
+  { id: 'review', label: 'Review & send' },
 ];
 
 const LIMITS = { widthIn: [1, 240], depthIn: [1, 120], heightIn: [0.25, 144] } as const;
@@ -225,19 +241,31 @@ export function errorTarget(field: string): { item: number; field: string } | nu
   return m ? { item: Number(m[1]), field: m[2] || 'name' } : null;
 }
 
-/**
- * How a count of products fills Model packs: how many packs, and how many products the last
- * pack still has room for. Counts only; every price comes from the server's quote.
- */
-export function packFill(products: number, perPack: number): { packs: number; inLast: number; roomInLast: number } {
-  const n = Math.max(0, Math.floor(products));
-  const packs = Math.max(1, Math.ceil(n / perPack));
-  const inLast = n === 0 ? 0 : n - (packs - 1) * perPack;
-  return { packs, inLast, roomInLast: perPack - inLast };
+/** "November 15": the day an allowance resets (UTC, as the server counts it). */
+export function resetDay(ms: number): string {
+  return new Date(ms).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'UTC' });
 }
 
-/** Which pack (1-based) the product at `index` falls in. */
-export const packOf = (index: number, perPack: number) => Math.floor(index / perPack) + 1;
+/** "2 of 3 models left this month", "No models left this month". */
+export function modelsLeftText(a: { left: number; total: number }): string {
+  if (a.left <= 0) return 'No models left this month';
+  return `${a.left} of ${a.total} model${a.total === 1 ? '' : 's'} left this month`;
+}
+
+/**
+ * What the request form says about a product count against the allowance: whether it can be sent,
+ * and if not, why (one model per product).
+ */
+export function allowanceCheck(products: number, a: { active: boolean; left: number; resetsAt: number } | null): { ok: boolean; message: string | null } {
+  if (!a) return { ok: false, message: null };
+  if (!a.active) return { ok: false, message: 'Custom 3D models come with the Contractor plan.' };
+  if (a.left <= 0) return { ok: false, message: `You’ve used this month’s models. Your allowance resets on ${resetDay(a.resetsAt)}.` };
+  if (products > a.left) {
+    const extra = products - a.left;
+    return { ok: false, message: `This request has ${products} products and you have ${a.left} model${a.left === 1 ? '' : 's'} left this month. Remove ${extra}, or send ${extra === 1 ? 'it' : 'them'} after ${resetDay(a.resetsAt)}.` };
+  }
+  return { ok: true, message: null };
+}
 
 /** "33″ W × 22″ D", "Size not given": a brief's size, whatever of it was given. */
 export function briefSize(b: { widthIn?: number | null; depthIn?: number | null; heightIn?: number | null }): string {
@@ -251,8 +279,12 @@ export function briefSize(b: { widthIn?: number | null; depthIn?: number | null;
 
 const LEGACY_TIER_NAME: Record<string, string> = { simple: 'Simple', standard: 'Standard', complex: 'Complex' };
 
-/** What an order's pricing is called: "Model pack", "2 Model packs", or an old tier for orders made before packs. */
+/**
+ * What an order's terms are called: "Included in your plan" for a Contractor-plan request, or what
+ * an order paid for before 2026-10-15 was sold as ("Model pack", "Standard model").
+ */
 export function pricingLabel(o: { tier: string; packs?: number; pricing?: string }): string {
+  if (o.pricing === 'plan' || o.tier === 'plan') return 'Included in your plan';
   if (o.pricing === 'pack' || o.tier === 'pack') return (o.packs ?? 1) > 1 ? `${o.packs} Model packs` : 'Model pack';
   return `${LEGACY_TIER_NAME[o.tier] ?? 'Custom'} model`;
 }

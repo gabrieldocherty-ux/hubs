@@ -7,8 +7,9 @@ import { productType } from '../../data/productTypes';
 import type { Product } from '../../types';
 import type { FileWire, GlbMeta, OrderStatus } from '../../types/platform';
 import { ProductStage } from '../viewer';
-import { ordersApi, type GlbReport, type OrderDetail, type OrderItemWire, type QueueOrder, type StudioFilter } from './api';
-import { briefSize, dollars, pricingLabel, shortDate, sizeText, STUDIO_STATUS_LABEL } from './model';
+import { money } from '../../lib/money';
+import { ordersApi, type Allowance, type GlbReport, type ModelGrant, type OrderDetail, type OrderItemWire, type QueueOrder, type StudioFilter } from './api';
+import { briefSize, modelsLeftText, orderPrice, pricingLabel, resetDay, shortDate, sizeText, statusLabel } from './model';
 import { formatUpc, UPC_FORMAT_LABEL } from './upc';
 import { StatusPill, Timeline } from './parts';
 import './orders.css';
@@ -21,7 +22,7 @@ const FILTERS: { id: StudioFilter; label: string; count?: OrderStatus[] }[] = [
   { id: 'delivered', label: 'Delivered', count: ['delivered'] },
   { id: 'completed', label: 'Completed', count: ['completed'] },
   { id: 'refunded', label: 'Refunded', count: ['refunded'] },
-  { id: 'all', label: 'All paid' },
+  { id: 'all', label: 'All' },
 ];
 const REFUNDABLE: OrderStatus[] = ['paid', 'in_progress', 'revision_requested', 'delivered'];
 const MATERIALS = ['paint', 'metal', 'wood', 'stone', 'ceramic', 'glass', 'fabric', 'leather', 'panel', 'foliage'] as const;
@@ -29,7 +30,9 @@ const MATERIALS = ['paint', 'metal', 'wood', 'stone', 'ceramic', 'glass', 'fabri
 /**
  * `#/admin/studio` (PRODUCT_SPEC §7.6): the custom-model queue, due date first, with a detail
  * drawer (brief, private reference photos, timeline, notes) where the studio starts, notes and
- * delivers: GLB + thumbnail upload, the GLB report, then the product preview. Admins also refund.
+ * delivers: GLB + thumbnail upload, the GLB report, then the product preview. Requests included in
+ * the Contractor plan can be cancelled before work starts (the models go back to the contractor's
+ * allowance); admins grant extra models for the current period, and refund orders paid before.
  */
 export default function AdminStudioTab() {
   const role = useSession((s) => s.user?.role);
@@ -68,16 +71,22 @@ export default function AdminStudioTab() {
           </button>
         ))}
       </div>
+      {role === 'admin' && (
+        <details className="ord-grant-lookup">
+          <summary>Extra models for a contractor</summary>
+          <GrantLookup />
+        </details>
+      )}
       {error && <div className="auth-error">{error}</div>}
       {!rows && !error && <div className="ord-loading">Loading the queue…</div>}
-      {rows && rows.length === 0 && <p className="empty-note">Nothing here. Paid orders show up in this queue, oldest due date first.</p>}
+      {rows && rows.length === 0 && <p className="empty-note">Nothing here. Contractors’ requests show up in this queue, oldest due date first.</p>}
       {rows && rows.length > 0 && (
         <table className="admin-table ord-queue">
           <thead>
             <tr>
               <th>Due</th>
               <th>Order</th>
-              <th>Pack</th>
+              <th>Terms</th>
               <th>Status</th>
               <th>Assignee</th>
               <th className="ord-num">Amount</th>
@@ -112,14 +121,14 @@ export default function AdminStudioTab() {
                     {o.extras.rush ? ' · rush' : ''}
                   </td>
                   <td className="ord-q-status">
-                    <StatusPill status={o.status} label={STUDIO_STATUS_LABEL[o.status]} />
+                    <StatusPill status={o.status} label={statusLabel(o, true)} />
                   </td>
                   <td className="ord-q-who">
                     <span className="ord-q-label">Assignee: </span>
                     {o.assignee ?? '—'}
                   </td>
                   <td className="ord-num ord-q-amt">
-                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className="mono">{dollars(o.amountCents)}</span>
+                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className="mono">{orderPrice(o)}</span>
                   </td>
                 </tr>
               );
@@ -192,6 +201,8 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
   const catalog = useCatalog((s) => s.byId);
   const [confirmRefund, setConfirmRefund] = useState(false);
   const [refundNote, setRefundNote] = useState('');
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelNote, setCancelNote] = useState('');
   const [delivered, setDelivered] = useState<{ product: Product; report: GlbReport } | null>(null);
 
   useEffect(() => {
@@ -231,12 +242,13 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
     <>
       <span className="eyebrow">
         {o.target === 'brand' ? `Brand order · ${o.brandName ?? ''}` : o.target === 'contractor' ? 'Contractor order' : 'Customer order'}
+        {o.pricing === 'plan' ? ' · included in the Contractor plan' : ''}
       </span>
       <span className="ord-id mono">{o.id}</span>
       <h2>{o.title}</h2>
       <div className="ord-head-meta">
-        <StatusPill status={o.status} label={STUDIO_STATUS_LABEL[o.status]} />
-        <span className="mono">{dollars(o.amountCents)}</span>
+        <StatusPill status={o.status} label={statusLabel(o, true)} />
+        <span className="mono">{orderPrice(o)}</span>
         {o.provider === 'demo' && <span className="ord-tag">Demo payment</span>}
         {o.dueAt && <span className="muted">Due {shortDate(o.dueAt)}</span>}
       </div>
@@ -268,7 +280,12 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
                   {busy === 'start' ? 'Starting…' : o.status === 'revision_requested' ? 'Start the revision' : 'Start (assign to me)'}
                 </button>
               )}
-              {isAdmin && REFUNDABLE.includes(o.status) && !confirmRefund && (
+              {o.pricing === 'plan' && o.status === 'paid' && !confirmCancel && (
+                <button className="btn" onClick={() => setConfirmCancel(true)} disabled={!!busy}>
+                  Cancel request…
+                </button>
+              )}
+              {isAdmin && o.pricing !== 'plan' && REFUNDABLE.includes(o.status) && !confirmRefund && (
                 <button className="btn" onClick={() => setConfirmRefund(true)} disabled={!!busy}>
                   Refund…
                 </button>
@@ -277,7 +294,7 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
             {confirmRefund && (
               <div className="ord-deliver">
                 <b>
-                  Refund {dollars(o.amountCents)}
+                  Refund {money(o.amountCents, o.currency)}
                   {o.provider === 'demo' ? ' (demo: nothing moves)' : ' through Stripe'}?
                 </b>
                 <p className="fine">The order becomes refunded. A delivered model stays in kitchens that use it, but leaves the buyer’s catalog.</p>
@@ -304,6 +321,49 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
               </div>
             )}
           </section>
+
+          {confirmCancel && (
+            <section className="ord-deliver">
+              <b>Cancel this request?</b>
+              <p className="fine">
+                Only before work starts. {o.items.length === 1 ? 'Its model goes' : `Its ${o.items.length} models go`} back to the contractor’s allowance for that month, and they see your reason on the timeline.
+              </p>
+              <label className="field">
+                <span>
+                  Reason <em>(shown to the contractor)</em>
+                </span>
+                <input value={cancelNote} maxLength={2000} onChange={(e) => setCancelNote(e.target.value)} placeholder="e.g. We can’t source enough of this product to model it." />
+              </label>
+              <div className="ord-actions">
+                <button className="btn" onClick={() => setConfirmCancel(false)}>
+                  Keep it
+                </button>
+                <button
+                  className="btn primary"
+                  disabled={busy === 'cancel'}
+                  onClick={async () => {
+                    if (await run('cancel', () => ordersApi.studioCancel(id, cancelNote.trim()))) setConfirmCancel(false);
+                  }}
+                >
+                  {busy === 'cancel' ? 'Cancelling…' : 'Cancel request'}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {data.buyerAllowance && data.buyer && (
+            <section>
+              <h3>Contractor’s models</h3>
+              <AllowanceSummary allowance={data.buyerAllowance} grants={data.buyerAllowance.grants} />
+              {isAdmin && (
+                <GrantForm
+                  userId={data.buyer.id}
+                  allowance={data.buyerAllowance}
+                  onGranted={(a, grants) => setData((d) => (d ? { ...d, buyerAllowance: { ...a, grants } } : d))}
+                />
+              )}
+            </section>
+          )}
 
           {o.status === 'in_progress' && (
             <section>
@@ -365,7 +425,7 @@ function StudioDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
                     {it.brief.name}
                   </b>
                   <span>
-                    {o.pricing === 'pack' ? (o.packs > 1 ? `Pack ${it.pack ?? 1}` : 'Model pack') : pricingLabel({ tier: it.tier })}
+                    {o.pricing === 'plan' ? 'Included' : o.pricing === 'pack' ? (o.packs > 1 ? `Pack ${it.pack ?? 1}` : 'Model pack') : pricingLabel({ tier: it.tier })}
                     {it.extraFinishes ? ` + ${it.extraFinishes} finishes` : ''}
                   </span>
                 </div>
@@ -665,6 +725,122 @@ function Report({ report, onUseModelSize }: { report: GlbReport; onUseModelSize?
         </ul>
       ) : (
         <div>✓ No warnings.</div>
+      )}
+    </div>
+  );
+}
+
+// ─── The Contractor plan's included models (admin) ──────────────────────
+
+/** "1 of 3 models left this month - resets November 15 (2 extra granted)". */
+function AllowanceSummary({ allowance: a, grants }: { allowance: Allowance; grants: ModelGrant[] }) {
+  if (!a.active) return <p className="fine">Not on the Contractor plan now: nothing new can be requested. Requests already sent are still delivered.</p>;
+  return (
+    <>
+      <p>
+        <b>
+          {modelsLeftText(a)} - resets {resetDay(a.resetsAt)}
+        </b>
+        <span className="muted">
+          {' '}
+          · {a.used} used of {a.included} included{a.granted ? ` + ${a.granted} extra` : ''}
+        </span>
+      </p>
+      {grants.length > 0 && (
+        <ul className="ord-grants">
+          {grants.map((g) => (
+            <li key={g.id} className="fine">
+              +{g.models} on {shortDate(g.createdAt)}
+              {g.note ? `: ${g.note}` : ''}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+/** Admin: give a contractor extra models for their current period only (audit-logged on the server). */
+function GrantForm({ userId, allowance, onGranted }: { userId: string; allowance: Allowance; onGranted: (a: Allowance, grants: ModelGrant[]) => void }) {
+  const [models, setModels] = useState(1);
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  if (!allowance.active) return null;
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await ordersApi.grantModels({ userId, models, note: note.trim() });
+      onGranted(r.allowance, r.grants);
+      setMsg({ ok: true, text: `Granted ${models} extra model${models === 1 ? '' : 's'} until ${resetDay(r.allowance.resetsAt)}.` });
+      setNote('');
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof ApiError ? err.message : 'That didn’t work.' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="ord-grant-form" onSubmit={submit}>
+      <label className="field">
+        <span>Extra models this month</span>
+        <input type="number" min={1} max={50} value={models} onChange={(e) => setModels(Math.max(1, Math.min(50, Math.round(Number(e.target.value) || 1))))} />
+      </label>
+      <label className="field">
+        <span>
+          Note <em>(for the audit log)</em>
+        </span>
+        <input value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Launch week: their first cabinet line" />
+      </label>
+      <button className="btn" type="submit" disabled={busy}>
+        {busy ? 'Granting…' : 'Grant'}
+      </button>
+      {msg && <p className={msg.ok ? 'fine' : 'auth-error'}>{msg.text}</p>}
+    </form>
+  );
+}
+
+/** Admin: find a contractor by email, see where they stand, grant extra models. */
+function GrantLookup() {
+  const [email, setEmail] = useState('');
+  const [found, setFound] = useState<{ user: { id: string; email: string; name: string }; allowance: Allowance; grants: ModelGrant[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const look = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setFound(null);
+    try {
+      setFound(await ordersApi.modelAllowance({ email: email.trim() }));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not look that account up.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="ord-grant-box">
+      <form className="ord-grant-form" onSubmit={look}>
+        <label className="field">
+          <span>Contractor’s email</span>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+        </label>
+        <button className="btn" type="submit" disabled={busy || !email.trim()}>
+          {busy ? 'Looking…' : 'Look up'}
+        </button>
+      </form>
+      {error && <p className="auth-error">{error}</p>}
+      {found && (
+        <>
+          <p className="fine">
+            {found.user.name} · {found.user.email}
+          </p>
+          <AllowanceSummary allowance={found.allowance} grants={found.grants} />
+          <GrantForm userId={found.user.id} allowance={found.allowance} onGranted={(allowance, grants) => setFound((f) => (f ? { ...f, allowance, grants } : f))} />
+        </>
       )}
     </div>
   );

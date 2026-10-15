@@ -13,6 +13,7 @@ import type { Plan } from '../../types/platform';
 import plansJson from '../../data/plans.json';
 import { amount, money, planPrice } from '../../lib/money';
 import { billingApi, goToCheckout, type BillingMe } from './api';
+import { call } from '../../lib/api';
 import { loadEntitlements } from './entitlements';
 import './billing.css';
 
@@ -36,6 +37,21 @@ export default function BillingPage() {
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [back, setBack] = useState<(CheckoutReturn & { confirmed: boolean }) | null>(null);
   const portalDemo = query.get('portal') === 'demo';
+  /** Custom-model orders this account has (paid ones from before 2026-10-15 have their own receipts). */
+  const [orderCount, setOrderCount] = useState(0);
+  const isContractor = useSession((s) => s.user?.plan.id === 'contractor' || !!s.user?.contractor);
+
+  useEffect(() => {
+    // Contractors reach their requests from the account menu; anyone else is pointed there from here.
+    if (isContractor) return;
+    let live = true;
+    call<{ orders: unknown[] }>('GET', '/api/orders')
+      .then((r) => live && setOrderCount(r.orders.length))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [isContractor]);
 
   const apply = useCallback(async (next: BillingMe) => {
     setMe(next);
@@ -289,6 +305,11 @@ export default function BillingPage() {
                 </table>
               )}
             </section>
+            {orderCount > 0 && (
+              <p className="fine">
+                Custom 3D model orders have their own receipts: <a href="#/orders">see your custom model orders</a>.
+              </p>
+            )}
             <p className="fine billing-policy">
               Cancelling keeps your plan until the end of the period you’ve paid for. See the <a href="#/refunds">Refund policy</a> and the <a href="#/terms">Terms</a>.
             </p>

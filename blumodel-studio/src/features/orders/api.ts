@@ -3,14 +3,20 @@ import type { Product } from '../../types';
 import type { FileWire, ModelTierId, Order, OrderBrief, OrderEvent, OrderStatus } from '../../types/platform';
 
 /**
- * Package C's calls (BUILD_PLAN §7 C-T4). Every amount comes from the server: the client only
- * sends the products and the rush flag, and shows what the server quotes back.
+ * Package C's calls (BUILD_PLAN §7 C-T4). Since 2026-10-15 custom models aren't sold: the
+ * Contractor plan includes 3 a month, made by our studio, and a request is submitted against that
+ * allowance (the server checks it). Orders paid for before then keep their stored price and
+ * currency, and every amount shown comes from the server.
  */
 
 export type OrderTarget = 'customer' | 'brand' | 'contractor';
 export type PaymentsProvider = 'demo' | 'stripe';
-/** 'pack' since Model packs; the retired per-product tiers on orders placed before them. */
-export type ItemTier = 'pack' | ModelTierId;
+/** 'plan' for a request included in the Contractor plan; 'pack' and the retired tiers on orders paid for before. */
+export type ItemTier = 'plan' | 'pack' | ModelTierId;
+/** 'plan': included in the Contractor plan (nothing paid); 'pack' / 'tiers': paid for before 2026-10-15. */
+export type OrderPricing = 'plan' | 'pack' | 'tiers';
+/** The order's provider: 'plan' when nothing was paid. */
+export type OrderProvider = PaymentsProvider | 'plan';
 export type UpcFormat = 'upc_a' | 'ean_13' | 'ean_8';
 
 /**
@@ -39,7 +45,7 @@ export interface OrderItemWire {
   tier: ItemTier;
   extraFinishes: number;
   amountCents: number;
-  /** Which Model pack the product is in (1-based); absent on orders from before packs. */
+  /** Which Model pack the product was in (1-based), on the few pack orders only. */
   pack?: number;
   deliverableProductId: string | null;
   deliveredAt: number | null;
@@ -53,9 +59,10 @@ export interface QuoteLine {
 }
 
 export interface QuoteWire {
-  pricing?: 'pack' | 'tiers';
+  pricing?: OrderPricing;
   amountCents: number;
-  currency: 'usd';
+  /** The order's own currency: 'cad' since 2026-10-15, 'usd' before. */
+  currency: string;
   dueBusinessDays: number;
   lines: QuoteLine[];
   rush?: boolean;
@@ -67,12 +74,18 @@ export interface QuoteWire {
  * An order as `GET /api/orders` returns it: the platform `Order` widened with the §13.3 fields
  * (contractor target, multi-item lines) and a few derived ones the server computes.
  */
-export interface OrderWire extends Omit<Order, 'target' | 'brief' | 'tier'> {
+export interface OrderWire extends Omit<Order, 'target' | 'brief' | 'tier' | 'provider' | 'currency'> {
   target: OrderTarget;
   tier: ItemTier;
-  /** 'pack' for a Model-pack order, 'tiers' for one placed before packs (kept at its own price). */
-  pricing: 'pack' | 'tiers';
+  provider: OrderProvider;
+  currency: string;
+  /** 'plan' when included in the Contractor plan; 'pack' / 'tiers' for one paid for before (at its own price). */
+  pricing: OrderPricing;
   packs: number;
+  /** The allowance period a plan request counted against. */
+  planPeriod: { start: number; end: number } | null;
+  /** Whether the buyer can still withdraw it (a plan request not started) or cancel it (unpaid). */
+  cancellable: boolean;
   finishesPerModel: number | null;
   brief: OrderBriefWire;
   brandName: string | null;
@@ -100,33 +113,60 @@ export interface OrderDetail {
   deliverables: Product[];
   /** Staff only. */
   buyer?: { id: string; name: string; email: string } | null;
+  /** Staff only, on a plan request: where the contractor stands this period. */
+  buyerAllowance?: (Allowance & { grants: ModelGrant[] }) | null;
   assignee: string | null;
   payments: PaymentsProvider;
   demo: boolean;
 }
 
-/** The Model pack as the server publishes it. */
-export interface PackWire {
-  id: 'pack';
-  name: string;
-  priceCents: number;
-  productsPerPack: number;
+/** What every model included in the Contractor plan comes with. */
+export interface ModelTerms {
+  /** Custom 3D models a month on the Contractor plan; unused ones don't roll over. */
+  perMonth: number;
   finishesPerModel: number;
   revisions: number;
+  /** Turnaround in business days after the request is submitted. */
   businessDays: number;
-  extraPackBusinessDays: number;
 }
 
-/** `GET /api/orders/tiers`: the one offer (a Model pack) and the request limits. */
+/** `GET /api/orders/tiers`: the included models' terms and the request limits. Nothing has a price. */
 export interface TiersWire {
-  pricing: 'pack';
-  pack: PackWire;
-  rushPct: number;
+  pricing: 'plan';
+  plan: 'contractor';
+  models: ModelTerms;
   maxItems: number;
-  maxPacks: number;
-  currency: 'usd';
+  currency: string;
   payments: PaymentsProvider;
   demo: boolean;
+}
+
+/** Where a user stands this period (`active` is false without the Contractor plan). */
+export interface Allowance {
+  active: boolean;
+  plan: string;
+  included: number;
+  granted: number;
+  used: number;
+  total: number;
+  left: number;
+  periodStart: number;
+  periodEnd: number;
+  /** When unused models lapse and the allowance starts again. */
+  resetsAt: number;
+  supportEmail: string | null;
+}
+
+/** Extra models an admin gave a contractor for one period. */
+export interface ModelGrant {
+  id: string;
+  userId: string;
+  models: number;
+  periodStart: number;
+  periodEnd: number;
+  note: string;
+  grantedBy: string | null;
+  createdAt: number;
 }
 
 export interface RequestItem {
@@ -137,7 +177,6 @@ export interface OrderRequest {
   target: OrderTarget;
   brandId?: string;
   line?: string;
-  rush: boolean;
   items: RequestItem[];
 }
 
@@ -194,10 +233,10 @@ const enc = encodeURIComponent;
 
 export const ordersApi = {
   tiers: () => call<TiersWire>('GET', '/api/orders/tiers'),
-  quote: (body: { rush: boolean; products: number }, signal?: AbortSignal) =>
-    call<{ quote: QuoteWire }>('POST', '/api/orders/quote', body, { signal }),
-  create: (body: OrderRequest) => call<{ order: OrderWire; quote: QuoteWire }>('POST', '/api/orders', body),
-  list: () => call<{ orders: OrderWire[]; payments: PaymentsProvider; demo: boolean }>('GET', '/api/orders'),
+  allowance: () => call<{ allowance: Allowance; terms: ModelTerms }>('GET', '/api/orders/allowance'),
+  /** Submits a request against the allowance: 403 without the plan, 409 past it (both carry `allowance`). */
+  create: (body: OrderRequest) => call<{ order: OrderWire; quote: QuoteWire; allowance: Allowance }>('POST', '/api/orders', body),
+  list: () => call<{ orders: OrderWire[]; allowance: Allowance; payments: PaymentsProvider; demo: boolean }>('GET', '/api/orders'),
   get: (id: string, sync?: { sessionId?: string | null }) => {
     const q = new URLSearchParams();
     if (sync) {
@@ -217,6 +256,8 @@ export const ordersApi = {
   queue: (status: StudioFilter = 'active') =>
     call<{ orders: QueueOrder[]; counts: Partial<Record<OrderStatus, number>>; filter: StudioFilter }>('GET', `/api/studio/orders?status=${enc(status)}`),
   start: (id: string) => call<OrderDetail>('POST', `/api/studio/orders/${enc(id)}/start`),
+  /** Cancels a plan request before work starts: its models go back to the contractor's allowance. */
+  studioCancel: (id: string, note: string) => call<OrderDetail>('POST', `/api/studio/orders/${enc(id)}/cancel`, { note }),
   note: (id: string, note: string) => call<OrderDetail>('POST', `/api/studio/orders/${enc(id)}/note`, { note }),
   report: (id: string, item: number, modelFileId: string) =>
     call<{ report: GlbReport }>('GET', `/api/studio/orders/${enc(id)}/report?item=${item}&modelFileId=${enc(modelFileId)}`),
@@ -226,6 +267,13 @@ export const ordersApi = {
   // admin
   refund: (id: string, note: string) => call<OrderDetail>('POST', `/api/admin/orders/${enc(id)}/refund`, { note }),
   revenue: (days: number) => call<RevenueWire>('GET', `/api/admin/revenue?days=${days}`),
+  modelAllowance: (who: { email?: string; userId?: string }) =>
+    call<{ user: { id: string; email: string; name: string }; allowance: Allowance; grants: ModelGrant[] }>(
+      'GET',
+      `/api/admin/model-allowance?${who.userId ? `userId=${enc(who.userId)}` : `email=${enc(who.email ?? '')}`}`,
+    ),
+  grantModels: (body: { userId?: string; email?: string; models: number; note: string }) =>
+    call<{ grant: ModelGrant; allowance: Allowance; grants: ModelGrant[] }>('POST', '/api/admin/model-grants', body),
 
   // files
   uploadFile: (file: Blob, kind: 'reference' | 'model' | 'image', name: string) => upload<{ file: FileWire }>('/api/files', file, { kind, name }),

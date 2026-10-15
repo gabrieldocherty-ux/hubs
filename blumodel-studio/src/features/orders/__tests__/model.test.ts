@@ -11,12 +11,15 @@ import {
   itemProblem,
   itemProblems,
   LIST_FILTERS,
-  packFill,
-  packOf,
+  allowanceCheck,
+  modelsLeftText,
+  orderPrice,
   parseInches,
   pricingLabel,
   relative,
+  resetDay,
   STATUS_LABEL,
+  statusLabel,
   statusTone,
   type DraftItem,
 } from '../model';
@@ -130,12 +133,25 @@ test('UPCs: UPC-A, EAN-13, EAN-8, check digits, normalising, and the same answer
   assert.equal(expandUpcE('9425261'), null);
 });
 
-test('packs: counts only (the server prices), which pack a product is in, labels', () => {
-  assert.deepEqual(packFill(1, 8), { packs: 1, inLast: 1, roomInLast: 7 });
-  assert.deepEqual(packFill(8, 8), { packs: 1, inLast: 8, roomInLast: 0 });
-  assert.deepEqual(packFill(9, 8), { packs: 2, inLast: 1, roomInLast: 7 });
-  assert.deepEqual(packFill(0, 8), { packs: 1, inLast: 0, roomInLast: 8 });
-  assert.deepEqual([0, 7, 8, 15, 16].map((i) => packOf(i, 8)), [1, 1, 2, 2, 3]);
+test('the plan’s allowance: one model per product, what is left, the reset day; plan requests read as included', () => {
+  const resets = Date.UTC(2026, 10, 15, 12);
+  assert.equal(resetDay(resets), 'November 15');
+  assert.equal(modelsLeftText({ left: 2, total: 3 }), '2 of 3 models left this month');
+  assert.equal(modelsLeftText({ left: 0, total: 3 }), 'No models left this month');
+  const a = { active: true, left: 2, resetsAt: resets };
+  assert.deepEqual(allowanceCheck(2, a), { ok: true, message: null });
+  assert.equal(allowanceCheck(3, a).ok, false);
+  assert.equal(allowanceCheck(3, a).message, 'This request has 3 products and you have 2 models left this month. Remove 1, or send it after November 15.');
+  assert.match(allowanceCheck(1, { ...a, left: 0 }).message!, /used this month’s models.*November 15/);
+  assert.match(allowanceCheck(1, { ...a, active: false }).message!, /Contractor plan/);
+  assert.deepEqual(allowanceCheck(1, null), { ok: false, message: null });
+  // A plan request was never paid for: "Submitted", "Included".
+  assert.equal(statusLabel({ status: 'paid', pricing: 'plan' }), 'Submitted · in the queue');
+  assert.equal(statusLabel({ status: 'paid', pricing: 'plan' }, true), 'Submitted');
+  assert.equal(statusLabel({ status: 'paid', pricing: 'tiers' }), 'Paid · in the queue');
+  assert.equal(orderPrice({ pricing: 'plan', amountCents: 0, currency: 'cad' }), 'Included');
+  assert.equal(orderPrice({ pricing: 'tiers', amountCents: 27_900, currency: 'usd' }), '$279 USD', 'an order from before keeps its currency');
+  assert.equal(pricingLabel({ tier: 'plan', pricing: 'plan', packs: 0 }), 'Included in your plan');
   assert.equal(pricingLabel({ tier: 'pack', pricing: 'pack', packs: 1 }), 'Model pack');
   assert.equal(pricingLabel({ tier: 'pack', pricing: 'pack', packs: 2 }), '2 Model packs');
   assert.equal(pricingLabel({ tier: 'standard', pricing: 'tiers', packs: 0 }), 'Standard model');

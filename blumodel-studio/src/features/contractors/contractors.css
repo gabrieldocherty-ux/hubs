@@ -1171,3 +1171,27 @@
   color: var(--ink);
   font-size: 15px;
 }
+
+/* The Contractor plan's included models (Make custom models). */
+.pro-allowance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.pro-allowance b {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.pro-allowance.empty {
+  border-left-color: var(--warn);
+}

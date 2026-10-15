@@ -10,7 +10,8 @@ import { productType } from '../../data/productTypes';
 import type { Product } from '../../types';
 import { ProductStage } from '../viewer';
 import { goToCheckout, ordersApi, type OrderDetail, type OrderWire } from './api';
-import { briefSize, dollars, isUnpaid, pricingLabel, relative, shortDate, sizeText } from './model';
+import { briefSize, isUnpaid, orderPrice, pricingLabel, relative, shortDate, sizeText } from './model';
+import { money } from '../../lib/money';
 import { formatUpc } from './upc';
 import { OrdersPayNote, OrdersShell, StatusPill, Timeline } from './parts';
 
@@ -101,7 +102,11 @@ export function OrderPage({ id }: { id: string }) {
     );
 
   const o = data.order;
-  const unpaid = isUnpaid(o.status);
+  /** Included in the Contractor plan: nothing was or will be paid. */
+  const plan = o.pricing === 'plan';
+  const unpaid = !plan && isUnpaid(o.status);
+  /** A price in the order's own currency ("$279 USD" for an order from before 2026-10-15). */
+  const price = (cents: number) => money(cents, o.currency);
   const roundsLeft = Math.max(0, o.revisionsAllowed - o.revisionsUsed);
   const deliverables = data.deliverables;
   // A demo-provider order says so once it's paid (nothing was charged), or while the demo is what pays it.
@@ -120,8 +125,8 @@ export function OrderPage({ id }: { id: string }) {
           </span>
           <h1>{o.title}</h1>
           <div className="ord-head-meta">
-            <StatusPill status={o.status} />
-            <span className="mono">{dollars(o.amountCents)}</span>
+            <StatusPill status={o.status} pricing={o.pricing} />
+            <span className="mono">{orderPrice(o)}</span>
             {demoOrder && <span className="ord-tag">Demo payment</span>}
             <span className="muted">Requested {shortDate(o.createdAt)}</span>
           </div>
@@ -141,12 +146,17 @@ export function OrderPage({ id }: { id: string }) {
           {unpaid && (
             <>
               <button className="btn primary big" onClick={pay} disabled={!!busy || soon} title={soon ? 'Payments aren’t open yet' : undefined}>
-                {soon ? 'Payments open soon' : busy === 'pay' ? 'Starting checkout…' : `Pay ${dollars(o.amountCents)}${payments === 'demo' ? ' (demo)' : ''}`}
+                {soon ? 'Payments open soon' : busy === 'pay' ? 'Starting checkout…' : `Pay ${price(o.amountCents)}${payments === 'demo' ? ' (demo)' : ''}`}
               </button>
               <button className="btn big" onClick={() => setDialog('cancel')} disabled={!!busy}>
                 Cancel request
               </button>
             </>
+          )}
+          {plan && o.cancellable && (
+            <button className="btn big" onClick={() => setDialog('cancel')} disabled={!!busy}>
+              Withdraw request
+            </button>
           )}
           {o.status === 'delivered' && (
             <>
@@ -216,8 +226,14 @@ export function OrderPage({ id }: { id: string }) {
                     {o.items.length > 1 ? `${it.idx + 1}. ` : ''}
                     {it.brief.name}
                   </b>
-                  {/* A pack's price is per pack, on the receipt; an older order priced each product. */}
-                  {o.pricing === 'pack' ? <span className="ord-pack-badge">{o.packs > 1 ? `Pack ${it.pack ?? 1}` : 'Model pack'}</span> : <span className="mono">{dollars(it.amountCents)}</span>}
+                  {/* Included in the plan; a pack's price was per pack (on the receipt); an older order priced each product. */}
+                  {plan ? (
+                    <span className="ord-pack-badge">Included</span>
+                  ) : o.pricing === 'pack' ? (
+                    <span className="ord-pack-badge">{o.packs > 1 ? `Pack ${it.pack ?? 1}` : 'Model pack'}</span>
+                  ) : (
+                    <span className="mono">{price(it.amountCents)}</span>
+                  )}
                 </div>
                 <dl className="ord-dl">
                   <div>
@@ -241,9 +257,9 @@ export function OrderPage({ id }: { id: string }) {
                     <dd>{briefSize(it.brief)}</dd>
                   </div>
                   <div>
-                    <dt>{o.pricing === 'pack' ? 'Includes' : 'Tier'}</dt>
+                    <dt>{plan || o.pricing === 'pack' ? 'Includes' : 'Tier'}</dt>
                     <dd>
-                      {o.pricing === 'pack'
+                      {plan || o.pricing === 'pack'
                         ? `Up to ${o.finishesPerModel ?? 3} finishes, ${o.revisionsAllowed} revision rounds`
                         : `${pricingLabel({ tier: it.tier })}${it.extraFinishes ? ` + ${it.extraFinishes} extra finish${it.extraFinishes === 1 ? '' : 'es'}` : ''}`}
                       {o.extras.rush ? ' · rush' : ''}
@@ -274,19 +290,39 @@ export function OrderPage({ id }: { id: string }) {
               </ul>
             </>
           )}
-          <h3 className="mini-label">Receipt</h3>
-          <ul className="ord-lines">
-            {o.quote.lines.map((l, i) => (
-              <li key={i}>
-                <span>{l.label}</span>
-                <span className="mono">{dollars(l.amountCents)}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="ord-total">
-            <span>Total{demoOrder ? ' (demo, nothing charged)' : ''}</span>
-            <b className="mono">{dollars(o.amountCents)}</b>
-          </div>
+          {plan ? (
+            <>
+              <h3 className="mini-label">Your plan</h3>
+              <ul className="ord-lines">
+                {o.quote.lines.map((l, i) => (
+                  <li key={i}>
+                    <span>{l.label}</span>
+                    <span className="mono">Included</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="fine">
+                Nothing to pay: {o.items.length === 1 ? 'this model came' : 'these models came'} from your Contractor plan’s monthly allowance
+                {o.planPeriod ? ` (${shortDate(o.planPeriod.start)} to ${shortDate(o.planPeriod.end - 1)})` : ''}.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="mini-label">Receipt</h3>
+              <ul className="ord-lines">
+                {o.quote.lines.map((l, i) => (
+                  <li key={i}>
+                    <span>{l.label}</span>
+                    <span className="mono">{price(l.amountCents)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="ord-total">
+                <span>Total{demoOrder ? ' (demo, nothing charged)' : ''}</span>
+                <b className="mono">{price(o.amountCents)}</b>
+              </div>
+            </>
+          )}
         </section>
 
         <section className="ord-section" aria-labelledby="ord-tl">
@@ -296,14 +332,18 @@ export function OrderPage({ id }: { id: string }) {
       </div>
 
       {dialog === 'cancel' && (
-        <Dialog title="Cancel this request?" onClose={() => setDialog(null)}>
-          <p className="dialog-copy">It hasn’t been paid, so nothing is charged. You can start a new request any time.</p>
+        <Dialog title={plan ? 'Withdraw this request?' : 'Cancel this request?'} onClose={() => setDialog(null)}>
+          <p className="dialog-copy">
+            {plan
+              ? `The studio hasn’t started on it, so ${o.items.length === 1 ? 'its model goes' : `its ${o.items.length} models go`} back to this month’s allowance.`
+              : 'It hasn’t been paid, so nothing is charged. You can start a new request any time.'}
+          </p>
           <div className="modal-actions">
             <button className="btn" onClick={() => setDialog(null)} data-autofocus>
               Keep it
             </button>
             <button className="btn primary" onClick={() => void run('cancel', () => ordersApi.cancel(id))} disabled={busy === 'cancel'}>
-              {busy === 'cancel' ? 'Cancelling…' : 'Cancel request'}
+              {busy === 'cancel' ? (plan ? 'Withdrawing…' : 'Cancelling…') : plan ? 'Withdraw request' : 'Cancel request'}
             </button>
           </div>
         </Dialog>
@@ -344,6 +384,8 @@ function StatusMessage({ order: o, roundsLeft }: { order: OrderWire; roundsLeft:
     case 'payment_failed':
       return <p>The payment was declined and nothing was charged. Try again{o.expiresAt ? ` before it expires ${relative(o.expiresAt)}` : ''}.</p>;
     case 'paid':
+      if (o.pricing === 'plan')
+        return <p>Sent. Your request is in the studio queue{o.dueAt ? `, due by ${shortDate(o.dueAt)}` : ''}. You can withdraw it until the studio starts.</p>;
       return <p>Paid. Your request is in the studio queue{o.dueAt ? `, due by ${shortDate(o.dueAt)}` : ''}.</p>;
     case 'in_progress':
       return <p>The studio is modelling it{o.dueAt ? `, due by ${shortDate(o.dueAt)}` : ''}. You’ll see it here as soon as it’s delivered.</p>;
@@ -360,7 +402,7 @@ function StatusMessage({ order: o, roundsLeft }: { order: OrderWire; roundsLeft:
     case 'refunded':
       return <p>Refunded{o.refundedAt ? ` on ${shortDate(o.refundedAt)}` : ''}. Kitchens that already use the model keep it, but it’s no longer in your catalog.</p>;
     case 'cancelled':
-      return <p>Cancelled. Nothing was charged.</p>;
+      return <p>{o.pricing === 'plan' ? 'Cancelled before work started. Its models went back to that month’s allowance.' : 'Cancelled. Nothing was charged.'}</p>;
     case 'expired':
       return <p>This request expired before it was paid. Nothing was charged.</p>;
   }

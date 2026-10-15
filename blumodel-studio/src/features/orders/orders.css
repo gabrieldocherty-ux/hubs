@@ -1915,3 +1915,90 @@
     gap: 8px;
   }
 }
+
+/* ─── Custom models included in the Contractor plan (2026-10-15) ───────── */
+.ord-plan-note,
+.ord-allowance-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.ord-plan-note b,
+.ord-allowance-bar b {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.ord-allowance-bar.empty {
+  border-left-color: var(--warn);
+}
+
+.ord-allowance .ord-pack-bar {
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  grid-auto-columns: 12px;
+}
+
+.ord-pack-bar span.used {
+  background: var(--ink-3);
+  opacity: 0.45;
+}
+
+.ord-allowance.over {
+  border-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.ord-grant-lookup {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.ord-grant-lookup summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ord-grant-box {
+  margin-top: 10px;
+}
+
+.ord-grant-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+  margin: 8px 0;
+}
+
+.ord-grant-form .field {
+  flex: 1 1 180px;
+  margin: 0;
+}
+
+.ord-grant-form .field input[type='number'] {
+  max-width: 120px;
+}
+
+.ord-grant-form > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.ord-grants {
+  margin: 4px 0 8px;
+  padding-left: 18px;
+}

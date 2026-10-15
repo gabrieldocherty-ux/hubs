@@ -2,13 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { ApiError } from '../../lib/api';
 import { usePayments } from '../../lib/config';
 import { hrefFor } from '../../lib/router';
-import { ordersApi, type OrderWire } from './api';
-import { dollars, inFilter, isUnpaid, LIST_FILTERS, pricingLabel, relative, shortDate, type ListFilter } from './model';
-import { OrdersPayNote, OrdersShell, StatusPill } from './parts';
+import { useSession } from '../../store/useSession';
+import { ordersApi, type Allowance, type OrderWire } from './api';
+import { inFilter, isUnpaid, LIST_FILTERS, modelsLeftText, orderPrice, pricingLabel, relative, resetDay, shortDate, type ListFilter } from './model';
+import { OrdersPayNote, OrdersShell, PlanOnlyNote, StatusPill } from './parts';
 
-/** `#/orders` ("Make custom models"): the buyer's custom-model requests, newest first, with status chips. */
+/**
+ * `#/orders` ("Make custom models"): the buyer's custom-model requests, newest first, with status
+ * chips. A contractor sees what is left of this month's included models and can start a request;
+ * anyone else sees their earlier orders read-only (receipts and refunds keep working) and a note
+ * that custom models come with the Contractor plan.
+ */
 export function OrdersList() {
   const [orders, setOrders] = useState<OrderWire[] | null>(null);
+  const [allowance, setAllowance] = useState<Allowance | null>(null);
+  const user = useSession((s) => s.user);
   const payments = usePayments();
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<ListFilter>('all');
@@ -20,6 +28,7 @@ export function OrdersList() {
       .then((r) => {
         if (!live) return;
         setOrders(r.orders);
+        setAllowance(r.allowance);
       })
       .catch((e) => live && setError(e instanceof ApiError ? e.message : 'Could not load your custom models.'));
     return () => {
@@ -33,31 +42,59 @@ export function OrdersList() {
     return c;
   }, [orders]);
   const shown = (orders ?? []).filter((o) => inFilter(o.status, filter));
+  const active = allowance?.active === true;
+  // Payments only matter for an order from before that still waits to be paid.
+  const unpaidOrder = (orders ?? []).some((o) => o.pricing !== 'plan' && isUnpaid(o.status));
 
   return (
     <OrdersShell>
       <div className="ord-head">
         <div>
           <span className="eyebrow">Custom 3D models</span>
-          <h1>Make custom models</h1>
-          <p className="muted">Can’t find your range, sink or light in the catalog? The BluModel 3D studio models it to scale, and it lands privately in your catalog.</p>
+          <h1>{active ? 'Make custom models' : 'Custom models'}</h1>
+          <p className="muted">
+            {active
+              ? 'Can’t find your range, sink or cabinet in the catalog? The BluModel 3D studio models it to scale from its name, UPC and a photo, and it lands privately in your catalog.'
+              : 'Your custom 3D model orders and their receipts.'}
+          </p>
         </div>
-        <a className="btn primary big" href={hrefFor({ name: 'orders', rest: 'new' })}>
-          Make a custom model
-        </a>
+        {active && (
+          <a className="btn primary big" href={hrefFor({ name: 'orders', rest: 'new' })}>
+            Make a custom model
+          </a>
+        )}
       </div>
-      <OrdersPayNote payments={payments} />
+      {active && allowance && (
+        <div className={allowance.left > 0 ? 'ord-allowance-bar' : 'ord-allowance-bar empty'} role="status">
+          <b>
+            {modelsLeftText(allowance)} - resets {resetDay(allowance.resetsAt)}
+          </b>
+          <span>
+            {allowance.left > 0
+              ? `Your Contractor plan includes ${allowance.included} custom 3D models a month${allowance.granted ? `, plus ${allowance.granted} extra this month` : ''}. Unused models don’t carry over.`
+              : 'You’ve used this month’s models. '}
+            {allowance.left <= 0 && allowance.supportEmail && (
+              <>
+                Need more? <a href={`mailto:${allowance.supportEmail}?subject=${encodeURIComponent('More custom models this month')}`}>Contact us</a>
+              </>
+            )}
+          </span>
+        </div>
+      )}
+      {allowance && !active && <PlanOnlyNote lapsed={!!user?.contractor} />}
+      {unpaidOrder && <OrdersPayNote payments={payments} />}
       {error && <div className="auth-error">{error}</div>}
       {!orders && !error && <div className="ord-loading">Loading your custom models…</div>}
-      {orders && orders.length === 0 && (
+      {orders && orders.length === 0 && active && (
         <section className="ord-empty">
           <h2>No custom models yet</h2>
-          <p>List the products you want: a name, the UPC from the box and a photo or two. The studio builds a true-to-size 3D model of each. A Model pack covers up to 8 products.</p>
+          <p>List the products you want: a name, the UPC from the box and a photo or two. The studio builds a true-to-size 3D model of each, one from your allowance per product.</p>
           <a className="btn primary" href={hrefFor({ name: 'orders', rest: 'new' })}>
             Make your first custom model
           </a>
         </section>
       )}
+      {orders && orders.length === 0 && !active && <p className="empty-note">You haven’t ordered any custom models.</p>}
       {orders && orders.length > 0 && (
         <>
           <div className="chips ord-chips" role="group" aria-label="Filter requests">
@@ -84,10 +121,10 @@ export function OrdersList() {
                       </span>
                     </div>
                     <div className="ord-row-side">
-                      <StatusPill status={o.status} />
+                      <StatusPill status={o.status} pricing={o.pricing} />
                       <span className="ord-row-meta">
                         {o.provider === 'demo' && <span className="ord-tag">Demo</span>}
-                        <span className="mono">{dollars(o.amountCents)}</span>
+                        <span className="mono">{orderPrice(o)}</span>
                       </span>
                       <span className="ord-row-when">{whenText(o)}</span>
                     </div>
@@ -103,7 +140,7 @@ export function OrdersList() {
 }
 
 function whenText(o: OrderWire): string {
-  if (isUnpaid(o.status) && o.expiresAt) return `Expires ${relative(o.expiresAt)}`;
+  if (o.pricing !== 'plan' && isUnpaid(o.status) && o.expiresAt) return `Expires ${relative(o.expiresAt)}`;
   if ((o.status === 'paid' || o.status === 'in_progress' || o.status === 'revision_requested') && o.dueAt) return `Due ${shortDate(o.dueAt)}`;
   if (o.status === 'delivered' && o.deliveredAt) return `Delivered ${shortDate(o.deliveredAt)}`;
   if (o.status === 'completed' && o.completedAt) return `Completed ${shortDate(o.completedAt)}`;

@@ -47,9 +47,13 @@ export function AccountMenu() {
           <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'home' }))}>
             <b>My kitchens</b>
           </button>
-          <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'orders', rest: '' }))}>
-            <b>Make custom models</b>
-          </button>
+          {/* Custom models come with the Contractor plan (3 a month). A lapsed contractor still
+              reaches their requests here; anyone else's earlier orders are linked from Billing. */}
+          {(user.plan.id === 'contractor' || user.contractor) && (
+            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'orders', rest: '' }))}>
+              <b>Make custom models</b>
+            </button>
+          )}
           <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'billing' }))}>
             <b>Billing</b>
             <span>{user.plan.id === 'free' ? 'Free plan' : `${user.plan.id === 'contractor' ? 'Contractor' : 'Unlimited'} plan`}</span>

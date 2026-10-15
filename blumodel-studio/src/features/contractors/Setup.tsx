@@ -112,7 +112,7 @@ function NewCompany({ onDone }: { onDone: () => Promise<void> }) {
                 </button>
                 <button type="button" className="pro-start-card" onClick={() => finish(hrefFor({ name: 'pro', rest: 'modelling' }))} disabled={busy}>
                   <b>Have BluModel Studio model it</b>
-                  <span>Send each product’s UPC or photos; we model a product or a whole line for you (priced in Model packs).</span>
+                  <span>Send each product’s UPC or photos; our studio models 3 a month for you, included in your plan.</span>
                 </button>
                 <button type="button" className="pro-start-card pro-start-skip" onClick={() => finish(hrefFor({ name: 'pro', rest: '' }))} disabled={busy}>
                   <b>Skip for now</b>
