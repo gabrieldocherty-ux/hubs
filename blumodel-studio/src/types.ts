@@ -168,11 +168,19 @@ export interface EstimateExtra {
   cost?: number;
 }
 
+/** The catalog categories a kitchen can name preferred brands for (the setup wizard's brand step). */
+export type BrandCategory = 'cabinets' | 'appliances' | 'sinks' | 'lighting';
+
+/** Preferred brand names per category. A missing or empty list means any brand. */
+export type BrandPrefs = Partial<Record<BrandCategory, string[]>>;
+
 export interface DesignDoc {
   name: string;
   room: Room;
   surfaces: Surfaces;
   items: PlacedItem[];
+  /** Brands chosen when the kitchen was set up: the layout builder and Add products start from them. */
+  brandPrefs?: BrandPrefs;
   /** 2 once the doc carries `finishId`s and product snapshots. Absent on old files. */
   version?: 2;
   /** Snapshots of every non-built-in product the kitchen uses, so it still renders after a product is unpublished. */
