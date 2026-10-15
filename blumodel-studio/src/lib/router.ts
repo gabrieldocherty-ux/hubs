@@ -20,6 +20,7 @@ export type Route =
   | { name: 'product'; id: string; finish?: string } // #/p/:id?finish=
   | { name: 'brandPage'; slug: string } // #/b/:slug
   | { name: 'brand'; rest: string } // #/brand, #/brand/<rest…>
+  | { name: 'contractors'; near?: string; kitchen?: string } // #/contractors?near=&kitchen= (the contractor directory)
   | { name: 'orders'; rest: string } // #/orders, #/orders/<rest…>
   | { name: 'payDemo'; orderId: string } // #/pay/demo/:orderId
   | { name: 'share'; token: string } // #/s/:token
@@ -118,6 +119,12 @@ export function parseRoute(hash: string): Route {
     case 'b':
       if (seg.length === 2 && PARAM.test(b)) return { name: 'brandPage', slug: b };
       break;
+    case 'contractors': {
+      if (seg.length !== 1) break;
+      const near = opt((query.get('near') ?? '').trim().slice(0, 60));
+      const kitchen = query.get('kitchen');
+      return { name: 'contractors', ...(near ? { near } : {}), ...(kitchen && UUID.test(kitchen) ? { kitchen } : {}) };
+    }
     case 'brand':
     case 'orders':
     case 'pro': {
@@ -166,6 +173,8 @@ export function hrefFor(r: Route): string {
       return withQuery(`#/p/${enc(r.id)}`, { finish: r.finish });
     case 'brandPage':
       return `#/b/${enc(r.slug)}`;
+    case 'contractors':
+      return withQuery('#/contractors', { near: r.near, kitchen: r.kitchen });
     case 'brand':
     case 'orders':
     case 'pro':

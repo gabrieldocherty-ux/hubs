@@ -12,6 +12,8 @@ export interface LeadFormProps {
   product?: { id: string; name: string } | null;
   /** In the owner's preview nothing is sent. */
   preview?: boolean;
+  /** One of the homeowner's kitchens to attach from the start (the contractor finder sends the open one). */
+  kitchenId?: string;
   onClose: () => void;
 }
 
@@ -20,7 +22,7 @@ export interface LeadFormProps {
  * postcode and a message; optionally one of the homeowner's kitchens; a required consent box; a
  * hidden honeypot field for bots. The server rate-limits by IP without storing it.
  */
-export default function LeadForm({ slug, company, product, preview = false, onClose }: LeadFormProps) {
+export default function LeadForm({ slug, company, product, preview = false, kitchenId, onClose }: LeadFormProps) {
   const user = useSession((s) => s.user);
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -29,7 +31,7 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
   const [message, setMessage] = useState(product ? `I’d like a quote for the ${product.name}.` : '');
   const [consent, setConsent] = useState(false);
   const [trap, setTrap] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useState(user && !preview ? kitchenId ?? '' : '');
   const [kitchens, setKitchens] = useState<Pick<Project, 'id' | 'name' | 'updatedAt'>[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<{ text: string; field?: string } | null>(null);
@@ -48,8 +50,18 @@ export default function LeadForm({ slug, company, product, preview = false, onCl
     let live = true;
     api
       .listProjects()
-      .then((r) => live && setKitchens(r.projects.map((p) => ({ id: p.id, name: p.name, updatedAt: p.updatedAt })).sort((a, b) => b.updatedAt - a.updatedAt)))
-      .catch(() => live && setKitchens([]));
+      .then((r) => {
+        if (!live) return;
+        const mine = r.projects.map((p) => ({ id: p.id, name: p.name, updatedAt: p.updatedAt })).sort((a, b) => b.updatedAt - a.updatedAt);
+        setKitchens(mine);
+        // A kitchen handed in that isn't one of theirs (or was deleted) isn't attached.
+        setProjectId((id) => (id && !mine.some((k) => k.id === id) ? '' : id));
+      })
+      .catch(() => {
+        if (!live) return;
+        setKitchens([]);
+        setProjectId('');
+      });
     return () => {
       live = false;
     };
