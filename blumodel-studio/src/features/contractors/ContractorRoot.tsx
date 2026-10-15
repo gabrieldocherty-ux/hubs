@@ -55,7 +55,7 @@ const TABS: [string, string][] = [
   ['brand', 'Brand page'],
   ['brands', 'Brands I carry'],
   ['quotes', 'Quotes'],
-  ['modelling', 'Modelling requests'],
+  ['modelling', 'Make custom models'],
   ['company', 'Company'],
 ];
 

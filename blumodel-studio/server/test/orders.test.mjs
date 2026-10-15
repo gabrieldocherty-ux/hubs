@@ -601,6 +601,56 @@ test('contractor target: plan required; one checkout for a multi-item line, deli
   assert.equal(edit.status, 200, `the contractor can edit a delivered model like any of their products: ${edit.text}`);
 });
 
+test('contractors use the same Model pack flow: UPC-only products, 9 products are 2 packs, rush, all into My catalog', async () => {
+  const pro = await t.user();
+  const c = await pro.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
+  assert.equal((await pro.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
+
+  // A line of nine cabinets identified by UPC alone: no photos, no sizes. Client prices are ignored.
+  const upcs = ['036000291452', '4006381333931', '96385074'];
+  const items = Array.from({ length: 9 }, (_, i) => ({
+    brief: { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name: `Harbor Base ${12 + 3 * i}`, brand: 'Harbor Cabinets (Test)', upc: upcs[i % 3], notes: '', referenceFileIds: [] },
+    amountCents: 1,
+    tier: 'simple',
+  }));
+  const r = await pro.post('/api/orders', { target: 'contractor', line: 'Harbor Shaker', rush: true, items, amountCents: 100 });
+  assert.equal(r.status, 201, r.text);
+  const o = r.body.order;
+  assert.equal(o.pricing, 'pack');
+  assert.equal(o.packs, 2);
+  assert.equal(o.amountCents, 2 * (12_900 + 6_450), 'two packs, each +50% for rush');
+  assert.equal(r.body.quote.dueBusinessDays, Math.ceil((15 + 5) / 2), 'rush halves the two-pack turnaround');
+  assert.deepEqual(o.items.map((it) => it.pack), [1, 1, 1, 1, 1, 1, 1, 1, 2]);
+  assert.equal(o.items.reduce((s, it) => s + it.amountCents, 0), o.amountCents);
+  assert.equal(o.items[1].brief.upc, '4006381333931');
+  // The same quote a customer gets for the same count.
+  const q = await pro.post('/api/orders/quote', { rush: true, products: 9 });
+  assert.equal(q.body.quote.amountCents, o.amountCents);
+
+  // The studio sees the UPCs; a delivery without a size takes the model's, and lands in My catalog
+  // with the brand and UPC in its description.
+  await demoPay(pro, o.id);
+  const studio = await t.user({ role: 'studio' });
+  const row = (await studio.get('/api/studio/orders?status=all')).body.orders.find((x) => x.id === o.id);
+  assert.deepEqual(row.items.map((it) => it.brief.upc), items.map((it) => it.brief.upc));
+  assert.equal((await studio.post(`/api/studio/orders/${o.id}/start`)).status, 200);
+  const d = await studioDeliver(studio, o.id, { item: 8, glb: makeGlb({ w: 36 * 0.0254, h: 34.5 * 0.0254, d: 24 * 0.0254 }) });
+  assert.equal(d.status, 200, d.text);
+  const p = t.services.products.get(d.body.product.id);
+  assert.equal(p.source, 'contractor');
+  assert.equal(p.visibility, 'private');
+  assert.equal(p.ownerUserId, pro.id);
+  assert.equal(p.spec.line, 'Harbor Shaker');
+  assert.deepEqual([p.spec.widthIn, p.spec.heightIn, p.spec.depthIn].map(Math.round), [36, 35, 24]);
+  assert.match(p.spec.blurb, /Brand: Harbor Cabinets \(Test\) · UPC 96385074\./);
+  assert.ok((await pro.get('/api/catalog')).body.products.some((x) => x.id === p.id), 'in the contractor’s catalog');
+
+  // A customer can't send an order to My catalog.
+  const ann = await t.user();
+  const denied = await ann.post('/api/orders', { target: 'contractor', items: items.slice(0, 1) });
+  assert.equal(denied.status, 403);
+});
+
 test('two revision rounds, then no more; a redelivery updates the same product', async () => {
   const ann = await t.user();
   const studio = await t.user({ role: 'studio' });

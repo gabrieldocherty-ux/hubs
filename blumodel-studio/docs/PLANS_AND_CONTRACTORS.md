@@ -61,7 +61,7 @@ The prices live in one file, `src/data/plans.json`. The server is the authority 
    - **Company:** business name and business phone (**both required**, checked in the browser and again by the server; the phone is normalised the same way as everywhere else, "(905) 555-0142" or "+<country code><digits>"), then logo, email, website and service area (optional). Every later save of the company needs both too. A contractor whose company was saved before this rule, with either missing, sees a *Finish your company details* card instead of the workspace until they add them (a lapsed, read-only contractor is not asked, since they can't save).
    - **Pricing defaults:** default markup %, for example 30%. This can be changed any time.
    - **Start your catalog:** quick-add a first product, upload a model, request modelling, or skip.
-3. They land in the **Contractor workspace** (`#/pro`). Its tabs are Dashboard, My catalog, Price book, Brands I carry, Quotes, Modelling requests and Company.
+3. They land in the **Contractor workspace** (`#/pro`). Its tabs are Dashboard, My catalog, Price book, Brands I carry, Quotes, Make custom models and Company.
 
 An Unlimited subscriber who upgrades is moved to Contractor; Stripe prorates the change, and demo mode simulates it.
 
@@ -187,4 +187,6 @@ A product needs at least one way to identify it: a photo, a UPC, a barcode photo
 - Client-sent amounts, tiers and extra-finish counts are ignored.
 - Counts (1–40 products), UPC check digits, and ownership of every uploaded photo are checked on the server.
 
-Contractors use the same pack flow with target **Contractor**: their deliverables land in My catalog (§4.2).
+**The studio** sees each product's brand, UPC (grouped as printed, with its format) and barcode photo in the queue and the order drawer. A delivered model's description names the brand and UPC the buyer gave (products have no fields for them yet), so a contractor can match it to the stock it stands for. A built-in product a request starts from fills in its type, name and size but not its brand, which is BluModel's own line rather than the real product's maker.
+
+Contractors use the same pack flow with target **Contractor** (the workspace's **Make custom models** tab, or **My catalog** in the form's "Who are the models for?"): the same $129 packs, rush and limits, priced by the same server quote. Their deliverables land privately in My catalog (§4.2), published and editable like any of their products.

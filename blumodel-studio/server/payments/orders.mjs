@@ -567,12 +567,15 @@ export function createOrderService({ db, now, services, config, log = console, t
     const result = tx(() => {
       const glb = copyFile(model, owner);
       const img = copyFile(thumb, owner);
+      // The brand and UPC the buyer gave go in the description: products have no fields for them
+      // yet, and they are how a contractor matches the model to the stock it stands for.
+      const ident = [brief.brand ? `Brand: ${brief.brand}` : null, brief.upc ? `UPC ${brief.upc}` : null].filter(Boolean);
       const spec = {
         kind: brief.kind,
         ...(brief.variant ? { variant: brief.variant } : {}),
         category: brief.category ?? KIND_CATEGORY[brief.kind],
         name,
-        blurb: 'Custom 3D model made by the BluModel 3D studio.',
+        blurb: `Custom 3D model made by the BluModel 3D studio.${ident.length ? ` ${ident.join(' · ')}.` : ''}`,
         sku: '',
         ...dims,
         price,

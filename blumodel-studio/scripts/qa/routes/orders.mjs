@@ -130,7 +130,8 @@ const waitFor = (expr, ms = 5000) => `(async () => {
 })()`;
 
 const SIDEWAYS = 'document.documentElement.scrollWidth > window.innerWidth + 1';
-const quoteTotal = `document.querySelector('.ord-quote .ord-total')?.textContent ?? ''`;
+// Parenthesised: `a ?? ''.includes(x)` would test only the '' and pass on any total.
+const quoteTotal = `(document.querySelector('.ord-quote .ord-total')?.textContent ?? '')`;
 const bodyHas = (t) => `document.body.textContent.includes(${JSON.stringify(t)})`;
 
 /** Types `text` into the field `selector` the way a person does (focus, select all, insert). */
@@ -333,6 +334,77 @@ export default [
       if (!(await evaluate(click('Review 1 product')))) throw new Error('no review button');
       if (!(await evaluate(waitFor(`document.querySelector('.ord-form h2')?.textContent.includes('Review & pay') && ${bodyHas('Barcode photo')}`)))) throw new Error('the review does not show the barcode photo');
       if (await evaluate(SIDEWAYS)) throw new Error('the page scrolls sideways on a phone');
+    },
+  },
+  // ── contractors: the same pack flow, into My catalog ───────────────────
+  {
+    // (The workspace opens once the company has a business name and phone; scripts/qa/routes/
+    // contractors.mjs saves its own company when it runs, so only fill one in if there is none.)
+    // The workspace's Make custom models page prices from the server and opens the same request
+    // form with My catalog chosen.
+    name: 'orders-pro-modelling',
+    path: '#/pro/modelling',
+    as: 'contractor',
+    setup: async ({ api }) => {
+      const me = api.as('contractor');
+      const p = (await me.get('/api/pro/profile')).body?.profile;
+      if (!p?.company || !p?.phone) {
+        const r = await me.put('/api/pro/profile', { company: 'Harbor Kitchens (QA)', phone: '905-555-0177', serviceArea: 'Testville' });
+        if (r.status !== 200) throw new Error(`saving the QA contractor's company failed: ${r.status} ${JSON.stringify(r.body)}`);
+      }
+      return {};
+    },
+    viewport: { w: 1440, h: 900 },
+    waitFor: '.pro-modelling',
+    expectText: ['Have BluModel Studio model your products', 'Delivered models land straight in My catalog'],
+    check: async ({ evaluate, shot }) => {
+      if (!(await evaluate(waitFor(bodyHas('A Model pack covers up to 8 products for $129'))))) throw new Error('the page does not show the server’s Model pack');
+      if (await evaluate(bodyHas('per item'))) throw new Error('the page still prices per item');
+      await shot('page');
+      const go = await evaluate(`(() => {
+        const a = [...document.querySelectorAll('.pro-modelling .btn.primary')].find((x) => x.textContent.trim() === 'Make custom models');
+        if (!a) return false;
+        a.click();
+        return true;
+      })()`);
+      if (!go) throw new Error('no Make custom models button');
+      if (!(await evaluate(waitFor(`location.hash.startsWith('#/orders/new') && document.querySelector('.ord-target select')?.value === 'contractor'`)))) throw new Error('the request form did not open with My catalog chosen');
+    },
+  },
+  {
+    // A contractor's line identified by UPC alone, reviewed: the same $129 pack, delivered to My catalog.
+    name: 'orders-new-contractor',
+    path: '#/orders/new?target=contractor',
+    as: 'contractor',
+    viewport: { w: 1440, h: 900 },
+    waitFor: ['.ord-product.open', '.ord-target select'],
+    expectText: ['Who are the models for?', 'Products to model'],
+    check: async (h) => {
+      const { evaluate, shot } = h;
+      if ((await evaluate(`document.querySelector('.ord-target select').value`)) !== 'contractor') throw new Error('My catalog is not the target');
+      await evaluate(`(() => {
+        const s = document.querySelector('#ord-product-0 select');
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(s, 'base-cabinet');
+        s.dispatchEvent(new Event('change', { bubbles: true }));
+      })()`);
+      await typeInto(h, '#ord-product-0 input[maxlength="80"]', 'QA Harbor Base 18 (Demo)');
+      await typeInto(h, '#ord-p0-upc', '036000291452');
+      if (!(await evaluate(waitFor(bodyHas('✓ UPC-A 0 36000 29145 2'))))) throw new Error('the UPC was not confirmed');
+      if (!(await evaluate(click('Review 1 product')))) throw new Error('no review button');
+      if (!(await evaluate(waitFor(`${bodyHas('Delivered models land privately in My catalog')} && ${quoteTotal}.includes('$129')`)))) throw new Error('the review does not say My catalog at $129');
+      if (!(await evaluate(waitFor(bodyHas('Line or collection'))))) throw new Error('a contractor request has no line field');
+      await shot('review');
+    },
+  },
+  {
+    name: 'orders-new-contractor-phone',
+    path: '#/orders/new?target=contractor',
+    as: 'contractor',
+    viewport: PHONE,
+    waitFor: ['.ord-product.open', '.ord-target select'],
+    expectText: ['Who are the models for?'],
+    check: async ({ evaluate }) => {
+      if (await evaluate(SIDEWAYS)) throw new Error('the contractor request scrolls sideways on a phone');
     },
   },
   {
