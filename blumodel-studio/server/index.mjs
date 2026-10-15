@@ -80,7 +80,7 @@ server.on('error', (err) => {
 server.listen(config.PORT, config.HOST, () => {
   const where = config.HOST.includes(':') ? `[${config.HOST}]` : config.HOST;
   console.log(`BluModel Studio listening on http://${where}:${config.PORT} (payments: ${config.paymentsProvider}${config.PROD ? ', production' : ''})`);
-  const report = startupReport(config);
+  const report = startupReport(config, { adminCount: db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'admin'").get().n });
   for (const l of report.info) console.log(l);
   for (const l of report.warn) console.warn(`Warning: ${l}`);
   if (config.BACKUPS === 'on') scheduleBackups({ db, config, log: console, paused: () => !integrity.ok });

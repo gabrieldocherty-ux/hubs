@@ -90,7 +90,7 @@ test('export: a JSON download of everything that is theirs, nobody else’s data
     assert.equal(r.headers.get('cache-control'), 'no-store');
     const data = JSON.parse(r.text);
 
-    assert.deepEqual(Object.keys(data.user).sort(), ['createdAt', 'email', 'name']);
+    assert.deepEqual(Object.keys(data.user).sort(), ['createdAt', 'email', 'name', 'phone']);
     assert.equal(data.user.email, ann.user.email);
     assert.equal(data.user.name, 'Ann Account');
     assert.deepEqual(data.projects.map((p) => p.name).sort(), ['Ann Galley', 'Ann Island']);

@@ -179,9 +179,14 @@ means a value is wrong; fix it and restart.
 From the repo's `blumodel-studio\` folder: `npm run stripe:check`. It finds the home's `blumodel.env`,
 says `live` or `test`, and checks (read-only): the key works; the account's business name; charges
 enabled; an enabled webhook endpoint for `https://blumodel.studio/api/webhooks/stripe` sending all ten
-events; an active Customer portal; `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION`, `ADMIN_EMAILS`,
+events; an active Customer portal; `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION`,
 `TRUST_PROXY`, `DEMO_PAYMENTS`; and whether the production server would take payments through Stripe.
 Fix every `FIX` line and run it again until the summary has none.
+
+Admins are not made by `ADMIN_EMAILS` (there is no email verification, so anyone could sign up
+with your address first). Sign up on https://blumodel.studio with your own email, then on the home
+machine run `make-admin` (OPERATIONS.md, *Admins*). The server log warns `No admin account exists`
+until one does.
 
 ### B9. Part C (Cloudflare) now
 
@@ -192,8 +197,8 @@ see that before a customer does.
 
 With your own card, on https://blumodel.studio from a normal browser window:
 
-1. Sign up with an email that is **not** in `ADMIN_EMAILS` (admins can export without paying, so an
-   admin account would skip the paywall).
+1. Sign up with an email that is **not** your admin account (admins can export without paying, so
+   an admin account would skip the paywall).
 2. Make a kitchen, press any **Export**, choose **Unlock this kitchen · $5**. You land on Stripe's
    checkout page (`checkout.stripe.com`): pay.
 3. You return to the kitchen: *Payment received*; the export you clicked finishes; Account → Billing

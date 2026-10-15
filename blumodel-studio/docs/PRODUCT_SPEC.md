@@ -51,7 +51,7 @@ These features exist today [MSRV][MDATA][M3D]. Each one gets a regression check 
 | `customer` (default) | Sign up | Everything above, plus saved kitchens, ordering custom models and creating share links |
 | Brand member (`owner` or `editor` of a brand) | Create a brand (it starts `pending`) or be added by its owner | Manage that brand's profile and products, see its analytics. Only owners manage members |
 | `studio` | Set by an admin | See and fulfil custom-model orders (studio queue) |
-| `admin` | `ADMIN_EMAILS` env var, or `node server/scripts/make-admin.mjs <email>`. **Never through the API** | Everything: moderation, brands, users, orders, refunds, revenue |
+| `admin` | Only `node server/scripts/make-admin.mjs <email>`, run on the server against its database. **Never through the API, never by signing up or in** (there is no email verification, so an address proves nothing; `ADMIN_EMAILS` grants nothing) | Everything: moderation, brands, users, orders, refunds, revenue |
 
 The server enforces every rule in the route table [MSRV]. Client-side gating only hides UI.
 

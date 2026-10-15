@@ -4,9 +4,10 @@
 
 /**
  * @param {any} config  the frozen config from loadConfig()
+ * @param {{ adminCount?: number }} [facts]  how many admin accounts the database has, when known
  * @returns {{ info: string[], warn: string[] }}
  */
-export function startupReport(config) {
+export function startupReport(config, { adminCount } = {}) {
   const info = [];
   const warn = [];
   const p = config.paymentsProvider;
@@ -18,7 +19,8 @@ export function startupReport(config) {
   if (p !== 'stripe') warn.push('No Stripe: nobody can pay on this server.');
   if (p === 'demo' && config.PROD) warn.push('DEMO payments are ON in production. Set DEMO_PAYMENTS=0 (or remove it) before real customers use this server.');
   if (p === 'stripe' && config.stripeMode === 'test' && config.PROD && config.httpsPublicUrl) warn.push('Stripe is in TEST mode on a public https server: payments are not real.');
-  if (!config.ADMIN_EMAILS?.length) warn.push('ADMIN_EMAILS is empty: nobody becomes an admin by signing in.');
+  // Nobody becomes an admin by signing in (ADMIN_EMAILS grants nothing): make-admin on the server.
+  if (adminCount === 0) warn.push('No admin account exists: run node server/scripts/make-admin.mjs <email> on the server (the account must be signed up first).');
   const missing = [
     !config.legal?.businessName && 'LEGAL_NAME',
     !config.legal?.supportEmail && 'SUPPORT_EMAIL',

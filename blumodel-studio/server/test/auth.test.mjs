@@ -1,5 +1,5 @@
 // Accounts and sessions: the existing flows, plus roles, rate limits, async scrypt,
-// ADMIN_EMAILS, make-admin and the Secure-cookie rule.
+// ADMIN_EMAILS (which grants nothing), make-admin and the Secure-cookie rule.
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -238,17 +238,35 @@ test('login does not block the event loop (async scrypt)', async () => {
   assert.ok(fastest < 20, `me answered in ${fastest.toFixed(1)} ms during logins (${JSON.stringify(timings)})`);
 });
 
-test('ADMIN_EMAILS promotes on signup and on login', async () => {
+test('ADMIN_EMAILS grants nothing: signing up or signing in with a listed address never makes an admin', async () => {
+  // There is no email verification, so anyone could register the owner's address first. Admins are
+  // made only with server/scripts/make-admin.mjs, on the server.
   const t2 = await startTestServer({ env: { ADMIN_EMAILS: 'boss@test.blumodel, Later@Test.BluModel' } });
   try {
     const r = await t2.agent().post('/api/auth/signup', { name: 'Boss', email: 'boss@test.blumodel', password: 'password123' });
-    assert.equal(r.body.user.role, 'admin');
-    // An existing account named in ADMIN_EMAILS is promoted at its next login.
+    assert.equal(r.status, 201, r.text);
+    assert.equal(r.body.user.role, 'customer');
+    assert.equal(t2.db.prepare('SELECT role FROM users WHERE email = ?').get('boss@test.blumodel').role, 'customer');
+    const again = await t2.agent().post('/api/auth/login', { email: 'boss@test.blumodel', password: 'password123' });
+    assert.equal(again.body.user.role, 'customer');
+    // An existing account named in ADMIN_EMAILS is not promoted at its next login either.
     const id = 'u-later';
     t2.db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(id, 'later@test.blumodel', 'Later', await hashPassword('password123'), Date.now());
     const l = await t2.agent().post('/api/auth/login', { email: 'later@test.blumodel', password: 'password123' });
-    assert.equal(l.body.user.role, 'admin');
-    assert.equal(t2.db.prepare('SELECT role FROM users WHERE id = ?').get(id).role, 'admin');
+    assert.equal(l.body.user.role, 'customer');
+    assert.equal(t2.db.prepare('SELECT role FROM users WHERE id = ?').get(id).role, 'customer');
+    // A real admin (made on the server) keeps the role through sign-in.
+    t2.db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(id);
+    const l2 = await t2.agent().post('/api/auth/login', { email: 'later@test.blumodel', password: 'password123' });
+    assert.equal(l2.body.user.role, 'admin');
+    // A listed address can't be moved onto another account through an email change.
+    const other = await t2.user();
+    const moved = await other.post('/api/account/email', { email: 'later@test.blumodel', password: other.user.password });
+    assert.equal(moved.status, 409, 'that address belongs to an account');
+    t2.db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    const reserved = await other.post('/api/account/email', { email: 'later@test.blumodel', password: other.user.password });
+    assert.equal(reserved.status, 400, reserved.text);
+    assert.equal(t2.db.prepare('SELECT role FROM users WHERE id = ?').get(other.id).role, 'customer');
   } finally {
     await t2.close();
   }

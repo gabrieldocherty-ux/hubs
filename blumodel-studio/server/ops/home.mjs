@@ -221,7 +221,8 @@ STRIPE_WEBHOOK_SECRET=
 
 # The https address customers use. Checkout return links and the webhook check use it.
 PUBLIC_URL=${publicUrl}
-# Who becomes an admin by signing in (comma separated).
+# Grants nothing: no other account can change its email to one of these (comma separated). Make
+# an admin with make-admin (docs/OPERATIONS.md, Admins) after signing up.
 ADMIN_EMAILS=${adminEmails}
 # 0: no labelled DEMO checkout on this server. Without Stripe values payments are simply off.
 DEMO_PAYMENTS=0

@@ -8,7 +8,7 @@
 //   GET /v1/billing_portal/configurations    a saved, active Customer portal setup
 //
 // and checks the settings the server needs around Stripe (webhook secret, PUBLIC_URL, legal names,
-// ADMIN_EMAILS, TRUST_PROXY, DEMO_PAYMENTS).
+// TRUST_PROXY, DEMO_PAYMENTS), and says that admins are made with make-admin, not ADMIN_EMAILS.
 //
 // What it may print: 'live' / 'test' (from the key's prefix), PASS / FIX / NOTE lines, PUBLIC_URL and
 // webhook URLs (public), the Stripe account's public business name and statement descriptor,
@@ -38,11 +38,12 @@ const printable = (v) =>
     : null;
 
 /**
- * @param {{ env: Record<string, string | undefined>, fetch: typeof fetch, timeoutMs?: number }} opts
+ * @param {{ env: Record<string, string | undefined>, fetch: typeof fetch, timeoutMs?: number, adminCount?: number }} opts
+ *   `adminCount`, when given, is how many admin accounts the database has.
  *   `env` holds the server's settings (the settings file loaded over the environment).
  * @returns {Promise<{ lines: { status: 'PASS' | 'FIX' | 'NOTE', text: string }[], fixes: number, mode: string }>}
  */
-export async function runStripeCheck({ env, fetch, timeoutMs = 15_000 }) {
+export async function runStripeCheck({ env, fetch, timeoutMs = 15_000, adminCount }) {
   /** @type {{ status: 'PASS' | 'FIX' | 'NOTE', text: string }[]} */
   const lines = [];
   const pass = (text) => lines.push({ status: 'PASS', text });
@@ -75,11 +76,11 @@ export async function runStripeCheck({ env, fetch, timeoutMs = 15_000 }) {
     pass(`PUBLIC_URL is ${publicUrl}`);
   }
 
-  const admins = val('ADMIN_EMAILS')
-    .split(/[,;\s]+/)
-    .filter(Boolean);
-  if (admins.length) pass(`ADMIN_EMAILS names ${admins.length} admin${admins.length === 1 ? '' : 's'}.`);
-  else fix('ADMIN_EMAILS is empty: nobody becomes an admin, so nobody can refund, grant plans or approve brand pages.');
+  // Admins: nobody becomes one by signing in (ADMIN_EMAILS grants nothing; there is no email
+  // verification). The count is known only when the caller read it from the database.
+  if (adminCount === 0) fix('No admin account exists: run node server/scripts/make-admin.mjs <email> on the server, or nobody can refund, grant plans or approve brand pages.');
+  else if (typeof adminCount === 'number' && adminCount > 0) pass(`${adminCount} admin account${adminCount === 1 ? ' exists' : 's exist'}.`);
+  else note('Admins are made only on the server: node server/scripts/make-admin.mjs <email> (ADMIN_EMAILS grants nothing).');
   for (const [k, what] of [
     ['LEGAL_NAME', 'the business name the terms, privacy page and receipts show'],
     ['SUPPORT_EMAIL', 'the address customers write to'],

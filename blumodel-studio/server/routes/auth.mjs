@@ -34,14 +34,10 @@ export default function routes(ctx) {
    */
   const userWire = makeUserWire(services);
 
-  /** ADMIN_EMAILS promotes on signup and login. Returns the (possibly updated) role. */
-  const promote = (user) => {
-    if (config.ADMIN_EMAILS.includes(String(user.email).toLowerCase()) && user.role !== 'admin') {
-      db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(user.id);
-      return 'admin';
-    }
-    return user.role || 'customer';
-  };
+  // Roles are never granted by signing up or signing in. There is no email verification, so an
+  // address proves nothing: an admin is made only on the server, with
+  // `node server/scripts/make-admin.mjs <email>`. ADMIN_EMAILS grants nothing; it only reserves its
+  // addresses against being moved onto another account (/api/account/email).
 
   /**
    * Email notifications > Sign-in alerts: when email is on, the person hasn't turned alerts off,
@@ -89,9 +85,8 @@ export default function routes(ctx) {
           if (/UNIQUE/i.test(String(err?.message))) throw taken();
           throw err;
         }
-        const role = promote({ id, email, role: 'customer' });
         sessions.start(rc.req, rc.res, id);
-        rc.send(201, { user: userWire({ id, email, name, role }) });
+        rc.send(201, { user: userWire({ id, email, name, role: 'customer' }) });
       },
     },
     {
@@ -118,10 +113,9 @@ export default function routes(ctx) {
           throw new HttpError(401, 'That email and password do not match.');
         }
         limiter.reset(keyPair);
-        const role = promote(user);
         alertNewDevice(rc.req, user);
         sessions.start(rc.req, rc.res, user.id);
-        return { user: userWire({ ...user, role }) };
+        return { user: userWire(user) };
       },
     },
     {

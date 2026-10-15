@@ -155,10 +155,12 @@ export default function routes(ctx) {
         if (!(await checkPassword(rc.user.id, rc.body.password))) throw new HttpError(400, 'Your current password is not right.', { field: 'password', code: 'wrong_password' });
         const old = db.prepare('SELECT email, name, role FROM users WHERE id = ?').get(rc.user.id);
         if (email === old.email) throw new HttpError(400, 'That is already your email address.', { field: 'email' });
-        // ADMIN_EMAILS promotes whoever signs in with that address: it can't be moved onto an account.
-        if (config.ADMIN_EMAILS.includes(email) && old.role !== 'admin') throw new HttpError(400, 'That address can’t be used for this account.', { field: 'email' });
         const taken = () => new HttpError(409, 'An account with that email already exists.', { field: 'email' });
         if (db.prepare('SELECT 1 FROM users WHERE email = ? AND id <> ?').get(email, rc.user.id)) throw taken();
+        // ADMIN_EMAILS grants nothing (admins are made with server/scripts/make-admin.mjs), but its
+        // addresses are the owner's: a non-admin account can't take one, so running make-admin
+        // with that address later can never promote someone else's account.
+        if (config.ADMIN_EMAILS.includes(email) && old.role !== 'admin') throw new HttpError(400, 'That address can’t be used for this account.', { field: 'email' });
         try {
           db.prepare('UPDATE users SET email = ? WHERE id = ?').run(email, rc.user.id);
         } catch (err) {

@@ -101,7 +101,7 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `STRIPE_SECRET_KEY` | `rk_live_…` (restricted key; LAUNCH.md lists its permissions) | Stripe API calls. A live key works only in production with an https `PUBLIC_URL`. |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | verifies Stripe's webhook signatures (5-minute tolerance) |
 | `PUBLIC_URL` | `https://blumodel.studio` | checkout success/cancel/portal return links and the webhook check; never taken from a request |
-| `ADMIN_EMAILS` | your email(s), comma separated | who becomes an admin on signing in |
+| `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing.** It only reserves the addresses: no other account can change its email to one. Admins are made with `make-admin` (below) |
 | `DEMO_PAYMENTS` | `0` | `1` allows the labelled DEMO checkout in production when Stripe isn't set (never with a live key) |
 | `TRUST_PROXY` | `1` | believe `CF-Connecting-IP` / `X-Forwarded-For` / `X-Forwarded-Proto` from 127.0.0.1 (per-visitor rate limits, Secure cookies, HSTS) |
 | `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION` | the business's legal name, a support address, where it's established | the terms, privacy and refund pages, receipts and the footer's Contact link |
@@ -125,6 +125,24 @@ Other variables the server reads (set by `run-server.cmd` or left at their defau
 `MAX_IMAGE_MB` (8), `BRAND_PRODUCT_LIMIT` (50), `BLUMODEL_LOG_FILE`, `BLUMODEL_SHUTDOWN_FILE`.
 
 Check the Stripe side any time with `npm run stripe:check` (read-only; prints PASS / FIX lines, never a key).
+
+## Admins
+
+Nobody becomes an admin by signing up or signing in, whatever `ADMIN_EMAILS` says: the site has no
+email verification, so anyone could register the owner's address first. An admin is made only on
+this machine, against the live database, after that person has signed up:
+
+```
+cd %USERPROFILE%\Projects\BluModelStudio\app
+set DB_PATH=%USERPROFILE%\Projects\BluModelStudio\data\blumodel.db
+node server\scripts\make-admin.mjs you@example.com
+```
+
+It prints `you@example.com is now an admin.` (or that no account has that email). `--role studio`
+makes a studio member instead; `--role customer` takes a role away. Admin > Users can change roles
+too, but never your own. Until an admin exists, the server log says `Warning: No admin account
+exists: run node server/scripts/make-admin.mjs <email>` at every start. Run it only for an account
+you know is the right person's: you signed it up yourself and can sign in to it.
 
 ## Backups and restore
 

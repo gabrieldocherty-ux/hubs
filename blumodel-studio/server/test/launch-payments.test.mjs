@@ -81,11 +81,12 @@ test('startup report: LIVE / TEST from the prefix only, and the warnings worth f
   assert.deepEqual(live.warn, [], 'a fully set-up live server has nothing to warn about');
   const test = startupReport(loadConfig({ STRIPE_SECRET_KEY: TEST_KEY, STRIPE_WEBHOOK_SECRET: WHSEC }, []));
   assert.ok(test.info.includes('Stripe: TEST mode'));
-  const bare = startupReport(loadConfig({ DEMO_PAYMENTS: '1' }, ['--prod']));
+  const bare = startupReport(loadConfig({ DEMO_PAYMENTS: '1' }, ['--prod']), { adminCount: 0 });
   const w = bare.warn.join('\n');
   assert.match(w, /No Stripe/);
   assert.match(w, /DEMO payments are ON in production/);
-  assert.match(w, /ADMIN_EMAILS is empty/);
+  assert.match(w, /No admin account exists: run node server\/scripts\/make-admin\.mjs/);
+  assert.doesNotMatch(w, /ADMIN_EMAILS/, 'ADMIN_EMAILS grants nothing, so the report never asks for it');
   assert.match(w, /Legal details missing \(LEGAL_NAME, SUPPORT_EMAIL, LEGAL_JURISDICTION\)/);
   const none = startupReport(loadConfig({ STRIPE_SECRET_KEY: LIVE_KEY, STRIPE_WEBHOOK_SECRET: WHSEC }, []));
   assert.match(none.info.join(' '), /Payments: none/);

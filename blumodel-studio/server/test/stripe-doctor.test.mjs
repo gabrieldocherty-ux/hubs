@@ -141,9 +141,10 @@ test('a network failure is a FIX naming the reason only', async () => {
 test('the settings around Stripe: each missing or wrong one is a FIX, and the server’s own verdict is shown', async () => {
   let called = 0;
   const fetch = async () => ((called += 1), json({}));
-  const bare = await runStripeCheck({ env: {}, fetch });
+  const bare = await runStripeCheck({ env: {}, fetch, adminCount: 0 });
   const t = text(bare);
-  for (const re of [/STRIPE_SECRET_KEY is not set/, /STRIPE_WEBHOOK_SECRET is not set/, /PUBLIC_URL is not set/, /ADMIN_EMAILS is empty/, /LEGAL_NAME is not set/, /SUPPORT_EMAIL is not set/, /LEGAL_JURISDICTION is not set/, /TRUST_PROXY is not 1/, /would NOT take payments through Stripe \(payments: none\)/]) {
+  assert.doesNotMatch(t, /ADMIN_EMAILS is empty/, 'ADMIN_EMAILS grants nothing, so it is never a FIX');
+  for (const re of [/STRIPE_SECRET_KEY is not set/, /STRIPE_WEBHOOK_SECRET is not set/, /PUBLIC_URL is not set/, /No admin account exists: run node server\/scripts\/make-admin\.mjs/, /LEGAL_NAME is not set/, /SUPPORT_EMAIL is not set/, /LEGAL_JURISDICTION is not set/, /TRUST_PROXY is not 1/, /would NOT take payments through Stripe \(payments: none\)/]) {
     assert.match(t, new RegExp(`FIX {3}.*${re.source}`), re.source);
   }
   assert.match(t, /NOTE {2}Skipped the Stripe checks: there is no usable key/);

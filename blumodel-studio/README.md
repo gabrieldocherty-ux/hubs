@@ -147,7 +147,7 @@ a supervisor that restarts the server if it exits. `node scripts/deploy-local.mj
 deploys an existing build. The header of `scripts/deploy-local.mjs` has the folder's layout.
 
 - **Private settings** (Stripe keys, `PUBLIC_URL=https://blumodel.studio`, `TRUST_PROXY`,
-  `ADMIN_EMAILS`…) live in `blumodel.env` in that folder, one `KEY=VALUE` per line, written by hand
+  `ADMIN_EMAILS`, which grants nothing: admins are made with `node server/scripts/make-admin.mjs <email>`…) live in `blumodel.env` in that folder, one `KEY=VALUE` per line, written by hand
   and never touched by a deploy. If it exists at deploy time, `run-server.cmd` names it in
   `BLUMODEL_ENV_FILE`; the server reads it at start (`server/lib/envFile.mjs`), never prints a
   value, and refuses to start if the named file has gone. A value already in the environment wins
