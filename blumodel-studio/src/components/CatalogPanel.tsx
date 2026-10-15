@@ -41,11 +41,17 @@ function storeFacets(list: Product[], names: Map<string, { name: string }>): Fac
   return [...n].map(([id, count]) => ({ id, label: names.get(id)?.name ?? id, n: count })).sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
 }
 
-/** "at RONA", "at RONA and IKEA", "at RONA + 2 more" for a card. */
-function storeLine(slugs: string[], names: Map<string, { name: string }>): string {
+/** A card's store chips: "at [RONA]", "at [RONA] [+2]" (the full list is in the label and on the product page). */
+function StoreChips({ slugs, names }: { slugs: string[]; names: Map<string, { name: string }> }) {
   const label = (s: string) => names.get(s)?.name ?? s;
-  if (slugs.length <= 2) return `at ${slugs.map(label).join(' and ')}`;
-  return `at ${label(slugs[0])} + ${slugs.length - 1} more`;
+  const all = slugs.map(label);
+  return (
+    <span className="product-stores" title={`Sold at ${all.join(', ')}`}>
+      <span>at</span>
+      <span className="store-chip">{all[0]}</span>
+      {all.length > 1 && <span className="store-chip more" aria-label={`and ${all.slice(1).join(', ')}`}>+{all.length - 1}</span>}
+    </span>
+  );
 }
 
 import { CATALOG_DRAG_CLASS, isCompact, useCompact, useMobileUI } from './MobileState';
@@ -454,7 +460,7 @@ export function CatalogPanel() {
                           <span>{p.brandKind === 'contractor' ? `by ${p.brand}` : p.brand}</span>
                           <span className="mono">{p.widthOptions?.length ? `${Math.min(...p.widthOptions)}–${Math.max(...p.widthOptions)}″` : `${p.widthIn}″`}</span>
                         </span>
-                        {sold.length > 0 && <span className="product-stores">{storeLine(sold, stores)}</span>}
+                        {sold.length > 0 && <StoreChips slugs={sold} names={stores} />}
                         <span className="product-foot">
                           <span className="dots">
                             {finishes.slice(0, 4).map((f) => (

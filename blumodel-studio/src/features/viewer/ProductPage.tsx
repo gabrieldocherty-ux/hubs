@@ -315,6 +315,7 @@ function WhereToBuy({ product, info }: { product: Product; info: RetailInfo }) {
               <span className="pp-buy-facts">
                 <span className="pp-buy-price">{l.priceCad !== null ? cad(l.priceCad) : 'Price not listed'}</span>
                 {finish && <span>{finish}</span>}
+                {l.sku && <span className="mono">SKU {l.sku}</span>}
                 {l.inStock === false && <span>Out of stock online</span>}
                 <span>checked {checkedLabel(info.checkedAt)}</span>
               </span>
