@@ -7,10 +7,20 @@
 
 .catalog-filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 0 14px 10px;
   flex-shrink: 0;
+  min-width: 0;
+}
+
+/* The brand and store dropdowns: one row that goes under the Your brands chip, whole, when the
+   panel is too narrow for both beside it, so neither is cut to "All bra…". */
+.catalog-selects {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 212px;
   min-width: 0;
 }
 
@@ -23,6 +33,10 @@
   flex: 1 1 0;
   min-width: 0;
   max-width: 220px;
+}
+
+.catalog-selects .catalog-filter {
+  min-width: 103px;
 }
 
 .catalog-filter select {
