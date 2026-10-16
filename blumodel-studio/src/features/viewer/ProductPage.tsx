@@ -284,6 +284,9 @@ function RetailPrice({ info }: { info: RetailInfo }) {
  */
 function WhereToBuy({ product, info, linkId = product.id, matchedUpc }: { product: Product; info: RetailInfo; linkId?: string; matchedUpc?: string }) {
   const bySlug = useRetailers((s) => s.bySlug);
+  // The order depends on the store settings (sponsored first), so the rows hold their place,
+  // unseen, until those have loaded (or failed), instead of drawing once and jumping.
+  const settled = useRetailers((s) => s.status === 'ready' || s.status === 'error');
   useEffect(() => {
     void loadRetailers();
   }, []);
@@ -303,7 +306,7 @@ function WhereToBuy({ product, info, linkId = product.id, matchedUpc }: { produc
         </span>
         <small>Prices in CAD</small>
       </div>
-      <ul className="pp-buy-list">
+      <ul className="pp-buy-list" aria-busy={settled ? undefined : true} style={settled ? undefined : { visibility: 'hidden' }}>
         {rows.map((l) => {
           const cfg = bySlug.get(l.store);
           const name = storeName(l.store);
