@@ -343,6 +343,8 @@ function WhereToBuy({ product, info }: { product: Product; info: RetailInfo }) {
 
 function ProductView({ product, finishParam, widthParam }: { product: Product; finishParam?: string; widthParam: string | null }) {
   const brands = useCatalog((s) => s.brands);
+  // Custom models come with the Contractor plan (the server refuses anyone else), so only they see the link.
+  const canRequestModel = useSession((s) => s.user?.plan.id === 'contractor');
   const finishes = finishList(product);
   const fallback = finishes[defaultFinishIndex(product, DEFAULT_SURFACES)] ?? finishes[0];
   const finish = finishes.find((f) => f.id === finishParam) ?? fallback;
@@ -521,9 +523,11 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
           <Suspense fallback={null}>
             <QuoteButton product={product} className="btn big" />
           </Suspense>
-          <a className="pp-link" href={`#/orders/new?ref=${encodeURIComponent(product.id)}`}>
-            Request a custom version
-          </a>
+          {canRequestModel && (
+            <a className="pp-link" href={`#/orders/new?ref=${encodeURIComponent(product.id)}`}>
+              Request a custom version
+            </a>
+          )}
         </div>
 
         {retail && <WhereToBuy product={product} info={retail} />}

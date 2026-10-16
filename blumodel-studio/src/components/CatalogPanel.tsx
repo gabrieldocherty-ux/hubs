@@ -5,6 +5,7 @@ import { CATEGORIES, getProduct, priceFor } from '../data/catalog';
 import type { CategoryId, Product, Surfaces } from '../types';
 import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog } from '../store/useCatalog';
+import { useSession } from '../store/useSession';
 import { findDropTarget, placeAt, usePlacement, type ViewId } from '../lib/interaction';
 import { ProductArt } from './ProductArt';
 import { Info, Plus, Search } from './Icons';
@@ -255,6 +256,8 @@ function DragGhost() {
 }
 
 export function CatalogPanel() {
+  // Custom models come with the Contractor plan (the server refuses anyone else).
+  const canRequestModel = useSession((s) => s.user?.plan.id === 'contractor');
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<CategoryId | typeof ALL>(ALL);
   const [brand, setBrand] = useState<string>(ALL);
@@ -481,9 +484,11 @@ export function CatalogPanel() {
             </section>
           ) : null,
         )}
-        <p className="catalog-foot">
-          Can’t find it? <a href={hrefFor({ name: 'orders', rest: 'new' })}>Request a custom model</a>
-        </p>
+        {canRequestModel && (
+          <p className="catalog-foot">
+            Can’t find it? <a href={hrefFor({ name: 'orders', rest: 'new' })}>Request a custom model</a>
+          </p>
+        )}
       </div>
       <DragGhost />
     </div>
