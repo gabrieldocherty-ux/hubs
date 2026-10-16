@@ -62,7 +62,8 @@ server stopped, so nothing written in between is lost.
   the checkout and point them at the home with `--home`.
 - A USB stick formatted **exFAT** (FAT32 can't hold a file over 4 GB; Ubuntu 24.04 and Debian 12
   read exFAT with nothing extra), or SSH to the Wyse. Room for the bundle: about the size of
-  `data\blumodel.db` plus `data\uploads\`.
+  `data\blumodel.db` plus `data\uploads\`, and the database's size once more while it is written
+  (the copy is made beside the bundle, then removed).
 
 ### 1. Export (on this PC)
 

@@ -350,8 +350,9 @@ export function tarEntries(file) {
         longName = read(at, size).toString('utf8').replace(/\0[\s\S]*$/, '');
         continue;
       }
-      const magic = cstr(h, 257, 6);
-      const prefix = magic.startsWith('ustar') ? cstr(h, 345, 155) : '';
+      // POSIX ustar ("ustar\0", what this writer and bsdtar write) keeps a name prefix at 345; GNU
+      // tar's own format ("ustar  ") keeps other fields there and uses 'L' entries for long names.
+      const prefix = h.toString('latin1', 257, 263) === 'ustar\0' ? cstr(h, 345, 155) : '';
       const short = cstr(h, 0, 100);
       const name = pax.path ?? longName ?? (prefix ? `${prefix}/${short}` : short);
       const realSize = pax.size !== undefined ? Number(pax.size) : size;
@@ -818,7 +819,8 @@ export function importData({ config, bundle, replace = false, checkOnly = false,
   const staging = fs.mkdtempSync(path.join(checkOnly ? os.tmpdir() : privateDir(dataDir), checkOnly ? 'blumodel-check-' : '.import-'));
   const stamp = stampOf(now());
   const kept = { db: /** @type {string | null} */ (null), uploads: /** @type {string | null} */ (null) };
-  let swapped = false;
+  /** What has been moved so far, for an exact undo. */
+  const moved = { oldDb: /** @type {string[]} */ ([]), oldUploads: false, newDb: false, newUploads: false };
   try {
     // 1. Every file against the manifest. A check keeps only the database (to open it); an import
     //    keeps everything, beside the data folder, so the move into place is a rename.
@@ -847,21 +849,29 @@ export function importData({ config, bundle, replace = false, checkOnly = false,
     };
     if (checkOnly) return summary;
 
-    // 2. Keep what is there (moved, never deleted: put it back by renaming it).
+    // 2. Keep what is there (moved, never deleted: put it back by renaming it). Each step is
+    //    recorded as it happens, so a failure part way (Windows refusing to rename a folder
+    //    something has open, say) undoes exactly what was done.
     if (there?.db) {
       kept.db = `${config.DB_PATH}.before-import-${stamp}`;
-      for (const x of ['', '-wal', '-shm']) if (fs.existsSync(config.DB_PATH + x)) fs.renameSync(config.DB_PATH + x, kept.db + x);
+      for (const x of ['', '-wal', '-shm']) {
+        if (!fs.existsSync(config.DB_PATH + x)) continue;
+        fs.renameSync(config.DB_PATH + x, kept.db + x);
+        moved.oldDb.push(x);
+      }
     } else for (const x of ['-wal', '-shm']) fs.rmSync(config.DB_PATH + x, { force: true });
     if (fs.existsSync(config.UPLOAD_DIR)) {
       kept.uploads = `${config.UPLOAD_DIR}.before-import-${stamp}`;
       fs.renameSync(config.UPLOAD_DIR, kept.uploads);
+      moved.oldUploads = true;
     }
-    swapped = true;
 
     // 3. Into place.
     fs.renameSync(stagedDb, config.DB_PATH);
+    moved.newDb = true;
     privateFile(config.DB_PATH);
     privateDir(config.UPLOAD_DIR);
+    moved.newUploads = true;
     const staged = path.join(staging, 'uploads');
     for (const rel of listFiles(staged)) {
       const dest = toOs(config.UPLOAD_DIR, rel);
@@ -892,15 +902,15 @@ export function importData({ config, bundle, replace = false, checkOnly = false,
     }
     return summary;
   } catch (err) {
-    if (swapped) {
-      // Put back what was there, and keep what was imported aside to look at.
+    if (moved.oldDb.length || moved.oldUploads || moved.newDb || moved.newUploads) {
+      // Undo exactly what was done: what was imported goes aside to look at, what was there goes back.
       const failed = `.failed-import-${stamp}`;
       try {
-        for (const x of ['', '-wal', '-shm']) if (fs.existsSync(config.DB_PATH + x)) fs.renameSync(config.DB_PATH + x, `${config.DB_PATH}${failed}${x}`);
-        if (kept.db) for (const x of ['', '-wal', '-shm']) if (fs.existsSync(kept.db + x)) fs.renameSync(kept.db + x, config.DB_PATH + x);
-        if (fs.existsSync(config.UPLOAD_DIR)) fs.renameSync(config.UPLOAD_DIR, `${config.UPLOAD_DIR}${failed}`);
-        if (kept.uploads) fs.renameSync(kept.uploads, config.UPLOAD_DIR);
-        err.message += `\nWhat was there before is back in place; what was imported is kept as *${failed}.`;
+        if (moved.newDb) for (const x of ['', '-wal', '-shm']) if (fs.existsSync(config.DB_PATH + x)) fs.renameSync(config.DB_PATH + x, `${config.DB_PATH}${failed}${x}`);
+        for (const x of moved.oldDb) fs.renameSync(kept.db + x, config.DB_PATH + x);
+        if (moved.newUploads && fs.existsSync(config.UPLOAD_DIR)) fs.renameSync(config.UPLOAD_DIR, `${config.UPLOAD_DIR}${failed}`);
+        if (moved.oldUploads) fs.renameSync(kept.uploads, config.UPLOAD_DIR);
+        err.message += `\nWhat was there before is back in place${moved.newDb || moved.newUploads ? `; what was imported is kept as *${failed}` : ''}.`;
       } catch (undoErr) {
         err.message += `\nPutting the previous data back failed too (${undoErr.message}); it is kept as ${kept.db ?? '(no database)'} and ${kept.uploads ?? '(no uploads)'}.`;
       }

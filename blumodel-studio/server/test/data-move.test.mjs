@@ -20,7 +20,7 @@ import { Agent, sampleDoc } from './helpers.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { openDb } from '../db/index.mjs';
 import { migrate } from '../db/migrate.mjs';
-import { exportData, importData, openBundle, safeRelPath, tarEntries, tarHeader, existingData, BUNDLE_FORMAT } from '../ops/dataBundle.mjs';
+import { exportData, importData, openBundle, safeRelPath, tarEntries, tarHeader, existingData, listFiles, BUNDLE_FORMAT } from '../ops/dataBundle.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.resolve(HERE, '..');
@@ -469,3 +469,31 @@ test('import: an empty migrated database (a server that started once) is not "da
     rm(dir);
   }
 });
+
+test('import: a failure part way through setting the old data aside (a folder that can’t be renamed) undoes exactly what was done', () => {
+  const dir = tempDir();
+  try {
+    const bundle = exportData({ config: smallHome(path.join(dir, 'a')), out: path.join(dir, 'out') }).bundle;
+    // The machine being imported into has real data: a user, and an upload.
+    const wyse = smallHome(path.join(dir, 'wyse'));
+    const db = new DatabaseSync(wyse.DB_PATH);
+    db.prepare("INSERT INTO users (id, email, name, password_hash, role, created_at) VALUES ('u_2', 'b@test.blumodel', 'B', 'x', 'customer', 2)").run();
+    db.close();
+    // Where the uploads would be set aside is already taken by a non-empty folder: the rename fails
+    // on every OS, after the database has been moved aside.
+    const at = Date.UTC(2026, 9, 16, 5);
+    const blocked = `${wyse.UPLOAD_DIR}.before-import-2026-10-16T05-00-00Z`;
+    fs.mkdirSync(blocked, { recursive: true });
+    fs.writeFileSync(path.join(blocked, 'in-the-way.txt'), 'x');
+    assert.throws(() => importData({ config: wyse, bundle, replace: true, now: () => at }), /What was there before is back in place\.$/);
+    const back = new DatabaseSync(wyse.DB_PATH, { readOnly: true });
+    assert.equal(back.prepare('SELECT COUNT(*) AS n FROM users').get().n, 2, 'the database is back where it was');
+    back.close();
+    assert.equal(listFiles(wyse.UPLOAD_DIR, { skipTop: ['tmp'] }).length, 1, 'the uploads never moved');
+    const names = fs.readdirSync(path.dirname(wyse.DB_PATH));
+    assert.ok(!names.some((n) => /before-import|failed-import|^\.import-/.test(n) && !n.startsWith('uploads.before-import')), names.join(', '));
+  } finally {
+    rm(dir);
+  }
+});
+
