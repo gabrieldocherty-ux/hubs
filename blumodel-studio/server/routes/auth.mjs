@@ -246,6 +246,9 @@ export default function routes(ctx) {
         sessions.endAll(userId);
         limiter.reset(`login-email:${db.prepare('SELECT email FROM users WHERE id = ?').get(userId)?.email ?? ''}`);
         const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(userId);
+        // A browser signed in as someone else (a reset link opened there) leaves that session too;
+        // the new session's cookie replaces it.
+        sessions.end(rc.req, rc.res);
         sessions.start(rc.req, rc.res, userId);
         if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ name: user.name, supportEmail: config.legal?.supportEmail, viaReset: true }) });
         log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
