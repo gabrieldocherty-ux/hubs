@@ -141,7 +141,9 @@ enabled**); deploys (starts the server and checks `http://127.0.0.1:8790/api/hea
 `cloudflared.yml` and checks it offline; and prints what is left.
 
 Run it again any time: each step checks first, so a second run only repairs or updates. Options:
-`--home <dir>`, `--branch <name>`, `--repo <url>`, `--port <n>`, `--dry-run`.
+`--home <dir>`, `--branch <name>`, `--repo <url>`, `--port <n>`, `--dry-run`. A home installed with
+`--port` (Windows: `-Port`) keeps that port: later deploys, updates, rollbacks and the data scripts read
+it back from the home (`blumodel-studio.service`, or `run-server.cmd` on Windows) unless told otherwise.
 
 It **never** starts the tunnel, never opens the settings file or the tunnel's credentials, and
 never copies anything from another machine. At the end the site runs on the Wyse at

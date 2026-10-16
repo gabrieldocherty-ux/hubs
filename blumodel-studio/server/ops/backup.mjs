@@ -28,7 +28,9 @@ import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { loadConfig } from '../config.mjs';
+import { SERVER_DIR, loadConfig } from '../config.mjs';
+import { deployedHome } from '../lib/envFile.mjs';
+import { homePort } from './homePort.mjs';
 
 const POSIX = process.platform !== 'win32';
 
@@ -250,14 +252,16 @@ const SCRIPT_KEYS = ['DB_PATH', 'UPLOAD_DIR', 'BACKUP_DIR', 'BACKUP_KEEP', 'PORT
  *   --home <dir>      a home folder: <dir>/data/blumodel.db, <dir>/data/uploads, <dir>/data/backups
  *   --db <file>       the database (its uploads/ and backups/ beside it unless set)
  *   --uploads <dir>   the uploads folder
- *   --port <n>        the server's port (8790), for "is it running?"
+ *   --port <n>        the server's port, for "is it running?"
  * then DB_PATH, UPLOAD_DIR, BACKUP_DIR, PORT and HOST from the environment, then the defaults
- * (a deployed home's data/ when the script runs from <home>/app/server/scripts). Nothing else is
+ * (a deployed home's data/ when the script runs from <home>/app/server/scripts). With no --port and
+ * no PORT, the port is the one the home (--home, or the one the script runs from) was installed
+ * with (server/ops/homePort.mjs: its run-server.cmd, or the systemd unit), else 8790. Nothing else is
  * read from the environment, so an unrelated setting can't stop a backup, and no key is ever seen.
  * Returns `{ config, home }` (`home` is --home, resolved, or null).
- * @param {{ argv?: string[], env?: Record<string, string | undefined> }} [o]
+ * @param {{ argv?: string[], env?: Record<string, string | undefined>, serverDir?: string, portOf?: (home: string) => number | null }} [o]
  */
-export function scriptConfig({ argv = [], env = process.env } = {}) {
+export function scriptConfig({ argv = [], env = process.env, serverDir = SERVER_DIR, portOf = homePort } = {}) {
   const opt = (flag) => {
     const i = argv.indexOf(flag);
     return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : undefined;
@@ -278,6 +282,11 @@ export function scriptConfig({ argv = [], env = process.env } = {}) {
   }
   if (opt('--uploads')) e.UPLOAD_DIR = path.resolve(opt('--uploads'));
   if (opt('--port')) e.PORT = opt('--port');
+  if (!e.PORT) {
+    const portHome = home ?? (e.DB_PATH ? null : deployedHome(serverDir));
+    const p = portHome ? portOf(portHome) : null;
+    if (p) e.PORT = String(p);
+  }
   return { config: loadConfig(e, []), home };
 }
 

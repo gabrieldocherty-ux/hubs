@@ -313,7 +313,7 @@ any disk.
 | `--check` | verify only, change nothing |
 | `--home <dir>` | the home to import into (else `--db` / `--uploads`, `DB_PATH` / `UPLOAD_DIR`, the home the script runs from) |
 | `--replace` | import over existing data, keeping it as `*.before-import-<time>` |
-| `--port <n>` | the server's port, for the "is it stopped?" check (default 8790) |
+| `--port <n>` | the server's port, for the "is it stopped?" check (default: the port the home was installed with, read from its `run-server.cmd` or `blumodel-studio.service`, else 8790) |
 
 The same from the repo: `npm run data:export -- …`, `npm run data:import -- …`, and
 `npm run data:restore -- …` for `restore.mjs`. Exit codes: 0 done, 1 refused or failed (nothing

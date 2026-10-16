@@ -12,7 +12,9 @@
 // blumodel-studio.service (scripts/register-tasks.mjs installs it) and this must run with sudo,
 // because it stops and starts that service. docs/HOSTING.md.
 //
-// Env: BLUMODEL_HOME (the folder), BLUMODEL_PORT (8790), BLUMODEL_HOST (127.0.0.1; Windows),
+// Env: BLUMODEL_HOME (the folder), BLUMODEL_PORT (default: the port this home was installed with,
+//      read from its run-server.cmd on Windows or blumodel-studio.service on Linux, else 8790; so an
+//      update or a rollback checks the port the install used), BLUMODEL_HOST (127.0.0.1; Windows),
 //      BLUMODEL_ADMIN_EMAILS (ADMIN_EMAILS in a new settings template; empty otherwise).
 //      MISE_HOME / MISE_PORT / MISE_HOST are the deprecated names from before the rename; still read
 //      when the BLUMODEL_ name isn't set. DEMO_PAYMENTS is no longer a deploy setting: it lives in
@@ -64,6 +66,7 @@ import {
   sys32,
   userIds,
 } from '../server/ops/home.mjs';
+import { homePort } from '../server/ops/homePort.mjs';
 import { EXIT, listening, readDeployed, rollbackApp, stageApp, swapInApp, unitState, waitForHealth } from './host/lib.mjs';
 
 /** BLUMODEL_<name>, else the deprecated MISE_<name>, else `def`. */
@@ -95,7 +98,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.resolve(ROOT, distArg || 'dist');
 const L = homeLayout(setting('HOME', defaultHome()));
 const HOME = L.home;
-const PORT = String(setting('PORT', '8790'));
+const PORT = String(setting('PORT', homePort(HOME) ?? '8790'));
 const HOST = setting('HOST', '127.0.0.1');
 const healthArg = Number(opt('--health-timeout') || 60);
 const HEALTH_MS = (Number.isFinite(healthArg) ? Math.max(5, healthArg) : 60) * 1000;
