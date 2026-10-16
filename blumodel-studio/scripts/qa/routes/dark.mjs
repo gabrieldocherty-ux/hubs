@@ -312,6 +312,45 @@ async function exportItem(h, label) {
   await h.click(`[data-qa-item="${label}"]`);
 }
 
+/**
+ * On a phone the editor's panels are sheets: open one from the bottom bar (`label` is the button's
+ * aria-label) so the phone screenshot shows the panel and not just the plan. No-op on desktop.
+ */
+const phoneSheet = (label) => async (h) => {
+  if (!(await h.evaluate(() => !!document.querySelector('.mbar')))) return;
+  const ok = await h.evaluate((l) => {
+    const b = document.querySelector(`.mbar-actions button[aria-label="${l}"]`);
+    b?.click();
+    return !!b;
+  }, label);
+  if (!ok) throw new Error(`no "${label}" button in the phone's bottom bar`);
+  await h.waitFor('.sheet.is-open');
+  await h.sleep(600);
+};
+const steps =
+  (...fns) =>
+  async (h) => {
+    for (const f of fns) await f(h);
+  };
+
+/**
+ * Phone full-page shots stop at 16384 device pixels (5461 CSS px at 3x) and repeat the top after
+ * that, so a page taller than that is shot screen by screen instead (`--p2`, `--p3`, ...; the route
+ * sets `phoneFullPage: false`). No-op on desktop.
+ */
+async function phonePages(h) {
+  const r = await h.evaluate(() => ({ phone: window.innerWidth < 600, total: document.documentElement.scrollHeight, vh: window.innerHeight }));
+  if (!r.phone) return;
+  const step = r.vh - 80;
+  for (let y = step, k = 2; y < r.total - 40; y += step, k++) {
+    await h.evaluate((top) => window.scrollTo(0, top), y);
+    await h.sleep(250);
+    await h.shot(`p${k}`);
+  }
+  await h.evaluate(() => window.scrollTo(0, 0));
+  await h.sleep(250);
+}
+
 const editor = (name, extra, opts) => ({
   name,
   as: 'customer',
@@ -324,8 +363,8 @@ const crashNoise = [/deliberate crash/i, /The above error occurred/i, /React wil
 
 export default [
   // ── Public pages ──────────────────────────────────────────────────────────
-  ...both({ name: 'dark-landing', path: '#/welcome', as: 'anon', fullPage: true, check: darkCheck(null, { focus: true }) }),
-  ...both({ name: 'dark-pricing', path: '#/pricing', as: 'anon', fullPage: true, check: darkCheck() }),
+  ...both({ name: 'dark-landing', path: '#/welcome', as: 'anon', fullPage: true, phoneFullPage: false, check: darkCheck(phonePages, { focus: true }) }),
+  ...both({ name: 'dark-pricing', path: '#/pricing', as: 'anon', fullPage: true, phoneFullPage: false, check: darkCheck(phonePages) }),
   ...both({ name: 'dark-terms', path: '#/terms', as: 'anon', check: darkCheck() }),
   ...both({ name: 'dark-privacy', path: '#/privacy', as: 'anon', check: darkCheck() }),
   ...both({ name: 'dark-signin', path: '#/signin', as: 'anon', waitFor: ['input[type="password"]'], check: darkCheck(null, { focus: 'input' }) }),
@@ -372,7 +411,7 @@ export default [
   ...both({ name: 'dark-orders', as: 'contractor', setup: ({ api }) => contractorAt(api, '#/orders'), check: darkCheck() }),
   ...both({ name: 'dark-orders-new', as: 'contractor', setup: ({ api }) => contractorAt(api, '#/orders/new'), check: darkCheck() }),
   ...both({ name: 'dark-pro', as: 'contractor', setup: ({ api }) => contractorAt(api, '#/pro'), check: darkCheck() }),
-  ...['catalog', 'price-book', 'quotes', 'modelling', 'brand', 'company'].map((tab) => ({
+  ...['catalog', 'price-book', 'brands', 'quotes', 'modelling', 'brand', 'company'].map((tab) => ({
     name: `dark-pro-${tab}`,
     as: 'contractor',
     colorScheme: 'dark',
@@ -411,8 +450,8 @@ export default [
     })
   ),
   ...both(editor('dark-editor-walls', ui({ viewMode: 'walls' }))),
-  ...both(editor('dark-editor-room', ui({ leftTab: 'room', viewMode: 'split' }))),
-  ...both(editor('dark-editor-checks', ui({ rightTab: 'checks' }))),
+  ...both(editor('dark-editor-room', steps(ui({ leftTab: 'room', viewMode: 'split' }), phoneSheet('Room and finishes')))),
+  ...both(editor('dark-editor-checks', steps(ui({ rightTab: 'checks' }), phoneSheet('Details')))),
   ...both({
     name: 'dark-editor-estimate',
     as: 'customer',
@@ -421,7 +460,7 @@ export default [
       return newKitchen(me, 'Dark Estimate Kitchen');
     },
     waitFor: ['.topbar', '.plan-view canvas'],
-    check: darkCheck(ui({ rightTab: 'estimate', viewMode: 'split' })),
+    check: darkCheck(steps(ui({ rightTab: 'estimate', viewMode: 'split' }), phoneSheet('Details'))),
   }),
   ...both(
     editor('dark-editor-toast', async (h) => {
@@ -446,6 +485,20 @@ export default [
       await h.evaluate(() => document.querySelector(".mbar-actions button[aria-label='Add products']")?.click());
       await h.waitFor('.sheet.is-open');
       await h.sleep(500);
+    }),
+  },
+  {
+    name: 'dark-editor-phone-item',
+    as: 'customer',
+    viewport: 'phone',
+    colorScheme: 'dark',
+    setup: async ({ me }) => newKitchen(me, 'Dark Item Kitchen'),
+    waitFor: ['.mbar'],
+    check: darkCheck(async (h) => {
+      await qaStore(h);
+      await store(h, () => window.__blumodelQA.store.getState().select('qa-range'));
+      await h.sleep(400);
+      await phoneSheet('Item')(h);
     }),
   },
   ...both({
