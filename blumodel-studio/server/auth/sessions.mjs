@@ -7,6 +7,8 @@
 
 import crypto from 'node:crypto';
 import { deviceOf } from './device.mjs';
+import { HttpError } from '../http/respond.mjs';
+import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
 
 export const COOKIE = 'blumodel_session';
 export const SESSION_DAYS = 30;
@@ -65,6 +67,8 @@ export function createSessionStore({ db, config, now = Date.now }) {
 
     /** Starts a session and sets its cookie on `res`. */
     start(req, res, userId) {
+      // A disabled account (Admin > Users) never gets a session, whichever route signs it in.
+      if (isDisabled(db, userId)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
       const token = crypto.randomBytes(32).toString('base64url');
       const t = now();
       const expires = t + SESSION_DAYS * DAY;
@@ -90,7 +94,7 @@ export function createSessionStore({ db, config, now = Date.now }) {
       if (!token) return null;
       const hash = sha256(token);
       const row = db
-        .prepare('SELECT s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?')
+        .prepare('SELECT s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND NOT EXISTS (SELECT 1 FROM account_status d WHERE d.user_id = u.id)')
         .get(hash);
       if (!row) return null;
       const t = now();

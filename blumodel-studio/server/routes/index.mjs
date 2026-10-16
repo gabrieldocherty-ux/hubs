@@ -19,8 +19,9 @@ import billing from './billing.mjs';
 import contractors from './contractors.mjs';
 import account from './account.mjs';
 import ops from './ops.mjs';
+import adminPanel from './adminPanel.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -40,4 +41,5 @@ export const ROUTE_MODULE_NAMES = [
   'contractors',
   'account',
   'ops',
+  'admin-panel',
 ];

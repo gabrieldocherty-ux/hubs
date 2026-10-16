@@ -23,6 +23,7 @@ import { createMailer } from '../email/index.mjs';
 import { passwordChangedEmail, resetEmail, signInAlertEmail } from '../email/messages.mjs';
 import { createResetStore, maskEmail, RESET_MINUTES } from '../auth/resets.mjs';
 import { audit } from '../lib/audit.mjs';
+import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -132,6 +133,8 @@ export default function routes(ctx) {
           throw new HttpError(401, 'That email and password do not match.');
         }
         limiter.reset(keyPair);
+        // Only after the right password, so it says nothing about an address to anyone else.
+        if (isDisabled(db, user.id)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
         alertNewDevice(rc.req, user);
         sessions.start(rc.req, rc.res, user.id);
         return { user: userWire(user) };

@@ -120,7 +120,8 @@ export function createBillingService({ db, now, log = console }) {
       if (!r) return FREE;
       const t = now();
       if (r.provider === 'demo' && r.status === 'active' && !r.cancel_at_period_end && r.current_period_end && t >= r.current_period_end) r = rollDemo(r);
-      if (r.status === 'active' && r.cancel_at_period_end && r.current_period_end && t >= r.current_period_end) {
+      // A complimentary plan given with an end date (Admin > Users) ends then, whatever its cancel flag says.
+      if (r.status === 'active' && (r.cancel_at_period_end || r.provider === 'comp') && r.current_period_end && t >= r.current_period_end) {
         db.prepare("UPDATE subscriptions SET status = 'canceled', canceled_at = COALESCE(canceled_at, ?), updated_at = ? WHERE id = ?").run(r.current_period_end, t, r.id);
         return { ...FREE, status: 'canceled' };
       }
