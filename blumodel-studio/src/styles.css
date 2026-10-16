@@ -5,17 +5,16 @@
  * Light is the default. Dark comes from `data-theme="dark"` on <html>, which src/lib/theme.ts and
  * public/theme-boot.js set from Account settings > Preferences > Appearance (System follows the
  * device); the media query below covers a page whose script never ran. Both dark blocks must stay
- * identical (src/lib/theme.test.ts checks it, and that every light token has a dark value). Dark
+ * identical (src/lib/__tests__/theme.test.ts checks it, and that every light token has a dark value). Dark
  * applies to screens only: printing always uses the light tokens, so a printed quote or plan is
  * dark ink on white paper whatever the setting.
  *
- * `.theme-paper` (and the document previews listed with it) keeps the light tokens inside a dark
- * page: a quote sheet is a printed page and is shown as one.
+ * `.theme-paper` (and the quote sheet listed with it) keeps the light tokens inside a dark page: a
+ * quote sheet is a printed page and is shown as one, on the dark page around it.
  */
 :root,
 .theme-paper,
-.quote-sheet,
-.quote-page {
+.quote-sheet {
   --paper: #f3eee5;
   --paper-2: #ebe4d8;
   --panel: #fbf9f4;
@@ -188,8 +187,7 @@
 
 /* A light-token scope inside a dark page reads as light, text included. */
 .theme-paper,
-.quote-sheet,
-.quote-page {
+.quote-sheet {
   color: var(--ink);
 }
 
