@@ -168,7 +168,8 @@ export default [
       await h.click('.avatar');
       await h.waitFor('.menu[role="menu"]');
       const items = await h.evaluate(() => [...document.querySelectorAll('.menu [role="menuitem"]')].map((b) => b.textContent.replace(/\s+/g, ' ').trim()));
-      if (!items.some((t) => t.startsWith('Make custom models'))) throw new Error(`no "Make custom models" in the menu: ${items.join(' | ')}`);
+      // Custom models come with the Contractor plan, so a customer's menu has no entry for them.
+      if (items.some((t) => t.startsWith('Make custom models'))) throw new Error(`a customer sees "Make custom models" in the menu: ${items.join(' | ')}`);
       if (items.some((t) => /contractor/i.test(t))) throw new Error(`a customer sees a contractor entry: ${items.join(' | ')}`);
     },
   },

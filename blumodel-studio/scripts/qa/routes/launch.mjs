@@ -124,21 +124,26 @@ async function demoUnlimited(me) {
   if (d.status >= 300) throw new Error(`completing the demo checkout failed (${d.status}): ${d.body?.error ?? d.text}`);
 }
 
-/** A fresh unpaid custom-model order for the seeded customer (as orders.mjs makes them). */
+/**
+ * An unpaid custom-model order the seeded customer made before 2026-10-15 (a Standard model at
+ * $279 USD), as orders.mjs makes them: custom models aren't sold any more (they come with the
+ * Contractor plan), so the API refuses a customer's request and the old order goes straight into
+ * the DB. It keeps its price and its checkout.
+ */
 async function newOrder(api) {
-  const r = await api.as('customer').post('/api/orders', {
-    target: 'customer',
-    rush: false,
-    items: [
-      {
-        tier: 'standard',
-        extraFinishes: 0,
-        brief: { productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', name: 'QA launch range', widthIn: 30, depthIn: 28, heightIn: 36, notes: 'QA', referenceFileIds: [], refProductId: 'range-30' },
-      },
-    ],
-  });
-  if (r.status !== 201) throw new Error(`creating an order failed: ${r.status} ${JSON.stringify(r.body)}`);
-  return r.body.order.id;
+  const userId = api.sql('SELECT id FROM users WHERE email = ?', 'demo-customer@blumodel.test')[0]?.id;
+  if (!userId) throw new Error('the demo customer does not exist (did the core seed run?)');
+  const id = `o_qalaunch${globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+  const t = Date.now();
+  const brief = JSON.stringify({ productTypeId: 'range-gas', kind: 'range', variant: 'gas-4', category: 'appliances', name: 'QA launch range', widthIn: 30, depthIn: 28, heightIn: 36, notes: 'QA', referenceFileIds: [], refProductId: 'range-30' });
+  api.sql(
+    `INSERT INTO orders (id, user_id, target, status, tier, extras, amount_cents, currency, provider, brief, ref_product_id, pending_since, created_at, updated_at)
+     VALUES (?, ?, 'customer', 'draft', 'standard', '{"rush":false,"extraFinishes":0}', 27900, 'usd', 'demo', ?, 'range-30', ?, ?, ?)`,
+    id, userId, brief, t, t, t,
+  );
+  api.sql("INSERT INTO order_items (order_id, idx, brief, tier, extra_finishes, amount_cents) VALUES (?, 0, ?, 'standard', 0, 27900)", id, brief);
+  api.sql("INSERT INTO order_events (order_id, type, to_status, by_user_id, created_at) VALUES (?, 'created', 'draft', ?, ?)", id, userId, t);
+  return id;
 }
 
 /** The seeded demo range (server/seed/core.mjs). */
@@ -374,8 +379,8 @@ export default [
       const soon = await buttonsLabelled(h, 'Opens soon');
       if (soon.length !== 2 || soon.some((b) => !b.disabled)) throw new Error(`Unlimited and Contractor should show a disabled “Opens soon”: ${JSON.stringify(soon)}`);
       if ((await buttonsLabelled(h, 'Go Unlimited')).length) throw new Error('“Go Unlimited” is still offered while payments are not open');
-      const models = await buttonsLabelled(h, 'Custom models open soon');
-      if (models.length !== 1 || !models[0].disabled) throw new Error('the custom-model button is not “Custom models open soon” (disabled)');
+      // Custom models come with the Contractor plan: no button or price of their own.
+      if ((await buttonsLabelled(h, 'Custom models')).length) throw new Error('the pricing page still has a custom-model button of its own');
       if (!(await buttonsLabelled(h, 'Start free')).length) throw new Error('“Start free” must stay: designing is unaffected');
       await noSideScroll(h);
     },
@@ -443,17 +448,23 @@ export default [
     check: noSideScroll,
   },
   {
+    // Custom models need no payment (they come with the Contractor plan), so requests stay open
+    // while payments are off.
     name: 'pay-none-orders-new',
     path: '#/orders/new?qa-payments=none',
-    as: 'customer',
-    expectText: ['Make custom models', 'Custom models open soon'],
-    check: noSideScroll,
+    as: 'contractor',
+    waitFor: ['.ord-allowance'],
+    expectText: ['Make custom models', 'models left this month'],
+    check: async (h) => {
+      await noDemoWording(h, 'the model request');
+      await noSideScroll(h);
+    },
   },
   {
     name: 'pay-none-order-unpaid',
     as: 'customer',
     setup: async ({ api }) => ({ path: `#/orders/${await newOrder(api)}?qa-payments=none` }),
-    expectText: ['QA launch range', 'Custom models open soon', 'Payments open soon'],
+    expectText: ['QA launch range', 'Payments open soon'],
     check: async (h) => {
       const b = await buttonsLabelled(h, 'Payments open soon');
       if (!b.length || b.some((x) => !x.disabled)) throw new Error(`the Pay button should be a disabled “Payments open soon”: ${JSON.stringify(b)}`);
@@ -588,8 +599,9 @@ export default [
   {
     name: 'pay-stripe-orders-new',
     path: '#/orders/new?qa-payments=stripe',
-    as: 'customer',
-    expectText: ['Make custom models', 'You pay on Stripe’s secure page'],
+    as: 'contractor',
+    waitFor: ['.ord-allowance'],
+    expectText: ['Make custom models', 'models left this month'],
     check: async (h) => {
       await noDemoWording(h, 'the model request');
       await noCardFields(h);

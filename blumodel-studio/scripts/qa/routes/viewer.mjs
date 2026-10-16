@@ -146,8 +146,10 @@ export default [
     path: '#/p/range-30',
     as: 'anon',
     waitFor: ['.product-stage[data-ready="1"] canvas', '.pp-dims'],
-    expectText: ['Gas Range 30″', 'Add to a kitchen', 'Request a custom version'],
+    expectText: ['Gas Range 30″', 'Add to a kitchen'],
     check: async (h) => {
+      // Custom models come with the Contractor plan: a visitor gets no request link (scripts/qa/routes/fix.mjs).
+      if (await h.evaluate(() => document.body.innerText.includes('Request a custom version'))) throw new Error('a visitor is offered "Request a custom version"');
       await dimsMatch(h, { W: 30, D: 28, H: 36 });
       // The turntable spins, so frames are expected; the stage must have drawn something.
       const stats = await h.evaluate(() => ({ canvas: window.__blumodelQa?.canvas, frames: window.__blumodelQa?.frames ?? 0, calls: window.__blumodelQa?.calls ?? 0 }));
