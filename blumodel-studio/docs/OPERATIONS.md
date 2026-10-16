@@ -279,7 +279,16 @@ node scripts/tunnel/setup-tunnel.mjs --validate     write them into the home, th
 keep-alive to the origin), anything else → 404. `--validate` runs `cloudflared tunnel --config <file>
 ingress validate` and `ingress rule https://blumodel.studio/`, which only read the file. It refuses to
 rewrite `run-tunnel.cmd` while that tunnel runs (stop it first); cloudflared reads `cloudflared.yml`
-only when it starts, so restart the tunnel after a change.
+only when it starts, so restart the tunnel after a change. `--credentials <file>` names the
+credentials JSON when it isn't in `%USERPROFILE%\.cloudflared\` (on Linux the default is
+`<home>/.cloudflared/<id>.json`).
+
+**Moving the tunnel to another machine** (the Dell Wyse) is in [HOSTING.md](HOSTING.md), *Move the
+tunnel*: the credentials JSON is copied by hand (never by a script, never `cert.pem`), and **only one
+machine may run the tunnel at a time**. Cloudflare spreads visitors over every connector that runs
+it, so two machines with different databases would split the site's accounts, kitchens and payments
+between them. Stop this PC's tunnel and server before the other machine's tunnel starts; going back
+means stopping that one first.
 
 ## Moving the home (once, from before the rename)
 

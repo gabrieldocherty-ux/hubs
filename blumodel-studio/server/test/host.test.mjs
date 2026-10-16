@@ -729,3 +729,87 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
     rm(dir);
   }
 });
+
+// ── 4. the tunnel on another machine ─────────────────────────────────────
+
+test('the tunnel’s credentials: %USERPROFILE%\\.cloudflared\\<id>.json on Windows, <home>/.cloudflared/<id>.json on Linux (readable by blumodel)', async () => {
+  const { TUNNEL_ID, credentialsFor } = await import('../../scripts/tunnel/tunnel.mjs');
+  assert.equal(credentialsFor({ platform: 'win32', homedir: 'C:\\Users\\owner' }), `C:\\Users\\owner\\.cloudflared\\${TUNNEL_ID}.json`);
+  assert.equal(credentialsFor({ platform: 'linux', home: '/srv/blumodel-studio' }), `/srv/blumodel-studio/.cloudflared/${TUNNEL_ID}.json`);
+  assert.equal(credentialsFor({ platform: 'linux', home: '/opt/bms', id: '00000000-0000-0000-0000-000000000000' }), '/opt/bms/.cloudflared/00000000-0000-0000-0000-000000000000.json');
+});
+
+test('cloudflared.yml on Linux: the same tunnel and ingress as on Windows, the credentials under the home, and says blumodel-tunnel.service runs it', async () => {
+  const { tunnelConfigYaml, TUNNEL_ID } = await import('../../scripts/tunnel/tunnel.mjs');
+  const creds = `/srv/blumodel-studio/.cloudflared/${TUNNEL_ID}.json`;
+  const lin = tunnelConfigYaml({ credentials: creds, platform: 'linux' });
+  const win = tunnelConfigYaml({ credentials: creds, platform: 'win32' });
+  const body = (y) => y.split('\n').filter((l) => !l.startsWith('#')).join('\n');
+  assert.equal(body(lin), body(win), 'only the comment differs');
+  assert.match(lin, new RegExp(`^credentials-file: '/srv/blumodel-studio/\\.cloudflared/${TUNNEL_ID}\\.json'$`, 'm'));
+  assert.match(lin, /^# Run by blumodel-tunnel\.service \(systemd\)\. .*sudo systemctl restart blumodel-tunnel\.$/m);
+  assert.match(win, /^# Run by run-tunnel\.cmd \(the BluModelTunnel task starts it\)\./m);
+  assert.match(lin, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.ok(lin.trimEnd().endsWith('- service: http_status:404'));
+  assert.ok(!lin.includes('\r'));
+  assert.throws(() => tunnelConfigYaml({ credentials: '', platform: 'linux' }), /needs the credentials file path/);
+});
+
+test('setup-tunnel --dry-run --platform linux: only cloudflared.yml (no .cmd scripts), the .cloudflared folder for the credentials, and how to copy them in; --credentials overrides', () => {
+  const cli = (...a) => spawnSync(NODE, [path.join(ROOT, 'scripts', 'tunnel', 'setup-tunnel.mjs'), ...a], { encoding: 'utf8', windowsHide: true, timeout: 60_000 });
+  const r = cli('--dry-run', '--platform', 'linux', '--home', '/srv/blumodel-studio');
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /── would write \/srv\/blumodel-studio\/cloudflared\.yml/);
+  assert.doesNotMatch(r.stdout, /\.cmd|\.vbs/);
+  assert.match(r.stdout, /credentials-file: '\/srv\/blumodel-studio\/\.cloudflared\/064671cd-a658-4240-8626-c697b9f148ac\.json'/);
+  assert.match(r.stdout, /would create \/srv\/blumodel-studio\/\.cloudflared \(mode 700, owned by blumodel\)/);
+  assert.match(r.stdout, /Copy 064671cd-a658-4240-8626-c697b9f148ac\.json there yourself, then: sudo chown blumodel:blumodel .* && sudo chmod 600 /);
+  assert.match(r.stdout, /Dry run: nothing was written\./);
+  const other = cli('--dry-run', '--platform', 'linux', '--home', '/srv/blumodel-studio', '--credentials', '/etc/cloudflared/blumodel.json', '--port', '8899');
+  assert.equal(other.status, 0, other.stderr);
+  assert.match(other.stdout, /credentials-file: '\/etc\/cloudflared\/blumodel\.json'/);
+  assert.match(other.stdout, /service: http:\/\/127\.0\.0\.1:8899/);
+  if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, 2, 'only a dry run may pretend to be Linux');
+  assert.equal(cli('--dry-run', '--tunnel-id', 'not-an-id').status, 2);
+});
+
+test('setup-tunnel writes the Windows files into a temp home and cloudflared validates them offline (named credentials, never the real ones)', { skip: (!WIN && 'Windows supervisor files') || false, timeout: 60_000 }, async () => {
+  const { findCloudflared } = await import('../../scripts/tunnel/tunnel.mjs');
+  const cf = findCloudflared();
+  const home = tempDir('blumodel-tunwrite-');
+  try {
+    const args = [path.join(ROOT, 'scripts', 'tunnel', 'setup-tunnel.mjs'), '--home', home, '--port', '8904', '--credentials', path.join(home, 'creds.json')];
+    if (cf) args.push('--validate');
+    else args.push('--cloudflared', 'C:\\nowhere\\cloudflared.exe');
+    const r = spawnSync(NODE, args, { encoding: 'utf8', windowsHide: true, timeout: 60_000 });
+    if (!cf) {
+      assert.equal(r.status, 1, 'refuses without cloudflared');
+      return;
+    }
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.deepEqual(fs.readdirSync(home).sort(), ['cloudflared.yml', 'run-tunnel.cmd', 'start-tunnel.cmd', 'start-tunnel.vbs', 'stop-tunnel.cmd']);
+    assert.match(r.stdout, /PASS {2}cloudflared ingress validate/);
+    assert.match(r.stdout, /PASS {2}https:\/\/blumodel\.studio\/ goes to http:\/\/127\.0\.0\.1:8904/);
+    assert.match(r.stdout, /PASS {2}any other hostname gets a 404/);
+    assert.match(r.stderr, /creds\.json does not exist/);
+  } finally {
+    rm(home);
+  }
+});
+
+test('cloudflared accepts the Linux config too (offline ingress validate and rule on a temp copy)', { skip: !WIN && 'cloudflared is only looked for on Windows here', timeout: 60_000 }, async () => {
+  const { findCloudflared, tunnelConfigYaml, TUNNEL_ID } = await import('../../scripts/tunnel/tunnel.mjs');
+  const cf = findCloudflared();
+  if (!cf) return;
+  const dir = tempDir('blumodel-cfglin-');
+  try {
+    const file = path.join(dir, 'cloudflared.yml');
+    fs.writeFileSync(file, tunnelConfigYaml({ credentials: `/srv/blumodel-studio/.cloudflared/${TUNNEL_ID}.json`, platform: 'linux' }));
+    const v = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'validate'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+    assert.equal(v.status, 0, v.stdout + v.stderr);
+    const rule = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://blumodel.studio/api/health'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+    assert.match(rule.stdout + rule.stderr, /service: http:\/\/127\.0\.0\.1:8790/);
+  } finally {
+    rm(dir);
+  }
+});
