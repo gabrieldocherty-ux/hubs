@@ -180,6 +180,7 @@ Supersedes the Model pack ($129 for up to 8 products, 2026-10-14, never on the l
 
 **The allowance** (`server/payments/allowance.mjs`; the server enforces all of it, the form only explains it):
 - The month is the subscription's **current billing period**; a complimentary plan (no period) uses the calendar month, UTC.
+- Periods tile exactly: each starts where the last one ended (`subscriptions.current_period_start`, kept by a trigger from `pricing-003-period-start` as the previous period end), never "a month before the end", which overlapped around short months (an end of Feb 28 started Jan 28, inside a January period ending Jan 31). A row from before pricing-003 uses a month before the end until its next renewal.
 - A model counts **when its request is sent**. It goes **back to the allowance** if the request is cancelled **before work starts**, by the contractor (*Withdraw request* on its page) or by the studio (*Cancel request…* in the queue drawer, with a reason the contractor sees). Once the studio starts, it counts.
 - **Unused models don't roll over.** Grants apply to the period they were given in only.
 - Past the allowance the form says how many are left and when it resets (*"N of 3 models left this month - resets November 15"*), lets the request be prepared but not sent, and offers *Need more? Contact us*. The server answers `409 { needs: 'allowance', allowance }` with the reset date.
