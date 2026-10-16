@@ -43,7 +43,11 @@ export const STORES = [
   { slug: 'wayfair', name: 'Wayfair', domain: 'wayfair.ca' },
   { slug: 'costco', name: 'Costco', domain: 'costco.ca' },
   { slug: 'walmart', name: 'Walmart', domain: 'walmart.ca' },
+  { slug: 'structube', name: 'Structube', domain: 'structube.com', pathPrefix: '/en_ca/' },
 ];
+// Appliance dealers in the round-2 research (Tasco, Leon's, Tepperman's, Canadian Appliance, Handy,
+// CANEX) are deliberately not stores: the research lists them as price evidence, not as places to
+// send shoppers (CANEX is military-only and in-store). Their rows are dropped as "unknown store".
 const normStore = (s) => String(s ?? '').toLowerCase().replace(/[’']/g, "'").replace(/\s+/g, ' ').trim();
 const STORE_BY_NAME = new Map(STORES.flatMap((s) => [normStore(s.name), normStore(s.slug), ...(s.aliases ?? []).map(normStore)].map((n) => [n, s])));
 
@@ -326,6 +330,13 @@ function dedupe(entries, log) {
     const keys = [];
     if (e.model) keys.push(`${e.brand.toLowerCase()}|m:${e.model}`);
     if (e.upc) keys.push(`${e.brand.toLowerCase()}|u:${e.upc}`);
+    // The same store listing researched twice under different keys (round 1 and round 2 keyed some
+    // Home Depot items differently): one product. A store's SKU names one product on its site.
+    for (const s of e.stores) {
+      const st = STORE_BY_NAME.get(normStore(s?.store));
+      const sku = typeof s?.sku === 'string' ? s.sku.trim() : '';
+      if (st && sku) keys.push(`s:${st.slug}|${sku}`);
+    }
     const found = keys.map((k) => byKey.get(k)).find(Boolean);
     if (!found) {
       out.push(e);
@@ -407,11 +418,14 @@ export function buildRetailCatalog(files) {
     }
     const opts = [...new Set((e.widthOptionsIn ?? []).map((v) => pos(v, 6, 96)).filter((v) => v !== null))].sort((a, b) => a - b);
     const pub = { w: pos(e.widthIn, 3, 240) ?? opts[0] ?? null, d: pos(e.depthIn, 1, 120), h: pos(e.heightIn, 0.1, 120) };
-    if (pub.w === null) {
+    // A stool or a pendant stands alone (nothing lines up with its width), so a listing that gives
+    // only a seat height or no size at all still places at the type's typical size, marked typical.
+    const sizeFree = e.kind === 'stool' || e.kind === 'pendant';
+    if (pub.w === null && !sizeFree) {
       drop('no published width');
       continue;
     }
-    const typeId = classify(e, pub.w, pub.d, pub.h);
+    const typeId = classify(e, pub.w ?? 0, pub.d, pub.h);
     if (!typeId) {
       drop(`no product type for "${e.kind}"`);
       continue;
@@ -440,10 +454,11 @@ export function buildRetailCatalog(files) {
     }
 
     // The placed size: the listing's numbers, else the type's typical ones (marked).
-    let w = pub.w;
+    let w = pub.w ?? TYPES[typeId][2];
     let d = pub.d ?? td;
     let h = pub.h ?? th;
     const typical = [];
+    if (pub.w === null) typical.push('width');
     if (pub.d === null) typical.push('depth');
     if (pub.h === null) typical.push('height');
     let elev = telev;
@@ -479,7 +494,7 @@ export function buildRetailCatalog(files) {
       note = `The ${fmtIn(pub.w)} sink, drawn in a ${fmtIn(base)} sink base cabinet.`;
     } else if (kind === 'pendant' && pub.d === null && variant !== 'linear') {
       d = w; // a round shade is as deep as it is wide
-      typical.splice(typical.indexOf('depth'), 1);
+      if (pub.w !== null) typical.splice(typical.indexOf('depth'), 1);
     } else if (kind === 'wall' && variant !== 'bridge' && pub.h !== null && pub.h > 30) {
       elev = 54;
     } else if (kind === 'wall' && variant === 'bridge') {

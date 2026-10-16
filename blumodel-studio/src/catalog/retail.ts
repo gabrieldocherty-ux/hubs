@@ -43,8 +43,8 @@ export interface RetailInfo {
   checkedAt: string;
   /** The size the listing gave, in inches; null where it gave none. */
   size: { w: number | null; d: number | null; h: number | null };
-  /** Placed dimensions taken from the type's typical size because the listing had none. */
-  typical: ('depth' | 'height')[];
+  /** Placed dimensions taken from the type's typical size because the listing had none (width only for stools and pendants). */
+  typical: ('width' | 'depth' | 'height')[];
   /** How it is drawn when that differs from the listing (a sink in its base cabinet…). */
   note?: string;
   /** A door style the app doesn't draw (raised panel…), for the facts. */

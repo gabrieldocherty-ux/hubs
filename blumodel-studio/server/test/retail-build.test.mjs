@@ -92,6 +92,34 @@ test('the same product listed twice (brand + model number, or UPC) merges its st
   assert.equal(log.merged.length, 2);
 });
 
+test('round 2: the same store listing under another key merges by store SKU; Structube is a store, appliance dealers are not', () => {
+  const { data, log } = build([
+    entry({ key: 'hd-edson-b24', name: 'Edson 24 in base', widthIn: 24, stores: [store('Home Depot', 'https://www.homedepot.ca/product/edson-b24/1001421090', { sku: '1001421090' })] }),
+    entry({ key: 'hampton-bay-edson-b24-white', name: 'Edson 24 in assembled base cabinet', widthIn: 24, stores: [store('Home Depot', 'https://www.homedepot.ca/product/hampton-bay-edson-24/1001421090', { sku: '1001421090', priceCad: 289 })] }),
+    entry({ key: 'structube-laval', kind: 'stool', category: 'seating', name: 'Laval counter stool', widthIn: 17.3, depthIn: 19.7, heightIn: 36.6, stores: [store('Structube', 'https://www.structube.com/en_ca/laval-counter-stool?pid=1', { priceCad: 159 })] }),
+    entry({ key: 'dealer-dw', kind: 'dishwasher', category: 'appliances', name: 'Dishwasher (SHE3AEM2N)', widthIn: 24, stores: [store('Tasco Appliance', 'https://www.tascoappliance.ca/bosch-she3aem2n'), store('CANEX', 'https://www.canex.ca/she3aem2n')] }),
+  ]);
+  assert.deepEqual(data.products.map((p) => p.retail.key).sort(), ['hd-edson-b24', 'structube-laval']);
+  assert.ok(log.merged.includes('hampton-bay-edson-b24-white → hd-edson-b24'));
+  assert.equal(data.products.find((p) => p.retail.key === 'hd-edson-b24').price, 289);
+  assert.ok(data.stores.some((s) => s.slug === 'structube'));
+  assert.equal(data.leftOut.byReason['no store link on a known store’s Canadian site'], 1);
+});
+
+test('a stool or pendant with no listed size places at the type’s typical size, marked typical; other kinds still need a width', () => {
+  const { data } = build([
+    entry({ key: 'stool', kind: 'stool', category: 'seating', name: 'Swivel counter stool with back', widthIn: null, depthIn: null, heightIn: null }),
+    entry({ key: 'pendant', kind: 'pendant', category: 'lighting', name: 'Opal globe pendant', widthIn: null, depthIn: null, heightIn: null }),
+    entry({ key: 'hood', kind: 'hood', category: 'appliances', name: 'Hood insert', widthIn: null }),
+  ]);
+  const by = (k) => data.products.find((p) => p.retail.key === k);
+  assert.equal(by('hood'), undefined);
+  assert.deepEqual([by('stool').retail.type, by('stool').widthIn, by('stool').heightIn], ['stool-backed', 19, 38]);
+  assert.deepEqual(by('stool').retail.typical, ['width', 'depth', 'height']);
+  assert.deepEqual([by('pendant').retail.type, by('pendant').widthIn, by('pendant').depthIn], ['pendant-globe', 12, 12]);
+  assert.deepEqual(by('pendant').retail.typical, ['width', 'depth', 'height']);
+});
+
 test('one cabinet researched once per finish becomes one product whose listings name their finish', () => {
   const { data } = build([
     entry({ key: 'acme-b30-white', name: 'Edson 30 in base cabinet, White', stores: [store('Home Depot', 'https://www.homedepot.ca/product/w/1', { sku: '1' })] }),
