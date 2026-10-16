@@ -2197,6 +2197,13 @@ kbd {
   padding-right: 64px;
 }
 
+/* Edge draws its own eye button in a password field once it has text, right next to our Show:
+   two reveal controls, one under the other's padding. Ours is the one with a label. */
+.pw input::-ms-reveal,
+.pw input::-ms-clear {
+  display: none;
+}
+
 .pw button {
   position: absolute;
   right: 6px;
