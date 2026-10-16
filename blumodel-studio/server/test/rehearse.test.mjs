@@ -63,6 +63,20 @@ test('homePort on Linux: Environment=PORT from blumodel-studio.service, only whe
   assert.equal(homePort('', { platform: 'linux', readFile }), null);
 });
 
+test('register-tasks --dry-run names the home’s own port in the server task’s description (not always 8790)', { skip: !WIN && 'Windows tasks' }, () => {
+  const dir = tempDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'run-server.cmd'), serverScripts({ node: NODE, port: 8934 })['run-server.cmd']);
+    const r = spawnSync(NODE, [path.join(ROOT, 'scripts', 'register-tasks.mjs'), '--home', dir, '--only', 'server', '--at-startup', '--dry-run'], { encoding: 'utf8', windowsHide: true, timeout: 60_000, env: cleanEnv() });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /Starts the BluModel Studio server \(http:\/\/127\.0\.0\.1:8934,/);
+    assert.match(r.stdout, /Dry run: no task was created, changed or deleted\./);
+    assert.ok(!fs.existsSync(path.join(dir, 'startup-tasks')), 'a dry run lists nothing');
+  } finally {
+    rm(dir);
+  }
+});
+
 test('the data scripts (import-data, restore) ask the home’s own port when none is given; --port and PORT still win; --db alone keeps 8790', () => {
   const portOf = (home) => (home === path.resolve('/x/home') ? 8933 : null);
   assert.equal(scriptConfig({ argv: ['--home', '/x/home'], env: {}, portOf }).config.PORT, 8933);

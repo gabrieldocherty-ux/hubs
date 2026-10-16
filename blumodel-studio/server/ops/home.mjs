@@ -498,9 +498,9 @@ ${triggerXml}
  * (atStartup) when Windows starts.
  * @param {string} home
  * @param {string} user
- * @param {{ atStartup?: boolean }} [o]
+ * @param {{ atStartup?: boolean, port?: number | string }} [o]  port: only named in the description
  */
-export function homeTasks(home, user, { atStartup = false } = {}) {
+export function homeTasks(home, user, { atStartup = false, port = DEFAULT_PORT } = {}) {
   const L = homeLayout(home, 'win32');
   const when = atStartup ? 'when Windows starts (whether or not anyone is signed in)' : 'at logon';
   const trigger = atStartup ? 'startup' : 'logon';
@@ -514,7 +514,7 @@ export function homeTasks(home, user, { atStartup = false } = {}) {
         trigger,
         launcher: L.startHidden,
         workingDir: L.home,
-        description: `Starts the BluModel Studio server (http://127.0.0.1:${DEFAULT_PORT}, public at ${PUBLIC_URL}) ${when}, hidden, under its restarting supervisor run-server.cmd. Files: ${L.home}`,
+        description: `Starts the BluModel Studio server (http://127.0.0.1:${port}, public at ${PUBLIC_URL}) ${when}, hidden, under its restarting supervisor run-server.cmd. Files: ${L.home}`,
       }),
     },
     {
@@ -569,8 +569,9 @@ SystemCallArchitectures=native`;
  * the 'blumodel' account, started at boot and restarted 5 s after any exit. systemd gives a
  * service a clean environment, so only the variables below and blumodel.env reach the server (what
  * run-server.cmd's clearing does on Windows). It may write only <home>/data and <home>/logs (both
- * must exist before it starts: a deploy and install-linux.sh make them), and what it writes is
- * readable by the blumodel group (UMask 0027). Stopping sends SIGTERM:
+ * must exist before it starts: a deploy and install-linux.sh make them), and nothing it writes is
+ * readable by other accounts (UMask 0027; the log, the backups and an imported database are 600).
+ * Stopping sends SIGTERM:
  * the server finishes open requests for up to 10 s, checkpoints the database and exits 0.
  * @param {{ home?: string, node?: string, user?: string, port?: number | string, host?: string }} [o]
  */
@@ -607,8 +608,8 @@ KillSignal=SIGTERM
 TimeoutStopSec=30
 Restart=always
 RestartSec=5
-# New files (database, uploads, backups, logs) are readable by the blumodel group (the admins
-# install-linux.sh adds to it) and nobody else; blumodel.env stays mode 600.
+# Nothing the server writes is readable by other accounts (at most by the blumodel group, which has
+# no other members); its log and backups are mode 600, and so is blumodel.env. Read them with sudo.
 UMask=0027
 LimitNOFILE=65536
 # The server may write its data and logs and nothing else; its code and settings are read-only to it.

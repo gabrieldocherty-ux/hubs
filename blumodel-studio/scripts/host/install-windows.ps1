@@ -175,8 +175,10 @@ Say 'Installed. What is left (docs/HOSTING.md has each step):'
 Write-Host "  The site runs on this machine at http://127.0.0.1:$Port (open http://127.0.0.1:$Port/api/health)."
 Write-Host '  It is NOT public yet: the tunnel is off until the cutover.'
 Write-Host ''
+Write-Host '  (These are PowerShell commands; in a Command Prompt leave out the leading "& ".)'
 Write-Host "  1. Settings: notepad `"$HomeDir\blumodel.env`"   (paste a NEW Stripe key here, nowhere else), then"
-Write-Host "     `"$HomeDir\stop-server.cmd`" and `"$HomeDir\start-server.cmd`""
+Write-Host "       & `"$HomeDir\stop-server.cmd`""
+Write-Host "       & `"$HomeDir\start-server.cmd`""
 Write-Host "  2. The tunnel's credentials: copy $tunnelId.json yourself into $env:USERPROFILE\.cloudflared\"
 Write-Host '  3. The data from the old machine: docs/MOVING_DATA.md'
 Write-Host '  4. The cutover (stop the old machine''s server and tunnel FIRST), from PowerShell run as administrator:'

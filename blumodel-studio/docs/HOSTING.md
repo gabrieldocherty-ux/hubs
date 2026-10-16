@@ -12,7 +12,9 @@ RAM) is plenty.
 Everything needed comes from two places:
 
 - **GitHub** (public): the repo `gabrieldocherty-ux/hubs`, branch **`blumodel-studio`**, folder
-  `blumodel-studio/`. The install scripts fetch only that folder.
+  `blumodel-studio/`. The install scripts check out only that folder (plus the few files at the top
+  of the repo, which git always includes). The branch is what the Wyse runs: section 10, *Publishing
+  a version*, says how a version gets onto it, and it must exist before the install can start.
 - **You**, and nobody else: the settings file's values (the Stripe key and the rest), the tunnel's
   credentials file, and the data bundle from the old machine. None of them is ever in git, and no
   script copies them between machines.
@@ -66,9 +68,9 @@ that:
 | The home | `/srv/blumodel-studio` | `%USERPROFILE%\Projects\BluModelStudio` |
 | Runs as | the `blumodel` system account (no login) | your Windows account |
 | Starts at boot | `blumodel-studio.service`, `blumodel-tunnel.service` (systemd) | tasks `BluModelStudioServer`, `BluModelTunnel` "at startup" |
-| Restart | `sudo systemctl restart blumodel-studio` | `stop-server.cmd`, then `start-server.cmd` |
+| Restart | `sudo systemctl restart blumodel-studio` | in the home (cmd): `stop-server.cmd`, then `start-server.cmd` |
 | Logs | `logs/server.log`, `journalctl -u blumodel-studio` | `logs\server.log`, `logs\console.log`, `logs\tunnel.log` |
-| Update | `sudo bash /srv/blumodel-studio/repo/blumodel-studio/scripts/host/update-linux.sh` | `node %USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio\scripts\host\update.mjs` |
+| Update | `sudo bash /srv/blumodel-studio/repo/blumodel-studio/scripts/host/update-linux.sh` | `node %USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio\scripts\host\update.mjs` (cmd) |
 
 ## 2. Prepare the Wyse (BIOS, power, network)
 
@@ -107,6 +109,8 @@ tunnel only connects out, so nothing else needs to be open):
 sudo ufw allow OpenSSH && sudo ufw enable
 ```
 
+(Ubuntu ships `ufw`; on Debian 12 install it first: `sudo apt-get install -y ufw`.)
+
 **Windows on the Wyse** (if you keep Windows instead):
 
 - **Turn the write filter off.** In an administrator prompt `uwfmgr get-config`; if it says the filter
@@ -133,9 +137,10 @@ It takes 5-15 minutes on a Wyse (most of it `npm ci` and the build). What it doe
 script's header says the same): checks the machine; installs `ca-certificates curl gnupg git`,
 **Node.js 24 from NodeSource's apt repository** (unless Node 24+ is there) and **cloudflared from
 Cloudflare's apt repository**; creates the **`blumodel` system account** and the home
-`/srv/blumodel-studio` (with `data/`, `logs/`, `.cloudflared/`, all owned by `blumodel`) and adds you
-to the `blumodel` group; makes a **sparse clone of just `blumodel-studio/`** on the `blumodel-studio`
-branch in `/srv/blumodel-studio/repo`; runs `npm ci` and the build (`scripts/host/build.mjs`) as
+`/srv/blumodel-studio` (with `data/`, `logs/`, `.cloudflared/`, all owned by `blumodel`); makes a
+**sparse clone of `blumodel-studio/`** on the `blumodel-studio` branch in `/srv/blumodel-studio/repo`
+(git also checks out the handful of files at the top of the repo; nothing uses them); runs `npm ci`
+and the build (`scripts/host/build.mjs`) as
 `blumodel`; installs the systemd units (the server **enabled**, the tunnel installed but **not
 enabled**); deploys (starts the server and checks `http://127.0.0.1:8790/api/health`); writes
 `cloudflared.yml` and checks it offline; and prints what is left.
@@ -215,8 +220,17 @@ one **only** in the Wyse's file.
    never into a chat, email, screenshot or git.
 2. Edit the template the install made:
    - Linux: `sudo nano /srv/blumodel-studio/blumodel.env`, save, then `sudo systemctl restart blumodel-studio`.
-   - Windows: `notepad %USERPROFILE%\Projects\BluModelStudio\blumodel.env`, then in that folder
-     `stop-server.cmd` and `start-server.cmd`.
+   - Windows, in a **Command Prompt** (cmd; `%USERPROFILE%` means nothing to PowerShell):
+
+     ```
+     notepad %USERPROFILE%\Projects\BluModelStudio\blumodel.env
+     cd /d %USERPROFILE%\Projects\BluModelStudio
+     stop-server.cmd
+     start-server.cmd
+     ```
+
+     In PowerShell the same is `notepad "$env:USERPROFILE\Projects\BluModelStudio\blumodel.env"`,
+     `cd "$env:USERPROFILE\Projects\BluModelStudio"`, `.\stop-server.cmd`, `.\start-server.cmd`.
 
    The values are listed in LAUNCH.md B6: `STRIPE_SECRET_KEY` (the **new** key),
    `STRIPE_WEBHOOK_SECRET` (the endpoint `https://blumodel.studio/api/webhooks/stripe` doesn't change,
@@ -226,8 +240,10 @@ one **only** in the Wyse's file.
    admins come with the data, or from `make-admin`).
 3. Check: the newest start in the server's log says `Stripe: LIVE mode` (or why Stripe is not on),
    never a key:
-   - Linux: `grep -E 'Stripe|Payments' /srv/blumodel-studio/logs/server.log | tail -n 5` (as a
-     member of the `blumodel` group, from your next login; otherwise with `sudo`).
+   - Linux: `sudo grep -E 'Stripe|Payments' /srv/blumodel-studio/logs/server.log | tail -n 5` (the
+     log is mode 600, the server's account's only, so reading it takes `sudo`).
+   - Windows (cmd): `findstr /C:"Stripe:" /C:"Payments:" %USERPROFILE%\Projects\BluModelStudio\logs\server.log`;
+     the last line is the newest start.
    - Read-only Stripe check (it calls Stripe; you run it): Linux
      `sudo -u blumodel node /srv/blumodel-studio/repo/blumodel-studio/scripts/stripe-check.mjs`;
      Windows, in `%USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio`: `npm run stripe:check`.
@@ -427,12 +443,16 @@ After the cutover, from outside (a phone on mobile data):
 the previous app goes back with:
 
 - Linux: `sudo node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --rollback`
-- Windows, in `%USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio`: `node scripts\deploy-local.mjs --rollback`
+- Windows (cmd), in `%USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio`: `node scripts\deploy-local.mjs --rollback`
 
 It swaps `app.previous` back in (keeping the failed one as `app.failed`), restarts the server and
 checks its health. It doesn't touch the database; if the newer version ran a migration the older one
 can't read, it prints the `restore.mjs --from data/backups/<time>/blumodel.db` command for the copy
 the deploy made just before.
+
+A rollback (by hand or by the update) changes only `app/`: the checkout in `repo/` stays on the newer
+commit, so the **next update deploys that commit again**. Fix it (or revert it) on the
+`blumodel-studio` branch first (section 10, *Publishing a version*), then update.
 
 **The database** (a bad import, a corrupt file): OPERATIONS.md, *Backups and restore*, and
 MOVING_DATA.md, *Roll back*. On Linux:
@@ -449,7 +469,7 @@ sudo systemctl start blumodel-studio
 New versions reach the Wyse through the `blumodel-studio` branch on GitHub. One command:
 
 - Linux: `sudo bash /srv/blumodel-studio/repo/blumodel-studio/scripts/host/update-linux.sh`
-- Windows: `node %USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio\scripts\host\update.mjs`
+- Windows (cmd): `node %USERPROFILE%\Projects\BluModelStudio\repo\blumodel-studio\scripts\host\update.mjs`
   (or `npm run host:update` in that folder)
 
 Add `--dry-run` to see the plan first; `--force` redeploys the commit already running. What it does
@@ -469,6 +489,24 @@ The site is down for a few seconds during step 5 (Cloudflare shows its 502 page)
 running. Keep the system current too: `sudo apt update && sudo apt upgrade` now and then (Node.js and
 cloudflared come from their own apt repositories, which `unattended-upgrades` leaves alone), then
 `sudo systemctl restart blumodel-studio blumodel-tunnel` if either was upgraded.
+
+### Publishing a version
+
+The Wyse installs and updates from the **`blumodel-studio` branch** of `gabrieldocherty-ux/hubs` and
+nothing else: development happens on other branches, and a version reaches the Wyse only when you
+move that branch to it. From any checkout of the repo, once the commit has passed `npm test` and
+`npm run build` and you have tried it:
+
+```
+git push origin <commit>:refs/heads/blumodel-studio
+```
+
+The first push creates the branch. **Until it exists on GitHub, the install commands in section 3
+fail** (`curl` gets a 404 for the script; `git clone` says the remote branch was not found). Move
+the branch only forward: git refuses a push that isn't a fast-forward unless you force it, and a
+forced one would make the Wyse's update (`git pull --ff-only`) refuse in turn. To undo a version,
+push a commit that reverts it. `--branch` (`-Branch` on Windows) installs from another branch instead, and the
+update then follows that branch.
 
 ## 11. Backups
 
@@ -495,7 +533,7 @@ Linux:
 
 | What | Command |
 | --- | --- |
-| The server's own log (requests' errors, starts, payments, warnings) | `tail -f /srv/blumodel-studio/logs/server.log` |
+| The server's own log (requests' errors, starts, payments, warnings) | `sudo tail -f /srv/blumodel-studio/logs/server.log` |
 | Starts, stops and crashes of the server | `journalctl -u blumodel-studio -f` |
 | The tunnel (`Registered tunnel connection` = connected) | `journalctl -u blumodel-tunnel -f` |
 | Both at once, since the last boot | `journalctl -b -u blumodel-studio -u blumodel-tunnel` |
@@ -503,9 +541,9 @@ Linux:
 | Restart after a settings change | `sudo systemctl restart blumodel-studio` |
 | Stop / start | `sudo systemctl stop blumodel-studio` / `sudo systemctl start blumodel-studio` |
 
-`server.log` is readable by the `blumodel` group (the install added you; it applies from your next
-login) and rotates itself at 10 MB, 5 kept. `journalctl` needs `sudo` unless your user is in the
-`adm` group (Ubuntu's first user is).
+`server.log` is mode 600, readable only by `blumodel` (it names accounts and addresses), so reading
+it takes `sudo`; it rotates itself at 10 MB, 5 kept. `journalctl` needs `sudo` unless your user is in
+the `adm` or `systemd-journal` group (Ubuntu's first user is in `adm`; Debian's isn't).
 
 Windows: `logs\server.log`, `logs\console.log` (the supervisor, and anything printed before the log
 opened), `logs\tunnel.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status with
@@ -543,6 +581,7 @@ opened), `logs\tunnel.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status w
 | Symptom | Look at | Usually |
 | --- | --- | --- |
 | The install stops at "RAM + swap" | `free -h` | add the swap file (section 13) |
+| `apt-get update` fails for `deb.nodesource.com` or `pkg.cloudflare.com` (`NO_PUBKEY`, `EXPKEYSIG`, "is not signed") | the error's URL | the vendor changed its signing key: install that package (Node.js or cloudflared) by the vendor's current instructions (github.com/nodesource/distributions, pkg.cloudflare.com), which replace the same list file, then run the install again: it skips what is already installed |
 | `blumodel-studio.service` keeps restarting | `journalctl -u blumodel-studio -n 50`, then `logs/server.log` | `blumodel.env` missing or unreadable (`Can't read the settings file …`), a bad `PUBLIC_URL`, port 8790 taken |
 | status `226/NAMESPACE` | `ls -ld /srv/blumodel-studio/data /srv/blumodel-studio/logs` | one of them is missing: `sudo install -d -m 0750 -o blumodel -g blumodel /srv/blumodel-studio/data /srv/blumodel-studio/logs` |
 | blumodel.studio shows Cloudflare 1033 | `systemctl status blumodel-tunnel`, `journalctl -u blumodel-tunnel` | the tunnel isn't running, or its credentials file is missing (`ls -l /srv/blumodel-studio/.cloudflared/`) |

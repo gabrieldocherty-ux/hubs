@@ -56,6 +56,7 @@ import {
   systemdUnits,
   writeStartupTasks,
 } from '../server/ops/home.mjs';
+import { homePort } from '../server/ops/homePort.mjs';
 import { CLOUDFLARED_LINUX, findCloudflared } from './tunnel/tunnel.mjs';
 
 const argv = process.argv.slice(2);
@@ -138,7 +139,7 @@ for (const f of ['--enable-tunnel', '--port', '--node', '--cloudflared']) if (ar
 const home = path.win32.resolve(opt('--home') || defaultHome(undefined, 'win32'));
 const user = opt('--user') || (process.platform === 'win32' ? currentAccount() : `${os.hostname().toUpperCase()}\\you`);
 
-const tasks = homeTasks(home, user, { atStartup }).filter((t) => !only || (only === 'server' ? /Server$/.test(t.name) : /Tunnel$/.test(t.name)));
+const tasks = homeTasks(home, user, { atStartup, port: homePort(home, { platform: 'win32' }) ?? DEFAULT_PORT }).filter((t) => !only || (only === 'server' ? /Server$/.test(t.name) : /Tunnel$/.test(t.name)));
 const canCheck = process.platform === 'win32';
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-tasks-'));
 let failed = false;

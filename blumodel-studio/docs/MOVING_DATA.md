@@ -120,8 +120,8 @@ the tar *was copied only partly*, copy the bundle again.
 
 ### 4. Import (on the Wyse)
 
-The server must be stopped (the import refuses while anything answers on port 8790 or, on Linux,
-while any process has the database open).
+The server must be stopped (the import refuses while anything answers on the server's port, 8790
+unless the home was installed with another, or, on Linux, while any process has the database open).
 
 Linux:
 
@@ -134,7 +134,7 @@ sudo systemctl start blumodel-studio
 Run with `sudo`, the import gives everything it puts in place to `blumodel` (the account that owns
 the home and runs the server), and makes the database `600` and its folders `700`.
 
-Windows:
+Windows (cmd):
 
 ```
 cd /d %USERPROFILE%\Projects\BluModelStudio
@@ -171,7 +171,7 @@ doesn't change), `PUBLIC_URL=https://blumodel.studio`, `TRUST_PROXY=1`, `DEMO_PA
 and email settings.
 
 - Linux: `sudo nano /srv/blumodel-studio/blumodel.env`, then `sudo systemctl restart blumodel-studio`.
-- Windows: `notepad %USERPROFILE%\Projects\BluModelStudio\blumodel.env`, then `stop-server.cmd`, `start-server.cmd`.
+- Windows (cmd): `notepad %USERPROFILE%\Projects\BluModelStudio\blumodel.env`, then in that folder `stop-server.cmd`, `start-server.cmd`.
 
 **B. Copy the file on the USB stick.** On this PC, copy `%USERPROFILE%\Projects\BluModelStudio\blumodel.env`
 to the stick by hand (Explorer or `copy`; don't open it in anything that syncs or previews). Then:

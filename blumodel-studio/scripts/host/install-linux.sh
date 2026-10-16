@@ -11,8 +11,8 @@
 #   2. apt: ca-certificates curl gnupg git; Node.js 24 from NodeSource's apt repository (unless
 #      node 24 or newer is there); cloudflared from Cloudflare's apt repository (unless it is there)
 #   3. the 'blumodel' system account (no login shell, home = the BluModel home) and the home:
-#      <home> (750), data/ and logs/ (750), .cloudflared/ (700), all owned by blumodel; the admin
-#      who ran sudo joins the blumodel group (to read the logs without sudo, from the next login)
+#      <home> (750), data/ and logs/ (750), .cloudflared/ (700), all owned by blumodel. The server's
+#      log and database files are mode 600 (blumodel's only): an admin reads them with sudo
 #   4. the code: a sparse, partial clone of just blumodel-studio/ on the branch into <home>/repo,
 #      or a fast-forward of the one already there (both as blumodel)
 #   5. npm ci and the build (scripts/host/build.mjs, which refuses with the fix when RAM + swap is
@@ -225,15 +225,6 @@ else
 fi
 run install -d -m 0750 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR" "$HOME_DIR/data" "$HOME_DIR/logs"
 run install -d -m 0700 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR/.cloudflared"
-ADMIN="${SUDO_USER:-}"
-if [ -n "$ADMIN" ] && [ "$ADMIN" != root ]; then
-  if id -nG "$ADMIN" 2>/dev/null | tr ' ' '\n' | grep -qx "$SVC_USER"; then
-    note "$ADMIN is in the $SVC_USER group"
-  else
-    run usermod -a -G "$SVC_USER" "$ADMIN"
-    note "($ADMIN can read the logs without sudo from the next login)"
-  fi
-fi
 
 # -- 4. the code -------------------------------------------------------------
 say "The code: $REPO, branch $BRANCH, only blumodel-studio/"
@@ -296,6 +287,6 @@ cat <<EOF
   4. The cutover (stop the old machine's server and tunnel FIRST, then):
        sudo systemctl enable --now blumodel-tunnel
   Updates later: sudo bash $APP_SRC/scripts/host/update-linux.sh
-  Logs: tail -f $HOME_DIR/logs/server.log   journalctl -u blumodel-studio -u blumodel-tunnel -f
+  Logs: sudo tail -f $HOME_DIR/logs/server.log   sudo journalctl -u blumodel-studio -u blumodel-tunnel -f
 EOF
 if [ "$DRY_RUN" = 1 ]; then echo; echo "Dry run: nothing was installed, written, started or changed."; fi
