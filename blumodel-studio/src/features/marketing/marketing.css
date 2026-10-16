@@ -932,8 +932,12 @@
   margin-top: auto;
 }
 
+/* At least 44px, and taller when a long label wraps ("Become a BluModel Studio contractor" at
+   1440 px), instead of a fixed height the second line spilled out of. */
 .mk-plan-cta .btn {
-  height: 44px;
+  min-height: 44px;
+  text-align: center;
+  line-height: 1.25;
 }
 
 .mk-plan--pro .mk-plan-cta .btn.primary {
