@@ -11,7 +11,8 @@ import { registerExporter } from '../../lib/exporters';
 import { qaExpose } from '../../lib/qa';
 import { clamp, type Resolved } from '../../lib/geometry';
 import { placeAt, planClientToRoom, planRoomToClient, registerDropTarget, useOverlay, usePlacement } from '../../lib/interaction';
-import { ACCENT, BAD, FONT_MONO, INK, OK, PAPER, WALL, WALL_T, WARN, patternFill } from './planStyle';
+import { BAD, FONT_MONO, OK, PLAN_LIGHT, PlanPaletteContext, WALL_T, WARN, patternFill, planPalette, type PlanPalette } from './planStyle';
+import { useResolvedTheme } from '../../lib/theme';
 import { PlanItem, isOverheadKind } from './PlanItem';
 import { SelectionDimensions, WallDimensions } from './Dimensions';
 import { DragFeedback } from './DragFeedback';
@@ -30,13 +31,13 @@ function visibleRect(el: HTMLElement): { left: number; top: number; right: numbe
   };
 }
 
-function hatchCanvas(): HTMLCanvasElement {
+function hatchCanvas(pal: PlanPalette): HTMLCanvasElement {
   const c = document.createElement('canvas');
   c.width = c.height = 12;
   const ctx = c.getContext('2d')!;
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = pal.sheet;
   ctx.fillRect(0, 0, 12, 12);
-  ctx.strokeStyle = INK;
+  ctx.strokeStyle = pal.ink;
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let i = -12; i <= 24; i += 6) {
@@ -88,7 +89,11 @@ export function PlanView() {
   const readOnly = useDesignStore((s) => s.readOnly);
   const report = useReport();
   const selected = useSelected();
-  const hatch = useMemo(() => hatchCanvas(), []);
+  // The theme's colours (planStyle.ts); an export always draws in PLAN_LIGHT, for paper.
+  const theme = useResolvedTheme();
+  const [exporting, setExporting] = useState(false);
+  const pal = exporting ? PLAN_LIGHT : planPalette(theme);
+  const hatch = useMemo(() => hatchCanvas(pal), [pal]);
   const itemsRef = useRef<Resolved[]>(all);
   itemsRef.current = all;
   const selectedRef = useRef<Resolved | null>(selected);
@@ -259,11 +264,15 @@ export function PlanView() {
       const prevSel = useDesignStore.getState().selectedId;
       select(null);
       hover(null);
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      const rect = paper.getClientRect();
-      const url = stage.toDataURL({ ...rect, pixelRatio: Math.min(5, 2600 / rect.width) });
-      select(prevSel);
-      return url;
+      setExporting(true);
+      try {
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const rect = paper.getClientRect();
+        return stage.toDataURL({ ...rect, pixelRatio: Math.min(5, 2600 / rect.width) });
+      } finally {
+        setExporting(false);
+        select(prevSel);
+      }
     });
     return () => registerExporter('plan', undefined);
   }, [select, hover]);
@@ -306,6 +315,7 @@ export function PlanView() {
       {/* Not listening: hit-testing is planHit's job (usePlanGestures), so Konva never builds a hit canvas. */}
       <Stage ref={stageRef} width={size.w} height={size.h} scaleX={view.scale} scaleY={view.scale} x={view.x} y={view.y} listening={false}>
         <Layer listening={false}>
+          <PlanPaletteContext.Provider value={pal}>
           <Group>
             <Rect
               ref={paperRef}
@@ -314,9 +324,9 @@ export function PlanView() {
               y={-margin}
               width={W + margin * 2}
               height={L + margin * 2}
-              fill={rendered ? PAPER : '#ffffff'}
+              fill={rendered ? pal.paper : pal.sheet}
             />
-            <Rect name="bg" x={0} y={0} width={W} height={L} {...(rendered ? patternFill(floor.pattern) : { fill: '#ffffff' })} />
+            <Rect name="bg" x={0} y={0} width={W} height={L} {...(rendered ? patternFill(floor.pattern) : { fill: pal.sheet })} />
             {rendered && <Rect x={0} y={0} width={W} height={L} fill="#f6f1e7" opacity={0.12} />}
             {ui.showGrid && (
               <Shape
@@ -332,7 +342,7 @@ export function PlanView() {
                   }
                   ctx.strokeShape(shape);
                 }}
-                stroke={rendered ? 'rgba(255,255,255,0.28)' : 'rgba(41,37,31,0.09)'}
+                stroke={rendered ? 'rgba(255,255,255,0.28)' : pal.grid}
                 strokeWidth={1}
                 strokeScaleEnabled={false}
               />
@@ -354,8 +364,8 @@ export function PlanView() {
                   y={y}
                   width={w}
                   height={h}
-                  {...(rendered ? { fill: WALL } : { fillPatternImage: hatch as unknown as HTMLImageElement, fillPatternScale: { x: k, y: k } })}
-                  stroke={INK}
+                  {...(rendered ? { fill: pal.wall } : { fillPatternImage: hatch as unknown as HTMLImageElement, fillPatternScale: { x: k, y: k } })}
+                  stroke={rendered ? pal.wallStroke : pal.ink}
                   strokeWidth={1.2}
                   strokeScaleEnabled={false}
                 />
@@ -414,9 +424,10 @@ export function PlanView() {
             {selected && dragging ? (
               <DragFeedback me={selected} all={all} room={room} k={k} />
             ) : (
-              selected && ui.showDims && <SelectionDimensions r={selected} room={room} k={k} color={ACCENT} />
+              selected && ui.showDims && <SelectionDimensions r={selected} room={room} k={k} color={pal.accent} />
             )}
           </Group>
+          </PlanPaletteContext.Provider>
         </Layer>
       </Stage>
 
@@ -434,9 +445,9 @@ export function PlanView() {
 
       <div className="plan-hud plan-hud--tr" aria-hidden>
         <svg width="34" height="44" viewBox="0 0 34 44">
-          <circle cx="17" cy="27" r="13" fill="none" stroke={INK} strokeWidth="1" opacity="0.5" />
-          <path d="M17 10 L23 30 L17 26 L11 30 Z" fill={INK} />
-          <text x="17" y="8" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="9" fill={INK}>N</text>
+          <circle cx="17" cy="27" r="13" fill="none" stroke={pal.ink} strokeWidth="1" opacity="0.5" />
+          <path d="M17 10 L23 30 L17 26 L11 30 Z" fill={pal.ink} />
+          <text x="17" y="8" textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="9" fill={pal.ink}>N</text>
         </svg>
       </div>
 

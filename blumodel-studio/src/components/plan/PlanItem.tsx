@@ -7,7 +7,7 @@ import { productCode } from '../../data/catalog';
 import { farmhouseSink } from '../../lib/fronts';
 import { COUNTERTOPS, byId } from '../../data/finishes';
 import { hashString, luminance, mulberry32, shade } from '../../lib/color';
-import { ACCENT, BAD, FONT_MONO, INK, INK_SOFT, PAPER, WALL_T, patternFill } from './planStyle';
+import { ACCENT, BAD, FONT_MONO, PAPER, PLAN_LIGHT, WALL_T, patternFill, usePlanPalette } from './planStyle';
 import { itemLocalBox } from './planHit';
 
 export type { DragResult };
@@ -24,8 +24,6 @@ interface Props {
   catalogVersion: number;
 }
 
-const hair = { stroke: INK, strokeWidth: 1, strokeScaleEnabled: false } as const;
-
 function steel(hex: string, w: number) {
   return {
     fillLinearGradientStartPoint: { x: -w / 2, y: 0 },
@@ -36,14 +34,23 @@ function steel(hex: string, w: number) {
 
 export const PlanItem = memo(function PlanItem(p: Props) {
   const r = useMemo(() => resolve(p.item), [p.item, p.catalogVersion]);
+  const pal = usePlanPalette();
   if (!r) return null;
   const { product, w, d } = r;
   const { item, k, style, surfaces } = p;
   const rendered = style === 'rendered';
+  // On the floor of the rendered style: real colours and dark line work, in both themes. Openings sit
+  // in the wall, and the drafting style is all line work: those follow the theme (planStyle.ts).
+  const inWall = product.kind === 'window' || product.kind === 'door';
+  const ink = rendered && !inWall ? PLAN_LIGHT.ink : pal.ink;
+  const inkSoft = rendered && !inWall ? PLAN_LIGHT.inkSoft : pal.inkSoft;
+  const sheet = pal.sheet;
+  const gap = rendered ? pal.paper : pal.draftGap;
+  const hair = { stroke: ink, strokeWidth: 1, strokeScaleEnabled: false } as const;
   const finish = resolveFinish(item, product, surfaces);
   const counter = byId(COUNTERTOPS, surfaces.countertopId);
-  const counterFill = rendered ? patternFill(counter.pattern) : { fill: '#ffffff' };
-  const labelInk = rendered && luminance(counter.hex) < 0.25 ? '#f2eee8' : INK;
+  const counterFill = rendered ? patternFill(counter.pattern) : { fill: sheet };
+  const labelInk = rendered && luminance(counter.hex) < 0.25 ? '#f2eee8' : ink;
   const dash = [5 * k, 4 * k];
   const x0 = -w / 2;
   const y0 = -d / 2;
@@ -53,7 +60,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
   const code = productCode(product, w);
   const nodes: ReactNode[] = [];
   let label: string | null = code;
-  let labelColor = INK;
+  let labelColor = ink;
 
   const counterSlab = (key: string, extra: object = {}) => (
     <Rect key={key} x={x0} y={y0} width={w} height={d} {...counterFill} {...hair} strokeWidth={0.9} {...shadow} {...extra} />
@@ -65,7 +72,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
 
   if (product.source === 'missing') {
     // A product that isn't available (yet): a neutral dashed box that keeps the item's place.
-    nodes.push(<Rect key="missing" x={x0} y={y0} width={w} height={d} fill={rendered ? '#ece7de' : '#ffffff'} {...hair} dash={dash} />);
+    nodes.push(<Rect key="missing" x={x0} y={y0} width={w} height={d} fill={rendered ? '#ece7de' : sheet} {...hair} dash={dash} />);
     label = 'Unavailable';
   } else switch (product.kind) {
     case 'base':
@@ -102,7 +109,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
     case 'sink': {
       nodes.push(counterSlab('slab'));
       nodes.push(finishStrip('strip'));
-      const basin = { fill: rendered ? finish.hex : '#fff', stroke: INK, strokeWidth: 0.9, strokeScaleEnabled: false, listening: false } as const;
+      const basin = { fill: rendered ? finish.hex : sheet, stroke: ink, strokeWidth: 0.9, strokeScaleEnabled: false, listening: false } as const;
       const inner = rendered ? { shadowColor: '#000', shadowBlur: 5, shadowOpacity: 0.35, shadowOffsetY: 1.5 } : {};
       let drainY = y0 + 14;
       if (product.variant === 'farmhouse') {
@@ -110,22 +117,22 @@ export const PlanItem = memo(function PlanItem(p: Props) {
         const s = farmhouseSink(w, d);
         const t = s.wall;
         nodes.push(<Rect key="b" x={-s.bw / 2} y={s.back} width={s.bw} height={s.depth} cornerRadius={[0.35, 0.35, s.cornerR, s.cornerR]} {...basin} {...inner} />);
-        nodes.push(<Rect key="bi" x={-s.bw / 2 + t} y={s.back + t} width={s.bw - t * 2} height={s.depth - t * 2} cornerRadius={1.5} stroke={INK} strokeWidth={0.6} strokeScaleEnabled={false} opacity={0.4} listening={false} />);
+        nodes.push(<Rect key="bi" x={-s.bw / 2 + t} y={s.back + t} width={s.bw - t * 2} height={s.depth - t * 2} cornerRadius={1.5} stroke={ink} strokeWidth={0.6} strokeScaleEnabled={false} opacity={0.4} listening={false} />);
         drainY = (s.front + s.back) / 2;
       } else if (product.variant === 'double') {
         const bw = (w - 9) / 2;
         nodes.push(<Rect key="b1" x={-bw - 1.5} y={y0 + 5} width={bw} height={16} cornerRadius={2.5} {...basin} {...inner} />);
         nodes.push(<Rect key="b2" x={1.5} y={y0 + 5} width={bw} height={16} cornerRadius={2.5} {...basin} {...inner} />);
-        nodes.push(<Circle key="dr2" x={1.5 + bw / 2} y={y0 + 15} radius={1.2} fill={INK} opacity={0.6} listening={false} />);
-        nodes.push(<Circle key="dr1" x={-1.5 - bw / 2} y={y0 + 15} radius={1.2} fill={INK} opacity={0.6} listening={false} />);
+        nodes.push(<Circle key="dr2" x={1.5 + bw / 2} y={y0 + 15} radius={1.2} fill={ink} opacity={0.6} listening={false} />);
+        nodes.push(<Circle key="dr1" x={-1.5 - bw / 2} y={y0 + 15} radius={1.2} fill={ink} opacity={0.6} listening={false} />);
       } else {
         const bw = product.variant === 'prep' ? Math.min(12, w - 4) : Math.min(w - 7, 30);
         const bd = product.variant === 'prep' ? 12 : 16;
         nodes.push(<Rect key="b" x={-bw / 2} y={y0 + 5} width={bw} height={bd} cornerRadius={2.5} {...basin} {...inner} />);
       }
-      if (product.variant !== 'double') nodes.push(<Circle key="drain" x={0} y={drainY} radius={1.3} fill={INK} opacity={0.55} listening={false} />);
-      nodes.push(<Circle key="fa" x={0} y={y0 + 2.4} radius={1.3} fill={INK} listening={false} />);
-      nodes.push(<Line key="fs" points={[0, y0 + 2.4, 0, y0 + 8]} stroke={INK} strokeWidth={2} strokeScaleEnabled={false} lineCap="round" listening={false} />);
+      if (product.variant !== 'double') nodes.push(<Circle key="drain" x={0} y={drainY} radius={1.3} fill={ink} opacity={0.55} listening={false} />);
+      nodes.push(<Circle key="fa" x={0} y={y0 + 2.4} radius={1.3} fill={ink} listening={false} />);
+      nodes.push(<Line key="fs" points={[0, y0 + 2.4, 0, y0 + 8]} stroke={ink} strokeWidth={2} strokeScaleEnabled={false} lineCap="round" listening={false} />);
       label = null;
       break;
     }
@@ -134,13 +141,13 @@ export const PlanItem = memo(function PlanItem(p: Props) {
         ? finish.material === 'metal'
           ? steel(finish.hex, w)
           : { fill: finish.hex }
-        : { fill: '#fff' };
+        : { fill: sheet };
       nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} {...body} {...hair} {...shadow} />);
       const topY = y0 + 1.5;
       const topH = d - 5;
       const induction = product.variant === 'induction';
       nodes.push(
-        <Rect key="top" x={x0 + 1.5} y={topY} width={w - 3} height={topH} fill={rendered ? (induction ? '#141414' : '#262626') : '#fff'} {...hair} strokeWidth={0.7} cornerRadius={induction ? 1.5 : 0.5} listening={false} />,
+        <Rect key="top" x={x0 + 1.5} y={topY} width={w - 3} height={topH} fill={rendered ? (induction ? '#141414' : '#262626') : sheet} {...hair} strokeWidth={0.7} cornerRadius={induction ? 1.5 : 0.5} listening={false} />,
       );
       const griddle = product.variant === 'griddle';
       const cookW = griddle ? (w - 3) * 0.66 : w - 3;
@@ -152,10 +159,10 @@ export const PlanItem = memo(function PlanItem(p: Props) {
           const cy = topY + (topH / rows) * (rr + 0.5);
           const rad = Math.min(cookW / cols, topH / rows) * (induction ? (c + rr) % 2 === 0 ? 0.42 : 0.34 : 0.3);
           if (induction) {
-            nodes.push(<Circle key={`b${c}${rr}`} x={cx} y={cy} radius={rad} stroke={rendered ? '#6d6d6d' : INK} strokeWidth={1} strokeScaleEnabled={false} listening={false} />);
+            nodes.push(<Circle key={`b${c}${rr}`} x={cx} y={cy} radius={rad} stroke={rendered ? '#6d6d6d' : ink} strokeWidth={1} strokeScaleEnabled={false} listening={false} />);
           } else {
-            nodes.push(<Circle key={`b${c}${rr}`} x={cx} y={cy} radius={rad} stroke={rendered ? '#8a8a8a' : INK} strokeWidth={1.2} strokeScaleEnabled={false} listening={false} />);
-            nodes.push(<Circle key={`c${c}${rr}`} x={cx} y={cy} radius={rad * 0.42} fill={rendered ? '#4a4a4a' : '#fff'} stroke={rendered ? '#999' : INK} strokeWidth={0.8} strokeScaleEnabled={false} listening={false} />);
+            nodes.push(<Circle key={`b${c}${rr}`} x={cx} y={cy} radius={rad} stroke={rendered ? '#8a8a8a' : ink} strokeWidth={1.2} strokeScaleEnabled={false} listening={false} />);
+            nodes.push(<Circle key={`c${c}${rr}`} x={cx} y={cy} radius={rad * 0.42} fill={rendered ? '#4a4a4a' : sheet} stroke={rendered ? '#999' : ink} strokeWidth={0.8} strokeScaleEnabled={false} listening={false} />);
           }
         }
       }
@@ -183,18 +190,18 @@ export const PlanItem = memo(function PlanItem(p: Props) {
         );
       }
       if (griddle) {
-        nodes.push(<Rect key="grid" x={x0 + 1.5 + cookW + 1} y={topY + 2} width={w - 3 - cookW - 2} height={topH - 4} fill={rendered ? '#9a9da1' : '#fff'} {...hair} strokeWidth={0.7} listening={false} />);
+        nodes.push(<Rect key="grid" x={x0 + 1.5 + cookW + 1} y={topY + 2} width={w - 3 - cookW - 2} height={topH - 4} fill={rendered ? '#9a9da1' : sheet} {...hair} strokeWidth={0.7} listening={false} />);
       }
       const knobs = Math.max(4, Math.round(w / 6));
       for (let i = 0; i < knobs; i++) {
         const kx = x0 + (w / knobs) * (i + 0.5);
-        nodes.push(<Circle key={`k${i}`} x={kx} y={d / 2 - 1.7} radius={0.9} fill={rendered ? (product.flags?.trim === 'brass' ? '#c6a15b' : '#dcdcdc') : '#fff'} stroke={INK} strokeWidth={0.6} strokeScaleEnabled={false} listening={false} />);
+        nodes.push(<Circle key={`k${i}`} x={kx} y={d / 2 - 1.7} radius={0.9} fill={rendered ? (product.flags?.trim === 'brass' ? '#c6a15b' : '#dcdcdc') : sheet} stroke={ink} strokeWidth={0.6} strokeScaleEnabled={false} listening={false} />);
       }
       label = null;
       break;
     }
     case 'fridge': {
-      const body = rendered ? (finish.material === 'metal' ? steel(finish.hex, w) : { fill: finish.hex }) : { fill: '#fff' };
+      const body = rendered ? (finish.material === 'metal' ? steel(finish.hex, w) : { fill: finish.hex }) : { fill: sheet };
       nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} {...body} {...hair} strokeWidth={1.2} {...shadow} cornerRadius={product.variant === 'retro' ? 3 : 0} />);
       nodes.push(<Rect key="inset" x={x0 + 1.5} y={y0 + 1.5} width={w - 3} height={d - 4} {...hair} opacity={0.35} listening={false} />);
       const doors = product.variant === 'french' ? 2 : 1;
@@ -215,7 +222,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
               else ctx.arc(hingeX, d / 2, leaf, Math.PI / 2, Math.PI, false);
               ctx.strokeShape(shape);
             }}
-            stroke={INK}
+            stroke={ink}
             strokeWidth={0.8}
             strokeScaleEnabled={false}
             dash={dash}
@@ -224,27 +231,27 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       }
       if (doors === 2) nodes.push(<Line key="split" points={[0, d / 2 - 6, 0, d / 2]} {...hair} listening={false} />);
       label = 'REF';
-      labelColor = rendered && luminance(finish.hex) < 0.2 ? '#eee' : INK;
+      labelColor = rendered && luminance(finish.hex) < 0.2 ? '#eee' : ink;
       break;
     }
     case 'tall':
     case 'oven-tower': {
       const hex = product.kind === 'oven-tower' ? cabinetFinish(surfaces).hex : finish.hex;
-      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} fill={rendered ? hex : '#fff'} {...hair} strokeWidth={1.2} {...shadow} />);
+      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} fill={rendered ? hex : sheet} {...hair} strokeWidth={1.2} {...shadow} />);
       nodes.push(<Line key="x1" points={[x0, y0, -x0, -y0]} {...hair} opacity={0.45} listening={false} />);
       nodes.push(<Line key="x2" points={[-x0, y0, x0, -y0]} {...hair} opacity={0.45} listening={false} />);
       if (product.kind === 'oven-tower' && rendered) nodes.push(<Rect key="ov" x={x0 + 2} y={d / 2 - 2} width={w - 4} height={1.5} {...steel(finish.hex, w)} listening={false} />);
-      labelColor = rendered && luminance(hex) < 0.2 ? '#eee' : INK;
+      labelColor = rendered && luminance(hex) < 0.2 ? '#eee' : ink;
       break;
     }
     case 'wall': {
-      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : '#fff'} opacity={rendered ? 0.5 : 0.85} listening={true} />);
+      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : sheet} opacity={rendered ? 0.5 : 0.85} listening={true} />);
       nodes.push(<Rect key="o" x={x0} y={y0} width={w} height={d} {...hair} strokeWidth={1.1} dash={dash} listening={false} />);
       if (product.variant === 'bridge') nodes.push(<Line key="x" points={[x0, y0, -x0, -y0]} {...hair} opacity={0.3} dash={dash} listening={false} />);
       break;
     }
     case 'hood': {
-      const fill = rendered ? (finish.material === 'metal' ? steel(finish.hex, w) : { fill: finish.hex }) : { fill: '#fff' };
+      const fill = rendered ? (finish.material === 'metal' ? steel(finish.hex, w) : { fill: finish.hex }) : { fill: sheet };
       nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} {...fill} opacity={0.72} />);
       nodes.push(<Rect key="o" x={x0} y={y0} width={w} height={d} {...hair} strokeWidth={1.1} dash={dash} listening={false} />);
       const dw = Math.min(12, w * 0.35);
@@ -255,13 +262,13 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       break;
     }
     case 'microwave': {
-      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : '#fff'} opacity={0.6} />);
+      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : sheet} opacity={0.6} />);
       nodes.push(<Rect key="o" x={x0} y={y0} width={w} height={d} {...hair} dash={dash} listening={false} />);
       label = 'MW';
       break;
     }
     case 'shelf': {
-      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} {...(rendered ? patternFill({ type: 'wood', base: finish.hex }) : { fill: '#fff' })} opacity={0.75} />);
+      nodes.push(<Rect key="body" x={x0} y={y0} width={w} height={d} {...(rendered ? patternFill({ type: 'wood', base: finish.hex }) : { fill: sheet })} opacity={0.75} />);
       nodes.push(<Rect key="o" x={x0} y={y0} width={w} height={d} {...hair} dash={dash} listening={false} />);
       label = null;
       break;
@@ -277,26 +284,26 @@ export const PlanItem = memo(function PlanItem(p: Props) {
               ctx.arc(0, 0, rad, Math.PI * 1.1, Math.PI * 1.9);
               ctx.strokeShape(shape);
             }}
-            stroke={rendered ? shade(finish.hex, -0.3) : INK}
+            stroke={rendered ? shade(finish.hex, -0.3) : ink}
             strokeWidth={2.6}
             lineCap="round"
             listening={false}
           />,
         );
       }
-      nodes.push(<Circle key="seat" x={0} y={0} radius={rad - 1.5} fill={rendered ? finish.hex : '#fff'} {...hair} {...shadow} />);
-      nodes.push(<Circle key="in" x={0} y={0} radius={rad - 4.5} stroke={rendered ? shade(finish.hex, 0.25) : INK} strokeWidth={0.8} strokeScaleEnabled={false} opacity={0.6} listening={false} />);
+      nodes.push(<Circle key="seat" x={0} y={0} radius={rad - 1.5} fill={rendered ? finish.hex : sheet} {...hair} {...shadow} />);
+      nodes.push(<Circle key="in" x={0} y={0} radius={rad - 4.5} stroke={rendered ? shade(finish.hex, 0.25) : ink} strokeWidth={0.8} strokeScaleEnabled={false} opacity={0.6} listening={false} />);
       label = null;
       break;
     }
     case 'chair': {
-      nodes.push(<Rect key="seat" x={x0 + 1} y={y0 + 3} width={w - 2} height={d - 4} cornerRadius={3} fill={rendered ? finish.hex : '#fff'} {...hair} {...shadow} />);
-      nodes.push(<Rect key="back" x={x0 + 1} y={y0} width={w - 2} height={2.5} cornerRadius={1.2} fill={rendered ? shade(finish.hex, -0.25) : '#fff'} {...hair} listening={false} />);
+      nodes.push(<Rect key="seat" x={x0 + 1} y={y0 + 3} width={w - 2} height={d - 4} cornerRadius={3} fill={rendered ? finish.hex : sheet} {...hair} {...shadow} />);
+      nodes.push(<Rect key="back" x={x0 + 1} y={y0} width={w - 2} height={2.5} cornerRadius={1.2} fill={rendered ? shade(finish.hex, -0.25) : sheet} {...hair} listening={false} />);
       label = null;
       break;
     }
     case 'table': {
-      const top = rendered ? (finish.material === 'stone' ? patternFill({ type: 'marble', base: finish.hex, vein: '#9a948a', intensity: 0.6 }) : patternFill({ type: 'wood', base: finish.hex })) : { fill: '#fff' };
+      const top = rendered ? (finish.material === 'stone' ? patternFill({ type: 'marble', base: finish.hex, vein: '#9a948a', intensity: 0.6 }) : patternFill({ type: 'wood', base: finish.hex })) : { fill: sheet };
       if (product.variant === 'round') nodes.push(<Circle key="top" x={0} y={0} radius={w / 2} {...top} {...hair} strokeWidth={1.1} {...shadow} />);
       else nodes.push(<Rect key="top" x={x0} y={y0} width={w} height={d} cornerRadius={2} {...top} {...hair} strokeWidth={1.1} {...shadow} />);
       label = null;
@@ -305,13 +312,13 @@ export const PlanItem = memo(function PlanItem(p: Props) {
     case 'pendant': {
       if (product.variant === 'linear') {
         if (rendered) nodes.push(<Rect key="glow" x={x0 - 8} y={y0 - 10} width={w + 16} height={d + 20} cornerRadius={12} fillRadialGradientStartPoint={{ x: 0, y: 0 }} fillRadialGradientEndPoint={{ x: 0, y: 0 }} fillRadialGradientStartRadius={0} fillRadialGradientEndRadius={w / 2 + 8} fillRadialGradientColorStops={[0, 'rgba(255,196,110,0.28)', 1, 'rgba(255,196,110,0)']} listening={false} />);
-        nodes.push(<Rect key="bar" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : '#fff'} opacity={0.8} />);
+        nodes.push(<Rect key="bar" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : sheet} opacity={0.8} />);
         nodes.push(<Rect key="o" x={x0} y={y0} width={w} height={d} {...hair} dash={dash} listening={false} />);
-        for (let i = 0; i < 4; i++) nodes.push(<Circle key={`l${i}`} x={x0 + (w / 4) * (i + 0.5)} y={0} radius={1.2} fill={INK} listening={false} />);
+        for (let i = 0; i < 4; i++) nodes.push(<Circle key={`l${i}`} x={x0 + (w / 4) * (i + 0.5)} y={0} radius={1.2} fill={ink} listening={false} />);
       } else {
         const rad = w / 2;
         if (rendered) nodes.push(<Circle key="glow" x={0} y={0} radius={rad + 14} fillRadialGradientStartPoint={{ x: 0, y: 0 }} fillRadialGradientEndPoint={{ x: 0, y: 0 }} fillRadialGradientStartRadius={0} fillRadialGradientEndRadius={rad + 14} fillRadialGradientColorStops={[0, 'rgba(255,196,110,0.34)', 1, 'rgba(255,196,110,0)']} listening={false} />);
-        nodes.push(<Circle key="shade" x={0} y={0} radius={rad} fill={rendered ? finish.hex : '#fff'} opacity={rendered ? 0.85 : 1} />);
+        nodes.push(<Circle key="shade" x={0} y={0} radius={rad} fill={rendered ? finish.hex : sheet} opacity={rendered ? 0.85 : 1} />);
         nodes.push(<Circle key="o" x={0} y={0} radius={rad} {...hair} dash={dash} listening={false} />);
         nodes.push(<Line key="c1" points={[-rad * 0.7, -rad * 0.7, rad * 0.7, rad * 0.7]} {...hair} opacity={0.55} listening={false} />);
         nodes.push(<Line key="c2" points={[rad * 0.7, -rad * 0.7, -rad * 0.7, rad * 0.7]} {...hair} opacity={0.55} listening={false} />);
@@ -320,20 +327,20 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       break;
     }
     case 'rug': {
-      nodes.push(<Rect key="base" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : '#fff'} opacity={rendered ? 0.92 : 1} {...hair} strokeWidth={0.7} />);
-      nodes.push(<Rect key="border" x={x0 + 3} y={y0 + 3} width={w - 6} height={d - 6} stroke={rendered ? shade(finish.hex, 0.35) : INK} strokeWidth={1.5} strokeScaleEnabled={false} opacity={0.8} listening={false} />);
+      nodes.push(<Rect key="base" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : sheet} opacity={rendered ? 0.92 : 1} {...hair} strokeWidth={0.7} />);
+      nodes.push(<Rect key="border" x={x0 + 3} y={y0 + 3} width={w - 6} height={d - 6} stroke={rendered ? shade(finish.hex, 0.35) : ink} strokeWidth={1.5} strokeScaleEnabled={false} opacity={0.8} listening={false} />);
       const rng = mulberry32(hashString(item.id));
       const bands = Math.floor((d - 12) / 8);
       for (let b = 0; b < bands; b++) {
         const yy = y0 + 8 + b * 8 + rng() * 2;
-        nodes.push(<Line key={`s${b}`} points={[x0 + 6, yy, -x0 - 6, yy]} stroke={rendered ? shade(finish.hex, b % 2 ? -0.25 : 0.3) : INK} strokeWidth={b % 3 === 0 ? 2 : 1} strokeScaleEnabled={false} opacity={0.6} listening={false} />);
+        nodes.push(<Line key={`s${b}`} points={[x0 + 6, yy, -x0 - 6, yy]} stroke={rendered ? shade(finish.hex, b % 2 ? -0.25 : 0.3) : ink} strokeWidth={b % 3 === 0 ? 2 : 1} strokeScaleEnabled={false} opacity={0.6} listening={false} />);
       }
       label = null;
       break;
     }
     case 'plant': {
       const rng = mulberry32(hashString(item.id + product.id));
-      nodes.push(<Circle key="pot" x={0} y={0} radius={Math.min(w, d) * 0.3} fill={rendered ? finish.hex : '#fff'} {...hair} {...shadow} />);
+      nodes.push(<Circle key="pot" x={0} y={0} radius={Math.min(w, d) * 0.3} fill={rendered ? finish.hex : sheet} {...hair} {...shadow} />);
       const olive = product.variant === 'olive';
       const leaves = olive ? 46 : 14;
       for (let i = 0; i < leaves; i++) {
@@ -350,8 +357,8 @@ export const PlanItem = memo(function PlanItem(p: Props) {
             radiusX={olive ? 2.6 : 5.5}
             radiusY={olive ? 1 : 3.2}
             rotation={(a * 180) / Math.PI + rng() * 40}
-            fill={rendered ? green : '#fff'}
-            stroke={rendered ? shade(green, -0.3) : INK}
+            fill={rendered ? green : sheet}
+            stroke={rendered ? shade(green, -0.3) : ink}
             strokeWidth={0.5}
             strokeScaleEnabled={false}
             opacity={0.95}
@@ -363,18 +370,18 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       break;
     }
     case 'window': {
-      const frame = rendered ? finish.hex : '#fff';
-      nodes.push(<Rect key="gap" x={x0} y={-WALL_T} width={w} height={WALL_T} fill={PAPER} />);
+      const frame = rendered ? finish.hex : sheet;
+      nodes.push(<Rect key="gap" x={x0} y={-WALL_T} width={w} height={WALL_T} fill={gap} />);
       nodes.push(<Rect key="frame" x={x0} y={-WALL_T} width={w} height={WALL_T} fill={frame} opacity={0.25} {...hair} />);
       nodes.push(<Line key="g1" points={[x0, -WALL_T * 0.62, -x0, -WALL_T * 0.62]} {...hair} listening={false} />);
       nodes.push(<Line key="g2" points={[x0, -WALL_T * 0.38, -x0, -WALL_T * 0.38]} {...hair} listening={false} />);
-      nodes.push(<Rect key="sill" x={x0 - 1.5} y={0} width={w + 3} height={1.2} fill={rendered ? '#fff' : '#fff'} {...hair} strokeWidth={0.8} listening={false} />);
+      nodes.push(<Rect key="sill" x={x0 - 1.5} y={0} width={w + 3} height={1.2} fill="#fff" {...hair} strokeWidth={0.8} listening={false} />);
       if (product.variant === 'casement') nodes.push(<Line key="m" points={[0, -WALL_T, 0, 0]} {...hair} listening={false} />);
       label = null;
       break;
     }
     case 'door': {
-      nodes.push(<Rect key="gap" x={x0} y={-WALL_T} width={w} height={WALL_T + 0.2} fill={PAPER} />);
+      nodes.push(<Rect key="gap" x={x0} y={-WALL_T} width={w} height={WALL_T + 0.2} fill={gap} />);
       nodes.push(<Line key="j1" points={[x0, -WALL_T, x0, 0]} {...hair} strokeWidth={1.4} listening={false} />);
       nodes.push(<Line key="j2" points={[-x0, -WALL_T, -x0, 0]} {...hair} strokeWidth={1.4} listening={false} />);
       if (product.variant !== 'opening') {
@@ -382,7 +389,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
           product.variant === 'double' ? [[x0, w / 2], [-x0, w / 2]] : [[item.mirrored ? -x0 : x0, w]];
         leaves.forEach(([hx, len], i) => {
           const right = hx > 0;
-          nodes.push(<Line key={`leaf${i}`} points={[hx, 0, hx, len]} stroke={INK} strokeWidth={2} strokeScaleEnabled={false} listening={false} />);
+          nodes.push(<Line key={`leaf${i}`} points={[hx, 0, hx, len]} stroke={ink} strokeWidth={2} strokeScaleEnabled={false} listening={false} />);
           nodes.push(
             <Shape
               key={`arc${i}`}
@@ -393,7 +400,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
                 else ctx.arc(hx, 0, len, 0, Math.PI / 2, false);
                 ctx.strokeShape(shape);
               }}
-              stroke={INK}
+              stroke={ink}
               strokeWidth={0.8}
               strokeScaleEnabled={false}
               opacity={0.7}
@@ -406,7 +413,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
     }
   }
 
-  const highlight = p.problem ? BAD : p.selected ? ACCENT : p.hovered ? INK_SOFT : null;
+  const highlight = p.problem ? BAD : p.selected ? ACCENT : p.hovered ? inkSoft : null;
   // Same box the plan hit-tests against (planHit.itemLocalBox), so what you see is what you grab.
   const lb = itemLocalBox(r);
   const box = { x: lb.x, y: lb.y, w: lb.w, h: lb.h };

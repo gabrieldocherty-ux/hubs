@@ -59,6 +59,8 @@
   --shadow-rgb: 33, 30, 26;
   /* Behind product art (line drawings in dark ink over real finish colours). */
   --art-bg: #f3eee5;
+  /* Walls of the small plan drawings (cards, pickers); the floor and the pieces keep real colours. */
+  --plan-wall: #2a2622;
   /* The 3D room's and the product viewer's backdrop (the scene itself keeps real colours). */
   --stage-1: #f8f4ec;
   --stage-2: #efe8dc;
@@ -109,6 +111,7 @@
     --ink-rgb: 241, 236, 227;
     --shadow-rgb: 0, 0, 0;
     --art-bg: #d9d2c6;
+    --plan-wall: #8a8174;
     --stage-1: #2b2723;
     --stage-2: #211e1a;
     --stage-3: #191714;
@@ -160,6 +163,7 @@
     --ink-rgb: 241, 236, 227;
     --shadow-rgb: 0, 0, 0;
     --art-bg: #d9d2c6;
+    --plan-wall: #8a8174;
     --stage-1: #2b2723;
     --stage-2: #211e1a;
     --stage-3: #191714;

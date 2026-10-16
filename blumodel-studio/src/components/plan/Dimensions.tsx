@@ -3,7 +3,7 @@ import type { Room } from '../../types';
 import { feetInches } from '../../lib/format';
 import { alongWall, flushWall, WALLS, type Resolved, type Wall } from '../../lib/geometry';
 import { isOpening } from '../../data/catalog';
-import { FONT_MONO, INK, PAPER, WALL_T } from './planStyle';
+import { FONT_MONO, WALL_T, usePlanPalette } from './planStyle';
 
 interface DimProps {
   x1: number;
@@ -19,7 +19,9 @@ interface DimProps {
 }
 
 /** A dimension string with architectural 45° tick marks and a centered label. */
-export function Dim({ x1, y1, x2, y2, label, k, color = INK, ticks, pill = false, fontPx = 10 }: DimProps) {
+export function Dim({ x1, y1, x2, y2, label, k, color: colorProp, ticks, pill = false, fontPx = 10 }: DimProps) {
+  const pal = usePlanPalette();
+  const color = colorProp ?? pal.ink;
   const horizontal = Math.abs(y2 - y1) < Math.abs(x2 - x1);
   const t = 4 * k;
   const marks = ticks ?? (horizontal ? [x1, x2] : [y1, y2]);
@@ -44,7 +46,7 @@ export function Dim({ x1, y1, x2, y2, label, k, color = INK, ticks, pill = false
       ))}
       {showLabel && (
         <Group x={mx} y={my} rotation={horizontal ? 0 : -90}>
-          {pill && <Rect x={-tw / 2} y={-fs * 0.85} width={tw} height={fs * 1.7} cornerRadius={fs * 0.85} fill={PAPER} stroke={color} strokeWidth={0.8} strokeScaleEnabled={false} />}
+          {pill && <Rect x={-tw / 2} y={-fs * 0.85} width={tw} height={fs * 1.7} cornerRadius={fs * 0.85} fill={pal.paper} stroke={color} strokeWidth={0.8} strokeScaleEnabled={false} />}
           <Text
             text={text}
             fontFamily={FONT_MONO}
@@ -63,6 +65,7 @@ export function Dim({ x1, y1, x2, y2, label, k, color = INK, ticks, pill = false
 
 /** Overall room size plus a chained string of every piece along each wall, like a real plan set. */
 export function WallDimensions({ room, all, k }: { room: Room; all: Resolved[]; k: number }) {
+  const muted = usePlanPalette().muted;
   const W = room.widthIn;
   const L = room.lengthIn;
   const chainOff = WALL_T + 16 * k;
@@ -108,7 +111,7 @@ export function WallDimensions({ room, all, k }: { room: Room; all: Resolved[]; 
               const [x1, y1] = pos(a);
               const [x2, y2] = pos(b);
               const label = b - a >= 6 ? feetInches(b - a).replace(/^0' /, '') : undefined;
-              return <Dim key={i} x1={x1} y1={y1} x2={x2} y2={y2} label={label} k={k} color="#7a7166" fontPx={9} />;
+              return <Dim key={i} x1={x1} y1={y1} x2={x2} y2={y2} label={label} k={k} color={muted} fontPx={9} />;
             })}
           </Group>
         );

@@ -9,39 +9,40 @@ import { PLAIN_PRESET, STYLE_PRESETS } from '../data/styles';
 import { PresetStrip } from './PresetStrip';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
-  const run = '#2a2622';
+  // The runs and the room outline follow the theme (styles.css --plan-wall).
+  const run = { fill: 'var(--plan-wall)' };
   const bars: Record<TemplateId, JSX.Element> = {
-    'one-wall': <rect x="4" y="4" width="52" height="9" fill={run} />,
+    'one-wall': <rect x="4" y="4" width="52" height="9" style={run} />,
     galley: (
       <>
-        <rect x="4" y="4" width="52" height="9" fill={run} />
-        <rect x="4" y="31" width="52" height="9" fill={run} />
+        <rect x="4" y="4" width="52" height="9" style={run} />
+        <rect x="4" y="31" width="52" height="9" style={run} />
       </>
     ),
     'l-shape': (
       <>
-        <rect x="4" y="4" width="52" height="9" fill={run} />
-        <rect x="4" y="4" width="9" height="36" fill={run} />
+        <rect x="4" y="4" width="52" height="9" style={run} />
+        <rect x="4" y="4" width="9" height="36" style={run} />
       </>
     ),
     'u-shape': (
       <>
-        <rect x="4" y="4" width="52" height="9" fill={run} />
-        <rect x="4" y="4" width="9" height="36" fill={run} />
-        <rect x="47" y="4" width="9" height="36" fill={run} />
+        <rect x="4" y="4" width="52" height="9" style={run} />
+        <rect x="4" y="4" width="9" height="36" style={run} />
+        <rect x="47" y="4" width="9" height="36" style={run} />
       </>
     ),
     'l-island': (
       <>
-        <rect x="4" y="4" width="52" height="9" fill={run} />
-        <rect x="4" y="4" width="9" height="36" fill={run} />
+        <rect x="4" y="4" width="52" height="9" style={run} />
+        <rect x="4" y="4" width="9" height="36" style={run} />
         <rect x="24" y="21" width="24" height="10" fill="#c2542d" />
       </>
     ),
   };
   return (
     <svg viewBox="0 0 60 44" aria-hidden>
-      <rect x="1" y="1" width="58" height="42" fill="none" stroke="#2a2622" strokeWidth="1.5" />
+      <rect x="1" y="1" width="58" height="42" fill="none" style={{ stroke: 'var(--plan-wall)' }} strokeWidth="1.5" />
       {bars[id]}
     </svg>
   );

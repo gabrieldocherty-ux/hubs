@@ -7,6 +7,9 @@ import { resolveFinish } from '../lib/finish';
 import { shade } from '../lib/color';
 
 const INK = '#2a2622';
+/** The walls and what an opening shows follow the theme (styles.css --plan-wall, --paper); the floor and the pieces keep their real colours and dark outlines. */
+const WALL_STYLE = { stroke: 'var(--plan-wall)' };
+const GAP_STYLE = { fill: 'var(--paper)' };
 
 /** A small, dependency-free plan drawing of a saved kitchen for cards and pickers. */
 export const MiniPlan = memo(function MiniPlan({ doc, className, highlight }: { doc: DesignDoc; className?: string; highlight?: boolean }) {
@@ -46,16 +49,16 @@ export const MiniPlan = memo(function MiniPlan({ doc, className, highlight }: { 
           </g>
         );
       })}
-      <rect x={-T} y={-T} width={W + T * 2} height={L + T * 2} fill="none" stroke={highlight ? '#c2542d' : INK} strokeWidth={T} />
+      <rect x={-T} y={-T} width={W + T * 2} height={L + T * 2} fill="none" stroke={highlight ? '#c2542d' : INK} style={highlight ? undefined : WALL_STYLE} strokeWidth={T} />
       {all
         .filter((r) => isOpening(r.product))
         .map((r) => {
           const b = r.box;
           const horiz = r.item.rotation === 0 || r.item.rotation === 180;
           return horiz ? (
-            <rect key={r.item.id} x={b.minX} y={r.item.y < 1 ? -T : L} width={b.maxX - b.minX} height={T} fill={r.product.kind === 'window' ? '#cfe0ea' : '#f3eee5'} />
+            <rect key={r.item.id} x={b.minX} y={r.item.y < 1 ? -T : L} width={b.maxX - b.minX} height={T} fill="#cfe0ea" style={r.product.kind === 'window' ? undefined : GAP_STYLE} />
           ) : (
-            <rect key={r.item.id} x={r.item.x < 1 ? -T : W} y={b.minY} width={T} height={b.maxY - b.minY} fill={r.product.kind === 'window' ? '#cfe0ea' : '#f3eee5'} />
+            <rect key={r.item.id} x={r.item.x < 1 ? -T : W} y={b.minY} width={T} height={b.maxY - b.minY} fill="#cfe0ea" style={r.product.kind === 'window' ? undefined : GAP_STYLE} />
           );
         })}
     </svg>
