@@ -262,3 +262,173 @@ test('deploy-local refuses, changing nothing: an unknown option (2), no build in
     rm(dir);
   }
 });
+
+// ── 2. starting on boot with nobody logged in ────────────────────────────
+
+/** A systemd unit as { Section: { Key: [values] } } (comments and blank lines skipped). */
+function parseUnit(text) {
+  const out = {};
+  let section = null;
+  for (const line of text.split('\n')) {
+    if (!line.trim() || line.startsWith('#')) continue;
+    const s = /^\[(\w+)\]$/.exec(line);
+    if (s) {
+      section = out[s[1]] = {};
+      continue;
+    }
+    const kv = /^([A-Za-z]+)=(.*)$/.exec(line);
+    assert.ok(kv && section, `a key=value line inside a section: ${line}`);
+    (section[kv[1]] ??= []).push(kv[2]);
+  }
+  return out;
+}
+
+test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as blumodel, production, restarted for ever, writes only data and logs, sandboxed', async () => {
+  const { systemdServerUnit } = await import('../ops/home.mjs');
+  const text = systemdServerUnit();
+  assert.ok(!text.includes('\r'), 'LF only');
+  const u = parseUnit(text);
+  assert.deepEqual(Object.keys(u), ['Unit', 'Service', 'Install']);
+  const S = u.Service;
+  assert.deepEqual(S.ExecStart, ['/usr/bin/node --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod']);
+  assert.deepEqual(S.WorkingDirectory, ['/srv/blumodel-studio/app']);
+  assert.deepEqual([S.User, S.Group], [['blumodel'], ['blumodel']]);
+  assert.deepEqual(S.Environment, [
+    'NODE_ENV=production',
+    'PORT=8790',
+    'HOST=127.0.0.1',
+    'DB_PATH=/srv/blumodel-studio/data/blumodel.db',
+    'BLUMODEL_ENV_FILE=/srv/blumodel-studio/blumodel.env',
+    'BLUMODEL_LOG_FILE=/srv/blumodel-studio/logs/server.log',
+  ]);
+  assert.ok(!S.Environment.some((e) => /^(DEMO_PAYMENTS|STRIPE_|PAYMENTS|NODE_OPTIONS)/.test(e)), 'the settings file alone decides payments');
+  assert.deepEqual([S.Restart, S.RestartSec, S.KillSignal, S.TimeoutStopSec], [['always'], ['5'], ['SIGTERM'], ['30']]);
+  assert.deepEqual(u.Unit.StartLimitIntervalSec, ['0'], 'never stops retrying');
+  assert.deepEqual(S.ReadWritePaths, ['/srv/blumodel-studio/data /srv/blumodel-studio/logs']);
+  for (const [k, v] of Object.entries({ NoNewPrivileges: 'yes', ProtectSystem: 'strict', ProtectHome: 'yes', PrivateTmp: 'yes', PrivateDevices: 'yes', RestrictSUIDSGID: 'yes', CapabilityBoundingSet: '', UMask: '0027' })) assert.deepEqual(S[k], [v], k);
+  assert.equal(S.MemoryDenyWriteExecute, undefined, 'Node’s JIT needs it off');
+  assert.deepEqual(u.Install.WantedBy, ['multi-user.target']);
+  // Another home, port and node: all follow; unsafe values are refused rather than written.
+  const other = parseUnit(systemdServerUnit({ home: '/opt/bms', port: 8899, node: '/usr/local/bin/node', user: 'bms' })).Service;
+  assert.deepEqual(other.ExecStart, ['/usr/local/bin/node --no-warnings /opt/bms/app/server/index.mjs --prod']);
+  assert.ok(other.Environment.includes('PORT=8899') && other.Environment.includes('DB_PATH=/opt/bms/data/blumodel.db'));
+  assert.deepEqual(other.User, ['bms']);
+  assert.throws(() => systemdServerUnit({ home: '/srv/blu model' }), /absolute path/);
+  assert.throws(() => systemdServerUnit({ home: 'srv/blumodel' }), /absolute path/);
+  assert.throws(() => systemdServerUnit({ home: '/srv/../etc' }), /absolute path/);
+  assert.throws(() => systemdServerUnit({ node: 'C:\\Program Files\\nodejs\\node.exe' }), /absolute path/);
+  assert.throws(() => systemdServerUnit({ user: 'root; rm' }), /Not a user name/);
+  assert.throws(() => systemdServerUnit({ port: '87 90' }), /Not a port/);
+});
+
+test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumodel, after and wanting the server and the network, restarted for ever, sandboxed', async () => {
+  const { systemdTunnelUnit } = await import('../ops/home.mjs');
+  const text = systemdTunnelUnit();
+  assert.ok(!text.includes('\r'));
+  const u = parseUnit(text);
+  assert.deepEqual(u.Service.ExecStart, ['/usr/bin/cloudflared tunnel --config /srv/blumodel-studio/cloudflared.yml --no-autoupdate run']);
+  assert.deepEqual(u.Unit.After, ['network-online.target blumodel-studio.service']);
+  assert.deepEqual(u.Unit.Wants, ['network-online.target blumodel-studio.service']);
+  assert.deepEqual([u.Service.User, u.Service.Restart, u.Service.RestartSec], [['blumodel'], ['always'], ['10']]);
+  for (const k of ['NoNewPrivileges', 'ProtectHome', 'PrivateTmp']) assert.deepEqual(u.Service[k], ['yes'], k);
+  assert.deepEqual(u.Service.ProtectSystem, ['strict']);
+  assert.equal(u.Service.ReadWritePaths, undefined, 'the tunnel writes nothing');
+  assert.match(text, /Enable it only at the cutover/);
+  assert.ok(!/\btoken\b|login|route|delete/i.test(u.Service.ExecStart[0]), 'it only ever runs the tunnel');
+});
+
+test('the Linux install plan: both unit files, daemon-reload, the server enabled; the tunnel enabled only when asked (the cutover); --only filters', async () => {
+  const { systemdInstallPlan, systemdUnits } = await import('../ops/home.mjs');
+  const units = systemdUnits();
+  const plan = systemdInstallPlan({ units });
+  assert.deepEqual(plan.writes.map((w) => w.file), ['/etc/systemd/system/blumodel-studio.service', '/etc/systemd/system/blumodel-tunnel.service']);
+  assert.deepEqual(plan.commands, [['systemctl', 'daemon-reload'], ['systemctl', 'enable', 'blumodel-studio.service']]);
+  assert.ok(!plan.commands.flat().includes('start') && !plan.commands.flat().includes('--now'), 'never starts anything');
+  assert.deepEqual(systemdInstallPlan({ units, enableTunnel: true }).commands.at(-1), ['systemctl', 'enable', 'blumodel-tunnel.service']);
+  const t = systemdInstallPlan({ units, only: 'tunnel' });
+  assert.deepEqual(t.writes.map((w) => path.posix.basename(w.file)), ['blumodel-tunnel.service']);
+  assert.deepEqual(t.commands, [['systemctl', 'daemon-reload']]);
+});
+
+test('Windows tasks at startup: a boot trigger (30 s delay) and a stored-password logon instead of logon + interactive token; the logon definition is unchanged', async () => {
+  const { homeTasks, taskXml } = await import('../ops/home.mjs');
+  const boot = homeTasks('C:\\Users\\owner\\Projects\\BluModelStudio', 'WYSE\\owner', { atStartup: true });
+  assert.deepEqual(boot.map((t) => t.name), ['BluModelStudioServer', 'BluModelTunnel']);
+  for (const t of boot) {
+    assert.match(t.xml, /<BootTrigger>\s*<Delay>PT30S<\/Delay>\s*<\/BootTrigger>/);
+    assert.doesNotMatch(t.xml, /LogonTrigger|InteractiveToken/);
+    assert.match(t.xml, /<UserId>WYSE\\owner<\/UserId>\s*<LogonType>Password<\/LogonType>\s*<RunLevel>LeastPrivilege<\/RunLevel>/);
+    assert.match(t.xml, /<ExecutionTimeLimit>PT0S<\/ExecutionTimeLimit>/);
+    assert.match(t.xml, /when Windows starts \(whether or not anyone is signed in\)/);
+    assert.doesNotMatch(t.xml, /<Password>|<RunAsPassword/i, 'no password is ever in a definition');
+  }
+  const logon = homeTasks('C:\\Users\\owner\\Projects\\BluModelStudio', 'WYSE\\owner');
+  assert.match(logon[0].xml, /<LogonTrigger>\s*<UserId>WYSE\\owner<\/UserId>\s*<\/LogonTrigger>/);
+  assert.match(logon[0].xml, /<LogonType>InteractiveToken<\/LogonType>/);
+  assert.equal(taskXml({ name: 'T', description: 'd', launcher: 'C:\\a.vbs', workingDir: 'C:\\', user: 'u' }), taskXml({ name: 'T', description: 'd', launcher: 'C:\\a.vbs', workingDir: 'C:\\', user: 'u', trigger: 'logon' }));
+  assert.throws(() => taskXml({ name: 'T', description: 'd', launcher: 'a', workingDir: 'b', user: 'u', trigger: 'idle' }), /Not a trigger/);
+  if (WIN) {
+    // The definition parses as XML (read-only, as register-tasks checks them).
+    const dir = tempDir();
+    try {
+      const file = path.join(dir, 't.xml');
+      fs.writeFileSync(file, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(boot[0].xml.replace(/\r?\n/g, '\r\n'), 'utf16le')]));
+      const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+      const r = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-Command', `$x = [xml](Get-Content -Raw -Encoding Unicode -LiteralPath '${file}'); $x.Task.Triggers.BootTrigger.Delay`], { encoding: 'utf8', windowsHide: true });
+      assert.equal(r.status, 0, r.stderr);
+      assert.equal(r.stdout.trim(), 'PT30S');
+    } finally {
+      rm(dir);
+    }
+  }
+});
+
+test('register-tasks --dry-run --at-startup: asks schtasks for the password (/RU <account> /RP *, never a password), lists the tasks for startup-tasks, changes nothing', { skip: !WIN }, () => {
+  const home = tempDir('blumodel-tasks-');
+  try {
+    const cli = (...a) => spawnSync(NODE, [path.join(ROOT, 'scripts', 'register-tasks.mjs'), '--dry-run', '--at-startup', '--home', home, '--user', 'WYSE\\owner', ...a], { encoding: 'utf8', windowsHide: true, timeout: 60_000 });
+    const r = cli();
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /BluModelStudioServer: when Windows starts, as WYSE\\owner \(signed in or not\), runs wscript\.exe ".*start-hidden\.vbs"/);
+    assert.match(r.stdout, /would run: schtasks \/Create \/TN BluModelStudioServer \/XML "<the definition below>" \/RU WYSE\\owner \/RP \* \/F/);
+    assert.match(r.stdout, /would run: schtasks \/Create \/TN BluModelTunnel \/XML "<the definition below>" \/RU WYSE\\owner \/RP \* \/F/);
+    assert.match(r.stdout, /<BootTrigger>/);
+    assert.match(r.stdout, /would list BluModelStudioServer, BluModelTunnel in .*startup-tasks/);
+    assert.match(r.stdout, /Dry run: no task was created, changed or deleted\./);
+    assert.ok(!fs.existsSync(path.join(home, 'startup-tasks')));
+    const one = cli('--only', 'server');
+    assert.equal(one.status, 0);
+    assert.doesNotMatch(one.stdout, /BluModelTunnel/);
+  } finally {
+    rm(home);
+  }
+});
+
+test('register-tasks --dry-run --platform linux prints the two units and the systemctl commands (server enabled, tunnel not), and refuses --platform without --dry-run', () => {
+  const cli = (...a) => spawnSync(NODE, [path.join(ROOT, 'scripts', 'register-tasks.mjs'), ...a], { encoding: 'utf8', windowsHide: true, timeout: 60_000 });
+  const r = cli('--dry-run', '--platform', 'linux', '--home', '/srv/blumodel-studio');
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-studio\.service$/m);
+  assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-tunnel\.service$/m);
+  assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/node --no-warnings \/srv\/blumodel-studio\/app\/server\/index\.mjs --prod$/m);
+  assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/cloudflared tunnel --config \/srv\/blumodel-studio\/cloudflared\.yml --no-autoupdate run$/m);
+  assert.match(r.stdout, /^would run: systemctl daemon-reload$/m);
+  assert.match(r.stdout, /^would run: systemctl enable blumodel-studio\.service$/m);
+  assert.doesNotMatch(r.stdout, /would run: systemctl enable blumodel-tunnel/);
+  assert.match(r.stdout, /blumodel-tunnel\.service is installed but NOT enabled\. At the cutover .*sudo systemctl enable --now blumodel-tunnel\.service/);
+  assert.match(r.stdout, /Dry run: no unit was written, enabled or started\./);
+  const t = cli('--dry-run', '--platform', 'linux', '--enable-tunnel', '--port', '8899', '--home', '/opt/bms');
+  assert.equal(t.status, 0, t.stderr);
+  assert.match(t.stdout, /^would run: systemctl enable blumodel-tunnel\.service$/m);
+  assert.match(t.stdout, /Environment=PORT=8899/);
+  assert.match(t.stdout, /WorkingDirectory=\/opt\/bms\/app/);
+  if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, 2, 'only a dry run may pretend to be Linux');
+  assert.equal(cli('--dry-run', '--platform', 'linux', '--home', '/srv/blu model').status, 2, 'a home systemd would need quoting is refused');
+  assert.equal(cli('--dry-run', '--only', 'both').status, 2);
+});
+
+test('register-tasks on Linux without root refuses before writing a unit', { skip: process.platform !== 'linux' || process.getuid?.() === 0 }, () => {
+  const r = spawnSync(NODE, [path.join(ROOT, 'scripts', 'register-tasks.mjs')], { encoding: 'utf8', timeout: 60_000 });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /needs root/);
+});
