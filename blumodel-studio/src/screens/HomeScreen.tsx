@@ -160,7 +160,7 @@ export function HomeScreen() {
                     <Plus width={22} height={22} />
                   </span>
                   <b>Start a new kitchen</b>
-                  <span>Room size, layout and style in four quick steps</span>
+                  <span>Room size, layout and brands in four quick steps</span>
                 </button>
               )}
 

@@ -516,7 +516,7 @@ function PlanSection() {
   const plan = useSession((s) => s.user!.plan);
   const status =
     plan.id === 'free'
-      ? 'Design, save and share for free. Exports are paid per kitchen or with a plan.'
+      ? 'Design, save and share for free. Exports come with a plan.'
       : plan.provider === 'comp'
         ? 'Complimentary.'
         : plan.graceUntil
