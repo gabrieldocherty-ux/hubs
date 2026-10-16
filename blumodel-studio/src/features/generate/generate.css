@@ -1377,4 +1377,10 @@
   :root[data-theme='dark'] .gen-seen-chip {
     border-color: rgba(255, 255, 255, 0.2);
   }
+
+  /* "Scale" is a primary button painted with the accent: white on it, not the dark text a
+     primary button has here (that read 3.5:1 on the orange). */
+  :root[data-theme='dark'] .gen-tape-go.btn.primary {
+    color: #fff;
+  }
 }
