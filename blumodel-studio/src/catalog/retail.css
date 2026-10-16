@@ -390,7 +390,7 @@
 }
 
 .rt-switch.on .rt-switch-track {
-  background: var(--ok);
+  background: var(--ok-solid);
 }
 
 .rt-switch.on .rt-switch-knob {

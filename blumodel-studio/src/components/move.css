@@ -77,9 +77,9 @@ html:has(.app) body {
   gap: 8px;
   min-height: calc(var(--mbar-h, 64px) + var(--safe-b, 0px));
   padding: 6px max(10px, env(safe-area-inset-left, 0px)) calc(6px + var(--safe-b, 0px)) max(10px, env(safe-area-inset-right, 0px));
-  background: rgba(251, 249, 244, 0.97);
+  background: rgba(var(--panel-rgb), 0.97);
   border-top: 1px solid var(--line);
-  box-shadow: 0 -10px 24px -18px rgba(33, 30, 26, 0.45);
+  box-shadow: 0 -10px 24px -18px rgba(var(--shadow-rgb), 0.45);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   user-select: none;
@@ -141,12 +141,12 @@ html:has(.app) body {
 
 .mbar-actions button.on {
   background: var(--ink);
-  color: #fbf9f4;
+  color: var(--panel);
 }
 
 /* "Add" is the one action people come here for. */
 .mbar-actions button[aria-label='Add products'] {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .mbar-actions button[aria-label='Add products'].on {
@@ -164,7 +164,7 @@ html:has(.app) body {
   height: 17px;
   padding: 0 4px;
   border-radius: 9px;
-  background: var(--warn);
+  background: var(--warn-solid);
   color: #fff;
   font-size: 10px;
   font-style: normal;
@@ -193,7 +193,7 @@ html:has(.app) body {
   max-height: calc(100dvh - var(--mbar-h, 64px) - var(--safe-b, 0px) - var(--sheet-gap, 56px));
   background: var(--panel);
   border-radius: 18px 18px 0 0;
-  box-shadow: 0 -18px 40px -18px rgba(33, 30, 26, 0.45), 0 -1px 0 var(--line);
+  box-shadow: 0 -18px 40px -18px rgba(var(--shadow-rgb), 0.45), 0 -1px 0 var(--line);
   overflow: hidden;
   overscroll-behavior: contain;
   transform: translateY(calc(100% + var(--mbar-h, 64px) + 24px));
@@ -348,7 +348,7 @@ html:has(.app) body {
   top: 0;
   bottom: calc(var(--mbar-h, 64px) + var(--safe-b, 0px));
   z-index: 35;
-  background: rgba(33, 30, 26, 0.24);
+  background: rgba(var(--shadow-rgb), 0.24);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.25s, visibility 0s linear 0.25s;
@@ -405,7 +405,7 @@ html:has(.app) body {
     height: auto;
     max-height: none;
     border-radius: 16px 0 0 16px;
-    box-shadow: -18px 0 40px -18px rgba(33, 30, 26, 0.45), -1px 0 0 var(--line);
+    box-shadow: -18px 0 40px -18px rgba(var(--shadow-rgb), 0.45), -1px 0 0 var(--line);
     transform: translateX(calc(100% + 24px));
   }
 
@@ -439,10 +439,10 @@ html:has(.app) body {
   width: max-content;
   max-width: calc(100% - 24px);
   padding: 5px 5px 5px 6px;
-  background: var(--ink);
-  color: #fbf9f4;
+  background: var(--inverse);
+  color: var(--on-inverse);
   border-radius: 999px;
-  box-shadow: 0 12px 28px -12px rgba(33, 30, 26, 0.6), 0 2px 6px rgba(33, 30, 26, 0.18);
+  box-shadow: 0 12px 28px -12px rgba(var(--shadow-rgb), 0.6), 0 2px 6px rgba(var(--shadow-rgb), 0.18);
   transform: translateX(-50%);
   animation: place-banner-in 0.18s ease-out;
 }
@@ -533,7 +533,7 @@ html:has(.app) body {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 12px 30px -12px rgba(33, 30, 26, 0.4), 0 2px 6px rgba(33, 30, 26, 0.08);
+  box-shadow: 0 12px 30px -12px rgba(var(--shadow-rgb), 0.4), 0 2px 6px rgba(var(--shadow-rgb), 0.08);
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
@@ -653,7 +653,7 @@ html:has(.app) body {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 16px 32px -14px rgba(33, 30, 26, 0.5), 0 2px 6px rgba(33, 30, 26, 0.1);
+  box-shadow: 0 16px 32px -14px rgba(var(--shadow-rgb), 0.5), 0 2px 6px rgba(var(--shadow-rgb), 0.1);
   transform: rotate(-1.5deg);
 }
 
@@ -705,7 +705,7 @@ html:has(.app) body {
 }
 
 .drag-ghost.over .drag-ghost-text span {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -748,5 +748,13 @@ body.is-catalog-dragging .sel-toolbar {
 @media (max-height: 520px) {
   body.is-catalog-dragging .sheet.is-open {
     transform: translateX(calc(100% - 30px));
+  }
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  /* Product art is dark line work over real finish colours: it keeps a light tile. */
+  :root[data-theme='dark'] .place-banner-art {
+    background: var(--art-bg);
   }
 }

@@ -47,7 +47,7 @@
 }
 
 .btn.brand-danger {
-  background: var(--bad);
+  background: var(--bad-solid);
   border-color: var(--bad);
   color: #fff;
 }
@@ -131,7 +131,7 @@
   font-family: var(--display);
   font-size: 34px;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .bp-title {
@@ -249,7 +249,7 @@
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
-  background: var(--paper);
+  background: var(--art-bg);
 }
 
 .bp-card-art img {
@@ -487,7 +487,7 @@
 .brand-banner.bad {
   border-color: #efc4bd;
   background: var(--bad-soft);
-  color: #7d2318;
+  color: var(--bad-ink);
 }
 
 .brand-subnav {
@@ -690,7 +690,7 @@
   padding: 6px 10px;
   border-radius: 8px;
   background: var(--bad-soft);
-  color: #7d2318;
+  color: var(--bad-ink);
   font-size: 12.5px;
 }
 
@@ -793,12 +793,12 @@
   height: 16px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(33, 30, 26, 0.3);
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.3);
   transition: transform 0.15s;
 }
 
 .brand-switch.is-on .brand-switch-track {
-  background: var(--ok);
+  background: var(--ok-solid);
 }
 
 .brand-switch.is-on .brand-switch-knob {
@@ -1083,7 +1083,7 @@
   gap: 8px;
   margin-top: 8px;
   padding: 12px 0;
-  background: linear-gradient(to bottom, rgba(243, 238, 229, 0), var(--paper) 30%);
+  background: linear-gradient(to bottom, transparent, var(--paper) 30%);
 }
 
 /* Preview */
@@ -1100,8 +1100,8 @@
   margin-bottom: 16px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: var(--ink);
-  color: #fbf9f4;
+  background: var(--inverse);
+  color: var(--on-inverse);
 }
 
 .brand-preview-bar .btn {
@@ -1109,7 +1109,7 @@
 }
 
 .brand-preview-bar .icon-btn {
-  color: #fbf9f4;
+  color: var(--on-inverse);
 }
 
 /* Dashboard card */
@@ -1384,7 +1384,7 @@
   padding: 14px;
   border-radius: 16px;
   background: var(--paper);
-  box-shadow: 0 24px 60px -20px rgba(33, 30, 26, 0.45);
+  box-shadow: 0 24px 60px -20px rgba(var(--shadow-rgb), 0.45);
 }
 
 /* ─── Admin: brands ─────────────────────────────────────── */
@@ -1464,7 +1464,7 @@
 
 .adm-note {
   font-size: 12.5px;
-  color: #7d2318;
+  color: var(--bad-ink);
 }
 
 .adm-counts {
@@ -1536,7 +1536,7 @@
 .mod .tag.warn,
 .adm-brands .tag.warn {
   background: var(--warn-soft);
-  color: #7a5212;
+  color: var(--warn-ink);
 }
 
 .bp .tag.bad,
@@ -1717,5 +1717,30 @@
 
   .brand-top td:first-child {
     min-width: 8.5em;
+  }
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  :root[data-theme='dark'] .brand-banner.warn {
+    border-color: rgba(227, 168, 79, 0.4);
+    color: var(--warn-ink);
+  }
+
+  :root[data-theme='dark'] .brand-banner.bad {
+    border-color: rgba(240, 138, 124, 0.4);
+  }
+
+  :root[data-theme='dark'] .brand-row.is-on {
+    border-color: rgba(116, 192, 139, 0.45);
+  }
+
+  :root[data-theme='dark'] .brand-ready li.missing,
+  :root[data-theme='dark'] .mod-glb-list li.warn {
+    color: var(--warn-ink);
+  }
+
+  :root[data-theme='dark'] .brand-lead.is-new {
+    border-color: rgba(238, 138, 97, 0.45);
   }
 }

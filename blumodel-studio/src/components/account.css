@@ -266,7 +266,7 @@
 }
 
 .set-switch.on .set-switch-track {
-  background: var(--ok);
+  background: var(--ok-solid);
 }
 
 .set-switch.on .set-switch-knob {

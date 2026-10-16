@@ -14,7 +14,7 @@
 .viewer-hud-note {
   font-size: 11px;
   color: var(--ink-3);
-  background: rgba(251, 249, 244, 0.85);
+  background: rgba(var(--panel-rgb), 0.85);
   padding: 2px 7px;
   border-radius: 6px;
 }
@@ -34,7 +34,7 @@
   min-height: 200px;
   border-radius: 14px;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 42%, #fbf9f5 0%, #f1ece3 55%, #e8e1d5 100%);
+  background: radial-gradient(ellipse at 50% 42%, var(--pstage-1) 0%, var(--pstage-2) 55%, var(--pstage-3) 100%);
   border: 1px solid var(--line);
   touch-action: none;
 }
@@ -282,7 +282,7 @@
 }
 
 .pp-actions .btn.primary {
-  color: #fbf9f4;
+  color: var(--panel);
 }
 
 .pp-link {
@@ -397,7 +397,7 @@
 }
 
 .pp-missing-actions .btn.primary {
-  color: #fbf9f4;
+  color: var(--panel);
 }
 
 /* Add to a kitchen */
@@ -452,7 +452,7 @@
 }
 
 .pp-add-actions .btn.primary {
-  color: #fbf9f4;
+  color: var(--panel);
 }
 
 /* Phones and narrow tablets: stack, stage first. */
@@ -535,7 +535,7 @@
   gap: 9px;
   padding: 7px 13px;
   border-radius: 999px;
-  background: rgba(251, 249, 244, 0.92);
+  background: rgba(var(--panel-rgb), 0.92);
   box-shadow: var(--shadow-sm);
   font-weight: 600;
   color: var(--ink);
@@ -647,5 +647,28 @@
   .studio-actions .btn {
     flex: 1 1 0;
     min-width: 0;
+  }
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  :root[data-theme='dark'] .stage-dim {
+    background: rgba(var(--panel-rgb), 0.92);
+    border-color: var(--line-2);
+  }
+
+  :root[data-theme='dark'] .pp-stage-tools .chip {
+    background: rgba(var(--panel-rgb), 0.92);
+  }
+
+  /* The 2D stand-in while the 3D loads: product art keeps a light card on the dark stage. */
+  :root[data-theme='dark'] .product-stage--art .pp-art {
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--art-bg);
+  }
+
+  :root[data-theme='dark'] .studio-preview {
+    background: radial-gradient(circle at 50% 42%, var(--pstage-1) 0%, var(--paper-2) 80%);
   }
 }

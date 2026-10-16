@@ -9,7 +9,7 @@
 .mk {
   --mk-max: 1180px;
   --mk-gut: 24px;
-  --mk-dark: #211e1a;
+  --mk-dark: var(--inverse);
   --mk-on-dark: #fbf9f4;
   --mk-on-dark-2: rgba(251, 249, 244, 0.78);
   --mk-on-dark-3: rgba(251, 249, 244, 0.56);
@@ -54,7 +54,7 @@
   gap: 20px;
   min-height: 60px;
   padding: 0 var(--mk-gut);
-  background: rgba(251, 249, 244, 0.94);
+  background: rgba(var(--panel-rgb), 0.94);
   backdrop-filter: saturate(1.2) blur(8px);
   border-bottom: 1px solid var(--line);
 }
@@ -121,7 +121,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .mk-eyebrow--light {
@@ -258,7 +258,7 @@
 }
 
 .mk .btn.mk-cta-main:hover {
-  background: var(--accent-2);
+  background: var(--accent-strong);
   border-color: var(--accent-2);
 }
 
@@ -308,7 +308,7 @@
   object-fit: cover;
   border-radius: 16px;
   background: var(--paper-2);
-  box-shadow: 0 30px 60px -30px rgba(33, 30, 26, 0.45), 0 0 0 1px rgba(33, 30, 26, 0.06);
+  box-shadow: 0 30px 60px -30px rgba(var(--shadow-rgb), 0.45), 0 0 0 1px rgba(var(--ink-rgb), 0.06);
 }
 
 .mk-hero-render--plan {
@@ -551,7 +551,7 @@
   padding: 6px 12px;
   border-radius: 8px;
   background: var(--ink);
-  color: var(--mk-on-dark);
+  color: var(--panel);
   font-size: 13px;
   font-weight: 600;
 }
@@ -636,7 +636,7 @@
   aspect-ratio: 1;
   margin-bottom: 8px;
   border-radius: 9px;
-  background: var(--paper);
+  background: var(--art-bg);
   overflow: hidden;
 }
 
@@ -819,7 +819,7 @@
   background: var(--mk-dark);
   border-color: var(--mk-dark);
   color: var(--mk-on-dark-2);
-  box-shadow: 0 24px 50px -28px rgba(33, 30, 26, 0.7);
+  box-shadow: 0 24px 50px -28px rgba(var(--shadow-rgb), 0.7);
 }
 
 .mk-plan.is-current {
@@ -943,7 +943,7 @@
 }
 
 .mk-plan--pro .mk-plan-cta .btn.primary:hover {
-  background: var(--accent-2);
+  background: var(--accent-strong);
 }
 
 /* A plan's footnote sits above its button, so every card's button lines up at the bottom. */
@@ -1274,5 +1274,18 @@
   .mk-plans--3 {
     grid-template-columns: minmax(0, 1fr);
     max-width: 560px;
+  }
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  /* A light button on a dark band: its text stays dark. */
+  :root[data-theme='dark'] .mk .btn.mk-btn-light {
+    color: #211e1a;
+  }
+
+  :root[data-theme='dark'] .mk-demo-note {
+    border-color: rgba(227, 168, 79, 0.45);
+    color: var(--warn-ink);
   }
 }

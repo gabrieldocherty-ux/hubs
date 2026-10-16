@@ -114,7 +114,7 @@
   padding: 8px 12px;
   border-radius: 8px;
   background: var(--warn-soft);
-  color: #7a5212;
+  color: var(--warn-ink);
   font-size: 12.5px;
 }
 
@@ -209,7 +209,7 @@
   padding: 3px 9px;
   border-radius: 999px;
   background: var(--warn-soft);
-  color: #7a5212;
+  color: var(--warn-ink);
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -360,5 +360,13 @@
   .billing-current {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  :root[data-theme='dark'] .demo-controls {
+    border-color: rgba(227, 168, 79, 0.45);
+    background: var(--warn-soft);
   }
 }

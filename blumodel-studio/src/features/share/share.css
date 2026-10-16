@@ -117,7 +117,7 @@
   place-items: center;
   border: 0;
   background: var(--ink);
-  color: #fbf9f4;
+  color: var(--panel);
   font-family: var(--display);
   font-size: 19px;
   font-weight: 600;
@@ -253,7 +253,7 @@
 }
 
 .share-plist-links a {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   font-size: 12.5px;
   text-decoration: none;
@@ -303,7 +303,7 @@
 }
 
 .share-plist-cta a {
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   text-decoration: none;
 }
@@ -458,7 +458,7 @@
 }
 
 .share-link-actions .btn.danger-btn {
-  background: var(--bad);
+  background: var(--bad-solid);
   border-color: var(--bad);
   color: #fff;
 }
@@ -594,5 +594,13 @@
 }
 
 .share-state-actions .btn.primary {
-  color: #fbf9f4;
+  color: var(--panel);
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  /* Product art is dark line work over real finish colours: it keeps a light tile. */
+  :root[data-theme='dark'] .share-plist-art {
+    background: var(--art-bg);
+  }
 }

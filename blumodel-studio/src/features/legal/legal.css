@@ -237,3 +237,10 @@
     padding-right: 16px;
   }
 }
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  :root[data-theme='dark'] .legal-toc button {
+    text-decoration-color: rgba(238, 138, 97, 0.4);
+  }
+}

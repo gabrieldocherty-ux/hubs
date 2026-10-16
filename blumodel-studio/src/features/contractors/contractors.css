@@ -128,7 +128,7 @@
 
 .tag.warn {
   background: var(--warn-soft);
-  color: #7a5212;
+  color: var(--warn-ink);
 }
 
 .tag.bad {
@@ -490,7 +490,7 @@
   width: 72px;
   height: 72px;
   border-radius: 10px;
-  background: var(--paper);
+  background: var(--art-bg);
   overflow: hidden;
 }
 
@@ -696,7 +696,7 @@
 }
 
 .pro-glb-report li.warn {
-  color: #7a5212;
+  color: var(--warn-ink);
 }
 
 .pro-costs {
@@ -748,7 +748,7 @@
   height: 200px;
   margin: 6px 0 8px;
   border-radius: 10px;
-  background: var(--paper);
+  background: var(--art-bg);
 }
 
 .pro-preview-art svg {
@@ -946,7 +946,7 @@
   object-fit: contain;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
 }
 
 .quote-images figcaption {
@@ -1194,4 +1194,15 @@
 
 .pro-allowance.empty {
   border-left-color: var(--warn);
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  :root[data-theme='dark'] .pro-lapsed {
+    color: var(--warn-ink);
+  }
+
+  :root[data-theme='dark'] .pro-image em {
+    background: rgba(var(--panel-rgb), 0.86);
+  }
 }

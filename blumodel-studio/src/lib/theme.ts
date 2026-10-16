@@ -14,6 +14,8 @@
  * never flashes light while the app loads; `initTheme()` takes over from it.
  */
 
+import { useSyncExternalStore } from 'react';
+
 export type ThemePref = 'system' | 'light' | 'dark';
 export type Theme = 'light' | 'dark';
 
@@ -48,13 +50,37 @@ let current: ThemePref = 'system';
 let listening = false;
 const listeners = new Set<(pref: ThemePref, theme: Theme) => void>();
 
+/** The page background per theme (styles.css --paper): the browser's toolbar and canvas colour. */
+export const THEME_CHROME: Record<Theme, string> = { light: '#f3eee5', dark: '#161411' };
+
 function paint(pref: ThemePref) {
   if (typeof document === 'undefined') return;
   const el = document.documentElement;
   const theme = resolveTheme(pref);
   el.setAttribute('data-theme', theme);
   el.setAttribute('data-theme-pref', pref);
+  // The phone's status bar / tab strip and the canvas before the styles load follow the theme too.
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_CHROME[theme]);
+  document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', theme);
   for (const fn of listeners) fn(pref, theme);
+}
+
+/** The resolved theme on <html> right now ('light' outside a browser). */
+export function currentTheme(): Theme {
+  if (typeof document === 'undefined') return 'light';
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
+/**
+ * The resolved theme, re-rendering on every change. For what CSS can't reach: the 2D plan
+ * (Konva), the elevations, the 3D view's background and HUD.
+ */
+export function useResolvedTheme(): Theme {
+  return useSyncExternalStore(
+    (cb) => onThemeChange(() => cb()),
+    currentTheme,
+    () => 'light' as Theme
+  );
 }
 
 /** Applies a choice now, remembers it in this browser, and follows the device while it is 'system'. */

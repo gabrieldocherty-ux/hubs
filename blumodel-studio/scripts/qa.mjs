@@ -683,7 +683,11 @@ async function runRoute(env, pkg, route, outDir) {
       const ok = await page.send('Network.setCookie', { name: COOKIE, value: agent.session, url: base, httpOnly: true, sameSite: 'Lax' });
       if (ok && ok.success === false) throw new Error('The browser refused the session cookie.');
     }
-    if (route.reducedMotion) await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    // colorScheme: 'dark' | 'light' emulates the device's choice, which Appearance = System (the default) follows.
+    const media = [];
+    if (route.reducedMotion) media.push({ name: 'prefers-reduced-motion', value: 'reduce' });
+    if (route.colorScheme) media.push({ name: 'prefers-color-scheme', value: String(route.colorScheme) });
+    if (media.length) await page.send('Emulation.setEmulatedMedia', { features: media });
     await page.goto(`${base}/?qa=1#${hashPath}`, routeTimeout);
     if (!env.renderer) {
       env.renderer = await page
