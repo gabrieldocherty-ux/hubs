@@ -3,6 +3,12 @@
 //
 //   npm run deploy:local                          # build, copy to %USERPROFILE%\Projects\BluModelStudio, restart
 //   node scripts/deploy-local.mjs --dist <dir>    # deploy an existing build from <dir> instead of dist\
+//   ... --allow-dirty                             # deploy even with uncommitted changes (see below)
+//
+// It refuses (before stopping anything) when a file it ships, or one dist\ is built from, is
+// changed or untracked in this checkout (server\, src\, public\, index.html, the package and Vite
+// files: DEPLOY_SOURCE_PATHS in server/ops/home.mjs). Deploy a commit: commit first, or deploy from
+// a clean `git worktree add <folder> <commit>`. DEPLOYED.txt records the commit and whether it was clean.
 //
 // Env: BLUMODEL_HOME (the folder; default %USERPROFILE%\Projects\BluModelStudio), BLUMODEL_PORT (8790),
 //      BLUMODEL_HOST (127.0.0.1), BLUMODEL_ADMIN_EMAILS (ADMIN_EMAILS in a new settings template).
@@ -33,9 +39,11 @@ import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
+  DEPLOY_SOURCE_PATHS,
   createSettingsTemplate,
   defaultHome,
   deployBackupDirs,
+  dirtyDeployFiles,
   homeLayout,
   homeProcesses,
   serverScripts,
@@ -60,6 +68,7 @@ function setting(name, def) {
 
 const argv = process.argv.slice(2);
 const distArg = argv.indexOf('--dist') >= 0 ? argv[argv.indexOf('--dist') + 1] : null;
+const allowDirty = argv.includes('--allow-dirty');
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.resolve(ROOT, distArg || 'dist');
@@ -92,6 +101,28 @@ if (!/^\d{1,5}$/.test(PORT)) {
 if (!fs.existsSync(path.join(DIST, 'index.html')) || !fs.existsSync(path.join(ROOT, 'server', 'generated', 'export-kit.mjs'))) {
   console.error(`No build found in ${DIST}. Run \`npm run build\` first (or use \`npm run deploy:local\`).`);
   process.exit(1);
+}
+// Ship a commit, not a half-edited working tree (see DEPLOY_SOURCE_PATHS): checked before anything
+// is stopped or copied. --allow-dirty deploys the files on disk anyway and says so in DEPLOYED.txt.
+let dirty = null;
+try {
+  const porcelain = execFileSync('git', ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', ...DEPLOY_SOURCE_PATHS], { cwd: ROOT, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+  dirty = dirtyDeployFiles(porcelain);
+} catch {
+  console.warn('Not a git checkout (or git is not on PATH): could not check for uncommitted changes.');
+}
+if (dirty?.length) {
+  const list = dirty.slice(0, 15).map((d) => `  ${d.status.padEnd(2)} ${d.file}`).join('\n') + (dirty.length > 15 ? `\n  ... and ${dirty.length - 15} more` : '');
+  if (!allowDirty) {
+    console.error(
+      `Not deploying: ${dirty.length} file(s) that a deploy ships are changed or untracked in ${ROOT}:\n${list}\n` +
+        'Commit them (or deploy from a clean checkout of the commit you want: git worktree add <folder> <commit>). ' +
+        'A migration that is only on disk would be applied to the real database and never re-run. ' +
+        'Pass --allow-dirty to deploy the files on disk anyway.',
+    );
+    process.exit(1);
+  }
+  console.warn(`--allow-dirty: deploying ${dirty.length} uncommitted file(s):\n${list}`);
 }
 for (const old of ['BLUMODEL_DEMO_PAYMENTS', 'MISE_DEMO_PAYMENTS']) {
   if (process.env[old]) console.warn(`${old} is no longer used by the deploy: set DEMO_PAYMENTS in ${L.settings} instead.`);
@@ -244,7 +275,8 @@ try {
   } catch {
     /* not a git checkout */
   }
-  fs.writeFileSync(path.join(staging, 'DEPLOYED.txt'), `commit ${head}\ndeployed ${new Date().toISOString()}\nfrom ${ROOT}\n`);
+  const dirtyNote = dirty === null ? 'unknown (not checked)' : dirty.length ? `yes, ${dirty.length} uncommitted file(s) (--allow-dirty)` : 'no';
+  fs.writeFileSync(path.join(staging, 'DEPLOYED.txt'), `commit ${head}\nuncommitted changes: ${dirtyNote}\ndeployed ${new Date().toISOString()}\nfrom ${ROOT}\n`);
 
   fs.rmSync(L.app, { recursive: true, force: true });
   fs.renameSync(staging, L.app);

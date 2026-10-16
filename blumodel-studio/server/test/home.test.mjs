@@ -19,6 +19,7 @@ import {
   CLEARED_ENV,
   createSettingsTemplate,
   deployBackupDirs,
+  dirtyDeployFiles,
   homeLayout,
   homeProcesses,
   homeTasks,
@@ -668,5 +669,54 @@ test('cloudflared itself accepts the generated config (offline: ingress validate
     assert.match(other.stdout + other.stderr, /http_status:404/);
   } finally {
     rm(dir);
+  }
+});
+
+test('dirtyDeployFiles reads git status --porcelain -z (changed, untracked, renamed)', () => {
+  const z = [' M server/routes/webhooks.mjs', '?? server/db/migrations/admin.mjs', 'R  src/new.ts', 'src/old.ts', 'A  server/admin/x.mjs', ''].join('\0');
+  assert.deepEqual(dirtyDeployFiles(z), [
+    { status: 'M', file: 'server/routes/webhooks.mjs' },
+    { status: '??', file: 'server/db/migrations/admin.mjs' },
+    { status: 'R', file: 'src/new.ts' },
+    { status: 'A', file: 'server/admin/x.mjs' },
+  ]);
+  assert.deepEqual(dirtyDeployFiles(''), []);
+});
+
+test('deploy-local refuses an uncommitted migration before it stops or copies anything', { skip: !WIN || spawnSync('git', ['--version'], { windowsHide: true }).status !== 0 }, () => {
+  // A throwaway git checkout holding just what deploy-local needs to get as far as its checks.
+  const repo = tempDir('blumodel-dirty-');
+  const home = tempDir('blumodel-dirty-home-');
+  try {
+    for (const rel of ['scripts/deploy-local.mjs', 'server/ops/home.mjs', 'server/lib/envFile.mjs']) {
+      fs.mkdirSync(path.dirname(path.join(repo, rel)), { recursive: true });
+      fs.copyFileSync(path.join(ROOT, rel), path.join(repo, rel));
+    }
+    fs.mkdirSync(path.join(repo, 'src', 'data'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'src', 'data', 'plans.json'), '[]');
+    fs.mkdirSync(path.join(repo, 'dist'));
+    fs.writeFileSync(path.join(repo, 'dist', 'index.html'), '<!doctype html>');
+    fs.mkdirSync(path.join(repo, 'server', 'generated'));
+    fs.writeFileSync(path.join(repo, 'server', 'generated', 'export-kit.mjs'), '');
+    fs.writeFileSync(path.join(repo, '.gitignore'), 'dist/\nserver/generated/\n');
+    const git = (...a) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t.test', '-c', 'commit.gpgsign=false', ...a], { cwd: repo, encoding: 'utf8', windowsHide: true });
+    assert.equal(git('init', '-q').status, 0);
+    git('add', '-A');
+    assert.equal(git('commit', '-q', '-m', 'x').status, 0);
+    fs.mkdirSync(path.join(repo, 'server', 'db', 'migrations'), { recursive: true });
+    fs.writeFileSync(path.join(repo, 'server', 'db', 'migrations', 'wip.mjs'), 'export const steps = [];');
+    const r = spawnSync(process.execPath, [path.join(repo, 'scripts', 'deploy-local.mjs')], {
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 60_000,
+      env: { ...process.env, BLUMODEL_HOME: home, BLUMODEL_PORT: '8929' },
+    });
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.match(r.stderr, /Not deploying: 1 file\(s\)/);
+    assert.match(r.stderr, /\?\? server\/db\/migrations\/wip\.mjs/);
+    assert.deepEqual(fs.readdirSync(home), [], 'nothing was written into the home');
+  } finally {
+    rm(repo);
+    rm(home);
   }
 });
