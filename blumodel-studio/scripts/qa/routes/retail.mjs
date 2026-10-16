@@ -262,6 +262,68 @@ const fixtureRoutes = [
   },
 ];
 
+// ── A product carrying a UPC (a delivered custom model) gets the matching retail listing's stores ──
+
+/** A retail product with a UPC: the custom model below stands for it. */
+const UPC_LISTED = RETAIL.products.find((p) => p.retail.upc);
+
+const upcRoutes = [
+  {
+    name: 'retail-upc-where-to-buy',
+    as: 'contractor',
+    waitFor: ['.pp-buy-row'],
+    expectText: ['Where to buy', 'Made by', `These stores list UPC ${UPC_LISTED.retail.upc}`],
+    timeoutMs: 30_000,
+    setup: async ({ api }) => {
+      const me = api.as('contractor');
+      const ok = (r, what) => {
+        if (r.status >= 300) throw new Error(`${what} failed (${r.status}): ${JSON.stringify(r.body).slice(0, 200)}`);
+        return r.body;
+      };
+      ok(await me.put('/api/pro/profile', { company: 'Quinn & Co. Kitchens (QA)', phone: '905-555-0164', serviceArea: 'Testville', defaultMarkupPct: 30 }), 'Saving the company');
+      const made = ok(
+        await me.post('/api/pro/products', {
+          spec: {
+            kind: UPC_LISTED.kind,
+            ...(UPC_LISTED.variant ? { variant: UPC_LISTED.variant } : {}),
+            category: UPC_LISTED.category,
+            name: `${UPC_LISTED.brand} model (QA, by UPC)`,
+            widthIn: UPC_LISTED.widthIn,
+            depthIn: UPC_LISTED.depthIn,
+            heightIn: UPC_LISTED.heightIn,
+            elevationIn: UPC_LISTED.elevationIn,
+            price: 0,
+            finishes: [{ id: 'as-modelled', name: 'As modelled', hex: '#c4c8cb', material: 'metal' }],
+            brand: UPC_LISTED.brand,
+            upc: UPC_LISTED.retail.upc,
+          },
+        }),
+        'Creating the product',
+      );
+      if (made.product.upc !== UPC_LISTED.retail.upc || made.product.productBrand !== UPC_LISTED.brand) throw new Error(`the product came back with ${JSON.stringify({ upc: made.product.upc, productBrand: made.product.productBrand })}`);
+      return { path: `#/p/${made.product.id}`, data: { id: made.product.id } };
+    },
+    check: async (h) => {
+      const rows = await buyRows(h);
+      const want = [...new Set(UPC_LISTED.retail.stores.map((l) => l.store))];
+      if (rows.map((r) => r.store).sort().join() !== want.sort().join()) throw new Error(`rows for ${rows.map((r) => r.store)}; the listing has ${want}`);
+      const upcCell = await h.evaluate(() => [...document.querySelectorAll('.pp-specs tr')].find((tr) => tr.querySelector('th')?.textContent === 'UPC')?.querySelector('td')?.textContent ?? '');
+      if (upcCell !== UPC_LISTED.retail.upc) throw new Error(`the UPC row reads "${upcCell}"`);
+      // A click is counted against the retail listing (the server only counts real listings).
+      const before = h.api.sql('SELECT COALESCE(SUM(clicks), 0) AS n FROM retail_clicks WHERE product_id = ?', UPC_LISTED.id)[0].n;
+      await h.evaluate(() => {
+        window.addEventListener('click', (e) => e.preventDefault(), { capture: true });
+        document.querySelector('.pp-buy-row a.pp-buy-link').click();
+      });
+      await h.sleep(800);
+      const after = h.api.sql('SELECT COALESCE(SUM(clicks), 0) AS n FROM retail_clicks WHERE product_id = ?', UPC_LISTED.id)[0].n;
+      if (after !== before + 1) throw new Error(`the link-out was counted ${after - before} times against ${UPC_LISTED.id}`);
+      await h.shot('linked');
+      await noSideScroll(h);
+    },
+  },
+];
+
 export default [
   // ── Catalog panel ───────────────────────────────────────────────────────
   {
@@ -539,4 +601,5 @@ export default [
     },
   },
   ...fixtureRoutes,
+  ...upcRoutes,
 ];

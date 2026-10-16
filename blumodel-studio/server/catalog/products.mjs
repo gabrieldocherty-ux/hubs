@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { randomId, FILE_ID_RE, PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { KIND_SET, CATEGORY_SET, MATERIAL_SET, VARIANTS } from './kinds.mjs';
+import { normalizeUpc } from '../payments/upc.mjs';
 
 export const STATUSES = ['draft', 'submitted', 'published', 'rejected', 'archived'];
 export const SOURCES = ['brand', 'custom', 'contractor'];
@@ -85,6 +86,23 @@ export function validateSpec(input, { partial = false } = {}) {
     if (s === null || s.length > 60) err('line', 'Keep the line name to 60 characters or fewer.');
     else if (s) out.line = s;
     else if (partial) out.line = null;
+  }
+  // The real product a model stands for: its maker ("Bosch") and its UPC/EAN, stored as digits
+  // (server/payments/upc.mjs). The UPC links a product to the retail catalog's store listings.
+  if (has('brand')) {
+    const s = input.brand === null ? '' : typeof input.brand === 'string' ? input.brand.replace(/\s+/g, ' ').trim() : null;
+    if (s === null || s.length > 60) err('brand', 'Keep the brand to 60 characters or fewer.');
+    else if (s) out.brand = s;
+    else if (partial) out.brand = null;
+  }
+  if (has('upc')) {
+    if (cleared('upc')) {
+      if (partial) out.upc = null;
+    } else {
+      const u = normalizeUpc(input.upc);
+      if (!u.ok) err('upc', u.message);
+      else out.upc = u.code;
+    }
   }
   if (has('doorStyle')) {
     if (cleared('doorStyle')) {
@@ -403,6 +421,8 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
               ? ownerLabel(row.ownerUserId) || 'My catalog'
               : 'Unknown brand',
         ...(spec.line ? { line: spec.line } : {}),
+        ...(spec.brand ? { productBrand: spec.brand } : {}),
+        ...(spec.upc ? { upc: spec.upc } : {}),
         ...(spec.doorStyle ? { doorStyle: spec.doorStyle } : {}),
         name: spec.name,
         code: spec.sku || '',

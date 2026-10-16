@@ -185,6 +185,8 @@ export function snapshotOf(p: Product): Product {
     ...(p.buyUrl ? { buyUrl: p.buyUrl } : {}),
     ...(p.model ? { model: p.model } : {}),
     ...(p.flags ? { flags: p.flags } : {}),
+    ...(p.productBrand ? { productBrand: p.productBrand } : {}),
+    ...(p.upc ? { upc: p.upc } : {}),
   };
   if (JSON.stringify(snap).length <= MAX_SNAPSHOT_BYTES) return snap;
   // Oversized (very long copy or many finishes): drop what a render doesn't need.

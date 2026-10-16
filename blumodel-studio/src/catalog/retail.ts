@@ -154,6 +154,22 @@ export function retailOf(id: string): RetailInfo | undefined {
   return useRetail.getState().byId.get(id);
 }
 
+/** A UPC as digits, with a 13-digit code that starts with 0 read as the 12-digit UPC-A it encodes (server/payments/upc.mjs). */
+export function upcKey(raw: string | null | undefined): string {
+  const s = String(raw ?? '').replace(/\D/g, '');
+  return s.length === 13 && s.startsWith('0') ? s.slice(1) : s;
+}
+
+/**
+ * The retail product or fixture listed under this UPC, by id (once the retail data is loaded): how
+ * a delivered custom model whose request gave a UPC finds its stores. Undefined without a match.
+ */
+export function retailIdByUpc(upc: string | null | undefined, data: RetailData | null = useRetail.getState().data): string | undefined {
+  const key = upcKey(upc);
+  if (key.length < 8 || !data) return undefined;
+  return [...data.products, ...(data.fixtures ?? [])].find((p) => p.retail.upc && upcKey(p.retail.upc) === key)?.id;
+}
+
 /** The store's display name for a slug. */
 export function storeName(slug: string): string {
   return useRetail.getState().stores.get(slug)?.name ?? slug;

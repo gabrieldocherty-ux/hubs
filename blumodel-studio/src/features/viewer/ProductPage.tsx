@@ -37,6 +37,7 @@ import {
   isRetailId,
   loadRetail,
   loadRetailers,
+  retailIdByUpc,
   retailOf,
   sortListings,
   storeLink,
@@ -281,7 +282,7 @@ function RetailPrice({ info }: { info: RetailInfo }) {
  * price. Links are plain navigations with the store's tracking parameter when an admin set one;
  * a click is counted per store and product only.
  */
-function WhereToBuy({ product, info }: { product: Product; info: RetailInfo }) {
+function WhereToBuy({ product, info, linkId = product.id, matchedUpc }: { product: Product; info: RetailInfo; linkId?: string; matchedUpc?: string }) {
   const bySlug = useRetailers((s) => s.bySlug);
   useEffect(() => {
     void loadRetailers();
@@ -289,9 +290,11 @@ function WhereToBuy({ product, info }: { product: Product; info: RetailInfo }) {
   const finishes = finishList(product);
   const rows = sortListings(info.stores, bySlug);
   const about: string[] = [];
-  if (info.note) about.push(info.note);
-  if (info.typical.length) about.push(`The ${info.typical.join(' and ')} shown ${info.typical.length > 1 ? 'are' : 'is'} typical for this kind of product; the listing didn’t give ${info.typical.length > 1 ? 'them' : 'it'}.`);
-  if (info.upc) about.push(`UPC ${info.upc}.`);
+  // A model linked by its UPC: the listings are the retail product's, not this model's own facts.
+  if (matchedUpc) about.push(`These stores list UPC ${matchedUpc}, the product this model stands for.`);
+  if (info.note && !matchedUpc) about.push(info.note);
+  if (info.typical.length && !matchedUpc) about.push(`The ${info.typical.join(' and ')} shown ${info.typical.length > 1 ? 'are' : 'is'} typical for this kind of product; the listing didn’t give ${info.typical.length > 1 ? 'them' : 'it'}.`);
+  if (info.upc && !matchedUpc) about.push(`UPC ${info.upc}.`);
   return (
     <section className="pp-buy" aria-labelledby="pp-buy-title">
       <div className="pp-buy-head">
@@ -305,7 +308,7 @@ function WhereToBuy({ product, info }: { product: Product; info: RetailInfo }) {
           const cfg = bySlug.get(l.store);
           const name = storeName(l.store);
           const finish = finishes.length > 1 && l.finish ? finishes.find((f) => f.id === l.finish)?.name : undefined;
-          const count = () => countClick(product.id, l.store);
+          const count = () => countClick(linkId, l.store);
           return (
             <li key={l.url} className="pp-buy-row" data-store={l.store}>
               <span className="pp-buy-store">
@@ -364,6 +367,13 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
   }, []);
   const isServer = !isBuiltin(product.id);
   const retail = useRetail((s) => s.byId.get(product.id));
+  // Not a retail product but carrying a UPC (a delivered custom model): the retail listing with that UPC.
+  const linkedUpc = !retail && product.upc ? product.upc : undefined;
+  const linkedId = useRetail((s) => (linkedUpc && s.status === 'ready' ? retailIdByUpc(linkedUpc, s.data) : undefined));
+  const linked = useRetail((s) => (linkedId ? s.byId.get(linkedId) : undefined));
+  useEffect(() => {
+    if (linkedUpc) void loadRetail();
+  }, [linkedUpc]);
 
   useEffect(() => {
     track(product.id, 'view');
@@ -531,6 +541,7 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
         </div>
 
         {retail && <WhereToBuy product={product} info={retail} />}
+        {!retail && linked && linkedId && <WhereToBuy product={product} info={linked} linkId={linkedId} matchedUpc={linkedUpc} />}
 
         {product.blurb && !retail && <p className="pp-blurb">{product.blurb}</p>}
 
@@ -540,6 +551,18 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
               <th scope="row">Brand</th>
               <td>{product.brand}</td>
             </tr>
+            {product.productBrand && product.productBrand !== product.brand && (
+              <tr>
+                <th scope="row">Made by</th>
+                <td>{product.productBrand}</td>
+              </tr>
+            )}
+            {(product.upc ?? retail?.upc) && (
+              <tr>
+                <th scope="row">UPC</th>
+                <td className="mono">{product.upc ?? retail?.upc}</td>
+              </tr>
+            )}
             <tr>
               <th scope="row">SKU</th>
               <td className="mono">{productCode(product, width)}</td>

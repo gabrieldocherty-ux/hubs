@@ -121,6 +121,13 @@ export interface Product {
   imageFileIds?: string[];
   /** A product line or collection ("Smith Shaker"); groups a contractor's catalog. */
   line?: string;
+  /**
+   * The maker of the real product a model stands for ("Bosch"), from the spec's `brand`. `brand`
+   * above stays the catalog's display brand ("Your model", a contractor's company).
+   */
+  productBrand?: string;
+  /** The real product's UPC/EAN, digits only (12, 13 or 8). Links it to the retail catalog's store listings. */
+  upc?: string;
   /** The door style a cabinet line is sold in. The kitchen-wide style still draws the doors. */
   doorStyle?: DoorStyle;
 }

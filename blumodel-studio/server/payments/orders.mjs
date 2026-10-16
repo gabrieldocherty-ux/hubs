@@ -660,8 +660,8 @@ export function createOrderService({ db, now, services, config, log = console, t
     const result = tx(() => {
       const glb = copyFile(model, owner);
       const img = copyFile(thumb, owner);
-      // The brand and UPC the buyer gave go in the description: products have no fields for them
-      // yet, and they are how a contractor matches the model to the stock it stands for.
+      // The brand and UPC the buyer gave: structured fields (they link the model to the retail
+      // catalog's store listings by UPC) and, as before, in the description.
       const ident = [brief.brand ? `Brand: ${brief.brand}` : null, brief.upc ? `UPC ${brief.upc}` : null].filter(Boolean);
       const spec = {
         kind: brief.kind,
@@ -676,6 +676,8 @@ export function createOrderService({ db, now, services, config, log = console, t
         imageFileIds: [img.id],
         modelFileId: glb.id,
         ...(o.line ? { line: o.line } : {}),
+        ...(brief.brand ? { brand: String(brief.brand).slice(0, 60) } : {}),
+        ...(brief.upc ? { upc: brief.upc } : {}),
       };
       let product;
       const existing = item.deliverableProductId ? products.get(item.deliverableProductId) : null;

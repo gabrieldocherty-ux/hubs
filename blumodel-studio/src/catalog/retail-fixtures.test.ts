@@ -85,3 +85,16 @@ test('a saved kitchen carries snapshots of its fixtures, so it draws and prices 
   resetFixtures();
   assert.equal(buildEstimate(saved).lines.find((l) => l.key === 'hardware')?.unitPrice, pricedPull.price);
 });
+
+test('a product carrying a UPC (a delivered custom model) finds the retail listing with that UPC', async () => {
+  const { retailIdByUpc, upcKey } = await import('./retail');
+  const listed = data.products.find((p) => p.retail.upc)!;
+  assert.equal(retailIdByUpc(listed.retail.upc, data), listed.id);
+  // Typed with spaces, or as the EAN-13 with a leading 0: the same code.
+  assert.equal(retailIdByUpc(`0${listed.retail.upc}`, data), listed.id);
+  assert.equal(retailIdByUpc(listed.retail.upc!.replace(/(\d{6})/, '$1 '), data), listed.id);
+  assert.equal(upcKey('0036000291452'), '036000291452');
+  assert.equal(retailIdByUpc('036000291452', data), undefined);
+  assert.equal(retailIdByUpc('', data), undefined);
+  assert.equal(retailIdByUpc(listed.retail.upc, null), undefined);
+});
