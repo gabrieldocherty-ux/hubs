@@ -3349,4 +3349,10 @@ a.btn {
   :root[data-theme='dark'] .elev-bar .count {
     opacity: 0.75;
   }
+
+  /* A count on a selected chip ("All 5"): the chip is light here, so the muted grey (made for
+     dark-on-light text the other way round) read 2.4:1; the chip's own dark text, softened. */
+  :root[data-theme='dark'] .chip.on .muted {
+    color: rgba(var(--panel-rgb), 0.72);
+  }
 }
