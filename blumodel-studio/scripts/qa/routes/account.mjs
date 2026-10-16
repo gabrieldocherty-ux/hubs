@@ -242,15 +242,18 @@ export default [
       const u = await api.as('fresh').user();
       return { email: u.email };
     },
-    expectText: ['Users', 'Create reset link'],
+    expectText: ['Users', 'Search by name or email'],
     check: async (h) => {
+      // Admin > Users (src/features/admin): search, open the account, then Create reset link.
       await h.click('.admin-users .home-search input');
       await h.type(h.data.email);
       await h.click(await mark(h, '.admin-users .home-search button', 'Search', 'search'));
-      await h.waitUntil(() => document.querySelectorAll('.admin-table tbody tr').length === 1, 6000, 'the search finding one user');
-      await h.click('.admin-table tbody tr button');
+      await h.waitUntil(() => document.querySelectorAll('.adm-table tbody tr').length === 1, 6000, 'the search finding one user');
+      await h.click('.adm-table tbody tr .adm-link');
+      await h.waitForText('Create reset link');
+      await h.click(await mark(h, '#adm-reset ~ * button, .adm-section button', 'Create reset link', 'make-link'));
       await h.waitForText(['Reset link for', 'won’t be shown again']);
-      const url = await h.evaluate(() => document.querySelector('.admin-reset-url input')?.value ?? '');
+      const url = await h.evaluate(() => document.querySelector('.adm-reset-url input')?.value ?? '');
       if (!/#\/signin\?reset=[A-Za-z0-9_-]{43}$/.test(url)) throw new Error(`the panel shows ${url.slice(0, 40)}…`);
       await noSideScroll(h);
     },
