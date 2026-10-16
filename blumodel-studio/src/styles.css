@@ -3355,4 +3355,10 @@ a.btn {
   :root[data-theme='dark'] .chip.on .muted {
     color: rgba(var(--panel-rgb), 0.72);
   }
+
+  /* Toasts float over the plan, the 3D view and the panels, all close to their tone in dark:
+     a light hairline keeps their edge (as the dark pill on light paper does in light). */
+  :root[data-theme='dark'] .toast {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), var(--shadow);
+  }
 }

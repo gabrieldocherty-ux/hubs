@@ -1383,4 +1383,9 @@
   :root[data-theme='dark'] .gen-tape-go.btn.primary {
     color: #fff;
   }
+
+  /* The editor's "Your photos" pill floats over the dark editor: a light hairline for its edge. */
+  :root[data-theme='dark'] .photo-ref-pill {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), var(--shadow);
+  }
 }
