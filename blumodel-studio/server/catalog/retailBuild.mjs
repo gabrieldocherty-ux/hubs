@@ -550,8 +550,8 @@ export function buildRetailCatalog(files) {
     (a, b) =>
       catOrder.indexOf(a.category) - catOrder.indexOf(b.category) ||
       TYPE_ORDER.indexOf(a.retail.type) - TYPE_ORDER.indexOf(b.retail.type) ||
-      a.brand.localeCompare(b.brand) ||
-      a.name.localeCompare(b.name),
+      a.brand.localeCompare(b.brand, 'en') ||
+      a.name.localeCompare(b.name, 'en'),
   );
 
   const byReason = {};
@@ -585,7 +585,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const { data, log } = buildRetailCatalog(readResearch());
   const text = serialize(data);
   if (process.argv.includes('--check')) {
-    const cur = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : '';
+    // A Windows checkout with core.autocrlf has CRLF on disk; the committed file is LF.
+    const cur = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8').replace(/\r\n/g, '\n') : '';
     if (cur !== text) {
       console.error('src/data/retail.json is out of date: run node server/catalog/retailBuild.mjs');
       process.exit(1);

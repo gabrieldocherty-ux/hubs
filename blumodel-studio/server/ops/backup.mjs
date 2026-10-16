@@ -1,23 +1,52 @@
 // Backups the server makes for itself (docs/OPERATIONS.md, "Backups and restore"):
 //
-//   <BACKUP_DIR>\daily\blumodel-YYYY-MM-DD.db   one consistent copy a day (VACUUM INTO), the newest
+//   <BACKUP_DIR>/daily/blumodel-YYYY-MM-DD.db   one consistent copy a day (VACUUM INTO), the newest
 //                                               BACKUP_KEEP (14) kept
-//   <BACKUP_DIR>\uploads-mirror\                a mirror of the uploads folder, refreshed after each
+//   <BACKUP_DIR>/uploads-mirror/                a mirror of the uploads folder, refreshed after each
 //                                               daily backup (blobs are content-addressed, so a
 //                                               file is copied once; a file deleted from uploads
 //                                               leaves the mirror too, so a deleted account's
 //                                               photos don't linger here)
 //
-// BACKUP_DIR defaults to <folder of the database>\backups. The deploy's own pre-deploy copies sit
-// beside these as <BACKUP_DIR>\<timestamp>\ (scripts/deploy-local.mjs).
+// BACKUP_DIR defaults to <folder of the database>/backups. The deploy's own pre-deploy copies sit
+// beside these as <BACKUP_DIR>/<timestamp>/ (scripts/deploy-local.mjs). Days are UTC days, on any
+// machine in any time zone.
+//
+// On Linux the folders this makes are 0700 and the database copies 0600: they hold every account's
+// data, and on a shared machine the default umask would let any local account read them. Windows
+// keeps the ACLs the folder inherits from the home (your account's profile).
 //
 // restoreBackup() puts a backup back (the server must be stopped: server/scripts/restore.mjs
-// refuses while something listens on the port). The database being replaced is kept beside it as
-// <name>.before-restore-<time>, never deleted.
+// refuses while something listens on the port, or, on Linux, while any process has the database
+// open). The database being replaced is kept beside it as <name>.before-restore-<time>, never
+// deleted.
+//
+// The data scripts (restore, export-data, import-data) share scriptConfig() and
+// assertServerStopped() below, so all three find the same files the same way on either OS.
 
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
+import { loadConfig } from '../config.mjs';
+
+const POSIX = process.platform !== 'win32';
+
+/** mkdir -p, private to this account on Linux (0700; a folder that already exists is left as is). */
+export function privateDir(dir) {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  return dir;
+}
+
+/** chmod 600 on Linux (a copy of the database, a data bundle). A no-op on Windows. Never throws. */
+export function privateFile(file) {
+  if (!POSIX) return;
+  try {
+    fs.chmodSync(file, 0o600);
+  } catch {
+    /* not ours to change: left as is */
+  }
+}
 
 const DAILY_RE = /^blumodel-(\d{4}-\d{2}-\d{2})\.db$/;
 const DAY = 86_400_000;
@@ -67,13 +96,13 @@ export function pruneDaily(backupDir, keep) {
  * place, so a half-written file never looks like a backup. Returns `{ file, made }`.
  */
 export function backupNow({ db, backupDir, now = Date.now, keep = 14 }) {
-  const dir = path.join(backupDir, 'daily');
-  fs.mkdirSync(dir, { recursive: true });
+  const dir = privateDir(path.join(backupDir, 'daily'));
   const file = path.join(dir, `blumodel-${dayOf(now())}.db`);
   if (fs.existsSync(file)) return { file, made: false };
   const tmp = `${file}.part`;
   fs.rmSync(tmp, { force: true });
   db.prepare('VACUUM INTO ?').run(tmp);
+  privateFile(tmp);
   const check = new DatabaseSync(tmp);
   try {
     const r = integrityCheck(check);
@@ -108,7 +137,7 @@ function walk(root, skip = new Set()) {
 }
 
 /**
- * Makes `mirrorDir` a copy of `uploadDir` (without its tmp\ folder): copies what is new or a
+ * Makes `mirrorDir` a copy of `uploadDir` (without its tmp/ folder): copies what is new or a
  * different size, deletes what is gone. Returns `{ copied, removed }`.
  */
 export function mirrorUploads({ uploadDir, mirrorDir }) {
@@ -125,7 +154,7 @@ export function mirrorUploads({ uploadDir, mirrorDir }) {
       same = false;
     }
     if (same) continue;
-    fs.mkdirSync(path.dirname(to), { recursive: true });
+    privateDir(path.dirname(to));
     fs.copyFileSync(from, to);
     copied++;
   }
@@ -175,8 +204,9 @@ export function restoreBackup({ backupFile, dbPath, now = Date.now }) {
   } else {
     for (const ext of ['-wal', '-shm']) fs.rmSync(dbPath + ext, { force: true });
   }
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+  privateDir(path.dirname(dbPath));
   fs.copyFileSync(backupFile, dbPath);
+  privateFile(dbPath);
   return { restored: dbPath, keptAs };
 }
 
@@ -208,4 +238,135 @@ export function scheduleBackups(opts) {
   const timer = setInterval(() => runDailyBackup(opts), Math.min(DAY, 3_600_000));
   timer.unref?.();
   return timer;
+}
+
+// ── what the data scripts share ──────────────────────────────────────────────
+
+/** The only settings the data scripts take from the environment: where the files are, and the port. */
+const SCRIPT_KEYS = ['DB_PATH', 'UPLOAD_DIR', 'BACKUP_DIR', 'BACKUP_KEEP', 'PORT', 'HOST'];
+
+/**
+ * The paths a data script works on, found the way the server finds them (server/config.mjs), from
+ *   --home <dir>      a home folder: <dir>/data/blumodel.db, <dir>/data/uploads, <dir>/data/backups
+ *   --db <file>       the database (its uploads/ and backups/ beside it unless set)
+ *   --uploads <dir>   the uploads folder
+ *   --port <n>        the server's port (8790), for "is it running?"
+ * then DB_PATH, UPLOAD_DIR, BACKUP_DIR, PORT and HOST from the environment, then the defaults
+ * (a deployed home's data/ when the script runs from <home>/app/server/scripts). Nothing else is
+ * read from the environment, so an unrelated setting can't stop a backup, and no key is ever seen.
+ * Returns `{ config, home }` (`home` is --home, resolved, or null).
+ * @param {{ argv?: string[], env?: Record<string, string | undefined> }} [o]
+ */
+export function scriptConfig({ argv = [], env = process.env } = {}) {
+  const opt = (flag) => {
+    const i = argv.indexOf(flag);
+    return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : undefined;
+  };
+  /** @type {Record<string, string>} */
+  const e = {};
+  for (const k of SCRIPT_KEYS) if (env[k]) e[k] = String(env[k]);
+  const home = opt('--home') ? path.resolve(opt('--home')) : null;
+  if (home) {
+    e.DB_PATH = path.join(home, 'data', 'blumodel.db');
+    e.UPLOAD_DIR = path.join(home, 'data', 'uploads');
+    e.BACKUP_DIR = path.join(home, 'data', 'backups');
+  }
+  if (opt('--db')) {
+    e.DB_PATH = path.resolve(opt('--db'));
+    if (!home && !env.UPLOAD_DIR) delete e.UPLOAD_DIR;
+    if (!home && !env.BACKUP_DIR) delete e.BACKUP_DIR;
+  }
+  if (opt('--uploads')) e.UPLOAD_DIR = path.resolve(opt('--uploads'));
+  if (opt('--port')) e.PORT = opt('--port');
+  return { config: loadConfig(e, []), home };
+}
+
+/** Is something accepting connections on host:port? Resolves true / false, never rejects. */
+export function portOpen(port, host = '127.0.0.1', timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    const s = net.connect({ port, host });
+    const done = (v) => {
+      s.destroy();
+      resolve(v);
+    };
+    s.once('connect', () => done(true));
+    s.once('error', () => done(false));
+    s.setTimeout(timeoutMs, () => done(false));
+  });
+}
+
+/**
+ * The address the server's port answers on, if it does ('127.0.0.1', or HOST), else null. Checks
+ * 127.0.0.1 and, when HOST is a specific address (a LAN address on the Wyse, say), that one too.
+ * @param {{ PORT: number, HOST: string }} config
+ */
+export async function serverListening(config) {
+  const hosts = new Set(['127.0.0.1']);
+  const h = String(config.HOST || '').replace(/^\[|\]$/g, '');
+  if (h === '::') hosts.add('::1');
+  else if (h && h !== '0.0.0.0' && h !== 'localhost') hosts.add(h);
+  for (const host of hosts) if (await portOpen(config.PORT, host)) return host;
+  return null;
+}
+
+/**
+ * The processes (pids) that have any of `files` open, from /proc: Linux only, where nothing stops
+ * a script from replacing a database a running server still has open (Windows refuses the rename,
+ * so it needs no such check). Returns null where it can't tell (not Linux, no /proc). A process
+ * of another account is only visible to that account or root, so run the scripts as the server's
+ * account (sudo -u blumodel ...) or with sudo.
+ * @param {string[]} files
+ * @param {{ procDir?: string, platform?: string, self?: number, readlink?: (p: string) => string }} [o]
+ */
+export function processesUsing(files, { procDir = '/proc', platform = process.platform, self = process.pid, readlink = fs.readlinkSync } = {}) {
+  if (platform !== 'linux') return null;
+  const wanted = new Set(files.map((f) => path.resolve(f)));
+  let pids;
+  try {
+    pids = fs.readdirSync(procDir).filter((n) => /^\d+$/.test(n));
+  } catch {
+    return null;
+  }
+  const out = [];
+  for (const pid of pids) {
+    if (Number(pid) === self) continue;
+    let fds = [];
+    try {
+      fds = fs.readdirSync(path.join(procDir, pid, 'fd'));
+    } catch {
+      continue; // gone, or another account's process
+    }
+    for (const fd of fds) {
+      let target = '';
+      try {
+        target = readlink(path.join(procDir, pid, 'fd', fd));
+      } catch {
+        continue;
+      }
+      if (wanted.has(target.replace(/ \(deleted\)$/, ''))) {
+        out.push(Number(pid));
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/** How to stop and start the server on this OS, for the scripts' messages (docs/HOSTING.md). */
+export const SERVICE_HINTS =
+  process.platform === 'win32'
+    ? { stop: 'stop-server.cmd in the home folder', start: 'start-server.cmd in the home folder' }
+    : { stop: 'sudo systemctl stop blumodel-studio', start: 'sudo systemctl start blumodel-studio' };
+
+/**
+ * Throws (with what to do) unless the server is stopped: nothing answers on its port and, on
+ * Linux, no process has the database or its -wal/-shm open.
+ * @param {{ PORT: number, HOST: string, DB_PATH: string }} config
+ * @param {{ using?: typeof processesUsing }} [o]
+ */
+export async function assertServerStopped(config, { using = processesUsing } = {}) {
+  const at = await serverListening(config);
+  if (at) throw new Error(`Something is listening on port ${config.PORT}${at === '127.0.0.1' ? '' : ` (${at})`}. Stop the server first (${SERVICE_HINTS.stop}), then run this again.`);
+  const pids = using([config.DB_PATH, `${config.DB_PATH}-wal`, `${config.DB_PATH}-shm`]);
+  if (pids?.length) throw new Error(`The database ${config.DB_PATH} is open in process ${pids.join(', ')}. Stop the server first (${SERVICE_HINTS.stop}), then run this again.`);
 }

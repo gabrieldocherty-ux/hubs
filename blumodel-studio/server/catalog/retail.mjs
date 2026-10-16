@@ -81,8 +81,8 @@ export function brandsInCategory(retail, category) {
   }
   return [...rows.values()]
     .map((r) => {
-      const slugs = [...r.stores].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([s]) => s);
+      const slugs = [...r.stores].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'en')).map(([s]) => s);
       return { brand: r.brand, products: r.products, stores: slugs.map((s) => retail.storeBySlug.get(s)?.name ?? s), storeSlugs: slugs };
     })
-    .sort((a, b) => b.products - a.products || a.brand.localeCompare(b.brand));
+    .sort((a, b) => b.products - a.products || a.brand.localeCompare(b.brand, 'en'));
 }

@@ -1,6 +1,7 @@
 // Rotates a log file once it passes a size: file → file.1 → … → file.<keep>.
-// Used by the home server's supervisors before each start (run-server.cmd: logs\console.log,
-// run-tunnel.cmd: logs\tunnel.log). Exits 0 whether or not it rotated.
+// Used by the Windows home server's supervisors before each start (run-server.cmd: logs\console.log,
+// run-tunnel.cmd: logs\tunnel.log); works the same on Linux for any file (a systemd unit's
+// ExecStartPre=, say). Plain renames, no other tools. Exits 0 whether or not it rotated.
 //
 //   node rotate-log.mjs <file> [--max-mb 10] [--keep 5]
 

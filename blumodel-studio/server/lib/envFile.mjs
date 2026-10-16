@@ -2,10 +2,11 @@
 // kept out of the repo and out of the generated supervisor script.
 //
 // Which file:
-//   1. BLUMODEL_ENV_FILE=C:\Users\<you>\Projects\BluModelStudio\blumodel.env
+//   1. BLUMODEL_ENV_FILE=<the file's path> (e.g. <home>/blumodel.env; any folder, any OS)
 //   2. MISE_ENV_FILE (the deprecated name from before the rename, still read)
-//   3. otherwise, when the server runs from a deployed home (<home>\app\server\index.mjs),
-//      <home>\blumodel.env if it exists, else <home>\mise.env (the old name) if that exists.
+//   3. otherwise, when the server runs from a deployed home (<home>/app/server/index.mjs, or
+//      <home>\app\server\index.mjs on Windows), <home>/blumodel.env if it exists, else
+//      <home>/mise.env (the old name) if that exists.
 //      A checkout (the repo, the QA runner, the tests) has no default file.
 //
 // Format: one KEY=VALUE per line; blank lines and lines starting with # are skipped; an optional
@@ -48,13 +49,16 @@ export const ENV_FILE_KEYS = Object.freeze([
 const ALLOWED = new Set(ENV_FILE_KEYS);
 
 /**
- * The deployed home this server runs from: the folder holding `app\` when the server is at
- * `<home>\app\server`. Null for a checkout.
+ * The deployed home this server runs from: the folder holding `app` when the server is at
+ * `<home>/app/server` (`<home>\app\server` on Windows). Null for a checkout. On Linux the folder
+ * must be named exactly `app` (names are case-sensitive there); Windows ignores case, as its disk does.
  * @param {string} [serverDir]
  */
 export function deployedHome(serverDir = DEFAULT_SERVER_DIR) {
   const appDir = path.resolve(serverDir, '..');
-  return path.basename(appDir).toLowerCase() === 'app' ? path.dirname(appDir) : null;
+  const name = path.basename(appDir);
+  const isApp = process.platform === 'win32' ? name.toLowerCase() === 'app' : name === 'app';
+  return isApp ? path.dirname(appDir) : null;
 }
 
 /**

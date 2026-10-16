@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { deployedHome } from './lib/envFile.mjs';
 
 export const SERVER_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -16,12 +17,18 @@ const int = (v, def, min = -Infinity, max = Infinity) => {
 const bool = (v) => /^(1|true|yes|on)$/i.test(String(v ?? '').trim());
 
 /**
- * The default database, server/data/blumodel.db. A checkout that still has the database from before
- * the rename (server/data/mise.db) and no blumodel.db keeps using the old file.
+ * The default database when DB_PATH isn't set. In a deployed home (the server at
+ * <home>/app/server, on Windows or Linux) it is <home>/data/blumodel.db, so a server or a script
+ * started there by hand never makes a fresh database inside app/, which the next deploy replaces.
+ * In a checkout it is server/data/blumodel.db. Either way a folder that still has the database from
+ * before the rename (mise.db) and no blumodel.db keeps using the old file.
+ * @param {string} [serverDir]
  */
-function defaultDbPath() {
-  const current = path.join(SERVER_DIR, 'data', 'blumodel.db');
-  const legacy = path.join(SERVER_DIR, 'data', 'mise.db');
+export function defaultDbPath(serverDir = SERVER_DIR) {
+  const home = deployedHome(serverDir);
+  const dir = home ? path.join(home, 'data') : path.join(serverDir, 'data');
+  const current = path.join(dir, 'blumodel.db');
+  const legacy = path.join(dir, 'mise.db');
   return !fs.existsSync(current) && fs.existsSync(legacy) ? legacy : current;
 }
 
@@ -41,7 +48,9 @@ export function loadConfig(env = process.env, argv = process.argv) {
   const PROD = env.NODE_ENV === 'production' || argv.includes('--prod');
   const PORT = int(env.PORT, 8790, 0, 65535);
   const HOST = (env.HOST || '').trim() || '127.0.0.1';
-  const DB_PATH = env.DB_PATH || defaultDbPath();
+  // Absolute from here on (a relative DB_PATH is taken from the directory the server starts in), so
+  // the log, the backups and the scripts all name the same file whatever their own directory is.
+  const DB_PATH = env.DB_PATH === ':memory:' ? ':memory:' : path.resolve(env.DB_PATH || defaultDbPath());
   const UPLOAD_DIR = path.resolve(env.UPLOAD_DIR || path.join(DB_PATH === ':memory:' ? path.join(SERVER_DIR, 'data') : path.dirname(DB_PATH), 'uploads'));
   const DIST_DIR = path.resolve(env.DIST_DIR || path.join(SERVER_DIR, '..', 'dist'));
   const PUBLIC_URL = (String(env.PUBLIC_URL || '').trim() || `http://127.0.0.1:${PORT}`).replace(/\/+$/, '');

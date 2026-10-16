@@ -35,7 +35,8 @@ const build = (products, checkedAt = '2026-10-15') => buildRetailCatalog([{ grou
 
 test('the shipped src/data/retail.json is exactly what the research builds (run node server/catalog/retailBuild.mjs)', () => {
   const { data } = buildRetailCatalog(readResearch());
-  assert.equal(fs.readFileSync(OUT_FILE, 'utf8'), serialize(data));
+  // CRLF on a Windows checkout with core.autocrlf (the committed file is LF, as on Linux).
+  assert.equal(fs.readFileSync(OUT_FILE, 'utf8').replace(/\r\n/g, '\n'), serialize(data));
 });
 
 test('every shipped product is a placeable app product with real store links', () => {
