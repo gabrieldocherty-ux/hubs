@@ -72,6 +72,27 @@ npm run deploy:local      (builds, then deploys to the home and restarts the ser
 ```
 
 `node scripts/deploy-local.mjs --dist <folder>` deploys a build you already made (a `vite build` output).
+
+**It ships a commit, not a working tree.** Before it stops or copies anything, the deploy runs
+`git status` over everything it ships or builds from (`server`, `src`, `public`, `index.html`,
+`package.json`, `package-lock.json`, `vite.config.ts`, `tsconfig.json`: `DEPLOY_SOURCE_PATHS` in
+`server/ops/home.mjs`). If any of those files is changed or untracked it lists them and exits 1,
+leaving the home untouched: a migration that is only on disk would be applied to the real database,
+recorded as done, and never re-run once it changed and was committed. Commit the work or, when the
+checkout holds someone else's unfinished changes, deploy from a clean worktree of the commit you want:
+
+```
+git worktree add --detach %TEMP%\bm-deploy <commit>
+cd %TEMP%\bm-deploy\blumodel-studio
+npm ci
+npm run deploy:local
+git worktree remove %TEMP%\bm-deploy      (afterwards, from the main checkout)
+```
+
+`--allow-dirty` deploys the files on disk anyway (it lists them first), and `app\DEPLOYED.txt`
+records whether a deploy was clean, so a dirty one stays visible. Without git on PATH the check is
+skipped with a warning.
+
 The deploy:
 
 1. stops this home's server gracefully and ends its supervisor (never the tunnel; never anything not
@@ -151,11 +172,16 @@ this machine, against the live database, after that person has signed up:
 
 ```
 cd %USERPROFILE%\Projects\BluModelStudio\app
-set DB_PATH=%USERPROFILE%\Projects\BluModelStudio\data\blumodel.db
 node server\scripts\make-admin.mjs you@example.com
 ```
 
-It prints `you@example.com is now an admin.` (or that no account has that email). `--role studio`
+Run from the home's `app\`, it finds the home's `data\blumodel.db` by itself, the same way
+`restore.mjs` does, so no `DB_PATH` is needed (before 2026-10-16 it opened
+`app\server\data\blumodel.db` instead and reported no account). `--db <file>` or `DB_PATH` names
+another database and wins. It first prints the database it used (`Database: ...\data\blumodel.db
+(the deployed home's database)`), and stops with an error if there is no database at that path
+rather than creating an empty one. Then it prints `you@example.com is now an admin.` (or that no
+account has that email). `--role studio`
 makes a studio member instead; `--role customer` takes a role away. Admin > Users can switch an
 account between customer and studio, never your own, and never to or from admin: that is only
 this script. Until an admin exists, the server log says `Warning: No admin account

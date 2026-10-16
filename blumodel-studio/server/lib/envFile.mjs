@@ -58,6 +58,21 @@ export function deployedHome(serverDir = DEFAULT_SERVER_DIR) {
 }
 
 /**
+ * The database a maintenance script (make-admin, restore) works on, and why: `{ dbPath, source }`.
+ * `--db <file>` first, then DB_PATH, then, when the script runs from a deployed home
+ * (`<home>pp\server\scripts`), the home's `datalumodel.db` (what run-server.cmd uses), else
+ * null (the server's own default, server\datalumodel.db in a checkout).
+ * @param {{ env?: Record<string, string | undefined>, dbFlag?: string, serverDir?: string }} [o]
+ */
+export function scriptDbPath({ env = process.env, dbFlag, serverDir = DEFAULT_SERVER_DIR } = {}) {
+  if (dbFlag) return { dbPath: path.resolve(dbFlag), source: '--db' };
+  if (env.DB_PATH) return { dbPath: env.DB_PATH, source: 'DB_PATH' };
+  const home = deployedHome(serverDir);
+  if (home) return { dbPath: path.join(home, 'data', 'blumodel.db'), source: 'home' };
+  return { dbPath: null, source: 'default' };
+}
+
+/**
  * Which settings file applies, and how it was chosen: `{ file, source }` with source
  * 'BLUMODEL_ENV_FILE' | 'MISE_ENV_FILE' | 'default' | 'default-legacy', or null when there is none.
  * Only checks whether files exist; never opens one.
