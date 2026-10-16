@@ -1,7 +1,9 @@
 # Operating BluModel Studio on the home server
 
 How the public site https://blumodel.studio runs on the Windows PC, and how to look after it. The
-go-live and payments steps are in [LAUNCH.md](LAUNCH.md).
+go-live and payments steps are in [LAUNCH.md](LAUNCH.md). Running it on another computer (the Dell
+Wyse 5070, on Linux or Windows: install, cutover, updates from GitHub) is in [HOSTING.md](HOSTING.md),
+and moving the data there in [MOVING_DATA.md](MOVING_DATA.md).
 
 ```
 visitor ── https ──> Cloudflare ── tunnel 'blumodel' ──> cloudflared (this PC)
@@ -22,6 +24,7 @@ systemd: [HOSTING.md](HOSTING.md) covers that machine (and a Windows machine nob
 | Path | What | Kept by a deploy? |
 | --- | --- | --- |
 | `app\` | the deployed code: `dist\` (the built site), `server\`, `src\data\*.json`, `DEPLOYED.txt` (commit and time) | replaced |
+| `app.previous\` | the app the last deploy replaced (`deploy-local --rollback` puts it back; `app.failed\` is the one a rollback replaced) | replaced |
 | `data\blumodel.db` (+ `-wal`, `-shm`) | the database | kept |
 | `data\uploads\` | uploaded models, images and photos | kept |
 | `data\backups\daily\` | the server's own daily database copies (14 kept) | kept |
@@ -80,10 +83,21 @@ The deploy:
 2. copies the database (with `-wal`/`-shm`) to `data\backups\<timestamp>\`;
 3. renames a pre-rename `data\mise.db` / `mise.env` if it finds them (`mise.env` is renamed, never opened);
    creates a `blumodel.env` **template** only if there is no settings file at all;
-4. replaces `app\`, rewrites the supervisor scripts, starts the server and waits for `/api/health`.
+4. puts the new `app\` in place, keeping the one it replaces as `app.previous\`, rewrites the
+   supervisor scripts, starts the server and waits for `/api/health`. It exits 0 when healthy, 1 when
+   it refused before changing anything (the old app keeps running), 3 when the new app is in place
+   but unhealthy.
 
 The site is down for a few seconds (Cloudflare shows its 502 page). New database migrations run when
 the new code starts; they are forward-only, which is why step 2 exists (see *Rollback* in LAUNCH.md).
+
+**Roll back** to the app the last deploy replaced: `node scripts/deploy-local.mjs --rollback` (from the
+repo). It stops the server, swaps `app.previous\` back in (the failed app is kept as `app.failed\`),
+starts it and checks its health. The database is left alone; if the newer version migrated it, the
+rollback prints the `restore.mjs` command for the copy the deploy made first.
+
+On a machine set up with `scripts/host/install-*` (the Wyse), one command pulls, builds, deploys and
+rolls back by itself when the health check fails: HOSTING.md, *Update from GitHub*.
 
 Settings for the deploy itself (rarely needed): `BLUMODEL_HOME` (another folder), `BLUMODEL_PORT`,
 `BLUMODEL_HOST`, `BLUMODEL_ADMIN_EMAILS` (only for a new template). `MISE_HOME` / `MISE_PORT` /
@@ -261,8 +275,16 @@ the logon was missed, and never run twice at once. The supervisors do the restar
 - Run now: `schtasks /Run /TN BluModelStudioServer`.
 - Remove: `schtasks /Delete /TN BluModelStudioServer /F`.
 
-They run only while you're logged on. A reboot with nobody logged on leaves the site down until you
-log on (set Windows to sign you in automatically, or accept it).
+Registered this way they run only while you're logged on: a reboot with nobody logged on leaves the
+site down until you log on. For a machine nobody signs in to, register them **at startup** instead,
+from PowerShell run as administrator: `node scripts/register-tasks.mjs --at-startup` (`--dry-run`
+first). They then run as your account when Windows starts, signed in or not; `schtasks` asks for your
+Windows password once (Windows stores it to start the task; no script passes a password), and you
+register them again after changing that password. The tasks are listed in `<home>\startup-tasks`, so
+`start-server.cmd`, `start-tunnel.cmd` and the deploy start them through Task Scheduler and they keep
+running after you sign out. Registering them without `--at-startup` goes back to logon.
+
+On Linux the same job is done by systemd units: HOSTING.md.
 
 ## The tunnel
 
@@ -310,6 +332,8 @@ prints the Task Scheduler changes to make. The steps in order are in LAUNCH.md, 
 | `/api/health` 503 `"db":"corrupt"` | `server.log` at start | restore the newest good backup (above) |
 | `Payments: none` after pasting keys | the `Stripe is NOT on:` lines under it, then `npm run stripe:check` | a typo in a key, a test key with a live webhook secret, or `PUBLIC_URL` not https |
 | Visitors share one rate limit; no `Secure` cookie | `TRUST_PROXY` | set `TRUST_PROXY=1` |
+| Accounts or kitchens seem to come and go | the Cloudflare dashboard: the connectors of the `blumodel` tunnel | **two machines run the tunnel** (this PC and the Wyse): stop one at once (HOSTING.md, the split-brain rule) |
+| A deploy ended `unhealthy` (exit 3) | `logs\server.log`, `logs\console.log` | `node scripts/deploy-local.mjs --rollback` puts the previous app back |
 
 ## Optional: Tailscale
 

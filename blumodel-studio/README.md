@@ -149,11 +149,19 @@ production — put it behind a TLS-terminating proxy.
 
 ## The home server (deploy-local)
 
-`npm run deploy:local` builds and copies the app to `%USERPROFILE%\Projects\BluModelStudio` (set
-`BLUMODEL_HOME`), keeping `data\blumodel.db` (backed up before every deploy, last 5 kept),
-`data\uploads\` and `logs\`, and restarts it on port 8790 (`BLUMODEL_PORT`) under `run-server.cmd`,
-a supervisor that restarts the server if it exits. `node scripts/deploy-local.mjs --dist <dir>`
-deploys an existing build. The header of `scripts/deploy-local.mjs` has the folder's layout.
+**Another computer** (the Dell Wyse 5070, Ubuntu Server 24.04 recommended, or Windows):
+[docs/HOSTING.md](docs/HOSTING.md). One script installs everything from this repo
+(`scripts/host/install-linux.sh` or `install-windows.ps1`), the site starts at boot with nobody
+logged in, and one command updates it from GitHub and rolls back by itself if the new version
+doesn't come up (`scripts/host/update.mjs`). Moving the data: [docs/MOVING_DATA.md](docs/MOVING_DATA.md).
+
+`npm run deploy:local` builds and copies the app to the home (`%USERPROFILE%\Projects\BluModelStudio`
+on Windows, `/srv/blumodel-studio` on Linux; set `BLUMODEL_HOME`), keeping `data/blumodel.db` (backed
+up before every deploy, last 5 kept), `data/uploads/` and `logs/`, keeping the app it replaces as
+`app.previous` (`node scripts/deploy-local.mjs --rollback` puts it back), and restarts it on port 8790
+(`BLUMODEL_PORT`): on Windows under `run-server.cmd`, a supervisor that restarts the server if it
+exits; on Linux as `blumodel-studio.service` (run with sudo). `node scripts/deploy-local.mjs --dist <dir>`
+deploys an existing build. The header of `server/ops/home.mjs` has the folder's layout.
 
 - **Private settings** (Stripe keys, `PUBLIC_URL=https://blumodel.studio`, `TRUST_PROXY`,
   `ADMIN_EMAILS`, which grants nothing: admins are made with `node server/scripts/make-admin.mjs <email>`…) live in `blumodel.env` in that folder, one `KEY=VALUE` per line, written by hand
@@ -162,9 +170,11 @@ deploys an existing build. The header of `scripts/deploy-local.mjs` has the fold
   value, and refuses to start if the named file has gone. A value already in the environment wins
   over the file. With a settings file, the file also decides `DEMO_PAYMENTS` (refused in production
   unless it says `DEMO_PAYMENTS=1`); a home without one allows the labelled demo.
-- **Scheduled tasks:** `BluModelStudioServer` runs `start-hidden.vbs` (the supervisor) at logon;
-  `BluModelTunnel` runs the Cloudflare tunnel `blumodel` to `http://127.0.0.1:8790`. The deploy
-  never creates or changes a task.
+- **Starting with the machine:** on Windows the scheduled task `BluModelStudioServer` runs
+  `start-hidden.vbs` (the supervisor) at logon, or at startup with `register-tasks --at-startup`;
+  `BluModelTunnel` runs the Cloudflare tunnel `blumodel` to `http://127.0.0.1:8790`. On Linux the
+  systemd units `blumodel-studio.service` and `blumodel-tunnel.service` do the same at boot
+  (`scripts/register-tasks.mjs` installs them). The deploy never creates or changes a task or a unit.
 
 ## Renamed from Mise
 

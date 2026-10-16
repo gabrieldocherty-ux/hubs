@@ -5,6 +5,11 @@ session does it; it's here so you can check or redo it). Part B is yours: the St
 and the first real purchase. Part C is Cloudflare. Then *Rollback*. Day-to-day running is in
 [OPERATIONS.md](OPERATIONS.md).
 
+Part A is the original Windows PC. Moving the site to another machine (the Dell Wyse 5070, on Ubuntu
+Server or Windows) is [HOSTING.md](HOSTING.md): there the install scripts do part A's work, the
+settings file is made fresh with a **new** Stripe key (part B's B3 and B6), and the cutover follows
+the one-machine-runs-the-tunnel rule. Parts B and C apply unchanged.
+
 Rules for every step that touches a key or secret:
 
 - Paste keys **only** into `blumodel.env` with Notepad. Never into a chat (including Claude), an
@@ -256,9 +261,12 @@ part C's bot or WAF settings (see C2).
 - **Back to the holding page:** `stop-tunnel.cmd` in the home, then start the holding page's
   cloudflared again (`cloudflared tunnel --config %USERPROFILE%\Projects\BluModelHolding\cloudflared.yml run`,
   with its server on 8795 running). The BluModel server can keep running on 127.0.0.1.
-- **A deploy went wrong:** redeploy the previous commit (check it out in another folder, build,
-  `node scripts/deploy-local.mjs --dist <its dist>`). If that version can't read the database the new
-  code migrated, stop the server and restore the copy the bad deploy made first:
+- **A deploy went wrong:** `node scripts/deploy-local.mjs --rollback` puts back the app that deploy
+  replaced (every deploy keeps it as `app.previous\`), restarts the server and checks its health; on a
+  machine set up from HOSTING.md the update does this by itself. Older than that: redeploy the commit
+  you want (check it out in another folder, build, `node scripts/deploy-local.mjs --dist <its dist>`).
+  If that version can't read the database the new code migrated, stop the server and restore the
+  copy the bad deploy made first:
   `node app\server\scripts\restore.mjs --from data\backups\<timestamp>\blumodel.db` (OPERATIONS.md).
   Anything written since that copy is lost, so prefer fixing forward when only code is wrong.
 - **Undo the move** (before customers): stop the server, `schtasks /Delete /TN BluModelStudioServer /F`

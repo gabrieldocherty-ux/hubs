@@ -813,3 +813,65 @@ test('cloudflared accepts the Linux config too (offline ingress validate and rul
     rm(dir);
   }
 });
+
+// ── 5. the runbook matches the scripts ───────────────────────────────────
+
+test('every script command in HOSTING.md, OPERATIONS.md, LAUNCH.md and the README names a script that exists and only options it takes', () => {
+  const docs = ['docs/HOSTING.md', 'docs/OPERATIONS.md', 'docs/LAUNCH.md', 'README.md'];
+  const seen = new Set();
+  for (const doc of docs) {
+    const text = fs.readFileSync(path.join(ROOT, doc), 'utf8');
+    for (const line of text.split(/\r?\n/)) {
+      // A script path (from the repo, the deployed app/ or an absolute home), then what follows it on the line.
+      const re = /(?:^|[\s`"(/\\])((?:server[\\/]scripts|scripts)[\\/][\w\\/.-]+?\.(?:mjs|sh|ps1)|install-linux\.sh|install-windows\.ps1)"?([^`|]*)/g;
+      for (const m of line.matchAll(re)) {
+        // The installers are also run as downloaded copies (no folder): they are scripts/host's.
+        const rel = /^install-/.test(m[1]) ? `scripts/host/${m[1]}` : m[1].replace(/\\/g, '/');
+        const file = path.join(ROOT, rel);
+        assert.ok(fs.existsSync(file), `${doc} names ${rel}, which does not exist`);
+        const src = fs.readFileSync(file, 'utf8');
+        // Stop at the next command on the line (&&, ;) or a closing parenthesis of prose.
+        const tail = m[2].split(/&&|;|\)\s|\s\(/)[0];
+        for (const flag of tail.match(/(?<=^|\s)--[a-z][\w-]*/g) || []) {
+          assert.ok(src.includes(flag), `${doc}: ${rel} does not take ${flag} (line: ${line.trim()})`);
+          seen.add(`${rel} ${flag}`);
+        }
+        if (rel.endsWith('.ps1')) for (const p of tail.match(/(?<=^|\s)-[A-Z]\w+/g) || []) assert.ok(src.includes(`$${p.slice(1)}`), `${doc}: ${rel} has no parameter ${p}`);
+      }
+    }
+  }
+  // The runbook's key commands are among those checked.
+  for (const k of ['scripts/deploy-local.mjs --rollback', 'scripts/register-tasks.mjs --at-startup', 'scripts/host/install-linux.sh --dry-run', 'server/scripts/import-data.mjs --replace', 'scripts/deploy-local.mjs --commit']) assert.ok(seen.has(k), `checked: ${k}`);
+});
+
+test('HOSTING.md covers what the runbook must: OS choice, BIOS/power, install on both, settings with a new key, data, both tunnel moves and the split-brain rule, cutover, verify, rollback, update, backups, logs, disk and RAM', () => {
+  const text = fs.readFileSync(path.join(ROOT, 'docs', 'HOSTING.md'), 'utf8');
+  for (const re of [
+    /Ubuntu Server 24\.04 LTS/,
+    /ThinOS[^.]*\*\*cannot\*\* run this app/,
+    /AC Recovery\*: \*\*Power On\*\*/,
+    /Wake on LAN/,
+    /sudo bash install-linux\.sh --dry-run/,
+    /install-windows\.ps1" -DryRun/,
+    /Unified Write Filter/,
+    /\*\*new\*\* key/,
+    /MOVING_DATA\.md/,
+    /\*\*A\. Copy the credentials file \(recommended\)\.\*\*/,
+    /cloudflared service install <token>/,
+    /\*\*Do not copy `cert\.pem`\*\*/,
+    /### The split-brain rule/,
+    /stop the PC's tunnel and server first/,
+    /sudo systemctl enable --now blumodel-tunnel/,
+    /schtasks \/Change \/TN BluModelTunnel \/Disable/,
+    /Reboot test/,
+    /sudo systemctl disable --now blumodel-tunnel/,
+    /update-linux\.sh/,
+    /journalctl -u blumodel-studio/,
+    /sudo fallocate -l 2G \/swapfile/,
+    /df -h \//,
+  ])
+    assert.match(text, re);
+  // Linked anchors exist.
+  const anchors = new Set([...text.matchAll(/^#{2,3} (.+)$/gm)].map((m) => m[1].toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')));
+  for (const [, a] of text.matchAll(/\]\(#([\w-]+)\)/g)) assert.ok(anchors.has(a), `#${a} is a heading`);
+});
