@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
  * Hash routing with query strings inside the hash (`#/p/range-30?finish=black-steel`).
  * `location.search` is only read through `pageQuery()` (Stripe's `?session_id=` return).
  */
-export type AdminTab = 'overview' | 'moderation' | 'brands' | 'retailers' | 'studio' | 'revenue' | 'billing' | 'users';
-export const ADMIN_TABS: AdminTab[] = ['overview', 'moderation', 'brands', 'retailers', 'studio', 'revenue', 'billing', 'users'];
+export type AdminTab = 'overview' | 'moderation' | 'brands' | 'retailers' | 'studio' | 'revenue' | 'billing' | 'users' | 'contractors' | 'system' | 'audit';
+export const ADMIN_TABS: AdminTab[] = ['overview', 'users', 'contractors', 'moderation', 'brands', 'retailers', 'studio', 'revenue', 'billing', 'system', 'audit'];
 
 export type Route =
   | { name: 'signin' }
