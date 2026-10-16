@@ -107,7 +107,7 @@ export default function App() {
   if (status === 'loading') return loading;
 
   const signedIn = status === 'signedIn';
-  if (authPage || (needsAccount && !signedIn))
+  if (authPage || resetPage || (needsAccount && !signedIn))
     return (
       <>
         <AuthScreen mode={route.name === 'signup' ? 'signup' : 'signin'} />
