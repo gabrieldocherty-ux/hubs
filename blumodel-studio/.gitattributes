@@ -1,0 +1,17 @@
+# Line endings for the files whose interpreter cares. Everything else keeps Git's default
+# handling (each machine's core.autocrlf), as before. Committed blobs are always LF; these rules
+# only decide what a checkout writes. docs/MOVING_DATA.md and docs/HOSTING.md.
+#
+# Linux runs these: always LF, even in a checkout made on Windows (a CR at a line end breaks
+# bash, sh and systemd, e.g. "bash\r: No such file or directory").
+*.sh      text eol=lf
+*.bash    text eol=lf
+*.service text eol=lf
+*.timer   text eol=lf
+
+# Windows runs these: always CRLF (cmd.exe can misread labels and goto targets in a file with LF
+# line ends; Windows Script Host and Windows PowerShell scripts get the same treatment).
+*.cmd     text eol=crlf
+*.bat     text eol=crlf
+*.vbs     text eol=crlf
+*.ps1     text eol=crlf
