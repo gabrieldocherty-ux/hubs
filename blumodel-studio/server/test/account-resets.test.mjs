@@ -90,7 +90,7 @@ test('forgot: CSRF-gated, validated, and the same answer whether or not the addr
     assert.equal(call.init.headers.Authorization, `Bearer ${RESEND_FAKE}`);
     assert.deepEqual(call.body.to, ['ann.reset@test.blumodel']);
     const token = tokenFrom(fetch, 'ann.reset@test.blumodel');
-    assert.ok(call.body.text.startsWith('Hi '), 'plain words');
+    assert.ok(call.body.text.startsWith('Hello,'), 'plain words, a neutral greeting');
     assert.ok(call.body.text.includes(`${t.config.PUBLIC_URL}/#/signin?reset=${token}`), 'the link is on PUBLIC_URL');
 
     // Hashed at rest: the database never holds the token itself.

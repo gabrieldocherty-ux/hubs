@@ -171,7 +171,7 @@ export default function routes(ctx) {
         // A reset link mailed to the old address stops working with it.
         db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(rc.user.id);
         if (mailer.enabled) {
-          const msg = emailChangedEmail({ name: old.name, newEmail: email, supportEmail: config.legal?.supportEmail });
+          const msg = emailChangedEmail({ newEmail: email, supportEmail: config.legal?.supportEmail });
           void mailer.send({ to: old.email, ...msg });
         }
         log.info?.(`Account ${rc.user.id} changed its email address (${signedOut} other session(s) signed out).`);

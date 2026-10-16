@@ -89,7 +89,6 @@ export default function routes(ctx) {
     db.prepare('DELETE FROM signin_alerts WHERE user_id = ? AND sent_at <= ?').run(user.id, t - ALERT_REPEAT_MS);
     db.prepare('INSERT INTO signin_alerts (user_id, device, sent_at) VALUES (?, ?, ?)').run(user.id, device, t);
     const msg = signInAlertEmail({
-      name: user.name,
       device: deviceLabel({ browser, os }),
       when: utc(t),
       settingsUrl: `${config.PUBLIC_URL}/#/account`,
@@ -198,7 +197,7 @@ export default function routes(ctx) {
         // Sign out every other device; keep this one. Any reset link still outstanding stops working.
         sessions.endOthers(rc.req, rc.user.id);
         resets.revokeFor(rc.user.id);
-        if (mailer.enabled) void mailer.send({ to: rc.user.email, ...passwordChangedEmail({ name: rc.user.name, supportEmail: config.legal?.supportEmail, viaReset: false }) });
+        if (mailer.enabled) void mailer.send({ to: rc.user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: false }) });
         return { ok: true };
       },
     },
@@ -226,7 +225,7 @@ export default function routes(ctx) {
         const user = db.prepare('SELECT id, email, name FROM users WHERE email = ?').get(email);
         if (user) {
           const { token } = resets.issue(user.id);
-          void mailer.send({ to: user.email, ...resetEmail({ name: user.name, url: resetUrl(token), minutes: RESET_MINUTES }) });
+          void mailer.send({ to: user.email, ...resetEmail({ url: resetUrl(token), minutes: RESET_MINUTES }) });
         }
         return { ok: true, emailEnabled: true };
       },
@@ -268,7 +267,7 @@ export default function routes(ctx) {
         // the new session's cookie replaces it.
         sessions.end(rc.req, rc.res);
         sessions.start(rc.req, rc.res, userId);
-        if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ name: user.name, supportEmail: config.legal?.supportEmail, viaReset: true }) });
+        if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: true }) });
         log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
         return { user: userWire(user) };
       },
