@@ -1154,6 +1154,14 @@ export default [
     await h.waitFor('.sheet .store-chip');
     await h.sleep(400);
   }),
+  phoneEditor('dark-editor-phone-place', async (h) => {
+    // A tap on a product arms it and shows "Tap the room to place" over the plan.
+    await openSheet(h, 'Add products');
+    await h.waitFor('.sheet .product-card');
+    await h.tap('.sheet .product-card');
+    await h.waitFor('.place-banner');
+    await h.sleep(600);
+  }),
   phoneEditor('dark-editor-phone-room', (h) => openSheet(h, 'Room and finishes')),
   phoneEditor('dark-editor-phone-details', (h) => openSheet(h, 'Details')),
   phoneEditor('dark-editor-phone-checks', async (h) => {
