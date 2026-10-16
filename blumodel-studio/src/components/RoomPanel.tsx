@@ -7,6 +7,7 @@ import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
 import { PLAIN_PRESET, STYLE_PRESETS } from '../data/styles';
 import { PresetStrip } from './PresetStrip';
+import { RetailFixtures } from '../catalog/RetailFixtures';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
   // The runs and the room outline follow the theme (styles.css --plan-wall).
@@ -153,6 +154,7 @@ export function RoomPanel() {
               />
             ))}
           </div>
+          <RetailFixtures surfaces={surfaces} set={set} />
         </div>
       </section>
 

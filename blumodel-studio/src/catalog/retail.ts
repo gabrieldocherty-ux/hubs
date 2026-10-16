@@ -17,6 +17,7 @@ import { BASICS_BRAND, BUILTIN_PRODUCTS } from '../data/builtins';
 import { priceFor } from '../data/catalog';
 import { call } from '../lib/api';
 import { useCatalog } from '../store/useCatalog';
+import { fixtureFromWire, registerFixtures, type FixtureWire } from '../lib/fixtures';
 
 export const RETAIL_PREFIX = 'r-';
 /** True for a retail product id (`r-…`). No built-in id starts this way. */
@@ -60,12 +61,17 @@ export interface RetailStore {
 
 type RetailWire = Omit<Product, 'price' | 'source'> & { price: number | null; retail: RetailInfo };
 
+/** A faucet, pull or knob: chosen kitchen-wide in Room & finishes rather than placed (`src/lib/fixtures.ts`). */
+export type RetailFixtureWire = FixtureWire & { retail: Omit<RetailInfo, 'typical'> & { typical: string[] } };
+
 export interface RetailData {
   version: number;
   checkedAt: string | null;
   researched: number;
   stores: RetailStore[];
   products: RetailWire[];
+  /** Faucets, pulls and knobs. Absent on data built before round 2. */
+  fixtures?: RetailFixtureWire[];
   leftOut: { count: number; byReason: Record<string, number> };
 }
 
@@ -89,11 +95,14 @@ interface RetailState {
   status: 'idle' | 'loading' | 'ready' | 'error';
   data: RetailData | null;
   products: Product[];
+  /** Store facts by id, for products and fixtures alike. */
   byId: Map<string, RetailInfo>;
+  /** The faucets, pulls and knobs, in catalog order. */
+  fixtures: RetailFixtureWire[];
   stores: Map<string, RetailStore>;
 }
 
-export const useRetail = create<RetailState>()(() => ({ status: 'idle', data: null, products: [], byId: new Map(), stores: new Map() }));
+export const useRetail = create<RetailState>()(() => ({ status: 'idle', data: null, products: [], byId: new Map(), fixtures: [], stores: new Map() }));
 
 let inflight: Promise<void> | null = null;
 let watching = false;
@@ -113,14 +122,17 @@ function register(products: Product[]) {
 /** Applies loaded data (exported for tests, which can't use the lazy chunk). */
 export function applyRetailData(data: RetailData): void {
   const products = data.products.map(toProduct);
+  const fixtures = Array.isArray(data.fixtures) ? data.fixtures : [];
   useRetail.setState({
     status: 'ready',
     data,
     products,
-    byId: new Map(data.products.map((p) => [p.id, p.retail])),
+    fixtures,
+    byId: new Map<string, RetailInfo>([...data.products.map((p) => [p.id, p.retail] as const), ...fixtures.map((f) => [f.id, f.retail as RetailInfo] as const)]),
     stores: new Map(data.stores.map((s) => [s.slug, s])),
   });
   register(products);
+  registerFixtures(fixtures.map(fixtureFromWire));
 }
 
 /** Loads the retail chunk once and registers its products. Never throws. */

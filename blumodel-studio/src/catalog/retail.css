@@ -497,3 +497,87 @@
     text-align: left;
   }
 }
+
+/* ── Room & finishes: store pulls, knobs and faucets ─────────────────── */
+
+.fixtures {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.fixture-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.fixture-field select {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+
+.fixture-field select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.fixture-chosen {
+  display: grid;
+  gap: 4px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  min-width: 0;
+}
+
+.fixture-chosen-name {
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.fixture-chosen-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.fixture-chosen-price {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.fixture-chosen-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.fixture-chosen-links .btn {
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.fixture-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}

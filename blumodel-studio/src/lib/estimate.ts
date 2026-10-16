@@ -1,7 +1,8 @@
 import type { DesignDoc, Product } from '../types';
 import type { PriceQuote } from '../types/platform';
 import { hasCountertop, isBuiltin, priceFor, productCode } from '../data/catalog';
-import { BACKSPLASHES, COUNTERTOPS, FLOORING, HARDWARE, PAINTS, byId, resolveBacksplash } from '../data/finishes';
+import { BACKSPLASHES, COUNTERTOPS, FLOORING, PAINTS, byId, resolveBacksplash } from '../data/finishes';
+import { resolveFaucet, resolveHardware } from './fixtures';
 import { backsplashSegments, resolveAll } from './geometry';
 import { resolveFinish } from './finish';
 
@@ -31,6 +32,8 @@ export interface EstimateLine {
   /** The brand's buy link, when it has one (product lines only). */
   buyUrl?: string;
   productId?: string;
+  /** A retail faucet, pull or knob line (`doc.fixtures`): not a placed product. */
+  fixtureId?: string;
   /** A contractor's cost per unit, when they entered one. Only ever shown in Contractor view. */
   unitCost?: number;
   /** The markup that produced `unitPrice` from `unitCost`, in percent. */
@@ -115,6 +118,7 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   const all = resolveAll(doc.items);
   const map = new Map<string, EstimateLine>();
   let pulls = 0;
+  let sinks = 0;
   let hasBuiltin = false;
   let atStore = 0;
 
@@ -151,6 +155,7 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
       });
     }
     pulls += pullCount(r.product, r.w);
+    if (r.product.kind === 'sink' && !missing) sinks++;
   }
 
   const lines = [...map.values()];
@@ -186,8 +191,28 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   lines.push({ key: 'paint', group: 'Surfaces', label: `${paint.brand} ${paint.name}`, sub: 'Wall paint, two coats', qty: gallons, unit: 'gal', unitPrice: paint.price, total: gallons * paint.price });
 
   if (pulls > 0) {
-    const hw = byId(HARDWARE, surfaces.hardwareId);
-    lines.push({ key: 'hardware', group: 'Hardware', label: `${hw.brand} ${hw.name} pulls`, sub: 'Cabinet pulls and knobs', qty: pulls, unit: 'ea', unitPrice: hw.price, total: pulls * hw.price });
+    const hw = resolveHardware(surfaces, doc.fixtures);
+    const f = hw.fixture;
+    const label = f ? `${f.brand} ${f.name}` : `${hw.brand} ${hw.name} pulls`;
+    const sub = f ? `${f.kind === 'knob' ? 'Cabinet knobs' : 'Cabinet pulls'} · ${f.code}${f.priceKnown ? '' : ' · typical price, check the store'}` : 'Cabinet pulls and knobs';
+    lines.push({ key: 'hardware', group: 'Hardware', label, sub, qty: pulls, unit: 'ea', unitPrice: hw.price, total: Math.round(pulls * hw.price * 100) / 100, ...(f ? { fixtureId: f.id } : {}) });
+  }
+
+  // A chosen retail faucet, one per sink (a sink's own faucet is in the sink's price otherwise).
+  const faucet = resolveFaucet(surfaces, doc.fixtures);
+  if (faucet && sinks > 0) {
+    const f = faucet.fixture;
+    lines.push({
+      key: 'faucet',
+      group: 'Sinks & faucets',
+      label: `${f.brand} ${f.name}`,
+      sub: `Faucet · ${f.code}${f.priceKnown ? '' : ' · typical price, check the store'}`,
+      qty: sinks,
+      unit: 'ea',
+      unitPrice: f.price,
+      total: Math.round(sinks * f.price * 100) / 100,
+      fixtureId: f.id,
+    });
   }
 
   // Labour and services the contractor added, in the order they were entered.

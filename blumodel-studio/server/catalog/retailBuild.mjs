@@ -95,9 +95,6 @@ const TYPE_ORDER = Object.keys(TYPES);
 
 /** Research kinds the app has no shape for (yet): kept out of the placeable catalog. */
 const UNPLACEABLE = {
-  faucet: 'faucet (no faucet shape: the sink draws its own)',
-  pull: 'cabinet hardware (set kitchen-wide in Room & finishes)',
-  knob: 'cabinet hardware (set kitchen-wide in Room & finishes)',
   'cabinet-door': 'cabinet fronts only (no box to place)',
   'backsplash-tile': 'backsplash tile (a surface, set in Room & finishes)',
   countertop: 'countertop (a surface, drawn on the cabinets)',
@@ -253,6 +250,114 @@ function cleanFinishes(list, kind) {
   return out;
 }
 
+// ── fixtures: faucets, pulls and knobs ──────────────────────────────────────────────────────
+//
+// Not placed items: a kitchen chooses one faucet (drawn on every sink) and one pull or knob (drawn
+// on every door and drawer) in Room & finishes, like the built-in hardware finishes. They ship in
+// `fixtures` and are drawn by the 3D models from `style` and `sizeIn` (src/components/three/parts.tsx).
+
+export const FIXTURE_KINDS = ['faucet', 'pull', 'knob'];
+/** Typical sizes, inches, for a listing that gives none (marked typical). */
+export const FIXTURE_TYPICAL = Object.freeze({ faucetHeight: { pulldown: 16, pullout: 14.5, single: 13, 'side-spray': 12, spring: 19 }, pullCc: 96 / 25.4, knobDia: 1.25 });
+
+const r2 = (n) => Math.round(n * 100) / 100;
+
+/** The drawn shape: faucet pulldown/pullout/single/side-spray/spring; pull bar/arch/rect/finger; knob mushroom/disc. */
+export function fixtureStyle(kind, name) {
+  const n = String(name).toLowerCase();
+  if (kind === 'faucet') {
+    if (/spring|industrial|commercial|\bbolden\b/.test(n)) return 'spring';
+    if (/pull[- ]?down/.test(n)) return 'pulldown';
+    if (/pull[- ]?out/.test(n)) return 'pullout';
+    if (/side spray/.test(n)) return 'side-spray';
+    return 'single';
+  }
+  if (kind === 'pull') {
+    if (/finger|\bedge\b|\btab\b/.test(n)) return 'finger';
+    if (/arch|curved|\bround\b|\bbow\b/.test(n)) return 'arch';
+    if (/rectangular|square/.test(n)) return 'rect';
+    return 'bar';
+  }
+  return /modern|contemporary|concentric/.test(n) && !/traditional/.test(n) ? 'disc' : 'mushroom';
+}
+
+/** How shiny the metal reads: matte black is dull, chrome is a mirror. */
+function fixtureRoughness(finishName) {
+  const n = String(finishName).toLowerCase();
+  if (/matte|flat/.test(n)) return 0.55;
+  if (/chrome|polished/.test(n)) return 0.1;
+  if (/brushed|satin|spot|stainless|nickel/.test(n)) return 0.32;
+  return 0.3;
+}
+
+/** Pieces per listing ("10-pack", "8 pk"); 1 when the name says nothing. */
+export function packOf(name) {
+  const m = /(\d{1,3})\s*-?\s*(?:pk|pack|pcs|pieces)\b/i.exec(String(name));
+  const n = m ? Number(m[1]) : 1;
+  return n >= 1 && n <= 100 ? n : 1;
+}
+
+/** A research entry as a fixture: its drawn style and size (listed, else typical and marked) and its listings. */
+function fixtureOf(e, listings, id) {
+  const style = fixtureStyle(e.kind, e.name);
+  const mm = /(\d{2,3})\s*mm\b/i.exec(e.name);
+  const typical = [];
+  const sizeIn = {};
+  const w = pos(e.widthIn, 0.3, 40);
+  if (e.kind === 'pull') {
+    const cc = mm ? Number(mm[1]) / 25.4 : null;
+    sizeIn.cc = r2(cc ?? FIXTURE_TYPICAL.pullCc);
+    if (cc === null) typical.push('cc');
+    // Overall length: listed, else the posts' spacing plus the usual overhang.
+    const listed = w !== null && w >= sizeIn.cc;
+    sizeIn.length = r2(listed ? w : sizeIn.cc + 0.75);
+    if (!listed) typical.push('length');
+  } else if (e.kind === 'knob') {
+    const d = w ?? (mm ? Number(mm[1]) / 25.4 : null);
+    const listed = d !== null && d <= 3;
+    sizeIn.dia = r2(listed ? d : FIXTURE_TYPICAL.knobDia);
+    if (!listed) typical.push('dia');
+  } else {
+    const h = pos(e.heightIn, 6, 30);
+    sizeIn.height = r2(h ?? FIXTURE_TYPICAL.faucetHeight[style]);
+    if (h === null) typical.push('height');
+  }
+  const f = cleanFinishes(e.finishes, 'faucet')[0];
+  const pack = packOf(e.name);
+  const prices = listings.map((l) => l.priceCad).filter((p) => p !== null);
+  const n = String(e.name).toLowerCase();
+  const extras = {
+    ...(/soap/.test(n) ? { soap: true } : {}),
+    ...(style === 'side-spray' ? { sideSpray: true } : {}),
+  };
+  const sku = listings.find((l) => l.sku)?.sku ?? null;
+  return {
+    id,
+    kind: e.kind,
+    style,
+    brand: e.brand,
+    name: (e.model ? e.name.replace(/\s*\([^)]*\)\s*$/, '') : e.name).slice(0, 120),
+    code: e.model ?? (e.upc ? `UPC ${e.upc}` : null) ?? sku ?? e.kind.toUpperCase(),
+    finish: { id: f.id, name: f.name, hex: f.hex },
+    roughness: fixtureRoughness(f.name),
+    sizeIn,
+    pack,
+    // Per piece: a 10-pack's price over ten.
+    price: prices.length ? r2(Math.min(...prices) / pack) : null,
+    ...(Object.keys(extras).length ? { extras } : {}),
+    retail: {
+      key: e.key,
+      type: `${e.kind}-${style}`,
+      upc: e.upc,
+      confidence: e.confidence,
+      checkedAt: e.checkedAt,
+      size: { w, d: pos(e.depthIn, 0.1, 40), h: pos(e.heightIn, 0.1, 40) },
+      typical,
+      stores: listings,
+    },
+  };
+}
+
 /** One store listing, or null with the reason (logged). */
 function cleanListing(s) {
   const store = STORE_BY_NAME.get(normStore(s?.store));
@@ -406,8 +511,44 @@ export function buildRetailCatalog(files) {
   const usedIds = new Set();
   const usedStores = new Set();
 
+  const fixtures = [];
+  const cleanListings = (e) => {
+    const listings = [];
+    const seenUrl = new Set();
+    for (const s of e.stores) {
+      const r = cleanListing(s);
+      if (r.drop) {
+        log.links.push(`${e.key}: ${r.drop}`);
+        continue;
+      }
+      if (seenUrl.has(r.listing.url)) continue;
+      seenUrl.add(r.listing.url);
+      listings.push(r.listing);
+    }
+    return listings;
+  };
+  const nextId = (key) => {
+    let id = retailId(key);
+    if (usedIds.has(id)) id = `${ID_PREFIX}${slugify(key).slice(0, 31).replace(/-+$/, '')}-${hash6(`${key}#${usedIds.size}`)}`;
+    usedIds.add(id);
+    return id;
+  };
+
   for (const e of merged) {
     const drop = (reason) => log.dropped.push({ key: e.key, reason });
+    if (FIXTURE_KINDS.includes(e.kind)) {
+      const listings = cleanListings(e);
+      if (!listings.length) {
+        drop('no store link on a known store’s Canadian site');
+        continue;
+      }
+      for (const l of listings) {
+        delete l.finishName;
+        usedStores.add(l.store);
+      }
+      fixtures.push(fixtureOf(e, listings, nextId(e.key)));
+      continue;
+    }
     if (UNPLACEABLE[e.kind]) {
       drop(UNPLACEABLE[e.kind]);
       continue;
@@ -436,18 +577,7 @@ export function buildRetailCatalog(files) {
       continue;
     }
 
-    const listings = [];
-    const seenUrl = new Set();
-    for (const s of e.stores) {
-      const r = cleanListing(s);
-      if (r.drop) {
-        log.links.push(`${e.key}: ${r.drop}`);
-        continue;
-      }
-      if (seenUrl.has(r.listing.url)) continue;
-      seenUrl.add(r.listing.url);
-      listings.push(r.listing);
-    }
+    const listings = cleanListings(e);
     if (!listings.length) {
       drop('no store link on a known store’s Canadian site');
       continue;
@@ -518,9 +648,7 @@ export function buildRetailCatalog(files) {
     const typeCode = typeId.split('-').map((x) => x[0]).join('').toUpperCase() + (widthOptions.length > 1 ? '{w}' : String(w));
     const code = e.model ?? (e.upc ? `UPC ${e.upc}` : null) ?? listings.find((l) => l.sku)?.sku ?? typeCode;
     const name = (e.model ? e.name.replace(/\s*\([^)]*\)\s*$/, '') : e.name).slice(0, 120);
-    let id = retailId(e.key);
-    if (usedIds.has(id)) id = `${ID_PREFIX}${slugify(e.key).slice(0, 31).replace(/-+$/, '')}-${hash6(`${e.key}#${usedIds.size}`)}`;
-    usedIds.add(id);
+    const id = nextId(e.key);
     const storeNames = [...new Set(listings.map((l) => l.store))].map((slug) => STORES.find((s) => s.slug === slug).name);
     for (const l of listings) usedStores.add(l.store);
     const doorStyle = e.doorStyle === 'shaker' || e.doorStyle === 'slab' ? e.doorStyle : undefined;
@@ -569,6 +697,9 @@ export function buildRetailCatalog(files) {
       a.name.localeCompare(b.name),
   );
 
+  const FIX_ORDER = ['faucet', 'pull', 'knob'];
+  fixtures.sort((a, b) => FIX_ORDER.indexOf(a.kind) - FIX_ORDER.indexOf(b.kind) || a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name));
+
   const byReason = {};
   for (const d of log.dropped) byReason[d.reason] = (byReason[d.reason] ?? 0) + 1;
   const dates = [...new Set(files.map((f) => f?.checkedAt).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d ?? '')))].sort();
@@ -579,6 +710,7 @@ export function buildRetailCatalog(files) {
       researched: entries.length,
       stores: STORES.filter((s) => usedStores.has(s.slug)).map(({ slug, name, domain }) => ({ slug, name, domain })),
       products,
+      fixtures,
       leftOut: { count: log.dropped.length, byReason },
     },
     log,
@@ -608,7 +740,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log('src/data/retail.json is up to date.');
   } else {
     fs.writeFileSync(OUT_FILE, text);
-    console.log(`${data.researched} researched → ${data.products.length} placeable products from ${data.stores.length} stores; ${log.dropped.length} left out, ${log.merged.length} merged.`);
+    console.log(`${data.researched} researched → ${data.products.length} placeable products and ${data.fixtures.length} faucets, pulls and knobs from ${data.stores.length} stores; ${log.dropped.length} left out, ${log.merged.length} merged.`);
     for (const [reason, n] of Object.entries(data.leftOut.byReason).sort((a, b) => b[1] - a[1])) console.log(`  ${String(n).padStart(3)}  ${reason}`);
     for (const d of log.dropped) console.log(`  - ${d.key}: ${d.reason}`);
     for (const m of log.merged) console.log(`  merged ${m}`);

@@ -42,7 +42,7 @@ test('every shipped product is a placeable app product with real store links', (
   const { data, log } = buildRetailCatalog(readResearch());
   assert.ok(data.products.length >= 100, `${data.products.length} products`);
   // Every researched entry is shipped, merged into another, or left out with a reason.
-  assert.equal(data.researched, data.products.length + data.leftOut.count + log.merged.length);
+  assert.equal(data.researched, data.products.length + data.fixtures.length + data.leftOut.count + log.merged.length);
   const domains = new Map(STORES.map((s) => [s.slug, s.domain]));
   const ids = new Set();
   for (const p of data.products) {
@@ -138,8 +138,8 @@ test('one cabinet researched once per finish becomes one product whose listings 
 test('entries without enough facts to place them are left out, with the reason counted', () => {
   const { data, log } = build([
     entry({ key: 'no-width', widthIn: null }),
-    entry({ key: 'faucet', kind: 'faucet', category: 'faucets' }),
-    entry({ key: 'pull', kind: 'pull', category: 'hardware' }),
+    entry({ key: 'fronts', kind: 'cabinet-door', category: 'cabinets' }),
+    entry({ key: 'tile', kind: 'backsplash-tile', category: 'surfaces' }),
     entry({ key: 'top-pantry', kind: 'tall-cabinet', name: 'Top Pantry Cabinet 15 x 49 in', heightIn: 49 }),
     entry({ key: 'us-ikea', stores: [store('IKEA', 'https://www.ikea.com/us/en/p/thing-1/')] }),
     entry({ key: 'off-site', stores: [store('RONA', 'https://rona.example.com/thing')] }),

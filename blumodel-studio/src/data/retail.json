@@ -18060,11 +18060,2456 @@
    }
   }
  ],
+ "fixtures": [
+  {
+   "id": "r-american-standard-copley-pulldo-ac0e4e",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "American Standard",
+   "name": "American Standard Copley single handle dual spray pull-down kitchen faucet with soap dispenser, stainless",
+   "code": "1001536304",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "extras": {
+    "soap": true
+   },
+   "retail": {
+    "key": "american-standard-copley-pulldown-stainless-soap",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/american-standard-copley-single-handle-dual-spray-pull-down-kitchen-faucet-in-stainless-steel-with-soap-dispenser-valve-deck-plate-included-/1001536304",
+      "sku": "1001536304",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-american-standard-fairbury-pull-13f4ee",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "American Standard",
+   "name": "American Standard Fairbury single handle pull-down dual sprayer kitchen faucet, stainless steel",
+   "code": "1000668784",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "american-standard-fairbury-pulldown-stainless",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/american-standard-fairbury-single-handle-pull-down-sprayer-kitchen-faucet-in-stainless-steel/1000668784",
+      "sku": "1000668784",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-belanger-professio-pulldown-mat-064016",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Belanger Essential",
+   "name": "Belanger Essential Professio single handle pull-down kitchen faucet, matte black",
+   "code": "3227052",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "belanger-professio-pulldown-matte-black",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/professio-single-handle-pull-down-kitchen-faucet-matte-black/p/3227052",
+      "sku": "3227052",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-delta-single-handle-pulldown-st-5eb1ac",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Delta",
+   "name": "Delta single handle pull-down kitchen faucet, stainless/black",
+   "code": "1001031624",
+   "finish": {
+    "id": "stainless-and-black",
+    "name": "Stainless and black",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "delta-single-handle-pulldown-stainless-black-1001031624",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/delta-single-handle-pull-down-kitchen-faucet-stainless-black/1001031624",
+      "sku": "1001031624",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-delta-struct-single-handle-chrome",
+   "kind": "faucet",
+   "style": "single",
+   "brand": "Delta",
+   "name": "Delta Struct single handle kitchen faucet, chrome",
+   "code": "3227030",
+   "finish": {
+    "id": "chrome",
+    "name": "Chrome",
+    "hex": "#d9dbdd"
+   },
+   "roughness": 0.1,
+   "sizeIn": {
+    "height": 13
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "delta-struct-single-handle-chrome",
+    "type": "faucet-single",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/struct-single-handle-kitchen-faucet-chrome/p/3227030",
+      "sku": "3227030",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-delta-marca-19780z-blsd-dst",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Delta",
+   "name": "Marca single-handle pull-down kitchen faucet with ShieldSpray and soap dispenser, matte black",
+   "code": "19780Z-BLSD-DST",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": 329,
+   "extras": {
+    "soap": true
+   },
+   "retail": {
+    "key": "delta-marca-19780z-blsd-dst",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/delta-marca-single-handle-pull-down-sprayer-kitchen-faucet-with-shieldspray-technology-in-matte-black/1001577801",
+      "sku": "1001577801",
+      "priceCad": 329,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-delta-trinsic-9159-bl-dst",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Delta",
+   "name": "Trinsic single-handle pull-down kitchen faucet with MagnaTite docking, matte black",
+   "code": "9159-BL-DST",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "delta-trinsic-9159-bl-dst",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/delta-trinsic-single-handle-pull-down-sprayer-kitchen-faucet-with-magnatite-docking-in-matte-black/1001119614",
+      "sku": "1001119614",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eurostream-favos-pulldown-matte-black",
+   "kind": "faucet",
+   "style": "spring",
+   "brand": "Eurostream",
+   "name": "Eurostream Favos single handle pull-down kitchen faucet with dual spray and spring spout, matte black",
+   "code": "3229202",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 19
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "eurostream-favos-pulldown-matte-black",
+    "type": "faucet-spring",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/favos-single-handle-pull-down-kitchen-faucet-with-dual-spray-spring-spout-matte-black/p/3229202",
+      "sku": "3229202",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-eurostream-oralie-side-spray-chrome",
+   "kind": "faucet",
+   "style": "side-spray",
+   "brand": "Eurostream",
+   "name": "Eurostream Oralie single handle kitchen faucet with side spray, chrome",
+   "code": "3230756",
+   "finish": {
+    "id": "chrome",
+    "name": "Chrome",
+    "hex": "#d9dbdd"
+   },
+   "roughness": 0.1,
+   "sizeIn": {
+    "height": 12
+   },
+   "pack": 1,
+   "price": null,
+   "extras": {
+    "sideSpray": true
+   },
+   "retail": {
+    "key": "eurostream-oralie-side-spray-chrome",
+    "type": "faucet-side-spray",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/oralie-single-handle-kitchen-faucet-with-side-spray-chrome/p/3230756",
+      "sku": "3230756",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hdg-single-handle-pulldown-stainless",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "HDG",
+   "name": "HDG single-handle pull-down sprayer kitchen faucet, stainless steel",
+   "code": "1001846822",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "hdg-single-handle-pulldown-stainless",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/hdg-single-handle-pull-down-sprayer-kitchen-faucet-in-stainless-steel/1001846822",
+      "sku": "1001846822",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kohler-malleco-pulldown-stainless-rona",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Kohler",
+   "name": "Kohler Malleco 1-handle pull-down kitchen faucet, stainless steel",
+   "code": "31535044",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "kohler-malleco-pulldown-stainless-rona",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://rona.ca/en/malleco-pull-out-kitchen-faucet-1-handle-stainless-steel-31535044",
+      "sku": "31535044",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-ansel-kpf-1675mb",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Kraus",
+   "name": "Ansel single-handle pull-down kitchen faucet, matte black",
+   "code": "KPF-1675MB",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16.5
+   },
+   "pack": 1,
+   "price": 298,
+   "retail": {
+    "key": "kraus-ansel-kpf-1675mb",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": 16.5
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kraus-ansel-single-handle-pull-down-sprayer-kitchen-faucet-in-matte-black/1001560033",
+      "sku": "1001560033",
+      "priceCad": 298,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-bolden-18-kpf-1610mb",
+   "kind": "faucet",
+   "style": "spring",
+   "brand": "Kraus",
+   "name": "Bolden 18 in single-handle pull-down kitchen faucet, matte black",
+   "code": "KPF-1610MB",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 18
+   },
+   "pack": 1,
+   "price": 391,
+   "retail": {
+    "key": "kraus-bolden-18-kpf-1610mb",
+    "type": "faucet-spring",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": 18
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kraus-single-handle-18-inch-faucet-with-pull-down-sprayhead-in-matte-black-finish/1001553473",
+      "sku": "1001553473",
+      "priceCad": 391,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kraus-oletto-kpf-3104mb",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Kraus",
+   "name": "Oletto contemporary single-handle pull-down kitchen faucet, matte black",
+   "code": "KPF-3104MB",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16.25
+   },
+   "pack": 1,
+   "price": 287,
+   "retail": {
+    "key": "kraus-oletto-kpf-3104mb",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": 16.25
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kraus-oletto-contemporary-pull-down-single-handle-kitchen-faucet-in-matte-black/1001652047",
+      "sku": "1001652047",
+      "priceCad": 287,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-adler-pulldown-spot-resist-a5e05c",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Moen",
+   "name": "Adler pull-down kitchen faucet, spot-resistant stainless (deckplate included)",
+   "code": "FAUCET",
+   "finish": {
+    "id": "spot-resistant-stainless",
+    "name": "Spot-resistant stainless",
+    "hex": "#c9cdd0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": 169,
+   "retail": {
+    "key": "moen-adler-pulldown-spot-resistant-stainless",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "low",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/en/home/categories/kitchen/kitchen-and-bar-faucets/f/delta/1-handle/59b-v13-2l5o",
+      "sku": null,
+      "priceCad": 169,
+      "inStock": null
+     },
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/kitchen/kitchen-faucets/moen--104-b21",
+      "sku": null,
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-level-pulldown-stainless",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Moen",
+   "name": "Level single-handle pulldown kitchen faucet with Reflex, stainless",
+   "code": "1000760596",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "moen-level-pulldown-stainless",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/moen-level-single-handle-pulldown-kitchen-faucet-featuring-reflex-in-stainless/1000760596",
+      "sku": "1000760596",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-boutique-pulldown-spot-resist",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Moen",
+   "name": "Moen Boutique single handle pull-down kitchen faucet, spot resist stainless",
+   "code": "3229190",
+   "finish": {
+    "id": "spot-resist-stainless",
+    "name": "Spot resist stainless",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "moen-boutique-pulldown-spot-resist",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/boutique-single-handle-pull-down-kitchen-faucet-spot-resist-stainless-steel/p/3229190",
+      "sku": "3229190",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-harlon-pulldown-spot-resist",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Moen",
+   "name": "Moen Harlon single handle pull-down kitchen faucet, spot resist stainless",
+   "code": "3229156",
+   "finish": {
+    "id": "spot-resist-stainless",
+    "name": "Spot resist stainless",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "moen-harlon-pulldown-spot-resist",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/harlon-single-handle-pull-down-kitchen-faucet-spot-resist-stainless-steel/p/3229156",
+      "sku": "3229156",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-nori-pulldown-soap-spot-resist",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Moen",
+   "name": "Moen Nori single handle pull-down kitchen faucet with soap dispenser, spot resist stainless",
+   "code": "3229160",
+   "finish": {
+    "id": "spot-resist-stainless",
+    "name": "Spot resist stainless",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "extras": {
+    "soap": true
+   },
+   "retail": {
+    "key": "moen-nori-pulldown-soap-spot-resist",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/nori-single-handle-pull-down-kitchen-faucet-with-soap-dispenser-spot-resist-stainless-steel/p/3229160",
+      "sku": "3229160",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-renzo-pullout-chrome",
+   "kind": "faucet",
+   "style": "pullout",
+   "brand": "Moen",
+   "name": "Moen Renzo single handle pull-out kitchen faucet, chrome",
+   "code": "3227225",
+   "finish": {
+    "id": "chrome",
+    "name": "Chrome",
+    "hex": "#d9dbdd"
+   },
+   "roughness": 0.1,
+   "sizeIn": {
+    "height": 14.5
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "moen-renzo-pullout-chrome",
+    "type": "faucet-pullout",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/renzo-single-handle-pull-out-kitchen-faucet-chrome/p/3227225",
+      "sku": "3227225",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-moen-terrace-pulldown-spot-resist",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Moen",
+   "name": "Moen Terrace single handle pull-down kitchen faucet, spot resist stainless",
+   "code": "3227006",
+   "finish": {
+    "id": "spot-resist-stainless",
+    "name": "Spot resist stainless",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "moen-terrace-pulldown-spot-resist",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-hardware",
+      "url": "https://www.homehardware.ca/en/terrace-single-handle-pull-down-kitchen-faucet-spot-resist-stainless-steel/p/3227006",
+      "sku": "3227006",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-peerless-precept-pulldown-stainless",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Peerless",
+   "name": "Peerless Precept single-handle pull-down kitchen faucet, stainless steel",
+   "code": "1001737989",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "peerless-precept-pulldown-stainless",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/peerless-precept-single-handle-pull-down-kitchen-faucet-in-stainless-steel/1001737989",
+      "sku": "1001737989",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-project-source-fp4af260bllb-bla-86f4ad",
+   "kind": "faucet",
+   "style": "spring",
+   "brand": "Project Source",
+   "name": "Project Source black industrial 1-handle pull-down kitchen faucet",
+   "code": "FP4AF260BLLB",
+   "finish": {
+    "id": "black",
+    "name": "Black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.3,
+   "sizeIn": {
+    "height": 19
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "project-source-fp4af260bllb-black-pulldown",
+    "type": "faucet-spring",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/project-source-black-industrial-1-handle-pull-down-kitchen-faucet-fp4af260bllb-80375189",
+      "sku": "80375189",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylish-modena-pulldown-brushed-7a66d5",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Stylish",
+   "name": "Stylish Modena single handle pull-down kitchen faucet with water tap, brushed stainless",
+   "code": "1001802884",
+   "finish": {
+    "id": "brushed-stainless",
+    "name": "Brushed stainless",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "stylish-modena-pulldown-brushed-stainless",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylish-modena-single-handle-pull-down-kitchen-faucet-with-water-tap-in-brushed-stainless-steel-finish/1001802884",
+      "sku": "1001802884",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylish-modern-pulldown-matte-b-7f5aa8",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Stylish",
+   "name": "Stylish modern single handle pull-down sprayer kitchen faucet, matte black stainless",
+   "code": "1001559732",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "stylish-modern-pulldown-matte-black-1001559732",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylish-modern-single-handle-pull-down-sprayer-kitchen-faucet-in-matte-black-stainless-steel/1001559732",
+      "sku": "1001559732",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylish-pulldown-soap-dispenser-black",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Stylish",
+   "name": "Stylish single handle pull-down kitchen faucet with soap dispenser, black",
+   "code": "1001793435",
+   "finish": {
+    "id": "black",
+    "name": "Black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.3,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "extras": {
+    "soap": true
+   },
+   "retail": {
+    "key": "stylish-pulldown-soap-dispenser-black",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylish-single-handle-pull-down-kitchen-faucet-with-soap-dispenser-in-black/1001793435",
+      "sku": "1001793435",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylish-pulldown-matte-black-si-a28d0d",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Stylish",
+   "name": "Stylish single handle pull-down sprayer kitchen faucet, matte black/silver",
+   "code": "1001561779",
+   "finish": {
+    "id": "matte-black-and-silver",
+    "name": "Matte black and silver",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "stylish-pulldown-matte-black-silver-1001561779",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylish-single-handle-pull-down-sprayer-kitchen-faucet-in-matte-black-silver-finish/1001561779",
+      "sku": "1001561779",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylish-single-handle-pulldown-a86379",
+   "kind": "faucet",
+   "style": "pulldown",
+   "brand": "Stylish",
+   "name": "Stylish single-handle pull-down sprayer kitchen faucet, stainless steel",
+   "code": "1001559729",
+   "finish": {
+    "id": "stainless-steel",
+    "name": "Stainless steel",
+    "hex": "#c4c8cb"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "height": 16
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "stylish-single-handle-pulldown-stainless-1001559729",
+    "type": "faucet-pulldown",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylish-single-handle-pull-down-sprayer-kitchen-faucet-in-stainless-steel/1001559729",
+      "sku": "1001559729",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-onward-essentials-96mm-matte-bl-2911b8",
+   "kind": "pull",
+   "style": "rect",
+   "brand": "Onward",
+   "name": "Onward Essentials 96 mm rectangular bar pull, matte black, 15-pack",
+   "code": "1001536081",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 6.14
+   },
+   "pack": 15,
+   "price": null,
+   "retail": {
+    "key": "onward-essentials-96mm-matte-black-15pk",
+    "type": "pull-rect",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 6.14,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/onward-essentials--15-pack-3-3-4-inch-96-mm-matte-black-modern-rectangular-cabinet-bar-pull/1001536081",
+      "sku": "1001536081",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-cambria-96mm-brushed-nickel",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Cambria collection 3-3/4 in (96 mm) modern arched cabinet pull, brushed nickel",
+   "code": "1000816906",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b4b6b8"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.94
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-cambria-96mm-brushed-nickel",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": 4.938,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-cambria-collection-3-3-4-inch-96-mm-brushed-nickel-modern-arched-cabinet-pull/1000816906",
+      "sku": "1000816906",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-candiac-96mm-matte-black",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Candiac collection 3-3/4 in (96 mm) traditional round cabinet pull, matte black",
+   "code": "1001532240",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-candiac-96mm-matte-black",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-candiac-collection-3-3-4-inch-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001532240",
+      "sku": "1001532240",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-greenwich-96mm-brushe-de6229",
+   "kind": "pull",
+   "style": "bar",
+   "brand": "Richelieu",
+   "name": "Greenwich collection 3-3/4 in (96 mm) modern bar pull, brushed nickel",
+   "code": "1001020989",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b4b6b8"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": 14.98,
+   "retail": {
+    "key": "richelieu-greenwich-96mm-brushed-nickel-bar",
+    "type": "pull-bar",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-greenwich-collection-3-3-4-inch-96-mm-brushed-nickel-modern-cabinet-bar-pull/1001020989",
+      "sku": "1001020989",
+      "priceCad": 14.98,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-monceau-96mm-matte-black",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Monceau collection 3-3/4 in (96 mm) traditional curved cabinet pull, matte black",
+   "code": "1001020443",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-monceau-96mm-matte-black",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-monceau-collection-3-3-4-in-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001020443",
+      "sku": "1001020443",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-nantes-96mm-matte-black",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Nantes collection 3-3/4 in (96 mm) traditional curved cabinet pull, matte black",
+   "code": "1001021527",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1c1c1e"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-nantes-96mm-matte-black",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-nantes-collection-3-3-4-inch-96-mm-matte-black-traditional-curved-cabinet-pull/1001021527",
+      "sku": "1001021527",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-andria-96mm-matte-black",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Richelieu Andria 96 mm modern curved pull, matte black",
+   "code": "1001653519",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": 6.36,
+   "retail": {
+    "key": "richelieu-andria-96mm-matte-black",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-3-3-4-inch-96-mm-matte-black-modern-curved-cabinet-pull/1001653519",
+      "sku": "1001653519",
+      "priceCad": 6.36,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-avellino-128mm-brushe-ec4837",
+   "kind": "pull",
+   "style": "bar",
+   "brand": "Richelieu",
+   "name": "Richelieu Avellino 128 mm (5 1/16 in) modern bar pull, brushed nickel",
+   "code": "1001019812",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 5.55
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-avellino-128mm-brushed-nickel",
+    "type": "pull-bar",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 5.55,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-avellino-collection-5-1-16-inch-128-mm-brushed-nickel-modern-cabinet-bar-pull/1001019812",
+      "sku": "1001019812",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-candiac-128mm-brushed-nickel",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Richelieu Candiac 128 mm (5 1/16 in) traditional arched pull, brushed nickel",
+   "code": "1001019693",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 5.67
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-candiac-128mm-brushed-nickel",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 5.67,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-candiac-collection-5-1-16-inch-128-mm-brushed-nickel-traditional-round-cabinet-pull/1001019693",
+      "sku": "1001019693",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-essentials-96mm-matte-953779",
+   "kind": "pull",
+   "style": "bar",
+   "brand": "Richelieu",
+   "name": "Richelieu Essentials 96 mm modern bar pull, matte black, 8-pack",
+   "code": "1001800663",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 6.14
+   },
+   "pack": 8,
+   "price": 2.25,
+   "retail": {
+    "key": "richelieu-essentials-96mm-matte-black-8pk",
+    "type": "pull-bar",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 6.14,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-essentials--8-pack-3-3-4-inch-96-mm-matte-black-modern-cabinet-bar-pull/1001800663",
+      "sku": "1001800663",
+      "priceCad": 17.98,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-essentials-96mm-matte-75ee7c",
+   "kind": "pull",
+   "style": "rect",
+   "brand": "Richelieu",
+   "name": "Richelieu Essentials 96 mm rectangular bar pull, matte black, 5-pack",
+   "code": "1001800671",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 6.14
+   },
+   "pack": 5,
+   "price": 4,
+   "retail": {
+    "key": "richelieu-essentials-96mm-matte-black-5pk",
+    "type": "pull-rect",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 6.14,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-essentials--5-pack-3-3-4-inch-96-mm-matte-black-modern-rectangular-cabinet-bar-pull/1001800671",
+      "sku": "1001800671",
+      "priceCad": 19.98,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-kent-128mm-brushed-nickel",
+   "kind": "pull",
+   "style": "rect",
+   "brand": "Richelieu",
+   "name": "Richelieu Kent 128 mm (5 1/16 in) modern rectangular pull, brushed nickel",
+   "code": "1001528906",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 5.67
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-kent-128mm-brushed-nickel",
+    "type": "pull-rect",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 5.67,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-kent-collection-5-1-16-inch-128-mm-brushed-nickel-modern-rectangular-cabinet-pull/1001528906",
+      "sku": "1001528906",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-key-128mm-brushed-nickel",
+   "kind": "pull",
+   "style": "finger",
+   "brand": "Richelieu",
+   "name": "Richelieu Key 128 mm (5 1/16 in) modern finger pull, brushed nickel",
+   "code": "1001532031",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 5.51
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-key-128mm-brushed-nickel",
+    "type": "pull-finger",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 5.51,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-5-1-16-inch-128-mm-center-to-center-brushed-nickel-contemporary-cabinet-pull/1001532031",
+      "sku": "1001532031",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-nimes-96mm-matte-black",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Richelieu Nimes 96 mm traditional arched bar pull, matte black",
+   "code": "1001021282",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-nimes-96mm-matte-black",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-nimes-collection-3-3-4-inch-96-mm-center-to-center-matte-black-traditional-cabinet-pull/1001021282",
+      "sku": "1001021282",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-ortona-128mm-brushed-nickel",
+   "kind": "pull",
+   "style": "rect",
+   "brand": "Richelieu",
+   "name": "Richelieu Ortona 128 mm (5 1/16 in) modern rectangular bar pull, brushed nickel",
+   "code": "1001653622",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 7.4
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-ortona-128mm-brushed-nickel",
+    "type": "pull-rect",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 7.4,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-ortona-collection-5-1-16-inch-128-mm-brushed-nickel-modern-rectangular-cabinet-bar-pull/1001653622",
+      "sku": "1001653622",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-preston-128mm-brushed-nickel",
+   "kind": "pull",
+   "style": "arch",
+   "brand": "Richelieu",
+   "name": "Richelieu Preston 128 mm (5 1/16 in) modern arched pull, brushed nickel",
+   "code": "1001653523",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 5.79
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-preston-128mm-brushed-nickel",
+    "type": "pull-arch",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-preston-collection-5-1-16-inch-128-mm-brushed-nickel-modern-arched-cabinet-pull/1001653523",
+      "sku": "1001653523",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-roosevelt-128mm-brush-040245",
+   "kind": "pull",
+   "style": "bar",
+   "brand": "Richelieu",
+   "name": "Richelieu Roosevelt 128 mm (5 1/16 in) modern bar pull, brushed nickel",
+   "code": "1001091537",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 6.61
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-roosevelt-128mm-brushed-nickel",
+    "type": "pull-bar",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 6.61,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-roosevelt-collection-5-1-16-inch-128-mm-brushed-nickel-modern-cabinet-bar-pull/1001091537",
+      "sku": "1001091537",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-roosevelt-96mm-matte-black",
+   "kind": "pull",
+   "style": "bar",
+   "brand": "Richelieu",
+   "name": "Richelieu Roosevelt 96 mm (3 3/4 in) modern bar pull, matte black",
+   "code": "1001004777",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 5.35
+   },
+   "pack": 1,
+   "price": 8.38,
+   "retail": {
+    "key": "richelieu-roosevelt-96mm-matte-black",
+    "type": "pull-bar",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 5.35,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-roosevelt-collection-3-3-4-inch-96-mm-matte-black-modern-cabinet-bar-pull/1001004777",
+      "sku": "1001004777",
+      "priceCad": 8.38,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-ventura-96mm-brushed-nickel",
+   "kind": "pull",
+   "style": "rect",
+   "brand": "Richelieu",
+   "name": "Ventura collection 3-3/4 in (96 mm) transitional rectangular cabinet pull, brushed nickel",
+   "code": "1001653619",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b4b6b8"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 3.78,
+    "length": 4.53
+   },
+   "pack": 1,
+   "price": 15.98,
+   "retail": {
+    "key": "richelieu-ventura-96mm-brushed-nickel",
+    "type": "pull-rect",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-15",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "length"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-ventura-collection-3-3-4-inch-96-mm-brushed-nickel-transitional-rectangular-cabinet-pull/1001653619",
+      "sku": "1001653619",
+      "priceCad": 15.98,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylewell-granville-128mm-brush-2f1e1b",
+   "kind": "pull",
+   "style": "bar",
+   "brand": "StyleWell",
+   "name": "StyleWell Granville 128 mm (5 1/16 in) cabinet bar pull, brushed nickel",
+   "code": "1001877877",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "cc": 5.04,
+    "length": 5.51
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "stylewell-granville-128mm-brushed-nickel",
+    "type": "pull-bar",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 5.51,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylewell-5-04-inch-128-mm-granville-brushed-nickel-cabinet-pull-handle-1-pack-/1001877877",
+      "sku": "1001877877",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-amerock-concentric-40mm-matte-b-a0ea1d",
+   "kind": "knob",
+   "style": "disc",
+   "brand": "Amerock",
+   "name": "Amerock Concentric 40 mm (1 9/16 in) cabinet knob, matte black",
+   "code": "1001683132",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.57
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "amerock-concentric-40mm-matte-black-knob",
+    "type": "knob-disc",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.57,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/amerock-concentric-1-9-16-in-40-mm-diameter-matte-black-cabinet-knob/1001683132",
+      "sku": "1001683132",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-peerless-1-1-4-round-knob-matte-5d63ba",
+   "kind": "knob",
+   "style": "mushroom",
+   "brand": "Peerless",
+   "name": "Peerless 1 1/4 in round knob, matte black, 2-pack",
+   "code": "1001600442",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.25
+   },
+   "pack": 2,
+   "price": null,
+   "retail": {
+    "key": "peerless-1-1-4-round-knob-matte-black-2pk",
+    "type": "knob-mushroom",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.25,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/peerless-1-1-4-inch-round-knob-in-matte-black-2-per-package/1001600442",
+      "sku": "1001600442",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-contemporary-knob-30m-c73388",
+   "kind": "knob",
+   "style": "disc",
+   "brand": "Richelieu",
+   "name": "Richelieu contemporary round metal cabinet knob 30 mm, brushed nickel, 10-pack",
+   "code": "DP9041195",
+   "finish": {
+    "id": "brushed-nickel",
+    "name": "Brushed nickel",
+    "hex": "#b9b7b0"
+   },
+   "roughness": 0.32,
+   "sizeIn": {
+    "dia": 1.18
+   },
+   "pack": 10,
+   "price": null,
+   "retail": {
+    "key": "richelieu-contemporary-knob-30mm-brushed-nickel-10pk",
+    "type": "knob-disc",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.18,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/richelieu-contemporary-cabinet-knob-30-mm-brushed-nickel-10-pack-dp9041195-07286759",
+      "sku": "07286759",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-copperfield-40mm-matt-43076f",
+   "kind": "knob",
+   "style": "mushroom",
+   "brand": "Richelieu",
+   "name": "Richelieu Copperfield 40 mm functional round cabinet knob, matte black",
+   "code": "1001532479",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.57
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-copperfield-40mm-matte-black-knob",
+    "type": "knob-mushroom",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.57,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-copperfield-collection-1-9-16-inch-40-mm-matte-black-functional-round-cabinet-knob/1001532479",
+      "sku": "1001532479",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-crestmont-34mm-matte-f53cfc",
+   "kind": "knob",
+   "style": "disc",
+   "brand": "Richelieu",
+   "name": "Richelieu Crestmont 34 mm modern round cabinet knob, matte black",
+   "code": "1001532407",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.34
+   },
+   "pack": 1,
+   "price": null,
+   "retail": {
+    "key": "richelieu-crestmont-34mm-matte-black-knob",
+    "type": "knob-disc",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.34,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu-crestmont-collection-1-5-16-inch-34-mm-matte-black-modern-round-cabinet-knob/1001532407",
+      "sku": "1001532407",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-richelieu-notre-dame-34mm-matte-281eac",
+   "kind": "knob",
+   "style": "mushroom",
+   "brand": "Richelieu",
+   "name": "Richelieu Notre-Dame 34 mm traditional round cabinet knob, matte black, 8-pack",
+   "code": "1001343222",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.34
+   },
+   "pack": 8,
+   "price": null,
+   "retail": {
+    "key": "richelieu-notre-dame-34mm-matte-black-8pk",
+    "type": "knob-mushroom",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.34,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/richelieu--8-pack-notre-dame-collection-1-5-16-inch-34-mm-matte-black-traditional-round-cabinet-knob/1001343222",
+      "sku": "1001343222",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylewell-32mm-zinc-matte-black-6e8dca",
+   "kind": "knob",
+   "style": "disc",
+   "brand": "StyleWell",
+   "name": "StyleWell 1 1/4 in (32 mm) zinc modern round cabinet knob, matte black, 10-pack",
+   "code": "1001690895",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.26
+   },
+   "pack": 10,
+   "price": null,
+   "retail": {
+    "key": "stylewell-32mm-zinc-matte-black-knob-10pk",
+    "type": "knob-disc",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.26,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylewell-1-1-4-inch-32mm-zinc-modern-functional-cabinet-round-knob-in-matte-black-10-pack-/1001690895",
+      "sku": "1001690895",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylewell-1-34in-round-knob-mat-7a8421",
+   "kind": "knob",
+   "style": "mushroom",
+   "brand": "StyleWell",
+   "name": "StyleWell 1.34 in round cabinet knob, matte black, 10-pack",
+   "code": "1001893724",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.34
+   },
+   "pack": 10,
+   "price": null,
+   "retail": {
+    "key": "stylewell-1-34in-round-knob-matte-black-10pk",
+    "type": "knob-mushroom",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.34,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylewell-1-34in-matte-black-round-cabinet-handle-drawer-knobs-10-pack-/1001893724",
+      "sku": "1001893724",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-stylewell-grafton-33mm-matte-bl-d48767",
+   "kind": "knob",
+   "style": "mushroom",
+   "brand": "StyleWell",
+   "name": "StyleWell Grafton 33 mm cabinet knob, matte black, 6-pack",
+   "code": "1001877883",
+   "finish": {
+    "id": "matte-black",
+    "name": "Matte black",
+    "hex": "#1f1f20"
+   },
+   "roughness": 0.55,
+   "sizeIn": {
+    "dia": 1.3
+   },
+   "pack": 6,
+   "price": null,
+   "retail": {
+    "key": "stylewell-grafton-33mm-matte-black-knob-6pk",
+    "type": "knob-mushroom",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-16",
+    "size": {
+     "w": 1.3,
+     "d": null,
+     "h": null
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/stylewell-1-4-inch-33-mm-grafton-matte-black-cabinet-knob-6-pack-/1001877883",
+      "sku": "1001877883",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  }
+ ],
  "leftOut": {
-  "count": 87,
+  "count": 30,
   "byReason": {
-   "faucet (no faucet shape: the sink draws its own)": 28,
-   "cabinet hardware (set kitchen-wide in Room & finishes)": 29,
    "no store link on a known store’s Canadian site": 4,
    "no published width": 3,
    "cabinet fronts only (no box to place)": 7,
