@@ -20,7 +20,8 @@ const byId = (id) => {
 const RANGE = 'r-samsung-ne63a6511ss';
 /** A RONA cabinet line ("Landon & Co"), for the catalog filters and the drags. */
 const RONA_CABINET = RETAIL.products.find((p) => p.category === 'cabinets' && p.brand === 'Landon & Co' && p.retail.stores.some((l) => l.store === 'rona'));
-const CHECKED = new Date(`${RETAIL.checkedAt}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+/** "Oct 15, 2026": the date a product's listing was checked (each research round has its own). */
+const checkedOn = (p) => new Date(`${p.retail.checkedAt}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 
 const EMPTY_DOC = { name: 'QA Retail Kitchen', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: {}, items: [], version: 2 };
 
@@ -271,7 +272,7 @@ const upcRoutes = [
   {
     name: 'retail-upc-where-to-buy',
     as: 'contractor',
-    waitFor: ['.pp-buy-row'],
+    waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Made by', `These stores list UPC ${UPC_LISTED.retail.upc}`],
     timeoutMs: 30_000,
     setup: async ({ api }) => {
@@ -431,7 +432,8 @@ export default [
   {
     name: 'retail-product-where-to-buy',
     as: 'anon',
-    waitFor: ['.pp-buy-row'],
+    // The rows show once the store settings (sponsored first) have loaded: read them then.
+    waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Prices in CAD', 'Prices and availability change', 'confirm with the store'],
     timeoutMs: 30_000,
     setup: async ({ api }) => {
@@ -453,7 +455,7 @@ export default [
         if (r.rel !== 'sponsored nofollow noopener') throw new Error(`${r.store}: rel="${r.rel}"`);
         if (r.target !== '_blank') throw new Error(`${r.store}: target="${r.target}"`);
         if (!r.href.startsWith('https://')) throw new Error(`${r.store}: ${r.href}`);
-        if (!r.text.includes(`checked ${CHECKED}`)) throw new Error(`${r.store}: no "checked ${CHECKED}" in "${r.text}"`);
+        if (!r.text.includes(`checked ${checkedOn(p)}`)) throw new Error(`${r.store}: no "checked ${checkedOn(p)}" in "${r.text}"`);
       }
       const rona = new URL(rows[0].href);
       if (rona.searchParams.get('aff') !== 'blumodel-qa') throw new Error(`RONA's link has no affiliate parameter: ${rows[0].href}`);
@@ -484,9 +486,13 @@ export default [
     name: 'retail-product-phone',
     as: 'anon',
     viewport: 'phone',
-    waitFor: ['.pp-buy-row'],
+    waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Prices and availability change'],
-    setup: async () => ({ path: `#/p/${RONA_CABINET.id}` }),
+    setup: async ({ api }) => {
+      // Plain RONA whatever the route before left behind.
+      await setStore(api, 'rona', { sponsored: false, affiliate: '' });
+      return { path: `#/p/${RONA_CABINET.id}` };
+    },
     check: async (h) => {
       await noSideScroll(h);
       const rows = await buyRows(h);

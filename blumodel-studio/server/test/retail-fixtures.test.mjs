@@ -106,3 +106,26 @@ test('a saved kitchen keeps the snapshots of the faucet and hardware its surface
   assert.ok(plain.ok);
   assert.equal(plain.doc.surfaces.faucetId, undefined);
 });
+
+test('sizes the layouts can use: IKEA SEKTION on its legs, a sink in every base that takes it, a pendant by its shade', () => {
+  const ikea = (key, over) => ({ ...entry({ key, brand: 'IKEA', category: 'cabinets', finishes: [{ name: 'White', hex: '#f3f3ef' }], stores: [store('IKEA', `https://www.ikea.com/ca/en/p/${key}/`)] }), ...over });
+  const { data } = build([
+    ikea('sektion-base', { kind: 'base-cabinet', name: 'SEKTION base cabinet frame, 24x24x30 "', widthIn: 24, depthIn: 24, heightIn: 30 }),
+    ikea('sektion-high', { kind: 'tall-cabinet', name: 'SEKTION high cabinet frame 30x24x80', widthIn: 30, depthIn: 24, heightIn: 80 }),
+    ikea('other-base', { kind: 'base-cabinet', name: 'ENHET base cabinet 30x24x30', widthIn: 30, depthIn: 24, heightIn: 30 }),
+    entry({ key: 'sink30', kind: 'sink', category: 'sinks', name: '30 in undermount single bowl', widthIn: 30, stores: [hd('sink30')] }),
+    entry({ key: 'sink27', kind: 'sink', category: 'sinks', name: '27 in drop-in single bowl', widthIn: 27, stores: [hd('sink27')] }),
+    entry({ key: 'apron33', kind: 'sink', category: 'sinks', name: '33 in farmhouse apron sink', widthIn: 33, stores: [hd('apron33')] }),
+    entry({ key: 'pend', kind: 'pendant', category: 'lighting', name: 'Globe glass pendant 30 cm', widthIn: 11.8, heightIn: 47.2, stores: [hd('pend')] }),
+  ]);
+  const by = (k) => data.products.find((p) => p.retail.key === k);
+  assert.deepEqual([by('sektion-base').heightIn, by('sektion-base').retail.size.h], [34.5, 30]);
+  assert.equal(by('sektion-high').heightIn, 84.5);
+  assert.equal(by('other-base').heightIn, 30, 'only SEKTION is listed by its box');
+  assert.deepEqual([by('sink30').widthIn, by('sink30').widthOptions], [33, [33, 36]]);
+  assert.deepEqual(by('sink27').widthOptions, [30, 33, 36]);
+  assert.match(by('sink27').retail.note, /27″ sink, in a 30″, 33″ or 36″ sink base/);
+  assert.deepEqual([by('apron33').widthIn, by('apron33').widthOptions], [33, undefined]);
+  assert.deepEqual([by('pend').heightIn, by('pend').retail.size.h], [12, 47.2]);
+  assert.match(by('pend').retail.note, /Listed 47\.2″ overall/);
+});

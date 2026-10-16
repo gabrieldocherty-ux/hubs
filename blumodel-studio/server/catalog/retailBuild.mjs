@@ -594,6 +594,8 @@ export function buildRetailCatalog(files) {
     let elev = telev;
     let note = null;
     let flags;
+    /** Sink base widths a drop-in or undermount sink also fits (it isn't only the narrowest). */
+    let sinkFits = null;
 
     if (kind === 'range') {
       if (e.kind === 'cooktop' || e.kind === 'rangetop') note = 'A cooktop, drawn as a range of the same width (there is no separate cooktop shape yet).';
@@ -622,6 +624,13 @@ export function buildRetailCatalog(files) {
       typical.length = 0;
       typical.push('depth', 'height');
       note = `The ${fmtIn(pub.w)} sink, drawn in a ${fmtIn(base)} sink base cabinet.`;
+      // An undermount or drop-in bowl fits any standard sink base from the narrowest that takes it
+      // up to two sizes wider, to 36″ (a 30″ sink in a 33″ or 36″ base), so it can fill the layouts' 33″
+      // sink slot. An apron front is as wide as its base: one size only.
+      if (!farm) {
+        sinkFits = BASE_WIDTHS.filter((bw) => bw === base || (bw > base && bw <= base + 6 && bw <= 36));
+        if (sinkFits.length > 1) note = `The ${fmtIn(pub.w)} sink, in a ${sinkFits.map(fmtIn).join(', ').replace(/, ([^,]*)$/, ' or $1')} sink base cabinet.`;
+      }
     } else if (kind === 'pendant' && pub.d === null && variant !== 'linear') {
       d = w; // a round shade is as deep as it is wide
       if (pub.w !== null) typical.splice(typical.indexOf('depth'), 1);
@@ -633,7 +642,21 @@ export function buildRetailCatalog(files) {
       note = 'An under-cabinet hood, drawn with the chimney hood shape (there is no under-cabinet shape yet).';
     }
 
-    const widthOptions = kind === 'base' || kind === 'wall' || kind === 'tall' || kind === 'corner' || (kind === 'sink' && e.kind !== 'sink') ? (opts.includes(w) ? opts : [...new Set([...opts, w])].sort((a, b) => a - b)) : [];
+    // IKEA SEKTION lists its cabinets by the box: a 30″ base box (an 80″ high cabinet) stands on
+    // 4½″ legs, which is how every other line's 34½″ base is measured. Drawn at the standing height,
+    // so it lines up with (and can replace) a standard counter-height base.
+    if (e.brand === 'IKEA' && /sektion/i.test(e.name) && pub.h !== null && ((['base', 'sink', 'corner'].includes(kind) && Math.abs(pub.h - 30) <= 0.5) || (kind === 'tall' && Math.abs(pub.h - 80) <= 0.5))) {
+      h = pub.h + 4.5;
+      note = `IKEA lists the ${fmtIn(pub.h)} cabinet box; on its 4½″ legs it stands ${fmtIn(h)}, drawn at that height.`;
+    }
+    // A pendant listed by its overall drop (cord or rod included) is drawn as its shade at the usual
+    // hanging height; the listed drop stays in the facts.
+    if (kind === 'pendant' && pub.h !== null && pub.h > 24) {
+      h = th;
+      note = `Listed ${fmtIn(pub.h)} overall with its cord or rod; drawn as the shade at the usual hanging height.`;
+    }
+
+    const widthOptions = sinkFits && sinkFits.length > 1 ? sinkFits : kind === 'base' || kind === 'wall' || kind === 'tall' || kind === 'corner' || (kind === 'sink' && e.kind !== 'sink') ? (opts.includes(w) ? opts : [...new Set([...opts, w])].sort((a, b) => a - b)) : [];
     const finishes = cleanFinishes(e.finishes, kind);
     // A listing names its finish only when the product comes in more than one.
     for (const l of listings) {

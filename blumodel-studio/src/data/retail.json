@@ -1665,7 +1665,7 @@
    "code": "502.986.49",
    "widthIn": 30,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "price": null,
    "finishes": [
@@ -1676,7 +1676,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-oven-base-30",
@@ -1690,6 +1690,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -1711,7 +1712,7 @@
    "code": "302.654.14",
    "widthIn": 21,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "price": null,
    "finishes": [
@@ -1722,7 +1723,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-base-21x24-frame",
@@ -1736,6 +1737,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -1757,7 +1759,7 @@
    "code": "BC{w}",
    "widthIn": 24,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "widthOptions": [
     12,
@@ -1777,7 +1779,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-base-24x24",
@@ -1791,6 +1793,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -1812,7 +1815,7 @@
    "code": "202.653.96",
    "widthIn": 18,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "price": null,
    "finishes": [
@@ -1823,7 +1826,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-base-18x24",
@@ -1837,6 +1840,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -1858,7 +1862,7 @@
    "code": "BC38",
    "widthIn": 38,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "price": 345,
    "finishes": [
@@ -1869,7 +1873,7 @@
      "material": "wood"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-corner-base-carousel-38",
@@ -1883,6 +1887,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -1904,7 +1909,7 @@
    "code": "302.653.91",
    "widthIn": 15,
    "depthIn": 14.75,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "widthOptions": [
     15,
@@ -1920,7 +1925,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-base-shallow-15",
@@ -1934,6 +1939,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -3311,7 +3317,7 @@
    "code": "DB36",
    "widthIn": 36,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "price": 417,
    "finishes": [
@@ -3322,7 +3328,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-maximera-drawer-base-36",
@@ -3336,6 +3342,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -3357,7 +3364,7 @@
    "code": "S99497647",
    "widthIn": 18,
    "depthIn": 15,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "price": null,
    "finishes": [
@@ -3368,7 +3375,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-maximera-4-drawer-base-18",
@@ -3382,6 +3389,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -6618,7 +6626,7 @@
    "code": "P30",
    "widthIn": 30,
    "depthIn": 24,
-   "heightIn": 80,
+   "heightIn": 84.5,
    "elevationIn": 0,
    "price": 843,
    "finishes": [
@@ -6629,7 +6637,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 80″ cabinet box; on its 4½″ legs it stands 84.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-maximera-high-cabinet-30x80",
@@ -6643,6 +6651,7 @@
      "h": 80
     },
     "typical": [],
+    "note": "IKEA lists the 80″ cabinet box; on its 4½″ legs it stands 84.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -13423,6 +13432,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    30,
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -13432,7 +13446,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at RONA. The 25″ sink, drawn in a 30″ sink base cabinet.",
+   "blurb": "Listed at RONA. The 25″ sink, in a 30″, 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "blanco-formera-402242-25-single-undermount",
     "type": "sink-undermount",
@@ -13448,7 +13462,7 @@
      "depth",
      "height"
     ],
-    "note": "The 25″ sink, drawn in a 30″ sink base cabinet.",
+    "note": "The 25″ sink, in a 30″, 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "rona",
@@ -13637,7 +13651,7 @@
    "code": "SU{w}",
    "widthIn": 30,
    "depthIn": 24,
-   "heightIn": 30,
+   "heightIn": 34.5,
    "elevationIn": 0,
    "widthOptions": [
     30,
@@ -13652,7 +13666,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at IKEA.",
+   "blurb": "Listed at IKEA. IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
    "line": "SEKTION",
    "retail": {
     "key": "ikea-sektion-sink-base-30",
@@ -13666,6 +13680,7 @@
      "h": 30
     },
     "typical": [],
+    "note": "IKEA lists the 30″ cabinet box; on its 4½″ legs it stands 34.5″, drawn at that height.",
     "stores": [
      {
       "store": "ikea",
@@ -13738,6 +13753,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -13747,7 +13766,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 30″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 30″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "kraus-khu100-30-single-undermount",
     "type": "sink-undermount",
@@ -13763,7 +13782,7 @@
      "depth",
      "height"
     ],
-    "note": "The 30″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 30″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -13787,6 +13806,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -13796,7 +13819,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at RONA. The 30″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at RONA. The 30″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "kraus-kore-kwu110-30-workstation",
     "type": "sink-undermount",
@@ -13812,7 +13835,7 @@
      "depth",
      "height"
     ],
-    "note": "The 30″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 30″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "rona",
@@ -13885,6 +13908,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    30,
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -13894,7 +13922,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 27″ sink, drawn in a 30″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 27″ sink, in a 30″, 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "kraus-kwu110-27-workstation",
     "type": "sink-undermount",
@@ -13910,7 +13938,7 @@
      "depth",
      "height"
     ],
-    "note": "The 27″ sink, drawn in a 30″ sink base cabinet.",
+    "note": "The 27″ sink, in a 30″, 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -13983,6 +14011,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    30,
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -13992,7 +14025,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at RONA. The 27″ sink, drawn in a 30″ sink base cabinet.",
+   "blurb": "Listed at RONA. The 27″ sink, in a 30″, 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "stylish-s-627w-27x19-workstation",
     "type": "sink-undermount",
@@ -14008,7 +14041,7 @@
      "depth",
      "height"
     ],
-    "note": "The 27″ sink, drawn in a 30″ sink base cabinet.",
+    "note": "The 27″ sink, in a 30″, 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "rona",
@@ -14032,6 +14065,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": 470,
    "finishes": [
     {
@@ -14041,7 +14078,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 28″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 28″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "stylish-s-306xg-28x18-single-undermount",
     "type": "sink-undermount",
@@ -14057,7 +14094,7 @@
      "depth",
      "height"
     ],
-    "note": "The 28″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 28″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -14081,6 +14118,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -14090,7 +14131,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at RONA. The 30″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at RONA. The 30″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "stylish-s-311xg-30-single-undermount",
     "type": "sink-undermount",
@@ -14106,7 +14147,7 @@
      "depth",
      "height"
     ],
-    "note": "The 30″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 30″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "rona",
@@ -14226,6 +14267,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -14235,7 +14280,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at RONA. The 30″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at RONA. The 30″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "trustmade-tmkswsmsj3019-30x19-workstation",
     "type": "sink-undermount",
@@ -14251,7 +14296,7 @@
      "depth",
      "height"
     ],
-    "note": "The 30″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 30″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "rona",
@@ -14275,6 +14320,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -14284,7 +14333,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Hardware. The 27.5″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at Home Hardware. The 27.5″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "wessan-27-5x20-78-1-5-bowl-dropin",
     "type": "sink-undermount",
@@ -14300,7 +14349,7 @@
      "depth",
      "height"
     ],
-    "note": "The 27.5″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 27.5″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "home-hardware",
@@ -14324,6 +14373,10 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    33,
+    36
+   ],
    "price": null,
    "finishes": [
     {
@@ -14333,7 +14386,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Hardware. The 27.25″ sink, drawn in a 33″ sink base cabinet.",
+   "blurb": "Listed at Home Hardware. The 27.25″ sink, in a 33″ or 36″ sink base cabinet.",
    "retail": {
     "key": "wessan-27-25x18-1-5-bowl-dropin",
     "type": "sink-undermount",
@@ -14349,7 +14402,7 @@
      "depth",
      "height"
     ],
-    "note": "The 27.25″ sink, drawn in a 33″ sink base cabinet.",
+    "note": "The 27.25″ sink, in a 33″ or 36″ sink base cabinet.",
     "stores": [
      {
       "store": "home-hardware",
@@ -15115,6 +15168,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    24,
+    27,
+    30
+   ],
    "price": null,
    "finishes": [
     {
@@ -15124,7 +15182,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Hardware. The 21″ sink, drawn in a 24″ sink base cabinet.",
+   "blurb": "Listed at Home Hardware. The 21″ sink, in a 24″, 27″ or 30″ sink base cabinet.",
    "retail": {
     "key": "kindred-21x20-single-dropin",
     "type": "sink-prep",
@@ -15140,7 +15198,7 @@
      "depth",
      "height"
     ],
-    "note": "The 21″ sink, drawn in a 24″ sink base cabinet.",
+    "note": "The 21″ sink, in a 24″, 27″ or 30″ sink base cabinet.",
     "stores": [
      {
       "store": "home-hardware",
@@ -15164,6 +15222,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    27,
+    30,
+    33
+   ],
    "price": 380,
    "finishes": [
     {
@@ -15173,7 +15236,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 23″ sink, drawn in a 27″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 23″ sink, in a 27″, 30″ or 33″ sink base cabinet.",
    "retail": {
     "key": "kraus-khu101-23-single-undermount",
     "type": "sink-prep",
@@ -15189,7 +15252,7 @@
      "depth",
      "height"
     ],
-    "note": "The 23″ sink, drawn in a 27″ sink base cabinet.",
+    "note": "The 23″ sink, in a 27″, 30″ or 33″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -15213,6 +15276,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    24,
+    27,
+    30
+   ],
    "price": null,
    "finishes": [
     {
@@ -15222,7 +15290,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 18″ sink, drawn in a 24″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 18″ sink, in a 24″, 27″ or 30″ sink base cabinet.",
    "retail": {
     "key": "stylish-18x16-single-undermount",
     "type": "sink-prep",
@@ -15238,7 +15306,7 @@
      "depth",
      "height"
     ],
-    "note": "The 18″ sink, drawn in a 24″ sink base cabinet.",
+    "note": "The 18″ sink, in a 24″, 27″ or 30″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -15262,6 +15330,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    27,
+    30,
+    33
+   ],
    "price": null,
    "finishes": [
     {
@@ -15271,7 +15344,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 22″ sink, drawn in a 27″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 22″ sink, in a 27″, 30″ or 33″ sink base cabinet.",
    "retail": {
     "key": "stylish-s-622w-22-workstation",
     "type": "sink-prep",
@@ -15287,7 +15360,7 @@
      "depth",
      "height"
     ],
-    "note": "The 22″ sink, drawn in a 27″ sink base cabinet.",
+    "note": "The 22″ sink, in a 27″, 30″ or 33″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -15311,6 +15384,11 @@
    "depthIn": 24,
    "heightIn": 36,
    "elevationIn": 0,
+   "widthOptions": [
+    27,
+    30,
+    33
+   ],
    "price": null,
    "finishes": [
     {
@@ -15320,7 +15398,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Home Depot. The 22″ sink, drawn in a 27″ sink base cabinet.",
+   "blurb": "Listed at Home Depot. The 22″ sink, in a 27″, 30″ or 33″ sink base cabinet.",
    "retail": {
     "key": "stylish-22x19-single-undermount-accessories",
     "type": "sink-prep",
@@ -15336,7 +15414,7 @@
      "depth",
      "height"
     ],
-    "note": "The 22″ sink, drawn in a 27″ sink base cabinet.",
+    "note": "The 22″ sink, in a 27″, 30″ or 33″ sink base cabinet.",
     "stores": [
      {
       "store": "home-depot",
@@ -15565,7 +15643,7 @@
    "code": "17.66.62.20",
    "widthIn": 27.6,
    "depthIn": 7.9,
-   "heightIn": 63,
+   "heightIn": 10,
    "elevationIn": 68,
    "price": 59,
    "finishes": [
@@ -15576,7 +15654,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at Structube.",
+   "blurb": "Listed at Structube. Listed 63″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
    "retail": {
     "key": "structube-kirun-industrial-pendant-70cm",
     "type": "pendant-dome",
@@ -15589,6 +15667,7 @@
      "h": 63
     },
     "typical": [],
+    "note": "Listed 63″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
     "stores": [
      {
       "store": "structube",
@@ -16196,7 +16275,7 @@
    "code": "49.31.17.64",
    "widthIn": 11.8,
    "depthIn": 11.8,
-   "heightIn": 47.2,
+   "heightIn": 12,
    "elevationIn": 66,
    "price": 59,
    "finishes": [
@@ -16207,7 +16286,7 @@
      "material": "metal"
     }
    ],
-   "blurb": "Listed at Structube.",
+   "blurb": "Listed at Structube. Listed 47.2″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
    "retail": {
     "key": "structube-bina-globe-pendant-30cm",
     "type": "pendant-globe",
@@ -16220,6 +16299,7 @@
      "h": 47.2
     },
     "typical": [],
+    "note": "Listed 47.2″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
     "stores": [
      {
       "store": "structube",
@@ -16241,7 +16321,7 @@
    "code": "82.68.05.32",
    "widthIn": 12.6,
    "depthIn": 12.6,
-   "heightIn": 47.2,
+   "heightIn": 12,
    "elevationIn": 66,
    "price": 99,
    "finishes": [
@@ -16252,7 +16332,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at Structube.",
+   "blurb": "Listed at Structube. Listed 47.2″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
    "retail": {
     "key": "structube-trudy-amber-glass-pendant-32cm",
     "type": "pendant-globe",
@@ -16265,6 +16345,7 @@
      "h": 47.2
     },
     "typical": [],
+    "note": "Listed 47.2″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
     "stores": [
      {
       "store": "structube",
@@ -16626,7 +16707,7 @@
    "code": "72.53.51.64",
    "widthIn": 47.2,
    "depthIn": 9.1,
-   "heightIn": 47.2,
+   "heightIn": 5,
    "elevationIn": 70,
    "price": 59,
    "finishes": [
@@ -16643,7 +16724,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at Structube.",
+   "blurb": "Listed at Structube. Listed 47.2″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
    "retail": {
     "key": "structube-flint-linear-pendant-120cm",
     "type": "pendant-linear",
@@ -16656,6 +16737,7 @@
      "h": 47.2
     },
     "typical": [],
+    "note": "Listed 47.2″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
     "stores": [
      {
       "store": "structube",
@@ -16677,7 +16759,7 @@
    "code": "72.64.70.64",
    "widthIn": 47.2,
    "depthIn": 4.7,
-   "heightIn": 90.6,
+   "heightIn": 5,
    "elevationIn": 70,
    "price": 199,
    "finishes": [
@@ -16694,7 +16776,7 @@
      "material": "paint"
     }
    ],
-   "blurb": "Listed at Structube.",
+   "blurb": "Listed at Structube. Listed 90.6″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
    "retail": {
     "key": "structube-ulani-linear-pendant-120cm",
     "type": "pendant-linear",
@@ -16707,6 +16789,7 @@
      "h": 90.6
     },
     "typical": [],
+    "note": "Listed 90.6″ overall with its cord or rod; drawn as the shade at the usual hanging height.",
     "stores": [
      {
       "store": "structube",
