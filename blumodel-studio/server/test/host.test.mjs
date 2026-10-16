@@ -432,3 +432,300 @@ test('register-tasks on Linux without root refuses before writing a unit', { ski
   assert.equal(r.status, 1);
   assert.match(r.stderr, /needs root/);
 });
+
+// ── 3. install, build and update ─────────────────────────────────────────
+
+const MB = 1024 * 1024;
+
+test('the build’s memory guard: half the RAM (1024-2048 MB heap); refused with the swap-file fix under 2 GB of RAM + swap', async () => {
+  const { buildMemoryPlan, parseMeminfo, machineMemory } = await import('../../scripts/host/lib.mjs');
+  const wyse4 = buildMemoryPlan({ ram: 3800 * MB, swap: 0, platform: 'linux' });
+  assert.deepEqual([wyse4.ok, wyse4.heapMb], [true, 1900], 'a 4 GB Wyse');
+  assert.equal(buildMemoryPlan({ ram: 7800 * MB, swap: 2048 * MB }).heapMb, 2048, 'capped at 2 GB');
+  assert.deepEqual(buildMemoryPlan({ ram: 1024 * MB, swap: 1024 * MB }), { ok: true, ramMb: 1024, swapMb: 1024, heapMb: 1024, message: 'Building with a 1024 MB heap (RAM 1024 MB, swap 1024 MB).' });
+  const small = buildMemoryPlan({ ram: 1500 * MB, swap: 0, platform: 'linux' });
+  assert.equal(small.ok, false);
+  assert.match(small.message, /1500 MB of RAM and 0 MB of swap\. Building BluModel Studio needs about 2048 MB/);
+  assert.match(small.message, /sudo fallocate -l 2G \/swapfile && sudo chmod 600 \/swapfile && sudo mkswap \/swapfile && sudo swapon \/swapfile/);
+  assert.match(small.message, /deploy-local\.mjs --dist <folder>/);
+  assert.match(buildMemoryPlan({ ram: 1500 * MB, platform: 'win32' }).message, /Virtual memory/);
+  assert.deepEqual(parseMeminfo('MemTotal:        3891204 kB\nMemFree:  100 kB\nSwapTotal:       2097148 kB\n'), { ram: 3891204 * 1024, swap: 2097148 * 1024 });
+  assert.deepEqual(parseMeminfo(''), { ram: 0, swap: 0 });
+  assert.deepEqual(machineMemory({ platform: 'linux', readFile: () => 'MemTotal: 4000 kB\nSwapTotal: 1000 kB\n' }), { ram: 4000 * 1024, swap: 1000 * 1024 });
+  assert.deepEqual(machineMemory({ platform: 'win32', totalmem: () => 42 }), { ram: 42, swap: 0 });
+});
+
+test('build.mjs: build-kit then vite into dist with NODE_OPTIONS=--max-old-space-size; --dry-run prints them and builds nothing', async () => {
+  const { buildSteps } = await import('../../scripts/host/build.mjs');
+  const steps = buildSteps({ root: '/srv/blumodel-studio/repo/blumodel-studio', heapMb: 1900, node: '/usr/bin/node', out: 'dist' });
+  assert.deepEqual(steps.map((s) => s.env), [{ NODE_OPTIONS: '--max-old-space-size=1900' }, { NODE_OPTIONS: '--max-old-space-size=1900' }]);
+  assert.match(steps[0].args[0], /scripts[\\/]build-kit\.mjs$/);
+  assert.match(steps[1].args[0], /node_modules[\\/]vite[\\/]bin[\\/]vite\.js$/);
+  assert.deepEqual(steps[1].args.slice(1), ['build', '--outDir', 'dist', '--emptyOutDir']);
+  const r = spawnSync(NODE, [path.join(ROOT, 'scripts', 'host', 'build.mjs'), '--dry-run', '--out', '.build/never'], { encoding: 'utf8', windowsHide: true, timeout: 60_000 });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Building with a \d+ MB heap/);
+  assert.match(r.stdout, /\+ NODE_OPTIONS=--max-old-space-size=\d+ .*vite\.js.* build --outDir \.build\/never --emptyOutDir/);
+  assert.ok(!fs.existsSync(path.join(ROOT, '.build', 'never')));
+  assert.equal(spawnSync(NODE, [path.join(ROOT, 'scripts', 'host', 'build.mjs'), '--bogus'], { windowsHide: true }).status, 2);
+});
+
+test('update: the home is the one the checkout sits in (<home>/repo/blumodel-studio), else the platform’s default; npm runs from npm-cli.js beside node', async () => {
+  const { inferHome, npmCommand } = await import('../../scripts/host/update.mjs');
+  const has = (set) => (p) => set.includes(p.replace(/\\/g, '/'));
+  assert.equal(inferHome('/srv/blumodel-studio/repo/blumodel-studio', { platform: 'linux', exists: has(['/srv/blumodel-studio/data']) }), '/srv/blumodel-studio');
+  assert.equal(inferHome('/opt/bms/repo/blumodel-studio', { platform: 'linux', exists: has(['/opt/bms/app']) }), '/opt/bms');
+  assert.equal(inferHome('/home/me/code/blumodel-studio', { platform: 'linux', exists: () => true }), '/srv/blumodel-studio', 'a checkout elsewhere: the default home');
+  assert.equal(inferHome('D:\\BMS\\repo\\blumodel-studio', { platform: 'win32', exists: has(['D:/BMS/data']) }), 'D:\\BMS');
+  assert.deepEqual(npmCommand({ platform: 'linux', node: '/usr/bin/node', exists: () => true }), { cmd: '/usr/bin/node', pre: ['/usr/lib/node_modules/npm/bin/npm-cli.js'], shell: false });
+  assert.deepEqual(npmCommand({ platform: 'win32', node: 'C:\\Program Files\\nodejs\\node.exe', exists: () => true }), { cmd: 'C:\\Program Files\\nodejs\\node.exe', pre: ['C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js'], shell: false });
+  assert.deepEqual(npmCommand({ platform: 'linux', exists: () => false }), { cmd: 'npm', pre: [], shell: false });
+});
+
+/**
+ * A fake machine for runUpdate: records every command, answers git questions, and returns the
+ * deploy's and rollback's exit codes from `codes`.
+ */
+function fakeExec({ dirty = '', pullStatus = 0, commit = 'new5678', deploy = 0, rollback = 0, npm = 0, build = 0 } = {}) {
+  const calls = [];
+  const exec = (cmd, args, opts) => {
+    const all = [cmd, ...args];
+    calls.push({ line: all.join(' '), env: opts.env ?? null });
+    const has = (s) => all.some((a) => String(a).endsWith(s) || a === s);
+    if (has('status')) return { status: 0, stdout: dirty };
+    if (has('pull')) return { status: pullStatus, stdout: '' };
+    if (has('rev-parse')) return { status: 0, stdout: `${commit}\n` };
+    if (has('ci')) return { status: npm, stdout: '' };
+    if (all.some((a) => /build\.mjs$/.test(a))) return { status: build, stdout: '' };
+    if (has('--rollback')) return { status: rollback, stdout: '' };
+    if (all.some((a) => /deploy-local\.mjs$/.test(a))) return { status: deploy, stdout: '' };
+    return { status: 0, stdout: '' };
+  };
+  return { exec, calls };
+}
+
+/** A home whose app/DEPLOYED.txt says `commit`. */
+function homeWithApp(commit) {
+  const home = tempDir('blumodel-uphome-');
+  fs.mkdirSync(path.join(home, 'app'), { recursive: true });
+  if (commit) fs.writeFileSync(path.join(home, 'app', 'DEPLOYED.txt'), `commit ${commit}\n`);
+  return home;
+}
+
+test('runUpdate: refuses on local changes or a pull that can’t fast-forward; stops when the commit is already deployed; otherwise npm ci, build, deploy in that order', async () => {
+  const { runUpdate } = await import('../../scripts/host/update.mjs');
+  const home = homeWithApp('old1234');
+  try {
+    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, out: () => {} };
+    let f = fakeExec({ dirty: ' M src/app.tsx\n' });
+    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.equal(f.calls.length, 1, 'stopped after git status');
+
+    f = fakeExec({ pullStatus: 1 });
+    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.ok(!f.calls.some((c) => / ci /.test(` ${c.line} `)), 'nothing installed');
+
+    f = fakeExec({ commit: 'old1234' });
+    assert.deepEqual(runUpdate({ ...base, exec: f.exec }), { code: EXIT.OK, deployed: 'old1234' });
+    assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'already deployed: nothing redeployed');
+    f = fakeExec({ commit: 'old1234' });
+    assert.equal(runUpdate({ ...base, exec: f.exec, force: true }).deployed, 'old1234', '--force redeploys');
+    assert.ok(f.calls.some((c) => /deploy-local/.test(c.line)));
+
+    f = fakeExec({ npm: 1 });
+    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'a failed npm ci never reaches the deploy');
+    f = fakeExec({ build: 1 });
+    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'a failed build never reaches the deploy');
+
+    f = fakeExec();
+    const out = [];
+    assert.deepEqual(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }), { code: EXIT.OK, deployed: 'new5678' });
+    const order = f.calls.map((c) => (/status/.test(c.line) ? 'status' : /pull/.test(c.line) ? 'pull' : /rev-parse/.test(c.line) ? 'rev-parse' : / ci /.test(` ${c.line} `) ? 'ci' : /build\.mjs/.test(c.line) ? 'build' : /deploy-local/.test(c.line) ? 'deploy' : c.line));
+    assert.deepEqual(order, ['status', 'pull', 'rev-parse', 'ci', 'build', 'deploy']);
+    const deploy = f.calls.at(-1);
+    assert.match(deploy.line, /deploy-local\.mjs --dist .*dist --commit new5678$/);
+    assert.deepEqual(deploy.env, { BLUMODEL_HOME: home }, 'deploys into the home it checked');
+    assert.match(out.join('\n'), /Updated: commit new5678 is running\./);
+  } finally {
+    rm(home);
+  }
+});
+
+test('runUpdate rolls back when the new app fails its health check (deploy exit 3), never when the deploy refused; a failed rollback says the site may be down', async () => {
+  const { runUpdate } = await import('../../scripts/host/update.mjs');
+  const home = homeWithApp('old1234');
+  try {
+    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform };
+    let out = [];
+    let f = fakeExec({ deploy: EXIT.UNHEALTHY });
+    assert.equal(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }).code, EXIT.REFUSED);
+    assert.match(f.calls.at(-1).line, /deploy-local\.mjs --rollback$/);
+    assert.deepEqual(f.calls.at(-1).env, { BLUMODEL_HOME: home });
+    assert.match(out.join('\n'), /ROLLED BACK: commit old1234 is running again; new5678 did not start healthy/);
+
+    out = [];
+    f = fakeExec({ deploy: EXIT.UNHEALTHY, rollback: EXIT.UNHEALTHY });
+    assert.equal(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }).code, EXIT.UNHEALTHY);
+    assert.match(out.join('\n'), /THE ROLLBACK FAILED TOO/);
+
+    f = fakeExec({ deploy: EXIT.REFUSED });
+    assert.equal(runUpdate({ ...base, exec: f.exec, out: () => {} }).code, EXIT.REFUSED);
+    assert.ok(!f.calls.some((c) => /--rollback/.test(c.line)), 'nothing was swapped, so nothing to roll back');
+
+    // The script changed with the pull: hand over to the new one before doing anything else.
+    f = fakeExec();
+    assert.deepEqual(runUpdate({ ...base, exec: f.exec, out: () => {}, afterPull: () => true }), { code: EXIT.OK, reexec: true });
+    assert.deepEqual(f.calls.map((c) => c.line.split(' ').slice(-2).join(' ')), ['--porcelain --untracked-files=no', 'pull --ff-only']);
+  } finally {
+    rm(home);
+  }
+});
+
+test('runUpdate on Linux as root: git, npm and the build run as the checkout’s owner (runuser, HOME = the home); the deploy and rollback run as root', async () => {
+  const { runUpdate } = await import('../../scripts/host/update.mjs');
+  const f = fakeExec({ deploy: EXIT.UNHEALTHY });
+  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {} });
+  const svc = 'runuser -u blumodel -- env HOME=/srv/blumodel-studio PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
+  const lines = f.calls.map((c) => c.line);
+  assert.equal(lines[0], `${svc} git -C /srv/blumodel-studio/repo/blumodel-studio status --porcelain --untracked-files=no`);
+  assert.equal(lines[1], `${svc} git -C /srv/blumodel-studio/repo/blumodel-studio pull --ff-only`);
+  assert.ok(lines.some((l) => l.startsWith(svc) && / ci --no-audit --no-fund$/.test(l)), 'npm ci as blumodel');
+  assert.ok(lines.includes(`${svc} /usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/host/build.mjs --out dist`));
+  assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/dist --commit new5678'));
+  assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --rollback'));
+});
+
+test('update.mjs --dry-run --platform linux prints the whole plan, the rollback it would run, and runs nothing; --platform needs --dry-run', () => {
+  const cli = (...a) => spawnSync(NODE, [path.join(ROOT, 'scripts', 'host', 'update.mjs'), ...a], { encoding: 'utf8', windowsHide: true, timeout: 60_000, env: cleanEnv() });
+  const r = cli('--dry-run', '--platform', 'linux');
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  for (const re of [
+    /checkout \/srv\/blumodel-studio\/repo\/blumodel-studio, home \/srv\/blumodel-studio/,
+    /\+ runuser -u blumodel -- .* git -C \/srv\/blumodel-studio\/repo\/blumodel-studio pull --ff-only/,
+    /\+ runuser -u blumodel -- .* npm ci --no-audit --no-fund/,
+    /\+ runuser -u blumodel -- .* \/usr\/bin\/node .*build\.mjs --out dist/,
+    /\+ BLUMODEL_HOME=\/srv\/blumodel-studio \/usr\/bin\/node .*deploy-local\.mjs --dist .*dist --commit/,
+    /Only if that health check fails: rolling back/,
+    /\+ BLUMODEL_HOME=\/srv\/blumodel-studio \/usr\/bin\/node .*deploy-local\.mjs --rollback/,
+    /Dry run: nothing was pulled, built, deployed or restarted\./,
+  ])
+    assert.match(r.stdout, re);
+  if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, EXIT.USAGE);
+  assert.equal(cli('--bogus').status, EXIT.USAGE);
+});
+
+// ── the scripts themselves ───────────────────────────────────────────────
+
+const HOST_DIR = path.join(ROOT, 'scripts', 'host');
+const shellScripts = fs.readdirSync(HOST_DIR).filter((f) => f.endsWith('.sh'));
+
+/** A real bash: on Windows Git's (never System32\bash.exe, the WSL launcher, which has no Linux here). */
+function findBash() {
+  if (!WIN) return spawnSync('bash', ['--version'], { encoding: 'utf8' }).status === 0 ? 'bash' : null;
+  const roots = [process.env.ProgramW6432, process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs')].filter(Boolean);
+  for (const r of roots) for (const rel of ['Git\\bin\\bash.exe', 'Git\\usr\\bin\\bash.exe']) if (fs.existsSync(path.join(r, rel))) return path.join(r, rel);
+  return null;
+}
+const BASH = findBash();
+
+test('every shell script: LF line ends only, a bash shebang, `set -euo pipefail`, and `bash -n` passes', { skip: !BASH && 'no bash here' }, () => {
+  assert.deepEqual(shellScripts.sort(), ['install-linux.sh', 'update-linux.sh']);
+  assert.match(fs.readFileSync(path.join(HOST_DIR, '.gitattributes'), 'utf8'), /^\*\.sh text eol=lf$/m);
+  for (const f of shellScripts) {
+    const file = path.join(HOST_DIR, f);
+    const text = fs.readFileSync(file, 'utf8');
+    assert.ok(!text.includes('\r'), `${f} has CR characters`);
+    assert.ok(text.startsWith('#!/usr/bin/env bash\n'), f);
+    assert.match(text, /^set -euo pipefail$/m, f);
+    assert.ok(/^[\x00-\x7f]*$/.test(text), `${f} is ASCII`);
+    const r = spawnSync(BASH, ['-n', file], { encoding: 'utf8', windowsHide: true });
+    assert.equal(r.status, 0, `bash -n ${f}: ${r.stderr}`);
+  }
+});
+
+test('install-linux.sh --dry-run prints every step (apt repos, the account, the sparse clone, npm ci, the build, the units, the deploy, the tunnel config) and runs none', { skip: !BASH && 'no bash here', timeout: 120_000 }, () => {
+  // A PATH without node or cloudflared on Windows, so the NodeSource and Cloudflare steps show too.
+  const env = cleanEnv(WIN ? { PATH: '/usr/bin:/bin' } : {});
+  const run = (...a) => spawnSync(BASH, [path.join(HOST_DIR, 'install-linux.sh'), ...a], { encoding: 'utf8', windowsHide: true, timeout: 90_000, env });
+  const r = run('--dry-run', '--home', '/srv/blumodel-dryrun', '--port', '8899');
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+  const o = r.stdout;
+  for (const re of [
+    /DRY RUN: every command is printed/,
+    /\+ useradd --system --user-group --home-dir \/srv\/blumodel-dryrun --no-create-home --shell \/usr\/sbin\/nologin --comment BluModel\\ Studio blumodel/,
+    /\+ install -d -m 0750 -o blumodel -g blumodel \/srv\/blumodel-dryrun \/srv\/blumodel-dryrun\/data \/srv\/blumodel-dryrun\/logs/,
+    /\+ install -d -m 0700 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/\.cloudflared/,
+    /\+ runuser -u blumodel -- env -C \/srv\/blumodel-dryrun HOME=\/srv\/blumodel-dryrun PATH=\S+ git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git \/srv\/blumodel-dryrun\/repo/,
+    /git sparse-checkout set blumodel-studio/,
+    /env -C \/srv\/blumodel-dryrun\/repo\/blumodel-studio HOME=\/srv\/blumodel-dryrun PATH=\S+ npm ci --no-audit --no-fund/,
+    /node scripts\/host\/build\.mjs --out dist/,
+    /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/register-tasks\.mjs --home \/srv\/blumodel-dryrun --user blumodel --port 8899 --node \S+ --cloudflared \S+/,
+    /\+ env BLUMODEL_HOME=\/srv\/blumodel-dryrun BLUMODEL_PORT=8899 node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/deploy-local\.mjs --dist \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/dist --commit/,
+    /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/tunnel\/setup-tunnel\.mjs --home \/srv\/blumodel-dryrun --port 8899 --validate/,
+    /sudo systemctl enable --now blumodel-tunnel/,
+    /Dry run: nothing was installed, written, started or changed\./,
+  ])
+    assert.match(o, re);
+  if (/Installing Node\.js/.test(o)) {
+    assert.match(o, /\+ curl -fsSL https:\/\/deb\.nodesource\.com\/gpgkey\/nodesource-repo\.gpg\.key \| gpg --dearmor --yes -o \/etc\/apt\/keyrings\/nodesource\.gpg/);
+    assert.match(o, /deb \[signed-by=\/etc\/apt\/keyrings\/nodesource\.gpg\] https:\/\/deb\.nodesource\.com\/node_24\.x nodistro main/);
+    assert.match(o, /apt-get install -y nodejs/);
+  }
+  if (/Installing cloudflared/.test(o)) {
+    assert.match(o, /\+ curl -fsSL https:\/\/pkg\.cloudflare\.com\/cloudflare-main\.gpg -o \/usr\/share\/keyrings\/cloudflare-main\.gpg/);
+    assert.match(o, /deb \[signed-by=\/usr\/share\/keyrings\/cloudflare-main\.gpg\] https:\/\/pkg\.cloudflare\.com\/cloudflared any main/);
+    assert.match(o, /apt-get install -y cloudflared/);
+  }
+  // The tunnel is never started by the install, and no command line carries a secret.
+  assert.doesNotMatch(o, /^\+ .*systemctl (start|enable).*blumodel-tunnel/m);
+  assert.doesNotMatch(o, /^\+ .*(cloudflared (tunnel|service) (run|login|route|create|delete|token|install)|--token)/m);
+  // Bad input is refused before anything.
+  assert.equal(run('--home', 'relative/path').status, 1);
+  assert.equal(run('--home', '/srv/with space').status, 1);
+  assert.equal(run('--frobnicate').status, 2);
+});
+
+test('update-linux.sh: needs sudo (unless --dry-run) and hands everything to update.mjs', { skip: !BASH && 'no bash here' }, () => {
+  const text = fs.readFileSync(path.join(HOST_DIR, 'update-linux.sh'), 'utf8');
+  assert.match(text, /exec node "\$APP_SRC\/scripts\/host\/update\.mjs" "\$@"/);
+  if (!WIN && process.getuid?.() !== 0) {
+    const r = spawnSync(BASH, [path.join(HOST_DIR, 'update-linux.sh')], { encoding: 'utf8' });
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /Run it with sudo/);
+  }
+});
+
+test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (never installing software, never starting the tunnel) and changes nothing', { skip: !WIN, timeout: 120_000 }, () => {
+  const file = path.join(HOST_DIR, 'install-windows.ps1');
+  const text = fs.readFileSync(file, 'utf8');
+  assert.ok(/^[\x00-\x7f]*$/.test(text), 'Windows PowerShell 5.1 reads a BOM-less script as ANSI: keep it ASCII');
+  assert.doesNotMatch(text.replace(/^\s*#.*$/gm, ''), /winget install(?![^'"]*['"])/, 'winget only appears inside printed text');
+  const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const parse = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-Command', `$t=$null;$e=$null;[void][System.Management.Automation.Language.Parser]::ParseFile('${file}',[ref]$t,[ref]$e);$e.Count`], { encoding: 'utf8', windowsHide: true });
+  assert.equal(parse.stdout.trim(), '0', parse.stdout + parse.stderr);
+  const dir = tempDir('blumodel-winst-');
+  const home = path.join(dir, 'Home');
+  try {
+    const r = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file, '-DryRun', '-HomeDir', home, '-Port', '8903'], { encoding: 'utf8', windowsHide: true, timeout: 90_000, env: cleanEnv() });
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const o = r.stdout;
+    for (const re of [
+      /git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git .*Home\\repo/,
+      /sparse-checkout set blumodel-studio/,
+      /\+ npm\.cmd ci --no-audit --no-fund/,
+      /\+ node scripts\\host\\build\.mjs --out dist/,
+      /\+ node scripts\\deploy-local\.mjs --dist .*Home\\repo\\blumodel-studio\\dist --commit <commit>/,
+      /\+ node scripts\\tunnel\\setup-tunnel\.mjs --home .*Home --port 8903 --validate/,
+      /\+ node scripts\\register-tasks\.mjs --home .*Home --at-startup --only server/,
+      /--at-startup --only tunnel/,
+      /Dry run: nothing was installed, written, started or changed\./,
+    ])
+      assert.match(o, re);
+    assert.doesNotMatch(o, /^\+ .*schtasks \/Run \/TN BluModelTunnel/m, 'the tunnel is never started by the install');
+    assert.ok(!fs.existsSync(home), 'nothing was made');
+  } finally {
+    rm(dir);
+  }
+});

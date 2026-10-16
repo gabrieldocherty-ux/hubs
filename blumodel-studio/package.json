@@ -21,6 +21,8 @@
     "home:tasks": "node scripts/register-tasks.mjs",
     "tunnel:setup": "node scripts/tunnel/setup-tunnel.mjs",
     "stripe:check": "node --no-warnings scripts/stripe-check.mjs",
+    "host:build": "node scripts/host/build.mjs",
+    "host:update": "node scripts/host/update.mjs",
     "data:export": "node --no-warnings server/scripts/export-data.mjs",
     "data:import": "node --no-warnings server/scripts/import-data.mjs",
     "data:restore": "node --no-warnings server/scripts/restore.mjs"
