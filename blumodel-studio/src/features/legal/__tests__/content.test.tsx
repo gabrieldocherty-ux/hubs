@@ -74,3 +74,11 @@ test('the pages cover what the product does: paid exports, cancelling at period 
       assert.deepEqual(nums, nums.map((_, i) => i + 1), `${id} ${payments}`);
     }
 });
+
+test('the Terms describe custom models as part of the Contractor plan: no tiers, no Model pack, no per-model or rush price', () => {
+  for (const payments of ['stripe', 'demo', null] as const) {
+    const t = text('terms', QA_LEGAL, payments).plain;
+    assert.doesNotMatch(t, /model pack|\bpacks?\b|\btiers?\b|\brush\b|\$129|\$279|\$549/i, `terms (${payments})`);
+    assert.match(t, /3 custom 3D models a month/);
+  }
+});
