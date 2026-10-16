@@ -17,6 +17,7 @@ import { requestExport, useEntitlements } from '../features/billing';
 import { ClientViewToggle, useKitchenPriceOf, usePriceBook, useShowCosts } from '../features/contractors';
 import { ContractorFinder } from '../features/finder';
 import { priceFor } from '../data/catalog';
+import { atStoreNote, pricedAtStore } from '../lib/estimate';
 import type { EstimateExtra } from '../types';
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (v: number) => void }) {
@@ -57,7 +58,10 @@ function Inspector() {
   const wall = flushWall(r, room);
   const issues = report.checks.filter((c) => c.itemIds.includes(item.id) && (c.level === 'bad' || c.level === 'warn'));
   // A contractor sees their sell price here, like their client will.
-  const price = priceOf ? priceOf(product, w).sell : priceFor(product, w);
+  const quote = priceOf ? priceOf(product, w) : null;
+  const price = quote ? quote.sell : priceFor(product, w);
+  // A retail product with no checked store price has no price to show (its typical one is only for sorting).
+  const atStore = pricedAtStore(product, quote);
   const flippable = (product.kind === 'door' && product.variant === 'single') || product.kind === 'corner' || (product.kind === 'fridge' && product.variant === 'column');
 
   return (
@@ -74,7 +78,7 @@ function Inspector() {
       </div>
       <p className="insp-blurb">{product.blurb}</p>
       <div className="insp-price">
-        <span className="mono">{missing ? 'Price unavailable' : money(price)}</span>
+        <span className={atStore ? 'insp-at-store' : 'mono'}>{missing ? 'Price unavailable' : atStore ? 'Price at store' : money(price)}</span>
         <span className="muted">{inches(w)} W × {inches(product.depthIn)} D × {inches(product.heightIn)} H{product.elevationIn > 0 ? ` · mounted at ${inches(product.elevationIn)}` : ''}</span>
       </div>
 
@@ -344,8 +348,8 @@ function EstimatePanel() {
                 ))}
             </div>
             <div className="mono">
-              <span>{l.qty} {l.unit} × {money(l.unitPrice)}</span>
-              <b>{money(l.total)}</b>
+              <span>{l.atStore ? `${l.qty} ${l.unit}` : `${l.qty} ${l.unit} × ${money(l.unitPrice)}`}</span>
+              <b className={l.atStore ? 'est-at-store' : undefined}>{l.atStore ? 'Price at store' : money(l.total)}</b>
             </div>
           </div>
         ))}
@@ -361,6 +365,7 @@ function EstimatePanel() {
       >
         {canExport ? <Download /> : <Lock />} Download shopping list (CSV)
       </button>
+      {est.atStore > 0 && <p className="fine est-at-store-note">{atStoreNote(est.atStore)}</p>}
       {est.hasBuiltin && <p className="fine">{PLACEHOLDER_PRICES_NOTE}</p>}
       <p className="fine">{VISUALIZER_DISCLAIMER}</p>
     </div>

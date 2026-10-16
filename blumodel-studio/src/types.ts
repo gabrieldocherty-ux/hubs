@@ -88,6 +88,11 @@ export interface Product {
   elevationIn: number;
   widthOptions?: number[];
   price: number;
+  /**
+   * A retail product with no checked store price: `price` is only a typical one (BluModel Basics
+   * of the same type) for sorting, and estimates show "Price at store" and leave it out of the total.
+   */
+  priceAtStore?: boolean;
   /** `'cabinet'` means the shared cabinet finish palette. */
   finishes: Finish[] | 'cabinet';
   blurb: string;

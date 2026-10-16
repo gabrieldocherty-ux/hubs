@@ -1490,6 +1490,12 @@ kbd {
   font-size: 12px;
 }
 
+/* A retail product with no checked store price (src/lib/estimate.ts pricedAtStore). */
+.insp-price .insp-at-store {
+  font-size: 15px;
+  font-weight: 500;
+}
+
 .insp-issues {
   display: flex;
   flex-direction: column;
@@ -1910,6 +1916,11 @@ kbd {
 
 .est-line > div:last-child b {
   font-weight: 500;
+}
+
+.est-line > div:last-child b.est-at-store {
+  font-family: var(--font-ui, inherit);
+  color: var(--ink-2);
 }
 
 .fine {

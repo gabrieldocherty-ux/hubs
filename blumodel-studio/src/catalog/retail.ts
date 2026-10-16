@@ -82,7 +82,7 @@ function basicFor(kind: Kind, variant?: string): Product | undefined {
 export function toProduct(w: RetailWire): Product {
   const { retail: _retail, price, ...rest } = w;
   const basic = price === null ? basicFor(w.kind, w.variant) : undefined;
-  return { ...rest, sku: w.code, price: price ?? (basic ? priceFor(basic, w.widthIn) : 0), source: 'brand' };
+  return { ...rest, sku: w.code, price: price ?? (basic ? priceFor(basic, w.widthIn) : 0), ...(price === null ? { priceAtStore: true } : {}), source: 'brand' };
 }
 
 interface RetailState {

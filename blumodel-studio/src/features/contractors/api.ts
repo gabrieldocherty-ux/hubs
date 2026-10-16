@@ -70,6 +70,8 @@ export interface QuoteLine {
   unit: string;
   unitPrice: number;
   total: number;
+  /** A retail product with no checked store price: "Price at store", not in the total. */
+  atStore?: boolean;
 }
 
 export interface Quote {
@@ -86,6 +88,8 @@ export interface Quote {
   validUntil: number;
   notes: string;
   hasBuiltin: boolean;
+  /** Items priced at the store, left out of the total (absent from older servers). */
+  atStore?: number;
   disclaimer: string;
 }
 

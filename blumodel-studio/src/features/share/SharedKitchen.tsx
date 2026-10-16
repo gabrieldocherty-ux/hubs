@@ -9,6 +9,7 @@ import { navigate, navigateHash, signinHref } from '../../lib/router';
 import { track } from '../../lib/track';
 import { resolveFinish } from '../../lib/finish';
 import { VISUALIZER_DISCLAIMER } from '../../lib/csv';
+import { atStoreNote } from '../../lib/estimate';
 import { getProduct, isBuiltin } from '../../data/catalog';
 import { useDesignStore } from '../../store/useDesignStore';
 import { useEstimate } from '../../store/derived';
@@ -337,7 +338,7 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
                   </span>
                 </span>
                 <span className="share-plist-qty">×{l.qty}</span>
-                {wire.showPrices && <span className="share-plist-price mono">{money(l.total)}</span>}
+                {wire.showPrices && <span className={l.atStore ? 'share-plist-price' : 'share-plist-price mono'}>{l.atStore ? 'Price at store' : money(l.total)}</span>}
               </li>
             );
           })}
@@ -349,6 +350,7 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
           <b className="mono">{money(total)}</b>
         </p>
       )}
+      {wire.showPrices && est.atStore > 0 && <p className="share-plist-note">{atStoreNote(est.atStore)}</p>}
       <p className="share-plist-note">
         {pro
           ? `Prices are ${pro.company}’s. Contact them to order or to change anything.`
