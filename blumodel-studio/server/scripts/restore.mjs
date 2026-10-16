@@ -12,11 +12,13 @@
 // --db <file>, --uploads <dir>, --port <n>, else DB_PATH, UPLOAD_DIR, BACKUP_DIR and PORT, else the
 // home this script runs from (<home>/app/server/scripts/restore.mjs → <home>/data/blumodel.db). The
 // database being replaced is kept as <db>.before-restore-<time>, never deleted. On Linux, run it as
-// the server's account (sudo -u blumodel node ...) so the restored files stay that account's.
+// the server's account (sudo -u blumodel node ...) or with sudo: as root, what it restores is given
+// to the account that owns the data folder, so the server can still write it.
 //
 // To move the data to another machine instead, see export-data.mjs / import-data.mjs
 // (docs/MOVING_DATA.md).
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { assertServerStopped, listDaily, restoreBackup, restoreUploads, scriptConfig, SERVICE_HINTS } from '../ops/backup.mjs';
 
@@ -54,11 +56,29 @@ try {
   console.error(err.message);
   process.exit(1);
 }
+/** Run with sudo on Linux: what this wrote goes to the account that owns the data folder (the server's). */
+function giveToDataOwner(paths) {
+  if (process.platform === 'win32' || process.getuid?.() !== 0) return;
+  const { uid, gid } = fs.statSync(path.dirname(config.DB_PATH));
+  if (uid === 0) return;
+  const walk = (p) => {
+    try {
+      fs.lchownSync(p, uid, gid);
+      if (fs.lstatSync(p).isDirectory()) for (const n of fs.readdirSync(p)) walk(path.join(p, n));
+    } catch {
+      /* gone or not ours */
+    }
+  };
+  for (const p of paths) if (fs.existsSync(p)) walk(p);
+}
+
 try {
   const r = restoreBackup({ backupFile: from, dbPath: config.DB_PATH });
+  giveToDataOwner([config.DB_PATH]);
   console.log(`Restored ${from} to ${r.restored}.${r.keptAs ? ` The database it replaced is kept as ${r.keptAs}.` : ''}`);
   if (argv.includes('--uploads')) {
     const n = restoreUploads({ mirrorDir: path.join(config.BACKUP_DIR, 'uploads-mirror'), uploadDir: config.UPLOAD_DIR });
+    giveToDataOwner([config.UPLOAD_DIR]);
     console.log(`Copied ${n} missing upload(s) back from the mirror.`);
   }
   console.log(`Start the server again (${SERVICE_HINTS.start}).`);
