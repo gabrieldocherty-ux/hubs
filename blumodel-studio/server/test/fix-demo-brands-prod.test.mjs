@@ -33,8 +33,12 @@ test('production: demo brands are left out of the catalog, the wizard brand list
   }
 });
 
-test('outside production the demo brands show (QA and the demo server use them)', async () => {
-  const s = await seeded({});
+for (const [label, env] of [
+  ['outside production', {}],
+  ['in production with SHOW_DEMO_BRANDS=1 (QA, a demo server)', { NODE_ENV: 'production', SHOW_DEMO_BRANDS: '1' }],
+])
+test(`${label} the demo brands show`, async () => {
+  const s = await seeded(env);
   try {
     const anon = s.agent();
     const cat = await anon.get('/api/catalog');

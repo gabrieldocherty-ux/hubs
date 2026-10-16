@@ -299,7 +299,7 @@ export default function routes(ctx) {
     pages.syncVisibilityDue();
     let b = pages.bySlug(slug);
     if (b) b = pages.syncVisibility(b);
-    if (!b || b.status !== 'active' || (config.PROD && b.isDemo)) throw new HttpError(404, 'This page is unavailable.');
+    if (!b || b.status !== 'active' || (!config.SHOW_DEMO_BRANDS && b.isDemo)) throw new HttpError(404, 'This page is unavailable.');
     return b;
   };
 

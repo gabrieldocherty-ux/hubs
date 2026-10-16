@@ -103,6 +103,7 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `PUBLIC_URL` | `https://blumodel.studio` | checkout success/cancel/portal return links and the webhook check; never taken from a request |
 | `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing and reserves nothing** (signing up or changing an email to a listed address is like any other). Admins are made with `make-admin` (below) |
 | `DEMO_PAYMENTS` | `0` | `1` allows the labelled DEMO checkout in production when Stripe isn't set (never with a live key) |
+| `SHOW_DEMO_BRANDS` | `0` | `1` shows the seeded "(Demo)" brands, their products and pages in production (QA sets it); without it production hides every `is_demo` brand |
 | `TRUST_PROXY` | `1` | believe `CF-Connecting-IP` / `X-Forwarded-For` / `X-Forwarded-Proto` from 127.0.0.1 (per-visitor rate limits, Secure cookies, HSTS) |
 | `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION` | the business's legal name, a support address, where it's established | the terms, privacy and refund pages, receipts and the footer's Contact link |
 | `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional | *Start from a photo* reads photos with Claude when both are set |
