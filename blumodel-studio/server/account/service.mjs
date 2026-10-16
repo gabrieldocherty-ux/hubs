@@ -221,6 +221,7 @@ export function createAccountService({ db, config, now = Date.now, tx, files }) 
       // Account settings: preferences and any reset link still outstanding (account-001).
       db.prepare('DELETE FROM user_prefs WHERE user_id = ?').run(userId);
       db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(userId);
+      db.prepare('DELETE FROM signin_alerts WHERE user_id = ?').run(userId);
       db.prepare('DELETE FROM export_events WHERE user_id = ?').run(userId);
       db.prepare('UPDATE product_events SET user_id = NULL WHERE user_id = ?').run(userId);
       db.prepare('UPDATE brand_events SET user_id = NULL WHERE user_id = ?').run(userId);
