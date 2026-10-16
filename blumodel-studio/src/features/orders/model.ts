@@ -92,9 +92,13 @@ export function dollars(cents: number): string {
   return (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
 }
 
-/** What an order cost: "Included" for a plan request, else its stored amount in its own currency ("$279 USD"). */
-export function orderPrice(o: { pricing?: string; amountCents: number; currency?: string | null }): string {
-  if (o.pricing === 'plan') return 'Included';
+/**
+ * What an order cost: "Included" for a plan request ("Not counted" once cancelled, since a plan
+ * request can only be cancelled before work starts and its models go back to the allowance), else
+ * its stored amount in its own currency ("$279 USD").
+ */
+export function orderPrice(o: { pricing?: string; status?: string; amountCents: number; currency?: string | null }): string {
+  if (o.pricing === 'plan') return o.status === 'cancelled' ? 'Not counted' : 'Included';
   return money(o.amountCents, o.currency || 'usd');
 }
 

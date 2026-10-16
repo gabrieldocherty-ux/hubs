@@ -128,7 +128,7 @@ export default function AdminStudioTab() {
                     {o.assignee ?? '—'}
                   </td>
                   <td className="ord-num ord-q-amt">
-                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className={o.pricing === 'plan' ? 'ord-included' : 'mono'}>{orderPrice(o)}</span>
+                    {o.provider === 'demo' && <span className="ord-tag">Demo</span>} <span className={o.pricing !== 'plan' ? 'mono' : o.status === 'cancelled' ? 'muted' : 'ord-included'}>{orderPrice(o)}</span>
                   </td>
                 </tr>
               );

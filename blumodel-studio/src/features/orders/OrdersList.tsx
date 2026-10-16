@@ -73,11 +73,14 @@ export function OrdersList() {
             {allowance.left > 0
               ? `Your Contractor plan includes ${allowance.included} custom 3D models a month${allowance.granted ? `, plus ${allowance.granted} extra this month` : ''}. Unused models don’t carry over.`
               : 'You’ve used this month’s models. '}
-            {allowance.left <= 0 && allowance.supportEmail && (
-              <>
-                Need more? <a href={`mailto:${allowance.supportEmail}?subject=${encodeURIComponent('More custom models this month')}`}>Contact us</a>
-              </>
-            )}
+            {allowance.left <= 0 &&
+              (allowance.supportEmail ? (
+                <>
+                  Need more? <a href={`mailto:${allowance.supportEmail}?subject=${encodeURIComponent('More custom models this month')}`}>Contact us</a>
+                </>
+              ) : (
+                'Need more? Contact BluModel Studio.'
+              ))}
           </span>
         </div>
       )}
@@ -124,7 +127,7 @@ export function OrdersList() {
                       <StatusPill status={o.status} pricing={o.pricing} />
                       <span className="ord-row-meta">
                         {o.provider === 'demo' && <span className="ord-tag">Demo</span>}
-                        <span className={o.pricing === 'plan' ? 'ord-included' : 'mono'}>{orderPrice(o)}</span>
+                        <span className={o.pricing !== 'plan' ? 'mono' : o.status === 'cancelled' ? 'muted' : 'ord-included'}>{orderPrice(o)}</span>
                       </span>
                       <span className="ord-row-when">{whenText(o)}</span>
                     </div>

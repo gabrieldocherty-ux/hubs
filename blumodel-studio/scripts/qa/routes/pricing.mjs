@@ -265,6 +265,10 @@ export default [
       const { evaluate, shot, api, data } = h;
       try {
         if (!(await evaluate(waitFor(bodyHas('That’s every model left this month'))))) throw new Error('the form does not say every model is used');
+        // The plan box says what is left now (not "after this request"), the reset once, and Need more.
+        const aside = await evaluate(`document.querySelector('.ord-quote')?.textContent ?? ''`);
+        if (/after this request/.test(aside) || !/Left this month/.test(aside) || !/Need more\?/.test(aside)) throw new Error(`the plan box reads: ${aside}`);
+        if ((aside.match(/resets on/g) ?? []).length !== 1) throw new Error(`the plan box gives the reset date ${(aside.match(/resets on/g) ?? []).length} times: ${aside}`);
         await shot('none-left');
         const list = await api.as('contractor').get('/api/orders');
         if (list.body?.allowance?.left !== 0) throw new Error(`the list says ${list.body?.allowance?.left} left`);
@@ -283,11 +287,24 @@ export default [
     setup: async ({ api }) => ({ ids: await useAllModels(api) }),
     viewport: PHONE,
     waitFor: ['.ord-allowance-bar'],
-    expectText: ['No models left this month - resets', 'Make a custom model'],
+    expectText: ['No models left this month - resets', 'Make a custom model', 'Need more?'],
     check: async (h) => {
       const { evaluate, shot, api, data } = h;
       try {
         if (await evaluate(SIDEWAYS)) throw new Error('the custom models page scrolls sideways on a phone');
+        // Requests withdrawn by the routes before this one: "Not counted", at the row's right edge
+        // (an empty due line used to push it to the middle).
+        const bad = await evaluate(`(() => {
+          const rows = [...document.querySelectorAll('.ord-row')].filter((r) => /Cancelled/.test(r.textContent));
+          for (const r of rows) {
+            const side = r.querySelector('.ord-row-side').getBoundingClientRect();
+            const price = r.querySelector('.ord-row-meta').getBoundingClientRect();
+            if (!/Not counted/.test(r.textContent) || /Included/.test(r.querySelector('.ord-row-meta').textContent)) return 'a cancelled request reads: ' + r.textContent;
+            if (side.right - price.right > 2) return 'a cancelled request\\'s price sits ' + Math.round(side.right - price.right) + 'px in from the edge';
+          }
+          return '';
+        })()`);
+        if (bad) throw new Error(bad);
         await shot('list');
       } finally {
         await withdraw(api, data.ids);

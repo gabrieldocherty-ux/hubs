@@ -260,6 +260,12 @@
   font-size: 12.5px;
 }
 
+/* A finished or cancelled order has no "due" line; an empty one would push the price to the
+   middle of the phone row (space-between). */
+.ord-row-when:empty {
+  display: none;
+}
+
 .ord-row-side {
   display: flex;
   flex-direction: column;

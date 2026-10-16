@@ -525,17 +525,23 @@ export function RequestWizard() {
                   <span className="ord-included">Included</span>
                 </li>
                 <li>
-                  <span>Left this month after this request</span>
+                  {/* Past the allowance there is no "after this request": say what is left now. */}
+                  <span>{fits.ok ? 'Left this month after this request' : 'Left this month'}</span>
                   <span className="mono">
-                    {Math.max(0, allowance.left - count)} of {allowance.total}
+                    {fits.ok ? allowance.left - count : Math.max(0, allowance.left)} of {allowance.total}
                   </span>
                 </li>
               </ul>
               <p className="ord-due">
                 Delivered in about {terms.businessDays} business days. {terms.revisions} revision rounds and up to {terms.finishesPerModel} finishes per model included.
               </p>
-              {!fits.ok && fits.message && <p className="ord-bad">{fits.message}</p>}
-              <p className="fine">Your allowance resets on {resetDay(allowance.resetsAt)}; unused models don’t carry over.</p>
+              {!fits.ok && fits.message ? (
+                <p className="ord-bad">
+                  {fits.message} <NeedMore allowance={allowance} />
+                </p>
+              ) : (
+                <p className="fine">Your allowance resets on {resetDay(allowance.resetsAt)}; unused models don’t carry over.</p>
+              )}
             </>
           )}
         </aside>

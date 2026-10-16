@@ -126,7 +126,7 @@ export function OrderPage({ id }: { id: string }) {
           <h1>{o.title}</h1>
           <div className="ord-head-meta">
             <StatusPill status={o.status} pricing={o.pricing} />
-            <span className={plan ? 'ord-included' : 'mono'}>{orderPrice(o)}</span>
+            <span className={!plan ? 'mono' : o.status === 'cancelled' ? 'muted' : 'ord-included'}>{orderPrice(o)}</span>
             {demoOrder && <span className="ord-tag">Demo payment</span>}
             <span className="muted">Requested {shortDate(o.createdAt)}</span>
           </div>

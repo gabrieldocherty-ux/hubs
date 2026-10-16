@@ -150,6 +150,8 @@ test('the plan’s allowance: one model per product, what is left, the reset day
   assert.equal(statusLabel({ status: 'paid', pricing: 'plan' }, true), 'Submitted');
   assert.equal(statusLabel({ status: 'paid', pricing: 'tiers' }), 'Paid · in the queue');
   assert.equal(orderPrice({ pricing: 'plan', amountCents: 0, currency: 'cad' }), 'Included');
+  assert.equal(orderPrice({ pricing: 'plan', status: 'cancelled', amountCents: 0, currency: 'cad' }), 'Not counted', 'a cancelled request went back to the allowance');
+  assert.equal(orderPrice({ pricing: 'tiers', status: 'cancelled', amountCents: 27_900, currency: 'usd' }), '$279 USD', 'a cancelled paid order keeps its price');
   assert.equal(orderPrice({ pricing: 'tiers', amountCents: 27_900, currency: 'usd' }), '$279 USD', 'an order from before keeps its currency');
   assert.equal(pricingLabel({ tier: 'plan', pricing: 'plan', packs: 0 }), 'Included in your plan');
   assert.equal(pricingLabel({ tier: 'pack', pricing: 'pack', packs: 1 }), 'Model pack');
