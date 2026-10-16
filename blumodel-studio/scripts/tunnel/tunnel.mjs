@@ -1,28 +1,55 @@
 // The Cloudflare tunnel for blumodel.studio, as files in the home server's folder: the cloudflared
-// config and the scripts that keep it running. Used by setup-tunnel.mjs; tested in
-// server/test/home.test.mjs. Nothing here starts, stops or changes the tunnel, its DNS or its
+// config and (Windows) the scripts that keep it running; on Linux blumodel-tunnel.service runs it
+// (server/ops/home.mjs). Used by setup-tunnel.mjs; tested in server/test/home.test.mjs and
+// server/test/host.test.mjs. Nothing here starts, stops or changes the tunnel, its DNS or its
 // credentials; the credentials file is only checked for existence, never opened.
 //
 // The tunnel itself ('blumodel', id below) already exists in Cloudflare with DNS for blumodel.studio
-// routed to it; its credentials are %USERPROFILE%\.cloudflared\<id>.json from `cloudflared tunnel create`.
+// routed to it. Its credentials are <id>.json from `cloudflared tunnel create`: on Windows in
+// %USERPROFILE%\.cloudflared\, on Linux in <home>/.cloudflared/ (owned by 'blumodel', mode 600).
+// Moving them to another machine is done by hand (docs/HOSTING.md), never by a script.
 
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { TUNNEL_TASK, crlf, sys32 } from '../../server/ops/home.mjs';
+import { TUNNEL_TASK, TUNNEL_UNIT, crlf, homeLayout, sys32 } from '../../server/ops/home.mjs';
 
 export const TUNNEL_NAME = 'blumodel';
 export const TUNNEL_ID = '064671cd-a658-4240-8626-c697b9f148ac';
 export const HOSTNAME = 'blumodel.studio';
 export const ORIGIN = 'http://127.0.0.1:8790';
 export const CLOUDFLARED_FALLBACK = 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe';
+/** Where Cloudflare's apt package (and the usual manual installs) put cloudflared on Linux. */
+export const CLOUDFLARED_LINUX = ['/usr/bin/cloudflared', '/usr/local/bin/cloudflared'];
 
 /** %USERPROFILE%\.cloudflared\<id>.json */
 export const credentialsFile = (id = TUNNEL_ID, homedir = os.homedir()) => path.join(homedir, '.cloudflared', `${id}.json`);
 
-/** cloudflared.exe: on PATH, else the installer's default folder. Null when neither exists. */
-export function findCloudflared({ exec = execFileSync } = {}) {
+/**
+ * Where the tunnel's credentials are expected on `platform`: Windows %USERPROFILE%\.cloudflared\<id>.json
+ * (where `cloudflared tunnel create` and `login` put them); Linux <home>/.cloudflared/<id>.json, inside
+ * the home so the 'blumodel' account that runs the tunnel can read them.
+ * @param {{ platform?: string, home?: string, homedir?: string, id?: string }} o
+ */
+export function credentialsFor({ platform = process.platform, home, homedir = os.homedir(), id = TUNNEL_ID }) {
+  if (platform === 'win32') return path.win32.join(homedir, '.cloudflared', `${id}.json`);
+  return path.posix.join(homeLayout(home, 'linux').cloudflaredDir, `${id}.json`);
+}
+
+/**
+ * The cloudflared program: on Linux the first of CLOUDFLARED_LINUX that exists, else one on PATH;
+ * on Windows on PATH (where.exe), else the installer's default folder. Null when there is none.
+ */
+export function findCloudflared({ exec = execFileSync, platform = process.platform } = {}) {
+  if (platform !== 'win32') {
+    for (const p of CLOUDFLARED_LINUX) if (fs.existsSync(p)) return p;
+    for (const dir of String(process.env.PATH || '').split(':')) {
+      const p = dir && path.posix.join(dir, 'cloudflared');
+      if (p && p.startsWith('/') && fs.existsSync(p)) return p;
+    }
+    return null;
+  }
   try {
     const first = String(exec(sys32('where.exe'), ['cloudflared'], { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }))
       .split(/\r?\n/)
@@ -43,15 +70,21 @@ const yamlString = (s) => `'${String(s).replace(/'/g, "''")}'`;
  * down, so fail fast with a 502 rather than hold the visitor), noHappyEyeballs (the origin is an
  * IPv4 literal; don't race IPv6), keepAliveTimeout 90s / keepAliveConnections 100 (reuse
  * connections to the origin), tcpKeepAlive 30s. The server's own limits are in server/http/listen.mjs.
- * @param {{ tunnelId?: string, credentials: string, hostname?: string, origin?: string }} o
+ * `platform` only changes the comment saying what runs it (Windows: run-tunnel.cmd; Linux: the unit).
+ * @param {{ tunnelId?: string, credentials: string, hostname?: string, origin?: string, platform?: string }} o
  */
-export function tunnelConfigYaml({ tunnelId = TUNNEL_ID, credentials, hostname = HOSTNAME, origin = ORIGIN }) {
+export function tunnelConfigYaml({ tunnelId = TUNNEL_ID, credentials, hostname = HOSTNAME, origin = ORIGIN, platform = 'win32' }) {
   if (!/^[0-9a-f-]{36}$/.test(tunnelId)) throw new Error(`Not a tunnel id: ${tunnelId}`);
   if (!/^[a-z0-9.-]+$/i.test(hostname)) throw new Error(`Not a hostname: ${hostname}`);
   if (!/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(origin)) throw new Error(`The origin must be http://127.0.0.1:<port> (got ${origin}).`);
+  if (!credentials) throw new Error('tunnelConfigYaml needs the credentials file path');
+  const runBy =
+    platform === 'win32'
+      ? `Run by run-tunnel.cmd (the ${TUNNEL_TASK} task starts it). cloudflared reads this at start.`
+      : `Run by ${TUNNEL_UNIT} (systemd). cloudflared reads this at start: sudo systemctl restart ${TUNNEL_UNIT.replace(/\.service$/, '')}.`;
   return `# BluModel Studio: the Cloudflare tunnel '${TUNNEL_NAME}' for ${hostname}.
 # Generated by blumodel-studio/scripts/tunnel/setup-tunnel.mjs: edits are overwritten.
-# Run by run-tunnel.cmd (the ${TUNNEL_TASK} task starts it at logon). cloudflared reads this at start.
+# ${runBy}
 tunnel: ${tunnelId}
 credentials-file: ${yamlString(credentials)}
 no-autoupdate: true
@@ -73,12 +106,14 @@ ingress:
  * The tunnel's supervisor scripts, keyed by file name (CRLF line ends). run-tunnel.cmd restarts
  * cloudflared whenever it exits (10 s later) and rotates logs\tunnel.log (10 MB, 5 kept) before
  * each start; tunnel.stopped (stop-tunnel.cmd) ends the loop.
- * `processName` is what stop-tunnel.cmd looks for (tests point it at a stand-in).
- * @param {{ cloudflared: string, node: string, processName?: string }} o
+ * `processName` is what stop-tunnel.cmd looks for (tests point it at a stand-in). start-tunnel.cmd
+ * starts it through the scheduled task `task` when the home's startup-tasks file lists it.
+ * @param {{ cloudflared: string, node: string, processName?: string, task?: string }} o
  */
-export function tunnelScripts({ cloudflared, node, processName = 'cloudflared.exe' }) {
+export function tunnelScripts({ cloudflared, node, processName = 'cloudflared.exe', task = TUNNEL_TASK }) {
   if (!cloudflared || !node) throw new Error('tunnelScripts needs the cloudflared.exe and node.exe paths');
   if (!/^[\w.-]+\.exe$/i.test(processName)) throw new Error(`Not a process name: ${processName}`);
+  if (!/^[\w-]+$/.test(task)) throw new Error(`Not a task name: ${task}`);
   const run = `@echo off
 rem BluModel Studio: Cloudflare tunnel supervisor. Runs cloudflared with cloudflared.yml and restarts
 rem it whenever it exits. Started hidden by start-tunnel.vbs (at logon by the ${TUNNEL_TASK} task).
@@ -108,7 +143,11 @@ sh.Run "cmd /c """ & dir & "\\run-tunnel.cmd""", 0, False
 rem Starts the BluModel Studio tunnel (hidden) after stop-tunnel.cmd.
 cd /d "%~dp0"
 if exist tunnel.stopped del tunnel.stopped
+rem When its task runs at startup (register-tasks --at-startup lists it in startup-tasks), start it
+rem through Task Scheduler so the tunnel keeps running after you sign out; otherwise directly.
+findstr /X /C:${task} startup-tasks >nul 2>&1 && schtasks /Run /TN ${task} >nul 2>&1 && goto started
 wscript.exe "%~dp0start-tunnel.vbs"
+:started
 echo The tunnel is starting (log: logs\\tunnel.log).
 `;
   // Only the cloudflared started with THIS folder's cloudflared.yml (its full path) is stopped; any

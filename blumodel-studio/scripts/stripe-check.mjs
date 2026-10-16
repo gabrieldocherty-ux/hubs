@@ -11,7 +11,10 @@
 // Which settings file, first that exists:
 //   --settings <path>
 //   BLUMODEL_ENV_FILE (or the deprecated MISE_ENV_FILE)
-//   <BLUMODEL_HOME or %USERPROFILE%\Projects\BluModelStudio>\blumodel.env, then mise.env there
+//   <BLUMODEL_HOME, or the home's default: Windows %USERPROFILE%\Projects\BluModelStudio,
+//    Linux /srv/blumodel-studio>\blumodel.env, then mise.env there (on Linux run it as the
+//    server's account, which alone can read the file:
+//    sudo -u blumodel node /srv/blumodel-studio/repo/blumodel-studio/scripts/stripe-check.mjs)
 //   %USERPROFILE%\Projects\Mise\mise.env (the home from before the rename, until it is moved)
 // As in the server, a value already in the environment wins over the file.
 
@@ -20,6 +23,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { ENV_FILE_KEYS, describeEnvFile, loadEnvFile } from '../server/lib/envFile.mjs';
 import { formatReport, runStripeCheck } from '../server/ops/stripeDoctor.mjs';
+import { defaultHome } from '../server/ops/home.mjs';
 
 const argv = process.argv.slice(2);
 if (argv.includes('--help') || argv.includes('-h')) {
@@ -38,7 +42,8 @@ function chooseFile() {
   const clean = (v) => String(v ?? '').trim().replace(/^"(.*)"$/, '$1');
   if (clean(process.env.BLUMODEL_ENV_FILE)) return { file: clean(process.env.BLUMODEL_ENV_FILE), looked: [] };
   if (clean(process.env.MISE_ENV_FILE)) return { file: clean(process.env.MISE_ENV_FILE), looked: [] };
-  const home = clean(process.env.BLUMODEL_HOME) || path.join(os.homedir(), 'Projects', 'BluModelStudio');
+  // The home server's folder: BLUMODEL_HOME, else the platform's default (server/ops/home.mjs).
+  const home = clean(process.env.BLUMODEL_HOME) || defaultHome();
   const candidates = [path.join(home, 'blumodel.env'), path.join(home, 'mise.env'), path.join(os.homedir(), 'Projects', 'Mise', 'mise.env')];
   return { file: candidates.find((f) => fs.existsSync(f)) ?? null, looked: candidates };
 }

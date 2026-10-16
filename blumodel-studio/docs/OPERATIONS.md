@@ -15,8 +15,9 @@ comes from 127.0.0.1.
 
 ## The home folder
 
-Everything lives in `%USERPROFILE%\Projects\BluModelStudio` (the "home"; `C:\Users\gdoch\Projects\BluModelStudio`).
-The repo is only where new versions come from.
+Everything lives in `%USERPROFILE%\Projects\BluModelStudio` (the "home"; `BLUMODEL_HOME` moves it).
+The repo is only where new versions come from. On Linux the home is `/srv/blumodel-studio`, run by
+systemd: [HOSTING.md](HOSTING.md) covers that machine (and a Windows machine nobody signs in to).
 
 | Path | What | Kept by a deploy? |
 | --- | --- | --- |
