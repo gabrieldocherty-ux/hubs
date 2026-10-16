@@ -58,8 +58,7 @@ export default function routes(ctx) {
 
   // Roles are never granted by signing up or signing in. There is no email verification, so an
   // address proves nothing: an admin is made only on the server, with
-  // `node server/scripts/make-admin.mjs <email>`. ADMIN_EMAILS grants nothing; it only reserves its
-  // addresses against being moved onto another account (/api/account/email).
+  // `node server/scripts/make-admin.mjs <email>`. ADMIN_EMAILS grants and reserves nothing.
 
   /**
    * Email notifications > Sign-in alerts: when email is on and the person hasn't turned alerts

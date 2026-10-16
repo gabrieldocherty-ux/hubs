@@ -28,8 +28,8 @@ Built 2026-10-14/15 (three sittings, two usage-limit cut-offs). Commits are pref
 - **Navigation:** no orders item beside the account menu; the menu says *Make custom models* (route
   `#/orders` unchanged); *Contractor workspace* only for users on the Contractor plan (or with a
   company); everyone still sees the Contractor plan on Pricing.
-- **Admins are never made by signing up or signing in.** `ADMIN_EMAILS` grants nothing; it only
-  reserves its addresses (no non-admin account can change its email to one). Admins come from
+- **Admins are never made by signing up or signing in.** `ADMIN_EMAILS` grants nothing and
+  reserves nothing (an email change to a listed address is like any other). Admins come from
   `node server/scripts/make-admin.mjs <email>` on the server; the startup log
   (`server/ops/startup.mjs`) and `npm run stripe:check` say so when no admin exists.
 - **Forgot password:** *Forgot password?* on sign-in (`#/signin?forgot=1`). With

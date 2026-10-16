@@ -101,7 +101,7 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `STRIPE_SECRET_KEY` | `rk_live_…` (restricted key; LAUNCH.md lists its permissions) | Stripe API calls. A live key works only in production with an https `PUBLIC_URL`. |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | verifies Stripe's webhook signatures (5-minute tolerance) |
 | `PUBLIC_URL` | `https://blumodel.studio` | checkout success/cancel/portal return links and the webhook check; never taken from a request |
-| `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing.** It only reserves the addresses: no other account can change its email to one. Admins are made with `make-admin` (below) |
+| `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing and reserves nothing** (signing up or changing an email to a listed address is like any other). Admins are made with `make-admin` (below) |
 | `DEMO_PAYMENTS` | `0` | `1` allows the labelled DEMO checkout in production when Stripe isn't set (never with a live key) |
 | `TRUST_PROXY` | `1` | believe `CF-Connecting-IP` / `X-Forwarded-For` / `X-Forwarded-Proto` from 127.0.0.1 (per-visitor rate limits, Secure cookies, HSTS) |
 | `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION` | the business's legal name, a support address, where it's established | the terms, privacy and refund pages, receipts and the footer's Contact link |
