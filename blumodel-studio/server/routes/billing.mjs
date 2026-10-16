@@ -13,7 +13,8 @@ import { CURRENCY, planById, PLANS, SUBSCRIPTION_PLANS } from '../lib/plans.mjs'
 import { loadKit } from '../lib/kit.mjs';
 import { createBillingService, GRACE_MS } from '../billing/service.mjs';
 import { createStripe, idOf, periodEndOf } from '../billing/stripe.mjs';
-import { paymentsUnavailable } from '../payments/stripeApi.mjs';
+import { paymentsUnavailable, StripeApiError } from '../payments/stripeApi.mjs';
+import { createAllowance } from '../payments/allowance.mjs';
 import { audit, auditLog } from '../lib/audit.mjs';
 
 export const EXPORT_KINDS = ['plan_png', 'scene_png', 'csv', 'json', 'render', 'quote'];
@@ -31,6 +32,7 @@ export default function routes(ctx) {
   const billing = createBillingService({ db, now: ctx.now, log });
   const stripe = createStripe({ config, fetch: (...a) => ctx.fetch(...a), log });
   const demo = () => config.paymentsProvider === 'demo';
+  const allowance = createAllowance({ db, now: ctx.now, billing, config });
 
   services.billing.register({ planOf: billing.planOf, canExport: billing.canExport });
 
@@ -361,16 +363,35 @@ export default function routes(ctx) {
         if (!itemId) throw new HttpError(502, 'Couldn’t read the subscription from the payment provider.');
         const productId = await ensureStripeProduct(plan);
         const meta = { kind: 'subscription', user_id: rc.user.id, plan };
-        const updated = await stripe.updateSubscription(
-          r.subscription_ref,
-          {
-            items: [{ id: itemId, price_data: { currency: CURRENCY, product: productId, unit_amount: planById(plan).priceCents, recurring: { interval: 'month' } } }],
-            proration_behavior: 'create_prorations',
-            cancel_at_period_end: false,
-            metadata: meta,
-          },
-          `change-${r.subscription_ref}-${plan}-${ctx.now()}`,
-        );
+        // The Contractor plan includes custom models made by the studio, so money has to match them:
+        // - an upgrade to Contractor is invoiced and charged now (always_invoice) and Stripe refuses
+        //   the change if that payment fails (error_if_incomplete), so the plan, and its models,
+        //   only apply once the difference is paid;
+        // - leaving Contractor after models were requested this period gives no credit back
+        //   (proration 'none'); otherwise an unused period is credited as usual.
+        const upgrade = plan === 'contractor' && r.plan !== 'contractor';
+        const leavingAfterModels = r.plan === 'contractor' && plan !== 'contractor' && allowance.of(rc.user.id).used > 0;
+        const proration = upgrade
+          ? { proration_behavior: 'always_invoice', payment_behavior: 'error_if_incomplete' }
+          : { proration_behavior: leavingAfterModels ? 'none' : 'create_prorations' };
+        let updated;
+        try {
+          updated = await stripe.updateSubscription(
+            r.subscription_ref,
+            {
+              items: [{ id: itemId, price_data: { currency: CURRENCY, product: productId, unit_amount: planById(plan).priceCents, recurring: { interval: 'month' } } }],
+              ...proration,
+              cancel_at_period_end: false,
+              metadata: meta,
+            },
+            `change-${r.subscription_ref}-${plan}-${ctx.now()}`,
+          );
+        } catch (e) {
+          if (upgrade && e instanceof StripeApiError && (e.stripeStatus === 402 || e.stripeType === 'card_error')) {
+            throw new HttpError(402, 'The payment for the upgrade didn’t go through, so your plan hasn’t changed. Update your card from Billing and try again.', { code: 'upgrade_payment_failed' });
+          }
+          throw e;
+        }
         ctx.tx(() => billing.applyStripeSubscription(updated));
         return meWire(rc.user.id);
       },

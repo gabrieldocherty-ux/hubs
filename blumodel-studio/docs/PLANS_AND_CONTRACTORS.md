@@ -70,7 +70,7 @@ The prices live in one file, `src/data/plans.json` (with `currency: "cad"` and t
    - **Start your catalog:** quick-add a first product, upload a model, have our studio model it (one of the plan's 3 included models a month), or skip.
 3. They land in the **Contractor workspace** (`#/pro`). Its tabs are Dashboard, My catalog, Price book, Brands I carry, Quotes, Make custom models and Company.
 
-An Unlimited subscriber who upgrades is moved to Contractor; Stripe prorates the change, and demo mode simulates it.
+An Unlimited subscriber who upgrades is moved to Contractor once the prorated difference is paid: the change is invoiced and charged at once (`always_invoice`, `error_if_incomplete`), and a declined payment leaves the plan as it was (402 `upgrade_payment_failed`), so the included models are never unlocked on credit. Leaving Contractor after requesting models in the current period gives no proration credit back (`proration_behavior: none`); leaving with none requested is prorated as usual. Demo mode simulates the change.
 
 ### 4.2 My catalog: three ways to add what they sell
 Everything in My catalog is **private to that contractor**. Other contractors, the public catalog and brand pages never see it.

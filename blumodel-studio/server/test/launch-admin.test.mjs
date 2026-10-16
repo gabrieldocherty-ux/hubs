@@ -273,7 +273,9 @@ test('Stripe chain: subscription checkout â†’ signed webhook (300 s tolerance) â
     assert.equal(upd.form.get('items[0][price_data][currency]'), 'cad');
     assert.equal(upd.form.get('items[0][price_data][product]'), 'prod_1');
     assert.equal(upd.form.get('items[0][price_data][recurring][interval]'), 'month');
-    assert.equal(upd.form.get('proration_behavior'), 'create_prorations');
+    // An upgrade to Contractor is charged now, and only applies once paid (server/test/fix-billing-change.test.mjs).
+    assert.equal(upd.form.get('proration_behavior'), 'always_invoice');
+    assert.equal(upd.form.get('payment_behavior'), 'error_if_incomplete');
     assert.ok(upd.headers['Idempotency-Key']);
     const down = await ann.post('/api/billing/change', { plan: 'unlimited' });
     assert.equal(down.body.plan.id, 'unlimited');
