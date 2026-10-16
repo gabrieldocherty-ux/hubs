@@ -1157,6 +1157,12 @@
   font-size: 12.5px;
 }
 
+/* The "2 new" leads badge is a span in that label too: white on its red, not the label's grey
+   (which read 1.6:1 in light and 3:1 in dark). */
+.brand-dash-stats .badge {
+  color: #fff;
+}
+
 .brand-dash-actions {
   display: flex;
   flex-wrap: wrap;
