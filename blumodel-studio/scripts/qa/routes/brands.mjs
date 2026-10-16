@@ -344,6 +344,50 @@ export default [
     },
   },
   {
+    // Review fix: product cards on phones grew about 43px when their thumbnails loaded (a
+    // percentage-height image in the art box's auto grid row sized the row by the picture), so a
+    // tap aimed at "Request a quote" could land on "Try in my kitchen". The art box now keeps its
+    // 4:3 size whatever the picture: nothing above the buttons moves once the page has drawn.
+    name: 'public-brand-cards-dont-shift-phone',
+    path: `#/b/${SLUG}`,
+    as: 'anon',
+    viewport: { w: 390, h: 844, dpr: 3, mobile: true },
+    waitFor: ['.bp-card-actions'],
+    check: async (h) => {
+      await mark(h, '.bp-card-actions button', 'Request a quote', 'quote');
+      const measure = () =>
+        h.evaluate(() => {
+          const q = document.querySelector('[data-qa="quote"]').getBoundingClientRect();
+          const arts = [...document.querySelectorAll('.bp-card-art')].map((a) => {
+            const r = a.getBoundingClientRect();
+            return { w: r.width, h: r.height };
+          });
+          return { top: q.top + scrollY, arts };
+        });
+      // Before the pictures: what a card looks like while its thumbnail is still loading.
+      await h.evaluate(() => document.querySelectorAll('.bp-card-art img').forEach((i) => (i.style.display = 'none')));
+      await h.sleep(50);
+      const before = await measure();
+      // After: every picture shown and decoded.
+      const pics = await h.evaluate(async () => {
+        const imgs = [...document.querySelectorAll('.bp-card-art img')];
+        imgs.forEach((i) => {
+          i.loading = 'eager';
+          i.style.display = '';
+        });
+        await Promise.all(imgs.map((i) => (i.complete ? null : new Promise((r) => i.addEventListener('load', r, { once: true }) || i.addEventListener('error', r, { once: true })))));
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        return imgs.filter((i) => i.naturalWidth > 0).length;
+      });
+      if (pics < 1) throw new Error('no product thumbnail loaded, so nothing was measured');
+      const after = await measure();
+      const moved = Math.abs(after.top - before.top);
+      if (moved > 1) throw new Error(`"Request a quote" moved ${Math.round(moved)}px when the thumbnails loaded (${Math.round(before.top)} -> ${Math.round(after.top)})`);
+      for (const a of after.arts) if (Math.abs(a.h - (a.w * 3) / 4) > 1.5) throw new Error(`a card's picture box is ${Math.round(a.w)}x${Math.round(a.h)}, not 4:3`);
+      h.note(`${pics} thumbnails loaded; the quote button stayed at ${Math.round(after.top)}px`);
+    },
+  },
+  {
     name: 'public-page-in-review-unavailable',
     path: `#/b/${IN_REVIEW}`,
     as: 'anon',
