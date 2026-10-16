@@ -155,8 +155,9 @@ node server\scripts\make-admin.mjs you@example.com
 ```
 
 It prints `you@example.com is now an admin.` (or that no account has that email). `--role studio`
-makes a studio member instead; `--role customer` takes a role away. Admin > Users can change roles
-too, but never your own. Until an admin exists, the server log says `Warning: No admin account
+makes a studio member instead; `--role customer` takes a role away. Admin > Users can switch an
+account between customer and studio, never your own, and never to or from admin: that is only
+this script. Until an admin exists, the server log says `Warning: No admin account
 exists: run node server/scripts/make-admin.mjs <email>` at every start. Run it only for an account
 you know is the right person's: you signed it up yourself and can sign in to it.
 
