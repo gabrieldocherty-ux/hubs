@@ -475,7 +475,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
         .prepare(
           `SELECT p.* FROM products p LEFT JOIN brands b ON b.id = p.brand_id
             WHERE p.live_spec IS NOT NULL AND p.status <> 'archived'
-              AND (p.brand_id IS NULL OR b.status = 'active')
+              AND (p.brand_id IS NULL OR (b.status = 'active'${brands.hideDemo ? ' AND b.is_demo = 0' : ''}))
               AND (p.visibility = 'public' OR p.owner_user_id = ?)
             ORDER BY COALESCE(b.name, '') COLLATE NOCASE, p.name COLLATE NOCASE, p.id`,
         )
@@ -487,7 +487,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
     inCatalog(row, user) {
       if (row?.brandId) runCatalogGuards();
       if (!row || !row.liveSpec || row.status === 'archived') return false;
-      if (row.brandId && brands.get(row.brandId)?.status !== 'active') return false;
+      if (row.brandId && !brands.isListed(brands.get(row.brandId))) return false;
       return row.visibility === 'public' || (!!user && row.ownerUserId === user.id);
     },
 
