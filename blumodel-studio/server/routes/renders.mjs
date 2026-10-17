@@ -141,7 +141,9 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/tenants/:id/renders/:renderId/refund',
       auth: 'admin',
-      params: { id: ID_PARAM, renderId: RENDER_ID },
+      // renderId takes any id shape here so a malformed id still meets the admin check first (401/403
+      // like every admin route); the service answers 404 for anything that isn't one of this showroom's renders.
+      params: { id: ID_PARAM, renderId: ID_PARAM },
       maxBytes: 2_048,
       handler: (rc) => {
         const t = services.tenants.get(rc.params.id);

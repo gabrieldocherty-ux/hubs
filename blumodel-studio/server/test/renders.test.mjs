@@ -382,6 +382,7 @@ test('the gallery: taking a render out of it, and an admin refund (audited, once
     assert.equal(ref.body.render.status, 'refunded');
     assert.equal(t.services.credits.balance(w.tn.id), 2500);
     assert.equal((await admin.post(`/api/admin/tenants/${w.tn.id}/renders/${id}/refund`, {})).status, 409);
+    assert.equal((await admin.post(`/api/admin/tenants/${w.tn.id}/renders/not_a_render/refund`, {})).status, 404, 'a malformed render id is a 404 for an admin');
     const a = t.db.prepare("SELECT detail FROM admin_audit WHERE action = 'tenant_render_refund'").all();
     assert.equal(a.length, 1);
     assert.equal(JSON.parse(a[0].detail).renderId, id);
