@@ -1,13 +1,19 @@
 # Operating BluModel Studio on the home server
 
-How the public site https://blumodel.studio runs on the Windows PC, and how to look after it. The
-go-live and payments steps are in [LAUNCH.md](LAUNCH.md). Running it on another computer (the Dell
-Wyse 5070, on Linux or Windows: install, cutover, updates from GitHub) is in [HOSTING.md](HOSTING.md),
-and moving the data there in [MOVING_DATA.md](MOVING_DATA.md).
+How the public sites run on the Windows PC, and how to look after them. One server and one database
+serve them all (docs/SHOWROOM_PIVOT.md): **blumodel.studio** (and www.) is our sales site for kitchen
+and bath companies, **`<slug>.blumodel.studio`** is each company's showroom, and a company's own
+domain (`showroom.acmekitchens.ca`) is the same showroom. The request's `Host` picks which.
+Setting a company up after a sale is [ONBOARDING_A_COMPANY.md](ONBOARDING_A_COMPANY.md). The go-live
+and payments steps are in [LAUNCH.md](LAUNCH.md). Running it on another computer (the Dell Wyse
+5070, on Linux or Windows: install, cutover, updates from GitHub) is in [HOSTING.md](HOSTING.md), and
+moving the data there in [MOVING_DATA.md](MOVING_DATA.md).
 
 ```
 visitor ── https ──> Cloudflare ── tunnel 'blumodel' ──> cloudflared (this PC)
-                                                          └─> http://127.0.0.1:8790  node server/index.mjs --prod
+  blumodel.studio, www.                                   └─> http://127.0.0.1:8790  node server/index.mjs --prod
+  <slug>.blumodel.studio  (wildcard DNS record *)              the Host header picks the sales site,
+  showroom.acmekitchens.ca (Cloudflare for SaaS)               a showroom, or a 404
 ```
 
 The server listens on 127.0.0.1 only: nothing on the LAN or the internet reaches it except through
@@ -58,6 +64,10 @@ From the home folder (double-click or a terminal):
 - **Status:** open http://127.0.0.1:8790/api/health. `{"ok":true,"version":"0.1.0","uptimeSec":…,"db":"ok"}`
   is healthy; a **503** means the database failed its check at startup (`"db":"corrupt"`), can't
   answer (`"db":"error"`), or the server is shutting down. From outside: https://blumodel.studio/api/health.
+- **Which site a host is:** `curl -s -H "Host: demo.blumodel.studio" http://127.0.0.1:8790/api/config`
+  answers `"site":"showroom"` with the company in `tenant`; `-H "Host: blumodel.studio"` answers
+  `"site":"sales"`; a host with no showroom answers 404. Every deploy runs these checks itself and
+  prints them under *Sites*.
 - What it decided at start (payments, warnings) is at the top of each start in `logs\server.log`, e.g.
   `Stripe: LIVE mode`, `Payments: none. …`, `Warning: …`.
 
@@ -107,7 +117,12 @@ The deploy:
 4. puts the new `app\` in place, keeping the one it replaces as `app.previous\`, rewrites the
    supervisor scripts, starts the server and waits for `/api/health`. It exits 0 when healthy, 1 when
    it refused before changing anything (the old app keeps running), 3 when the new app is in place
-   but unhealthy.
+   but unhealthy;
+5. when healthy, asks the server on 127.0.0.1 which site `blumodel.studio`, `www.`, `demo.` and a
+   made-up showroom are (by `Host`; the base domain is the server's own, from `/api/config`) and
+   prints a *Sites* block (`ok`, `NOTE` for a missing demo showroom, `FIX`), then warns when
+   `cloudflared.yml` doesn't send `www.` and `*.blumodel.studio` here (a config from before showrooms:
+   see *The tunnel*). These are reported only; they never fail or roll back a deploy.
 
 The site is down for a few seconds (Cloudflare shows its 502 page). New database migrations run when
 the new code starts; they are forward-only, which is why step 2 exists (see *Rollback* in LAUNCH.md).
@@ -137,12 +152,15 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `STRIPE_SECRET_KEY` | `rk_live_…` (restricted key; LAUNCH.md lists its permissions) | Stripe API calls. A live key works only in production with an https `PUBLIC_URL`. |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | verifies Stripe's webhook signatures (5-minute tolerance) |
 | `PUBLIC_URL` | `https://blumodel.studio` | checkout success/cancel/portal return links and the webhook check; never taken from a request |
+| `BASE_DOMAIN` | empty (= `blumodel.studio`) | the domain showrooms live under: `<slug>.<BASE_DOMAIN>` is a showroom, the domain and `www.` the sales site. Change it only together with the tunnel (`setup-tunnel.mjs --hostname`) and DNS. Dev and QA use `localhost` |
 | `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing and reserves nothing** (signing up or changing an email to a listed address is like any other). Admins are made with `make-admin` (below) |
 | `DEMO_PAYMENTS` | `0` | `1` allows the labelled DEMO checkout in production when Stripe isn't set (never with a live key) |
 | `SHOW_DEMO_BRANDS` | `0` | `1` shows the seeded "(Demo)" brands, their products and pages in production (QA sets it); without it production hides every `is_demo` brand |
 | `TRUST_PROXY` | `1` | believe `CF-Connecting-IP` / `X-Forwarded-For` / `X-Forwarded-Proto` from 127.0.0.1 (per-visitor rate limits, Secure cookies, HSTS) |
 | `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION` | the business's legal name, a support address, where it's established | the terms, privacy and refund pages, receipts and the footer's Contact link |
-| `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional | *Start from a photo* reads photos with Claude when both are set |
+| `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional, legacy | the retired *Start from a photo* read photos with Claude when both were set |
+| `ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY` | optional: the render service's address and key | "Make it photoreal" on the showrooms. Without both, the button says renders are being set up and nothing is charged |
+| `RENDER_CREDIT_CENTS` | empty (= 25) | the credits one render costs a company, in cents |
 | `RESEND_API_KEY` **or** `POSTMARK_TOKEN` | optional: a Resend API key (`re_…`) or a Postmark server API token | emails password-reset links and account notices (see *Password resets*). Set one; with both, Resend is used |
 | `EMAIL_FROM` | `"BluModel Studio <hello@blumodel.studio>"` (quoted, since it has spaces) | the sender; the provider must have verified that address or domain. Without it no email is sent even with a key |
 
@@ -165,8 +183,10 @@ Other variables the server reads (set by `run-server.cmd` or left at their defau
 
 Check the Stripe side any time with `npm run stripe:check` (read-only; prints PASS / FIX lines, never a key).
 
-A home folder made before email existed has no email lines in `blumodel.env`. To turn email on, add
-them yourself with Notepad (the deploy never edits an existing settings file):
+A home folder made before showrooms has no `BASE_DOMAIN`, `ARCHITECT_AI_*` or `RENDER_CREDIT_CENTS`
+lines; that's fine, their defaults are right. Add any of them yourself with Notepad when needed (the
+deploy never edits an existing settings file). Likewise one made before email existed has no email
+lines. To turn email on, add:
 
 ```
 # Optional: email password-reset links and account notices. ONE provider key, and the sender.
@@ -221,7 +241,31 @@ SHA-256 is stored, so a copy of the database can't be used to reset anyone. Usin
 password, signs the account out on **every** device and signs that browser in. Changing the password
 or the sign-in email in Account settings, or deleting the account, cancels any outstanding link.
 
-## Prices and custom models (since 2026-10-15)
+## Showrooms, licenses and the monthly plan (since 2026-10-17)
+
+What we sell (docs/SHOWROOM_PIVOT.md): a **yearly license** per company (list $1,995 CAD incl. setup
+and up to 50 products modelled), recorded by hand in **Admin > Companies** (no Stripe), plus **$50
+CAD/month** by Stripe Checkout ($25 hosting with their web address, $25 of render credits that roll
+over 3 months). A showroom is live only while both are current; a failed renewal has 14 days of
+grace; a lapsed or suspended showroom shows "temporarily unavailable" and keeps all its data.
+Homeowners never pay: designing, saving, sharing and downloading are free everywhere.
+
+The whole procedure after a sale, including the Cloudflare steps for a company's own domain and the
+go-live checklist, is [ONBOARDING_A_COMPANY.md](ONBOARDING_A_COMPANY.md). Day to day:
+
+- **Admin > Companies**: every company's status, license, monthly plan, credits, leads, renders and
+  products; record or void a license, create a monthly checkout link, complimentary plans, web
+  addresses, settings, credits (add/remove with a reason), team, suspend and launch. Everything is
+  in the audit log.
+- **Admin > Sales leads**: the sales site's *Book a call* requests (also emailed to `SUPPORT_EMAIL`
+  when email is on).
+- **The demo showroom** `demo.blumodel.studio` (Northline Kitchen & Bath (Demo)) is made once with
+  `node server\scripts\seed-demo-tenant.mjs` from the home's `app\` (safe to run again).
+- **Nothing new can be bought on the old plans.** Homeowner Unlimited, the $5 unlock and Contractor
+  are closed to new purchases (checkout answers 410); what was already paid keeps its receipts,
+  cancel/resume, portal and refunds until it ends.
+
+### The legacy plans and custom models (2026-10-15, still true for existing customers)
 
 - **Prices are in Canadian dollars**: the $5 CAD kitchen unlock (offered only in the export dialog),
   Unlimited $15 CAD/month, Contractor $99 CAD/month. They live in `src/data/plans.json`; the server
@@ -318,16 +362,27 @@ On Linux the same job is done by systemd units: HOSTING.md.
 
 The tunnel `blumodel` (`064671cd-a658-4240-8626-c697b9f148ac`) already exists in Cloudflare, with DNS for
 blumodel.studio routed to it; its credentials are `%USERPROFILE%\.cloudflared\064671cd-….json`. Nothing
-in this repo creates, routes, logs into or deletes a tunnel.
+in this repo creates, routes, logs into or deletes a tunnel. **Showrooms also need, once, a wildcard
+DNS record `*` → the tunnel** in Cloudflare: [ONBOARDING_A_COMPANY.md](ONBOARDING_A_COMPANY.md),
+*Once: Cloudflare*, has that and the Cloudflare for SaaS setup for companies' own domains.
 
 ```
 node scripts/tunnel/setup-tunnel.mjs --dry-run      print the files it would write
 node scripts/tunnel/setup-tunnel.mjs --validate     write them into the home, then check the config offline
 ```
 
-`cloudflared.yml`: `blumodel.studio` → `http://127.0.0.1:8790` (connect timeout 10 s, no IPv6 racing,
-keep-alive to the origin), anything else → 404. `--validate` runs `cloudflared tunnel --config <file>
-ingress validate` and `ingress rule https://blumodel.studio/`, which only read the file. It refuses to
+`cloudflared.yml` sends `blumodel.studio`, `www.blumodel.studio`, `*.blumodel.studio` (every showroom:
+one rule, so adding a company never changes the file) and, last, any other host to
+`http://127.0.0.1:8790` (connect timeout 10 s, no IPv6 racing, keep-alive to the origin). The last rule
+is for companies' own domains: Cloudflare for SaaS hands them over with the company's hostname, which
+the tunnel can't list, and the server answers 404 for any host it has no showroom for. Only hostnames
+routed to this tunnel in our Cloudflare account ever reach it. `--no-custom-domains` makes that last
+rule a 404 from cloudflared instead. `--hostname` is the base domain (`www.` and `*.` are added).
+`--validate` runs `cloudflared tunnel --config <file> ingress validate` and `ingress rule` for the
+sales site, `www.`, `acme.blumodel.studio` and a custom domain, which only read the file, and prints
+which rule each one matched. A config written before showrooms (only `blumodel.studio`, then 404)
+still serves the sales site; the deploy warns about it. Rewrite it with `stop-tunnel.cmd`,
+`node scripts/tunnel/setup-tunnel.mjs --validate`, `start-tunnel.cmd`. It refuses to
 rewrite `run-tunnel.cmd` while that tunnel runs (stop it first); cloudflared reads `cloudflared.yml`
 only when it starts, so restart the tunnel after a change. `--credentials <file>` names the
 credentials JSON when it isn't in `%USERPROFILE%\.cloudflared\` (on Linux the default is
@@ -360,6 +415,9 @@ prints the Task Scheduler changes to make. The steps in order are in LAUNCH.md, 
 | `/api/health` 503 `"db":"corrupt"` | `server.log` at start | restore the newest good backup (above) |
 | `Payments: none` after pasting keys | the `Stripe is NOT on:` lines under it, then `npm run stripe:check` | a typo in a key, a test key with a live webhook secret, or `PUBLIC_URL` not https |
 | Visitors share one rate limit; no `Secure` cookie | `TRUST_PROXY` | set `TRUST_PROXY=1` |
+| A showroom (`acme.blumodel.studio`) doesn't resolve | Cloudflare DNS | the wildcard `*` record is missing (ONBOARDING_A_COMPANY.md, *Once*) |
+| A showroom shows a bare "404 Not Found", not BluModel's page | the deploy's warning, `cloudflared.yml` | the tunnel config predates showrooms: rewrite it (*The tunnel*) and restart the tunnel |
+| A showroom says "unknown showroom" or "temporarily unavailable" | Admin > Companies | the address isn't on a company (or a custom domain isn't marked verified), or the showroom is in setup, lapsed or suspended |
 | Accounts or kitchens seem to come and go | the Cloudflare dashboard: the connectors of the `blumodel` tunnel | **two machines run the tunnel** (this PC and the Wyse): stop one at once (HOSTING.md, the split-brain rule) |
 | A deploy ended `unhealthy` (exit 3) | `logs\server.log`, `logs\console.log` | `node scripts/deploy-local.mjs --rollback` puts the previous app back |
 

@@ -2,7 +2,10 @@
 
 How to move https://blumodel.studio from the Windows PC that serves it today to a Dell Wyse 5070 thin
 client (or any small x86-64 machine), and how to run it there: install, settings, data, tunnel,
-cutover, checks, rollback, updates, backups and logs.
+cutover, checks, rollback, updates, backups and logs. The same one server serves the sales site
+(blumodel.studio, www.), every company's showroom (`<slug>.blumodel.studio`) and companies' own
+domains, picked by the request's `Host` (docs/SHOWROOM_PIVOT.md); nothing about that differs
+between the PC and the Wyse. Setting up a company is [ONBOARDING_A_COMPANY.md](ONBOARDING_A_COMPANY.md).
 
 The server is plain Node: Node's own `http`, `crypto` and built-in `node:sqlite`, no other runtime
 dependencies. Everything 3D runs in each visitor's browser, so the machine only serves files, the
@@ -278,10 +281,12 @@ import needs `--replace` (MOVING_DATA.md explains; what it replaces is kept, nev
 ## 6. Move the tunnel
 
 The tunnel `blumodel` (ID `064671cd-a658-4240-8626-c697b9f148ac`) keeps its name, its ID and its DNS
-for blumodel.studio. Nothing in Cloudflare changes. Only **where the connector runs** moves, and the
-connector needs the tunnel's credentials. The install already wrote the Wyse's `cloudflared.yml`
-(`blumodel.studio` → `http://127.0.0.1:8790`, anything else 404), naming the credentials file where
-the Wyse expects it. Two ways to give the Wyse the credentials:
+(blumodel.studio, www and the wildcard `*` for the showrooms). Nothing in Cloudflare changes. Only
+**where the connector runs** moves, and the connector needs the tunnel's credentials. The install
+already wrote the Wyse's `cloudflared.yml`: `blumodel.studio`, `www.blumodel.studio`,
+`*.blumodel.studio` and, last, any other host (companies' own domains through Cloudflare for SaaS)
+→ `http://127.0.0.1:8790`, naming the credentials file where the Wyse expects it (OPERATIONS.md, *The
+tunnel*, says why the last rule goes to the server). Two ways to give the Wyse the credentials:
 
 **A. Copy the credentials file (recommended).** On the PC the file is
 `%USERPROFILE%\.cloudflared\064671cd-a658-4240-8626-c697b9f148ac.json`. Copy it yourself, by hand, to a
@@ -305,7 +310,9 @@ with the service cloudflared installs for itself. You do this, by hand:
 1. The token runs the tunnel, but **not our `cloudflared.yml`**: the hostname must then be
    configured in Cloudflare. Zero Trust dashboard → *Networks → Tunnels* → `blumodel` → migrate it
    to dashboard-managed configuration (Cloudflare documents this as one-way: read its warning
-   first), then add the public hostname `blumodel.studio` → `http://127.0.0.1:8790`.
+   first), then add the public hostnames `blumodel.studio`, `www.blumodel.studio` and
+   `*.blumodel.studio` (subdomain `*`), each → `http://127.0.0.1:8790`. A dashboard-managed tunnel's
+   last rule is a 404, so each company's own domain then needs a public hostname of its own too.
 2. On the PC, where cloudflared is logged in: `cloudflared tunnel token blumodel` prints the token.
    It is a secret, like the credentials file.
 3. On the Wyse: Linux `sudo cloudflared service install <token>` (type a space before `sudo`, so
@@ -318,6 +325,12 @@ with the service cloudflared installs for itself. You do this, by hand:
    `Stop-Service Cloudflared` / `Start-Service Cloudflared`).
 
 Way A keeps the configuration in the repo and needs no change in Cloudflare; prefer it.
+
+**The showrooms' DNS** is Cloudflare's, not the machine's: the wildcard record `*` (a proxied CNAME to
+`064671cd-a658-4240-8626-c697b9f148ac.cfargotunnel.com`) and, for companies' own domains, the
+`tunnel` record and the Cloudflare for SaaS fallback origin. They point at the tunnel, not at a
+machine, so moving the connector changes none of them. If they don't exist yet, they're made once:
+ONBOARDING_A_COMPANY.md, *Once: Cloudflare*.
 
 ### The split-brain rule
 
@@ -404,6 +417,10 @@ On the Wyse, before the cutover and after any change:
 - `curl -s http://127.0.0.1:8790/api/health` (Windows: open it in a browser) →
   `{"ok":true,"version":"0.1.0","uptimeSec":…,"db":"ok"}`. A 503 means the database failed its check
   at start (`"db":"corrupt"`) or can't answer.
+- Each kind of site, by `Host`: `curl -s -H "Host: blumodel.studio" http://127.0.0.1:8790/api/config`
+  → `"site":"sales"`; `-H "Host: demo.blumodel.studio"` → `"site":"showroom"` with Northline in
+  `tenant` (once the demo showroom exists); `-H "Host: nobody.blumodel.studio"` → a 404. The deploy
+  (and so every update) prints the same checks under *Sites*.
 - `systemctl is-enabled blumodel-studio blumodel-tunnel` → `enabled`, and before the cutover
   `disabled` for the tunnel. `systemctl status blumodel-studio` → `active (running)`.
 - The site itself, from your PC, through SSH (port 8791 on the PC, since the PC's own server may hold
@@ -417,6 +434,8 @@ On the Wyse, before the cutover and after any change:
 After the cutover, from outside (a phone on mobile data):
 
 - https://blumodel.studio loads; https://blumodel.studio/api/health answers `{"ok":true,…}`.
+- https://demo.blumodel.studio shows the demo showroom, every live company's address shows its
+  showroom (Admin > Companies lists them), and a company's own domain, if any, loads with a padlock.
 - Sign in, open a kitchen, export something you've paid for.
 - Stripe Dashboard → *Developers → Webhooks* → the endpoint: recent deliveries answer **200**
   (Stripe retries the ones that failed during the downtime, for up to 3 days).
@@ -589,6 +608,8 @@ opened), `logs\tunnel.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status w
 | blumodel.studio shows Cloudflare 1033 | `systemctl status blumodel-tunnel`, `journalctl -u blumodel-tunnel` | the tunnel isn't running, or its credentials file is missing (`ls -l /srv/blumodel-studio/.cloudflared/`) |
 | blumodel.studio shows Cloudflare 502 | `curl -s http://127.0.0.1:8790/api/health` | the tunnel runs but the server doesn't |
 | Some visitors see old data | the dashboard's connectors for `blumodel` | **two machines run the tunnel**: stop one now (section 6, split brain) |
+| blumodel.studio works but a showroom gives a bare 404 | the deploy's *Sites* warning; `grep hostname /srv/blumodel-studio/cloudflared.yml` | `cloudflared.yml` predates showrooms: `sudo node /srv/blumodel-studio/repo/blumodel-studio/scripts/tunnel/setup-tunnel.mjs --home /srv/blumodel-studio --validate`, then `sudo systemctl restart blumodel-tunnel` |
+| A showroom's address doesn't resolve | Cloudflare → DNS | the wildcard `*` record is missing (ONBOARDING_A_COMPANY.md, *Once*) |
 | Stripe webhooks fail with *Invalid signature* | `timedatectl` | the clock is off, or the wrong `STRIPE_WEBHOOK_SECRET` |
 | The update says "local changes" | `git -C /srv/blumodel-studio/repo status` | someone edited a file in the checkout: `sudo -u blumodel git -C /srv/blumodel-studio/repo checkout -- .` |
 | Windows: the site is down after a restart | `uwfmgr get-config`, Task Scheduler's history | the write filter is on, or the task's stored password is out of date (register it again) |
@@ -606,7 +627,8 @@ All in the repo's `blumodel-studio/` folder. Each has the full details in its he
 | `scripts/host/build.mjs` | the build with the memory guard (`npm run host:build`; `--out`, `--dry-run`) |
 | `scripts/deploy-local.mjs` | deploy a build into the home (`--dist`, `--commit`), or `--rollback`; on Linux with sudo |
 | `scripts/register-tasks.mjs` | Linux: install the systemd units (`--enable-tunnel` at the cutover); Windows: the tasks (`--at-startup`); `--dry-run` |
-| `scripts/tunnel/setup-tunnel.mjs` | write `cloudflared.yml` (and the Windows supervisor) and check it offline (`--validate`, `--credentials`) |
+| `scripts/tunnel/setup-tunnel.mjs` | write `cloudflared.yml` (the sales site, `www.`, `*.` showrooms and custom domains; and the Windows supervisor) and check it offline (`--validate`, `--credentials`, `--hostname`, `--no-custom-domains`) |
+| `server/scripts/seed-demo-tenant.mjs` | make or refresh the demo showroom `demo.blumodel.studio` (`--db`) |
 | `server/scripts/export-data.mjs`, `import-data.mjs` | the data bundle (MOVING_DATA.md) |
 | `server/scripts/restore.mjs`, `make-admin.mjs` | restore a backup; make an admin (OPERATIONS.md) |
 

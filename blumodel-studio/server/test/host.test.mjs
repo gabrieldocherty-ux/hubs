@@ -820,7 +820,7 @@ test('cloudflared accepts the Linux config too (offline ingress validate and rul
 // ── 5. the runbook matches the scripts ───────────────────────────────────
 
 test('every script command in HOSTING.md, OPERATIONS.md, LAUNCH.md and the README names a script that exists and only options it takes', () => {
-  const docs = ['docs/HOSTING.md', 'docs/OPERATIONS.md', 'docs/LAUNCH.md', 'README.md'];
+  const docs = ['docs/HOSTING.md', 'docs/OPERATIONS.md', 'docs/LAUNCH.md', 'docs/ONBOARDING_A_COMPANY.md', 'README.md'];
   const seen = new Set();
   for (const doc of docs) {
     const text = fs.readFileSync(path.join(ROOT, doc), 'utf8');

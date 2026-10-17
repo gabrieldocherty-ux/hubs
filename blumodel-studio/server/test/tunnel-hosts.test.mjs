@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { RESERVED_SLUGS as RESERVED } from '../tenancy/service.mjs';
 import { HOSTNAME, TUNNEL_ID, findCloudflared, tunnelConfigYaml, tunnelRoutes } from '../../scripts/tunnel/tunnel.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -119,4 +120,33 @@ test('cloudflared routes the sales site, www, acme.blumodel.studio and a custom 
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('ONBOARDING_A_COMPANY.md: the one-time Cloudflare steps match the generated config, and every runbook step is there', () => {
+  const text = fs.readFileSync(path.join(ROOT, 'docs', 'ONBOARDING_A_COMPANY.md'), 'utf8');
+  for (const re of [
+    /\| CNAME \| `\*` \| `064671cd-a658-4240-8626-c697b9f148ac\.cfargotunnel\.com` \| \*\*Proxied\*\*/,
+    /setup-tunnel\.mjs --home \/srv\/blumodel-studio --validate/,
+    /sudo systemctl restart blumodel-tunnel/,
+    /seed-demo-tenant\.mjs/,
+    /Fallback Origin/,
+    /`tunnel\.blumodel\.studio`/,
+    /## 1\. Create the company/,
+    /## 2\. Record the license/,
+    /## 3\. Send the monthly link/,
+    /## 4\. Model their products/,
+    /## 5\. Their web address/,
+    /## 6\. Their own domain \(Cloudflare for SaaS\)/,
+    /## 7\. Go-live checklist/,
+    /\*\*Mark verified\*\*/,
+    /Launch showroom/,
+  ])
+    assert.match(text, re);
+  // The fallback origin it recommends can never be a company's address.
+  assert.ok(RESERVED.has('tunnel'));
+  // Its in-page links point at headings.
+  const anchors = new Set([...text.matchAll(/^#{2,3} (.+)$/gm)].map((m) => m[1].toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')));
+  for (const [, a] of text.matchAll(/\]\(#([\w-]+)\)/g)) assert.ok(anchors.has(a), `#${a} is a heading`);
+  // The tunnel rules it shows are what tunnelConfigYaml writes.
+  assert.deepEqual(tunnelRoutes(tunnelConfigYaml({ credentials: CREDS })), { sales: true, www: true, showrooms: true, customDomains: true });
 });
