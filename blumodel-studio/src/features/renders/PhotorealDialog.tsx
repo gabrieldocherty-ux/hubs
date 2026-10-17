@@ -231,9 +231,9 @@ export default function PhotorealDialog({ projectId, shareToken, team }: { proje
                 <button type="button" className="photoreal-thumb" onClick={() => setCurrent(r)} disabled={r.status === 'pending'} aria-label={`Show the render from ${when(r.createdAt)}`} aria-pressed={current?.id === r.id}>
                   {r.imageUrl ? <img src={r.imageUrl} alt="" loading="lazy" /> : <span className={`photoreal-thumb-state is-${r.status}`}>{r.status === 'pending' ? 'Rendering…' : 'Didn’t work'}</span>}
                 </button>
-                <span className="photoreal-thumb-meta">
+                {/* Just the time: the narrow caption cut "· demo" to "· de…"; a demo render says so on the large view. */}
+                <span className="photoreal-thumb-meta" title={r.demo ? `${when(r.createdAt)} · demo render` : undefined}>
                   {when(r.createdAt)}
-                  {r.demo ? ' · demo' : ''}
                 </span>
                 {r.status !== 'pending' && (r.mine || team) && (
                   <button type="button" className="icon-btn photoreal-remove" onClick={() => void remove(r)} aria-label={`Remove the render from ${when(r.createdAt)}`} title="Remove from this design">

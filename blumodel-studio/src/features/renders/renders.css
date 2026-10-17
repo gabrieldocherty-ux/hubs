@@ -336,6 +336,9 @@
 .rn-item {
   position: relative;
   display: grid;
+  /* The picture keeps its 16:9 when a neighbour's caption wraps; the caption takes the extra height. */
+  grid-template-rows: auto 1fr;
+  align-content: start;
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);

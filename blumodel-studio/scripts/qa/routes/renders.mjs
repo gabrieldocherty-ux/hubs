@@ -8,9 +8,10 @@
 import crypto from 'node:crypto';
 
 const views = [
-  { suffix: '', viewport: 'desktop' },
+  // Light said outright: without it Edge follows this machine's own setting.
+  { suffix: '', viewport: 'desktop', colorScheme: 'light' },
   { suffix: '-dark', viewport: 'desktop', colorScheme: 'dark' },
-  { suffix: '-phone', viewport: 'phone' },
+  { suffix: '-phone', viewport: 'phone', colorScheme: 'light' },
   { suffix: '-phone-dark', viewport: 'phone', colorScheme: 'dark' },
 ];
 const at = (v) => ({ viewport: v.viewport, ...(v.colorScheme ? { colorScheme: v.colorScheme } : {}) });
@@ -205,7 +206,19 @@ export default [
     ...at(v),
     waitFor: ['.rn-gallery[data-configured="1"]', '.rn-item img'],
     check: async (h) => {
-      await h.waitUntil(() => [...document.querySelectorAll('.rn-item img')].every((i) => i.complete && i.naturalWidth > 0), 15_000, 'the render thumbnails');
+      // The thumbnails load lazily: bring the gallery into view, then every thumbnail on screen must load.
+      await h.evaluate(() => document.querySelector('.rn-item')?.scrollIntoView({ block: 'start' }));
+      await h.waitUntil(
+        () => {
+          const shown = [...document.querySelectorAll('.rn-item img')].filter((i) => {
+            const r = i.getBoundingClientRect();
+            return r.bottom > 0 && r.top < window.innerHeight;
+          });
+          return shown.length > 0 && shown.every((i) => i.complete && i.naturalWidth > 0);
+        },
+        15_000,
+        'the render thumbnails on screen',
+      );
       const n = await h.evaluate(() => document.querySelectorAll('.rn-item').length);
       if (n < 4) throw new Error(`the workspace gallery shows ${n} renders, expected the ones made above`);
       const by = await h.evaluate(() => [...document.querySelectorAll('.rn-item-meta span')].map((s) => s.textContent).join(' | '));
