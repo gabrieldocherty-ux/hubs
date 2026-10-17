@@ -6,7 +6,7 @@
 //
 //   node scripts/qa-shot.mjs <url> <out.png> [--phone | --w=1440 --h=900] [--wait=3000] [--swiftshader] [--chrome]
 //
-// Only local pages (127.0.0.1, localhost, [::1]) are allowed. Every request a page makes to
+// Only local pages (127.0.0.1, localhost, *.localhost, [::1]) are allowed. Every request a page makes to
 // any other host is blocked before it leaves the machine (CDP Fetch interception, plus a
 // host-resolver rule that makes every other host unresolvable), and is reported.
 // Ports 8787 and 8790 are refused: other apps on this machine own them.
@@ -237,8 +237,10 @@ export async function launchBrowser({ chrome = false, swiftshader = false, headl
     '--disable-features=Translate,OptimizationHints,MediaRouter,AutofillServerCommunication,msSmartScreenProtection,msEdgeShoppingAssistant,msEdgeCollections,EdgeShoppingAssistantEnabled',
     // Nothing but loopback resolves, and no proxy is used, so not even the browser itself
     // can reach another host. Page requests are also blocked one by one (Fetch domain).
+    // <slug>.localhost (a showroom, docs/handoff/tenancy.md) is loopback too, mapped explicitly
+    // because the catch-all rule would otherwise make it unresolvable.
     '--no-proxy-server',
-    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1, EXCLUDE localhost',
+    '--host-resolver-rules=MAP *.localhost 127.0.0.1, MAP * ~NOTFOUND, EXCLUDE 127.0.0.1, EXCLUDE localhost',
     `--user-data-dir=${profile}`,
     '--remote-debugging-port=0',
     '--window-size=1440,900',

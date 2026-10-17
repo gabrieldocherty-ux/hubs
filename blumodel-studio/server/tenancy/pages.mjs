@@ -16,6 +16,7 @@ function page({ title, heading, body, accent }) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<link rel="icon" href="data:,">
 <title>${esc(title)}</title>
 <style>
 :root { --bg: #f6f5f2; --card: #ffffff; --ink: #1d2328; --muted: #5b6670; --line: #e2e0da; --accent: ${a ?? '#1f4f8a'}; color-scheme: light dark; }

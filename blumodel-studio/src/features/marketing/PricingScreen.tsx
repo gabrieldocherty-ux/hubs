@@ -13,7 +13,9 @@ const PLANS = plansJson as Plan[];
  * advertised (Gabe, 2026-10-15): a free user is offered it in the export dialog when they try
  * an export, and nowhere else.
  */
-const SHOWN = PLANS.filter((p) => p.id !== 'kitchen_unlock');
+// plans.json also lists the showroom plans since the pivot (docs/SHOWROOM_PIVOT.md); this legacy
+// page keeps showing only the plans it was written for until the sales site replaces it.
+const SHOWN = PLANS.filter((p) => ['free', 'unlimited', 'contractor'].includes(p.id));
 const CONTRACTOR = PLANS.find((p) => p.id === 'contractor')!;
 /** Custom 3D models a month the Contractor plan includes (src/data/plans.json; checked by the server). */
 const INCLUDED = CONTRACTOR.includedModels ?? 3;
