@@ -370,3 +370,12 @@
     background: var(--warn-soft);
   }
 }
+
+/* An unlocked kitchen's link is a 44px touch target on touch screens. */
+@media (pointer: coarse) {
+  .billing-list a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

@@ -8,6 +8,8 @@
 //     demo lead has its design attached.
 //   - the showroom catalog leads with the company's products; BluModel Basics come last, under their
 //     own heading, and last in the line select.
+//   - on a phone the links the review measured under 44 px (the editor's back link, the workspace's
+//     company link, product names, the Renders tab's inline link) are 44 px tall.
 // Every screen route checks: no sideways scroll, and 44 px touch targets on phones.
 // Run: node scripts/qa.mjs --pkg pivot --port 8955
 
@@ -75,6 +77,21 @@ async function setupCompany(api) {
   const list = (await must(admin.get('/api/admin/tenants'), 'Listing companies')).tenants;
   if (!list.some((t) => t.slug === 'qa-setup')) await must(admin.post('/api/admin/tenants', { name: 'Setup Street Kitchens', slug: 'qa-setup' }), 'Creating the setup company');
   return { path: '/' };
+}
+
+/** Fails when any element matching `selector` is shown under 44 px tall. */
+async function tall(h, selector) {
+  const r = await h.evaluate(
+    (sel) =>
+      [...document.querySelectorAll(sel)]
+        .map((el) => el.getBoundingClientRect())
+        .filter((b) => b.width > 0)
+        .map((b) => Math.round(b.height)),
+    selector,
+  );
+  if (!r.length) throw new Error(`no ${selector} on the page`);
+  const small = r.filter((x) => x < 44);
+  if (small.length) throw new Error(`${selector} is ${small.join(', ')} px tall on a phone`);
 }
 
 export default [
@@ -179,8 +196,46 @@ export default [
       const opts = r.options.filter((o) => !/^All lines/.test(o));
       if (opts.length && !/BluModel Basics/.test(opts[opts.length - 1])) throw new Error(`Basics isn't last in the line select: ${opts.join(', ')}`);
       await h.shot('catalog');
+      // A showroom has no billing: the editor never asks for entitlements there (it was a 404 each load).
+      const asked = await h.evaluate(() => performance.getEntriesByType('resource').filter((e) => e.name.includes('/api/billing/')).length);
+      if (asked) throw new Error(`the showroom editor called /api/billing/ ${asked} time(s)`);
     },
   })),
+  {
+    name: 'touch-workspace-products-phone',
+    host: 'demo',
+    as: 'showroom-owner',
+    path: '#/studio/products',
+    viewport: 'phone',
+    colorScheme: 'light',
+    waitFor: ['.ws-product-name'],
+    check: async (h) => {
+      await tall(h, '.ws-company');
+      await tall(h, '.ws-product-name');
+    },
+  },
+  {
+    name: 'touch-workspace-renders-phone',
+    host: 'demo',
+    as: 'showroom-owner',
+    path: '#/studio/renders',
+    viewport: 'phone',
+    colorScheme: 'dark',
+    waitFor: ['.ws-inline-link'],
+    check: async (h) => tall(h, '.ws-inline-link'),
+  },
+  {
+    name: 'touch-editor-back-phone',
+    host: 'demo',
+    as: 'showroom-visitor',
+    viewport: 'phone',
+    colorScheme: 'light',
+    setup: async ({ api }) => ({ path: `/k/${api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = 'demo-visitor@blumodel.test' ORDER BY p.name LIMIT 1")[0].id}` }),
+    waitFor: ['.plan-view canvas'],
+    check: async (h) => {
+      if (await h.evaluate(() => !!document.querySelector('.back-link'))) await tall(h, '.back-link');
+    },
+  },
   {
     name: 'demo-leads-have-designs',
     host: 'demo',

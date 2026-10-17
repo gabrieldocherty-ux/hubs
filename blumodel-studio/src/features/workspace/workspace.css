@@ -803,3 +803,17 @@ fieldset.ws-card {
     min-height: 44px;
   }
 }
+
+/* Links that are controls on their own (the header's company link, a product's name, the Renders
+   tab's "change on the Showroom tab") get 44px touch targets on touch screens. */
+@media (pointer: coarse) {
+  .ws-company {
+    min-height: 44px;
+  }
+  .ws-product-name,
+  .ws-inline-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

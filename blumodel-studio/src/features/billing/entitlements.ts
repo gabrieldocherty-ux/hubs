@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
 import { call } from '../../lib/api';
+import { loadConfig, useConfig } from '../../lib/config';
 import { useSession } from '../../store/useSession';
 import type { AccountPlanId, Entitlements, ExportKind, PlanId } from '../../types/platform';
 
@@ -25,13 +26,16 @@ let inflight: Promise<void> | null = null;
 export function loadEntitlements(force = false): Promise<void> {
   const userId = useSession.getState().user?.id ?? null;
   const s = useEntitlementStore.getState();
-  if (!userId) {
-    useEntitlementStore.setState({ userId: null, status: 'ready', plan: 'free', unlocked: new Set() });
+  // A showroom has no billing (its routes answer 404 there) and exports are free: nothing to ask.
+  if (!userId || useConfig.getState().config?.site === 'showroom') {
+    useEntitlementStore.setState({ userId, status: 'ready', plan: 'free', unlocked: new Set() });
     return Promise.resolve();
   }
   if (!force && s.userId === userId && (s.status === 'ready' || s.status === 'loading')) return inflight ?? Promise.resolve();
   useEntitlementStore.setState({ userId, status: 'loading' });
-  const p = call<Entitlements>('GET', '/api/billing/entitlements')
+  // Which site this is decides whether to ask at all (a showroom has no billing): config first.
+  const p = loadConfig()
+    .then((cfg) => (cfg?.site === 'showroom' ? ({ plan: 'free', unlockedProjectIds: [] } as unknown as Entitlements) : call<Entitlements>('GET', '/api/billing/entitlements')))
     .then((e) => {
       if (useSession.getState().user?.id !== userId) return;
       useEntitlementStore.setState({ userId, status: 'ready', plan: e.plan, unlocked: new Set(e.unlockedProjectIds) });
