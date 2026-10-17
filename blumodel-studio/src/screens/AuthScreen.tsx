@@ -48,8 +48,8 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
             </>
           ) : (
             <>
-              <h1>Plan the kitchen before you build it.</h1>
-              <p>Drop in real cabinets and appliances at true scale, check the layout against kitchen-planning guidelines, price it, and walk through it in 3D.</p>
+              <h1>Your showroom, your products, your leads.</h1>
+              <p>Kitchen and bath companies we build showrooms for sign in on their own showroom’s address to manage products, leads and their team. Your customers design on your showroom, never here.</p>
             </>
           )}
         </div>
@@ -95,7 +95,15 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
   return (
     <form className="auth-form" onSubmit={submit} noValidate>
       <h2>{signup ? 'Create your account' : 'Welcome back'}</h2>
-      <p className="auth-sub">{signup ? 'Save every kitchen you design and pick up where you left off, on any device.' : 'Sign in to open your kitchens.'}</p>
+      <p className="auth-sub">
+        {showroom
+          ? signup
+            ? 'Save every design you make here and pick up where you left off, on any device.'
+            : 'Sign in to open your designs.'
+          : signup
+            ? 'An account on BluModel Studio itself. A company’s team signs in on its own showroom.'
+            : 'Sign in to BluModel Studio.'}
+      </p>
 
       {offline && (
         <div className="auth-note">
@@ -147,14 +155,14 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
         <a href={`${signup ? '#/signin' : '#/signup'}${keepNext}`}>{signup ? 'Sign in' : 'Create an account'}</a>
       </p>
 
-      {/* Device-only designs never reach a showroom's company, so a showroom doesn't offer them. */}
+      {/* The sales site is for companies: no homeowner design-without-an-account here. */}
       {!showroom && (
         <>
           <div className="auth-or">
             <span>or</span>
           </div>
-          <a className="btn wide" href="#/local">
-            Design on this device without an account
+          <a className="btn wide" href="#/book">
+            Not working with us yet? Book a call
           </a>
         </>
       )}

@@ -227,7 +227,7 @@ export default [
     path: '#/account/billing',
     as: 'anon',
     waitFor: ['input[type="password"]'],
-    expectText: ['Sign in to open your kitchens.'],
+    expectText: ['Sign in to BluModel Studio.'],
     check: async ({ evaluate }) => {
       const hash = await evaluate(() => location.hash);
       if (!hash.startsWith('#/signin')) throw new Error(`expected a redirect to #/signin, got ${hash}`);

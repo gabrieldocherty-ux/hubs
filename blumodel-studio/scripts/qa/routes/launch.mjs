@@ -839,7 +839,7 @@ export default [
     name: 'not-found',
     path: '#/no-such-page',
     as: 'anon',
-    expectText: ['404', 'We can’t find that page', 'Go to the home page', 'Design a kitchen'],
+    expectText: ['404', 'We can’t find that page', 'Go to the home page', 'See a live demo showroom'],
     check: async (h) => {
       await hasLegalLinks(h, 'the 404');
       if (!(await h.evaluate(() => /Page not found/.test(document.title)))) throw new Error('the tab title does not say “Page not found”');
@@ -850,7 +850,7 @@ export default [
     path: '#/kitchen/missing/parts',
     as: 'customer',
     viewport: PHONE,
-    expectText: ['We can’t find that page', 'Go to my kitchens'],
+    expectText: ['We can’t find that page', 'Go to my account'],
     check: noSideScroll,
   },
   {
