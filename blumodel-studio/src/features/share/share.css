@@ -72,6 +72,12 @@
   text-overflow: ellipsis;
 }
 
+.share-bar-on {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
 .share-bar-actions {
   display: flex;
   align-items: center;
@@ -151,6 +157,7 @@
     padding: 8px 12px;
   }
   .share-bar-note,
+  .share-bar-on,
   .share-bar-when {
     display: none;
   }

@@ -1,0 +1,310 @@
+/*
+ * "Send this design to <Company>" (SendDesign, SendDialog): the card at the foot of the editor's
+ * Overview and Estimate, the card under a download's toast, and the form. Colours are tokens only;
+ * the company's colours arrive as tokens (palette.ts), so light, dark and contrast follow them.
+ */
+
+.sr-send-card {
+  margin: 18px 0 6px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--brand, var(--accent));
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.sr-send-card h3 {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sr-send-card p {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.sr-send-card .btn {
+  width: 100%;
+  min-height: 42px;
+}
+
+/* Under a download's toast: the toast stack lets clicks through, this card takes them. */
+.sr-send-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 10px 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-size: 13.5px;
+}
+
+.sr-send-toast > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.sr-send-toast .btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.sr-send-toast-x {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sr-send-toast-x:hover {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+@media (max-width: 560px) {
+  .sr-send-toast {
+    flex-wrap: wrap;
+  }
+  .sr-send-toast > span {
+    flex-basis: calc(100% - 46px);
+  }
+  .sr-send-toast .btn {
+    order: 3;
+    width: 100%;
+  }
+}
+
+/* ── the form ─────────────────────────────────────────────────────────── */
+
+.sr-send-dialog {
+  width: min(600px, calc(100vw - 24px));
+}
+
+.sr-send-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sr-send-head p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.sr-send-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+}
+
+.sr-send-wide {
+  grid-column: 1 / -1;
+}
+
+.sr-send-form select,
+.sr-send-form textarea {
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+}
+
+.sr-send-form select {
+  height: 42px;
+}
+
+.sr-send-form textarea {
+  padding: 10px 12px;
+  resize: vertical;
+  min-height: 76px;
+}
+
+.sr-send-form select:focus,
+.sr-send-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.sr-send-form [aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.sr-send-err {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--bad-ink);
+}
+
+/* The honeypot: off screen for people, there for a bot that fills every field. */
+.sr-send-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.sr-send-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.sr-send-consent.is-bad {
+  border-color: var(--bad);
+}
+
+.sr-send-consent input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.sr-send-consent + .sr-send-err {
+  display: block;
+  margin-top: 6px;
+}
+
+.sr-send-failed {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--bad-soft);
+  color: var(--bad-ink);
+  font-size: 13.5px;
+}
+
+.sr-send-fine {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.sr-send-fine a {
+  color: var(--accent-text);
+}
+
+/* ── sent ─────────────────────────────────────────────────────────────── */
+
+.sr-send-done {
+  text-align: center;
+}
+
+.sr-send-done-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 4px 0 12px;
+  border-radius: 50%;
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.sr-send-done p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.sr-send-done-lead {
+  font-size: 15.5px !important;
+  color: var(--ink) !important;
+}
+
+.sr-send-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.sr-send-contact a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--accent-text);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sr-send-done .modal-actions {
+  justify-content: center;
+}
+
+@media (max-width: 560px) {
+  .sr-send-grid {
+    grid-template-columns: 1fr;
+  }
+  .sr-send-dialog .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+/* Every control a finger can hit at least 44px tall on a touch screen. */
+@media (pointer: coarse) {
+  .sr-send-card .btn,
+  .sr-send-toast .btn,
+  .sr-send-form .btn,
+  .sr-send-done .btn,
+  .sr-send-btn,
+  .sr-send-form select,
+  .sr-send-form .field input,
+  .sr-send-contact a,
+  .sr-send-fine a {
+    min-height: 44px;
+  }
+  .sr-send-fine a {
+    display: inline-flex;
+    align-items: center;
+  }
+  .sr-send-toast-x {
+    width: 44px;
+    height: 44px;
+  }
+  .sr-send-consent {
+    min-height: 44px;
+  }
+}
