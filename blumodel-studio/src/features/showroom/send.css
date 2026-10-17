@@ -78,15 +78,26 @@
 }
 
 @media (max-width: 560px) {
+  /* The words and the close button on one row, the button full width under them. */
   .sr-send-toast {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    width: calc(100vw - 32px);
   }
   .sr-send-toast > span {
-    flex-basis: calc(100% - 46px);
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .sr-send-toast-x {
+    grid-column: 2;
+    grid-row: 1;
   }
   .sr-send-toast .btn {
-    order: 3;
+    grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
+    white-space: normal;
   }
 }
 
@@ -112,8 +123,19 @@
 
 .sr-send-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 14px;
+}
+
+.sr-send-grid .field {
+  min-width: 0;
+}
+
+.sr-send-grid input,
+.sr-send-grid select,
+.sr-send-grid textarea {
+  width: 100%;
+  min-width: 0;
 }
 
 .sr-send-wide {
@@ -275,7 +297,7 @@
 
 @media (max-width: 560px) {
   .sr-send-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .sr-send-dialog .modal-actions {
     flex-direction: column-reverse;

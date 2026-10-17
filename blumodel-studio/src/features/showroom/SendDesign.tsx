@@ -1,4 +1,5 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useRoute } from '../../lib/router';
 import { useDesignStore } from '../../store/useDesignStore';
 import { useSession } from '../../store/useSession';
@@ -24,7 +25,14 @@ export interface SendDesignProps {
 
 /** The signed-in person's role on this showroom's team, if any (the server adds `showroom: { tenantId, role }`). */
 function useTeamRole(): 'owner' | 'staff' | null {
-  return useSession((s) => (s.user as { showroom?: { role?: 'owner' | 'staff' | null } | null } | null)?.showroom?.role ?? null);
+  return useSession(
+    (s) =>
+      (
+        s.user as {
+          showroom?: { role?: 'owner' | 'staff' | null } | null;
+        } | null
+      )?.showroom?.role ?? null,
+  );
 }
 
 /**
@@ -53,18 +61,22 @@ export function SendDesign({ where, hidden = false, shareToken, designName }: Se
   if (where === 'export') return <AfterDownload onOpen={() => setOpen(true)} name={shortName(showroom)} open={open} dialog={dialog()} />;
 
   function dialog() {
-    return open ? (
-      <Suspense fallback={null}>
-        <SendDialog
-          tenant={showroom!}
-          design={shareToken ? { shareToken } : { projectId: projectId! }}
-          designName={designName ?? docName}
-          sentKey={key!}
-          onSent={(at) => setSent(at)}
-          onClose={() => setOpen(false)}
-        />
-      </Suspense>
-    ) : null;
+    // On <body>: the toast stack and the side panel would otherwise clip and shift the modal.
+    return open
+      ? createPortal(
+          <Suspense fallback={null}>
+            <SendDialog
+              tenant={showroom!}
+              design={shareToken ? { shareToken } : { projectId: projectId! }}
+              designName={designName ?? docName}
+              sentKey={key!}
+              onSent={(at) => setSent(at)}
+              onClose={() => setOpen(false)}
+            />
+          </Suspense>,
+          document.body,
+        )
+      : null;
   }
 
   const name = shortName(showroom);
@@ -101,7 +113,7 @@ const QUIET_MS = 10 * 60_000;
 let lastOffer = -Infinity;
 
 /** Watches the toasts for a download in the editor and shows the card under them for a while. */
-function AfterDownload({ onOpen, name, open, dialog }: { onOpen: () => void; name: string; open: boolean; dialog: JSX.Element | null }) {
+function AfterDownload({ onOpen, name, open, dialog }: { onOpen: () => void; name: string; open: boolean; dialog: ReactNode }) {
   const route = useRoute();
   const inEditor = route.name === 'kitchen';
   const [shown, setShown] = useState(false);

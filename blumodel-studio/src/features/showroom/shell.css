@@ -85,3 +85,17 @@
 .auth-brand .site-name {
   color: inherit;
 }
+
+/* Touch screens: the mark in the top bars and the legal footer links are 44px tap targets. */
+@media (pointer: coarse) {
+  header a.brand {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .legal-links a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
