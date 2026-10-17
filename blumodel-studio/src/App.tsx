@@ -22,6 +22,8 @@ import { LegalScreen } from './features/legal';
 
 const AdminScreen = lazy(() => import('./screens/AdminScreen'));
 const AccountScreen = lazy(() => import('./screens/AccountScreen'));
+// The sales site's Book a call page (docs/SHOWROOM_PIVOT.md §6).
+const BookCallScreen = lazy(() => import('./features/marketing/BookCallScreen'));
 // The editor carries the 2D plan (konva), the panels and the exports: about 60% of what used to be
 // the entry chunk, and none of it is needed by the landing page, pricing, product pages or sign-in.
 const KitchenEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.KitchenEditor })));
@@ -136,6 +138,8 @@ function screenFor(route: Route, signedIn: boolean) {
       return <LandingScreen />;
     case 'pricing':
       return <PricingScreen />;
+    case 'book':
+      return <BookCallScreen />;
     case 'new':
       return <SetupWizard />;
     case 'kitchen':

@@ -16,6 +16,7 @@ export type Route =
   | { name: 'kitchen'; id: string; add?: string } // #/k/:uuid?add=
   | { name: 'welcome' }
   | { name: 'pricing' } // #/welcome, #/pricing
+  | { name: 'book' } // #/book (the sales site's Book a call)
   | { name: 'generate'; q?: string; from?: string } // #/generate?q=&from=
   | { name: 'product'; id: string; finish?: string } // #/p/:id?finish=
   | { name: 'brandPage'; slug: string } // #/b/:slug
@@ -93,6 +94,7 @@ export function parseRoute(hash: string): Route {
     case 'local':
     case 'welcome':
     case 'pricing':
+    case 'book':
       return seg.length === 1 ? { name: a } : { name: 'notFound' };
     case 'terms':
     case 'privacy':

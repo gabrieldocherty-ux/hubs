@@ -1,50 +1,105 @@
-import { useEffect, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { Logo, Wordmark } from '../../components/Icons';
-import { usePayments, type PaymentsMode } from '../../lib/config';
-import { VISUALIZER_DISCLAIMER } from '../../lib/csv';
+import { call } from '../../lib/api';
 import { LegalLinks } from '../legal/LegalLinks';
 import { useSession } from '../../store/useSession';
+import plansJson from '../../data/plans.json';
+import { amount } from '../../lib/money';
 import './marketing.css';
 
-/** The marketing pages' top bar: logo, a few links, and sign in / start free (or My kitchens). */
-export function MarketingHeader({ active }: { active?: 'pricing' | 'home' }) {
-  const signedIn = useSession((s) => s.status === 'signedIn');
+/*
+ * The sales site (blumodel.studio itself, docs/SHOWROOM_PIVOT.md §6): pages for the owners and
+ * sales managers of kitchen and bath companies. There is no homeowner sign-up funnel here; "Sign
+ * in" stays for our admins and for anyone with an account from before the pivot.
+ */
+
+// ── prices (src/data/plans.json, the server's own price list) ───────────────
+
+interface ShowroomPlanJson {
+  id: string;
+  priceCents: number;
+  includedProducts?: number;
+  creditRolloverMonths?: number;
+  breakdown?: { id: string; label: string; cents: number }[];
+}
+
+const PLANS = plansJson as unknown as ShowroomPlanJson[];
+const LICENSE = PLANS.find((p) => p.id === 'showroom_license');
+const MONTHLY = PLANS.find((p) => p.id === 'showroom_monthly');
+const part = (id: string) => MONTHLY?.breakdown?.find((b) => b.id === id)?.cents;
+
+/** What the sales site quotes, all in CAD. The fallbacks are the prices of docs/SHOWROOM_PIVOT.md §2. */
+export const PRICES = Object.freeze({
+  /** "$1,995" a year, the list price (each deal sets its own). */
+  license: amount(LICENSE?.priceCents ?? 199500),
+  includedProducts: LICENSE?.includedProducts ?? 50,
+  /** "$50" a month. */
+  monthly: amount(MONTHLY?.priceCents ?? 5000),
+  /** "$25" of it for hosting and running the showroom, its web address included. */
+  hosting: amount(part('hosting') ?? 2500),
+  /** "$25" of it in AI rendering credits. */
+  credits: amount(part('render_credits') ?? 2500),
+  rolloverMonths: MONTHLY?.creditRolloverMonths ?? 3,
+});
+
+// ── the demo showroom's address ─────────────────────────────────────────────
+
+const HOST = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i;
+const IP = /^(\d{1,3}\.){3}\d{1,3}$|^\[?[0-9a-f:]+\]?$/i;
+
+/**
+ * The live demo showroom, `demo.<base domain>`: https://demo.blumodel.studio in production and
+ * http://demo.localhost:<port> in dev and QA. The base domain comes from the server's
+ * `/api/config` (BASE_DOMAIN); until it answers, from the page's own host (without `www.`). A page
+ * opened by IP address on a server that doesn't say falls back to the public demo.
+ */
+export function demoShowroomUrl(baseDomain: string | null, loc: { protocol: string; hostname: string; port: string }): string {
+  const port = loc.port ? `:${loc.port}` : '';
+  const scheme = loc.protocol === 'http:' ? 'http:' : 'https:';
+  const base = baseDomain && HOST.test(baseDomain) ? baseDomain.toLowerCase() : null;
+  if (base) {
+    // Same machine (dev and QA, `localhost`) or the same domain: keep the page's scheme and port.
+    const here = base === 'localhost' || loc.hostname === base || loc.hostname.endsWith(`.${base}`);
+    return here ? `${scheme}//demo.${base}${port}` : `https://demo.${base}`;
+  }
+  const host = loc.hostname.toLowerCase().replace(/^www\./, '');
+  if (!host || IP.test(host) || !HOST.test(host)) return 'https://demo.blumodel.studio';
+  return `${scheme}//demo.${host}${port}`;
+}
+
+let baseDomainAsk: Promise<string | null> | null = null;
+function askBaseDomain(): Promise<string | null> {
+  baseDomainAsk ??= call<{ baseDomain?: unknown }>('GET', '/api/config')
+    .then((c) => (typeof c?.baseDomain === 'string' ? c.baseDomain : null))
+    .catch(() => null);
+  return baseDomainAsk;
+}
+
+/** The demo showroom's URL for links on this page. */
+export function useDemoUrl(): string {
+  const [base, setBase] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    void askBaseDomain().then((b) => live && setBase(b));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return demoShowroomUrl(base, location);
+}
+
+/** "See a live demo showroom", opened in a new tab so the sales page stays where it was. */
+export function DemoLink({ className = 'btn primary big', children = 'See a live demo showroom' }: { className?: string; children?: ReactNode }) {
+  const url = useDemoUrl();
   return (
-    <header className="mk-bar">
-      <a className="brand" href={signedIn ? '#/welcome' : '#/'} aria-label="BluModel Studio home">
-        <Logo />
-        <Wordmark />
-      </a>
-      <nav className="mk-nav" aria-label="Site">
-        <a href="#/welcome" className={active === 'home' ? 'on' : ''} onClick={(e) => scrollIfHere(e, 'how')}>
-          How it works
-        </a>
-        <a href="#/pricing" className={active === 'pricing' ? 'on' : ''} aria-current={active === 'pricing' ? 'page' : undefined}>
-          Pricing
-        </a>
-        <a href="#/pricing" onClick={(e) => scrollIfHere(e, 'contractor', '#/pricing')}>
-          For contractors
-        </a>
-      </nav>
-      <div className="mk-bar-actions">
-        {signedIn ? (
-          <a className="btn primary" href="#/">
-            My kitchens
-          </a>
-        ) : (
-          <>
-            <a className="btn mk-signin" href="#/signin">
-              Sign in
-            </a>
-            <a className="btn primary" href="#/signup">
-              Start free
-            </a>
-          </>
-        )}
-      </div>
-    </header>
+    <a className={className} href={url} target="_blank" rel="noopener" data-demo-link>
+      {children}
+      <ArrowOut />
+    </a>
   );
 }
+
+// ── in-page navigation ──────────────────────────────────────────────────────
 
 /**
  * In-page links: hash routing owns `#`, so sections are reached by scrolling, not anchors. When
@@ -69,10 +124,72 @@ export function usePendingScroll() {
     const id = pendingScroll;
     pendingScroll = null;
     if (id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }));
+    else window.scrollTo(0, 0);
   }, []);
 }
 
+/** Sets the tab's title while the page is open. */
+export function useTitle(title: string) {
+  useEffect(() => {
+    const before = document.title;
+    document.title = title;
+    return () => {
+      document.title = before;
+    };
+  }, [title]);
+}
+
+export type MarketingPage = 'home' | 'pricing' | 'book';
+
+/** The sales site's top bar: the logo, four links, Sign in (for staff and admins) and Book a call. */
+export function MarketingHeader({ active }: { active?: MarketingPage }) {
+  const signedIn = useSession((s) => s.status === 'signedIn');
+  const onLanding = active === 'home';
+  return (
+    <header className="mk-bar">
+      <div className="mk-bar-inner">
+        <a className="brand" href={signedIn ? '#/welcome' : '#/'} aria-label="BluModel Studio home">
+          <Logo />
+          <Wordmark />
+        </a>
+        <nav className="mk-nav" aria-label="Site">
+          <a href="#/welcome" onClick={(e) => scrollIfHere(e, 'how')}>
+            How it works
+          </a>
+          <a href="#/welcome" onClick={(e) => scrollIfHere(e, 'included')}>
+            Included
+          </a>
+          <a href="#/pricing" className={active === 'pricing' ? 'on' : ''} aria-current={active === 'pricing' ? 'page' : undefined}>
+            Pricing
+          </a>
+          <a href="#/welcome" onClick={(e) => scrollIfHere(e, 'faq')}>
+            FAQ
+          </a>
+          {signedIn ? (
+            <a className="mk-nav-quiet" href="#/">
+              My account
+            </a>
+          ) : (
+            <a className="mk-nav-quiet mk-signin" href="#/signin">
+              Sign in
+            </a>
+          )}
+        </nav>
+        <a
+          className="btn primary mk-bar-cta"
+          href="#/book"
+          aria-current={active === 'book' ? 'page' : undefined}
+          onClick={onLanding ? (e) => scrollIfHere(e, 'book') : undefined}
+        >
+          Book a call
+        </a>
+      </div>
+    </header>
+  );
+}
+
 export function MarketingFooter() {
+  const signedIn = useSession((s) => s.status === 'signedIn');
   return (
     <footer className="mk-foot">
       <div className="mk-foot-inner">
@@ -81,37 +198,92 @@ export function MarketingFooter() {
             <Logo />
             <Wordmark />
           </span>
-          <p>Kitchen design for the kitchen you actually have.</p>
+          <p>Virtual showrooms for kitchen and bath companies. We build them, host them and keep them running.</p>
         </div>
         <nav className="mk-foot-links" aria-label="More">
-          <a href="#/generate">Start from a photo</a>
-          <a href="#/local">Try without an account</a>
-          <a href="#/pricing">Pricing</a>
-          <a href="#/signin">Sign in</a>
+          <DemoLink className="mk-foot-link">Live demo showroom</DemoLink>
+          <a className="mk-foot-link" href="#/pricing">
+            Pricing
+          </a>
+          <a className="mk-foot-link" href="#/book">
+            Book a call
+          </a>
+          <a className="mk-foot-link" href={signedIn ? '#/' : '#/signin'}>
+            {signedIn ? 'My account' : 'Sign in'}
+          </a>
         </nav>
       </div>
-      <p className="mk-disclaimer">{VISUALIZER_DISCLAIMER}</p>
-      <p className="mk-fine">BluModel Basics are generic sample products. Retailer products list real brands and the stores that sell them, with prices as checked on the date shown. Products from contractors and partner brands appear once an admin has verified them.</p>
+      <p className="mk-fine">All prices are in Canadian dollars. The companies, people and products shown in illustrations on this site are made up.</p>
       <LegalLinks className="mk-legal" />
     </footer>
   );
 }
 
 /** A section heading block. */
-export function SectionHead({ eyebrow, title, children, center }: { eyebrow?: string; title: ReactNode; children?: ReactNode; center?: boolean }) {
+export function SectionHead({ eyebrow, title, id, children, center }: { eyebrow?: string; title: ReactNode; id: string; children?: ReactNode; center?: boolean }) {
   return (
     <div className={`mk-head${center ? ' mk-head--center' : ''}`}>
       {eyebrow && <span className="mk-eyebrow">{eyebrow}</span>}
-      <h2>{title}</h2>
+      <h2 id={id}>{title}</h2>
       {children && <p>{children}</p>}
     </div>
   );
 }
 
-/**
- * How this server takes payments (`/api/config`, shared with every paying screen): `stripe`, the
- * labelled `demo`, or `none` while payments aren't open yet. Null until known.
- */
-export function usePaymentsMode(): PaymentsMode | null {
-  return usePayments();
-}
+// ── small inline icons (stroke = currentColor) ──────────────────────────────
+
+const svg = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
+
+export const ArrowOut = () => (
+  <svg {...svg} width={16} height={16} className="mk-arrow-out">
+    <path d="M9 7h8v8M17 7 7 17" />
+  </svg>
+);
+export const GlobeIcon = () => (
+  <svg {...svg}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3Z" />
+  </svg>
+);
+export const ServerIcon = () => (
+  <svg {...svg}>
+    <rect x="3.5" y="4" width="17" height="7" rx="1.5" />
+    <rect x="3.5" y="13" width="17" height="7" rx="1.5" />
+    <path d="M7.5 7.5h.01M7.5 16.5h.01M11 7.5h6M11 16.5h6" />
+  </svg>
+);
+export const CubeIcon = () => (
+  <svg {...svg}>
+    <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+    <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+  </svg>
+);
+export const InboxIcon = () => (
+  <svg {...svg}>
+    <path d="M4 13.5 6.2 5.6A1.5 1.5 0 0 1 7.6 4.5h8.8a1.5 1.5 0 0 1 1.4 1.1L20 13.5V18a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18v-4.5Z" />
+    <path d="M4 13.5h4.5l1 2h5l1-2H20" />
+  </svg>
+);
+export const TeamIcon = () => (
+  <svg {...svg}>
+    <circle cx="9" cy="8.5" r="3" />
+    <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
+    <circle cx="17" cy="9.5" r="2.4" />
+    <path d="M15.5 14.3A4.5 4.5 0 0 1 20.5 19" />
+  </svg>
+);
+export const SparkIcon = () => (
+  <svg {...svg}>
+    <path d="M12 3.5 13.8 9a1.5 1.5 0 0 0 1 1l5.7 2-5.7 2a1.5 1.5 0 0 0-1 1L12 20.5 10.2 15a1.5 1.5 0 0 0-1-1L3.5 12l5.7-2a1.5 1.5 0 0 0 1-1L12 3.5Z" />
+  </svg>
+);
+export const CheckIcon = () => (
+  <svg {...svg} width={16} height={16}>
+    <path d="m5 12.5 4.2 4L19 7" />
+  </svg>
+);
+export const PhoneIcon = () => (
+  <svg {...svg} width={16} height={16}>
+    <path d="M6.6 3.5h2.6l1.4 4.1-2 1.4a12 12 0 0 0 6.4 6.4l1.4-2 4.1 1.4v2.6a1.6 1.6 0 0 1-1.7 1.6A16.5 16.5 0 0 1 5 5.2a1.6 1.6 0 0 1 1.6-1.7Z" />
+  </svg>
+);

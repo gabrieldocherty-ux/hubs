@@ -1,27 +1,19 @@
-import { useMemo, useState } from 'react';
-import { MiniPlan } from '../../components/MiniPlan';
-import { ProductArt } from '../../components/ProductArt';
-import { getProduct } from '../../data/catalog';
-import { DEFAULT_SURFACES } from '../../data/defaults';
-import { initialDoc } from '../../store/useDesignStore';
-import type { Finish, Product } from '../../types';
 import { useHashQuery } from '../../lib/router';
-import { planPrice } from '../../lib/money';
-import plansJson from '../../data/plans.json';
-import type { Plan } from '../../types/platform';
-import { MarketingFooter, MarketingHeader, scrollIfHere, SectionHead, usePendingScroll } from './parts';
+import { LeadCard, ShowroomMock } from './art';
+import { DemoLink, MarketingFooter, MarketingHeader, PRICES, scrollIfHere, SectionHead, usePendingScroll, useTitle } from './parts';
+import { BookSection, Faq, FinalCta, Included, PricingCards } from './sections';
 import './marketing.css';
 
-const CONTRACTOR = (plansJson as Plan[]).find((p) => p.id === 'contractor')!;
+export const SALES_TITLE = 'BluModel Studio · Virtual showrooms for kitchen and bath companies';
 
 /**
- * The landing page (signed-out `#/` and `#/welcome`), PRODUCT_SPEC §5.1 as revised: the way in is
- * a photo of the kitchen you have (`#/generate`), not a text description, which Gabe turned down.
- * Everything here is drawn by BluModel Studio itself: the hero is a real render of the starter kitchen, the
- * plan inset and the product drawings are the app's own components. No web fonts, no stock art.
+ * blumodel.studio, the sales site (docs/SHOWROOM_PIVOT.md §6): signed-out `#/` and `#/welcome`.
+ * Written for the owner or sales manager of a kitchen and bath company. It says plainly that we
+ * build, host and run the showroom for them, what it costs, and how to see one working.
  */
 export default function LandingScreen() {
   usePendingScroll();
+  useTitle(SALES_TITLE);
   // Account settings → Delete my account lands here with `?deleted=1`.
   const deleted = useHashQuery().get('deleted') === '1';
   return (
@@ -29,14 +21,19 @@ export default function LandingScreen() {
       <MarketingHeader active="home" />
       {deleted && (
         <p className="mk-deleted" role="status">
-          Your account has been deleted, and you’re signed out everywhere. Thank you for designing with BluModel Studio.
+          Your account has been deleted, and you’re signed out everywhere.
         </p>
       )}
       <main>
         <Hero />
+        <WeRunIt />
         <HowItWorks />
-        <Contractors />
-        <Brands />
+        <Leads />
+        <Included />
+        <WhoFor />
+        <PricingSummary />
+        <Faq />
+        <BookSection />
         <FinalCta />
       </main>
       <MarketingFooter />
@@ -44,276 +41,157 @@ export default function LandingScreen() {
   );
 }
 
-function Ctas({ where }: { where: string }) {
-  return (
-    <div className="mk-ctas" aria-label={`Get started (${where})`}>
-      <a className="btn primary big mk-cta-main" href="#/generate">
-        <CameraIcon /> Start from a photo of your kitchen
-      </a>
-      <div className="mk-ctas-row">
-        <a className="btn big" href="#/signup">
-          Start free
-        </a>
-        <a className="mk-link" href="#/local">
-          Try without an account →
-        </a>
-      </div>
-    </div>
-  );
-}
-
 function Hero() {
-  const doc = useMemo(() => initialDoc(), []);
-  const [art, setArt] = useState<'render' | 'plan'>('render');
   return (
-    <section className="mk-hero">
+    <section className="mk-hero" aria-labelledby="hero-title">
       <div className="mk-hero-copy">
-        <span className="mk-eyebrow">Kitchen design for the kitchen you have</span>
-        <h1>See your new kitchen before anyone picks up a hammer.</h1>
+        <span className="mk-eyebrow">Virtual showrooms for kitchen &amp; bath companies</span>
+        <h1 id="hero-title">Your own virtual showroom, with your products, under your name.</h1>
         <p className="mk-lede">
-          Start from a photo of your kitchen. Check the measurements, then try cabinets, appliances and finishes at their true size, in plan and in 3D. Designing, saving and sharing are free.
+          We build, host and run a 3D design website for your kitchen and bath company. Your customers design with your actual cabinets and fixtures, and every design comes to you
+          as a lead.
         </p>
-        <Ctas where="top" />
-        <p className="mk-hero-fine">No card needed. Designing is free; exports are a paid feature.</p>
+        <div className="mk-ctas">
+          <DemoLink />
+          <a className="btn big" href="#/book" onClick={(e) => scrollIfHere(e, 'book')}>
+            Book a call
+          </a>
+        </div>
+        <p className="mk-hero-fine">
+          From {PRICES.license}/year plus {PRICES.monthly}/month, in CAD. Nothing to install. No developer, no Blender.
+        </p>
       </div>
-      {art === 'render' ? (
-        // The render is a real BluModel Studio 3D view of the starter kitchen (public/marketing/hero.webp).
-        <figure className="mk-hero-art">
-          <img
-            className="mk-hero-render"
-            src="/marketing/hero.webp"
-            width={1200}
-            height={800}
-            alt="A BluModel Studio 3D view of an L-shaped kitchen with an island, warm white shaker cabinets, brass pendants and a marble countertop."
-            onError={() => setArt('plan')}
-          />
-          <div className="mk-hero-inset" aria-hidden>
-            <span className="mk-hero-inset-label">Plan</span>
-            <MiniPlan doc={doc} />
-          </div>
-          <figcaption>The starter kitchen in BluModel Studio: the 3D view, and the same room as a plan.</figcaption>
-        </figure>
-      ) : (
-        // Without the render (a build without public/marketing), the live plan stands in.
-        <figure className="mk-hero-art mk-hero-art--plan">
-          <div className="mk-hero-render mk-hero-render--plan">
-            <MiniPlan doc={doc} />
-          </div>
-          <figcaption>The starter kitchen in BluModel Studio, as a plan.</figcaption>
-        </figure>
-      )}
+      <div className="mk-hero-art">
+        <ShowroomMock />
+        <div className="mk-hero-lead">
+          <LeadCard compact />
+        </div>
+      </div>
     </section>
   );
 }
 
-const STEPS: { n: string; title: string; body: string; icon: JSX.Element }[] = [
+/** The point most worth making: the company never runs anything. */
+function WeRunIt() {
+  const items: [string, string][] = [
+    ['We build it', 'Your name, logo and colours, your welcome text, and your product lines modelled in 3D.'],
+    ['We host it', 'On your own web address, backed up every day. Nothing to install, nothing to maintain.'],
+    ['We run it', 'Updates, fixes and new products: you tell us, we take care of it.'],
+  ];
+  return (
+    <section className="mk-strip" aria-label="What we do for you">
+      <ul className="mk-strip-list">
+        {items.map(([t, b]) => (
+          <li key={t}>
+            <b>{t}.</b> <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+const STEPS: { who: string; title: string; body: string }[] = [
   {
-    n: '1',
-    title: 'Photo',
-    body: 'Add a few photos of the kitchen you have now. On a phone, just take them where you stand.',
-    icon: <CameraIcon />,
+    who: 'Us',
+    title: 'We set up your showroom and model your products',
+    body: 'Send us your logo, your colours and your product range. We build the showroom under your name and model your cabinets and fixtures in 3D, at their true size, with your finishes.',
   },
   {
-    n: '2',
-    title: 'Check the space',
-    body: 'Measure one wall with a tape and BluModel Studio scales the rest. Confirm the windows, doors and where the sink and range sit.',
-    icon: <TapeIcon />,
+    who: 'Your customers',
+    title: 'Customers design on your site, under your name',
+    body: 'Homeowners lay out their kitchen or bathroom with your products, in plan and in 3D, on a phone or a computer. Only your products, never a competitor’s or a big-box store’s.',
   },
   {
-    n: '3',
-    title: 'Redesign in 2D and 3D with real products',
-    body: 'Drag in cabinets, appliances, sinks and lights at their true size. Switch between plan, 3D and wall views; design checks flag tight aisles and missing landing space as you go.',
-    icon: <CubeIcon />,
-  },
-  {
-    n: '4',
-    title: 'Share',
-    body: 'Send a view-only link to your partner, your family or your contractor. They look around in 3D, with or without prices, and can’t change a thing.',
-    icon: <ShareIcon />,
+    who: 'Your team',
+    title: 'You get leads, and your team sells with it',
+    body: 'Every design a customer sends lands in your inbox with the plan and the product list. Your staff open the same showroom in sales meetings and turn designs into photoreal renderings.',
   },
 ];
 
 function HowItWorks() {
   return (
     <section className="mk-section" id="how" aria-labelledby="how-title">
-      <SectionHead eyebrow="How it works" title={<span id="how-title">From the kitchen you have to the one you want</span>} center>
-        Four steps, and the first two take about ten minutes with a tape measure.
+      <SectionHead id="how-title" eyebrow="How it works" title="Three steps, and we do the first one" center>
+        You don’t hire a developer or learn 3D software. We do the building; you do the selling.
       </SectionHead>
       <ol className="mk-steps">
-        {STEPS.map((s) => (
-          <li key={s.n} className="mk-step">
-            <span className="mk-step-icon">{s.icon}</span>
-            <span className="mk-step-n">Step {s.n}</span>
+        {STEPS.map((s, i) => (
+          <li key={s.title} className="mk-step">
+            <span className="mk-step-n" aria-hidden>
+              {i + 1}
+            </span>
+            <span className="mk-step-who">{s.who}</span>
             <h3>{s.title}</h3>
             <p>{s.body}</p>
           </li>
         ))}
       </ol>
-      <p className="mk-steps-alt">
-        No photo handy? <a href="#/local">Start from a ready-made layout</a> and change the room size to match.
-      </p>
     </section>
   );
 }
 
-function Contractors() {
+function Leads() {
   return (
-    <section className="mk-band" id="contractors" aria-labelledby="pro-title">
+    <section className="mk-band" id="leads" aria-labelledby="leads-title">
       <div className="mk-band-inner">
         <div className="mk-band-copy">
-          <span className="mk-eyebrow mk-eyebrow--light">For kitchen contractors · {planPrice(CONTRACTOR)}</span>
-          <h2 id="pro-title">Show your customers the exact cabinets you sell, in their kitchen, at your price.</h2>
-          <ul className="mk-ticks">
-            <li>Add your own lines in an afternoon: quick-add with no 3D model, or upload your own.</li>
-            <li>{CONTRACTOR.includedModels ?? 3} custom 3D models a month, made by our studio from a UPC or a photo.</li>
-            <li>A price book with your cost and markup. Clients only ever see your sell price.</li>
-            <li>Branded share links and printable quotes with your logo, phone and email.</li>
-            <li>Get found: put the cabinets you sell in front of homeowners designing their kitchens, with a verified brand page and leads.</li>
+          <span className="mk-eyebrow mk-eyebrow--light">Leads</span>
+          <h2 id="leads-title">Every design is a lead, with the plan attached.</h2>
+          <p className="mk-band-lede">
+            When a customer finishes a design, the last step is <b>Send this design to</b> your company. You get:
+          </p>
+          <ul className="mk-band-list">
+            <li>Their name, email, phone and postal code, with their consent</li>
+            <li>Their budget, timeline and notes</li>
+            <li>The design itself, to open in 3D, and its product list</li>
+            <li>An inbox to track it: new, contacted, quoted, won or lost</li>
           </ul>
-          <div className="mk-band-ctas">
-            <a className="btn big mk-btn-light" href="#/pricing" onClick={(e) => scrollIfHere(e, 'contractor', '#/pricing')}>
-              See the Contractor plan
-            </a>
-            <a className="mk-link mk-link--light" href="#/pro">
-              Already a contractor? Open your workspace →
-            </a>
-          </div>
+          <p className="mk-band-fine">The leads are yours. We never sell them, share them or market to your customers.</p>
         </div>
-        <ProSample />
+        <LeadCard />
       </div>
     </section>
   );
 }
 
-/** An illustration of a contractor's share, drawn with fictional names and prices. */
-function ProSample() {
-  const lines: [string, string, string][] = [
-    ['Shaker base 24″', 'Oat · BB24', '$612'],
-    ['Shaker wall 30″', 'Oat · BW30', '$448'],
-    ['Farmhouse sink 33″', 'Fireclay', '$1,190'],
-    ['Installation', 'Labour', '$1,800'],
-  ];
+const WHO: { title: string; body: string }[] = [
+  { title: 'Cabinet showrooms', body: 'Let customers try your door styles and finishes in their own layout before they visit, and come in ready to buy.' },
+  { title: 'Kitchen & bath design-build firms', body: 'Show a believable first draft in the first meeting, then hand the details to your designer.' },
+  { title: 'Bath and plumbing showrooms', body: 'Vanities, tubs, showers and fixtures, placed in a real bathroom layout under your name.' },
+  { title: 'Renovation companies with a showroom', body: 'Turn website visitors into booked consultations, with the design already started.' },
+];
+
+function WhoFor() {
   return (
-    <figure className="mk-sample" aria-label="Example: what a contractor’s client sees">
-      <div className="mk-sample-head">
-        <span className="mk-sample-logo" aria-hidden>
-          B
-        </span>
-        <div>
-          <span className="mk-sample-kicker">Prepared by</span>
-          <b>Birch &amp; Bevel</b>
-        </div>
-        <span className="mk-sample-contact">Contact</span>
-      </div>
-      <ul className="mk-sample-lines">
-        {lines.map(([a, b, c]) => (
-          <li key={a}>
-            <span>
-              <b>{a}</b>
-              <i>{b}</i>
-            </span>
-            <span className="mono">{c}</span>
+    <section className="mk-section mk-who" id="who" aria-labelledby="who-title">
+      <SectionHead id="who-title" eyebrow="Who it’s for" title="Built for companies that sell kitchens and bathrooms">
+        Small and mid-sized companies that want what the big chains have, without building it themselves.
+      </SectionHead>
+      <ul className="mk-grid mk-grid--4">
+        {WHO.map((w) => (
+          <li key={w.title} className="mk-card mk-card--who">
+            <h3>{w.title}</h3>
+            <p>{w.body}</p>
           </li>
         ))}
       </ul>
-      <div className="mk-sample-total">
-        <span>Your price</span>
-        <b className="mono">$4,050</b>
-      </div>
-      <figcaption>Illustration with a made-up company. Your client sees sell prices only: never your cost or margin.</figcaption>
-    </figure>
-  );
-}
-
-const SHOWCASE: [string, string?][] = [['heritage-36', 'sage'], ['fridge-retro', 'cream'], ['sink-farm'], ['hood-plaster'], ['pendant-dome', 'brass'], ['wall-glass']];
-
-function Brands() {
-  const items = useMemo(
-    () =>
-      SHOWCASE.map(([id, finishId]) => {
-        const p = getProduct(id);
-        if (!p) return null;
-        const finish = Array.isArray(p.finishes) ? (p.finishes.find((f) => f.id === finishId) ?? p.finishes[0]) : undefined;
-        return { p, finish } as { p: Product; finish?: Finish };
-      }).filter((x): x is { p: Product; finish?: Finish } => !!x),
-    [],
-  );
-  return (
-    <section className="mk-section mk-brands" id="brands" aria-labelledby="brands-title">
-      <div className="mk-split">
-        <div>
-          <SectionHead eyebrow="Brands and makers" title={<span id="brands-title">Brand products at their real size, ready to drop in</span>}>
-            Every product in BluModel Studio has real dimensions, finishes and a price, and brand products carry their SKU and a link to buy. Open any of them on its own page, turn it around in 3D, then drop it into your kitchen.
-          </SectionHead>
-          <ul className="mk-ticks mk-ticks--dark">
-            <li>Brand pages with a <b>Verified</b> badge once we’ve checked the business is real.</li>
-            <li>Sell cabinets or fixtures? Your brand page comes with the Contractor plan: publish what you sell and get leads from homeowners.</li>
-            <li>
-              Can’t find your exact range or sink? <a href="#/orders/new">Have it modelled</a> and it appears in your kitchens, privately.
-            </li>
-          </ul>
-        </div>
-        <div className="mk-shelf" aria-label="A few products from the sample catalog">
-          {items.map(({ p, finish }) => (
-            <div key={p.id} className="mk-shelf-item">
-              <span className="mk-shelf-art">
-                <ProductArt product={p} finish={finish} surfaces={DEFAULT_SURFACES} />
-              </span>
-              <span className="mk-shelf-name">{p.name}</span>
-              <span className="mk-shelf-brand">{p.brand} (sample)</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }
 
-function FinalCta() {
+function PricingSummary() {
   return (
-    <section className="mk-final" aria-labelledby="final-title">
-      <h2 id="final-title">Your kitchen, redesigned tonight.</h2>
-      <p>Free to design, save and share. Pay only if you want the files.</p>
-      <Ctas where="bottom" />
+    <section className="mk-section mk-pricing-sum" id="pricing" aria-labelledby="pricing-title">
+      <SectionHead id="pricing-title" eyebrow="Pricing" title="One license, one monthly plan" center>
+        All prices in Canadian dollars. Your customers never pay anything.
+      </SectionHead>
+      <PricingCards />
+      <p className="mk-center">
+        <a className="mk-link" href="#/pricing">
+          Pricing details and how billing works →
+        </a>
+      </p>
     </section>
-  );
-}
-
-// ── small inline icons (stroke = currentColor) ───────────────────────────
-
-function CameraIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 8h3l1.6-2.4A1.5 1.5 0 0 1 9.85 5h4.3a1.5 1.5 0 0 1 1.25.6L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
-      <circle cx="12" cy="13" r="3.5" />
-    </svg>
-  );
-}
-
-function TapeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="9" cy="12" r="6" />
-      <circle cx="9" cy="12" r="1.6" />
-      <path d="M15 15.5h6v3h-6M17 15.5v1.6M19 15.5v1.6" />
-    </svg>
-  );
-}
-
-function CubeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
-      <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
-    </svg>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
-      <path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12" />
-    </svg>
   );
 }
