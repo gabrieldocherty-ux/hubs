@@ -61,7 +61,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const billing = createBillingHooks();
   const pricing = createPricingHooks();
   const contractors = createContractorHooks();
-  const products = createProductService({ db, now, files, brands, ownerLabel: (userId) => contractors.labelFor(userId) });
+  // `tenants` is made below; the label is only asked for at request time.
+  const products = createProductService({ db, now, files, brands, ownerLabel: (userId) => contractors.labelFor(userId), tenantLabel: (tenantId) => tenants.get(tenantId)?.name ?? null });
   const events = createEventService({ db, now });
   // Tenants and which site a request is for (docs/SHOWROOM_PIVOT.md §4, docs/handoff/tenancy.md).
   const tenants = createTenantService({ db, config, now, files, log });

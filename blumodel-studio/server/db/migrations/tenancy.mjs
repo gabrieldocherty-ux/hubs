@@ -6,6 +6,11 @@
 //   tenancy-002  accounts and sessions belong to a site: users.tenant_id (NULL = the sales site; an
 //                address is unique per site, not globally) and sessions.tenant_id (the site the
 //                session was started on; it works nowhere else)
+//   tenancy-003  tenant scoping: products (source may be 'tenant'), projects and files gain
+//                tenant_id (NULL = the sales site / our shared library); every contractor company
+//                becomes a tenant in 'setup' (its owner on the team, its private catalog and those
+//                products' files moved into the showroom; nothing is deleted or changed for the
+//                contractor on the sales site)
 
 /**
  * Rebuilds `table` with SQLite's procedure (create new, copy, drop old, rename), for the changes
@@ -103,6 +108,76 @@ export const steps = [
         CREATE INDEX users_tenant ON users(tenant_id);
         ALTER TABLE sessions ADD COLUMN tenant_id TEXT;
       `);
+    },
+  },
+  {
+    id: 'tenancy-003-scoping-contractor-tenants',
+    foreignKeys: 'off',
+    up(db) {
+      rebuildTable(db, 'products', (sql) => sql.replace(/CHECK\s*\(\s*source\s+IN\s*\('brand','custom','contractor'\)\s*\)/i, "CHECK (source IN ('brand','custom','contractor','tenant'))"));
+      db.exec(`
+        ALTER TABLE products ADD COLUMN tenant_id TEXT REFERENCES tenants(id);
+        CREATE INDEX products_tenant ON products(tenant_id, status);
+        ALTER TABLE projects ADD COLUMN tenant_id TEXT REFERENCES tenants(id);
+        CREATE INDEX projects_tenant_user ON projects(tenant_id, user_id, updated_at DESC);
+        ALTER TABLE files ADD COLUMN tenant_id TEXT REFERENCES tenants(id);
+        CREATE INDEX files_tenant ON files(tenant_id);
+      `);
+
+      // Every contractor company becomes a showroom in setup. Slugs as services.tenants makes them.
+      const reserved = new Set(['www', 'api', 'app', 'admin', 'administrator', 'mail', 'email', 'smtp', 'ftp', 'ns1', 'ns2', 'static', 'assets', 'files', 'cdn', 'blog', 'help', 'support', 'status', 'sales', 'billing', 'pay', 'payments', 'stripe', 'studio', 'blumodel', 'dashboard', 'login', 'signin', 'signup', 'account', 'docs', 'dev', 'test', 'staging', 'qa', 'localhost', 'webhooks', 'tunnel']);
+      const slugOf = (name) => {
+        let base =
+          String(name ?? '')
+            .normalize('NFKD')
+            .replace(/[̀-ͯ]/g, '')
+            .toLowerCase()
+            .replace(/&/g, ' ')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 40)
+            .replace(/-+$/g, '') || 'showroom';
+        if (reserved.has(base)) base = `${base}-showroom`.slice(0, 40);
+        let s = base;
+        for (let i = 2; db.prepare('SELECT 1 FROM tenants WHERE slug = ?').get(s) || reserved.has(s); i++) s = `${base.slice(0, 36)}-${i}`;
+        return s;
+      };
+      const parse = (x) => {
+        try {
+          return JSON.parse(x || 'null');
+        } catch {
+          return null;
+        }
+      };
+      const fileIds = (spec) => {
+        if (!spec) return [];
+        const ids = [...(Array.isArray(spec.imageFileIds) ? spec.imageFileIds : [])];
+        if (spec.modelFileId) ids.push(spec.modelFileId);
+        if (Array.isArray(spec.finishes)) for (const f of spec.finishes) if (f?.swatchFileId) ids.push(f.swatchFileId);
+        return ids.filter((x) => typeof x === 'string');
+      };
+      const now = Date.now();
+      const profiles = db.prepare('SELECT p.* FROM contractor_profiles p JOIN users u ON u.id = p.user_id ORDER BY p.created_at, p.user_id').all();
+      for (const p of profiles) {
+        if (db.prepare('SELECT 1 FROM tenants WHERE source_user_id = ?').get(p.user_id)) continue;
+        const id = `t_c${String(p.user_id).replace(/[^A-Za-z0-9]/g, '').slice(0, 20)}`;
+        const slug = slugOf(p.company);
+        const contact = { phone: p.phone || '', email: p.email || '', website: p.website || '', serviceArea: p.service_area || '' };
+        const branding = p.logo_file_id ? { logoFileId: p.logo_file_id } : {};
+        db.prepare(
+          `INSERT INTO tenants (id, slug, name, status, status_note, branding, contact, settings, is_demo, source_user_id, created_by, created_at, updated_at)
+           VALUES (?, ?, ?, 'setup', 'Made from a Contractor company when the showrooms began.', ?, ?, '{}', 0, ?, NULL, ?, ?)`,
+        ).run(id, slug, String(p.company || 'Showroom').slice(0, 100), JSON.stringify(branding), JSON.stringify(contact), p.user_id, now, now);
+        db.prepare("INSERT INTO tenant_hostnames (hostname, tenant_id, kind, verified, is_primary, created_by, created_at) VALUES (?, ?, 'subdomain', 1, 1, NULL, ?)").run(`${slug}.blumodel.studio`, id, now);
+        db.prepare("INSERT OR IGNORE INTO tenant_members (tenant_id, user_id, role, invited_by, created_at) VALUES (?, ?, 'owner', NULL, ?)").run(id, p.user_id, now);
+        const products = db.prepare("SELECT id, spec, live_spec FROM products WHERE source = 'contractor' AND owner_user_id = ?").all(p.user_id);
+        const ids = new Set(p.logo_file_id ? [p.logo_file_id] : []);
+        for (const r of products) {
+          db.prepare('UPDATE products SET tenant_id = ? WHERE id = ?').run(id, r.id);
+          for (const f of [...fileIds(parse(r.spec)), ...fileIds(parse(r.live_spec))]) ids.add(f);
+        }
+        for (const f of ids) db.prepare('UPDATE files SET tenant_id = ? WHERE id = ? AND owner_user_id = ? AND tenant_id IS NULL').run(id, f, p.user_id);
+      }
     },
   },
 ];

@@ -9,6 +9,14 @@ import crypto from 'node:crypto';
 import { deviceOf } from './device.mjs';
 import { HttpError } from '../http/respond.mjs';
 import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
+import { siteAllows } from '../tenancy/accounts.mjs';
+
+/**
+ * The tenant id of the site a request is for (app.mjs sets req.blumodelSite from its Host), null for
+ * the sales site. A session belongs to the site it was started on and works nowhere else; the
+ * cookie is host-only (no Domain=) as well, so a browser never even sends it to another showroom.
+ */
+export const siteTenantOf = (req) => req?.blumodelSite?.tenantId ?? null;
 
 export const COOKIE = 'blumodel_session';
 export const SESSION_DAYS = 30;
@@ -65,16 +73,21 @@ export function createSessionStore({ db, config, now = Date.now }) {
     cookieFor,
     clearedCookie: (req) => `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureAttr(req, config)}`,
 
-    /** Starts a session and sets its cookie on `res`. */
+    /**
+     * Starts a session on the request's site and sets its cookie on `res`. An account that doesn't
+     * belong to this site (tenancy/accounts.mjs siteAllows) never gets one, whichever route asks.
+     */
     start(req, res, userId) {
       // A disabled account (Admin > Users) never gets a session, whichever route signs it in.
       if (isDisabled(db, userId)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
+      const tenantId = siteTenantOf(req);
+      if (!siteAllows(db, userId, tenantId)) throw new HttpError(403, 'That account isn’t on this site.', { code: 'wrong_site' });
       const token = crypto.randomBytes(32).toString('base64url');
       const t = now();
       const expires = t + SESSION_DAYS * DAY;
       const { browser, os } = deviceOf(req);
       const id = crypto.randomBytes(12).toString('hex');
-      db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, id, created_at, last_seen_at, browser, os) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, id, created_at, last_seen_at, browser, os, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
         sha256(token),
         userId,
         expires,
@@ -83,19 +96,29 @@ export function createSessionStore({ db, config, now = Date.now }) {
         t,
         browser,
         os,
+        tenantId,
       );
       res.setHeader('Set-Cookie', cookieFor(req, token, expires));
       return { token, expires, id };
     },
 
-    /** The signed-in user (`{ id, email, name, role }`) or null; slides the session once half used. */
+    /**
+     * The signed-in user (`{ id, email, name, role, tenantId }`) or null; slides the session once
+     * half used. Only a session started on this request's site counts, and only while the account
+     * still belongs there (a removed team member's showroom session stops at once).
+     */
     currentUser(req, res) {
       const token = readCookie(req, COOKIE);
       if (!token) return null;
       const hash = sha256(token);
+      const tenantId = siteTenantOf(req);
       const row = db
-        .prepare('SELECT s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.role FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ? AND NOT EXISTS (SELECT 1 FROM account_status d WHERE d.user_id = u.id)')
-        .get(hash);
+        .prepare(
+          `SELECT s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.role, u.tenant_id FROM sessions s JOIN users u ON u.id = s.user_id
+            WHERE s.token_hash = ? AND s.tenant_id IS ? AND NOT EXISTS (SELECT 1 FROM account_status d WHERE d.user_id = u.id)
+              AND (u.tenant_id IS ? OR (? IS NOT NULL AND u.tenant_id IS NULL AND EXISTS (SELECT 1 FROM tenant_members m WHERE m.tenant_id = ? AND m.user_id = u.id)))`,
+        )
+        .get(hash, tenantId, tenantId, tenantId, tenantId);
       if (!row) return null;
       const t = now();
       if (row.expires_at < t) {
@@ -109,7 +132,9 @@ export function createSessionStore({ db, config, now = Date.now }) {
       } else if (!(row.last_seen_at > t - LAST_SEEN_EVERY)) {
         db.prepare('UPDATE sessions SET last_seen_at = ? WHERE token_hash = ?').run(t, hash);
       }
-      return { id: row.id, email: row.email, name: row.name, role: row.role || 'customer' };
+      // BluModel's own roles (studio, admin) mean nothing on a showroom.
+      const role = tenantId ? 'customer' : row.role || 'customer';
+      return { id: row.id, email: row.email, name: row.name, role, tenantId: row.tenant_id ?? null };
     },
 
     /** Ends the request's session (if any) and clears the cookie. */

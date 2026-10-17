@@ -156,7 +156,8 @@ export default function routes(ctx) {
         const old = db.prepare('SELECT email, name FROM users WHERE id = ?').get(rc.user.id);
         if (email === old.email) throw new HttpError(400, 'That is already your email address.', { field: 'email' });
         const taken = () => new HttpError(409, 'An account with that email already exists.', { field: 'email' });
-        if (db.prepare('SELECT 1 FROM users WHERE email = ? AND id <> ?').get(email, rc.user.id)) throw taken();
+        // An address is unique per site (tenancy-002): another showroom's account with it is no clash.
+        if (db.prepare('SELECT 1 FROM users WHERE email = ? AND id <> ? AND tenant_id IS (SELECT tenant_id FROM users WHERE id = ?)').get(email, rc.user.id, rc.user.id)) throw taken();
         // ADMIN_EMAILS plays no part here: it grants nothing and reserves nothing (signing up with a
         // listed address never could be stopped either). Admins come only from
         // server/scripts/make-admin.mjs, run on the server against an account that already exists.

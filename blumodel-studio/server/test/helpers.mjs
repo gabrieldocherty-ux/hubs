@@ -64,9 +64,12 @@ export function sampleDoc(over = {}) {
 function hostRequest(url, { method, headers, body, host }) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
+    const buf = body === undefined ? undefined : Buffer.isBuffer(body) ? body : Buffer.from(String(body));
+    let answered = false;
     const req = http.request(
-      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: { ...headers, Host: host } },
+      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: { ...headers, Host: host, ...(buf ? { 'Content-Length': String(buf.length) } : {}) } },
       (res) => {
+        answered = true;
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {
@@ -81,8 +84,11 @@ function hostRequest(url, { method, headers, body, host }) {
         res.on('error', reject);
       },
     );
-    req.on('error', reject);
-    if (body !== undefined) req.write(body);
+    // The server may answer (and close) before reading a body it refuses: that's an answer, not an error.
+    req.on('error', (err) => {
+      if (!answered) reject(err);
+    });
+    if (buf) req.write(buf);
     req.end();
   });
 }

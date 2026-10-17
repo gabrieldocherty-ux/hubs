@@ -1,4 +1,5 @@
-// Saved kitchens. Every query is scoped to the owner; another user's kitchen is a 404.
+// Saved kitchens. Every query is scoped to the owner AND the site (projects.tenant_id, tenancy-003:
+// a kitchen saved on a showroom exists only there); another user's kitchen is a 404.
 // Saves are optimistic: `revision` is required (unless `force: true`) and the write is a
 // conditional UPDATE, so of two saves from the same revision exactly one wins.
 
@@ -23,8 +24,8 @@ export default function routes(ctx) {
     ...(withDoc ? { doc: JSON.parse(r.doc) } : {}),
   });
 
-  const owned = (userId, id) => {
-    const row = db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ?').get(id, userId);
+  const owned = (userId, id, tenantId) => {
+    const row = db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ? AND tenant_id IS ?').get(id, userId, tenantId ?? null);
     if (!row) throw new HttpError(404, 'That kitchen does not exist.');
     return row;
   };
@@ -43,7 +44,10 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/projects',
       handler: (rc) => ({
-        projects: db.prepare('SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(rc.user.id).map((r) => projectWire(r)),
+        projects: db
+          .prepare('SELECT * FROM projects WHERE user_id = ? AND tenant_id IS ? ORDER BY updated_at DESC')
+          .all(rc.user.id, rc.site.tenantId)
+          .map((r) => projectWire(r)),
       }),
     },
     {
@@ -55,21 +59,21 @@ export default function routes(ctx) {
         const doc = serialise(rc.body.doc, name);
         const id = crypto.randomUUID();
         const t = ctx.now();
-        db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)').run(id, rc.user.id, name, client, doc, t, t);
-        rc.send(201, { project: projectWire(owned(rc.user.id, id)) });
+        db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').run(id, rc.user.id, name, client, doc, t, t, rc.site.tenantId);
+        rc.send(201, { project: projectWire(owned(rc.user.id, id, rc.site.tenantId)) });
       },
     },
     {
       method: 'GET',
       path: '/api/projects/:id',
-      handler: (rc) => ({ project: projectWire(owned(rc.user.id, rc.params.id)) }),
+      handler: (rc) => ({ project: projectWire(owned(rc.user.id, rc.params.id, rc.site.tenantId)) }),
     },
     {
       method: 'DELETE',
       path: '/api/projects/:id',
       handler: (rc) => {
-        owned(rc.user.id, rc.params.id);
-        db.prepare('DELETE FROM projects WHERE id = ? AND user_id = ?').run(rc.params.id, rc.user.id);
+        owned(rc.user.id, rc.params.id, rc.site.tenantId);
+        db.prepare('DELETE FROM projects WHERE id = ? AND user_id = ? AND tenant_id IS ?').run(rc.params.id, rc.user.id, rc.site.tenantId);
         return { ok: true };
       },
     },
@@ -79,7 +83,7 @@ export default function routes(ctx) {
       handler: (rc) => {
         const body = rc.body;
         const id = rc.params.id;
-        const row = owned(rc.user.id, id);
+        const row = owned(rc.user.id, id, rc.site.tenantId);
         const force = body.force === true;
         if (!force && typeof body.revision !== 'number') throw new HttpError(400, 'Reload this kitchen to get the latest version, then try again.');
         const conflict = (current) => rc.send(409, { error: 'This kitchen was changed somewhere else.', project: projectWire(current) });
@@ -96,8 +100,8 @@ export default function routes(ctx) {
           : db
               .prepare('UPDATE projects SET name = ?, client = ?, doc = ?, revision = revision + 1, updated_at = ? WHERE id = ? AND user_id = ? AND revision = ?')
               .run(name, client, doc, ctx.now(), id, rc.user.id, body.revision);
-        if (!res.changes) return conflict(owned(rc.user.id, id));
-        return { project: projectWire(owned(rc.user.id, id)) };
+        if (!res.changes) return conflict(owned(rc.user.id, id, rc.site.tenantId));
+        return { project: projectWire(owned(rc.user.id, id, rc.site.tenantId)) };
       },
     },
     {
@@ -105,17 +109,17 @@ export default function routes(ctx) {
       path: '/api/projects/:id/duplicate',
       body: 'none',
       handler: (rc) => {
-        const src = owned(rc.user.id, rc.params.id);
+        const src = owned(rc.user.id, rc.params.id, rc.site.tenantId);
         const nid = crypto.randomUUID();
         const t = ctx.now();
         const name = `${src.name} (copy)`.slice(0, 120);
         const doc = JSON.stringify({ ...JSON.parse(src.doc), name });
         ctx.tx(() => {
-          db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)').run(nid, rc.user.id, name, src.client, doc, t, t);
+          db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').run(nid, rc.user.id, name, src.client, doc, t, t, rc.site.tenantId);
           // The photos a kitchen was started from (Start from a photo) go with its copy.
           db.prepare('INSERT INTO generate_photo_refs (project_id, user_id, file_ids, updated_at) SELECT ?, user_id, file_ids, ? FROM generate_photo_refs WHERE project_id = ?').run(nid, t, src.id);
         });
-        rc.send(201, { project: projectWire(owned(rc.user.id, nid)) });
+        rc.send(201, { project: projectWire(owned(rc.user.id, nid, rc.site.tenantId)) });
       },
     },
   ];

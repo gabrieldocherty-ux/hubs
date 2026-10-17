@@ -34,12 +34,13 @@ export default function routes(ctx) {
 
   return [
     {
+      // On a showroom: that company's products only, and no partner brands (docs/handoff/tenancy.md).
       method: 'GET',
       path: '/api/catalog',
       auth: 'optional',
       handler: (rc) => {
-        const list = products.listCatalog(rc.user);
-        const brandList = brands.listActive().map(brands.toWire);
+        const list = products.listCatalog(rc.user, rc.site);
+        const brandList = rc.tenant ? [] : brands.listActive().map(brands.toWire);
         return { products: list, brands: brandList, version: products.catalogVersion(list, brandList) };
       },
     },
@@ -50,10 +51,24 @@ export default function routes(ctx) {
       path: '/api/catalog/brands',
       auth: 'none',
       handler: (rc) => {
-        const out = { brands: brands.listActive().map(brands.toWire) };
         const category = rc.query.get('category');
+        if (category !== null && category !== 'all' && !CATEGORY_IDS.has(category)) throw new HttpError(400, `Unknown category. Use all or one of: ${[...CATEGORY_IDS].join(', ')}.`);
+        // A showroom's wizard lists the company's own product lines, never a retailer.
+        if (rc.tenant) {
+          const lines = new Map();
+          for (const p of products.listCatalog(rc.user, rc.site)) {
+            if (category && category !== 'all' && p.category !== category) continue;
+            const name = p.line || p.brand;
+            const cur = lines.get(name) ?? { name, categories: new Set(), products: 0 };
+            cur.categories.add(p.category);
+            cur.products++;
+            lines.set(name, cur);
+          }
+          const list = [...lines.values()].map((l) => ({ name: l.name, categories: [...l.categories].sort(), products: l.products })).sort((a, b) => a.name.localeCompare(b.name, 'en'));
+          return { brands: [], lines: list, ...(category !== null ? { category, checkedAt: null, retailBrands: [] } : {}) };
+        }
+        const out = { brands: brands.listActive().map(brands.toWire) };
         if (category === null) return out;
-        if (category !== 'all' && !CATEGORY_IDS.has(category)) throw new HttpError(400, `Unknown category. Use all or one of: ${[...CATEGORY_IDS].join(', ')}.`);
         const retail = loadRetail();
         return { ...out, category, checkedAt: retail.data.checkedAt ?? null, retailBrands: brandsInCategory(retail, category) };
       },
@@ -67,13 +82,18 @@ export default function routes(ctx) {
         const notFound = () => new HttpError(404, 'That product does not exist.');
         if (!row) throw notFound();
         const user = rc.user;
-        // The working copy: brand members, the owner of a custom product, studio and admin.
+        // Another showroom's product doesn't exist here. On a showroom only its own products do; on
+        // the sales site a tenant's product is our studio's and admins' (and a contractor's own).
+        if (rc.tenant && row.tenantId !== rc.tenant.id) throw notFound();
+        // The working copy: brand members, the owner of a custom product, studio and admin; on a
+        // showroom, its team.
         if (rc.query.get('working') === '1' && user) {
-          const entitled =
-            user.role === 'admin' || user.role === 'studio' || (row.ownerUserId && row.ownerUserId === user.id) || (row.brandId && auth.isBrandMember(user.id, row.brandId));
+          const entitled = rc.tenant
+            ? !!rc.memberRole || (row.ownerUserId && row.ownerUserId === user.id)
+            : user.role === 'admin' || user.role === 'studio' || (row.ownerUserId && row.ownerUserId === user.id) || (row.brandId && auth.isBrandMember(user.id, row.brandId));
           if (entitled) return { product: products.toWire(row, { which: 'working', viewer: user }) };
         }
-        if (!products.inCatalog(row, user)) throw notFound();
+        if (!products.inCatalog(row, user, rc.site)) throw notFound();
         return { product: products.toWire(row, { which: 'live', viewer: user }) };
       },
     },
@@ -84,6 +104,8 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/catalog/retailers',
       auth: 'none',
+      // A showroom never sends its visitors to a store (docs/SHOWROOM_PIVOT.md §3).
+      hosts: 'sales',
       handler: () => ({ retailers: retailerRows().map(publicRetailer) }),
     },
     {
@@ -91,6 +113,7 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/catalog/retail/clicks',
       auth: 'optional',
+      hosts: 'sales',
       maxBytes: 1_024,
       rateLimit: { name: 'retail-clicks', max: 300, windowMs: HOUR, by: 'ip' },
       handler: (rc) => {

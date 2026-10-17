@@ -24,6 +24,8 @@ import { passwordChangedEmail, resetEmail, signInAlertEmail } from '../email/mes
 import { createResetStore, maskEmail, RESET_MINUTES } from '../auth/resets.mjs';
 import { audit } from '../lib/audit.mjs';
 import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
+import { findSiteUser, siteAllows } from '../tenancy/accounts.mjs';
+import { requestOrigin } from '../tenancy/hosts.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -47,14 +49,31 @@ export default function routes(ctx) {
   const prefs = createPrefsStore(db, ctx.now);
   const mailer = createMailer({ config, fetch: ctx.fetch, log });
   const resets = createResetStore({ db, now: ctx.now });
-  const resetUrl = (token) => `${config.PUBLIC_URL}/#/signin?reset=${token}`;
+  // Accounts belong to a site (docs/handoff/tenancy.md): a showroom's links use its own address
+  // (from the database, never the request's Host); the sales site's use PUBLIC_URL.
+  const siteOrigin = (rc, tenantId = rc.site.tenantId) => {
+    if (!tenantId) return config.PUBLIC_URL;
+    const t = services.tenants.get(tenantId);
+    return services.tenants.originOf(t, requestOrigin(rc.req, config));
+  };
+  const resetUrl = (token, rc, tenantId) => `${siteOrigin(rc, tenantId)}/#/signin?reset=${token}`;
   for (const n of mailer.notes) log?.info?.(n);
 
   /**
    * `{ id, email, name, role, brands, plan, contractor }`: the shape every auth response
    * returns (server/auth/userWire.mjs).
    */
-  const userWire = makeUserWire(services);
+  const baseWire = makeUserWire(services);
+  /**
+   * On a showroom the user also carries `showroom: { tenantId, role: 'owner'|'staff'|null }` (role
+   * null for a visitor); on the sales site `showroom` is null.
+   */
+  const userWire = (u, rc) => {
+    const w = baseWire(u);
+    const tid = rc?.site?.tenantId ?? null;
+    return { ...w, ...(tid ? { role: 'customer' } : {}), showroom: tid ? { tenantId: tid, role: services.tenants.roleOf(tid, u.id) } : null };
+  };
+
 
   // Roles are never granted by signing up or signing in. There is no email verification, so an
   // address proves nothing: an admin is made only on the server, with
@@ -74,7 +93,8 @@ export default function routes(ctx) {
    * names, the unrecognisable one included) is alerted about at most once per account per
    * ALERT_REPEAT_MS (signin_alerts, account-002).
    */
-  const alertNewDevice = (req, user) => {
+  const alertNewDevice = (rc, user) => {
+    const req = rc.req;
     if (!mailer.enabled || !prefs.get(user.id).prefs.signInAlerts) return;
     const { browser, os } = deviceOf(req);
     const t = ctx.now();
@@ -90,7 +110,7 @@ export default function routes(ctx) {
     const msg = signInAlertEmail({
       device: deviceLabel({ browser, os }),
       when: utc(t),
-      settingsUrl: `${config.PUBLIC_URL}/#/account`,
+      settingsUrl: `${siteOrigin(rc)}/#/account`,
       supportEmail: config.legal?.supportEmail,
     });
     void mailer.send({ to: user.email, ...msg });
@@ -112,17 +132,19 @@ export default function routes(ctx) {
         if (password.length < 8) throw new HttpError(400, 'Use at least 8 characters for your password.');
         if (password.length > MAX_PASSWORD) throw new HttpError(400, 'That password is too long.');
         const taken = () => new HttpError(409, 'An account with that email already exists. Try signing in.');
-        if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(email)) throw taken();
+        // An account is made on this site (a showroom's visitors are its own; the sales site's are ours).
+        const tenantId = rc.site.tenantId;
+        if (db.prepare('SELECT 1 FROM users WHERE email = ? AND tenant_id IS ?').get(email, tenantId)) throw taken();
         const hash = await hashPassword(password);
         const id = crypto.randomUUID();
         try {
-          db.prepare('INSERT INTO users (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(id, email, name, hash, ctx.now());
+          db.prepare('INSERT INTO users (id, email, name, password_hash, created_at, tenant_id) VALUES (?, ?, ?, ?, ?, ?)').run(id, email, name, hash, ctx.now(), tenantId);
         } catch (err) {
           if (/UNIQUE/i.test(String(err?.message))) throw taken();
           throw err;
         }
         sessions.start(rc.req, rc.res, id);
-        rc.send(201, { user: userWire({ id, email, name, role: 'customer' }) });
+        rc.send(201, { user: userWire({ id, email, name, role: 'customer' }, rc) });
       },
     },
     {
@@ -134,14 +156,16 @@ export default function routes(ctx) {
       handler: async (rc) => {
         const email = str(rc.body.email, 254).toLowerCase();
         const password = typeof rc.body.password === 'string' ? rc.body.password : '';
-        const keyPair = `login:${rc.ip}|${email}`;
-        const keyEmail = `login-email:${email}`;
+        // Budgets are per site: a lockout on one showroom says nothing about an address elsewhere.
+        const site = rc.site.tenantId ?? 'sales';
+        const keyPair = `login:${site}|${rc.ip}|${email}`;
+        const keyEmail = `login-email:${site}|${email}`;
         if (limiter.blocked(keyPair, LOGIN_MAX_PER_IP_EMAIL, LOGIN_WINDOW) || limiter.blocked(keyEmail, LOGIN_MAX_PER_EMAIL, LOGIN_WINDOW)) {
           const err = new HttpError(429, 'Too many attempts. Wait a few minutes and try again.');
           err.retryAfter = 60;
           throw err;
         }
-        const user = db.prepare('SELECT id, email, name, role, password_hash FROM users WHERE email = ?').get(email);
+        const user = findSiteUser(db, email, rc.site.tenantId, 'id, email, name, role, password_hash');
         const ok = (await verifyPassword(password.slice(0, MAX_PASSWORD), user ? user.password_hash : await dummyHash())) && !!user;
         if (!ok) {
           limiter.hit(keyPair, Infinity, LOGIN_WINDOW);
@@ -151,9 +175,9 @@ export default function routes(ctx) {
         limiter.reset(keyPair);
         // Only after the right password, so it says nothing about an address to anyone else.
         if (isDisabled(db, user.id)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
-        alertNewDevice(rc.req, user);
+        alertNewDevice(rc, user);
         sessions.start(rc.req, rc.res, user.id);
-        return { user: userWire(user) };
+        return { user: userWire(user, rc) };
       },
     },
     {
@@ -170,7 +194,7 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/auth/me',
       auth: 'optional',
-      handler: (rc) => ({ user: rc.user ? userWire(rc.user) : null }),
+      handler: (rc) => ({ user: rc.user ? userWire(rc.user, rc) : null }),
     },
     {
       method: 'PATCH',
@@ -179,7 +203,7 @@ export default function routes(ctx) {
         const name = str(rc.body.name, 80);
         if (!name) throw new HttpError(400, 'Name cannot be empty.');
         db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, rc.user.id);
-        return { user: userWire({ ...rc.user, name }) };
+        return { user: userWire({ ...rc.user, name }, rc) };
       },
     },
     {
@@ -220,11 +244,11 @@ export default function routes(ctx) {
         // From here the answer is the same for every address: whether it has an account, whether
         // this address has had its 3 an hour, whether the provider accepts the message.
         if (!mailer.enabled) return { ok: true, emailEnabled: false };
-        if (!limiter.hit(`forgot-email:${email}`, FORGOT_MAX_PER_EMAIL, HOUR).ok) return { ok: true, emailEnabled: true };
-        const user = db.prepare('SELECT id, email, name FROM users WHERE email = ?').get(email);
+        if (!limiter.hit(`forgot-email:${rc.site.tenantId ?? 'sales'}|${email}`, FORGOT_MAX_PER_EMAIL, HOUR).ok) return { ok: true, emailEnabled: true };
+        const user = findSiteUser(db, email, rc.site.tenantId, 'id, email, name');
         if (user) {
           const { token } = resets.issue(user.id);
-          void mailer.send({ to: user.email, ...resetEmail({ url: resetUrl(token), minutes: RESET_MINUTES }) });
+          void mailer.send({ to: user.email, ...resetEmail({ url: resetUrl(token, rc), minutes: RESET_MINUTES }) });
         }
         return { ok: true, emailEnabled: true };
       },
@@ -237,7 +261,8 @@ export default function routes(ctx) {
       rateLimit: { name: 'reset-check', max: 60, windowMs: 15 * 60_000, by: 'ip' },
       handler: (rc) => {
         const found = resets.find(rc.body.token);
-        return found ? { valid: true, email: maskEmail(found.email) } : { valid: false };
+        // A link works only on the site its account belongs to.
+        return found && siteAllows(db, found.userId, rc.site.tenantId) ? { valid: true, email: maskEmail(found.email) } : { valid: false };
       },
     },
     {
@@ -250,7 +275,8 @@ export default function routes(ctx) {
         const token = rc.body.token;
         const password = typeof rc.body.password === 'string' ? rc.body.password : '';
         const gone = () => new HttpError(400, 'This reset link has expired or was already used. Ask for a new one.', { code: 'reset_invalid' });
-        if (!resets.find(token)) throw gone();
+        const live = resets.find(token);
+        if (!live || !siteAllows(db, live.userId, rc.site.tenantId)) throw gone();
         if (password.length < 8) throw new HttpError(400, 'Use at least 8 characters for your password.', { field: 'password' });
         if (password.length > MAX_PASSWORD) throw new HttpError(400, 'That password is too long.', { field: 'password' });
         const hash = await hashPassword(password);
@@ -260,7 +286,7 @@ export default function routes(ctx) {
         db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
         resets.revokeFor(userId);
         sessions.endAll(userId);
-        limiter.reset(`login-email:${db.prepare('SELECT email FROM users WHERE id = ?').get(userId)?.email ?? ''}`);
+        limiter.reset(`login-email:${rc.site.tenantId ?? 'sales'}|${db.prepare('SELECT email FROM users WHERE id = ?').get(userId)?.email ?? ''}`);
         const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(userId);
         // A browser signed in as someone else (a reset link opened there) leaves that session too;
         // the new session's cookie replaces it.
@@ -268,7 +294,7 @@ export default function routes(ctx) {
         sessions.start(rc.req, rc.res, userId);
         if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: true }) });
         log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
-        return { user: userWire(user) };
+        return { user: userWire(user, rc) };
       },
     },
     {
@@ -279,13 +305,14 @@ export default function routes(ctx) {
       params: { id: /^[A-Za-z0-9_-]{1,64}$/ },
       rateLimit: { name: 'admin-reset-link', max: 30, windowMs: HOUR, by: 'user' },
       handler: (rc) => {
-        const target = db.prepare('SELECT id, email FROM users WHERE id = ?').get(rc.params.id);
+        const target = db.prepare('SELECT id, email, tenant_id FROM users WHERE id = ?').get(rc.params.id);
         if (!target) throw new HttpError(404, 'That user does not exist.');
         const { token, expiresAt } = resets.issue(target.id, { createdBy: rc.user.id });
         // The link itself is never logged or audited: only that one was made, by whom, for whom.
         audit(db, { admin: rc.user, action: 'reset_link', targetUserId: target.id, targetEmail: target.email, detail: { expiresAt }, at: ctx.now() });
         rc.res.setHeader('Cache-Control', 'no-store');
-        return { url: resetUrl(token), expiresAt };
+        // A showroom visitor's or staff member's link opens on their showroom.
+        return { url: resetUrl(token, rc, target.tenant_id ?? null), expiresAt };
       },
     },
   ];

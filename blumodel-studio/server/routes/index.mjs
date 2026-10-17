@@ -53,7 +53,7 @@ export const ROUTE_MODULE_NAMES = [
  * Every other module answers only on the sales site, so a module is safe until someone has scoped
  * its queries to rc.site.tenantId and added it here. A route can still say `hosts` itself.
  */
-export const SHOWROOM_MODULES = new Set(['config', 'ops', 'tenants', 'tenants-admin']);
+export const SHOWROOM_MODULES = new Set(['auth', 'projects', 'config', 'catalog', 'files', 'events', 'share', 'account', 'ops', 'tenants', 'tenants-admin']);
 
 /** The default `hosts` for a module's routes: 'any' for SHOWROOM_MODULES, else 'sales'. */
 export const moduleHosts = (name) => (SHOWROOM_MODULES.has(name) ? 'any' : 'sales');
