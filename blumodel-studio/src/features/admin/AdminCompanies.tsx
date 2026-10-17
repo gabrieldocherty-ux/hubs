@@ -8,7 +8,8 @@
  * (server/routes/tenantsAdmin.mjs, tenantsBilling.mjs); the numbers come from adminShowrooms.mjs.
  */
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { money } from '../../lib/money';
+import { amount as dollars, money } from '../../lib/money';
+import plansJson from '../../data/plans.json';
 import { useAppConfig } from '../../lib/config';
 import { timeAgo } from '../../store/useSession';
 import { showroomApi } from './showroomApi';
@@ -34,7 +35,24 @@ const PAID_HOW: [PaidHow, string][] = [
 ];
 const PAID_LABEL = Object.fromEntries(PAID_HOW) as Record<PaidHow, string>;
 
-const LIST_PRICE_CENTS = 199500;
+// Prices from src/data/plans.json, the server's own price list (fallbacks: SHOWROOM_PIVOT §2).
+interface ShowroomPlanJson {
+  id: string;
+  priceCents: number;
+  includedProducts?: number;
+  creditRolloverMonths?: number;
+  breakdown?: { id: string; cents: number }[];
+}
+const PLAN_LIST = plansJson as unknown as ShowroomPlanJson[];
+const LICENSE_PLAN = PLAN_LIST.find((p) => p.id === 'showroom_license');
+const MONTHLY_PLAN = PLAN_LIST.find((p) => p.id === 'showroom_monthly');
+const LIST_PRICE_CENTS = LICENSE_PLAN?.priceCents ?? 199500;
+const INCLUDED_PRODUCTS = LICENSE_PLAN?.includedProducts ?? 50;
+const MONTHLY_CENTS = MONTHLY_PLAN?.priceCents ?? 5000;
+const part = (id: string, fallback: number) => MONTHLY_PLAN?.breakdown?.find((b) => b.id === id)?.cents ?? fallback;
+const HOSTING_CENTS = part('hosting', 2500);
+const CREDIT_CENTS = part('render_credits', 2500);
+const ROLLOVER_MONTHS = MONTHLY_PLAN?.creditRolloverMonths ?? 3;
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/;
 
 /** Like the server's slugify (server/tenancy/service.mjs), for the address preview only. */
@@ -644,7 +662,7 @@ function LicenseSection({ t, act, busy }: SectionProps) {
           <span>Note</span>
           <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="e.g. Invoice 1042, includes 50 products" />
         </label>
-        <p className="adm-note">List price {money(LIST_PRICE_CENTS)} a year with setup and up to 50 products modelled. Type what the deal was signed at. Dates are calendar days (UTC), both included.</p>
+        <p className="adm-note">List price {money(LIST_PRICE_CENTS)} a year with setup and up to {INCLUDED_PRODUCTS} products modelled. Type what the deal was signed at. Dates are calendar days (UTC), both included.</p>
         <div>
           <button type="submit" className="btn" disabled={!!busy || cents === null}>
             {busy === 'license' ? 'Recording…' : 'Record license'}
@@ -668,7 +686,7 @@ function MonthlySection({ t, act, busy }: SectionProps) {
   const demoPayments = cfg?.payments === 'demo';
 
   return (
-    <Section title="Monthly plan ($50/month)" id="adm-co-monthly">
+    <Section title={`Monthly plan (${dollars(MONTHLY_CENTS)}/month)`} id="adm-co-monthly">
       <dl className="adm-kv">
         <dt>Plan</dt>
         <dd>
@@ -699,7 +717,7 @@ function MonthlySection({ t, act, busy }: SectionProps) {
           </>
         )}
       </dl>
-      <p className="adm-note">$25 hosting with their web address + $25 of render credits a month, through Stripe. A failed payment gets 14 days of grace before the showroom lapses.</p>
+      <p className="adm-note">{dollars(HOSTING_CENTS)} hosting with their web address + {dollars(CREDIT_CENTS)} of render credits a month, through Stripe. A failed payment gets 14 days of grace before the showroom lapses.</p>
       <div className="adm-form">
         {latest && (
           <>
@@ -968,7 +986,7 @@ function CreditsSection({ id, onChange }: { id: string; onChange: () => void }) 
             <dt>Next expiry</dt>
             <dd>{data.nextExpiry ? `${money(data.nextExpiry.cents)} on ${day(data.nextExpiry.at)}` : '—'}</dd>
           </dl>
-          <p className="adm-note">Each paid month adds $25. Credits last 3 months and the oldest are spent first.</p>
+          <p className="adm-note">Each paid month adds {dollars(CREDIT_CENTS)}. Credits last {ROLLOVER_MONTHS} months and the oldest are spent first.</p>
         </>
       )}
       <form className="adm-form adm-subform" onSubmit={(e) => void submit(e)}>
