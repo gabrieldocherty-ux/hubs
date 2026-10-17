@@ -1,16 +1,12 @@
 import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useState } from 'react';
 import { AccountMenu } from '../../components/AccountMenu';
-import { Check, Logo, Wordmark } from '../../components/Icons';
+import { Logo, Wordmark } from '../../components/Icons';
 import { Toasts } from '../../components/Toasts';
-import { AgreeToPay, DemoBanner, PaymentsSoon } from '../../components/PaymentNotice';
 import { ApiError, call } from '../../lib/api';
-import { usePayments } from '../../lib/config';
-import { amount } from '../../lib/money';
-import { clearSessionId, markCheckout, paymentError, takeCheckoutReturn, type CheckoutReturn } from '../../lib/payments';
-import { hrefFor, navigateHash } from '../../lib/router';
+import { clearSessionId, takeCheckoutReturn, type CheckoutReturn } from '../../lib/payments';
+import { hrefFor } from '../../lib/router';
 import { useSession } from '../../store/useSession';
-import type { ContractorProfile, Plan } from '../../types/platform';
-import plansJson from '../../data/plans.json';
+import type { ContractorProfile } from '../../types/platform';
 import { proApi } from './api';
 import { needsCompanyDetails } from './CompanyFields';
 import { loadPriceBook } from './pricing';
@@ -27,9 +23,6 @@ const Brands = lazy(() => import('./Brands'));
 const Quotes = lazy(() => import('./Quotes'));
 const QuotePage = lazy(() => import('./QuotePage'));
 const Company = lazy(() => import('./Company'));
-const Modelling = lazy(() => import('./Modelling'));
-
-const CONTRACTOR = (plansJson as Plan[]).find((p) => p.id === 'contractor')!;
 
 interface Workspace {
   profile: ContractorProfile;
@@ -56,7 +49,6 @@ const TABS: [string, string][] = [
   ['brand', 'Brand page'],
   ['brands', 'Brands I carry'],
   ['quotes', 'Quotes'],
-  ['modelling', 'Make custom models'],
   ['company', 'Company'],
 ];
 
@@ -202,7 +194,6 @@ export default function ContractorRoot({ rest }: { rest: string }) {
             {active === 'brand' && <ProBrandTab rest={rest} />}
             {active === 'brands' && <Brands />}
             {active === 'quotes' && <Quotes />}
-            {active === 'modelling' && <Modelling />}
             {active === 'company' && <Company />}
           </Suspense>
         </main>
@@ -226,36 +217,11 @@ function BrandBadge() {
 }
 
 /**
- * For anyone without the Contractor plan: what it is and how to start it. The button follows this
- * server's payments: Stripe's hosted checkout, the labelled DEMO, or "opens soon" while payments
- * aren't open (no checkout is started then).
+ * For anyone without a contractor company: the Contractor plan isn't sold any more (the showroom
+ * pivot, docs/SHOWROOM_PIVOT.md §3). BluModel Studio now builds showrooms for companies, so this
+ * says so and points at the sales site instead of starting a checkout.
  */
-function Pitch({ brand = false, back = null }: { brand?: boolean; back?: CheckoutReturn | null }) {
-  const plan = useSession((s) => s.user?.plan);
-  const payments = usePayments();
-  const soon = payments === 'none';
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const start = async () => {
-    if (soon) return;
-    setBusy(true);
-    setError(null);
-    try {
-      if (plan?.id === 'unlimited') {
-        await proApi.switchToContractor();
-        await useSession.getState().refresh();
-        location.reload();
-        return;
-      }
-      const { url } = await proApi.startContractorPlan();
-      markCheckout('contractor', '#/pro');
-      if (url.startsWith('#/')) navigateHash(url);
-      else location.assign(url);
-    } catch (e) {
-      setError(paymentError(e, 'Could not start the plan. Try again.'));
-      setBusy(false);
-    }
-  };
+function Pitch({ brand = false }: { brand?: boolean; back?: CheckoutReturn | null }) {
   return (
     <div className="pro pro-pitch">
       <header className="home-bar">
@@ -266,55 +232,21 @@ function Pitch({ brand = false, back = null }: { brand?: boolean; back?: Checkou
         <AccountMenu />
       </header>
       <main className="pro-pitch-main">
-        <span className="eyebrow">For kitchen contractors, cabinet shops and remodelers</span>
-        <h1>{CONTRACTOR.tagline}</h1>
-        {brand && (
-          // Package B2: `#/brand*` lands here for anyone without the plan (BRAND_PAGE §2).
-          <p className="pro-pitch-brand">
-            <b>Get found:</b> put the cabinets you sell in front of homeowners designing their kitchens. A brand page with your products in 3D and a leads inbox is included in the
-            Contractor plan.
-          </p>
-        )}
-        <div className="pro-pitch-grid">
-          <ul className="plan-bullets pro-pitch-bullets">
-            {CONTRACTOR.bullets.map((b) => (
-              <li key={b}>
-                <Check width={16} height={16} /> {b}
-              </li>
-            ))}
-          </ul>
-          <section className="pro-pitch-card" aria-label="Contractor plan">
-            <span className="eyebrow">Contractor</span>
-            <div className="pro-pitch-price">
-              <b>{amount(CONTRACTOR.priceCents)}</b>
-              <span>CAD / month</span>
-            </div>
-            <p>Set up your company, add the cabinets you sell, and price kitchens at your markup. Cancel anytime.</p>
-            {back?.outcome === 'cancel' && (
-              <div className="auth-note" role="status">
-                Checkout cancelled. Nothing was charged.
-              </div>
-            )}
-            {back?.outcome === 'success' && (
-              <div className="auth-note" role="status">
-                Payment received. We’re still confirming it with the payment provider: reload this page in a minute.
-              </div>
-            )}
-            {payments === 'demo' && <DemoBanner compact />}
-            {soon ? (
-              <PaymentsSoon compact title="The Contractor plan opens soon">
-                Sign-ups open with payments. Until then you can design and share kitchens for free.
-              </PaymentsSoon>
-            ) : (
-              <button className="btn primary big wide" onClick={start} disabled={busy}>
-                {busy ? 'One moment…' : plan?.id === 'unlimited' ? 'Switch from Unlimited to Contractor' : 'Start the Contractor plan'}
-              </button>
-            )}
-            {error && <div className="auth-error">{error}</div>}
-            {!soon && <AgreeToPay />}
-            <p className="fine">Your clients only ever see your sell prices. Your costs stay in your account.</p>
-          </section>
+        <span className="eyebrow">For kitchen and bath companies</span>
+        <h1>The Contractor plan has been retired</h1>
+        <p className="pro-pitch-brand">
+          {brand ? 'Brand pages were part of the Contractor plan, which is no longer offered. ' : ''}BluModel Studio now builds, hosts and runs a virtual showroom for your company: your own web address, your products modelled in 3D, every customer design sent to you as a
+          lead, and a workspace for your team.
+        </p>
+        <div className="pro-pitch-actions">
+          <a className="btn primary big" href="#/welcome">
+            See how showrooms work
+          </a>
+          <a className="btn big" href="#/book">
+            Book a call
+          </a>
         </div>
+        <p className="fine">Designing and sharing your own kitchens stays free.</p>
       </main>
     </div>
   );

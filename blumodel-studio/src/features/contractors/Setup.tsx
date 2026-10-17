@@ -110,10 +110,6 @@ function NewCompany({ onDone }: { onDone: () => Promise<void> }) {
                   <b>Upload your own 3D model</b>
                   <span>A .glb file of a product you sell, checked for size and dimensions.</span>
                 </button>
-                <button type="button" className="pro-start-card" onClick={() => finish(hrefFor({ name: 'pro', rest: 'modelling' }))} disabled={busy}>
-                  <b>Have BluModel Studio model it</b>
-                  <span>Send each product’s UPC or photos; our studio models 3 a month for you, included in your plan.</span>
-                </button>
                 <button type="button" className="pro-start-card pro-start-skip" onClick={() => finish(hrefFor({ name: 'pro', rest: '' }))} disabled={busy}>
                   <b>Skip for now</b>
                   <span>Go to your workspace.</span>
