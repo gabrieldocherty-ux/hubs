@@ -16,3 +16,17 @@ export function takePendingUser(): string | null {
   pending = null;
   return id;
 }
+
+/** The same for one company: Overview hands its id to Admin > Companies. */
+let pendingCompany: string | null = null;
+
+export function openCompany(id: string) {
+  pendingCompany = id;
+  navigate({ name: 'admin', tab: 'companies' });
+}
+
+export function takePendingCompany(): string | null {
+  const id = pendingCompany;
+  pendingCompany = null;
+  return id;
+}
