@@ -33,8 +33,8 @@ export interface CatalogState {
   registerMissing(list: Product[]): void;
 }
 
-const RANK: Record<string, number> = { builtin: 4, brand: 3, custom: 3, contractor: 3, snapshot: 2, missing: 1 };
-const LIVE_SOURCES = new Set(['brand', 'custom', 'contractor']);
+const RANK: Record<string, number> = { builtin: 4, brand: 3, custom: 3, contractor: 3, tenant: 3, snapshot: 2, missing: 1 };
+const LIVE_SOURCES = new Set(['brand', 'custom', 'contractor', 'tenant']);
 const rank = (p: Product | undefined) => (p ? RANK[p.source ?? 'brand'] ?? 3 : 0);
 
 let inflight: Promise<void> | null = null;

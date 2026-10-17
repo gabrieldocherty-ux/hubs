@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { navigateHash, safeNext, signinHref, splitHash, useRoute, type Route } from './lib/router';
-import { loadConfig } from './lib/config';
+import { loadConfig, useConfig } from './lib/config';
 import { useSession } from './store/useSession';
 import { useCatalog } from './store/useCatalog';
 import { AuthScreen } from './screens/AuthScreen';
@@ -19,6 +19,8 @@ import { ContractorRoot } from './features/contractors';
 import { WorkspaceRoot } from './features/workspace';
 import { ContractorsPage } from './features/finder';
 import { LegalScreen } from './features/legal';
+import { applyShowroomBranding, NOT_ON_SHOWROOM, useSiteKind } from './features/showroom';
+import { showroomScreen } from './features/showroom/routes';
 
 const AdminScreen = lazy(() => import('./screens/AdminScreen'));
 const AccountScreen = lazy(() => import('./screens/AccountScreen'));
@@ -40,6 +42,12 @@ export default function App() {
   const userId = useSession((s) => s.user?.id ?? null);
   const init = useSession((s) => s.init);
   const lastUser = useRef<string | null | undefined>(undefined);
+  // Which site this host is (the server says, in /api/config): a company's showroom gets its
+  // own screens and branding (src/features/showroom), our sales site everything else.
+  const site = useSiteKind();
+  const configStatus = useConfig((s) => s.status);
+  const tenant = useConfig((s) => s.config?.tenant ?? null);
+  useEffect(() => applyShowroomBranding(tenant), [tenant]);
 
   useEffect(() => {
     void init();
@@ -60,7 +68,7 @@ export default function App() {
     void useCatalog.getState().load(changed);
   }, [status, userId]);
 
-  const needsAccount = NEEDS_ACCOUNT.has(route.name);
+  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && NOT_ON_SHOWROOM.has(route.name));
   // A password-reset link (`#/signin?reset=`) opens even when this browser is signed in: setting
   // the new password signs the browser in as the account it belongs to.
   const resetPage = route.name === 'signin' && splitHash(location.hash).query.has('reset');
@@ -68,15 +76,29 @@ export default function App() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (status !== 'signedIn' && needsAccount) navigateHash(signinHref(), true);
+    // A showroom visitor starting a design is new here far more often than not: create an account.
+    if (status !== 'signedIn' && needsAccount) navigateHash(site === 'showroom' && route.name === 'new' ? signinHref().replace('#/signin', '#/signup') : signinHref(), true);
     if (status === 'signedIn' && authPage) navigateHash(safeNext(splitHash(location.hash).query), true);
-  }, [status, needsAccount, authPage]);
+  }, [status, needsAccount, authPage, site, route.name]);
 
   // A crash on one screen shows "Something went wrong" in its place; moving to another screen clears it.
   const boundaryKey = splitHash(location.hash).path || 'home';
 
-  // Device-only mode works with no server at all, so it never waits on the session.
-  if (route.name === 'local')
+  // A showroom draws nothing of ours until the config has said whose it is (no flash of our brand).
+  if (site === 'unknown')
+    return configStatus === 'error' ? (
+      <div className="screen-msg">
+        <p>This showroom can’t be reached right now.</p>
+        <button className="btn" onClick={() => void loadConfig(true)}>
+          Try again
+        </button>
+      </div>
+    ) : (
+      loading
+    );
+  // Device-only mode works with no server at all, so it never waits on the session. Not on a
+  // showroom: a design there is saved to the visitor's account, which is how it reaches the company.
+  if (route.name === 'local' && site === 'sales')
     return (
       <>
         <ErrorBoundary inline key={boundaryKey}>
@@ -122,7 +144,7 @@ export default function App() {
     <>
       <ErrorBoundary inline key={boundaryKey}>
         <QaCrash where="route" />
-        <Suspense fallback={loading}>{screenFor(route, signedIn)}</Suspense>
+        <Suspense fallback={loading}>{screenFor(route, signedIn, site === 'showroom')}</Suspense>
         <BillingHost />
       </ErrorBoundary>
       <ConnectionBanner />
@@ -130,7 +152,11 @@ export default function App() {
   );
 }
 
-function screenFor(route: Route, signedIn: boolean) {
+function screenFor(route: Route, signedIn: boolean, showroom = false) {
+  if (showroom) {
+    const screen = showroomScreen(route, signedIn);
+    if (screen) return screen;
+  }
   switch (route.name) {
     case 'home':
       return signedIn ? <HomeScreen /> : <LandingScreen />;

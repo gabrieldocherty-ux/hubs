@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { AppConfig, LegalConfig } from '../types/platform';
 import { call } from './api';
 import { QA_LOCAL } from './qa';
+import { normalizeTenant, type PublicTenant, type SiteKind } from '../features/showroom/site';
 
 /**
  * What this server is set up for (`GET /api/config`), loaded once and shared by every screen:
@@ -17,6 +18,12 @@ export interface ClientConfig {
   publicUrl: string;
   legal: LegalConfig;
   llm: boolean;
+  /** Which site this host is (docs/handoff/tenancy.md §2): our sales site or a company's showroom. */
+  site: SiteKind;
+  /** The showroom's company (null on the sales site). */
+  tenant: PublicTenant | null;
+  /** The server's BASE_DOMAIN: `blumodel.studio` in production, `localhost` in dev and QA. */
+  baseDomain: string;
 }
 
 export const PUBLIC_URL = 'https://blumodel.studio';
@@ -43,7 +50,10 @@ export function normalizeConfig(raw: Partial<AppConfig> | null | undefined): Cli
   const r = raw ?? {};
   const payments: PaymentsMode = r.payments === 'stripe' ? 'stripe' : r.payments === 'demo' && r.demoPayments !== false ? 'demo' : 'none';
   const url = typeof r.publicUrl === 'string' && /^https?:\/\/[^\s]+$/.test(r.publicUrl) ? r.publicUrl.replace(/\/+$/, '') : PUBLIC_URL;
-  return { payments, publicUrl: url, legal: normalizeLegal(r.legal), llm: r.llm === true };
+  const x = r as { site?: unknown; tenant?: unknown; baseDomain?: unknown };
+  const tenant = x.site === 'showroom' ? normalizeTenant(x.tenant) : null;
+  const baseDomain = typeof x.baseDomain === 'string' && /^[a-z0-9.-]{1,253}$/i.test(x.baseDomain) ? x.baseDomain.toLowerCase() : 'blumodel.studio';
+  return { payments, publicUrl: url, legal: normalizeLegal(r.legal), llm: r.llm === true, site: tenant ? 'showroom' : 'sales', tenant, baseDomain };
 }
 
 // ── QA-only override ─────────────────────────────────────────────────────────

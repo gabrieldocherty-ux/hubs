@@ -56,7 +56,8 @@ export interface Finish {
  * Where a product came from. Built-ins are compiled in; the rest come from the server or a saved
  * kitchen. `contractor` products are a contractor's private catalog (only they see them).
  */
-export type ProductSource = 'builtin' | 'brand' | 'custom' | 'contractor' | 'snapshot' | 'missing';
+/** `tenant`: a showroom company's own product (docs/handoff/tenancy.md), only ever on its showroom. */
+export type ProductSource = 'builtin' | 'brand' | 'custom' | 'contractor' | 'tenant' | 'snapshot' | 'missing';
 
 /** Look flags that used to be keyed off brand names (brass knobs, pro backguard). */
 export interface ProductFlags {

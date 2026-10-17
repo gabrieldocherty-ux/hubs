@@ -1,0 +1,52 @@
+/*
+ * The showroom's pieces that sit in the main chunk: the company mark in every top bar. The landing
+ * page, the Send dialog and the downloads have their own stylesheet (showroom.css, lazy).
+ * Colours are tokens only; the company's colours arrive as tokens too (palette.ts).
+ */
+
+.site-logo {
+  flex: none;
+  display: block;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.site-logo--initial {
+  display: grid;
+  place-items: center;
+  background: var(--brand, var(--accent));
+  color: var(--brand-ink, var(--on-inverse));
+  font-family: var(--display);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.site-name {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.topbar .site-name {
+  font-size: 17px;
+  max-width: 220px;
+}
+
+@media (max-width: 1280px) {
+  .topbar .site-name {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .home-bar .site-name {
+    font-size: 16px;
+    max-width: 52vw;
+  }
+}

@@ -1,0 +1,491 @@
+/*
+ * A company's showroom (src/features/showroom): the landing page, the "Send this design" dialog
+ * and its prompts. Colours are tokens only. The company's own colours arrive as tokens too
+ * (--brand, --brand-ink, --brand-2, --brand-2-soft and the accent set, palette.ts), already
+ * adjusted so text on them passes AA in light and dark; without a company colour they fall
+ * back to the theme's.
+ */
+
+.sr-page {
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+}
+
+.sr-page main {
+  flex: 1;
+}
+
+.sr-bar-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sr-bar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sr-bar-link:hover {
+  color: var(--ink);
+  background: var(--paper-2);
+}
+
+.sr-bar-link--strong {
+  color: var(--accent-text);
+}
+
+/* ── hero ─────────────────────────────────────────────────────────────── */
+
+.sr-hero {
+  background: var(--brand, var(--inverse));
+  color: var(--brand-ink, var(--on-inverse));
+  position: relative;
+  overflow: hidden;
+}
+
+.sr-hero::after {
+  content: '';
+  position: absolute;
+  right: -120px;
+  bottom: -160px;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  background: var(--brand-2, var(--accent));
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.sr-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 64px 24px 72px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 48px;
+  align-items: center;
+}
+
+.sr-kicker {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.86;
+}
+
+.sr-hero h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(34px, 4.4vw, 54px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  max-width: 16ch;
+}
+
+.sr-lede {
+  margin: 18px 0 0;
+  font-size: 17px;
+  line-height: 1.55;
+  max-width: 56ch;
+  opacity: 0.92;
+}
+
+.sr-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.sr-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  /* The brand band's text colour as the button, the band as its text: the same AA pair, inverted. */
+  background: var(--brand-ink, var(--on-inverse));
+  color: var(--brand, var(--inverse));
+  border: 2px solid var(--brand-ink, var(--on-inverse));
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+
+.sr-cta:hover {
+  box-shadow: 0 6px 18px -8px rgba(var(--shadow-rgb), 0.6);
+}
+
+.sr-cta:active {
+  transform: translateY(1px);
+}
+
+.sr-cta:focus-visible {
+  outline: 3px solid var(--brand-ink, var(--on-inverse));
+  outline-offset: 3px;
+}
+
+.sr-cta--ghost {
+  background: transparent;
+  color: var(--brand-ink, var(--on-inverse));
+}
+
+.sr-reassure {
+  margin: 14px 0 0;
+  font-size: 14px;
+  opacity: 0.86;
+}
+
+.sr-soon {
+  margin: 26px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  font-weight: 600;
+  max-width: 48ch;
+}
+
+.sr-hero-plan {
+  margin: 0;
+}
+
+.sr-plan-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 24px 60px -24px rgba(var(--shadow-rgb), 0.55);
+  aspect-ratio: 8 / 7;
+  display: grid;
+  place-items: center;
+}
+
+.sr-plan-card svg,
+.sr-plan-card canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.sr-plan-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--paper-2);
+}
+
+.sr-hero-plan figcaption {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.86;
+  text-align: center;
+}
+
+/* ── sections ─────────────────────────────────────────────────────────── */
+
+.sr-h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(24px, 2.6vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.sr-steps,
+.sr-lines,
+.sr-contact {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 56px 24px 0;
+}
+
+.sr-steps ol {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sr-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+.sr-steps li b {
+  font-size: 17px;
+}
+
+.sr-steps li span:last-child {
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.sr-step-n {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.sr-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sr-section-head p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.sr-line-grid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.sr-line {
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.sr-line-art {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  aspect-ratio: 3 / 1.25;
+}
+
+.sr-line-pic {
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  background: var(--art-bg);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.sr-line-pic > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.sr-line-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.sr-line-body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.sr-line-body h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.sr-line-meta {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.sr-swatches {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
+.sr-swatches i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+}
+
+.sr-line-go {
+  margin-top: auto;
+  padding-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.sr-line-go:hover {
+  text-decoration: underline;
+}
+
+.sr-contact {
+  padding-bottom: 64px;
+}
+
+.sr-contact-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--brand-2-soft, var(--paper-2));
+  border: 1px solid var(--line);
+}
+
+.sr-contact-text p {
+  margin: 6px 0 0;
+  color: var(--ink-2);
+}
+
+.sr-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.sr-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 18px 24px 26px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.sr-foot nav {
+  display: flex;
+  gap: 14px;
+}
+
+.sr-foot a {
+  color: var(--ink-2);
+}
+
+.sr-foot-by {
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .sr-hero-inner {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 40px 20px 48px;
+  }
+
+  .sr-hero-plan {
+    max-width: 440px;
+  }
+
+  .sr-steps ol {
+    grid-template-columns: 1fr;
+  }
+
+  .sr-contact-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .sr-contact-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .sr-bar-link:not(.sr-bar-link--strong) {
+    display: none;
+  }
+
+  .sr-hero h1 {
+    font-size: 34px;
+  }
+
+  .sr-lede {
+    font-size: 16px;
+  }
+
+  .sr-ctas {
+    flex-direction: column;
+  }
+
+  .sr-cta {
+    width: 100%;
+  }
+
+  .sr-steps,
+  .sr-lines,
+  .sr-contact {
+    padding: 40px 16px 0;
+  }
+
+  .sr-contact {
+    padding-bottom: 48px;
+  }
+
+  .sr-line-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sr-contact-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .sr-foot-by {
+    margin-left: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .sr-bar-link,
+  .sr-foot a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
