@@ -27,7 +27,7 @@ import { requestOrigin } from '../tenancy/hosts.mjs';
 import { leadNoticeEmail, salesLeadEmail } from '../tenancy/emails.mjs';
 
 const LEAD_PARAM = /^ld_[A-Za-z0-9_-]{8,40}$/;
-const SALES_PARAM = /^sl_[A-Za-z0-9_-]{8,40}$/;
+const SALES_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
 const HOUR = 3_600_000;
 const SALES_STATUSES = ['new', 'contacted', 'demo', 'won', 'lost'];
 const one = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');

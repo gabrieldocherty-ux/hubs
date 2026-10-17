@@ -495,7 +495,7 @@ export default function routes(ctx) {
         if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Enter the account’s email address.', { errors: [{ field: 'email', message: 'Enter the account’s email address.' }] });
         if (!SUBSCRIPTION_PLANS.includes(plan)) throw new HttpError(400, 'Choose Unlimited or Contractor.', { errors: [{ field: 'plan', message: 'Choose Unlimited or Contractor.' }] });
         if (note.length > GRANT_NOTE_MAX) throw new HttpError(400, `Keep the note to ${GRANT_NOTE_MAX} characters or fewer.`, { errors: [{ field: 'note', message: `Keep the note to ${GRANT_NOTE_MAX} characters or fewer.` }] });
-        const target = db.prepare('SELECT id, email FROM users WHERE email = ?').get(email);
+        const target = db.prepare('SELECT id, email FROM users WHERE email = ? AND tenant_id IS NULL').get(email);
         if (!target) throw new HttpError(404, 'No account has that email address.', { code: 'no_such_user' });
         const out = ctx.tx(() => {
           let res;

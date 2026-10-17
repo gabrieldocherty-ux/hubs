@@ -39,7 +39,8 @@ if (config.DB_PATH !== ':memory:' && !fs.existsSync(config.DB_PATH)) {
 }
 const db = openDb(config.DB_PATH);
 migrate(db);
-const user = db.prepare('SELECT id, email, role FROM users WHERE email = ?').get(email);
+// A sales-site account: showroom accounts (users.tenant_id) are never BluModel's admins.
+const user = db.prepare('SELECT id, email, role FROM users WHERE email = ? AND tenant_id IS NULL').get(email);
 if (!user) {
   console.error(`No account with the email ${email} in ${config.DB_PATH}. Sign up first.`);
   db.close();
