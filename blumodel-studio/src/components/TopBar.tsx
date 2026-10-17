@@ -15,6 +15,7 @@ import { PhotorealButton } from '../features/renders';
 import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
+import { SiteMark, useShowroom } from '../features/showroom';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
@@ -74,6 +75,8 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   const showEstimator = useShowEstimator();
   const signedIn = useSession((s) => s.status === 'signedIn' && !!s.projectId);
   const hasUser = useSession((s) => !!s.user);
+  // On a company's showroom the mark is the company's.
+  const showroom = useShowroom();
   const [menu, setMenu] = useState(false);
   const [draft, setDraft] = useState(name);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -150,10 +153,12 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
     <header className={compact ? 'topbar topbar--compact' : 'topbar'}>
       <div className="brand">
         {signedIn ? (
-          <a className="back-link" href="#/" title="Back to my kitchens">
-            <Logo />
-            <span className="back-label">Kitchens</span>
+          <a className="back-link" href="#/" title={showroom ? 'Back to my designs' : 'Back to my kitchens'}>
+            {showroom ? <SiteMark compact /> : <Logo />}
+            <span className="back-label">{showroom ? 'Designs' : 'Kitchens'}</span>
           </a>
+        ) : showroom ? (
+          <SiteMark />
         ) : (
           <>
             <Logo />

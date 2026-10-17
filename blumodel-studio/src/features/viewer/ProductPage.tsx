@@ -25,7 +25,9 @@ import { Dialog } from '../../components/Dialog';
 import { ProductArt } from '../../components/ProductArt';
 import { Toasts } from '../../components/Toasts';
 import { QuoteButton } from '../brands';
-import { Download, Logo, Wordmark, Plus } from '../../components/Icons';
+import { Download, Plus } from '../../components/Icons';
+import { currentShowroom, pageTitle, SiteMark, useShowroom } from '../showroom';
+import { prefName } from '../../lib/generate/brands';
 import { dimText, pickWidth, productHash, widthChoices } from './stageMath';
 import type { StageStill } from './ProductStage';
 import './viewer.css';
@@ -61,6 +63,13 @@ function useProduct(id: string): [Load, () => void] {
     return { status: 'loading' };
   });
   useEffect(() => {
+    // A showroom shows only its own products (and BluModel Basics when it fills the gaps with
+    // them): never the retail catalog, never a product of ours or anyone else's.
+    const showroom = currentShowroom();
+    if (showroom && (isRetailId(id) || (isBuiltin(id) && !showroom.features.fillGaps))) {
+      setLoad({ status: 'missing' });
+      return;
+    }
     if (isBuiltin(id)) {
       const p = getProduct(id);
       setLoad(p ? { status: 'ready', product: p } : { status: 'missing' });
@@ -116,8 +125,7 @@ function PageBar() {
   return (
     <header className="home-bar">
       <a className="brand" href="#/">
-        <Logo />
-        <Wordmark />
+        <SiteMark />
       </a>
       {user ? (
         <AccountMenu />
@@ -350,7 +358,9 @@ function WhereToBuy({ product, info, linkId = product.id, matchedUpc }: { produc
 function ProductView({ product, finishParam, widthParam }: { product: Product; finishParam?: string; widthParam: string | null }) {
   const brands = useCatalog((s) => s.brands);
   // Custom models come with the Contractor plan (the server refuses anyone else), so only they see the link.
-  const canRequestModel = useSession((s) => s.user?.plan.id === 'contractor');
+  const showroom = useShowroom();
+  // No store, brand page, quote request or custom model on a showroom: the company sells it.
+  const canRequestModel = useSession((s) => s.user?.plan.id === 'contractor') && !showroom;
   const finishes = finishList(product);
   const fallback = finishes[defaultFinishIndex(product, DEFAULT_SURFACES)] ?? finishes[0];
   const finish = finishes.find((f) => f.id === finishParam) ?? fallback;
@@ -369,9 +379,9 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
     still.current = r;
   }, []);
   const isServer = !isBuiltin(product.id);
-  const retail = useRetail((s) => s.byId.get(product.id));
+  const retail = useRetail((s) => (showroom ? undefined : s.byId.get(product.id)));
   // Not a retail product but carrying a UPC (a delivered custom model): the retail listing with that UPC.
-  const linkedUpc = !retail && product.upc ? product.upc : undefined;
+  const linkedUpc = !retail && !showroom && product.upc ? product.upc : undefined;
   const linkedId = useRetail((s) => (linkedUpc && s.status === 'ready' ? retailIdByUpc(linkedUpc, s.data) : undefined));
   const linked = useRetail((s) => (linkedId ? s.byId.get(linkedId) : undefined));
   useEffect(() => {
@@ -385,7 +395,7 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
 
   useEffect(() => {
     const prev = document.title;
-    document.title = `${product.name} · BluModel Studio`;
+    document.title = pageTitle(product.name);
     return () => {
       document.title = prev;
     };
@@ -448,7 +458,7 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
 
       <aside className="pp-panel">
         <div className="pp-brand">
-          {product.brandSlug ? <a href={`#/b/${encodeURIComponent(product.brandSlug)}`}>{product.brand}</a> : <span>{product.brand}</span>}
+          {showroom ? <span>{prefName(product)}</span> : product.brandSlug ? <a href={`#/b/${encodeURIComponent(product.brandSlug)}`}>{product.brand}</a> : <span>{product.brand}</span>}
           {product.isDemo || brand?.isDemo ? <span className="pp-badge pp-badge--demo" title="A fictional demo brand">Demo</span> : null}
           {brand?.verified && !brand.isDemo ? <span className="pp-badge pp-badge--ok">Verified</span> : null}
           {product.visibility === 'private' && <span className="pp-badge" title="Only you can see this product">Private</span>}
@@ -528,14 +538,16 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
           <button type="button" className="btn primary big" onClick={() => setAdding(true)}>
             <Plus width={15} height={15} /> Add to a kitchen
           </button>
-          {product.buyUrl && (
+          {product.buyUrl && !showroom && (
             <a className="btn big" href={product.buyUrl} target="_blank" rel="noopener nofollow" onClick={() => track(product.id, 'buy_click')}>
               Buy from {product.brand}
             </a>
           )}
-          <Suspense fallback={null}>
-            <QuoteButton product={product} className="btn big" />
-          </Suspense>
+          {!showroom && (
+            <Suspense fallback={null}>
+              <QuoteButton product={product} className="btn big" />
+            </Suspense>
+          )}
           {canRequestModel && (
             <a className="pp-link" href={`#/orders/new?ref=${encodeURIComponent(product.id)}`}>
               Request a custom version
@@ -641,7 +653,7 @@ export default function ProductPage({ id, finish }: { id: string; finish?: strin
                 </a>
               )}
               <a className="btn" href="#/">
-                Back to BluModel Studio
+                {currentShowroom() ? 'Back to the showroom' : 'Back to BluModel Studio'}
               </a>
             </div>
           </div>

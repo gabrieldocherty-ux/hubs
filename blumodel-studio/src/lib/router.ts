@@ -17,11 +17,9 @@ export type Route =
   | { name: 'welcome' }
   | { name: 'pricing' } // #/welcome, #/pricing
   | { name: 'book' } // #/book (the sales site's Book a call)
-  | { name: 'generate'; q?: string; from?: string } // #/generate?q=&from=
   | { name: 'product'; id: string; finish?: string } // #/p/:id?finish=
   | { name: 'brandPage'; slug: string } // #/b/:slug
   | { name: 'brand'; rest: string } // #/brand, #/brand/<rest…>
-  | { name: 'contractors'; near?: string; kitchen?: string } // #/contractors?near=&kitchen= (the contractor directory)
   | { name: 'orders'; rest: string } // #/orders, #/orders/<rest…>
   | { name: 'payDemo'; orderId: string } // #/pay/demo/:orderId
   | { name: 'share'; token: string } // #/s/:token
@@ -57,8 +55,6 @@ export function splitHash(hash: string): { path: string; query: URLSearchParams 
   const path = (q < 0 ? h : h.slice(0, q)).replace(/\/+$/, '');
   return { path, query: new URLSearchParams(q < 0 ? '' : h.slice(q + 1)) };
 }
-
-const opt = (v: string | null) => (v ? v : undefined);
 
 /**
  * The server answers any extensionless path with the app (server/http/static.mjs), but every route
@@ -101,12 +97,9 @@ export function parseRoute(hash: string): Route {
     case 'refunds':
       if (seg.length === 1) return { name: 'legal', doc: a };
       break;
-    case 'generate': {
-      if (seg.length !== 1) break;
-      const q = opt(query.get('q'));
-      const from = opt(query.get('from'));
-      return { name: 'generate', ...(q ? { q } : {}), ...(from ? { from } : {}) };
-    }
+    // Start from a photo was removed in the showroom pivot: an old link opens the new-kitchen wizard.
+    case 'generate':
+      return seg.length === 1 ? { name: 'new' } : { name: 'notFound' };
     case 'k':
       if (seg.length === 2 && UUID.test(b)) {
         const add = query.get('add');
@@ -122,12 +115,6 @@ export function parseRoute(hash: string): Route {
     case 'b':
       if (seg.length === 2 && PARAM.test(b)) return { name: 'brandPage', slug: b };
       break;
-    case 'contractors': {
-      if (seg.length !== 1) break;
-      const near = opt((query.get('near') ?? '').trim().slice(0, 60));
-      const kitchen = query.get('kitchen');
-      return { name: 'contractors', ...(near ? { near } : {}), ...(kitchen && UUID.test(kitchen) ? { kitchen } : {}) };
-    }
     case 'brand':
     case 'orders':
     case 'pro':
@@ -171,14 +158,10 @@ export function hrefFor(r: Route): string {
       return '#/';
     case 'kitchen':
       return withQuery(`#/k/${r.id}`, { add: r.add });
-    case 'generate':
-      return withQuery('#/generate', { q: r.q, from: r.from });
     case 'product':
       return withQuery(`#/p/${enc(r.id)}`, { finish: r.finish });
     case 'brandPage':
       return `#/b/${enc(r.slug)}`;
-    case 'contractors':
-      return withQuery('#/contractors', { near: r.near, kitchen: r.kitchen });
     case 'brand':
     case 'orders':
     case 'pro':

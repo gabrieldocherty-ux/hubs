@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Logo, Wordmark } from '../components/Icons';
+import { SiteMark } from '../features/showroom';
 import { LegalLinks } from '../features/legal/LegalLinks';
 import { useSession } from '../store/useSession';
 
@@ -17,8 +17,7 @@ export function NotFound() {
     <div className="nf">
       <main className="nf-card" aria-labelledby="nf-title">
         <a className="brand" href="#/" aria-label="BluModel Studio home">
-          <Logo />
-          <Wordmark />
+          <SiteMark />
         </a>
         <span className="eyebrow">404</span>
         <h1 id="nf-title">We can’t find that page</h1>

@@ -441,7 +441,6 @@ export default [
     { name: 'screen-welcome-phone', path: '#/welcome', as: 'anon', viewport: 'phone' },
     { name: 'screen-pricing', path: '#/pricing', as: 'anon' },
     { name: 'screen-pricing-phone', path: '#/pricing', as: 'anon', viewport: 'phone' },
-    { name: 'screen-generate', path: '#/generate', as: 'customer' },
     {
       name: 'screen-product-demo',
       as: 'anon',

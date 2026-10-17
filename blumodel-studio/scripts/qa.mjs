@@ -493,6 +493,12 @@ function serverEnv(extra) {
     'DEMO_PAYMENTS',
     'SHOW_DEMO_BRANDS',
     'BASE_DOMAIN',
+    // Photoreal renders: the QA server never calls a real rendering service (it uses the demo).
+    'ARCHITECT_AI_URL',
+    'ARCHITECT_AI_KEY',
+    'RENDER_PROVIDER',
+    'DEMO_RENDERS',
+    'RENDER_CREDIT_CENTS',
   ])
     delete env[k];
   return { ...env, ...extra };
@@ -931,6 +937,8 @@ export async function main(argv = process.argv.slice(2)) {
     // Showrooms are <slug>.localhost:<port> (Chromium resolves *.localhost to 127.0.0.1); the sales
     // site stays http://127.0.0.1:<port>. See docs/handoff/tenancy.md "QA".
     BASE_DOMAIN: 'localhost',
+    // The stamped demo renderer (server/renders), which production refuses without this.
+    DEMO_RENDERS: '1',
     ADMIN_EMAILS: DEMO_EMAIL.admin,
     SEED_PASSWORD: password,
     ...(opts.dist ? { DIST_DIR: dist } : {}),

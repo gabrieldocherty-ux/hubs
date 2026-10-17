@@ -27,7 +27,6 @@
 
 import { makeGlb } from '../../../server/test/fixtures/glb.mjs';
 import { makePng } from '../../../server/test/fixtures/images.mjs';
-import { kitchenPhoto } from './generate.mjs';
 
 const COMPANY = { company: 'Cedar & Sill Millwork (QA)', phone: '905-555-0173', email: 'hello@cedarsill.example', website: 'https://cedarsill.example', serviceArea: 'Hamilton and Burlington', defaultMarkupPct: 40 };
 const PRODUCT_NAME = 'Cedar Sill Walnut Base 24 (QA)';
@@ -450,7 +449,7 @@ export default [
       h.note(`account menu: ${items.join(' | ')}`);
       if (items.some((t) => /for contractors|contractor workspace|my orders|make custom models/i.test(t))) throw new Error(`a homeowner's account menu offers: ${items.join(' | ')}`);
       await h.key('Escape');
-      for (const hash of ['#/new', '#/generate', '#/pricing', '#/welcome', '#/orders', '#/account/billing', '#/pro']) {
+      for (const hash of ['#/new', '#/pricing', '#/welcome', '#/orders', '#/account/billing', '#/pro']) {
         await h.goto(hash);
         await h.sleep(900);
         await assertCopy(h, hash);
@@ -466,24 +465,11 @@ export default [
     path: '#/',
     as: 'anon',
     waitFor: ['a[href="#/signin"]'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await assertCopy(h, 'the landing page');
       await h.goto('#/pricing');
       await h.sleep(900);
       await assertCopy(h, 'the pricing page');
-    },
-  },
-  {
-    // Signed in, the Home call to action is Start from a photo and it opens the photo screen.
-    name: 'int-home-start-from-a-photo',
-    path: '#/',
-    as: 'customer',
-    waitFor: ['.home-cta'],
-    check: async (h) => {
-      await h.click(await mark(h, '.home-cta button', 'Start from a photo', 'cta'));
-      await h.waitUntil(() => location.hash.startsWith('#/generate'), 8000, '#/generate');
-      await h.waitForText('Start from a photo of your kitchen');
     },
   },
 
@@ -517,39 +503,6 @@ export default [
     },
   },
 
-  // ─── photo ─────────────────────────────────────────────────────────────────
-  {
-    // Photo -> Check the space (the manual form: the QA server has no model key) -> Build my
-    // kitchen -> the editor, with the photo reference mounted and the photo attached.
-    name: 'int-photo-to-editor',
-    as: 'customer',
-    setup: async ({ api }) => {
-      const up = await api.as('customer').putRaw('/api/files?kind=reference&name=qa-kitchen.png', kitchenPhoto(), 'image/png');
-      const id = must(up, 'Uploading the fixture photo').file.id;
-      brand.photoId = id;
-      return { path: `#/generate?qaPhotos=${id}&qaStep=space` };
-    },
-    waitFor: ['.gen-form', '.gen-footer .gen-go'],
-    expectText: ['Check the space'],
-    waitMs: 500,
-    check: async (h) => {
-      await noSideScroll(h);
-      await assertCopy(h, 'Start from a photo');
-      await h.click('.gen-footer .gen-go');
-      await h.waitUntil(() => /^#\/k\//.test(location.hash), 25_000, 'the editor after Build my kitchen');
-      const id = await h.evaluate(() => location.hash.slice(4).split('?')[0]);
-      await h.waitFor('.topbar');
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      const photos = must(await h.api.as('customer').get(`/api/generate/photos/${id}`), 'Reading the kitchen\'s photos');
-      if (!photos.files?.some((f) => f.id === brand.photoId)) throw new Error('the photo was not attached to the new kitchen');
-      const items = await h.evaluate(() => window.__blumodelQA.store.getState().doc.items.length);
-      if (items < 5) throw new Error(`the built kitchen has only ${items} pieces`);
-      // A signed-in kitchen survives a reload with its photo reference.
-      await h.reload();
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      await h.shot('editor');
-    },
-  },
 
   // ─── order ─────────────────────────────────────────────────────────────────
   {

@@ -28,7 +28,6 @@
 import crypto from 'node:crypto';
 import { hashPassword } from '../../../server/auth/passwords.mjs';
 import { kitchenDoc } from './core.mjs';
-import { kitchenPhoto } from './generate.mjs';
 
 const must = (r, what) => {
   if (r.status >= 300) throw new Error(`${what} failed (${r.status}): ${r.body?.error ?? String(r.text ?? '').slice(0, 200)}`);
@@ -660,19 +659,6 @@ export default [
   one({ name: 'dark-reset-expired', path: `#/signin?reset=${'A'.repeat(43)}`, as: 'anon', expectText: ['This link has expired'], check: darkCheck() }),
   ...both({ name: 'dark-not-found', path: '#/no-such-page', as: 'anon', check: darkCheck() }),
   ...both({ name: 'dark-error', path: '#/pricing?qa-crash=route', as: 'anon', ignoreConsole: crashNoise, check: darkCheck() }),
-  ...both({ name: 'dark-contractors', path: '#/contractors', as: 'anon', check: darkCheck() }),
-  ...both({
-    // The directory with a listed contractor (and the "Need a contractor?" routes below): the
-    // contractor is unlisted again at the end of each route.
-    name: 'dark-contractors-listed',
-    path: '#/contractors',
-    as: 'anon',
-    setup: async ({ api }) => {
-      await listedPro(api);
-      return {};
-    },
-    check: withPro(darkCheck((h) => h.waitFor('.fd-card'))),
-  }),
   ...both({ name: 'dark-brand-page', path: '#/b/blumodel-sample-co-demo', as: 'anon', fullPage: true, phoneFullPage: false, check: darkCheck(null, { screens: true }) }),
   ...both({
     name: 'dark-contractor-page',
@@ -817,9 +803,6 @@ export default [
   ...both({ name: 'dark-wizard-room', path: '#/new', as: 'customer', check: darkCheck(wizardStep(1)) }),
   ...both({ name: 'dark-wizard-layout', path: '#/new', as: 'customer', check: darkCheck(wizardStep(2)) }),
   ...both({ name: 'dark-wizard-brands', path: '#/new', as: 'customer', check: darkCheck(wizardStep(3)) }),
-  ...both({ name: 'dark-generate', path: '#/generate', as: 'customer', check: darkCheck() }),
-  ...both({ name: 'dark-generate-photos', path: '#/generate?qaPhotos=synth:3', as: 'customer', check: darkCheck((h) => h.waitFor('.gen-thumb img')) }),
-  ...both({ name: 'dark-generate-space', path: '#/generate?qaPhotos=synth:2&qaStep=space', as: 'customer', check: darkCheck((h) => h.waitFor('.gen-form')) }),
   ...both({ name: 'dark-account', path: '#/account', as: 'customer', fullPage: true, check: darkCheck(null, { focus: 'input' }) }),
   one({
     name: 'dark-account-delete',
@@ -1078,59 +1061,6 @@ export default [
     }),
   ),
   one({
-    name: 'dark-editor-finder',
-    as: 'customer',
-    setup: async ({ api, me }) => {
-      await listedPro(api);
-      return newKitchen(me, 'Dark Finder Kitchen');
-    },
-    waitFor: ['.topbar'],
-    check: withPro(
-      darkCheck(async (h) => {
-        await h.waitFor('.finder--summary .finder-link');
-        const r = await h.rectOf('.finder--summary .finder-link', { scroll: true });
-        await h.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: r.cx, y: r.cy });
-        await h.waitFor('.finder-pop');
-        await h.sleep(400);
-      }),
-    ),
-  }),
-  one({
-    // Ask for a quote from the popover: the lead form with this kitchen attached.
-    name: 'dark-editor-lead',
-    as: 'customer',
-    setup: async ({ api, me }) => {
-      await listedPro(api);
-      return newKitchen(me, 'Dark Lead Kitchen');
-    },
-    waitFor: ['.topbar'],
-    check: withPro(
-      darkCheck(async (h) => {
-        await h.waitFor('.finder--summary .finder-link');
-        await h.click('.finder--summary .finder-link');
-        await h.waitFor('.finder-pop .finder-btn--ask');
-        await h.click('.finder-pop .finder-btn--ask');
-        await h.waitForText('Attach one of my kitchens');
-        await h.sleep(800);
-      }),
-    ),
-  }),
-  one({
-    name: 'dark-editor-photo-ref',
-    as: 'customer',
-    setup: async ({ me }) => {
-      const file = must(await me.putRaw('/api/files?kind=reference&name=dark-kitchen.png', kitchenPhoto(), 'image/png'), 'Uploading a photo').file.id;
-      const k = await newKitchen(me, 'Dark Photo Kitchen');
-      must(await me.put(`/api/generate/photos/${k.projectId}`, { fileIds: [file] }), 'Attaching the photo');
-      return k;
-    },
-    waitFor: ['.topbar'],
-    check: darkCheck(async (h) => {
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      await h.sleep(1000);
-    }),
-  }),
-  one({
     // A contractor's own kitchen: Present, the estimate's Client / Contractor view, Quote in Export.
     name: 'dark-editor-contractor',
     as: 'fresh',
@@ -1174,27 +1104,6 @@ export default [
     await h.sleep(400);
     // With a piece selected the bar's Details button is "Item".
     await openSheet(h, 'Item');
-  }),
-  one({
-    name: 'dark-editor-phone-finder',
-    as: 'customer',
-    viewport: 'phone',
-    setup: async ({ api, me }) => {
-      await listedPro(api);
-      return newKitchen(me, 'Dark Finder Phone Kitchen');
-    },
-    waitFor: ['.mbar'],
-    check: withPro(
-      darkCheck(async (h) => {
-        await openSheet(h, 'Details');
-        await h.waitFor('.right-panel--sheet .finder-link');
-        await h.evaluate(() => document.querySelector('.right-panel--sheet .finder-link').scrollIntoView({ block: 'center' }));
-        await h.sleep(300);
-        await h.tap('.right-panel--sheet .finder-link');
-        await h.waitFor('.finder-pop');
-        await h.sleep(400);
-      }),
-    ),
   }),
   ...both({
     name: 'dark-unlock-dialog',

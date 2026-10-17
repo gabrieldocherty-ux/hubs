@@ -57,7 +57,7 @@ test('TRUST_PROXY off: forwarding headers are ignored, so a client can’t pick 
   }
 });
 
-test('signup, login, uploads, leads and photo analysis each carry a per-real-IP rate limit', async () => {
+test('signup, login, uploads and leads each carry a per-real-IP rate limit', async () => {
   const s = await startTestServer();
   try {
     const want = [
@@ -65,7 +65,6 @@ test('signup, login, uploads, leads and photo analysis each carry a per-real-IP 
       ['POST', '/api/auth/login'],
       ['PUT', '/api/files'],
       ['POST', '/api/brands/by-slug/:slug/leads'],
-      ['POST', '/api/generate/photo'],
       ['POST', '/api/account/delete'],
     ];
     for (const [method, p] of want) {

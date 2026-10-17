@@ -103,8 +103,9 @@ export default [
   ...views.map((v) => ({
     name: `demo-showroom-editor${v.suffix}`,
     host: 'demo',
-    path: '#/local',
-    as: 'anon',
+    // A showroom has no device-only mode (a design there must reach the company): the visitor's own kitchen.
+    as: 'showroom-visitor',
+    setup: async ({ api }) => ({ path: `#/k/${api.sql("SELECT id FROM projects WHERE tenant_id = 't_demo' ORDER BY name LIMIT 1")[0].id}` }),
     viewport: v.viewport,
     ...(v.colorScheme ? { colorScheme: v.colorScheme } : {}),
     waitFor: ['.topbar', '.plan-view canvas'],

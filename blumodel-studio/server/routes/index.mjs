@@ -10,9 +10,7 @@ import events from './events.mjs';
 import admin from './admin.mjs';
 import viewer from './viewer.mjs';
 import brands from './brands.mjs';
-import finder from './finder.mjs';
 import orders from './orders.mjs';
-import generate from './generate.mjs';
 import share from './share.mjs';
 import webhooks from './webhooks.mjs';
 import billing from './billing.mjs';
@@ -28,7 +26,7 @@ import adminShowrooms from './adminShowrooms.mjs';
 import renders from './renders.mjs';
 import workspace from './workspace.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling, tenantsLeads, adminShowrooms, renders, workspace];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, orders, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling, tenantsLeads, adminShowrooms, renders, workspace];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -40,9 +38,7 @@ export const ROUTE_MODULE_NAMES = [
   'webhooks',
   'viewer',
   'brands',
-  'finder',
   'orders',
-  'generate',
   'share',
   'billing',
   'contractors',

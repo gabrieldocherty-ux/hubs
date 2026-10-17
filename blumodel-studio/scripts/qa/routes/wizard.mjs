@@ -310,23 +310,6 @@ export default [
     },
   },
   {
-    // "Start from a photo of my kitchen" is the first thing on Basics, and on a phone it opens the
-    // photo flow.
-    name: 'wizard-photo-entry-phone',
-    path: '#/new',
-    as: 'fresh',
-    viewport: PHONE,
-    waitFor: ['.wizard', '.gen-wiz-photo'],
-    check: async (h) => {
-      await noSideScroll(h);
-      await h.shot('basics');
-      await h.click('.gen-wiz-photo');
-      await h.waitUntil(() => location.hash.startsWith('#/generate'), 10_000, 'the photo flow opening');
-      await h.waitFor('.gen-drop', 15_000);
-      await noSideScroll(h);
-    },
-  },
-  {
     name: 'wizard-brands-phone',
     path: '#/new',
     as: 'fresh',

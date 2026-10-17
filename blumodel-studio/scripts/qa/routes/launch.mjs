@@ -275,7 +275,6 @@ const PASS_GROUPS = [
       ['product', `#/p/${d.productId}`],
       ['brand', '#/b/blumodel-sample-co-demo'],
       ['share', `#/s/${d.token}`],
-      ['generate', '#/generate'],
       ['terms', '#/terms'],
       ['privacy', '#/privacy'],
       ['refunds', '#/refunds'],
@@ -777,7 +776,6 @@ export default [
         ['#/signup', 'sign up', 'By creating an account you agree to the Terms and the Privacy policy'],
         [`#/p/${h.data.productId}`, 'a product page', 'Sample Gas Range'],
         ['#/b/blumodel-sample-co-demo', 'a brand page', 'BluModel Sample Co.'],
-        ['#/generate', 'Start from a photo', 'photos'],
         ['#/no-such-page', 'the 404', 'We can’t find that page'],
         ['#/privacy', 'the Privacy policy', 'Privacy policy'],
       ];
@@ -794,7 +792,6 @@ export default [
     path: '#/',
     as: 'customer',
     waitFor: ['.home-main'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await hasLegalLinks(h, 'My kitchens');
       await h.goto('#/account/billing');
@@ -979,7 +976,6 @@ export default [
     path: '#/',
     as: 'customer',
     waitFor: ['.home-main'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await h.evaluate(() => window.dispatchEvent(new Event('offline')));
       await h.waitForText(['Can’t reach BluModel Studio', 'Retry']);

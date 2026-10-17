@@ -12,12 +12,10 @@ import { ErrorBoundary, QaCrash } from './components/ErrorBoundary';
 import { ProductPage } from './features/viewer';
 import { BrandPage, BrandPortal } from './features/brands';
 import { DemoPay, OrdersRoot } from './features/orders';
-import { GenerateScreen, PhotoReference } from './features/generate';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
 import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
 import { WorkspaceRoot } from './features/workspace';
-import { ContractorsPage } from './features/finder';
 import { LegalScreen } from './features/legal';
 import { applyShowroomBranding, NOT_ON_SHOWROOM, useSiteKind } from './features/showroom';
 import { showroomScreen } from './features/showroom/routes';
@@ -106,7 +104,6 @@ export default function App() {
           <Suspense fallback={loading}>
             <LocalEditor />
           </Suspense>
-          <PhotoReference />
           <BillingHost />
         </ErrorBoundary>
         <ConnectionBanner local />
@@ -169,22 +166,11 @@ function screenFor(route: Route, signedIn: boolean, showroom = false) {
     case 'new':
       return <SetupWizard />;
     case 'kitchen':
-      // The photos a kitchen was started from float over the editor. Never on a share view
-      // (`#/s/:token`): they are private to the owner.
-      return (
-        <>
-          <KitchenEditor key={route.id} id={route.id} add={route.add} />
-          <PhotoReference key={`ref-${route.id}`} projectId={route.id} />
-        </>
-      );
-    case 'generate':
-      return <GenerateScreen q={route.q} from={route.from} />;
+      return <KitchenEditor key={route.id} id={route.id} add={route.add} />;
     case 'product':
       return <ProductPage key={route.id} id={route.id} finish={route.finish} />;
     case 'brandPage':
       return <BrandPage key={route.slug} slug={route.slug} />;
-    case 'contractors':
-      return <ContractorsPage near={route.near} kitchen={route.kitchen} />;
     case 'brand':
       return <BrandPortal rest={route.rest} />;
     case 'orders':

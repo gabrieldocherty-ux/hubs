@@ -1,6 +1,6 @@
 import { AccountMenu } from '../components/AccountMenu';
 import { AccountSettingsPage } from '../components/AccountSettings';
-import { Logo, Wordmark } from '../components/Icons';
+import { SiteMark } from '../features/showroom';
 import { LegalLinks } from '../features/legal/LegalLinks';
 
 /** `#/account`: Account settings, in sections (src/components/AccountSettings.tsx). */
@@ -9,8 +9,7 @@ export default function AccountScreen() {
     <div className="acct-page">
       <header className="home-bar">
         <a className="brand" href="#/">
-          <Logo />
-          <Wordmark />
+          <SiteMark />
         </a>
         <AccountMenu />
       </header>
