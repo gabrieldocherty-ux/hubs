@@ -488,7 +488,7 @@ function StatusSection({ t, act, busy }: SectionProps) {
         <dd>{t.standing?.monthlyPaid ? <Pill tone="ok">Paid</Pill> : <Pill tone="warn">Not paid</Pill>}</dd>
         {t.statusNote && (
           <>
-            <dt>Note</dt>
+            <dt>Last status note</dt>
             <dd>{t.statusNote}</dd>
           </>
         )}
@@ -595,7 +595,7 @@ function LicenseSection({ t, act, busy }: SectionProps) {
               </b>
               <span>
                 {l.note || ''}
-                {l.recordedBy ? ` · by ${l.recordedBy}` : ''}
+                {l.recordedBy ? `${l.note ? ' · ' : ''}by ${l.recordedBy}` : ''}
                 {!l.voidedAt &&
                   (voiding === l.id ? (
                     <Confirm text="Void it? It stays in the record." yes="Yes, void" danger busy={!!busy} onNo={() => setVoiding(null)} onYes={() => void act('void', () => showroomApi.voidLicense(t.id, l.id), 'License voided.').then(() => setVoiding(null))} />
