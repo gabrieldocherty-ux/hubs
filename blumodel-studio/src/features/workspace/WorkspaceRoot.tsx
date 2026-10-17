@@ -7,6 +7,7 @@ import { wsApi, type MemberRole, type StaffTenant } from './api';
 import { WorkspaceContext, type Workspace } from './context';
 import './workspace.css';
 import './products.css';
+import './tabs.css';
 
 const ShowroomTab = lazy(() => import('./ShowroomTab'));
 const ProductsTab = lazy(() => import('./ProductsTab'));

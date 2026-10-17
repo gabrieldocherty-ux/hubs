@@ -1,0 +1,172 @@
+/* The workspace's Team, Plan and Renders tabs. */
+
+.ws-members {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-member {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 0;
+}
+
+.ws-member + .ws-member {
+  border-top: 1px solid var(--line);
+}
+
+.ws-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+.ws-member-who {
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ws-member-who .muted {
+  overflow-wrap: anywhere;
+}
+
+.ws-member-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-member-actions select,
+.ws-invite-row select {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ws-invite-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 140px auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.ws-invite-row .field {
+  margin-bottom: 0;
+}
+
+.ws-invite-row .btn {
+  height: 42px;
+}
+
+.ws-note p {
+  margin: 0 0 8px;
+}
+
+.btn.danger {
+  border-color: var(--bad);
+  background: var(--bad-solid);
+  color: var(--on-inverse);
+}
+
+/* ── Plan ──────────────────────────────────────────────────────────────── */
+
+.ws-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.ws-plan-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ws-plan-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ws-plan-price b {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.ws-breakdown li span:last-child {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Renders ───────────────────────────────────────────────────────────── */
+
+.ws-credit-kind {
+  text-transform: capitalize;
+}
+
+.ws-amount-plus {
+  color: var(--ok-ink);
+}
+
+.ws-amount-minus {
+  color: var(--ink-2);
+}
+
+@media (max-width: 860px) {
+  .ws-plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ws-invite-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (pointer: coarse) {
+  .ws-member-actions select,
+  .ws-invite-row select,
+  .ws-invite-row .btn {
+    min-height: 44px;
+  }
+}
