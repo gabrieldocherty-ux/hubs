@@ -263,7 +263,7 @@ catalog products, so the demo catalog has none; deciding how a showroom offers f
   dark, finder, launch); they need `api.legacyCheckout` like core.
 - `orders` (model requests, the studio queue) is sales-only; scoping it to tenants is the
   workspace package's (the queue should group by `tenant_id`).
-- Deleting an account on a showroom deletes that account; for a sales-site account on a team that is
-  the sales account. Owners should be showroom accounts.
+- Deleting an account on a showroom deletes that showroom account. A sales-site account on a team
+  can't be deleted from a showroom (409 `sales_account`, since pivot-fix); it is deleted on the sales site.
 - Hosting: the wildcard DNS record and tunnel ingress for `*.blumodel.studio` are Gabe's, per
   SHOWROOM_PIVOT §4; nothing here changes `cloudflared.yml`.
