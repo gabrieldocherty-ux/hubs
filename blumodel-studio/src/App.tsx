@@ -13,7 +13,7 @@ import { ProductPage } from './features/viewer';
 import { BrandPage, BrandPortal } from './features/brands';
 import { DemoPay, OrdersRoot } from './features/orders';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
-import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
+import { BillingHost, BillingPage, DemoPlanPay, ShowroomPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
 import { WorkspaceRoot } from './features/workspace';
 import { LegalScreen } from './features/legal';
@@ -191,6 +191,8 @@ function screenFor(route: Route, signedIn: boolean, showroom = false) {
       return <WorkspaceRoot rest={route.rest} />;
     case 'payDemoPlan':
       return <DemoPlanPay key={route.ref} checkoutRef={route.ref} />;
+    case 'payShowroom':
+      return <ShowroomPay key={route.ref} checkoutRef={route.ref} />;
     case 'legal':
       return <LegalScreen doc={route.doc} />;
     case 'notFound':

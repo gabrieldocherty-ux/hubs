@@ -13,7 +13,7 @@
 //   POST   /api/admin/tenants/:id/monthly/cancel        -> { tenant } (Stripe: at the period end)
 //   POST   /api/admin/tenants/:id/monthly/demo          demo only: { event: renewal|renewal_failed|grace_end|cancel }
 // Public (sales site), for the link the company opens:
-//   GET    /api/showroom-checkouts/:ref                 { checkout, showroom: { name, slug } }
+//   GET    /api/showroom-checkouts/:ref                 { checkout: { …, payUrl }, showroom: { name, slug, live, url } }
 //   POST   /api/showroom-checkouts/:ref/demo            demo only: { outcome: success|cancel } -> { checkout }
 //   POST   /api/showroom-checkouts/:ref/sync            { sessionId } back from Stripe (?session_id=): don't
 //                                                       wait for the webhook -> { checkout }
@@ -276,9 +276,15 @@ export default function routes(ctx) {
       handler: (rc) => {
         const c = sb.checkout(rc.params.ref);
         if (!c) throw new HttpError(404, 'That payment link doesn’t exist.');
-        const t = tenants.get(c.tenant_id);
-        const { status, amountCents, currency, provider, ref } = sb.checkoutWire(c);
-        return { checkout: { ref, status, amountCents, currency, provider, demo: provider === 'demo' }, showroom: { name: t?.name ?? '', slug: t?.slug ?? '' } };
+        const t = tenants.refresh(c.tenant_id);
+        const { status, amountCents, currency, provider, ref, url } = sb.checkoutWire(c);
+        // payUrl: Stripe's own checkout page while the link is unpaid, so this page can send the
+        // company there (it's the page the admin's link and Stripe's cancel_url land on).
+        const payUrl = provider === 'stripe' && status === 'pending' && typeof url === 'string' && url.startsWith('https://checkout.stripe.com/') ? url : null;
+        return {
+          checkout: { ref, status, amountCents, currency, provider, demo: provider === 'demo', payUrl },
+          showroom: { name: t?.name ?? '', slug: t?.slug ?? '', live: t?.status === 'live', url: t ? tenants.originOf(t, requestOrigin(rc.req, config)) : null },
+        };
       },
     },
     {

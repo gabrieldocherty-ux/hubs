@@ -29,6 +29,7 @@ export type Route =
   | { name: 'pro'; rest: string } // #/pro, #/pro/<rest…> (the Contractor workspace)
   | { name: 'studio'; rest: string } // #/studio, #/studio/<tab>/<rest…> (the company workspace on a showroom)
   | { name: 'payDemoPlan'; ref: string } // #/pay/demo-plan/:ref
+  | { name: 'payShowroom'; ref: string } // #/pay/showroom/:ref (a company's monthly plan link, sales site)
   | { name: 'legal'; doc: LegalDocId } // #/terms, #/privacy, #/refunds
   | { name: 'notFound' }; // anything else
 
@@ -130,6 +131,7 @@ export function parseRoute(hash: string): Route {
     case 'pay':
       if (seg.length === 3 && b === 'demo' && PARAM.test(c)) return { name: 'payDemo', orderId: c };
       if (seg.length === 3 && b === 'demo-plan' && PARAM.test(c)) return { name: 'payDemoPlan', ref: c };
+      if (seg.length === 3 && b === 'showroom' && PARAM.test(c)) return { name: 'payShowroom', ref: c };
       break;
     case 's':
       if (seg.length === 2 && PARAM.test(b)) return { name: 'share', token: b };
@@ -179,6 +181,8 @@ export function hrefFor(r: Route): string {
       return `#/pay/demo/${enc(r.orderId)}`;
     case 'payDemoPlan':
       return `#/pay/demo-plan/${enc(r.ref)}`;
+    case 'payShowroom':
+      return `#/pay/showroom/${enc(r.ref)}`;
     case 'share':
       return `#/s/${enc(r.token)}`;
     case 'admin':

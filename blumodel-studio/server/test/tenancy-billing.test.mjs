@@ -140,7 +140,10 @@ test('the monthly plan through Stripe: admin link, signed webhook, invoices, 14-
     assert.equal(c.headers['Idempotency-Key'], `${ref}-checkout`);
     // The company opens the link's status page (sales site, no sign-in).
     const pub = await s.agent().get(`/api/showroom-checkouts/${ref}`);
-    assert.deepEqual(pub.body, { checkout: { ref, status: 'pending', amountCents: 5000, currency: 'cad', provider: 'stripe', demo: false }, showroom: { name: 'Oak & Iron Kitchens', slug: 'oak-iron' } });
+    assert.deepEqual(pub.body, {
+      checkout: { ref, status: 'pending', amountCents: 5000, currency: 'cad', provider: 'stripe', demo: false, payUrl: 'https://checkout.stripe.com/c/pay/cs_test_show' },
+      showroom: { name: 'Oak & Iron Kitchens', slug: 'oak-iron', live: false, url: `http://oak-iron.localhost:${s.port}` },
+    });
     assert.equal((await s.agent({ host: s.hostFor('oak-iron') }).get(`/api/showroom-checkouts/${ref}`)).status, 503, 'not on the showroom (lapsed there, and sales-only anyway)');
 
     // Paid (webhook, delivered twice).

@@ -50,10 +50,10 @@ This checklist covers what only the real Stripe account can show.
 
 These came out of the verification. Until they are fixed, expect the following:
 
-- **The return page after paying doesn't exist yet.** Stripe sends the payer back to
-  `https://blumodel.studio/?session_id=…#/pay/showroom/<ref>`, and the app shows its *not found*
-  page there. The payment is still recorded, because the webhook does that. Note what you see in
-  step 2.6 and carry on.
+- ~~The return page after paying doesn't exist yet~~ (fixed in pivot-fix): `#/pay/showroom/<ref>`
+  on the sales site shows the company and the amount, sends an unpaid link to Stripe ("Pay by card"),
+  confirms the payment as soon as Stripe sends the payer back (`?session_id=`), and ends on "Paid. …
+  monthly plan is active" or "Payment didn't go through".
 - ~~The order of Stripe's events matters~~ (fixed in pivot-fix): an `invoice.paid` that arrives
   before the subscription is known is placed by the subscription's metadata, so the first month's
   2,500 credits and receipt are kept whatever the order. If step 3 still shows **$0.00**, that is a
@@ -170,7 +170,7 @@ Sign in on `https://blumodel.studio` with your **admin** account.
 6. [ ] Where Stripe sent you back: the address is
    `https://blumodel.studio/?session_id=cs_live_…#/pay/showroom/tc_…`.
    - Expected once fixed: a page saying the plan is paid and the showroom is live.
-   - At 6074f7c: the *not found* page (see *Known issues*).
+   - At 6074f7c this was the *not found* page; since pivot-fix it says the plan is active.
 
 ## 3. The webhook did its job: live, and 2,500 credits
 
