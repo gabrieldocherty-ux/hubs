@@ -3,6 +3,7 @@ import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
 import { WallsIcon, CubeIcon, Download, Logo, Wordmark, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
+import { feetInches } from '../lib/format';
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
@@ -14,7 +15,7 @@ import { PhotorealButton } from '../features/renders';
 import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
-import { SiteMark, useShowroom } from '../features/showroom';
+import { shortName, SiteMark, useShowroom } from '../features/showroom';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
@@ -105,8 +106,10 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
       setUI({ viewMode: 'split' });
       await new Promise((r) => setTimeout(r, 900));
     }
-    const url = await exportImage(kind);
-    if (!url) return toast('Could not capture that view. Try again in a moment.', 'warn');
+    const raw = await exportImage(kind);
+    if (!raw) return toast('Could not capture that view. Try again in a moment.', 'warn');
+    // On a showroom the PNG carries the company's logo, name and contact details (lazy: not in the main chunk).
+    const url = showroom ? await import('../features/showroom/downloads').then((m) => m.brandedPng(raw, showroom, name, location.host)).catch(() => raw) : raw;
     downloadDataUrl(url, `${slug(name)}-${kind === 'plan' ? 'floor-plan' : '3d'}.png`);
     toast(kind === 'plan' ? 'Floor plan saved as PNG.' : '3D view saved as PNG.', 'ok');
   };
@@ -118,9 +121,31 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
     downloadText(file.content, file.filename, file.contentType);
     toast(done, 'ok');
   };
+  // On a showroom: the product list as a printable page in the company's colours, with its contact details.
+  const productList = async () => {
+    if (!showroom) return;
+    const [{ productListHtml }, planShot] = await Promise.all([import('../features/showroom/downloads'), viewMode === 'plan' || viewMode === 'split' ? exportImage('plan') : Promise.resolve(null)]);
+    const doc = useDesignStore.getState().doc;
+    const logo = showroom.branding.logoUrl ? new URL(showroom.branding.logoUrl, location.origin).href : null;
+    const html = productListHtml({
+      tenant: showroom,
+      designName: doc.name,
+      roomText: `${feetInches(doc.room.widthIn)} × ${feetInches(doc.room.lengthIn)} · ${Math.round((doc.room.widthIn * doc.room.lengthIn) / 144)} sq ft`,
+      lines: est.lines.filter((l) => l.productId || l.fixtureId),
+      showPrices,
+      total: est.lines.filter((l) => l.productId || l.fixtureId).reduce((n, l) => n + l.total, 0),
+      logoUrl: logo,
+      planImage: planShot,
+      host: location.host,
+      at: new Date(),
+    });
+    downloadText(html, `${slug(doc.name)}-product-list.html`, 'text/html');
+    toast('Product list saved. Open it to print or save as PDF.', 'ok');
+  };
   const runners: Partial<Record<ExportKind, ExportRunner>> = {
     plan_png: () => exportPng('plan'),
     scene_png: () => exportPng('scene'),
+    ...(showroom ? { quote: productList } : {}),
     csv: saveFile('Shopping list saved as CSV.'),
     json: saveFile('Project saved. Open it later with Import.'),
   };
@@ -231,6 +256,11 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
                 <button role="menuitem" onClick={() => doExport('scene_png')}>
                   <b>{lock}3D render</b><span>PNG of the current camera</span>
                 </button>
+                {showroom && (
+                  <button role="menuitem" onClick={() => doExport('quote')}>
+                    <b>{lock}Product list</b><span>Printable, with {shortName(showroom)}’s details</span>
+                  </button>
+                )}
                 {showPrices && (
                   <button role="menuitem" onClick={() => doExport('csv')}>
                     <b>{lock}Shopping list</b><span>CSV with every product and surface</span>
