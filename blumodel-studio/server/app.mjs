@@ -20,6 +20,7 @@ import { createBillingHooks, createContractorHooks, createPricingHooks, createWe
 import { ROUTE_MODULES, ROUTE_MODULE_NAMES, moduleHosts } from './routes/index.mjs';
 import { createTenantService } from './tenancy/service.mjs';
 import { createShowroomBilling } from './billing/showroom.mjs';
+import { createCredits } from './billing/credits.mjs';
 import { createSiteResolver } from './tenancy/hosts.mjs';
 import { unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
 
@@ -72,6 +73,9 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const showroomBilling = createShowroomBilling({ db, now, log });
   tenants.registerStanding((tenantId) => showroomBilling.standing(tenantId));
   showroomBilling.onChange((tenantId) => tenants.refresh(tenantId));
+  // Each paid month adds its render credits, once per invoice.
+  const credits = createCredits({ db, now });
+  showroomBilling.onMonthPaid((tenantId, { invoiceRef, at }) => credits.grantMonth(tenantId, invoiceRef, { at }));
 
   /**
    * The client's real address. With TRUST_PROXY=1 AND a loopback peer (cloudflared on this
@@ -97,7 +101,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling },
+    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits },
     /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp, sites },
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */
@@ -108,8 +112,9 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
       sessions.purgeExpired();
       try {
         tenants.refreshAll();
+        credits.expire();
       } catch (err) {
-        log.warn?.(`tenants: status refresh failed: ${err?.message ?? err}`);
+        log.warn?.(`tenants: status refresh or credit expiry failed: ${err?.message ?? err}`);
       }
       limiter.prune();
       const tmp = path.join(config.UPLOAD_DIR, 'tmp');

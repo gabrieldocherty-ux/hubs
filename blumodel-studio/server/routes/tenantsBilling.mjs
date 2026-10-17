@@ -17,9 +17,13 @@
 //   POST   /api/showroom-checkouts/:ref/demo            demo only: { outcome: success|cancel } -> { checkout }
 //   POST   /api/showroom-checkouts/:ref/sync            { sessionId } back from Stripe (?session_id=): don't
 //                                                       wait for the webhook -> { checkout }
+//   GET    /api/admin/tenants/:id/credits               { balanceCents, lots, nextExpiry, heldCents, history }
+//   POST   /api/admin/tenants/:id/credits               { cents: +/- integer, note } -> the same (audited)
 // Workspace (showroom, team):
 //   GET    /api/workspace/plan                          { license, licenses, monthly, receipts, standing, prices, graceDays }
 //   POST   /api/workspace/plan/portal                   owner -> { url } (Stripe's billing portal for the card)
+//   GET    /api/workspace/credits                       { balanceCents, lots, nextExpiry, heldCents, renderCostCents,
+//                                                         rolloverMonths, history } (?before=<entry id> pages history)
 
 import { HttpError } from '../http/respond.mjs';
 import { audit } from '../lib/audit.mjs';
@@ -35,7 +39,7 @@ const REF_PARAM = /^tc_[A-Za-z0-9_-]{16,40}$/;
 /** @param {any} ctx */
 export default function routes(ctx) {
   const { db, config, services } = ctx;
-  const { tenants, showroomBilling: sb, webhooks } = services;
+  const { tenants, showroomBilling: sb, webhooks, credits } = services;
   const stripe = createStripe({ config, fetch: (...a) => ctx.fetch(...a), log: ctx.log });
   const demo = () => config.paymentsProvider === 'demo';
   const requirePayments = () => {
@@ -55,7 +59,12 @@ export default function routes(ctx) {
     licenses: sb.licenses(t.id),
     monthly: sb.monthlyWire(t.id),
     checkouts: sb.checkouts(t.id),
+    credits: { balanceCents: credits.balance(t.id) },
   }));
+  const creditsWire = (tenantId, rc, limit) => {
+    const before = Number(rc.query.get('before'));
+    return { ...credits.summary(tenantId), history: credits.history(tenantId, { limit, before: Number.isInteger(before) && before > 0 ? before : undefined }) };
+  };
 
   const mustGet = (id) => {
     const t = tenants.get(id);
@@ -223,6 +232,32 @@ export default function routes(ctx) {
       },
     },
 
+    // ── admin: credits ──────────────────────────────────────────────────────
+    {
+      method: 'GET',
+      path: '/api/admin/tenants/:id/credits',
+      auth: 'admin',
+      params: { id: ID_PARAM },
+      handler: (rc) => creditsWire(mustGet(rc.params.id).id, rc, 200),
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/tenants/:id/credits',
+      auth: 'admin',
+      params: { id: ID_PARAM },
+      maxBytes: 2_048,
+      handler: (rc) => {
+        const t = mustGet(rc.params.id);
+        const cents = rc.body?.cents;
+        const note = rc.body?.note;
+        ctx.tx(() => {
+          credits.adjust(t.id, cents, { note, by: rc.user.id });
+          log(rc, 'tenant_credit_adjust', t, { cents, note: String(note).slice(0, 500) });
+        });
+        return creditsWire(t.id, rc, 200);
+      },
+    },
+
     // ── the checkout link the company opens ─────────────────────────────────
     {
       method: 'GET',
@@ -296,6 +331,16 @@ export default function routes(ctx) {
       path: '/api/workspace/plan',
       auth: 'staff',
       handler: (rc) => planWire(tenants.refresh(rc.tenant.id)),
+    },
+    {
+      method: 'GET',
+      path: '/api/workspace/credits',
+      auth: 'staff',
+      handler: (rc) => ({
+        ...creditsWire(rc.tenant.id, rc, 50),
+        renderCostCents: config.RENDER_CREDIT_CENTS,
+        rolloverMonths: SHOWROOM_MONTHLY.creditRolloverMonths,
+      }),
     },
     {
       method: 'POST',

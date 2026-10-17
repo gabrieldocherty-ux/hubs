@@ -14,6 +14,9 @@
 //   tenancy-004  the showroom's money: tenant_licenses (yearly, recorded by an admin),
 //                tenant_subscriptions (the $50 monthly plan: stripe | demo | comp), tenant_checkouts
 //                (the Checkout links an admin sends) and tenant_payments (receipts)
+//   tenancy-005  the render credits ledger: tenant_credit_lots (what was granted, what is left of
+//                it, when it expires), tenant_credit_holds (credits reserved for a render, then
+//                charged, released or refunded) and tenant_credit_entries (every change, signed)
 
 /**
  * Rebuilds `table` with SQLite's procedure (create new, copy, drop old, rename), for the changes
@@ -246,6 +249,55 @@ export const steps = [
           period_end INTEGER,
           created_at INTEGER NOT NULL);
         CREATE INDEX tenant_payments_tenant ON tenant_payments(tenant_id, created_at DESC);
+      `);
+    },
+  },
+  {
+    id: 'tenancy-005-credits-ledger',
+    up(db) {
+      db.exec(`
+        CREATE TABLE tenant_credit_lots (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          -- monthly: a paid month's credits (ref = the invoice); adjust: an admin added them
+          source TEXT NOT NULL CHECK (source IN ('monthly','adjust')),
+          cents INTEGER NOT NULL CHECK (cents > 0),
+          remaining INTEGER NOT NULL CHECK (remaining >= 0),
+          ref TEXT,
+          expires_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL);
+        CREATE INDEX tenant_credit_lots_tenant ON tenant_credit_lots(tenant_id, expires_at);
+        CREATE UNIQUE INDEX tenant_credit_lots_ref ON tenant_credit_lots(tenant_id, source, ref) WHERE ref IS NOT NULL;
+
+        CREATE TABLE tenant_credit_holds (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          cents INTEGER NOT NULL CHECK (cents > 0),
+          status TEXT NOT NULL CHECK (status IN ('held','charged','released','refunded')),
+          -- [{ lotId, cents }]: which lots the reservation took from, oldest expiry first
+          allocations TEXT NOT NULL,
+          purpose TEXT NOT NULL DEFAULT 'render',
+          ref TEXT,
+          by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          created_at INTEGER NOT NULL,
+          settled_at INTEGER);
+        CREATE INDEX tenant_credit_holds_tenant ON tenant_credit_holds(tenant_id, created_at DESC);
+
+        CREATE TABLE tenant_credit_entries (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL CHECK (kind IN ('grant','expire','reserve','charge','release','refund','adjust')),
+          -- the change to the balance (charge is 0: the reservation already took it)
+          cents INTEGER NOT NULL,
+          balance_after INTEGER NOT NULL,
+          lot_id TEXT,
+          hold_id TEXT,
+          ref TEXT,
+          note TEXT NOT NULL DEFAULT '',
+          by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          by_email TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL);
+        CREATE INDEX tenant_credit_entries_tenant ON tenant_credit_entries(tenant_id, id DESC);
       `);
     },
   },

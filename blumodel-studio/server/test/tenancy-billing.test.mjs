@@ -176,6 +176,7 @@ test('the monthly plan through Stripe: admin link, signed webhook, invoices, 14-
     await hook(s, signed(inv(2, 5000, 'subscription_cycle')));
     assert.equal((await s.agent({ host: s.hostFor('oak-iron') }).get('/api/showroom')).status, 200);
     assert.equal(s.db.prepare("SELECT COUNT(*) AS n FROM tenant_payments WHERE kind = 'monthly'").get().n, 2);
+    assert.equal(s.ctx.services.credits.balance(id), 5000, 'two paid months: two lots of render credits');
 
     // The owner's portal; the admin cancels at the period end.
     const owner = await s.showroomUser({ id, host: s.hostFor('oak-iron') }, { role: 'owner' });
