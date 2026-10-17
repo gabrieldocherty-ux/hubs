@@ -1,0 +1,61 @@
+// The emails the showroom side sends, as `{ subject, text }` for createMailer (server/email). As in
+// server/email/messages.mjs, nothing a visitor typed goes into a message to a third party: a
+// showroom's lead notice says a lead arrived and links to the inbox, it never quotes the lead.
+// The showroom's name is set by its staff or by us, so it may appear.
+
+const oneLine = (s, max = 100) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, max);
+
+/** To a new team member: set a password and sign in to the company workspace. */
+export function inviteEmail({ showroom, url }) {
+  const name = oneLine(showroom);
+  return {
+    subject: `You’ve been added to ${name}’s showroom team`,
+    text: `Hello,
+
+You’ve been added to the team for ${name}’s online showroom on BluModel Studio. Choose a password to sign in:
+
+${url}
+
+The link works once, for 7 days.
+
+BluModel Studio`,
+  };
+}
+
+/** To a showroom's contact address when a visitor sends a design. */
+export function leadNoticeEmail({ showroom, inboxUrl }) {
+  const name = oneLine(showroom);
+  return {
+    subject: `New design request on ${name}’s showroom`,
+    text: `Hello,
+
+A visitor sent a design to ${name} from your online showroom. Open your leads inbox to see it:
+
+${inboxUrl}
+
+BluModel Studio`,
+  };
+}
+
+/**
+ * To SUPPORT_EMAIL (us) when a company books a call on the sales site. This one goes to our own
+ * inbox, so it carries what they typed, each field on one line.
+ */
+export function salesLeadEmail({ lead, adminUrl }) {
+  const f = (label, v, max) => `${label}: ${oneLine(v, max) || '-'}`;
+  return {
+    subject: `Book a call: ${oneLine(lead.company, 80) || 'a company'}`,
+    text: `A company asked for a call on the sales site.
+
+${f('Company', lead.company, 120)}
+${f('Name', lead.name, 80)}
+${f('Phone', lead.phone, 40)}
+${f('Email', lead.email, 254)}
+${f('City', lead.city, 80)}
+
+Message:
+${String(lead.message ?? '').trim().slice(0, 2000) || '-'}
+
+Admin: ${adminUrl}`,
+  };
+}

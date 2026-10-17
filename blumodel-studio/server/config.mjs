@@ -102,6 +102,17 @@ export function loadConfig(env = process.env, argv = process.argv) {
   const BLUMODEL_LLM_MODEL = env.BLUMODEL_LLM_MODEL || env.MISE_LLM_MODEL || '';
   const SEED_PASSWORD = env.SEED_PASSWORD || '';
 
+  // The domain showrooms live under (docs/SHOWROOM_PIVOT.md §4): the request's Host picks the site.
+  // <base> and www.<base> are the sales site, <slug>.<base> a company's showroom. 'localhost' in dev
+  // and QA (Chromium resolves *.localhost to 127.0.0.1), 'blumodel.studio' in production.
+  const BASE_DOMAIN = String(env.BASE_DOMAIN || (PROD ? 'blumodel.studio' : 'localhost'))
+    .trim()
+    .toLowerCase()
+    .replace(/^\.+|\.+$/g, '');
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(BASE_DOMAIN)) throw new Error(`BASE_DOMAIN must be a domain name like blumodel.studio (got "${BASE_DOMAIN}").`);
+  // Credits one AI render costs (docs/SHOWROOM_PIVOT.md §7), in cents. 25 until Gabe sets it.
+  const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 25, 1, 100_000);
+
   const RATE_LIMITS = (env.RATE_LIMITS || 'on').trim().toLowerCase() === 'off' ? 'off' : 'on';
   if (RATE_LIMITS === 'off' && PROD) throw new Error('RATE_LIMITS=off is refused in production.');
 
@@ -137,6 +148,8 @@ export function loadConfig(env = process.env, argv = process.argv) {
     BACKUPS,
     BACKUP_KEEP,
     SHUTDOWN_FILE,
+    BASE_DOMAIN,
+    RENDER_CREDIT_CENTS,
     // derived
     /** 'stripe' | 'demo' | 'none': see paymentsPosture(). */
     paymentsProvider,

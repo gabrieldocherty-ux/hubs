@@ -57,10 +57,47 @@ export function sampleDoc(over = {}) {
   };
 }
 
-/** An HTTP client with a cookie jar. Non-GET requests carry `X-BluModel: 1` and JSON by default. */
+/**
+ * One request over node:http with an explicit Host header (fetch can't set Host, and Node doesn't
+ * resolve *.localhost), shaped like a fetch Response for Agent.request.
+ */
+function hostRequest(url, { method, headers, body, host }) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const req = http.request(
+      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: { ...headers, Host: host } },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const h = new Headers();
+          for (const [k, v] of Object.entries(res.headers)) {
+            if (Array.isArray(v)) for (const x of v) h.append(k, x);
+            else if (v !== undefined) h.set(k, String(v));
+          }
+          const buf = Buffer.concat(chunks);
+          resolve({ status: res.statusCode, headers: h, arrayBuffer: async () => buf });
+        });
+        res.on('error', reject);
+      },
+    );
+    req.on('error', reject);
+    if (body !== undefined) req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * An HTTP client with a cookie jar. Non-GET requests carry `X-BluModel: 1` and JSON by default.
+ * With `host` ('acme.localhost'), every request sends that Host header: the server then answers as
+ * that site (a showroom, or the sales site). Cookies are kept per Agent, like one browser profile
+ * on one host (the session cookie is host-only).
+ */
 export class Agent {
-  constructor(base) {
+  constructor(base, { host } = {}) {
     this.base = base;
+    /** The Host header to send, or null for the test server's own 127.0.0.1:<port>. */
+    this.host = host ?? null;
     /** @type {Map<string, string>} */
     this.cookies = new Map();
     /** Set by t.user(): `{ id, email, name, role, brands, password }`. */
@@ -107,7 +144,9 @@ export class Agent {
       h['Content-Type'] = contentType ?? 'application/json';
     }
     if (this.cookies.size) h.Cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
-    const res = await fetch(this.base + p, { method, headers: h, body: payload, redirect: 'manual' });
+    const res = this.host
+      ? await hostRequest(this.base + p, { method, headers: h, body: payload, host: this.host })
+      : await fetch(this.base + p, { method, headers: h, body: payload, redirect: 'manual' });
     this.storeCookies(res.headers.getSetCookie?.() ?? []);
     const buffer = method === 'HEAD' ? Buffer.alloc(0) : Buffer.from(await res.arrayBuffer());
     const text = buffer.toString('utf8');
@@ -189,7 +228,46 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
     server,
     services: ctx.services,
     tmp,
-    agent: () => new Agent(url),
+    /** `t.agent()`: a client on the sales site; `t.agent({ host: t.hostFor('acme') })`: on that showroom. */
+    agent: (o) => new Agent(url, o),
+
+    /** The Host a showroom answers on in tests: '<slug>.localhost:<port>' (BASE_DOMAIN localhost). */
+    hostFor(slug) {
+      return `${slug}.${config.BASE_DOMAIN}:${port}`;
+    },
+
+    /**
+     * Makes a tenant (services.tenants.create) that is live unless `status` says otherwise: a
+     * current admin-recorded license and a complimentary monthly plan, so it is fully usable.
+     * @returns {{ id: string, slug: string, name: string, host: string, tenant: any }}
+     */
+    tenant({ name = `Test Showroom ${++seq}`, slug, status = 'live', settings, branding, contact } = {}) {
+      const ts = ctx.services.tenants;
+      const tn = ts.create({ name, slug, settings, branding, contact });
+      if (status === 'live' || status === 'lapsed') {
+        if (status === 'live') ctx.services.showroomBilling?.grantForTests?.(tn.id);
+        ts.setStatus(tn.id, 'live');
+      } else if (status !== 'setup') ts.setStatus(tn.id, status);
+      const fresh = ts.get(tn.id);
+      return { id: fresh.id, slug: fresh.slug, name: fresh.name, host: `${fresh.slug}.${config.BASE_DOMAIN}:${port}`, tenant: fresh };
+    },
+
+    /**
+     * Signs a user up on a showroom (through the API on its host) and, with `role`, adds them to its
+     * team. Returns an Agent bound to that host.
+     * @param {{ id: string, host: string }} tn  from t.tenant()
+     */
+    async showroomUser(tn, { role = null, name, email, password } = {}) {
+      const n = ++seq;
+      const a = new Agent(url, { host: tn.host });
+      const creds = { name: name ?? `Showroom User ${n}`, email: email ?? `visitor${n}-${randomId('', 6)}@test.blumodel`, password: password ?? `correct horse ${n}` };
+      const r = await a.post('/api/auth/signup', creds);
+      if (r.status !== 201) throw new Error(`t.showroomUser: signup failed (${r.status}): ${r.text}`);
+      ctx.internal.limiter.reset('route:signup:ip:127.0.0.1');
+      if (role) ctx.services.tenants.addMember(tn.id, r.body.user.id, role);
+      a.user = { ...r.body.user, password: creds.password, tenantId: tn.id };
+      return a;
+    },
 
     /**
      * Signs a new user up through the API, then sets the role in the DB.

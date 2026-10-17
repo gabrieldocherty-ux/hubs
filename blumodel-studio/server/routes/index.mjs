@@ -20,8 +20,10 @@ import contractors from './contractors.mjs';
 import account from './account.mjs';
 import ops from './ops.mjs';
 import adminPanel from './adminPanel.mjs';
+import tenants from './tenants.mjs';
+import tenantsAdmin from './tenantsAdmin.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -42,4 +44,16 @@ export const ROUTE_MODULE_NAMES = [
   'account',
   'ops',
   'admin-panel',
+  'tenants',
+  'tenants-admin',
 ];
+
+/**
+ * Modules whose routes may answer on a showroom's host (docs/handoff/tenancy.md "Isolation").
+ * Every other module answers only on the sales site, so a module is safe until someone has scoped
+ * its queries to rc.site.tenantId and added it here. A route can still say `hosts` itself.
+ */
+export const SHOWROOM_MODULES = new Set(['config', 'ops', 'tenants', 'tenants-admin']);
+
+/** The default `hosts` for a module's routes: 'any' for SHOWROOM_MODULES, else 'sales'. */
+export const moduleHosts = (name) => (SHOWROOM_MODULES.has(name) ? 'any' : 'sales');

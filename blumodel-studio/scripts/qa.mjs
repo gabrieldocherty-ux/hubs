@@ -423,6 +423,7 @@ function serverEnv(extra) {
     'PAYMENTS',
     'DEMO_PAYMENTS',
     'SHOW_DEMO_BRANDS',
+    'BASE_DOMAIN',
   ])
     delete env[k];
   return { ...env, ...extra };
@@ -852,6 +853,9 @@ export async function main(argv = process.argv.slice(2)) {
     DEMO_PAYMENTS: '1',
     // The routes use the seeded "(Demo)" brands, which a production server hides without this.
     SHOW_DEMO_BRANDS: '1',
+    // Showrooms are <slug>.localhost:<port> (Chromium resolves *.localhost to 127.0.0.1); the sales
+    // site stays http://127.0.0.1:<port>. See docs/handoff/tenancy.md "QA".
+    BASE_DOMAIN: 'localhost',
     ADMIN_EMAILS: DEMO_EMAIL.admin,
     SEED_PASSWORD: password,
     ...(opts.dist ? { DIST_DIR: dist } : {}),

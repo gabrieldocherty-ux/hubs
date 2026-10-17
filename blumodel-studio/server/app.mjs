@@ -17,7 +17,23 @@ import { createBrandService } from './catalog/brands.mjs';
 import { createProductService } from './catalog/products.mjs';
 import { createEventService } from './catalog/events.mjs';
 import { createBillingHooks, createContractorHooks, createPricingHooks, createWebhookService } from './lib/hooks.mjs';
-import { ROUTE_MODULES, ROUTE_MODULE_NAMES } from './routes/index.mjs';
+import { ROUTE_MODULES, ROUTE_MODULE_NAMES, moduleHosts } from './routes/index.mjs';
+import { createTenantService } from './tenancy/service.mjs';
+import { createSiteResolver } from './tenancy/hosts.mjs';
+import { unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
+
+/**
+ * What a lapsed or suspended showroom still answers (everything else is a 503): the app's config,
+ * so the client can say why, and the health check.
+ */
+const UNAVAILABLE_ALLOW = new Set(['GET /api/config', 'GET /api/health', 'HEAD /api/health']);
+
+/** Sends one of the server's own HTML pages (tenancy/pages.mjs). */
+function sendPage(res, status, html) {
+  if (res.headersSent) return res.end();
+  res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': Buffer.byteLength(html), 'Cache-Control': 'no-store' });
+  res.end(res.req?.method === 'HEAD' ? undefined : html);
+}
 
 const normalizeIp = (a = '') => (a.startsWith('::ffff:') ? a.slice(7) : a);
 const asIp = (v) => {
@@ -47,6 +63,9 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const contractors = createContractorHooks();
   const products = createProductService({ db, now, files, brands, ownerLabel: (userId) => contractors.labelFor(userId) });
   const events = createEventService({ db, now });
+  // Tenants and which site a request is for (docs/SHOWROOM_PIVOT.md §4, docs/handoff/tenancy.md).
+  const tenants = createTenantService({ db, config, now, files, log });
+  const sites = createSiteResolver({ tenants, config });
 
   /**
    * The client's real address. With TRUST_PROXY=1 AND a loopback peer (cloudflared on this
@@ -72,15 +91,20 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors },
-    /** Foundation internals (sessions, limiter, clientIp). Feature packages shouldn't need these. */
-    internal: { sessions, limiter, clientIp },
+    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants },
+    /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
+    internal: { sessions, limiter, clientIp, sites },
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */
     startedAt: now(),
     health: { integrity: /** @type {null | { ok: boolean, problems: string[] }} */ (null), shuttingDown: false },
     /** Periodic housekeeping; index.mjs runs it every 10 minutes. */
     maintenance() {
       sessions.purgeExpired();
+      try {
+        tenants.refreshAll();
+      } catch (err) {
+        log.warn?.(`tenants: status refresh failed: ${err?.message ?? err}`);
+      }
       limiter.prune();
       const tmp = path.join(config.UPLOAD_DIR, 'tmp');
       try {
@@ -94,17 +118,18 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     },
   };
 
-  const modules = routeModules ?? ROUTE_MODULES.map((fn, i) => ({ name: ROUTE_MODULE_NAMES[i], fn }));
+  const modules = routeModules ?? ROUTE_MODULES.map((fn, i) => ({ name: ROUTE_MODULE_NAMES[i], fn, hosts: moduleHosts(ROUTE_MODULE_NAMES[i]) }));
   const routes = compileRoutes(ctx, modules);
   ctx.routes = routes.map((r) => ({
     method: r.method,
     path: r.path,
     auth: r.auth,
+    hosts: r.hosts,
     module: r.module,
     maxBytes: r.maxBytes,
     rateLimits: r.rateLimits.map(({ name, max, windowMs, by }) => ({ name, max, windowMs, by })),
   }));
-  const deps = { currentUser: sessions.currentUser, limiter, clientIp };
+  const deps = { currentUser: sessions.currentUser, limiter, clientIp, siteOf: (req) => req.blumodelSite, memberRole: tenants.roleOf };
 
   /** Responses not yet finished, so shutdown can tell them to close their connection. */
   const inflight = new Set();
@@ -133,12 +158,28 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
       } catch {
         throw new HttpError(400, 'Bad request.');
       }
+      // Which site this is: the sales site, a showroom, or nothing (tenancy/hosts.mjs). Kept on the
+      // request so sessions (auth/sessions.mjs) bind to it.
+      const site = sites.resolve(req);
+      req.blumodelSite = site;
+      const isApi = url.pathname === '/api' || url.pathname.startsWith('/api/');
+      if (site.kind === 'unknown') {
+        if (isApi || req.method !== 'GET') throw new HttpError(404, 'There’s no showroom at this address.', { code: 'unknown_host' });
+        return sendPage(res, 404, unknownHostPage(site.hostname));
+      }
+      if (site.kind === 'showroom' && !site.available && !UNAVAILABLE_ALLOW.has(`${req.method} ${url.pathname}`)) {
+        if (isApi || (req.method !== 'GET' && req.method !== 'HEAD')) {
+          throw new HttpError(503, 'This showroom is temporarily unavailable.', { code: 'showroom_unavailable', status: site.tenant.status });
+        }
+        res.setHeader('Retry-After', '3600');
+        return sendPage(res, 503, unavailablePage(site.tenant));
+      }
       if (req.method === 'OPTIONS') {
         const err = new HttpError(405, 'Method not allowed.');
         err.allow = 'GET, HEAD, POST, PUT, PATCH, DELETE';
         throw err;
       }
-      const found = findRoute(routes, req.method, url.pathname);
+      const found = findRoute(routes, req.method, url.pathname, site.kind);
       if (found?.route) {
         await runRoute({ req, res, url, route: found.route, params: found.params, ctx, deps });
         return;
@@ -148,7 +189,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
         err.allow = found.allow;
         throw err;
       }
-      if (url.pathname === '/api' || url.pathname.startsWith('/api/')) throw new HttpError(404, 'Not found.');
+      if (isApi) throw new HttpError(404, 'Not found.');
       if (req.method === 'GET' || req.method === 'HEAD') {
         await serveDist(req, res, url, config.DIST_DIR);
         return;
