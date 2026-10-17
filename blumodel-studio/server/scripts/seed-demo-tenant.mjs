@@ -29,7 +29,11 @@ if (args.includes('--help') || args.includes('-h')) {
 const env = { ...process.env };
 const { dbPath, source } = scriptDbPath({ env, dbFlag });
 if (dbPath) env.DB_PATH = dbPath;
-const config = loadConfig(env, process.argv);
+// The deployed home's database is the live server's, so its defaults are production's
+// (BASE_DOMAIN blumodel.studio). Without this the demo's address was saved as demo.localhost on the
+// live server (2026-10-17).
+const argv = source === 'home' && !process.argv.includes('--prod') ? [...process.argv, '--prod'] : process.argv;
+const config = loadConfig(env, argv);
 const why = { '--db': 'from --db', DB_PATH: 'from DB_PATH', home: 'the deployed home’s database', default: 'the checkout’s database' }[source];
 console.log(`Database: ${config.DB_PATH} (${why})`);
 if (config.DB_PATH !== ':memory:' && !fs.existsSync(config.DB_PATH)) {
