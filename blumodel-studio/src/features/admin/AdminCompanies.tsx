@@ -59,11 +59,19 @@ export function dollarsToCents(s: string): number | null {
   return Math.round(Number(t) * 100);
 }
 
-/** GET /api/config's baseDomain (blumodel.studio in production, localhost in dev and QA). */
-const baseDomainOf = (cfg: unknown) => {
+/**
+ * The base domain showrooms live under (blumodel.studio in production, localhost in dev and QA):
+ * read off a company's own <slug>.<base> address, which the server always stores, else
+ * GET /api/config's baseDomain when the client config carries it.
+ */
+export function baseDomainOf(cfg: unknown, tenants: AdminTenant[] = []): string {
+  for (const t of tenants) {
+    const own = t.hostnames?.find((h) => h.kind === 'subdomain' && h.hostname.startsWith(`${t.slug}.`));
+    if (own) return own.hostname.slice(t.slug.length + 1);
+  }
   const v = (cfg as { baseDomain?: unknown } | null)?.baseDomain;
   return typeof v === 'string' && v ? v : 'blumodel.studio';
-};
+}
 
 /** `<host>` of an origin, for showing the address without the scheme. */
 const hostOf = (url: string) => url.replace(/^[a-z]+:\/\//i, '').replace(/\/$/, '');
@@ -193,6 +201,7 @@ export default function AdminCompanies() {
       </div>
       {creating && (
         <CreateCompany
+          tenants={all ?? []}
           onCreated={(t, inv, email) => {
             setCreating(false);
             if (inv) setInvite({ invite: inv, email });
@@ -281,9 +290,9 @@ export default function AdminCompanies() {
   );
 }
 
-function CreateCompany({ onCreated }: { onCreated: (t: AdminTenant, invite: InviteLink | undefined, email: string) => void }) {
+function CreateCompany({ onCreated, tenants }: { onCreated: (t: AdminTenant, invite: InviteLink | undefined, email: string) => void; tenants: AdminTenant[] }) {
   const cfg = useAppConfig();
-  const base = baseDomainOf(cfg);
+  const base = baseDomainOf(cfg, tenants);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
@@ -762,7 +771,7 @@ function MonthlySection({ t, act, busy }: SectionProps) {
 
 function HostnamesSection({ t, act, busy }: SectionProps) {
   const cfg = useAppConfig();
-  const base = baseDomainOf(cfg);
+  const base = baseDomainOf(cfg, [t]);
   const [host, setHost] = useState('');
   const [kind, setKind] = useState<'custom' | 'subdomain'>('custom');
   const own = `${t.slug}.${base}`;
