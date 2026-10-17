@@ -55,3 +55,48 @@ export function unavailablePage(tenant) {
     accent: tenant?.branding?.primaryColor,
   });
 }
+
+/**
+ * The app's index.html as a showroom serves it: the head says the company, not our sales pitch, so
+ * a link to <company>.blumodel.studio pasted into a chat or a social post previews the company
+ * (link previewers don't run the app's script). Mirrors src/features/showroom/branding.ts:
+ * title, description, og/twitter title and description, site name, og:url and the canonical link
+ * from the tenant (escaped); our own share image and its alt text are dropped (a company's logo is
+ * not a 1200x630 card) and the logo, when it has one, becomes og:image.
+ * @param {string} html  the built index.html
+ * @param {{ name: string, settings?: any, contact?: any }} t  the tenant
+ * @param {{ origin: string, logoUrl?: string | null }} o
+ */
+export function showroomIndexHtml(html, t, { origin, logoUrl = null }) {
+  const name = String(t.name).replace(/\s*\((demo|sample)\)\s*$/i, '').trim() || String(t.name);
+  const bath = !!t.settings?.bathrooms;
+  const title = `${name} · Design your ${bath ? 'kitchen or bathroom' : 'kitchen'} in 3D`;
+  const area = String(t.contact?.serviceArea ?? '').trim();
+  const description = `Design your kitchen${bath ? ' or bathroom' : ''} in 3D with ${name}'s own products, then send it to ${name} for a quote.${area ? ` Serving ${area}.` : ''}`;
+  const url = `${origin}/`;
+  const meta = (attr, key, value) => (h) => h.replace(new RegExp(`(<meta ${attr}="${key}" content=")[^"]*(")`), (_m, a, b) => `${a}${esc(value)}${b}`);
+  const drop = (re) => (h) => h.replace(re, '');
+  const steps = [
+    (h) => h.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`),
+    meta('name', 'description', description),
+    meta('name', 'application-name', name),
+    meta('name', 'apple-mobile-web-app-title', name.slice(0, 30)),
+    meta('property', 'og:site_name', name),
+    meta('property', 'og:title', title),
+    meta('property', 'og:description', description),
+    meta('property', 'og:url', url),
+    meta('name', 'twitter:title', title),
+    meta('name', 'twitter:description', description),
+    (h) => h.replace(/(<link rel="canonical" href=")[^"]*(")/, (_m, a, b) => `${a}${esc(url)}${b}`),
+    drop(/\s*<meta property="og:image(?::[a-z]+)?" content="[^"]*" \/>/g),
+    drop(/\s*<meta name="twitter:image(?::alt)?" content="[^"]*" \/>/g),
+    (h) => h.replace(/<meta name="twitter:card" content="summary_large_image" \/>/, '<meta name="twitter:card" content="summary" />'),
+  ];
+  let out = steps.reduce((h, f) => f(h), html);
+  if (logoUrl) {
+    const abs = /^https:\/\//.test(logoUrl) ? logoUrl : logoUrl.startsWith('/') ? `${origin}${logoUrl}` : null;
+    if (abs) out = out.replace(/(<meta property="og:url" content="[^"]*" \/>)/, `$1
+    <meta property="og:image" content="${esc(abs)}" />`);
+  }
+  return out;
+}
