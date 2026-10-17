@@ -6,7 +6,7 @@ import { useSession } from '../store/useSession';
 import { buildTemplate } from '../data/templates';
 import { DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { MiniPlan } from '../components/MiniPlan';
-import { Logo, Wordmark } from '../components/Icons';
+import { shortName, SiteMark, useShowroom } from '../features/showroom';
 import { AgreeToSignUp } from '../components/PaymentNotice';
 import { LegalLinks } from '../features/legal/LegalLinks';
 import './auth.css';
@@ -27,21 +27,31 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
   const next = query.get('next');
   const keepNext = next ? `?next=${encodeURIComponent(next)}` : '';
 
+  // On a company's showroom the page is the company's: its mark and its words, never ours.
+  const showroom = useShowroom();
   const hero = useMemo(() => ({ name: 'Hero', room: DEFAULT_ROOM, surfaces: DEFAULT_SURFACES, items: buildTemplate('l-island', DEFAULT_ROOM, DEFAULT_SURFACES).items }), []);
 
   return (
     <div className="auth">
       <section className="auth-hero" aria-hidden>
         <div className="auth-brand">
-          <Logo />
-          <Wordmark />
+          <SiteMark />
         </div>
         <div className="auth-plan">
           <MiniPlan doc={hero} />
         </div>
         <div className="auth-pitch">
-          <h1>Plan the kitchen before you build it.</h1>
-          <p>Drop in real cabinets and appliances at true scale, check the layout against kitchen-planning guidelines, price it, and walk through it in 3D.</p>
+          {showroom ? (
+            <>
+              <h1>Design your room with {shortName(showroom)}.</h1>
+              <p>Your account keeps every design you make here, free. When you’re happy with one, send it to {shortName(showroom)} and a designer will follow up.</p>
+            </>
+          ) : (
+            <>
+              <h1>Plan the kitchen before you build it.</h1>
+              <p>Drop in real cabinets and appliances at true scale, check the layout against kitchen-planning guidelines, price it, and walk through it in 3D.</p>
+            </>
+          )}
         </div>
       </section>
 
@@ -64,6 +74,7 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
   const [busy, setBusy] = useState(false);
   const offline = status === 'offline';
   const signup = mode === 'signup';
+  const showroom = useShowroom();
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -132,16 +143,21 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
       {signup && <AgreeToSignUp />}
 
       <p className="auth-switch">
-        {signup ? 'Already have an account? ' : 'New to BluModel Studio? '}
+        {signup ? 'Already have an account? ' : showroom ? 'New here? ' : 'New to BluModel Studio? '}
         <a href={`${signup ? '#/signin' : '#/signup'}${keepNext}`}>{signup ? 'Sign in' : 'Create an account'}</a>
       </p>
 
-      <div className="auth-or">
-        <span>or</span>
-      </div>
-      <a className="btn wide" href="#/local">
-        Design on this device without an account
-      </a>
+      {/* Device-only designs never reach a showroom's company, so a showroom doesn't offer them. */}
+      {!showroom && (
+        <>
+          <div className="auth-or">
+            <span>or</span>
+          </div>
+          <a className="btn wide" href="#/local">
+            Design on this device without an account
+          </a>
+        </>
+      )}
     </form>
   );
 }

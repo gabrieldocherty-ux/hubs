@@ -50,3 +50,38 @@
     max-width: 52vw;
   }
 }
+
+/* The right end of a showroom's top bar: a link back to its landing page beside the account menu. */
+.home-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-bar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--ink-2);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.home-bar-link:hover {
+  color: var(--ink);
+  background: var(--paper-2);
+}
+
+@media (pointer: coarse) {
+  .home-bar-link {
+    min-height: 44px;
+  }
+}
+
+/* The sign-in page's art panel is dark in both themes: the company's name reads in its colour. */
+.auth-brand .site-name {
+  color: inherit;
+}

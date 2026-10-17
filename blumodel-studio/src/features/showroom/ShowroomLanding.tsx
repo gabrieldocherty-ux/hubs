@@ -180,7 +180,7 @@ function LineCard({ line, signedIn, disabled }: { line: ShowroomLine; signedIn: 
   const n = line.products.length;
   return (
     <article className="sr-line">
-      <div className="sr-line-art" aria-hidden>
+      <div className="sr-line-art" style={{ gridTemplateColumns: `repeat(${Math.max(1, pics.length)}, 1fr)` }} aria-hidden>
         {pics.map((p) => (
           <span key={p.id} className="sr-line-pic">
             <ProductArt product={p} surfaces={DEFAULT_SURFACES} />
