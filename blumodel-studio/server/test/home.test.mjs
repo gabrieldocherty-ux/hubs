@@ -211,8 +211,11 @@ test('the blumodel.env template: every settings key once, secrets empty, the pub
   assert.equal(values.ADMIN_EMAILS, 'owner@blumodel.example');
   assert.equal(values.DEMO_PAYMENTS, '0');
   assert.equal(values.TRUST_PROXY, '1');
+  assert.equal(values.BASE_DOMAIN, '', 'empty: the production default');
   // What the production server makes of it: no Stripe, no demo, so payments are 'none'.
   const c = loadConfig({ ...values }, ['--prod']);
+  assert.equal(c.BASE_DOMAIN, 'blumodel.studio', 'showrooms at <slug>.blumodel.studio');
+  assert.equal(loadConfig({ ...values, BASE_DOMAIN: 'Showrooms.Example.CA' }, ['--prod']).BASE_DOMAIN, 'showrooms.example.ca');
   assert.equal(c.paymentsProvider, 'none');
   assert.equal(c.TRUST_PROXY, 1);
   assert.deepEqual([...c.ADMIN_EMAILS], ['owner@blumodel.example']);

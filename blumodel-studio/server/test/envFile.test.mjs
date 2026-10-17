@@ -81,6 +81,7 @@ test('loadEnvFile: only the settings keys are applied; other keys are ignored an
     assert.deepEqual([...ENV_FILE_KEYS].sort(), [
       'ADMIN_EMAILS',
       'ANTHROPIC_API_KEY',
+      'BASE_DOMAIN',
       'BLUMODEL_LLM_MODEL',
       'DEMO_PAYMENTS',
       'EMAIL_FROM',

@@ -292,12 +292,17 @@ export function settingsTemplate({ adminEmails = '', publicUrl = PUBLIC_URL, pla
 # docs/LAUNCH.md says where each value comes from; npm run stripe:check checks the Stripe ones.
 
 # Stripe: a restricted key (rk_live_...) or secret key (sk_live_...), and the signing secret
-# (whsec_...) of the webhook endpoint ${publicUrl}/api/webhooks/stripe.
+# (whsec_...) of the webhook endpoint ${publicUrl}/api/webhooks/stripe. The companies' monthly
+# plans are charged through it; yearly licenses are recorded by hand in Admin (no Stripe).
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 
 # The https address customers use. Checkout return links and the webhook check use it.
 PUBLIC_URL=${publicUrl}
+# The domain the showrooms live under: <slug>.<BASE_DOMAIN> is a company's showroom, the domain
+# itself and www. are the sales site. Empty: blumodel.studio. The tunnel must route *.<BASE_DOMAIN>
+# as well (scripts/tunnel/setup-tunnel.mjs --hostname, docs/ONBOARDING_A_COMPANY.md).
+BASE_DOMAIN=
 # Grants nothing: no other account can change its email to one of these (comma separated). Make
 # an admin with make-admin (docs/OPERATIONS.md, Admins) after signing up.
 ADMIN_EMAILS=${adminEmails}
@@ -311,7 +316,7 @@ LEGAL_NAME=
 SUPPORT_EMAIL=
 LEGAL_JURISDICTION=
 
-# Optional: Start from a photo reads the photos with Claude when both are set.
+# Optional, legacy: the retired Start from a photo read photos with Claude when both were set.
 ANTHROPIC_API_KEY=
 BLUMODEL_LLM_MODEL=
 
