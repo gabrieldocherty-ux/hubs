@@ -4,6 +4,8 @@
 //     site, no sign-in): the demo payment completes and says the plan is active and the showroom live.
 //   - a showroom still in setup: no empty sample preview, no "call or email us below" without contact
 //     details, and sign-up refused (403 showroom_not_open).
+//   - the demo showroom's seeded designs pass every design check (nothing through a wall), and every
+//     demo lead has its design attached.
 // Every screen route checks: no sideways scroll, and 44 px touch targets on phones.
 // Run: node scripts/qa.mjs --pkg pivot --port 8955
 
@@ -129,6 +131,39 @@ export default [
       await layoutOk(h);
     },
   })),
+  ...[
+    { name: 'Riley’s sage shaker kitchen', as: 'showroom-visitor', who: 'demo-visitor@blumodel.test' },
+    { name: 'Morgan’s condo kitchen', as: 'showroom-staff', who: 'demo-staff@blumodel.test' },
+    { name: 'Patel family kitchen', as: 'showroom-staff', who: 'demo-staff@blumodel.test' },
+  ].map((d, i) => ({
+    name: `demo-design-checks-${i + 1}`,
+    host: 'demo',
+    as: d.as,
+    viewport: 'desktop',
+    colorScheme: i === 1 ? 'dark' : 'light',
+    setup: async ({ api }) => {
+      const row = api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = ? AND p.tenant_id = 't_demo' AND p.name = ?", d.who, d.name)[0];
+      if (!row) throw new Error(`no seeded design "${d.name}"`);
+      return { path: `/k/${row.id}` };
+    },
+    waitFor: ['.plan-view canvas'],
+    expectText: ['Layout passes every design check'],
+    waitMs: 1500,
+  })),
+  {
+    name: 'demo-leads-have-designs',
+    host: 'demo',
+    as: 'showroom-owner',
+    path: '#/studio/leads',
+    viewport: 'desktop',
+    colorScheme: 'light',
+    waitFor: ['.ws-tabs'],
+    expectText: ['Riley Okafor', 'Morgan Lee', 'Sam Patel'],
+    check: async (h) => {
+      const n = h.api.sql("SELECT COUNT(*) AS n FROM showroom_leads WHERE tenant_id = 't_demo' AND share_token IS NULL")[0].n;
+      if (n) throw new Error(`${n} demo lead(s) have no design`);
+    },
+  },
   {
     name: 'pay-showroom-unknown',
     path: '#/pay/showroom/tc_doesNotExist0000000',

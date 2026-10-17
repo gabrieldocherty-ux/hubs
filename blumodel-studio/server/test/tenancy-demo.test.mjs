@@ -68,8 +68,23 @@ test('the demo showroom: live, its own catalog (no store links), branding, peopl
     assert.equal(inbox.counts.total, 3);
     assert.equal(inbox.counts.contacted, 1);
     assert.equal(inbox.counts.quoted, 1);
-    const withDesign = inbox.leads.find((l) => l.design);
-    assert.equal((await owner.get(`/api/share/${withDesign.design.shareToken}`)).status, 200, 'the sample design opens');
+    // Every demo lead comes with its design, and each opens.
+    assert.equal(inbox.leads.filter((l) => l.design).length, 3);
+    for (const l of inbox.leads) assert.equal((await owner.get(`/api/share/${l.design.shareToken}`)).status, 200, `${l.name}'s design opens`);
+    // Every seeded design sits inside the room: nothing pokes through a wall (the editor's
+    // "pokes through a wall" check), and back-wall pieces touch the wall.
+    const depth = new Map(cat.products.map((p) => [p.id, p.depthIn ?? p.spec?.depthIn]));
+    assert.ok([...depth.values()].every((d) => d > 0), 'every demo product has a depth');
+    for (const row of t.db.prepare("SELECT name, doc FROM projects WHERE tenant_id = 't_demo'").all()) {
+      const doc = JSON.parse(row.doc);
+      for (const it of doc.items) {
+        const d = depth.get(it.productId);
+        const w = it.widthIn;
+        if (!d || !w || it.rotation) continue;
+        assert.ok(it.y - d / 2 >= 0 && it.y + d / 2 <= doc.room.lengthIn, `${row.name}: ${it.productId} at y ${it.y} (depth ${d}) is through a wall`);
+        assert.ok(it.x - w / 2 >= 0 && it.x + w / 2 <= doc.room.widthIn, `${row.name}: ${it.productId} at x ${it.x} is through a wall`);
+      }
+    }
     assert.equal((await owner.get('/api/workspace/credits')).body.balanceCents, 2500);
     const me = new Agent(t.url, { host });
     await me.post('/api/auth/login', { email: DEMO_PEOPLE[2].email, password: 'demo password for tests' });

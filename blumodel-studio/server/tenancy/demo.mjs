@@ -148,12 +148,19 @@ function passwordFor(config, email) {
   return { password, source: 'generated' };
 }
 
-/** A design along the back wall: a run of `ids` (product, width) and an island. */
-function designDoc(name, run, extras = []) {
+/** Depth (inches) of a demo product by its id: what the back-wall run sits at. */
+const depthOfId = (ids, productId) => DEMO_PRODUCTS.find((p) => ids[p.sku] === productId)?.depthIn ?? 24;
+
+/**
+ * A design along the back wall: a run of `ids` (product, width) and an island. Each piece of the
+ * run sits with its back on the wall (y = half its depth: a 30″-deep fridge at 15, not 12, or it
+ * pokes through the wall and fails the design checks).
+ */
+function designDoc(name, run, extras = [], ids = {}) {
   let x = 4;
   const items = [];
   for (const [productId, widthIn, finishIndex = 0] of run) {
-    items.push({ id: `it-${items.length + 1}`, productId, x: x + widthIn / 2, y: 12, rotation: 0, finishIndex, widthIn });
+    items.push({ id: `it-${items.length + 1}`, productId, x: x + widthIn / 2, y: depthOfId(ids, productId) / 2, rotation: 0, finishIndex, widthIn });
     x += widthIn;
   }
   for (const e of extras) items.push({ id: `it-${items.length + 1}`, rotation: 0, finishIndex: 0, ...e });
@@ -263,14 +270,14 @@ export async function seedDemoTenant({ db, services, config, now = Date.now }, {
         { productId: P('NL-LT-D14'), x: 128, y: 96, finishIndex: 1 },
         { productId: P('NL-ST-26'), x: 90, y: 128, rotation: 180 },
         { productId: P('NL-ST-26'), x: 126, y: 128, rotation: 180 },
-      ]),
+      ], ids),
       designDoc('Harbourfront condo kitchen', [
         [P('NL-HS-P{w}84'), 24],
         [P('NL-HS-B{w}'), 30],
         [P('NL-SK-UM{w}'), 33],
         [P('NL-AP-DW24'), 24],
         [P('NL-HS-B{w}'), 24],
-      ]),
+      ], [], ids),
     ];
     const t0 = now();
     const projectIds = [];
@@ -291,8 +298,41 @@ export async function seedDemoTenant({ db, services, config, now = Date.now }, {
         { userId: accounts.visitor },
       );
       leads.update(tenantId, first.id, { status: 'contacted', staffNotes: 'Called back; site measure booked.' });
-      leads.create(tenant, { name: 'Morgan Lee', email: 'morgan.lee@example.test', phone: '(226) 555-0107', postalCode: 'N2L 3G1', budget: '$25,000 - $40,000', timeline: '3-6 months', notes: 'Condo kitchen, flat-front doors, lots of storage.', consent: true });
-      const third = leads.create(tenant, { name: 'Sam Patel', email: 'sam.patel@example.test', postalCode: 'N1E 6K2', budget: 'Not sure yet', timeline: 'Just looking', notes: '', consent: true });
+      // The other two leads came with designs too (made with them in the showroom by the staff
+      // and sent from a view-only link), so the demo inbox shows the plan attached on each.
+      const shared = (d) => {
+        const pid = crypto.randomUUID();
+        db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').run(pid, accounts.staff, d.name, '', JSON.stringify(d), t0, t0, tenantId);
+        const token = crypto.randomBytes(24).toString('base64url');
+        db.prepare(
+          `INSERT INTO share_links (id, project_id, token, created_by, label, show_prices, expires_at, revoked_at, view_count, last_viewed_at, created_at)
+           VALUES (?, ?, ?, ?, ?, 1, NULL, NULL, 0, NULL, ?)`,
+        ).run(`sh_${crypto.randomBytes(12).toString('base64url')}`, pid, token, accounts.staff, 'Sent to Northline', t0);
+        return token;
+      };
+      const morgan = shared(
+        designDoc('Morgan’s condo kitchen', [
+          [P('NL-HS-P{w}84'), 24],
+          [P('NL-AP-F36'), 36],
+          [P('NL-HS-B{w}'), 30],
+          [P('NL-SK-UM{w}'), 33],
+          [P('NL-AP-DW24'), 24],
+          [P('NL-HS-B{w}'), 24],
+        ], [], ids),
+      );
+      leads.create(tenant, { name: 'Morgan Lee', email: 'morgan.lee@example.test', phone: '(226) 555-0107', postalCode: 'N2L 3G1', budget: '$25,000 - $40,000', timeline: '3-6 months', notes: 'Condo kitchen, flat-front doors, lots of storage.', consent: true, shareToken: morgan });
+      const sam = shared(
+        designDoc('Patel family kitchen', [
+          [P('NL-LS-P{w}84'), 24],
+          [P('NL-LS-B{w}'), 24],
+          [P('NL-AP-R36'), 36],
+          [P('NL-LS-DB{w}'), 30],
+          [P('NL-SK-FS{w}'), 36],
+          [P('NL-AP-DW24'), 24],
+          [P('NL-AP-F36'), 36],
+        ], [{ productId: P('NL-AP-H{w}'), x: 4 + 24 + 24 + 18, y: 10, widthIn: 36 }], ids),
+      );
+      const third = leads.create(tenant, { name: 'Sam Patel', email: 'sam.patel@example.test', postalCode: 'N1E 6K2', budget: 'Not sure yet', timeline: 'Just looking', notes: '', consent: true, shareToken: sam });
       leads.update(tenantId, third.id, { status: 'quoted', staffNotes: 'Quote #1042 sent.' });
     }
   }
