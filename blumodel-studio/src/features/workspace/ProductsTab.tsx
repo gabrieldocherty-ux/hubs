@@ -10,7 +10,6 @@ import type { Product } from '../../types';
 import { wsApi, type PricingWire } from './api';
 import { useWorkspace } from './context';
 import { parseDollars } from './pricing';
-import './products.css';
 
 const ProductForm = lazy(() => import('./ProductForm'));
 const Requests = lazy(() => import('./Requests'));
