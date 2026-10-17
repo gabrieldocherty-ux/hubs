@@ -44,9 +44,9 @@
   }
 }
 
-.mk h1,
-.mk h2,
-.mk h3 {
+:where(.mk) h1,
+:where(.mk) h2,
+:where(.mk) h3 {
   font-family: var(--display);
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -59,19 +59,19 @@
   text-wrap: balance;
 }
 
-.mk p {
+:where(.mk) p {
   overflow-wrap: break-word;
   margin: 0;
 }
 
-.mk ul,
-.mk ol {
+:where(.mk) ul,
+:where(.mk) ol {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.mk a:not(.btn) {
+:where(.mk a:not(.btn)) {
   color: inherit;
 }
 
@@ -125,7 +125,7 @@
 
 .mk-center {
   text-align: center;
-  margin-top: 28px !important;
+  margin-top: 28px;
 }
 
 /* ─── Header ─────────────────────────────────────────────── */
@@ -176,14 +176,14 @@
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink-2) !important;
+  color: var(--ink-2);
   text-decoration: none;
   white-space: nowrap;
 }
 
 .mk-nav a:hover,
 .mk-nav a.on {
-  color: var(--ink) !important;
+  color: var(--ink);
   background: var(--paper-2);
 }
 
@@ -475,12 +475,12 @@
   gap: 10px;
 }
 
-.mk-lead-who b {
+.mk-lead-who div b {
   display: block;
   font-size: 15px;
 }
 
-.mk-lead-who span {
+.mk-lead-who div span {
   font-size: 12.5px;
   color: var(--ink-2);
 }
@@ -925,7 +925,7 @@
 .mk-price-fine {
   font-size: 13px;
   color: var(--ink-3);
-  margin-top: auto !important;
+  margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--line);
 }
@@ -1117,7 +1117,7 @@
 .mk-book-points {
   display: grid;
   gap: 9px;
-  margin-top: 4px !important;
+  margin-top: 4px;
 }
 
 .mk-book-points li {
@@ -1137,7 +1137,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px !important;
+  margin-top: 10px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 14px;
@@ -1155,7 +1155,7 @@
 }
 
 .mk-book-demo {
-  margin: 0 auto 72px !important;
+  margin: 0 auto 72px;
   padding: 0 var(--mk-gut);
   color: var(--ink-2);
 }
@@ -1388,12 +1388,12 @@
   min-height: 40px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ink-2) !important;
+  color: var(--ink-2);
   text-decoration: none;
 }
 
 .mk-foot-link:hover {
-  color: var(--ink) !important;
+  color: var(--ink);
   text-decoration: underline;
 }
 
@@ -1404,7 +1404,7 @@
 
 .mk-fine {
   max-width: var(--mk-max);
-  margin: 22px auto 0 !important;
+  margin: 22px auto 0;
   font-size: 12.5px;
   color: var(--ink-3);
 }
@@ -1578,6 +1578,15 @@
     padding-bottom: 60px;
   }
 
+  .mk-section.mk-section--tight {
+    padding-top: 0;
+  }
+
+  .mk-pricing-hero {
+    padding-top: 40px;
+    padding-bottom: 28px;
+  }
+
   .mk-head {
     margin-bottom: 28px;
   }
@@ -1666,6 +1675,14 @@
   .mk-inline-link,
   .mk-form-note a,
   .mk-book-alt a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+@media (pointer: coarse) {
+  .mk-legal a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
