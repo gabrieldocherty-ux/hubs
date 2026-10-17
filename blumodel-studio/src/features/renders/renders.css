@@ -253,6 +253,16 @@
   color: var(--warn-ink);
 }
 
+.rn-usage {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.rn-gallery .rn-banner {
+  margin-bottom: 12px;
+}
+
 .rn-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

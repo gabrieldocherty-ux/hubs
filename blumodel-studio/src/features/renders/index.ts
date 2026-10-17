@@ -9,8 +9,11 @@ import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
  *    visitor renders on; its dialog is lazy.
  *  - `RendersPage`: the company workspace's Renders page (lazy, default-exported module): balance,
  *    cost, expiry, this month's use, every render, the credits ledger. Fetches its own data.
+ *  - `RendersGallery`: just the gallery of every render the showroom made (lazy), for the workspace
+ *    tab that already shows the credits.
  *  - `openPhotoreal()`: opens the dialog from elsewhere.
  */
+export const RendersGallery: LazyExoticComponent<ComponentType<{ title?: string }>> = lazy(() => import('./RendersGallery'));
 export const RendersPage: LazyExoticComponent<ComponentType<{}>> = lazy(() => import('./RendersPage'));
 export { PhotorealButton, openPhotoreal, closePhotoreal, showroomRole } from './PhotorealButton';
 export type { RenderWire, RendersStatus, WorkspaceRenders, WorkspaceCredits } from './api';
