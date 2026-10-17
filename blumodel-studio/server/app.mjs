@@ -21,6 +21,7 @@ import { ROUTE_MODULES, ROUTE_MODULE_NAMES, moduleHosts } from './routes/index.m
 import { createTenantService } from './tenancy/service.mjs';
 import { createShowroomBilling } from './billing/showroom.mjs';
 import { createCredits } from './billing/credits.mjs';
+import { createLeadService } from './tenancy/leads.mjs';
 import { createSiteResolver } from './tenancy/hosts.mjs';
 import { unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
 
@@ -76,6 +77,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   // Each paid month adds its render credits, once per invoice.
   const credits = createCredits({ db, now });
   showroomBilling.onMonthPaid((tenantId, { invoiceRef, at }) => credits.grantMonth(tenantId, invoiceRef, { at }));
+  const leads = createLeadService({ db, now });
 
   /**
    * The client's real address. With TRUST_PROXY=1 AND a loopback peer (cloudflared on this
@@ -101,7 +103,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits },
+    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits, leads },
     /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp, sites },
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */

@@ -254,7 +254,7 @@ test('modules that answer on showrooms are exactly the scoped ones; every other 
   const t = await startTestServer();
   try {
     const { aOwner } = await world(t);
-    assert.deepEqual([...SHOWROOM_MODULES].sort(), ['account', 'auth', 'catalog', 'config', 'events', 'files', 'ops', 'projects', 'share', 'tenants', 'tenants-admin', 'tenants-billing'].sort());
+    assert.deepEqual([...SHOWROOM_MODULES].sort(), ['account', 'auth', 'catalog', 'config', 'events', 'files', 'ops', 'projects', 'share', 'tenants', 'tenants-admin', 'tenants-billing', 'tenants-leads'].sort());
     const fill = (p) => p.replace(/:([A-Za-z_]+)/g, 'nobody_here');
     for (const r of t.ctx.routes) {
       if (r.hosts !== 'sales') continue;

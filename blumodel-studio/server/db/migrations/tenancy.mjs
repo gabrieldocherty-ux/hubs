@@ -17,6 +17,9 @@
 //   tenancy-005  the render credits ledger: tenant_credit_lots (what was granted, what is left of
 //                it, when it expires), tenant_credit_holds (credits reserved for a render, then
 //                charged, released or refunded) and tenant_credit_entries (every change, signed)
+//   tenancy-006  showroom_leads: "Send this design to <Company>" (a new table: the old brand-page
+//                leads table needs a brand and has no 'quoted' status; it stays as it is) and
+//                sales_leads: "Book a call" on the sales site, for us
 
 /**
  * Rebuilds `table` with SQLite's procedure (create new, copy, drop old, rename), for the changes
@@ -298,6 +301,53 @@ export const steps = [
           by_email TEXT NOT NULL DEFAULT '',
           created_at INTEGER NOT NULL);
         CREATE INDEX tenant_credit_entries_tenant ON tenant_credit_entries(tenant_id, id DESC);
+      `);
+    },
+  },
+  {
+    id: 'tenancy-006-showroom-and-sales-leads',
+    up(db) {
+      db.exec(`
+        CREATE TABLE showroom_leads (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          -- the visitor's account on the showroom, when signed in
+          user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+          project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+          design_name TEXT NOT NULL DEFAULT '',
+          -- the view-only share link the staff open (#/s/<token>)
+          share_token TEXT,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          phone TEXT NOT NULL DEFAULT '',
+          postal_code TEXT NOT NULL DEFAULT '',
+          budget TEXT NOT NULL DEFAULT '',
+          timeline TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT '',
+          consent INTEGER NOT NULL CHECK (consent IN (0,1)),
+          consent_text TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','quoted','won','lost')),
+          staff_notes TEXT NOT NULL DEFAULT '',
+          read_at INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL);
+        CREATE INDEX showroom_leads_tenant ON showroom_leads(tenant_id, created_at DESC);
+        CREATE INDEX showroom_leads_status ON showroom_leads(tenant_id, status);
+
+        CREATE TABLE sales_leads (
+          id TEXT PRIMARY KEY,
+          company TEXT NOT NULL,
+          name TEXT NOT NULL,
+          phone TEXT NOT NULL DEFAULT '',
+          email TEXT NOT NULL,
+          city TEXT NOT NULL DEFAULT '',
+          message TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','contacted','demo','won','lost')),
+          admin_notes TEXT NOT NULL DEFAULT '',
+          emailed INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL);
+        CREATE INDEX sales_leads_created ON sales_leads(created_at DESC);
       `);
     },
   },
