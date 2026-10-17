@@ -18,22 +18,23 @@ import './marketing.css';
 
 interface ShowroomPlanJson {
   id: string;
-  priceCents: number;
-  includedProducts?: number;
+  priceCents: number | null;
   creditRolloverMonths?: number;
   breakdown?: { id: string; label: string; cents: number }[];
 }
 
 const PLANS = plansJson as unknown as ShowroomPlanJson[];
-const LICENSE = PLANS.find((p) => p.id === 'showroom_license');
 const MONTHLY = PLANS.find((p) => p.id === 'showroom_monthly');
 const part = (id: string) => MONTHLY?.breakdown?.find((b) => b.id === id)?.cents;
 
-/** What the sales site quotes, all in CAD. The fallbacks are the prices of docs/SHOWROOM_PIVOT.md §2. */
+/**
+ * What the sales site quotes, all in CAD. The fallbacks are the prices of docs/SHOWROOM_PIVOT.md §2.
+ * The setup and yearly license has no price here on purpose: it is quoted per company on a call
+ * (plans.json `quoted`), so the site never shows an amount or a product count for it.
+ */
 export const PRICES = Object.freeze({
-  /** "$1,995" a year, the list price (each deal sets its own). */
-  license: amount(LICENSE?.priceCents ?? 199500),
-  includedProducts: LICENSE?.includedProducts ?? 50,
+  /** How the site describes the setup and license's price. */
+  license: 'quoted for your company',
   /** "$50" a month. */
   monthly: amount(MONTHLY?.priceCents ?? 5000),
   /** "$25" of it for hosting and running the showroom, its web address included. */

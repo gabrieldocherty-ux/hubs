@@ -16,10 +16,10 @@ export default function PricingScreen() {
       <main>
         <section className="mk-pricing-hero" aria-labelledby="pricing-hero-title">
           <span className="mk-eyebrow">Pricing</span>
-          <h1 id="pricing-hero-title">A yearly license and {PRICES.monthly} a month. That’s the whole price.</h1>
+          <h1 id="pricing-hero-title">{PRICES.monthly} a month, plus a setup quoted for your company.</h1>
           <p className="mk-lede">
-            The license pays for your showroom, its setup and the modelling of your products. The monthly plan pays for hosting it at your own web address and for AI renderings. No
-            per-lead fees, and your customers never pay. All prices are in Canadian dollars.
+            The monthly plan pays for hosting your showroom at your own web address and for AI renderings. The setup and yearly license pay for your showroom, setting it up and
+            modelling your products; every company’s range is different, so we quote it on a call. No per-lead fees, and your customers never pay. All prices are in Canadian dollars.
           </p>
         </section>
         <section className="mk-section mk-section--tight" aria-label="Plans">
@@ -36,8 +36,8 @@ export default function PricingScreen() {
 
 const ROWS: { q: string; a: string }[] = [
   {
-    q: 'How the license is paid',
-    a: `We agree the license with you on a call and send an invoice: e-transfer, cheque or card. ${PRICES.license} a year is the list price for a showroom with up to ${PRICES.includedProducts} products; a bigger range is quoted.`,
+    q: 'How the setup and license are paid',
+    a: 'Setup and yearly license: quoted for your company. Book a call and we’ll price it for your product range, then send an invoice: e-transfer, cheque or card.',
   },
   {
     q: 'How the monthly plan is paid',

@@ -25,7 +25,7 @@ const INCLUDED: { title: string; body: ReactNode; icon: JSX.Element }[] = [
   },
   {
     title: 'Your products, modelled',
-    body: `We model your starting range in 3D at true size: up to ${PRICES.includedProducts} of your products with the license. New products are added when you need them, quoted first.`,
+    body: 'We model your starting range in 3D at true size as part of your setup. New products are added when you need them, quoted first.',
     icon: <CubeIcon />,
   },
   {
@@ -49,7 +49,7 @@ export function Included() {
   return (
     <section className="mk-section" id="included" aria-labelledby="included-title">
       <SectionHead id="included-title" eyebrow="What’s included" title="Everything a showroom needs, run by us" center>
-        One license and one monthly plan cover all of it. No per-lead fees, and nothing for your customers to pay.
+        One monthly plan and a setup quoted for your company cover all of it. No per-lead fees, and nothing for your customers to pay.
       </SectionHead>
       <ul className="mk-grid mk-grid--3">
         {INCLUDED.map((x) => (
@@ -69,7 +69,7 @@ export function Included() {
 const LICENSE_COVERS = [
   'The showroom software for a year',
   'Setup: your name, logo, colours, welcome text and product lines',
-  `3D modelling of your starting range, up to ${PRICES.includedProducts} products`,
+  '3D modelling of your starting product range',
   'Accounts for your team, set up with you',
 ];
 const MONTHLY_COVERS = [
@@ -84,12 +84,12 @@ export function PricingCards({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
   return (
     <div className="mk-prices">
       <article className="mk-price" aria-labelledby="price-license">
-        <span className="mk-price-kicker">Once a year</span>
-        <H id="price-license">Showroom license</H>
+        <span className="mk-price-kicker">Setup, then yearly</span>
+        <H id="price-license">Setup and yearly license</H>
         <p className="mk-price-amount">
-          <span className="mk-price-from">from</span> <b>{PRICES.license}</b> <span>CAD / year</span>
+          <b>Quoted</b> <span>for your company</span>
         </p>
-        <p className="mk-price-tag">Including setup and up to {PRICES.includedProducts} of your products modelled.</p>
+        <p className="mk-price-tag">Setup and yearly license: quoted for your company. Book a call and we’ll price it for your product range.</p>
         <ul className="mk-ticks">
           {LICENSE_COVERS.map((x) => (
             <li key={x}>
@@ -98,7 +98,7 @@ export function PricingCards({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
             </li>
           ))}
         </ul>
-        <p className="mk-price-fine">Set per company when we sign, and invoiced. More products are quoted separately.</p>
+        <p className="mk-price-fine">Agreed with you before we start, and invoiced. More products later are quoted separately.</p>
       </article>
       <span className="mk-price-plus" aria-hidden>
         +
@@ -137,7 +137,7 @@ export const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'What if we add products?',
-    a: `Send us what’s new (spec sheets, photos or the UPC from the box) and we model it in 3D at true size. The license covers your starting range of up to ${PRICES.includedProducts} products; anything beyond that is quoted before we start.`,
+    a: 'Send us what’s new (spec sheets, photos or the UPC from the box) and we model it in 3D at true size. Your setup covers the starting range we agree with you; anything beyond that is quoted before we start.',
   },
   {
     q: 'Is it a CAD tool?',

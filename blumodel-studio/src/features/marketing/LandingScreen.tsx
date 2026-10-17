@@ -58,7 +58,7 @@ function Hero() {
           </a>
         </div>
         <p className="mk-hero-fine">
-          From {PRICES.license}/year plus {PRICES.monthly}/month, in CAD. Nothing to install. No developer, no Blender.
+          {PRICES.monthly}/month in CAD plus a one-time setup quoted for your company. Nothing to install. No developer, no Blender.
         </p>
       </div>
       <div className="mk-hero-art">
@@ -183,7 +183,7 @@ function WhoFor() {
 function PricingSummary() {
   return (
     <section className="mk-section mk-pricing-sum" id="pricing" aria-labelledby="pricing-title">
-      <SectionHead id="pricing-title" eyebrow="Pricing" title="One license, one monthly plan" center>
+      <SectionHead id="pricing-title" eyebrow="Pricing" title="One monthly plan, plus a setup quoted for you" center>
         All prices in Canadian dollars. Your customers never pay anything.
       </SectionHead>
       <PricingCards />
