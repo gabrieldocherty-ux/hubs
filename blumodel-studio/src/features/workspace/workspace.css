@@ -548,9 +548,17 @@ fieldset.ws-card {
   font-size: 12.5px;
 }
 
+/* Sized to the box outright: a grid item's max-height: 100% doesn't resolve against an auto row,
+   so a large logo drew at its natural size over the fields below. */
+.ws-logo-box {
+  overflow: hidden;
+}
+
 .ws-logo-box img {
-  max-width: 100%;
-  max-height: 100%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   object-fit: contain;
 }
 

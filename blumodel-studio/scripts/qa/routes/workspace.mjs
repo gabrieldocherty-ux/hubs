@@ -168,9 +168,11 @@ export default [
       return { path: `#/studio/leads/${id}` };
     },
     waitFor: ['.ws-lead-detail', '.ws-kv'],
-    expectText: ['Riley Okafor', 'Contact', 'Your follow-up', 'Open the design', 'site measure booked'],
+    expectText: ['Riley Okafor', 'Contact', 'Your follow-up', 'Open the design', 'Contacted'],
     check: async (h) => {
       const links = await h.evaluate(() => ({ mail: !!document.querySelector('a[href^="mailto:"]'), tel: !!document.querySelector('a[href^="tel:"]'), design: [...document.querySelectorAll('a[href]')].some((a) => /#\/s\//.test(a.getAttribute('href') ?? '') || /share/.test(a.getAttribute('href') ?? '')) }));
+      const notes = await h.evaluate(() => document.querySelector('.ws-lead-detail textarea')?.value ?? '');
+      if (!/site measure booked/.test(notes)) throw new Error(`the team's notes read "${notes}"`);
       if (!links.mail || !links.tel) throw new Error('the lead’s email and phone are not mailto/tel links');
       if (!links.design) throw new Error('Open the design doesn’t link to the design');
       await page(h);
@@ -230,7 +232,8 @@ export default [
     expectText: ['Your plan', 'Yearly license', 'Monthly plan', 'Receipts'],
     check: async (h) => {
       const text = await h.evaluate(() => document.body.innerText);
-      if (!/\$50/.test(text)) throw new Error('the monthly plan’s price ($50) isn’t shown');
+      // Complimentary here, so $0 a month; the breakdown still names the two $25 halves of the $50 plan.
+      if ((text.match(/\$25 CAD/g) ?? []).length < 2) throw new Error('the monthly plan’s breakdown (hosting $25 + render credits $25) isn’t shown');
       if (!/complimentary/i.test(text)) throw new Error('the demo’s complimentary plan isn’t said');
       await page(h);
     },
