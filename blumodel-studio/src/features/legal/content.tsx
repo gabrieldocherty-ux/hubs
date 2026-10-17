@@ -44,17 +44,13 @@ const PIVOT_DATE = '17 October 2026';
 
 interface PlanJson {
   id: string;
-  priceCents: number;
-  includedProducts?: number;
+  priceCents: number | null;
   creditRolloverMonths?: number;
   breakdown?: { id: string; cents: number }[];
 }
 const PLANS = plansJson as unknown as PlanJson[];
-const LICENSE = PLANS.find((p) => p.id === 'showroom_license');
 const MONTHLY = PLANS.find((p) => p.id === 'showroom_monthly');
 const cad = (cents: number) => `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })} CAD`;
-const LICENSE_PRICE = cad(LICENSE?.priceCents ?? 199500);
-const INCLUDED = LICENSE?.includedProducts ?? 50;
 const MONTHLY_PRICE = cad(MONTHLY?.priceCents ?? 5000);
 const HOSTING_PRICE = cad(MONTHLY?.breakdown?.find((b) => b.id === 'hosting')?.cents ?? 2500);
 const CREDIT_PRICE = cad(MONTHLY?.breakdown?.find((b) => b.id === 'render_credits')?.cents ?? 2500);
@@ -188,16 +184,15 @@ export function termsDoc(w: LegalWords): LegalDoc {
       },
       {
         id: 'license',
-        heading: '3. The yearly license',
+        heading: '3. Setup and the yearly license',
         body: (
           <>
             <p>
-              The license pays for the showroom software for its term (one year unless your order says otherwise), its setup, and 3D modelling of your starting range. The list
-              price is <b>{LICENSE_PRICE} a year</b>, including up to <b>{INCLUDED} products</b> modelled; the price and the number of products for your company are the ones on
-              your quote or order.
+              The license pays for the showroom software for its term (one year unless your order says otherwise), its setup, and 3D modelling of your starting range. You pay{' '}
+              <b>the setup and license fee set out in your order or invoice</b>, which is quoted for your company; your starting range is the one set out there too.
             </p>
             <p>
-              We invoice the license, and it is due as the invoice says. Products beyond those included are quoted before we model them, and nothing is charged without your
+              We invoice the setup and license fee, and it is due as the invoice says. Products beyond those in your order are quoted before we model them, and nothing is charged without your
               agreement. Before the term ends we will contact you about renewing; the license does not renew by itself unless your order says it does.
             </p>
           </>

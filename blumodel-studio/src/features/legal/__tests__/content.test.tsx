@@ -58,8 +58,9 @@ test('the pages cover the showroom service: a B2B agreement, the company as cont
   const refunds = text('refunds', NO_LEGAL, 'stripe').plain;
   assert.equal(legalDoc('terms', NO_LEGAL, 'stripe').title, 'Service agreement');
   assert.match(terms, /kitchen and bath companies/);
-  assert.match(terms, /\$1,995 CAD a year/);
-  assert.match(terms, /up to 50 products/);
+  // The setup and license fee is quoted per company: the agreement names no amount and no product count.
+  assert.match(terms, /the setup and license fee set out in your order or invoice/);
+  assert.doesNotMatch(terms, /1,995|1995|up to 50|\d+ products/);
   assert.match(terms, /\$50 CAD a month/);
   assert.match(terms, /\$25 CAD for hosting and running your showroom, including its web address/);
   assert.match(terms, /\$25 CAD of AI rendering credits/);
