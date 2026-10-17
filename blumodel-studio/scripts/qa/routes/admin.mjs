@@ -113,9 +113,33 @@ async function press(h, text) {
   await h.evaluate(() => document.querySelector('[data-qa-press]')?.removeAttribute('data-qa-press'));
 }
 
+/** A company with a license, a demo monthly checkout link, a custom domain, credits and a sales lead (once per run). */
+async function seedCompany(api) {
+  const admin = api.as('admin');
+  const made = await admin.post('/api/admin/tenants', { name: 'Ridgeline Cabinets (QA)', slug: 'ridgeline-qa', ownerEmail: 'owner@ridgeline-qa.test', ownerName: 'Robin Ridge' });
+  if (made.status !== 201 && made.status !== 409) throw new Error(`making the QA company failed (${made.status}): ${made.body?.error ?? made.text}`);
+  const id = made.status === 201 ? made.body.tenant.id : api.sql("SELECT id FROM tenants WHERE slug = 'ridgeline-qa'")[0].id;
+  if (made.status === 201) {
+    must(await admin.post(`/api/admin/tenants/${id}/licenses`, { amountCents: 179500, paidHow: 'invoice', note: 'Invoice 1042 (QA)' }), 'Recording the license');
+    must(await admin.post(`/api/admin/tenants/${id}/monthly/checkout`), 'The monthly checkout link');
+    must(await admin.post(`/api/admin/tenants/${id}/hostnames`, { hostname: 'showroom.ridgeline-qa.test', kind: 'custom' }), 'Adding a custom domain');
+    must(await admin.post(`/api/admin/tenants/${id}/credits`, { cents: 2500, note: 'Launch credits (QA)' }), 'Adding credits');
+    must(await api.post('/api/sales-leads', { company: 'Ridgeline Cabinets (QA)', name: 'Robin Ridge', phone: '519-555-0177', email: 'robin@ridgeline-qa.test', city: 'Guelph', message: 'Saw the demo showroom. Can we talk Thursday?', website: '' }), 'A sales lead');
+  }
+  return { id, name: 'Ridgeline Cabinets (QA)' };
+}
+
+/** Opens a company from Admin > Companies by its name. */
+async function openCompany(h, name) {
+  await h.waitFor(`button[aria-label="Open ${name}"]`);
+  await h.click(`button[aria-label="Open ${name}"]`);
+  await h.waitForText(['Yearly license', 'Monthly plan', 'Web addresses', 'Render credits', 'Team', 'Studio queue']);
+  await h.sleep(300);
+}
+
 export default [
   // ── the tabs, 1440 / 390, light / dark ───────────────────────────────────
-  ...four({ name: 'admin-overview', path: '#/admin/overview', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Overview', 'Monthly recurring revenue', 'Recent sign-ups', 'Recent payments'] }),
+  ...four({ name: 'admin-overview', path: '#/admin/overview', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Overview', 'Showrooms', 'Companies live', 'Monthly recurring revenue', 'Licenses booked', 'Render credits used', 'Legacy homeowner and contractor plans', 'Recent sign-ups', 'Recent payments'] }),
   ...four({ name: 'admin-users', path: '#/admin/users', as: 'admin', expectText: ['Users', 'Search by name or email'] }),
   ...four({
     name: 'admin-user-detail',
@@ -132,6 +156,19 @@ export default [
     },
   }),
   ...four({ name: 'admin-contractors', path: '#/admin/contractors', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Contractors', 'Brand page', 'Models'] }),
+  ...four({ name: 'admin-companies', path: '#/admin/companies', as: 'admin', setup: async ({ api }) => (await seedCompany(api), {}), expectText: ['Companies', 'New company', 'Ridgeline Cabinets (QA)', 'Northline Kitchen'] }),
+  ...four({
+    name: 'admin-company-detail',
+    path: '#/admin/companies',
+    as: 'admin',
+    setup: async ({ api }) => seedCompany(api),
+    expectText: ['Companies'],
+    extra: async (h) => {
+      await openCompany(h, h.data.name);
+      await h.waitForText(['Invoice 1042 (QA)', 'Checkout link to send', 'showroom.ridgeline-qa.test', 'Not verified', 'Launch credits (QA)', 'owner@ridgeline-qa.test']);
+    },
+  }),
+  ...four({ name: 'admin-sales-leads', path: '#/admin/sales-leads', as: 'admin', setup: async ({ api }) => (await seedCompany(api), {}), expectText: ['Sales leads', 'Ridgeline Cabinets (QA)', 'Can we talk Thursday?', 'Our notes'] }),
   ...four({ name: 'admin-system', path: '#/admin/system', as: 'admin', expectText: ['System', 'Payments', 'Webhook signing secret', 'Database and backups', 'blumodel.env'] }),
   ...four({ name: 'admin-audit', path: '#/admin/audit', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Audit log', 'Complimentary plan given'] }),
 
@@ -167,7 +204,7 @@ export default [
     as: 'customer',
     expectText: 'This area is for BluModel Studio staff.',
     check: async (h) => {
-      for (const p of ['/api/admin/dashboard', '/api/admin/system', '/api/admin/audit', '/api/admin/contractors', '/api/admin/users']) {
+      for (const p of ['/api/admin/dashboard', '/api/admin/system', '/api/admin/audit', '/api/admin/contractors', '/api/admin/users', '/api/admin/tenants', '/api/admin/showrooms/overview', '/api/admin/showrooms/queue', '/api/admin/sales-leads']) {
         const status = await h.evaluate(async (u) => (await fetch(u, { credentials: 'same-origin' })).status, p);
         if (status !== 403) throw new Error(`${p} answered ${status} to a customer (expected 403)`);
       }
@@ -227,6 +264,84 @@ export default [
       await h.waitForText(['was deleted', 'The audit log keeps the record']);
       const res = await h.evaluate(async () => (await fetch('/api/admin/audit?action=account_delete', { credentials: 'same-origin' })).json());
       if (!res.entries?.some((e) => e.targetEmail)) throw new Error('the delete is not in the audit log');
+    },
+  },
+
+  // ── companies through the UI ─────────────────────────────────────────────
+  {
+    name: 'admin-company-lifecycle',
+    path: '#/admin/companies',
+    as: 'admin',
+    viewport: 'phone',
+    check: async (h) => {
+      await settle(h);
+      const tag = Date.now().toString(36);
+      const name = `Maple Lane Kitchens QA ${tag}`;
+      await press(h, 'New company');
+      await h.click('input[placeholder="Acme Kitchens"]');
+      await h.type(name);
+      await h.click('input[placeholder="owner@acmekitchens.ca"]');
+      await h.type(`owner-${tag}@maple-qa.test`);
+      await press(h, 'Create company');
+      await h.waitForText(['Sign-in link', 'Yearly license', 'Setting up']);
+      // Record the license at the list price, make the monthly plan complimentary, launch.
+      await press(h, 'Record license');
+      await h.waitForText('License recorded');
+      await h.click('input[aria-label="Why the plan is complimentary"]');
+      await h.type('Launch partner (QA)');
+      await press(h, 'Make it complimentary');
+      await h.waitForText('Complimentary monthly plan on.');
+      await press(h, 'Launch showroom');
+      await h.waitForText('is live.');
+      // A custom domain, verified.
+      await h.click('input[placeholder="showroom.acmekitchens.ca"]');
+      await h.type(`design-${tag}.maple-qa.test`);
+      await press(h, 'Add address');
+      await h.waitForText('Follow the Cloudflare steps');
+      await press(h, 'Mark verified');
+      await h.waitForText('it now opens the showroom');
+      // Credits need a reason.
+      await h.click('input[placeholder="25"]');
+      await h.type('10');
+      const disabled = await h.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Add credits')?.disabled);
+      if (disabled !== true) throw new Error('Add credits is enabled without a reason');
+      await h.click('input[placeholder^="e.g. Make-good"]');
+      await h.type('Make-good (QA)');
+      await press(h, 'Add credits');
+      await h.waitForText('of credits.');
+      // Suspend (reason required, confirmed) and restore.
+      await h.click('input[placeholder^="e.g. Asked to pause"]');
+      await h.type('Paused for the QA run');
+      await press(h, 'Suspend');
+      await press(h, 'Yes, suspend');
+      await h.waitForText('is suspended.');
+      await press(h, 'Restore showroom');
+      await h.waitForText('is live.');
+      await noSideScroll(h);
+      const res = await h.evaluate(async () => (await fetch('/api/admin/audit?action=tenant_credit_adjust', { credentials: 'same-origin' })).json());
+      if (!res.entries?.some((e) => e.detail?.note === 'Make-good (QA)')) throw new Error('the credit adjustment is not in the audit log');
+    },
+  },
+  {
+    name: 'admin-sales-lead-status',
+    path: '#/admin/sales-leads',
+    as: 'admin',
+    setup: async ({ api }) => (await seedCompany(api), {}),
+    check: async (h) => {
+      await settle(h);
+      await h.waitForText('Can we talk Thursday?');
+      const ok = await h.evaluate(() => {
+        const sel = document.querySelector('.adm-lead select');
+        if (!sel) return false;
+        const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+        set.call(sel, 'contacted');
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      });
+      if (!ok) throw new Error('no status select on the lead');
+      await h.waitForText('Saved.');
+      const res = await h.evaluate(async () => (await fetch('/api/admin/audit?action=sales_lead_update', { credentials: 'same-origin' })).json());
+      if (!res.entries?.length) throw new Error('the sales lead change is not in the audit log');
     },
   },
 ];
