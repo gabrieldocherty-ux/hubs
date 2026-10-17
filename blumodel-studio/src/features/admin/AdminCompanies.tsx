@@ -709,7 +709,7 @@ function MonthlySection({ t, act, busy }: SectionProps) {
           {running &&
             (confirm ? (
               <Confirm
-                text={m?.provider === 'stripe' ? 'Cancel at the end of the paid period?' : 'Cancel the monthly plan?'}
+                text={m?.provider === 'stripe' ? 'Cancel when the month already paid for ends?' : 'Cancel the monthly plan?'}
                 yes="Yes, cancel"
                 danger
                 busy={!!busy}
