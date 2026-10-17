@@ -5,6 +5,7 @@ import { LegalLinks } from '../legal/LegalLinks';
 import { useSession } from '../../store/useSession';
 import plansJson from '../../data/plans.json';
 import { amount } from '../../lib/money';
+import { demoShowroomUrl } from './logic';
 import './marketing.css';
 
 /*
@@ -43,29 +44,6 @@ export const PRICES = Object.freeze({
 });
 
 // ── the demo showroom's address ─────────────────────────────────────────────
-
-const HOST = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/i;
-const IP = /^(\d{1,3}\.){3}\d{1,3}$|^\[?[0-9a-f:]+\]?$/i;
-
-/**
- * The live demo showroom, `demo.<base domain>`: https://demo.blumodel.studio in production and
- * http://demo.localhost:<port> in dev and QA. The base domain comes from the server's
- * `/api/config` (BASE_DOMAIN); until it answers, from the page's own host (without `www.`). A page
- * opened by IP address on a server that doesn't say falls back to the public demo.
- */
-export function demoShowroomUrl(baseDomain: string | null, loc: { protocol: string; hostname: string; port: string }): string {
-  const port = loc.port ? `:${loc.port}` : '';
-  const scheme = loc.protocol === 'http:' ? 'http:' : 'https:';
-  const base = baseDomain && HOST.test(baseDomain) ? baseDomain.toLowerCase() : null;
-  if (base) {
-    // Same machine (dev and QA, `localhost`) or the same domain: keep the page's scheme and port.
-    const here = base === 'localhost' || loc.hostname === base || loc.hostname.endsWith(`.${base}`);
-    return here ? `${scheme}//demo.${base}${port}` : `https://demo.${base}`;
-  }
-  const host = loc.hostname.toLowerCase().replace(/^www\./, '');
-  if (!host || IP.test(host) || !HOST.test(host)) return 'https://demo.blumodel.studio';
-  return `${scheme}//demo.${host}${port}`;
-}
 
 let baseDomainAsk: Promise<string | null> | null = null;
 function askBaseDomain(): Promise<string | null> {

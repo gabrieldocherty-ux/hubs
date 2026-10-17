@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { ApiError, call, isUnreachable } from '../../lib/api';
 import { useLegal } from '../../lib/config';
+import { checkSalesLead, type SalesLeadField, type SalesLeadValues } from './logic';
 import { CheckIcon } from './parts';
 
 /*
@@ -10,22 +11,9 @@ import { CheckIcon } from './parts';
  * from screen readers, so only a bot fills it in (the server then says "accepted" and keeps nothing).
  */
 
-type Field = 'company' | 'name' | 'phone' | 'email' | 'city' | 'message';
-type Values = Record<Field, string>;
+type Field = SalesLeadField;
+type Values = SalesLeadValues;
 const EMPTY: Values = { company: '', name: '', phone: '', email: '', city: '', message: '' };
-
-const EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[A-Za-z]{2,}$/;
-const PHONE = /^[0-9+().\-\s x]{7,40}$/i;
-
-/** The same checks the server makes, so most mistakes are caught before sending. */
-export function checkSalesLead(v: Values): Partial<Record<Field, string>> {
-  const e: Partial<Record<Field, string>> = {};
-  if (!v.company.trim()) e.company = 'Tell us your company’s name.';
-  if (!v.name.trim()) e.name = 'Tell us your name.';
-  if (!EMAIL.test(v.email.trim())) e.email = 'That email address doesn’t look right.';
-  if (v.phone.trim() && !PHONE.test(v.phone.trim())) e.phone = 'That phone number doesn’t look right.';
-  return e;
-}
 
 export function BookCallForm({ headingId }: { headingId?: string }) {
   const uid = useId();
