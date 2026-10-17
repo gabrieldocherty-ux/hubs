@@ -721,7 +721,7 @@ export function buildRetailCatalog(files) {
   );
 
   const FIX_ORDER = ['faucet', 'pull', 'knob'];
-  fixtures.sort((a, b) => FIX_ORDER.indexOf(a.kind) - FIX_ORDER.indexOf(b.kind) || a.brand.localeCompare(b.brand) || a.name.localeCompare(b.name));
+  fixtures.sort((a, b) => FIX_ORDER.indexOf(a.kind) - FIX_ORDER.indexOf(b.kind) || a.brand.localeCompare(b.brand, 'en') || a.name.localeCompare(b.name, 'en'));
 
   const byReason = {};
   for (const d of log.dropped) byReason[d.reason] = (byReason[d.reason] ?? 0) + 1;

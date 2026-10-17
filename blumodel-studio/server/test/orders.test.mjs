@@ -165,7 +165,7 @@ test('custom models are included in the Contractor plan: no price, no pack, no r
   assert.equal(o.revisionsAllowed, 2);
   assert.equal(o.cancellable, true);
   assert.ok(o.planPeriod && o.planPeriod.start <= o.createdAt && o.createdAt < o.planPeriod.end);
-  assert.ok(o.dueAt >= o.paidAt + 21 * DAY, '15 business days are at least 21 calendar days');
+  assert.ok(o.dueAt >= o.paidAt + 19 * DAY, '15 business days are at least 19 calendar days (21 from a weekday, 19 from a Sunday)');
   assert.deepEqual(o.quote.lines, [{ label: '1 custom 3D model, included in the Contractor plan', amountCents: 0 }]);
   assert.equal(r.body.allowance.left, 2);
   assert.match(t.db.prepare("SELECT note FROM order_events WHERE order_id = ? AND type = 'created'").get(o.id).note, /2 of 3 left/);
@@ -423,7 +423,7 @@ test('demo flow for an order from before: draft → pending_payment → paid; a 
   assert.equal(ok1.status, 200);
   assert.equal(ok1.body.order.status, 'paid');
   assert.ok(ok1.body.order.paidAt);
-  assert.ok(ok1.body.order.dueAt >= ok1.body.order.paidAt + 14 * DAY, 'Standard’s 10 business days are at least 14 calendar days');
+  assert.ok(ok1.body.order.dueAt >= ok1.body.order.paidAt + 12 * DAY, 'Standard’s 10 business days are at least 12 calendar days (14 from a weekday, 12 from a Sunday)');
   const ok2 = await ann.post(`/api/payments/demo/${o.id}/complete`, { outcome: 'success' });
   assert.equal(ok2.status, 200);
   assert.equal(ok2.body.order.paidAt, ok1.body.order.paidAt);

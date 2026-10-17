@@ -688,7 +688,7 @@ test('deploy-local refuses an uncommitted migration before it stops or copies an
   const repo = tempDir('blumodel-dirty-');
   const home = tempDir('blumodel-dirty-home-');
   try {
-    for (const rel of ['scripts/deploy-local.mjs', 'server/ops/home.mjs', 'server/lib/envFile.mjs']) {
+    for (const rel of ['scripts/deploy-local.mjs', 'scripts/host/lib.mjs', 'server/ops/home.mjs', 'server/ops/homePort.mjs', 'server/lib/envFile.mjs']) {
       fs.mkdirSync(path.dirname(path.join(repo, rel)), { recursive: true });
       fs.copyFileSync(path.join(ROOT, rel), path.join(repo, rel));
     }
