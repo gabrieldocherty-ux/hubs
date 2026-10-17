@@ -3,7 +3,9 @@
 // field errors), the legal pages, and the header for a signed-in admin, at 1440 and 390, light and
 // dark. Every route checks: no homeowner sign-up funnel and no homeowner pricing, the demo link
 // goes to the demo showroom on this server (http://demo.localhost:<port>), no sideways scroll, and on
-// phones every link, button and field is a 44 px touch target.
+// phones every link, button and field is a 44 px touch target. Since 2026-10-17 the setup and yearly
+// license is quoted per company: no page names a license amount or a product count (no 1,995, no
+// "up to 50"), while the $50 monthly plan, its $25 + $25 split and "quoted" do appear.
 // Run: node scripts/qa.mjs --pkg sales --port 8925
 
 const SALES_TITLE = 'BluModel Studio · Virtual showrooms for kitchen and bath companies';
@@ -76,6 +78,13 @@ async function salesOnly(h) {
   const bad = r.hrefs.filter((x) => /^#\/(signup|generate|contractors|local|orders|pro)\b/.test(x));
   if (bad.length) throw new Error(`homeowner or removed links on the sales site: ${bad.join(', ')}`);
   for (const re of [/\bUnlimited\b/, /Contractor plan/i, /\$5(\.00)?\b/, /Start free/i, /Start from a photo/i, /\$15\b/, /\$99\b/, /Where to buy/i]) if (re.test(r.text)) throw new Error(`the page still says ${re}`);
+  noLicenseAmount(r.text);
+}
+
+/** The setup and license is quoted per company: no license amount or product count, in any form. */
+const LICENSE_AMOUNTS = [/1,995/, /1995/, /199500/, /up to 50/i, /\b50 (of your )?products\b/i, /list price/i];
+function noLicenseAmount(text, where = 'the page') {
+  for (const re of LICENSE_AMOUNTS) if (re.test(text)) throw new Error(`${where} names a license amount or product count: ${re}`);
 }
 
 /** The demo link points at this server's demo showroom. */
@@ -119,8 +128,10 @@ export default [
       if ((await h.evaluate(() => document.title)) !== SALES_TITLE) throw new Error(`the title is "${await h.evaluate(() => document.title)}"`);
       const lede = await h.evaluate(() => document.querySelector('.mk-lede').textContent);
       if (!/We build, host and run/.test(lede)) throw new Error('the hero doesn’t say we build, host and run it');
+      const fine = await h.evaluate(() => document.querySelector('.mk-hero-fine')?.textContent.replace(/\s+/g, ' ').trim() ?? '');
+      if (fine !== '$50/month in CAD plus a one-time setup quoted for your company. Nothing to install. No developer, no Blender.') throw new Error(`the line under the hero buttons says: ${fine}`);
       const text = await h.evaluate(() => document.body.innerText);
-      for (const s of ['$1,995', '$50', '$25', 'up to 50', 'How it works', 'Who it’s for', 'What’s included', 'Your own web address', 'Hosting and updates', 'A lead inbox', 'Team accounts', 'Photoreal AI renders'])
+      for (const s of ['$50', '$25', 'quoted', 'How it works', 'Who it’s for', 'What’s included', 'Your own web address', 'Hosting and updates', 'A lead inbox', 'Team accounts', 'Photoreal AI renders'])
         if (!text.toLowerCase().includes(s.toLowerCase())) throw new Error(`the landing page doesn’t say "${s}"`);
       for (const q of ['Do we need to install anything?', 'Can we use our own domain?', 'What if we add products?', 'Is it a CAD tool?', 'Who owns the leads?', 'Can we cancel?'])
         if (!text.includes(q)) throw new Error(`the FAQ is missing "${q}"`);
@@ -188,14 +199,19 @@ export default [
     ...view(v),
     fullPage: v.viewport === 'desktop',
     waitFor: ['.mk-prices', '.mk-split-bar', '#billing'],
-    expectText: ['Showroom license', 'Monthly plan', 'How paying works'],
+    expectText: ['Setup and yearly license', 'Monthly plan', 'How paying works'],
     check: async (h) => {
       await waitDemo(h);
       const price = await h.evaluate(() => ({
         license: document.querySelector('#price-license')?.closest('.mk-price')?.innerText ?? '',
         monthly: document.querySelector('#price-monthly')?.closest('.mk-price')?.innerText ?? '',
       }));
-      if (!/from\s+\$1,995\s+CAD \/ year/i.test(price.license) || !/up to 50/.test(price.license)) throw new Error(`the license card says: ${price.license}`);
+      // The license card names no amount at all: no dollar sign and no number.
+      if (/\$|\d/.test(price.license)) throw new Error(`the license card names an amount: ${price.license}`);
+      if (!/Quoted\s+for your company/.test(price.license)) throw new Error(`the license card doesn’t say it’s quoted: ${price.license}`);
+      if (!price.license.includes('Setup and yearly license: quoted for your company. Book a call and we’ll price it for your product range.')) throw new Error(`the license card says: ${price.license}`);
+      const all = await h.evaluate(() => document.body.innerText);
+      for (const s of ['$50', '$25', 'quoted']) if (!all.includes(s)) throw new Error(`the pricing page doesn’t say "${s}"`);
       if (!/\$50\s+CAD \/ month/.test(price.monthly)) throw new Error(`the monthly card says: ${price.monthly}`);
       if (!/\$25\s+Hosting, running and your own web address/i.test(price.monthly) || !/\$25\s+AI rendering credits/i.test(price.monthly)) throw new Error('the monthly plan isn’t split into $25 hosting + $25 credits');
       await salesOnly(h);
@@ -279,6 +295,8 @@ export default [
         // The removed homeowner and contractor products are named only in the earlier-purchases section.
         const current = await h.evaluate(() => [...document.querySelectorAll('.legal-doc section:not(#legal-earlier)')].map((x) => x.innerText).join('\n'));
         for (const re of [/\bUnlimited\b/, /Start from a photo/i, /kitchen unlock/i, /Contractor plan/i]) if (re.test(current)) throw new Error(`${doc} still says ${re} outside the earlier-purchases section`);
+        noLicenseAmount(text, doc);
+        if (doc === 'terms' && !/the setup and license fee set out in your order or invoice/.test(text)) throw new Error('the agreement doesn’t refer to the fee in the order or invoice');
         await layoutOk(h);
       },
     })),
