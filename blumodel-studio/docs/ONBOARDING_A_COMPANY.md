@@ -1,8 +1,8 @@
 # Onboarding a company (after a sale)
 
 Gabe's runbook from "they said yes" to "their showroom is live". What we sell is in
-[SHOWROOM_PIVOT.md](SHOWROOM_PIVOT.md): a yearly license (list price $1,995 CAD, including setup and up
-to 50 products modelled) plus $50 CAD/month ($25 hosting with their web address, $25 of AI render
+[SHOWROOM_PIVOT.md](SHOWROOM_PIVOT.md): a setup and yearly license, quoted for each company (there is
+no list price) plus $50 CAD/month ($25 hosting with their web address, $25 of AI render
 credits). Running the server itself is in [OPERATIONS.md](OPERATIONS.md) and [HOSTING.md](HOSTING.md).
 
 Every step below is either in **Admin** (sign in at https://blumodel.studio as an admin, then
@@ -113,11 +113,12 @@ remove and re-add them under *Team*, which makes a new link.
 The license is sold on the phone and invoiced, never through Stripe. Once it's paid (or on the
 terms you agreed), open the company → **Yearly license** → **Record a license**:
 
-- **Amount (CAD)**: what was agreed (1995 at list price).
+- **Amount (CAD)**: what was agreed on the call, as on their invoice. It is required and never
+  prefilled: there is no list price. A complimentary license is 0 with *Complimentary*.
 - **How it was paid**: invoice, e-transfer, cheque, card, cash, complimentary or other.
 - **Starts** (empty: today) and **Ends** (empty: a year, the day before the same date).
-- **Note**: the invoice number and what it includes ("setup + 50 products", or any extra
-  products quoted).
+- **Note**: the invoice number and what it includes (the starting range you quoted, or any extra
+  products).
 
 **Record license**. A wrong one is voided from its history (kept, never deleted). The license is one
 of the two things a live showroom needs.
@@ -137,8 +138,9 @@ The monthly plan is the second thing a live showroom needs.
 
 ## 4. Model their products
 
-The license includes their starting range (default up to 50 products; Admin's company list shows
-products against the 50 included). Get the list from them: product lines, door styles and finishes,
+The license includes the starting range you quoted them. (Admin's company list shows products
+against an internal default count, `includedProducts` in `src/data/plans.json`; it's a guide for us,
+not a promise to the company.) Get the list from them: product lines, door styles and finishes,
 the sizes they sell, photos or spec sheets, and their prices if they want prices shown.
 
 To load them, add yourself to their team: the company → **Team** → your email, role staff. That gives

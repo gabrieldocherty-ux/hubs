@@ -243,8 +243,8 @@ or the sign-in email in Account settings, or deleting the account, cancels any o
 
 ## Showrooms, licenses and the monthly plan (since 2026-10-17)
 
-What we sell (docs/SHOWROOM_PIVOT.md): a **yearly license** per company (list $1,995 CAD incl. setup
-and up to 50 products modelled), recorded by hand in **Admin > Companies** (no Stripe), plus **$50
+What we sell (docs/SHOWROOM_PIVOT.md): a **setup and yearly license** per company, **quoted per
+company** (no list price), with the amount agreed typed in by hand in **Admin > Companies** (no Stripe), plus **$50
 CAD/month** by Stripe Checkout ($25 hosting with their web address, $25 of render credits that roll
 over 3 months). A showroom is live only while both are current; a failed renewal has 14 days of
 grace; a lapsed or suspended showroom shows "temporarily unavailable" and keeps all its data.

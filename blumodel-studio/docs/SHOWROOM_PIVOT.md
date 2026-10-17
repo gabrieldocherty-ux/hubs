@@ -27,7 +27,7 @@ All prices are in CAD and set in `src/data/plans.json`, with the server as the o
 
 | What | Price | What it covers |
 |---|---|---|
-| **Yearly license** | set per company when the deal is signed (default list price **$1,995/year**) | The showroom software, the setup, and modelling of the company's starting product range (default: up to **50 products**). More products are quoted separately. |
+| **Setup and yearly license** | **quoted per company**; there is no list price (Gabe, 2026-10-17: "the sign up fee is going to be different company to company") | The showroom software, the setup, and modelling of the company's starting product range, as set out in its order or invoice. More products are quoted separately. |
 | **Monthly plan** | **$50/month** | **$25** for hosting and running the showroom, *including its own web address*. **$25** of AI rendering credits. |
 
 - **The web address is included.** Every company gets `<company>.blumodel.studio` from day one. A company
@@ -133,9 +133,10 @@ Aimed at owners and sales managers of kitchen and bath companies. Plain, confide
   - lead inbox
   - team accounts
   - photoreal AI renders ($25/month of credits)
-- **Pricing:** the yearly license ("from $1,995/year, including setup and up to 50 of your products
-  modelled") plus $50/month, broken down as **$25 hosting and your web address** and **$25 AI rendering
-  credits**. All CAD.
+- **Pricing:** $50/month plus "Setup and yearly license: quoted for your company. Book a call and
+  we'll price it for your product range." No license amount and no product count anywhere. The
+  $50/month is broken down as **$25 hosting and your web address** and **$25 AI rendering credits**.
+  All CAD.
 - **Who it's for:** cabinet showrooms, kitchen and bath design-build firms, bath and plumbing
   showrooms, renovation companies with a showroom.
 - **FAQ:**

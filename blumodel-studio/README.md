@@ -14,8 +14,8 @@ still come from the company's designer.
   showroom. **https://demo.blumodel.studio** is the live demo showroom (Northline Kitchen & Bath
   (Demo), fictional).
 - **What a company pays** (CAD, `src/data/plans.json`, the server is the only price authority): a
-  **yearly license**, list price **$1,995/year** including setup and up to 50 of their products
-  modelled (sold by phone, recorded by an admin), plus **$50/month** by Stripe: **$25** hosting and
+  **setup and yearly license quoted per company** (there is no list price: the sign-up fee differs
+  company to company; sold by phone, the amount agreed recorded by an admin), plus **$50/month** by Stripe: **$25** hosting and
   running the showroom *including its web address*, and **$25 of AI render credits** that roll over
   for 3 months. **Homeowners never pay.**
 - The plan the whole product works from is [docs/SHOWROOM_PIVOT.md](docs/SHOWROOM_PIVOT.md) (it
