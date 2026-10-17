@@ -206,8 +206,8 @@ export default [
         license: document.querySelector('#price-license')?.closest('.mk-price')?.innerText ?? '',
         monthly: document.querySelector('#price-monthly')?.closest('.mk-price')?.innerText ?? '',
       }));
-      // The license card names no amount at all: no dollar sign and no number.
-      if (/\$|\d/.test(price.license)) throw new Error(`the license card names an amount: ${price.license}`);
+      // The license card names no amount at all: no dollar sign and no number ("3D" aside).
+      if (/\$|\d/.test(price.license.replace(/\b3D\b/g, ''))) throw new Error(`the license card names an amount: ${price.license}`);
       if (!/Quoted\s+for your company/.test(price.license)) throw new Error(`the license card doesn’t say it’s quoted: ${price.license}`);
       if (!price.license.includes('Setup and yearly license: quoted for your company. Book a call and we’ll price it for your product range.')) throw new Error(`the license card says: ${price.license}`);
       const all = await h.evaluate(() => document.body.innerText);
