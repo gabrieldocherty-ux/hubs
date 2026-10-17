@@ -141,6 +141,15 @@ export function loadLocalDraft(): DesignDoc | null {
   }
 }
 
+/** Forgets the device design (once a showroom visitor's draft is saved to their new account). */
+export function clearLocalDraft() {
+  try {
+    localStorage.removeItem(LOCAL_DRAFT);
+  } catch {
+    // Storage blocked: nothing was kept.
+  }
+}
+
 export function saveLocalDraft(doc: DesignDoc) {
   try {
     localStorage.setItem(LOCAL_DRAFT, JSON.stringify(prepareDocForSave(doc)));

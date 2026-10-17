@@ -24,4 +24,4 @@ export { SendDesign, type SendPlace } from './SendDesign';
  * Routes a showroom never has: our sales pages, legacy paid flows, brand and contractor pages, the
  * admin. They show the 404 there (the server answers their APIs with a 404 on a showroom too).
  */
-export const NOT_ON_SHOWROOM: ReadonlySet<string> = new Set(['pricing', 'book', 'brandPage', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'pro', 'payDemoPlan', 'payShowroom', 'local']);
+export const NOT_ON_SHOWROOM: ReadonlySet<string> = new Set(['pricing', 'book', 'brandPage', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'pro', 'payDemoPlan', 'payShowroom']);

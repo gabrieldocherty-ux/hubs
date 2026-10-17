@@ -66,7 +66,8 @@ export default function App() {
     void useCatalog.getState().load(changed);
   }, [status, userId]);
 
-  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && NOT_ON_SHOWROOM.has(route.name));
+  // On a showroom a visitor starts a design signed out (it stays on the device until they send it).
+  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && (NOT_ON_SHOWROOM.has(route.name) || route.name === 'new'));
   // A password-reset link (`#/signin?reset=`) opens even when this browser is signed in: setting
   // the new password signs the browser in as the account it belongs to.
   const resetPage = route.name === 'signin' && splitHash(location.hash).query.has('reset');
@@ -74,8 +75,7 @@ export default function App() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    // A showroom visitor starting a design is new here far more often than not: create an account.
-    if (status !== 'signedIn' && needsAccount) navigateHash(site === 'showroom' && route.name === 'new' ? signinHref().replace('#/signin', '#/signup') : signinHref(), true);
+    if (status !== 'signedIn' && needsAccount) navigateHash(signinHref(), true);
     if (status === 'signedIn' && authPage) navigateHash(safeNext(splitHash(location.hash).query), true);
   }, [status, needsAccount, authPage, site, route.name]);
 
@@ -94,8 +94,8 @@ export default function App() {
     ) : (
       loading
     );
-  // Device-only mode works with no server at all, so it never waits on the session. Not on a
-  // showroom: a design there is saved to the visitor's account, which is how it reaches the company.
+  // Device-only mode works with no server at all, so it never waits on the session. A showroom's
+  // #/local (a signed-out visitor's design) is drawn by its own screens: it needs the session.
   if (route.name === 'local' && site === 'sales')
     return (
       <>

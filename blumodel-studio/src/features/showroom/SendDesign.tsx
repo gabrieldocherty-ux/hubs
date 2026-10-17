@@ -6,6 +6,7 @@ import { useSession } from '../../store/useSession';
 import { useShowroom } from './useShowroom';
 import { shortName } from './site';
 import { isDownloadToast, sentAt } from './send';
+import { CLAIM_DRAFT_HREF } from './links';
 import './send.css';
 
 const SendDialog = lazy(() => import('./SendDialog'));
@@ -55,6 +56,19 @@ export function SendDesign({ where, hidden = false, shareToken, designName }: Se
   const [sent, setSent] = useState<number | null>(() => (key ? sentAt(key) : null));
   useEffect(() => setSent(key ? sentAt(key) : null), [key]);
 
+  // A signed-out visitor's device design: sending it needs an account, which keeps the design.
+  if (showroom && !team && !hidden && where === 'summary' && !signedIn && !projectId) {
+    const n = shortName(showroom);
+    return (
+      <section className="sr-send-card" aria-labelledby="sr-send-title" data-testid="send-design">
+        <h3 id="sr-send-title">Happy with your design?</h3>
+        <p>Create a free account to send it to {n}. Your design comes with you, and {n} gets back to you about making it real.</p>
+        <a className="btn primary" href={CLAIM_DRAFT_HREF}>
+          Send this design to {n}
+        </a>
+      </section>
+    );
+  }
   if (!showroom || team || hidden || !key) return null;
   // In the editor the design must be one's own saved kitchen; the share page needs no account.
   if (where !== 'share' && !signedIn) return null;

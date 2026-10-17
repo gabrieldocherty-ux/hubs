@@ -3,7 +3,7 @@
 // 390, light and dark: the branded landing, sign-up, the wizard with the company's lines, the
 // editor with the company's catalog only (no store links, no prices or plans of ours), the free
 // branded downloads, "Send this design to Northline" from the editor and the share page, and a
-// whole visitor journey ending in a lead in the company's inbox.
+// whole visitor journey (signed out from the landing to a device design, then an account to send it) ending in a lead in the company's inbox.
 // Run: node scripts/qa.mjs --pkg showroom --port 8910
 
 /** No horizontal page scroll. */
@@ -281,18 +281,32 @@ export default [
     timeoutMs: 45_000,
     check: async (h) => {
       const email = `qa-journey-${v.viewport}-${Date.now()}@example.test`;
+      // Signed out, straight to the wizard (SHOWROOM_PIVOT §5): the design starts on this device.
       await clickText(h, 'a', 'Design your kitchen');
-      await h.waitFor('.auth-form input[type="email"]');
-      await fill(h, '.auth-form input[autocomplete="name"]', 'Casey Journey');
-      await fill(h, '.auth-form input[type="email"]', email);
-      await fill(h, '.auth-form input[autocomplete="new-password"]', `qa-${Math.random().toString(36).slice(2)}-pw`);
-      await clickText(h, '.auth-form button[type="submit"]', 'Create account');
       await h.waitForText('Let’s design your kitchen.', 20_000);
       await fill(h, '.wizard input', 'Casey’s kitchen (QA)');
       for (let i = 0; i < 3; i++) await clickText(h, '.wizard .btn.primary', 'Continue');
       await h.waitForText('Choose from our lines.');
       await h.shot('wizard');
       await clickText(h, '.wizard .btn.primary', 'Create kitchen');
+      await h.waitUntil(() => location.hash === '#/local', 20_000, 'the device design opening');
+      await h.waitFor('.plan-view canvas');
+      await h.shot('device-design');
+      // Sending needs an account: the card signs up, and the design comes along.
+      // On a phone the card is in Details.
+      if (isPhone(h)) {
+        await clickText(h, 'button', 'Details');
+        await h.waitFor('[data-testid="send-design"] a[href^="#/signup"]', 8000);
+        await h.shot('device-send-card');
+      }
+      const claim = await h.evaluate(() => document.querySelector('[data-testid="send-design"] a[href^="#/signup"]')?.getAttribute('href'));
+      if (!claim) throw new Error('the device design offers no way to send it to the company');
+      await h.goto(claim);
+      await h.waitFor('.auth-form input[type="email"]');
+      await fill(h, '.auth-form input[autocomplete="name"]', 'Casey Journey');
+      await fill(h, '.auth-form input[type="email"]', email);
+      await fill(h, '.auth-form input[autocomplete="new-password"]', `qa-${Math.random().toString(36).slice(2)}-pw`);
+      await clickText(h, '.auth-form button[type="submit"]', 'Create account');
       await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'the new design opening');
       await h.waitFor('.plan-view canvas');
       const made = h.api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = ? AND p.tenant_id = 't_demo'", email)[0];
@@ -384,10 +398,18 @@ function isPhone(h) {
 
 /** Opens the editor's Export menu and picks an item. */
 async function exportItem(h, label) {
-  const compact = await h.evaluate(() => !!document.querySelector('.export-btn'));
-  if (compact) await h.tap('.export-btn');
-  else await h.click('.topbar .menu-wrap > .btn.primary');
-  await h.waitFor('.topbar .menu[role="menu"]');
+  // Twice at most: a tap that lands while the editor is still settling can be lost.
+  for (let attempt = 0; ; attempt++) {
+    const compact = await h.evaluate(() => !!document.querySelector('.export-btn'));
+    if (compact) await h.tap('.export-btn');
+    else await h.click('.topbar .menu-wrap > .btn.primary');
+    try {
+      await h.waitFor('.topbar .menu[role="menu"]', 4000);
+      break;
+    } catch (e) {
+      if (attempt) throw e;
+    }
+  }
   await clickText(h, '.topbar .menu [role="menuitem"]', label);
 }
 

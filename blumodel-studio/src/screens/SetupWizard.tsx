@@ -12,6 +12,8 @@ import { AccountMenu } from '../components/AccountMenu';
 import { Check } from '../components/Icons';
 import { feetInches } from '../lib/format';
 import { useCatalog, useCatalogVersion } from '../store/useCatalog';
+import { useSession } from '../store/useSession';
+import { saveLocalDraft } from '../store/useDesignStore';
 import { brandsForCategory } from '../catalog/retail';
 import { BRAND_CATEGORIES, brandKey, brandOptions, brandPrefsLabel, brandShare, cleanBrandPrefs, hasBrandPrefs, type BrandCount, type BrandOption } from '../lib/generate/brands';
 import { keepShowroomItems, lineFromQuery, linesIn, roomFromQuery, shortName, showroomLines, showroomPrefs, SiteMark, useShowroom, type PublicTenant, type ShowroomLine } from '../features/showroom';
@@ -97,9 +99,16 @@ export function SetupWizard() {
   );
   const share = useMemo(() => brandShare(preview, brandPrefs), [preview, brandPrefs]);
 
+  const signedIn = useSession((st) => st.status === 'signedIn');
   const create = async () => {
     setBusy(true);
     setError(null);
+    // A signed-out visitor on a showroom designs on this device; the account comes when they send it.
+    if (showroom && !signedIn) {
+      saveLocalDraft(prepareDocForSave(preview));
+      navigate({ name: 'local' }, true);
+      return;
+    }
     try {
       const { project } = await api.createProject(kitchenName, client.trim(), prepareDocForSave(preview));
       navigate({ name: 'kitchen', id: project.id }, true);

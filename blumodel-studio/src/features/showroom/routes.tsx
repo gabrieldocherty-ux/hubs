@@ -8,6 +8,7 @@ import { SharedKitchen } from '../share';
 import { NOT_ON_SHOWROOM, ShowroomLanding } from './index';
 
 const KitchenEditor = lazy(() => import('../../screens/Editor').then((m) => ({ default: m.KitchenEditor })));
+const ShowroomLocal = lazy(() => import('./ShowroomLocal'));
 
 /**
  * The screen for a route on a showroom, or undefined to let the app shell draw it as it does on
@@ -23,6 +24,8 @@ export function showroomScreen(route: Route, signedIn: boolean): JSX.Element | u
       return <ShowroomLanding />;
     case 'new':
       return <SetupWizard />;
+    case 'local':
+      return <ShowroomLocal signedIn={signedIn} />;
     case 'kitchen':
       return <KitchenEditor key={route.id} id={route.id} add={route.add} />;
     case 'product':
