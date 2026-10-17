@@ -77,7 +77,7 @@ It prints the database it used, makes no accounts and is safe to run again. Add 
 in Admin > Companies > Northline > Team to edit it.
 
 **D. Check from outside** (a phone on mobile data): https://demo.blumodel.studio shows Northline, and
-https://anything-made-up.blumodel.studio shows BluModel's "unknown showroom" page. Both mean DNS, TLS
+https://anything-made-up.blumodel.studio shows BluModel's "There’s no showroom at this address" page. Both mean DNS, TLS
 and the tunnel are right.
 
 **E. Cloudflare for SaaS (only when the first company wants its own domain).** Cloudflare →
@@ -174,7 +174,7 @@ a CNAME, and their main website usually lives there anyway. Needs [Once](#once-c
 
 1. **Admin**: the company → **Web addresses** → **Add an address** → `showroom.acmekitchens.ca`, kind
    *Their own domain* → **Add address**. It shows **Not verified**, and until step 6 below that
-   address answers "unknown showroom", so nobody sees a half-set-up page.
+   address answers "There’s no showroom at this address", so nobody sees a half-set-up page.
 2. **Cloudflare** → `blumodel.studio` → *SSL/TLS → Custom Hostnames* → **Add Custom Hostname**:
    - Custom hostname: `showroom.acmekitchens.ca`
    - Minimum TLS version: 1.2
@@ -192,7 +192,7 @@ a CNAME, and their main website usually lives there anyway. Needs [Once](#once-c
    is minutes once their records are in, occasionally a few hours (it depends on their DNS's TTL).
    *Refresh* on the row re-checks.
 5. **Test**: open https://showroom.acmekitchens.ca. With a valid padlock you should see BluModel's
-   "unknown showroom" page: traffic, certificate and tunnel all work, the server just doesn't know
+   "There’s no showroom at this address" page: traffic, certificate and tunnel all work, the server just doesn't know
    the address yet. A Cloudflare error page instead means a step above isn't finished
    ([Troubleshooting](#troubleshooting)).
 6. **Admin**: the address → **Mark verified**. Reload https://showroom.acmekitchens.ca: their
@@ -247,10 +247,10 @@ On the company's page in Admin and on their showroom, every line true:
 | `acme.blumodel.studio` doesn't resolve (browser: "server not found") | the wildcard `*` record is missing or not proxied ([Once](#once-cloudflare), A) |
 | A bare "404 Not Found" (not BluModel's page) on a showroom while blumodel.studio works | the tunnel's `cloudflared.yml` predates showrooms: rewrite it and restart the tunnel ([Once](#once-cloudflare), B). A deploy's output says so too |
 | Cloudflare **1033/502** everywhere | the tunnel or the server is down (OPERATIONS.md, Troubleshooting) |
-| "unknown showroom" on `acme.blumodel.studio` | the web address isn't on any company: check the spelling in Admin > Companies > the company > Web addresses |
+| "There’s no showroom at this address" on `acme.blumodel.studio` | the web address isn't on any company: check the spelling in Admin > Companies > the company > Web addresses |
 | "temporarily unavailable" | the showroom is in setup, lapsed or suspended: Admin shows which and why |
 | Custom domain: Cloudflare error **1001** or **1014** | their CNAME is missing, points somewhere else, or is proxied in their own Cloudflare account: make it DNS only, target `tunnel.blumodel.studio` |
 | Custom domain: certificate error, or the hostname stays *Pending* | the TXT records aren't in yet, or their DNS still serves an old record (TTL): check with `nslookup -type=cname showroom.acmekitchens.ca`, then *Refresh* in Custom Hostnames |
-| Custom domain shows "unknown showroom" with a valid padlock | everything works except Admin: **Mark verified** (step 6.6) |
+| Custom domain shows "There’s no showroom at this address" with a valid padlock | everything works except Admin: **Mark verified** (step 6.6) |
 | Custom domain: error **1016** | the fallback origin record `tunnel` is missing or the fallback origin isn't Active ([Once](#once-cloudflare), E) |
 | The owner's sign-in link says expired | it lasts 7 days: remove and re-add them in the company's Team for a new one |

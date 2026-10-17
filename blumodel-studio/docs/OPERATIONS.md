@@ -417,7 +417,7 @@ prints the Task Scheduler changes to make. The steps in order are in LAUNCH.md, 
 | Visitors share one rate limit; no `Secure` cookie | `TRUST_PROXY` | set `TRUST_PROXY=1` |
 | A showroom (`acme.blumodel.studio`) doesn't resolve | Cloudflare DNS | the wildcard `*` record is missing (ONBOARDING_A_COMPANY.md, *Once*) |
 | A showroom shows a bare "404 Not Found", not BluModel's page | the deploy's warning, `cloudflared.yml` | the tunnel config predates showrooms: rewrite it (*The tunnel*) and restart the tunnel |
-| A showroom says "unknown showroom" or "temporarily unavailable" | Admin > Companies | the address isn't on a company (or a custom domain isn't marked verified), or the showroom is in setup, lapsed or suspended |
+| A showroom says "There’s no showroom at this address" or "temporarily unavailable" | Admin > Companies | the address isn't on a company (or a custom domain isn't marked verified), or the showroom is in setup, lapsed or suspended |
 | Accounts or kitchens seem to come and go | the Cloudflare dashboard: the connectors of the `blumodel` tunnel | **two machines run the tunnel** (this PC and the Wyse): stop one at once (HOSTING.md, the split-brain rule) |
 | A deploy ended `unhealthy` (exit 3) | `logs\server.log`, `logs\console.log` | `node scripts/deploy-local.mjs --rollback` puts the previous app back |
 
