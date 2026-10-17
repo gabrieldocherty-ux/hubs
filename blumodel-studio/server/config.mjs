@@ -112,6 +112,37 @@ export function loadConfig(env = process.env, argv = process.argv) {
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(BASE_DOMAIN)) throw new Error(`BASE_DOMAIN must be a domain name like blumodel.studio (got "${BASE_DOMAIN}").`);
   // Credits one AI render costs (docs/SHOWROOM_PIVOT.md §7), in cents. 25 until Gabe sets it.
   const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 25, 1, 100_000);
+  // Who makes the photoreal renders (server/renders, docs/handoff/renders.md): Gabe's architecture
+  // AI over HTTP when ARCHITECT_AI_URL and ARCHITECT_AI_KEY are set; else the stamped demo provider
+  // outside production (or with DEMO_RENDERS=1); else none ("Photoreal renders are being set up",
+  // nothing charged). RENDER_PROVIDER=architect|demo|off forces one (architect still needs both).
+  const ARCHITECT_AI_URL = String(env.ARCHITECT_AI_URL || '').trim();
+  const ARCHITECT_AI_KEY = String(env.ARCHITECT_AI_KEY || '').trim();
+  if (ARCHITECT_AI_URL && !/^https?:\/\/[^\s]+$/i.test(ARCHITECT_AI_URL)) throw new Error('ARCHITECT_AI_URL must be an http(s) URL.');
+  const RENDER_PROVIDER = String(env.RENDER_PROVIDER || 'auto').trim().toLowerCase();
+  if (!['auto', 'architect', 'demo', 'off'].includes(RENDER_PROVIDER)) throw new Error(`RENDER_PROVIDER must be auto, architect, demo or off (got "${RENDER_PROVIDER}").`);
+  const DEMO_RENDERS = bool(env.DEMO_RENDERS);
+  const architectReady = !!(ARCHITECT_AI_URL && ARCHITECT_AI_KEY);
+  const demoRendersAllowed = !PROD || DEMO_RENDERS;
+  const rendersProvider =
+    RENDER_PROVIDER === 'off'
+      ? 'none'
+      : RENDER_PROVIDER === 'architect'
+        ? architectReady
+          ? 'architect'
+          : 'none'
+        : RENDER_PROVIDER === 'demo'
+          ? demoRendersAllowed
+            ? 'demo'
+            : 'none'
+          : architectReady
+            ? 'architect'
+            : demoRendersAllowed
+              ? 'demo'
+              : 'none';
+  // The captured 3D view a render request may carry, and how long the AI may take.
+  const RENDER_MAX_IMAGE_MB = int(env.RENDER_MAX_IMAGE_MB, 6, 1, 20);
+  const RENDER_TIMEOUT_MS = int(env.RENDER_TIMEOUT_MS, 180_000, 1_000, 900_000);
 
   const RATE_LIMITS = (env.RATE_LIMITS || 'on').trim().toLowerCase() === 'off' ? 'off' : 'on';
   if (RATE_LIMITS === 'off' && PROD) throw new Error('RATE_LIMITS=off is refused in production.');
@@ -150,7 +181,15 @@ export function loadConfig(env = process.env, argv = process.argv) {
     SHUTDOWN_FILE,
     BASE_DOMAIN,
     RENDER_CREDIT_CENTS,
+    ARCHITECT_AI_URL,
+    ARCHITECT_AI_KEY,
+    RENDER_PROVIDER,
+    DEMO_RENDERS,
+    RENDER_MAX_IMAGE_MB,
+    RENDER_TIMEOUT_MS,
     // derived
+    /** 'architect' | 'demo' | 'none': who makes photoreal renders (server/renders). */
+    rendersProvider,
     /** 'stripe' | 'demo' | 'none': see paymentsPosture(). */
     paymentsProvider,
     /** 'live' | 'test' | null: the Stripe key's mode (from its prefix), when Stripe is on. */

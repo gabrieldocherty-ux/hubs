@@ -327,6 +327,13 @@ BLUMODEL_LLM_MODEL=
 RESEND_API_KEY=
 POSTMARK_TOKEN=
 EMAIL_FROM=
+
+# Optional: photoreal AI renders on the showrooms ("Make it photoreal"). Both set: renders go to
+# that service; without them the button says renders are being set up and nothing is charged.
+# RENDER_CREDIT_CENTS is what one render costs a company in credits (25 = 25 cents when empty).
+ARCHITECT_AI_URL=
+ARCHITECT_AI_KEY=
+RENDER_CREDIT_CENTS=
 `;
   return eol(t, platform);
 }

@@ -17,7 +17,8 @@ import * as pricing from './pricing.mjs';
 import * as retail from './retail.mjs';
 import * as admin from './admin.mjs';
 import * as tenancy from './tenancy.mjs';
+import * as renders from './renders.mjs';
 import * as workspace from './workspace.mjs';
 
-export const MIGRATION_MODULES = [core, platform, viewer, brands, orders, generate, share, billing, contractors, account, ops, pricing, retail, admin, tenancy, workspace];
-export const MIGRATION_KEYS = ['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'account', 'ops', 'pricing', 'retail', 'admin', 'tenancy', 'workspace'];
+export const MIGRATION_MODULES = [core, platform, viewer, brands, orders, generate, share, billing, contractors, account, ops, pricing, retail, admin, tenancy, workspace, renders];
+export const MIGRATION_KEYS = ['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'account', 'ops', 'pricing', 'retail', 'admin', 'tenancy', 'workspace', 'renders'];

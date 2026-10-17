@@ -46,6 +46,9 @@ export const ENV_FILE_KEYS = Object.freeze([
   'RESEND_API_KEY',
   'POSTMARK_TOKEN',
   'EMAIL_FROM',
+  'ARCHITECT_AI_URL',
+  'ARCHITECT_AI_KEY',
+  'RENDER_CREDIT_CENTS',
 ]);
 const ALLOWED = new Set(ENV_FILE_KEYS);
 
