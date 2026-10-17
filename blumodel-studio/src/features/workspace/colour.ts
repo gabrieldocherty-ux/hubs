@@ -46,18 +46,16 @@ export interface ContrastCheck {
 }
 
 /**
- * The main colour carries the buttons' text and the header, and must stand out on a white page:
- * 4.5:1 for its text (the best of white or black on it) and 3:1 against white (WCAG's large text
- * and interface minimums).
+ * The main colour carries the buttons and the header, with white or near-black text on it
+ * (whichever reads better, which always reaches 4.5:1), and has to stand out on a white page:
+ * 3:1 or more against white (WCAG's minimum for large text and interface parts).
  */
 export function checkPrimary(hex: string): ContrastCheck {
   const h = normalizeHex(hex);
   if (!h) return { ok: false, ratio: 0, message: 'Use a colour like #2e3d55.' };
-  const onText = contrast(h, textOn(h));
   const onPage = contrast(h, '#ffffff');
-  if (onText < 4.5) return { ok: false, ratio: onText, message: `Button text on this colour is hard to read (${onText.toFixed(1)}:1; aim for 4.5:1 or more). Try a darker or a lighter shade.` };
-  if (onPage < 3) return { ok: false, ratio: onPage, message: `This colour is faint on a white page (${onPage.toFixed(1)}:1; aim for 3:1 or more), so headings and links in it will be hard to see.` };
-  return { ok: true, ratio: Math.min(onText, onPage), message: null };
+  if (onPage < 3) return { ok: false, ratio: onPage, message: `This colour is faint on a white page (${onPage.toFixed(1)}:1; aim for 3:1 or more), so buttons, headings and links in it will be hard to see. Try a darker shade.` };
+  return { ok: true, ratio: onPage, message: null };
 }
 
 /** The accent is decoration (chips, highlights): only warn when it vanishes into white or the main colour. */
