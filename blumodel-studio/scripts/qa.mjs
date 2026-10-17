@@ -34,7 +34,14 @@
 //     setup: async ({ api, as, me, user, base, sleep }) => ({ path?, ...data }),
 //     check: async ({ evaluate, send, api, sleep, mouseDrag, touchDrag, pinch, tap, click, rectOf,
 //                     key, type, waitFor, waitForText, reload, goto, shot, note, data, me, viewport }) => {},
-//     ignoreConsole: [/known message/], knownIssue: 'why this route is expected to fail' }
+//     ignoreConsole: [/known message/], knownIssue: 'why this route is expected to fail',
+//     host: 'demo', allowStatus: [503] }
+// `host: '<slug>'` opens the route on that showroom, http://<slug>.localhost:<port> (BASE_DOMAIN is
+// localhost here; docs/handoff/tenancy.md), instead of the sales site at 127.0.0.1. On a showroom
+// `as` is 'anon' or one of the seeded demo showroom's people: 'showroom-owner', 'showroom-staff',
+// 'showroom-visitor' (their session is made straight in the database, bound to that showroom).
+// `allowStatus` lists HTTP statuses the page itself may answer (an unknown host's 404, a lapsed
+// showroom's 503) without failing the route.
 // `as: 'fresh'` is a brand-new free customer made for that route alone. `knownIssue` reports a
 // failure as known instead of failing the run, and fails the run if the route starts passing
 // (so the marker gets removed once the bug is fixed).
@@ -65,7 +72,9 @@ const ROUTES_DIR = path.join(ROOT, 'scripts', 'qa', 'routes');
 const QA_DIR = path.join(ROOT, '.qa');
 const COOKIE = 'blumodel_session';
 
-export const ROLES = Object.freeze(['anon', 'customer', 'contractor', 'brand', 'studio', 'admin', 'fresh']);
+export const ROLES = Object.freeze(['anon', 'customer', 'contractor', 'brand', 'studio', 'admin', 'fresh', 'showroom-owner', 'showroom-staff', 'showroom-visitor']);
+/** The demo showroom's people (server/tenancy/demo.mjs), signed in on a `host` route. */
+const SHOWROOM_EMAIL = { 'showroom-owner': 'demo-owner@blumodel.test', 'showroom-staff': 'demo-staff@blumodel.test', 'showroom-visitor': 'demo-visitor@blumodel.test' };
 /** Seeded by server/seed/core.mjs. */
 const DEMO_EMAIL = { customer: 'demo-customer@blumodel.test', brand: 'demo-brand@blumodel.test', studio: 'demo-studio@blumodel.test', admin: 'demo-admin@blumodel.test' };
 const CONTRACTOR_EMAIL = 'qa-contractor@blumodel.test';
@@ -147,6 +156,10 @@ function validateRoute(r, file, seen) {
   if (r.path !== undefined && (typeof r.path !== 'string' || !/^#?\//.test(r.path))) throw new Error(`${where}: path must look like '#/local'.`);
   if (r.path === undefined && typeof r.setup !== 'function') throw new Error(`${where}: needs a path, or a setup that returns one.`);
   if (!ROLES.includes(r.as ?? 'anon')) throw new Error(`${where}: as must be one of ${ROLES.join(', ')}.`);
+  if (r.host !== undefined && (typeof r.host !== 'string' || !/^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/.test(r.host))) throw new Error(`${where}: host is a showroom slug like 'demo'.`);
+  if (SHOWROOM_EMAIL[r.as] && !r.host) throw new Error(`${where}: as '${r.as}' needs host (the showroom).`);
+  if (r.host && !(r.as === undefined || r.as === 'anon' || SHOWROOM_EMAIL[r.as])) throw new Error(`${where}: on a showroom, as is anon or showroom-owner|showroom-staff|showroom-visitor.`);
+  for (const s of asList(r.allowStatus)) if (!Number.isInteger(s) || s < 400 || s > 599) throw new Error(`${where}: allowStatus takes HTTP error statuses.`);
   resolveViewport(r.viewport);
   for (const s of asList(r.waitFor)) if (typeof s !== 'string' || !s) throw new Error(`${where}: waitFor must be a selector or a list of selectors.`);
   for (const t of asList(r.expectText)) if (typeof t !== 'string' || !t) throw new Error(`${where}: expectText must be a string or a list of strings.`);
@@ -287,6 +300,33 @@ class Users {
     }
   }
 
+  /**
+   * A pending demo checkout for a legacy plan or unlock, as POST /api/billing/checkout made one
+   * before the showroom pivot (it answers 410 not_for_sale now). Returns its ref.
+   * @param {string} userId
+   * @param {{ kind: 'subscription' | 'kitchen_unlock', plan?: string, projectId?: string, returnTo?: string }} body
+   */
+  legacyCheckout(userId, { kind, plan = null, projectId = null, returnTo }) {
+    const prices = { unlimited: 1500, contractor: 9900, kitchen_unlock: 500 };
+    const project = projectId ? this.sql('SELECT id, name FROM projects WHERE id = ? AND user_id = ?', projectId, userId)[0] : null;
+    if (projectId && !project) throw new Error(`legacyCheckout: ${projectId} is not this user's kitchen`);
+    const ref = `bc_${crypto.randomBytes(12).toString('hex').slice(0, 24)}`;
+    this.sql(
+      `INSERT INTO billing_checkouts (ref, user_id, kind, project_id, project_name, plan, amount_cents, currency, status, provider, return_to, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'cad', 'pending', 'demo', ?, ?)`,
+      ref,
+      userId,
+      kind,
+      project?.id ?? null,
+      project?.name ?? '',
+      kind === 'subscription' ? plan : null,
+      prices[kind === 'subscription' ? plan : 'kitchen_unlock'],
+      returnTo ?? (project ? `#/k/${project.id}` : plan === 'contractor' ? '#/pro' : '#/account/billing'),
+      Date.now(),
+    );
+    return ref;
+  }
+
   /** Inserts a user straight into the DB (no signup rate limit), unless the email exists. */
   async createUser(email, name, role = 'customer') {
     const hash = await hashPassword(this.password);
@@ -310,9 +350,10 @@ class Users {
       await this.createUser(CONTRACTOR_EMAIL, 'Quinn Contractor');
       const a = await this.login(CONTRACTOR_EMAIL, role);
       if (a.user.plan?.id !== 'contractor') {
-        // The real demo checkout, as the app does it: start, then complete with success.
-        const c = await must(a.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
-        await must(a.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
+        // A Contractor plan bought before the showroom pivot (nothing new is sold since): its
+        // pending demo checkout, completed through the app's demo payment as it was then.
+        const ref = this.legacyCheckout(a.user.id, { kind: 'subscription', plan: 'contractor' });
+        await must(a.post(`/api/billing/demo/${ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
         a.user = (await must(a.get('/api/auth/me'), 'Reading the contractor')).body.user;
         if (a.user.plan?.id !== 'contractor') throw new Error(`The QA contractor is on plan "${a.user.plan?.id}" after a successful demo checkout.`);
       }
@@ -342,6 +383,32 @@ class Users {
     // A route signed out (which ends the session server-side): sign in again.
     this.byRole.delete(role);
     return this.agentFor(role);
+  }
+
+  /**
+   * A session for one of a showroom's people, made straight in the database (Node can't send a
+   * showroom's Host through fetch), bound to that showroom as a real sign-in there would be.
+   * Returns the cookie value.
+   */
+  showroomSession(email, slug) {
+    const row = this.sql('SELECT u.id FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.email = ? AND t.slug = ?', email, slug)[0];
+    if (!row) throw new Error(`${email} has no account on the ${slug} showroom. Did the tenants seed run?`);
+    const tenant = this.sql('SELECT id FROM tenants WHERE slug = ?', slug)[0];
+    const token = crypto.randomBytes(32).toString('base64url');
+    const t = Date.now();
+    this.sql(
+      'INSERT INTO sessions (token_hash, user_id, expires_at, id, created_at, last_seen_at, browser, os, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      crypto.createHash('sha256').update(token).digest('hex'),
+      row.id,
+      t + 86_400_000,
+      crypto.randomBytes(12).toString('hex'),
+      t,
+      t,
+      'QA',
+      'QA',
+      tenant.id,
+    );
+    return token;
   }
 
   /** A brand-new free customer. */
@@ -384,6 +451,8 @@ function makeApi(users, getFresh) {
     patch: (...a) => anon.patch(...a),
     delete: (...a) => anon.delete(...a),
     sql: (q, ...p) => users.sql(q, ...p),
+    /** A legacy (pre-pivot) pending demo checkout for `userId`: its ref. */
+    legacyCheckout: (userId, body) => users.legacyCheckout(userId, body),
   };
 }
 
@@ -669,8 +738,11 @@ async function runRoute(env, pkg, route, outDir) {
   };
 
   try {
-    const agent = as === 'anon' ? null : as === 'fresh' ? await getFresh() : await users.agentFor(as);
-    const me = as === 'anon' ? null : api.as(as);
+    const showroomAs = !!SHOWROOM_EMAIL[as];
+    const agent = as === 'anon' || showroomAs ? null : as === 'fresh' ? await getFresh() : await users.agentFor(as);
+    const me = as === 'anon' || showroomAs ? null : api.as(as);
+    // A showroom route opens on <slug>.localhost; the sales site stays 127.0.0.1.
+    const pageBase = route.host ? base.replace('//127.0.0.1', `//${route.host}.localhost`) : base;
     let data = {};
     if (route.setup) {
       const out = await route.setup({ api, as, me, user: agent?.user ?? null, base, sleep });
@@ -681,8 +753,9 @@ async function runRoute(env, pkg, route, outDir) {
     res.path = `#${hashPath}`;
 
     page = await openPage(cdp, { viewport });
-    if (agent?.session) {
-      const ok = await page.send('Network.setCookie', { name: COOKIE, value: agent.session, url: base, httpOnly: true, sameSite: 'Lax' });
+    const session = showroomAs ? users.showroomSession(SHOWROOM_EMAIL[as], route.host) : agent?.session;
+    if (session) {
+      const ok = await page.send('Network.setCookie', { name: COOKIE, value: session, url: pageBase, httpOnly: true, sameSite: 'Lax' });
       if (ok && ok.success === false) throw new Error('The browser refused the session cookie.');
     }
     // colorScheme: 'dark' | 'light' emulates the device's choice, which Appearance = System (the default) follows.
@@ -690,7 +763,7 @@ async function runRoute(env, pkg, route, outDir) {
     if (route.reducedMotion) media.push({ name: 'prefers-reduced-motion', value: 'reduce' });
     if (route.colorScheme) media.push({ name: 'prefers-color-scheme', value: String(route.colorScheme) });
     if (media.length) await page.send('Emulation.setEmulatedMedia', { features: media });
-    await page.goto(`${base}/?qa=1#${hashPath}`, routeTimeout);
+    await page.goto(`${pageBase}/?qa=1#${hashPath}`, routeTimeout);
     if (!env.renderer) {
       env.renderer = await page
         .evaluate(() => {
@@ -720,7 +793,7 @@ async function runRoute(env, pkg, route, outDir) {
           as,
           me,
           data,
-          base,
+          base: pageBase,
           viewport,
           note: (msg) => res.notes.push(String(msg)),
           shot: (suffix) => shoot(suffix),
@@ -787,6 +860,8 @@ async function runRoute(env, pkg, route, outDir) {
         if (!isLocalUrl(r.url)) continue;
         const u = new URL(r.url);
         const isApi = u.pathname.startsWith('/api/');
+        // The page itself answering a status the route expects (an unknown host's 404, a 503).
+        if (!isApi && u.pathname === '/' && asList(route.allowStatus).includes(r.status)) continue;
         if (r.status >= 500) res.failures.push(`HTTP ${r.status} from ${r.method ?? 'GET'} ${u.pathname}`);
         else if (r.status >= 400 && !isApi) res.failures.push(`HTTP ${r.status} for ${u.pathname} (missing asset?)`);
         else if (r.status >= 400) res.apiErrors.push(`${r.status} ${r.method ?? 'GET'} ${u.pathname}${u.search}`);
