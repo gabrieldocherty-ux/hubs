@@ -124,6 +124,7 @@ export type MarketingPage = 'home' | 'pricing' | 'book';
 export function MarketingHeader({ active }: { active?: MarketingPage }) {
   const signedIn = useSession((s) => s.status === 'signedIn');
   const onLanding = active === 'home';
+  const demoUrl = useDemoUrl();
   return (
     <header className="mk-bar">
       <div className="mk-bar-inner">
@@ -135,7 +136,7 @@ export function MarketingHeader({ active }: { active?: MarketingPage }) {
           <a href="#/welcome" onClick={(e) => scrollIfHere(e, 'how')}>
             How it works
           </a>
-          <a href="#/welcome" onClick={(e) => scrollIfHere(e, 'included')}>
+          <a className="mk-nav-included" href="#/welcome" onClick={(e) => scrollIfHere(e, 'included')}>
             Included
           </a>
           <a href="#/pricing" className={active === 'pricing' ? 'on' : ''} aria-current={active === 'pricing' ? 'page' : undefined}>
@@ -143,6 +144,10 @@ export function MarketingHeader({ active }: { active?: MarketingPage }) {
           </a>
           <a href="#/welcome" onClick={(e) => scrollIfHere(e, 'faq')}>
             FAQ
+          </a>
+          {/* Gabe, 2026-10-17: the demo must be one obvious click from anywhere on the sales site. */}
+          <a className="mk-nav-demo" href={demoUrl} target="_blank" rel="noopener">
+            Live demo
           </a>
           {signedIn ? (
             <a className="mk-nav-quiet" href="#/">

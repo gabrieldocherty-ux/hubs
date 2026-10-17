@@ -11,6 +11,7 @@ import { DEFAULT_SURFACES } from '../../data/defaults';
 import { BRAND_CATEGORIES } from '../../lib/generate/brands';
 import { finishList } from '../../lib/finish';
 import { useShowroom } from './useShowroom';
+import { useConfig } from '../../lib/config';
 import { CompanyLogo, SiteMark } from './SiteMark';
 import { featuredLines, showroomLines, showroomPrefs, type ShowroomLine } from './lines';
 import { designHref } from './links';
@@ -18,6 +19,27 @@ import { shortName, telHref, type PublicTenant } from './site';
 import './showroom.css';
 
 const SAMPLE_ROOM = { widthIn: 192, lengthIn: 168, ceilingIn: 108 };
+
+/**
+ * The demo showroom only (Northline, demo.blumodel.studio): a slim band saying what this is, for
+ * prospects arriving from the sales site, with the way back to book a call. Real showrooms never
+ * show it (Gabe, 2026-10-17: "I don't want people to not understand").
+ */
+function DemoBanner() {
+  const base = useConfig((s) => s.config?.baseDomain ?? 'blumodel.studio');
+  const sales = base === 'localhost' ? `${location.protocol}//localhost${location.port ? `:${location.port}` : ''}` : `https://${base}`;
+  return (
+    <aside className="sr-demo-band" aria-label="About this demo">
+      <p>
+        <b>This is a demo showroom built by BluModel Studio.</b> Your company gets one like it, with your products, your
+        brand and your own web address.
+      </p>
+      <a className="sr-demo-cta" href={`${sales}/#/book`}>
+        Get one for your company
+      </a>
+    </aside>
+  );
+}
 
 const categoryLabel = (c: BrandCategory) => BRAND_CATEGORIES.find((x) => x.id === c)?.label ?? c;
 
@@ -45,6 +67,7 @@ export default function ShowroomLanding() {
 
   return (
     <div className="sr-page">
+      {t.isDemo && <DemoBanner />}
       <header className="home-bar sr-bar">
         <a className="brand" href="#/" aria-label={`${name}, showroom home`}>
           <SiteMark />
