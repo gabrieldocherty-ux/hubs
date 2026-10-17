@@ -244,8 +244,16 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
       let base = slugify(wanted);
       if (RESERVED_SLUGS.has(base)) base = `${base}-showroom`.slice(0, 40);
       let s = base;
-      for (let i = 2; db.prepare('SELECT 1 FROM tenants WHERE slug = ?').get(s) || RESERVED_SLUGS.has(s); i++) s = `${base.slice(0, 36)}-${i}`;
+      for (let i = 2; svc.slugInUse(s) || RESERVED_SLUGS.has(s); i++) s = `${base.slice(0, 36)}-${i}`;
       return s;
+    },
+
+    /**
+     * True when `<slug>` is some tenant's slug, or `<slug>.<BASE_DOMAIN>` is already an address
+     * (an admin may give a showroom an extra subdomain, which then reserves that slug).
+     */
+    slugInUse(slug) {
+      return !!db.prepare('SELECT 1 FROM tenants WHERE slug = ?').get(slug) || !!db.prepare('SELECT 1 FROM tenant_hostnames WHERE hostname = ?').get(svc.subdomainFor(slug));
     },
 
     /** `<slug>.<BASE_DOMAIN>`: the address every tenant gets. */
@@ -265,7 +273,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
         s = String(slug).trim().toLowerCase();
         if (!SLUG_RE.test(s)) throw invalid([{ field: 'slug', message: 'The web address uses lowercase letters, digits and dashes (2 to 40), like acme-kitchens.' }]);
         if (RESERVED_SLUGS.has(s)) throw invalid([{ field: 'slug', message: `“${s}” is reserved. Choose another web address.` }]);
-        if (db.prepare('SELECT 1 FROM tenants WHERE slug = ?').get(s)) throw new HttpError(409, `${s}.${config.BASE_DOMAIN} is taken.`, { field: 'slug', code: 'slug_taken' });
+        if (svc.slugInUse(s)) throw new HttpError(409, `${s}.${config.BASE_DOMAIN} is taken.`, { field: 'slug', code: 'slug_taken' });
       } else s = svc.uniqueSlug(n);
       if (!STATUSES.includes(status)) throw new Error(`tenants.create: bad status ${status}`);
       const b = cleanBranding(branding);
@@ -279,7 +287,9 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
         `INSERT INTO tenants (id, slug, name, status, branding, contact, settings, is_demo, source_user_id, created_by, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(tid, s, n, status, JSON.stringify(b.value), JSON.stringify(c.value), JSON.stringify(st.value), isDemo ? 1 : 0, sourceUserId, createdBy, t, t);
-      db.prepare("INSERT OR IGNORE INTO tenant_hostnames (hostname, tenant_id, kind, verified, is_primary, created_by, created_at) VALUES (?, ?, 'subdomain', 1, 1, ?, ?)").run(
+      // A plain INSERT: if the address were somehow taken, creating the tenant fails (in the caller's
+      // transaction) rather than leaving its own subdomain pointing at another showroom.
+      db.prepare("INSERT INTO tenant_hostnames (hostname, tenant_id, kind, verified, is_primary, created_by, created_at) VALUES (?, ?, 'subdomain', 1, 1, ?, ?)").run(
         svc.subdomainFor(s),
         tid,
         createdBy,

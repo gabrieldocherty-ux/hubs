@@ -85,6 +85,27 @@ test('slugs: reserved, taken, made from the name', async () => {
   }
 });
 
+test('an extra subdomain reserves its slug: a later company with that slug is refused, never served the other showroom', async () => {
+  const t = await startTestServer();
+  try {
+    const admin = await t.user({ role: 'admin' });
+    const bravo = (await admin.post('/api/admin/tenants', { name: 'Bravo Bath', slug: 'bravo' })).body.tenant;
+    const alias = await admin.post(`/api/admin/tenants/${bravo.id}/hostnames`, { hostname: 'delta.localhost', kind: 'subdomain' });
+    assert.equal(alias.status, 201);
+    const delta = await admin.post('/api/admin/tenants', { name: 'Delta Design', slug: 'delta' });
+    assert.equal(delta.status, 409);
+    assert.equal(delta.body.code, 'slug_taken');
+    // A slug made from the name skips it too.
+    const auto = await admin.post('/api/admin/tenants', { name: 'Delta' });
+    assert.equal(auto.status, 201);
+    assert.equal(auto.body.tenant.slug, 'delta-2');
+    assert.equal(t.db.prepare('SELECT tenant_id FROM tenant_hostnames WHERE hostname = ?').get('delta-2.localhost').tenant_id, auto.body.tenant.id);
+    assert.equal((await t.agent({ host: t.hostFor('delta-2') }).get('/api/showroom')).body.tenant.name, 'Delta');
+  } finally {
+    await t.close();
+  }
+});
+
 test('a suspended showroom is temporarily unavailable; data is kept', async () => {
   const t = await startTestServer();
   try {
