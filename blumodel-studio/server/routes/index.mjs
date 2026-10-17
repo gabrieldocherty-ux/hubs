@@ -25,8 +25,9 @@ import tenantsAdmin from './tenantsAdmin.mjs';
 import tenantsBilling from './tenantsBilling.mjs';
 import tenantsLeads from './tenantsLeads.mjs';
 import adminShowrooms from './adminShowrooms.mjs';
+import workspace from './workspace.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling, tenantsLeads, adminShowrooms];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling, tenantsLeads, adminShowrooms, workspace];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -52,6 +53,7 @@ export const ROUTE_MODULE_NAMES = [
   'tenants-billing',
   'tenants-leads',
   'admin-showrooms',
+  'workspace',
 ];
 
 /**
