@@ -3,7 +3,6 @@ import { AccountMenu } from '../../components/AccountMenu';
 import { Logo, Wordmark } from '../../components/Icons';
 import { PaymentsSoon } from '../../components/PaymentNotice';
 import type { PaymentsMode } from '../../lib/config';
-import { hrefFor } from '../../lib/router';
 import type { OrderStatus } from '../../types/platform';
 import type { OrderEventWire } from './api';
 import { dateTime, eventTitle, statusLabel, statusTone } from './model';
@@ -49,27 +48,15 @@ export function OrdersPayNote({ payments }: { payments: PaymentsMode | null }) {
 }
 
 /**
- * For anyone not on the Contractor plan: custom 3D models come with it (3 a month, made by our
- * studio). A contractor whose plan lapsed is told their requests already sent are still delivered.
+ * For anyone without an active Contractor plan (docs/SHOWROOM_PIVOT.md §3: the plan and its
+ * models are no longer sold): what they ordered before is still made and delivered, and nothing
+ * new is offered. `terms` is kept for callers and no longer used.
  */
-export function PlanOnlyNote({ lapsed = false, terms }: { lapsed?: boolean; terms?: { perMonth: number } }) {
-  const n = terms?.perMonth ?? 3;
-  if (lapsed) {
-    return (
-      <div className="ord-plan-note" role="note">
-        <b>Your Contractor plan has lapsed, so new requests are paused.</b>
-        <span>
-          Requests you already sent are still being made and delivered. Renew in <a href={hrefFor({ name: 'billing' })}>Billing</a> to get {n} custom models a month again.
-        </span>
-      </div>
-    );
-  }
+export function PlanOnlyNote({ lapsed = false }: { lapsed?: boolean; terms?: { perMonth: number } }) {
   return (
     <div className="ord-plan-note" role="note">
-      <b>Custom 3D models come with the Contractor plan.</b>
-      <span>
-        It includes {n} a month, made by our studio from your product’s name, UPC and a photo, and they land privately in your catalog. <a href={hrefFor({ name: 'pricing' })}>See the Contractor plan</a>
-      </span>
+      <b>{lapsed ? 'New custom-model requests are closed.' : 'These are your earlier custom-model orders.'}</b>
+      <span>{lapsed ? 'Requests you already sent are still being made and delivered. ' : ''}New custom models are no longer sold here. Your receipts stay below.</span>
     </div>
   );
 }
