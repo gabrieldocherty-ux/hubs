@@ -750,7 +750,8 @@ test('cloudflared.yml on Linux: the same tunnel and ingress as on Windows, the c
   assert.match(lin, /^# Run by blumodel-tunnel\.service \(systemd\)\. .*sudo systemctl restart blumodel-tunnel\.$/m);
   assert.match(win, /^# Run by run-tunnel\.cmd \(the BluModelTunnel task starts it\)\./m);
   assert.match(lin, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
-  assert.ok(lin.trimEnd().endsWith('- service: http_status:404'));
+  assert.match(lin, /^ {2}- hostname: '\*\.blumodel\.studio'\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.ok(lin.trimEnd().endsWith('- service: http://127.0.0.1:8790'));
   assert.ok(!lin.includes('\r'));
   assert.throws(() => tunnelConfigYaml({ credentials: '', platform: 'linux' }), /needs the credentials file path/);
 });
@@ -789,8 +790,10 @@ test('setup-tunnel writes the Windows files into a temp home and cloudflared val
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.deepEqual(fs.readdirSync(home).sort(), ['cloudflared.yml', 'run-tunnel.cmd', 'start-tunnel.cmd', 'start-tunnel.vbs', 'stop-tunnel.cmd']);
     assert.match(r.stdout, /PASS {2}cloudflared ingress validate/);
-    assert.match(r.stdout, /PASS {2}https:\/\/blumodel\.studio\/ goes to http:\/\/127\.0\.0\.1:8904/);
-    assert.match(r.stdout, /PASS {2}any other hostname gets a 404/);
+    assert.match(r.stdout, /PASS {2}https:\/\/blumodel\.studio\/ \(the sales site\) goes to http:\/\/127\.0\.0\.1:8904 by the rule for blumodel\.studio/);
+    assert.match(r.stdout, /PASS {2}https:\/\/www\.blumodel\.studio\/ .* by the rule for www\.blumodel\.studio/);
+    assert.match(r.stdout, /PASS {2}https:\/\/acme\.blumodel\.studio\/ \(a showroom\) goes to http:\/\/127\.0\.0\.1:8904 by the rule for \*\.blumodel\.studio/);
+    assert.match(r.stdout, /PASS {2}https:\/\/showroom\.acmekitchens\.example\/ .* goes to http:\/\/127\.0\.0\.1:8904 by the last rule/);
     assert.match(r.stderr, /creds\.json does not exist/);
   } finally {
     rm(home);

@@ -575,15 +575,18 @@ test('the migrate-home CLI: --dry-run against temp folders, a refusal exits 1, a
 
 // ── the Cloudflare tunnel ────────────────────────────────────────────────
 
-test('cloudflared.yml: the blumodel tunnel, its credentials under %USERPROFILE%\\.cloudflared, blumodel.studio to 127.0.0.1:8790, everything else 404', () => {
+test('cloudflared.yml: the blumodel tunnel, its credentials under %USERPROFILE%\\.cloudflared, blumodel.studio, www and every showroom to 127.0.0.1:8790, custom domains to the server too', () => {
   const creds = credentialsFile(TUNNEL_ID, 'C:\\Users\\owner');
   assert.equal(creds, 'C:\\Users\\owner\\.cloudflared\\064671cd-a658-4240-8626-c697b9f148ac.json');
   const y = tunnelConfigYaml({ credentials: creds });
   assert.match(y, /^tunnel: 064671cd-a658-4240-8626-c697b9f148ac$/m);
   assert.match(y, /^credentials-file: 'C:\\Users\\owner\\\.cloudflared\\064671cd-a658-4240-8626-c697b9f148ac\.json'$/m);
-  assert.match(y, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n {4}originRequest:\n {6}connectTimeout: 10s\n {6}noHappyEyeballs: true\n/m);
-  assert.match(y, /^ {2}- service: http_status:404\n$/m);
-  assert.ok(y.trimEnd().endsWith('- service: http_status:404'), 'the catch-all is last');
+  assert.match(y, /^originRequest:\n {2}connectTimeout: 10s\n {2}noHappyEyeballs: true\n/m);
+  assert.match(y, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.match(y, /^ {2}- hostname: www\.blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.match(y, /^ {2}- hostname: '\*\.blumodel\.studio'\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.ok(y.trimEnd().endsWith('- service: http://127.0.0.1:8790'), 'the catch-all is last and goes to the server (custom domains)');
+  assert.ok(tunnelConfigYaml({ credentials: creds, customDomains: false }).trimEnd().endsWith('- service: http_status:404'), 'without custom domains: 404');
   assert.throws(() => tunnelConfigYaml({ credentials: creds, origin: 'http://0.0.0.0:8790' }), /origin must be/);
   assert.throws(() => tunnelConfigYaml({ credentials: creds, hostname: 'a b' }), /Not a hostname/);
   assert.match(tunnelConfigYaml({ credentials: "C:\\it's\\x.json" }), /credentials-file: 'C:\\it''s\\x\.json'/);
@@ -665,8 +668,10 @@ test('cloudflared itself accepts the generated config (offline: ingress validate
     assert.equal(v.status, 0, v.stdout + v.stderr);
     const rule = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://blumodel.studio/any/path'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
     assert.match(rule.stdout + rule.stderr, /service: http:\/\/127\.0\.0\.1:8790/);
+    const shop = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://acme.blumodel.studio/'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+    assert.match(shop.stdout + shop.stderr, /hostname: \*\.blumodel\.studio\s+service: http:\/\/127\.0\.0\.1:8790/);
     const other = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://www.example.com/'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
-    assert.match(other.stdout + other.stderr, /http_status:404/);
+    assert.match(other.stdout + other.stderr, /service: http:\/\/127\.0\.0\.1:8790/, 'a custom domain reaches the server, which answers 404 for hosts it does not know');
   } finally {
     rm(dir);
   }
