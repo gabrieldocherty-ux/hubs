@@ -31,6 +31,7 @@ function stripeMock() {
     if (u.pathname === '/v1/checkout/sessions' && init.method === 'POST') return json({ id: 'cs_test_show', url: 'https://checkout.stripe.com/c/pay/cs_test_show' });
     if (u.pathname === '/v1/checkout/sessions/cs_test_show') return json(stripeMock.session);
     if (u.pathname === '/v1/billing_portal/sessions') return json({ url: 'https://billing.stripe.com/p/session/show' });
+    if (u.pathname.startsWith('/v1/subscriptions/') && init.method === 'DELETE') return json({ id: decodeURIComponent(u.pathname.slice(18)), object: 'subscription', status: 'canceled' });
     if (u.pathname.startsWith('/v1/subscriptions/') && init.method === 'POST') return json({ ...stripeMock.subscription, cancel_at_period_end: form.get('cancel_at_period_end') === 'true' });
     return json({ error: { type: 'invalid_request_error', code: 'resource_missing' } }, 404);
   };
@@ -197,6 +198,76 @@ test('the monthly plan through Stripe: admin link, signed webhook, invoices, 14-
     assert.equal((await admin.post(`/api/admin/tenants/${id}/monthly/checkout`)).status, 201);
   } finally {
     stripeMock.subscription = undefined;
+    await s.close();
+  }
+});
+
+test('Stripe events in any order: an early invoice.paid keeps its credits, a late one never revives a canceled plan, completed keeps the period end', async () => {
+  const mock = stripeMock();
+  const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
+  try {
+    const admin = await s.user({ role: 'admin' });
+    const id = (await admin.post('/api/admin/tenants', { name: 'Order Co', slug: 'order-co' })).body.tenant.id;
+    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice' });
+    await admin.post(`/api/admin/tenants/${id}/status`, { status: 'live' });
+    const ref = (await admin.post(`/api/admin/tenants/${id}/monthly/checkout`)).body.checkout.ref;
+    const meta = { kind: 'showroom_monthly', checkout_ref: ref, tenant_id: id };
+    const end = Math.floor(Date.now() / 1000) + 30 * 86400;
+    const sub = { id: 'sub_ord', object: 'subscription', status: 'active', customer: 'cus_ord', cancel_at_period_end: false, metadata: meta, items: { data: [{ id: 'si_o', current_period_end: end, price: { unit_amount: 5000, currency: 'cad' } }] } };
+    const invoice = (n, subId = 'sub_ord') => ({ id: `evt_oi_${n}_${subId}`, type: 'invoice.paid', data: { object: { id: `in_ord_${n}_${subId}`, amount_paid: 5000, currency: 'cad', customer: 'cus_ord', parent: { subscription_details: { subscription: subId, metadata: { ...meta } } }, lines: { data: [{ period: { end } }] } } } });
+
+    // invoice.paid first, then the subscription, then the session.
+    assert.equal((await hook(s, signed(invoice(1)))).status, 200);
+    assert.equal(s.ctx.services.credits.balance(id), 2500, 'the first month’s credits');
+    assert.equal(s.db.prepare("SELECT COUNT(*) AS n FROM tenant_payments WHERE kind = 'monthly' AND tenant_id = ?").get(id).n, 1);
+    await hook(s, signed({ id: 'evt_o_sub', type: 'customer.subscription.created', data: { object: sub } }));
+    await hook(s, signed({ id: 'evt_o_cs', type: 'checkout.session.completed', data: { object: { id: 'cs_o', payment_status: 'paid', status: 'complete', client_reference_id: ref, customer: 'cus_ord', subscription: 'sub_ord', metadata: meta } } }));
+    let m = (await admin.get(`/api/admin/tenants/${id}`)).body.tenant;
+    assert.equal(m.status, 'live');
+    assert.equal(m.monthly.periodEnd, end * 1000, 'checkout.session.completed kept the stored period end');
+    assert.equal(s.ctx.services.credits.balance(id), 2500, 'still once');
+
+    // Canceled at Stripe, then a late invoice.paid for it: recorded, not live again.
+    await hook(s, signed({ id: 'evt_o_del', type: 'customer.subscription.deleted', data: { object: { ...sub, status: 'canceled' } } }));
+    assert.equal((await admin.get(`/api/admin/tenants/${id}`)).body.tenant.status, 'lapsed');
+    await hook(s, signed(invoice(2)));
+    m = (await admin.get(`/api/admin/tenants/${id}`)).body.tenant;
+    assert.equal(m.status, 'lapsed');
+    assert.equal(m.monthly.status, 'canceled');
+    assert.equal(s.db.prepare("SELECT COUNT(*) AS n FROM tenant_payments WHERE kind = 'monthly' AND tenant_id = ?").get(id).n, 2, 'the money taken is on record');
+  } finally {
+    await s.close();
+  }
+});
+
+test('a new link over a past-due Stripe subscription cancels it first, and a payment on the old one is still recorded', async () => {
+  const mock = stripeMock();
+  const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
+  try {
+    const admin = await s.user({ role: 'admin' });
+    const id = (await admin.post('/api/admin/tenants', { name: 'Lapse Co', slug: 'lapse-co' })).body.tenant.id;
+    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice' });
+    await admin.post(`/api/admin/tenants/${id}/status`, { status: 'live' });
+    const ref = (await admin.post(`/api/admin/tenants/${id}/monthly/checkout`)).body.checkout.ref;
+    const meta = { kind: 'showroom_monthly', checkout_ref: ref, tenant_id: id };
+    await hook(s, signed({ id: 'evt_l_cs', type: 'checkout.session.completed', data: { object: { id: 'cs_l', payment_status: 'paid', status: 'complete', client_reference_id: ref, customer: 'cus_l', subscription: 'sub_old', metadata: meta } } }));
+    await hook(s, signed({ id: 'evt_l_fail', type: 'invoice.payment_failed', data: { object: { id: 'in_l_f', subscription: 'sub_old' } } }));
+    s.setNow(Date.now() + 15 * DAY);
+    assert.equal((await admin.get(`/api/admin/tenants/${id}`)).body.tenant.status, 'lapsed');
+    const again = await admin.post(`/api/admin/tenants/${id}/monthly/checkout`);
+    assert.equal(again.status, 201, again.text);
+    const del = mock.calls.filter((c) => c.method === 'DELETE');
+    assert.deepEqual(del.map((c) => c.path), ['/v1/subscriptions/sub_old']);
+    assert.equal(s.ctx.services.showroomBilling.subRow(id).status, 'canceled');
+    s.setNow(null); // webhooks are signed with the real clock
+    // The new link is paid; a straggling invoice on the old subscription is recorded, nothing else.
+    const ref2 = again.body.checkout.ref;
+    assert.equal((await hook(s, signed({ id: 'evt_l_cs2', type: 'checkout.session.completed', data: { object: { id: 'cs_l2', payment_status: 'paid', status: 'complete', client_reference_id: ref2, customer: 'cus_l', subscription: 'sub_new', metadata: { ...meta, checkout_ref: ref2 } } } }))).status, 200);
+    await hook(s, signed({ id: 'evt_l_old', type: 'invoice.paid', data: { object: { id: 'in_old', amount_paid: 5000, currency: 'cad', parent: { subscription_details: { subscription: 'sub_old', metadata: meta } }, lines: { data: [] } } } }));
+    assert.equal(s.ctx.services.showroomBilling.subRow(id).subscription_ref, 'sub_new');
+    assert.deepEqual(s.db.prepare("SELECT ref FROM tenant_payments WHERE kind = 'monthly' AND tenant_id = ? ORDER BY ref").all(id).map((r) => r.ref), ['in_old']);
+  } finally {
+    s.setNow(null);
     await s.close();
   }
 });

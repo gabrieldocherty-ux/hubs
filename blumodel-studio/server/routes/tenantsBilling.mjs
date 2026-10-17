@@ -143,6 +143,13 @@ export default function routes(ctx) {
           throw new HttpError(409, 'This showroom’s monthly plan is already paid.', { code: 'already_paid' });
         }
         const provider = demo() ? 'demo' : 'stripe';
+        // A new link over a Stripe subscription that stopped paying: cancel that one first, or the
+        // company could end up with two subscriptions and be charged on both.
+        if (cur && cur.provider === 'stripe' && cur.subscription_ref && ['past_due', 'incomplete'].includes(cur.status) && provider === 'stripe') {
+          await stripe.cancelSubscription(cur.subscription_ref, `${cur.subscription_ref}-cancel-for-new-link`);
+          sb.upsert(t.id, { status: 'canceled', graceUntil: null });
+          log(rc, 'tenant_monthly_cancel', t, { subscriptionRef: cur.subscription_ref, reason: 'replaced by a new checkout link' });
+        }
         const c = sb.newCheckout(t.id, { provider, by: rc.user.id });
         let url;
         if (provider === 'demo') url = `${config.PUBLIC_URL}/#/pay/showroom/${c.ref}`;

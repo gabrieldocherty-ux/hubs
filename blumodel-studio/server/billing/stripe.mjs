@@ -38,5 +38,7 @@ export function createStripe({ config, fetch, log = console }) {
     updateSubscription: (id, params, idempotencyKey) => request('POST', `/subscriptions/${encodeURIComponent(id)}`, params, { idempotencyKey }),
     createProduct: (params, idempotencyKey) => request('POST', '/products', params, { idempotencyKey }),
     createPortalSession: (params) => request('POST', '/billing_portal/sessions', params),
+    /** Cancels a subscription now (no more charges on it). */
+    cancelSubscription: (id, idempotencyKey) => request('DELETE', `/subscriptions/${encodeURIComponent(id)}`, null, { idempotencyKey }),
   };
 }

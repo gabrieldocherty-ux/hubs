@@ -308,7 +308,9 @@ export function createShowroomBilling({ db, now = Date.now, log = console }) {
         status: 'active',
         customerRef,
         subscriptionRef: demo ? `demo_${ref}` : subscriptionRef,
-        periodEnd: periodEnd ?? (demo ? addMonths(t, 1) : null),
+        // Stripe: undefined when the event doesn't carry it, so the end customer.subscription.*
+        // already stored is kept (the session's subscription is usually just an id).
+        periodEnd: periodEnd ?? (demo ? addMonths(t, 1) : undefined),
         graceUntil: null,
         cancelAtPeriodEnd: false,
         amountCents: c.amount_cents,
@@ -391,14 +393,37 @@ export function createShowroomBilling({ db, now = Date.now, log = console }) {
       return true;
     },
 
-    /** invoice.paid: paid up again, a receipt, and the month's credits (once per invoice). */
+    /**
+     * invoice.paid: paid up again, a receipt, and the month's credits (once per invoice).
+     * Stripe doesn't promise the order events arrive in, so an invoice for a subscription we don't
+     * know yet is placed by its subscription's metadata (kind showroom_monthly, tenant_id): the
+     * first month's credits and receipt are never lost to an early invoice.paid. Money taken is
+     * always recorded; it reactivates the plan only when the invoice is for the subscription in use
+     * and that subscription isn't canceled (a late invoice can't bring a canceled showroom back).
+     */
     invoicePaid(inv) {
-      const r = subByRef(invoiceSubscriptionId(inv));
-      if (!r) return false;
+      const subId = invoiceSubscriptionId(inv);
+      let r = subByRef(subId);
       const end = invoicePeriodEnd(inv);
-      db.prepare(
-        "UPDATE tenant_subscriptions SET status = 'active', grace_until = NULL, canceled_at = NULL, current_period_end = MAX(COALESCE(current_period_end, 0), ?), updated_at = ? WHERE tenant_id = ?",
-      ).run(end ?? 0, now(), r.tenant_id);
+      if (!r) {
+        const meta = inv?.parent?.subscription_details?.metadata ?? inv?.subscription_details?.metadata ?? null;
+        const tenantId = meta?.kind === 'showroom_monthly' && typeof meta.tenant_id === 'string' && db.prepare('SELECT 1 FROM tenants WHERE id = ?').get(meta.tenant_id) ? meta.tenant_id : null;
+        if (!tenantId || !subId) return false;
+        const current = subRow(tenantId);
+        if (current && current.status === 'active' && current.subscription_ref !== subId) {
+          // Another plan is in use (a newer link, or complimentary): record the money, change nothing.
+          log.warn?.(`showroom billing: invoice for ${subId} recorded; tenant ${tenantId} is on ${current.subscription_ref ?? current.provider}`);
+          if (Number(inv.amount_paid) > 0) svc.monthPaid(tenantId, { invoiceRef: idOf(inv), amountCents: inv.amount_paid, currency: inv.currency || CURRENCY, provider: 'stripe', periodEnd: end });
+          onChange(tenantId);
+          return true;
+        }
+        svc.upsert(tenantId, { provider: 'stripe', status: 'active', customerRef: idOf(inv.customer), subscriptionRef: subId, periodEnd: end ?? undefined, graceUntil: null, cancelAtPeriodEnd: false });
+        r = subRow(tenantId);
+      } else if (r.status !== 'canceled') {
+        db.prepare(
+          "UPDATE tenant_subscriptions SET status = 'active', grace_until = NULL, canceled_at = NULL, current_period_end = MAX(COALESCE(current_period_end, 0), ?), updated_at = ? WHERE tenant_id = ?",
+        ).run(end ?? 0, now(), r.tenant_id);
+      } else log.warn?.(`showroom billing: invoice paid on canceled ${subId}; recorded, plan left canceled`);
       if (Number(inv.amount_paid) > 0) svc.monthPaid(r.tenant_id, { invoiceRef: idOf(inv), amountCents: inv.amount_paid, currency: inv.currency || r.currency, provider: 'stripe', periodEnd: end });
       onChange(r.tenant_id);
       return true;

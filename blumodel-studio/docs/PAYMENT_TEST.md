@@ -54,15 +54,17 @@ These came out of the verification. Until they are fixed, expect the following:
   `https://blumodel.studio/?session_id=…#/pay/showroom/<ref>`, and the app shows its *not found*
   page there. The payment is still recorded, because the webhook does that. Note what you see in
   step 2.6 and carry on.
-- **The order of Stripe's events matters.** The first month's 2,500 credits are granted only if
-  `customer.subscription.created` (or `checkout.session.completed`) is processed before
-  `invoice.paid`. Stripe doesn't promise any order. If step 3 shows **$0.00** credits even though
-  every delivery is 200, this is why. Add the $25 by hand: **Admin → Companies → the company → Render
-  credits → Add or remove**, with the note "first month, event order".
+- ~~The order of Stripe's events matters~~ (fixed in pivot-fix): an `invoice.paid` that arrives
+  before the subscription is known is placed by the subscription's metadata, so the first month's
+  2,500 credits and receipt are kept whatever the order. If step 3 still shows **$0.00**, that is a
+  real bug: note it and add the $25 by hand (**Admin → Companies → the company → Render credits →
+  Add or remove**).
 - **A lapsed company can't fix its own card.** Every page and API call on a lapsed showroom answers
   "temporarily unavailable", including sign-in and the Plan tab's card portal. Before going live
   with real companies, set Stripe to email failed-payment links (section 0) so a company can pay
-  from Stripe's own page.
+  from Stripe's own page. To recover a lapsed company, send a new monthly link: the server now
+  cancels the old past-due subscription at Stripe first, so the company is never charged twice
+  (pivot-fix).
 
 ---
 
