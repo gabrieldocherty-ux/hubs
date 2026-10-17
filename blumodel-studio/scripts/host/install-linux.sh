@@ -37,7 +37,10 @@ umask 022
 HOME_DIR=/srv/blumodel-studio
 BRANCH=blumodel-studio
 REPO=https://github.com/gabrieldocherty-ux/hubs.git
-PORT=8790
+# Empty: the port this home already uses (its blumodel-studio.service), else 8790.
+PORT=
+# Where register-tasks writes the server unit (BLUMODEL_SERVER_UNIT_FILE is for the tests).
+UNIT_FILE="${BLUMODEL_SERVER_UNIT_FILE:-/etc/systemd/system/blumodel-studio.service}"
 SVC_USER=blumodel
 NODE_MAJOR=24
 DRY_RUN=0
@@ -115,6 +118,16 @@ if ! [[ "$HOME_DIR" =~ ^/[A-Za-z0-9._/@+-]+$ ]] || [[ "$HOME_DIR" == *..* ]]; th
   die "--home may use letters, digits and . _ - / @ + only (got $HOME_DIR)."
 fi
 HOME_DIR="${HOME_DIR%/}"
+PORT_FROM=""
+if [ -z "$PORT" ]; then
+  # A home installed with --port keeps it when the install runs again without one: its unit says
+  # which (only the unit whose database is this home's).
+  if [ -r "$UNIT_FILE" ] && grep -qxF "Environment=DB_PATH=$HOME_DIR/data/blumodel.db" "$UNIT_FILE"; then
+    PORT="$(sed -n 's/^Environment=PORT=\([0-9]\{1,5\}\)$/\1/p' "$UNIT_FILE" | head -n 1)"
+    if [ -n "$PORT" ]; then PORT_FROM="this home's, from $UNIT_FILE"; fi
+  fi
+  PORT="${PORT:-8790}"
+fi
 [[ "$PORT" =~ ^[0-9]{1,5}$ ]] || die "--port must be a number (got $PORT)."
 [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || die "Not a branch name: $BRANCH"
 REPO_DIR="$HOME_DIR/repo"

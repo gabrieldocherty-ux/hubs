@@ -551,8 +551,10 @@ opened), `logs\tunnel.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status w
 
 ## 13. Disk and memory
 
-- **Disk.** The code, its `node_modules` and the build take about 500 MB under
-  `/srv/blumodel-studio/repo`; each copy of the app (`app`, `app.previous`) a few MB. What grows is the
+- **Disk.** The code, its `node_modules` and the build take 250-500 MB under
+  `/srv/blumodel-studio/repo` (230 MB in the rehearsal), plus npm's download cache in
+  `/srv/blumodel-studio/.npm` (safe to delete; the next update fills it again); each copy of the app
+  (`app`, `app.previous`, `app.failed`) about 6 MB. What grows is the
   data: the database plus 14 daily copies of it, the uploads twice (they are mirrored) and 5 pre-deploy
   copies of the database. A 16 GB eMMC holds Ubuntu Server and a young site, but watch it; 32 GB or more
   (or an M.2 SATA drive, if your unit has the slot) is comfortable. Check with `df -h /` and
