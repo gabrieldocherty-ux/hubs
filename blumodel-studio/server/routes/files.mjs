@@ -65,11 +65,12 @@ export default function routes(ctx) {
     {
       method: 'GET',
       path: '/files/:name',
-      auth: 'none',
+      // optional: an admin or the studio on the sales site may see a showroom's files.
+      auth: 'optional',
       params: { name: /^[0-9a-f]{64}\.(glb|png|jpg|webp)$/ },
       handler: (rc) => {
         const [sha, ext] = rc.params.name.split('.');
-        const file = files.publicBlob(sha, ext, rc.site);
+        const file = files.publicBlob(sha, ext, rc.site, rc.user ?? null);
         if (!file) throw new HttpError(404, 'Not found.');
         rc.sent = true;
         serveFile(rc.req, rc.res, files.blobPath(sha, ext), {

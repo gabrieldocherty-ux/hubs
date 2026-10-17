@@ -154,7 +154,7 @@ test('share links open only on the showroom the kitchen was saved on', async () 
 test('products and files: A’s catalog, models and pictures never reach B or the sales site', async () => {
   const t = await startTestServer();
   try {
-    const { A, B, aOwner, bOwner, aVisitor, bVisitor } = await world(t);
+    const { A, B, aOwner, bOwner, aVisitor, bVisitor, sales } = await world(t);
     // Only a showroom's team uploads there.
     assert.equal((await aVisitor.putRaw('/api/files?kind=image&name=x.png', makePng({ w: 4, h: 4 }), 'image/png')).status, 403);
     const up = await aOwner.putRaw('/api/files?kind=image&name=door.png', makePng({ w: 5, h: 5, rgba: [10, 20, 30, 255] }), 'image/png');
@@ -200,6 +200,13 @@ test('products and files: A’s catalog, models and pictures never reach B or th
     const pub = await aOwner.putRaw('/api/files?kind=image&visibility=public&name=logo.png', makePng({ w: 7, h: 7, rgba: [200, 20, 30, 255] }), 'image/png');
     assert.equal((await aVisitor.get(pub.body.file.url)).status, 200);
     assert.equal((await bVisitor.get(pub.body.file.url)).status, 404);
+    // ...nor on the sales site, by its id or its blob, except to our admins.
+    assert.equal((await sales.get(`/api/files/${pub.body.file.id}`)).status, 404);
+    assert.equal((await sales.get(pub.body.file.url)).status, 404);
+    assert.equal((await t.agent().get(pub.body.file.url)).status, 404);
+    const ourAdmin = await t.user({ role: 'admin' });
+    assert.equal((await ourAdmin.get(`/api/files/${pub.body.file.id}`)).status, 200);
+    assert.equal((await ourAdmin.get(pub.body.file.url)).status, 200);
     // Events about A's product from B are dropped.
     await bVisitor.post('/api/events', { productId: pid, type: 'view' });
     assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM product_events WHERE product_id = ?').get(pid).n, 0);

@@ -137,11 +137,15 @@ export function createFileService({ db, config, now = Date.now, auth }) {
      * showroom), only our library's and that showroom's own: another company's public files
      * aren't served on it.
      */
-    publicBlob(sha, ext, site) {
+    publicBlob(sha, ext, site, user = null) {
       const tenantId = site?.tenantId ?? null;
+      const staffOfOurs = user && (user.role === 'admin' || user.role === 'studio');
       const row = tenantId
         ? db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' AND (tenant_id IS NULL OR tenant_id = ?) LIMIT 1").get(sha, ext, tenantId)
-        : db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' LIMIT 1").get(sha, ext);
+        : staffOfOurs
+          ? db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' LIMIT 1").get(sha, ext)
+          : // On the sales site a company's files are invisible, except to whoever uploaded them.
+            db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' AND (tenant_id IS NULL OR owner_user_id IS ?) LIMIT 1").get(sha, ext, user?.id ?? null);
       return toRecord(row) || null;
     },
 
@@ -150,12 +154,19 @@ export function createFileService({ db, config, now = Date.now, auth }) {
      *   on a showroom   another showroom's file never; the showroom's own file when it is public,
      *                   its team asks, or it is a picture or model of one of its live products
      *                   (or its logo); otherwise the usual rule (canRead)
-     *   on the sales site the usual rule
+     *   on the sales site a showroom's file only for admins, the studio and its uploader;
+     *                   otherwise the usual rule
      */
     canReadOnSite(rc, file) {
       if (!file) return false;
       const tenantId = rc?.site?.tenantId ?? null;
-      if (!tenantId) return read.canRead(rc?.user ?? null, file, rc);
+      if (!tenantId) {
+        // A company's file is invisible on the sales site except to our admins and studio, and to
+        // the account that uploaded it (a contractor whose company became a showroom).
+        const u = rc?.user ?? null;
+        if (file.tenantId && !(u && (u.role === 'admin' || u.role === 'studio' || (file.ownerUserId && file.ownerUserId === u.id)))) return false;
+        return read.canRead(u, file, rc);
+      }
       if (file.tenantId && file.tenantId !== tenantId) return false;
       if (file.tenantId === tenantId) {
         if (file.visibility === 'public' || rc.memberRole) return true;
