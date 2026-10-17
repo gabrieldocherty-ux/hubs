@@ -199,10 +199,10 @@ export default [
     as: 'anon',
     waitFor: ['.topbar'],
     check: async (h) => {
-      // A device draft can't export: the Unlock dialog first asks for a free account.
+      // A device draft can't export: downloads are free, but it has to be saved to an account first.
       await exportItem(h, 'Project file');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText('Exports are a paid feature');
+      await h.waitForText('Downloads are free. Sign in and save this kitchen');
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock'))) throw new Error('a payment dialog opened for a free download');
     },
   },
 

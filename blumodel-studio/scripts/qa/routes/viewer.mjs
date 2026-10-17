@@ -397,7 +397,7 @@ export default [
       const d = await h.evaluate(() => ({ ...document.querySelector('.studio-preview').dataset, max: window.__blumodelQa.viewer.maxSide }));
       const wantW = Math.min(3840, d.max);
       if (+d.width !== wantW || +d.height !== Math.round((wantW * 9) / 16)) throw new Error(`the 4K render from split view is ${d.width}×${d.height} (max side ${d.max})`);
-      if (d.watermark !== '1') throw new Error('a free user’s preview has no watermark');
+      if (d.watermark !== '0') throw new Error('a free user’s preview is watermarked (downloads are free since the showroom pivot)');
       await h.shot('preview');
     },
   },

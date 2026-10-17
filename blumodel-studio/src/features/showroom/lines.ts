@@ -1,4 +1,5 @@
-import type { BrandCategory, BrandPrefs, Product } from '../../types';
+import type { BrandCategory, BrandPrefs, DesignDoc, Product } from '../../types';
+import { getProduct, isBuiltin } from '../../data/catalog';
 import { BRAND_CATEGORIES, brandKey, cleanBrandPrefs, isBrandCategory, prefName } from '../../lib/generate/brands';
 
 /**
@@ -73,4 +74,15 @@ export function lineFromQuery(lines: ShowroomLine[], raw: string | null): Showro
   if (!raw) return null;
   const key = brandKey(raw);
   return lines.find((l) => l.key === key) ?? null;
+}
+
+/**
+ * A new showroom design made of the company's products only, unless the company fills the gaps
+ * with BluModel Basics: built-in pieces the layout builder put where the company sells nothing are
+ * left out (doors and windows stay; they are part of the room, not products for sale).
+ */
+export function keepShowroomItems(doc: DesignDoc, fillGaps: boolean): DesignDoc {
+  if (fillGaps) return doc;
+  const items = doc.items.filter((i) => !isBuiltin(i.productId) || getProduct(i.productId)?.category === 'openings');
+  return items.length === doc.items.length ? doc : { ...doc, items };
 }

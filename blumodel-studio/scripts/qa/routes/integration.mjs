@@ -662,39 +662,24 @@ export default [
 
   // ─── export ────────────────────────────────────────────────────────────────
   {
-    // A free user: Export -> the Unlock dialog -> $5 unlock (demo checkout) -> back in the kitchen
-    // the export they asked for runs by itself.
-    name: 'int-free-export-unlock-runs',
+    // A free user's download just runs (the showroom pivot): no dialog, no payment, and the server
+    // records it. Another account can't export someone else's kitchen.
+    name: 'int-free-export-runs',
     as: 'fresh',
     setup: async ({ me }) => {
-      const k = await newKitchen(me, 'QA Unlock Kitchen');
+      const k = await newKitchen(me, 'QA Free Export Kitchen');
       return { path: `#/k/${k.id}`, projectId: k.id };
     },
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
-      const before = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
-      if (before.status !== 403) throw new Error(`a free user's export answers ${before.status} before paying, expected 403`);
       const compact = await h.evaluate(() => !!document.querySelector('.export-btn'));
       await h.click(compact ? '.export-btn' : '.topbar .menu-wrap > .btn.primary');
       await h.waitFor('.topbar .menu[role="menu"]');
       await h.click(await mark(h, '.topbar .menu [role="menuitem"]', 'Shopping list', 'csv'));
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock “QA Unlock Kitchen”', 'Unlock this kitchen - $5 CAD once']);
-      await h.click(await mark(h, '.modal.unlock button', 'Unlock this kitchen', 'unlock'));
-      await h.waitUntil(() => location.hash.startsWith('#/pay/'), 10_000, 'the demo checkout');
-      await h.waitForText(['DEMO PAYMENT', 'BluModel Studio never sees or stores card details']);
-      const cardish = await h.evaluate(() => [...document.querySelectorAll('input')].filter((i) => /card|cc-|cvc|cvv|expir/i.test(`${i.name} ${i.id} ${i.autocomplete} ${i.placeholder}`)).length);
-      if (cardish) throw new Error(`${cardish} card-like field(s) on the demo checkout`);
-      await h.click('.demo-pay-actions .btn.primary');
-      // Back in the kitchen, the export finishes by itself.
-      await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'returning to the kitchen');
       await h.waitForText('Shopping list saved as CSV.', 25_000);
-      const after = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
-      if (after.status !== 200) throw new Error(`after unlocking, the export answers ${after.status}`);
-      // Unlocking one kitchen does not unlock another.
-      const other = await newKitchen(h.me, 'QA Other Kitchen');
-      const r = await h.me.post(`/api/projects/${other.id}/exports`, { kind: 'csv' });
-      if (r.status !== 403) throw new Error(`a second kitchen exports without being unlocked (${r.status})`);
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock'))) throw new Error('a payment dialog opened for a free download');
+      const r = await h.api.as('customer').post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
+      if (r.status !== 403 && r.status !== 404) throw new Error(`another account exported this kitchen (${r.status})`);
       await h.shot('exported');
     },
   },

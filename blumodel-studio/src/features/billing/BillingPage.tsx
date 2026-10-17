@@ -389,7 +389,7 @@ function statusLine(me: BillingMe, comp: boolean): string {
   if (plan.id === 'free') {
     if (sub?.status === 'past_due') return `Your ${planName(sub.plan)} renewal failed and the ${me.graceDays}-day grace period has ended. Update your payment to restore it.`;
     if (sub?.status === 'canceled') return `Your ${planName(sub.plan)} plan ended. Exports are locked; everything you designed is still here.`;
-    return 'Design, save and share for free. Exports are a paid feature.';
+    return 'Design, save, share and download for free.';
   }
   if (comp) return plan.periodEnd ? `Complimentary, until ${date(plan.periodEnd)}. There is nothing to pay.` : 'Complimentary. There is nothing to pay.';
   if (plan.status === 'past_due') return `The last payment failed. You keep ${planName(plan.id)} until ${date(plan.graceUntil)} while it is retried.`;

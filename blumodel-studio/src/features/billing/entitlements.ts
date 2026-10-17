@@ -5,9 +5,9 @@ import { useSession } from '../../store/useSession';
 import type { AccountPlanId, Entitlements, ExportKind, PlanId } from '../../types/platform';
 
 /**
- * What the signed-in account may export: its plan and the kitchens it unlocked for $5. Loaded once
- * per user and refreshed after a payment. The server checks every export again; this only decides
- * whether the editor shows locks and opens the Unlock dialog.
+ * The signed-in account's plan (a legacy subscriber's) and its kitchens, from
+ * /api/billing/entitlements. Loaded once per user and refreshed after a payment. Exports are free
+ * since the showroom pivot, so nothing here locks the editor any more.
  */
 
 interface EntitlementState {
@@ -45,28 +45,23 @@ export function loadEntitlements(force = false): Promise<void> {
 }
 
 /**
- * True when the signed-in account may export this kitchen (it owns it, and it's unlocked or on a
- * plan). Admins export without paying (the server allows it), so they never see the Unlock dialog.
+ * True when the signed-in account may export this kitchen. Since the showroom pivot
+ * (docs/SHOWROOM_PIVOT.md §3) downloads are free: being signed in on a saved kitchen is enough,
+ * and the server still checks that the kitchen is the account's own.
  */
 export function isEntitled(projectId: string | null): boolean {
-  const s = useEntitlementStore.getState();
-  const user = useSession.getState().user;
-  if (!projectId || !user) return false;
-  if (user.role === 'admin') return true;
-  return s.userId === user.id && (s.plan !== 'free' || s.unlocked.has(projectId));
+  return !!projectId && !!useSession.getState().user;
 }
 
-/** BUILD_PLAN §13.2. `watermark` is true until the kitchen is unlocked or the account has a plan. */
+/** What the editor shows on its Export menu. `watermark` is always false: nothing is watermarked any more. */
 export function useEntitlements(projectId: string | null): { loading: boolean; canExport: boolean; watermark: boolean; plan: PlanId } {
   const userId = useSession((s) => s.user?.id ?? null);
-  const admin = useSession((s) => s.user?.role === 'admin');
   const st = useEntitlementStore();
   useEffect(() => {
     void loadEntitlements();
   }, [userId]);
   const mine = st.userId === userId;
-  const canExport = !!projectId && !!userId && (admin || (mine && (st.plan !== 'free' || st.unlocked.has(projectId))));
-  return { loading: !!userId && (!mine || st.status === 'loading'), canExport, watermark: !canExport, plan: userId && mine ? st.plan : 'free' };
+  return { loading: false, canExport: !!projectId && !!userId, watermark: false, plan: userId && mine ? st.plan : 'free' };
 }
 
 /** A file the server made for a paid export (the CSV and the project file). */
@@ -77,18 +72,6 @@ export interface ExportFile {
 }
 
 export type ExportRunner = (file?: ExportFile) => Promise<void> | void;
-
-// ── the Unlock dialog's request ───────────────────────────────────────────
-
-export interface UnlockRequest {
-  projectId: string | null;
-  kind: ExportKind;
-}
-
-export const useUnlock = create<{ request: UnlockRequest | null }>()(() => ({ request: null }));
-
-export const openUnlock = (request: UnlockRequest) => useUnlock.setState({ request });
-export const closeUnlock = () => useUnlock.setState({ request: null });
 
 // ── what to finish after paying (kept across the trip to Stripe) ─────────
 

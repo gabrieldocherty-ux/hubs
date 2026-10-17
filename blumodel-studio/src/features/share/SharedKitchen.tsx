@@ -16,6 +16,7 @@ import { useEstimate } from '../../store/derived';
 import { useCatalog } from '../../store/useCatalog';
 import { useSession, timeAgo } from '../../store/useSession';
 import { setSharedPrices } from '../contractors';
+import { useShowroom } from '../showroom';
 import type { PreparedBy } from '../../types/platform';
 import { shareApi, type GoneReason, type SharedWire } from './api';
 import './share.css';
@@ -296,6 +297,7 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
   const est = useEstimate();
   const doc = useDesignStore((s) => s.doc);
   const pro = wire.preparedBy;
+  const showroom = useShowroom();
   const lines = useMemo(() => est.lines.filter((l) => l.productId), [est]);
   const total = lines.reduce((n, l) => n + l.total, 0);
   const pieces = lines.reduce((n, l) => n + l.qty, 0);
@@ -310,8 +312,9 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
             const product = getProduct(l.productId!);
             const item = doc.items.find((i) => i.productId === l.productId);
             const finish = product && item ? resolveFinish(item, product, doc.surfaces) : undefined;
-            const publicPage = product && (isBuiltin(product.id) || product.source === 'brand');
-            const buy = !pro && (l.buyUrl ?? product?.buyUrl);
+            const publicPage = product && (showroom ? product.source === 'tenant' || isBuiltin(product.id) : isBuiltin(product.id) || product.source === 'brand');
+            // Never a store link on a company's showroom: it sells its own products.
+            const buy = !pro && !showroom && (l.buyUrl ?? product?.buyUrl);
             return (
               <li key={l.key}>
                 <span className="share-plist-art">{product ? <ProductArt product={product} finish={finish} surfaces={doc.surfaces} width={item?.widthIn} /> : null}</span>

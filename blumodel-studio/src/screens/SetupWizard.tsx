@@ -14,7 +14,7 @@ import { feetInches } from '../lib/format';
 import { useCatalog, useCatalogVersion } from '../store/useCatalog';
 import { brandsForCategory } from '../catalog/retail';
 import { BRAND_CATEGORIES, brandKey, brandOptions, brandPrefsLabel, brandShare, cleanBrandPrefs, hasBrandPrefs, type BrandCount, type BrandOption } from '../lib/generate/brands';
-import { lineFromQuery, linesIn, roomFromQuery, shortName, showroomLines, showroomPrefs, SiteMark, useShowroom, type PublicTenant, type ShowroomLine } from '../features/showroom';
+import { keepShowroomItems, lineFromQuery, linesIn, roomFromQuery, shortName, showroomLines, showroomPrefs, SiteMark, useShowroom, type PublicTenant, type ShowroomLine } from '../features/showroom';
 import './setupWizard.css';
 
 const STEPS = ['Basics', 'Room', 'Layout', 'Brands'] as const;
@@ -74,7 +74,7 @@ export function SetupWizard() {
   }, [lines, lineParam, lineApplied]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const retail = useRetailBrands();
+  const retail = useRetailBrands(!showroom);
   const catalogVersion = useCatalogVersion();
 
   const fits = (t: (typeof TEMPLATES)[number]) => room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
@@ -89,9 +89,11 @@ export function SetupWizard() {
   // On a showroom a category with no choice means every line the company sells there, so a new
   // design is the company's products wherever one fits (showroomPrefs).
   const brandPrefs = useMemo(() => (showroom ? showroomPrefs(brands, lines) : cleanBrandPrefs(brands)), [brands, showroom, lines]);
+  // Without "fill the gaps" a showroom design holds only the company's own products.
+  const fillGaps = !showroom || showroom.features.fillGaps;
   const preview = useMemo(
-    () => composeNewKitchen(kitchenName, room, layoutOk ? templateId : null, brandPrefs),
-    [kitchenName, room, templateId, layoutOk, brandPrefs, catalogVersion],
+    () => keepShowroomItems(composeNewKitchen(kitchenName, room, layoutOk ? templateId : null, brandPrefs), fillGaps),
+    [kitchenName, room, templateId, layoutOk, brandPrefs, catalogVersion, fillGaps],
   );
   const share = useMemo(() => brandShare(preview, brandPrefs), [preview, brandPrefs]);
 
@@ -288,18 +290,20 @@ export function SetupWizard() {
  * retail chunk and registers its products so the layout can place them). Null while loading.
  * Also asks for the server catalog, so partner brands are offered too.
  */
-function useRetailBrands(): Partial<Record<BrandCategory, BrandCount[]>> | null {
+function useRetailBrands(withRetail = true): Partial<Record<BrandCategory, BrandCount[]>> | null {
   const [retail, setRetail] = useState<Partial<Record<BrandCategory, BrandCount[]>> | null>(null);
   useEffect(() => {
     let alive = true;
     void useCatalog.getState().load();
+    // A showroom never loads the retail catalog: its visitors design with the company's products.
+    if (!withRetail) return;
     Promise.all(BRAND_CATEGORIES.map((c) => brandsForCategory(c.id).then((list) => [c.id, list] as const)))
       .then((rows) => alive && setRetail(Object.fromEntries(rows)))
       .catch(() => alive && setRetail({}));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [withRetail]);
   return retail;
 }
 

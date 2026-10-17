@@ -752,14 +752,14 @@ export default [
   }),
   ...both({ name: 'dark-local', path: '#/local', as: 'anon', waitFor: ['.topbar', '.plan-view canvas'], check: darkCheck() }),
   one({
-    // A device draft can't export: the Unlock dialog asks for a free account first.
+    // A device draft can't export: downloads are free, but it is saved to an account first (a toast says so).
     name: 'dark-local-export',
     path: '#/local',
     as: 'anon',
     waitFor: ['.topbar', '.plan-view canvas'],
     check: darkCheck(async (h) => {
       await exportItem(h, 'Project file');
-      await h.waitFor('.modal.unlock[role="dialog"]');
+      await h.waitForText('Downloads are free. Sign in and save this kitchen');
       await h.sleep(400);
     }),
   }),
@@ -1104,17 +1104,6 @@ export default [
     await h.sleep(400);
     // With a piece selected the bar's Details button is "Item".
     await openSheet(h, 'Item');
-  }),
-  ...both({
-    name: 'dark-unlock-dialog',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'Dark Paywall Kitchen'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: darkCheck(async (h) => {
-      await exportItem(h, 'Shopping list');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.sleep(400);
-    }),
   }),
 
   // ── Light: the same screens as before dark mode (compare with a pre-dark build, docs/handoff/dark.md) ──

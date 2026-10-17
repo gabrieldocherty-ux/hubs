@@ -16,7 +16,7 @@ export { useShowroom, currentShowroom, useSiteKind, basicsAllowed } from './useS
 export { SiteMark, CompanyLogo } from './SiteMark';
 export { applyShowroomBranding, pageTitle, siteName } from './branding';
 export { shortName, looksLikeShowroomHost, type PublicTenant, type SiteKind } from './site';
-export { showroomLines, showroomPrefs, linesIn, lineFromQuery, isOwnProduct, type ShowroomLine } from './lines';
+export { showroomLines, showroomPrefs, linesIn, lineFromQuery, isOwnProduct, keepShowroomItems, type ShowroomLine } from './lines';
 export { designHref, newDesignHash, roomFromQuery, type RoomKind } from './links';
 export { SendDesign, type SendPlace } from './SendDesign';
 

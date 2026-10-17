@@ -394,34 +394,27 @@ export default [
     check: noSideScroll,
   },
   {
-    name: 'pay-none-unlock',
+    // Payments off: downloading is free anyway (the showroom pivot), so nothing asks for money.
+    name: 'pay-none-export-free',
     as: 'fresh',
     setup: async ({ me }) => newKitchen(me, 'QA Soon Kitchen', '?qa-payments=none'),
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
-      // Designing and sharing are unaffected: the editor and its Share button are all there.
       if (!(await h.evaluate(() => [...document.querySelectorAll('.topbar button')].some((b) => /share/i.test(b.textContent))))) throw new Error('no Share button in the editor');
-      await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Exports for “QA Soon Kitchen”', 'Paid exports open soon', 'Here is what they will cost']);
-      const soon = await buttonsLabelled(h, 'Opens soon');
-      if (soon.length !== 2 || soon.some((b) => !b.disabled)) throw new Error(`both plan buttons should be disabled “Opens soon”: ${JSON.stringify(soon)}`);
-      if (await h.evaluate(() => /By paying you agree/.test(document.body.innerText))) throw new Error('“By paying you agree” shows while nothing can be paid');
+      await exportItem(h, 'Shopping list');
+      await h.waitForText('Shopping list saved as CSV.');
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock'))) throw new Error('a payment dialog opened for a free download');
       await noCardFields(h);
     },
   },
   {
-    name: 'pay-none-unlock-device',
+    name: 'pay-none-export-device',
     path: '#/local?qa-payments=none',
     as: 'anon',
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
       await exportItem(h, 'Shopping list');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Exports open soon', 'Paid exports open soon', 'Keep it in a free account', 'Back to my kitchen']);
-      await h.shot('dialog');
-      await clickLabelled(h, 'Back to my kitchen');
-      await h.waitUntil(() => !document.querySelector('.modal.unlock'), 5000, 'the dialog closing');
+      await h.waitForText('Downloads are free. Sign in and save this kitchen');
     },
   },
   {
@@ -499,42 +492,6 @@ export default [
     expectText: ['Demo payments on this server', 'By paying you agree to the Terms and the Refund policy'],
     check: noCardFields,
   },
-  {
-    name: 'pay-demo-unlock',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Demo Unlock', '?qa-payments=demo'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock .pay-note--demo');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'By paying you agree']);
-      await noCardFields(h);
-    },
-  },
-  {
-    // After paying, the export the user clicked finishes by itself (here through the DEMO checkout page).
-    name: 'pay-demo-unlock-resumes-export',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Resume Export', '?qa-payments=demo'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    timeoutMs: 30_000,
-    check: async (h) => {
-      await exportItem(h, 'Shopping list');
-      await h.waitForText('Unlock this kitchen - $5 CAD once');
-      await clickLabelled(h, 'Unlock this kitchen');
-      await h.waitFor('.demo-pay-actions .btn.primary');
-      await noCardFields(h);
-      await h.click('.demo-pay-actions .btn.primary');
-      await h.waitForText('Unlocked: exports for “QA Resume Export” are yours', 20_000);
-      // The server records the export the user clicked before paying, a moment after the toast.
-      let n = 0;
-      for (let i = 0; i < 40 && !n; i++) {
-        await h.sleep(250);
-        n = h.api.sql("SELECT COUNT(*) AS n FROM export_events WHERE project_id = ? AND kind = 'csv'", h.data.projectId)[0].n;
-      }
-      if (!n) throw new Error('the paid-for CSV export was not made after returning from checkout');
-    },
-  },
 
   // ── Payments: real (Stripe) ──────────────────────────────────────────────
   {
@@ -560,39 +517,6 @@ export default [
       await noDemoWording(h, 'Billing');
       await noCardFields(h);
       if (await h.evaluate(() => !!document.querySelector('.pay-note'))) throw new Error('a DEMO / opens-soon note shows with real payments');
-    },
-  },
-  {
-    name: 'pay-stripe-unlock',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Stripe Unlock', '?qa-payments=stripe'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, '3D render');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month', 'By paying you agree to the Terms and the Refund policy']);
-      // The catalog panel behind it lists the QA seed's "(Demo)" brands: check the dialog and the Export menu's words.
-      await noDemoWording(h, 'the Unlock dialog', '.modal.unlock');
-      await noCardFields(h);
-      const links = await h.evaluate(() => [...document.querySelectorAll('.modal.unlock .agree a')].map((a) => `${a.getAttribute('href')} ${a.target}`));
-      if (links.join('|') !== '#/terms _blank|#/refunds _blank') throw new Error(`the agreement links are ${JSON.stringify(links)}`);
-    },
-  },
-  {
-    name: 'pay-stripe-unlock-phone',
-    as: 'fresh',
-    viewport: PHONE,
-    setup: async ({ me }) => newKitchen(me, 'QA Stripe Phone', '?qa-payments=stripe'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, 'Floor plan');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'By paying you agree']);
-      await noDemoWording(h, 'the Unlock dialog', '.modal.unlock');
-      const r = await h.evaluate(() => {
-        const m = document.querySelector('.modal.unlock').getBoundingClientRect();
-        return { left: m.left, right: m.right, w: innerWidth };
-      });
-      if (r.left < -1 || r.right > r.w + 1) throw new Error(`the Unlock dialog is wider than the screen (${Math.round(r.left)}–${Math.round(r.right)} in ${r.w}px)`);
     },
   },
   {

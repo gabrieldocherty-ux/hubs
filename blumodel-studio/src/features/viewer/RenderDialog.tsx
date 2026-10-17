@@ -7,25 +7,23 @@
  *  - The 3D view renders the still offscreen at the exact target size (roomStill.ts); the result
  *    doesn't depend on the canvas on screen, so split view gives the same image as 3D view. If
  *    the 3D view isn't showing, the dialog switches to it first.
- *  - The preview is a scaled copy. Until this kitchen is unlocked or the account has a plan
- *    (`useEntitlements(projectId).watermark`), the preview carries the "BluModel Studio · Preview"
- *    watermark. Downloading is an export: it goes through `requestExport(projectId, 'render', …)`,
- *    which opens the Unlock dialog when needed and resumes the download after payment. The
- *    downloaded PNG is the full-resolution render and never has a watermark.
+ *  - The preview is a scaled copy. Downloading is an export: it goes through
+ *    `requestExport(projectId, 'render', …)`, which the server records. Since the showroom pivot
+ *    (docs/SHOWROOM_PIVOT.md §3) downloads are free for the kitchen's owner and nothing carries a
+ *    watermark.
  */
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Dialog } from '../../components/Dialog';
-import { Download, Lock } from '../../components/Icons';
+import { Download } from '../../components/Icons';
 import { isCompact } from '../../components/MobileState';
 import { slug } from '../../lib/exporters';
 import { QA } from '../../lib/qa';
-import { usePayments } from '../../lib/config';
 import { useDesignStore } from '../../store/useDesignStore';
-import { requestExport, useEntitlements } from '../billing';
+import { requestExport } from '../billing';
 import { STUDIO_SIZES, capSize, renderFilename, stillOptionsFor, useStudioPrefs, waitForStillRenderer, type StudioCamera, type StudioPrefs } from './studio';
 import { closeStudioRender, useStudio } from './studioDialog';
-import { drawWatermark, previewSize } from './watermark';
+import { previewSize } from './preview';
 import './viewer.css';
 
 interface Rendered {
@@ -106,8 +104,6 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
   const prefs = useStudioPrefs((s) => s.prefs);
   const setPrefs = useStudioPrefs((s) => s.setPrefs);
   const name = useDesignStore((s) => s.doc.name);
-  const { watermark, loading } = useEntitlements(projectId);
-  const payments = usePayments();
   const [status, setStatus] = useState<'idle' | 'preparing' | 'rendering' | 'done' | 'error'>('idle');
   const [error, setError] = useState('');
   const [result, setResult] = useState<Rendered | null>(null);
@@ -168,9 +164,6 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
   const download = async (r: Rendered | null = result) => {
     if (!r || saving) return;
     useStudio.setState({ autoDownload: false });
-    // Not entitled: the Unlock dialog takes over (it would sit under this one). Billing remembers
-    // the export, and after payment the dialog reopens and finishes the download by itself.
-    if (watermark && !loading) closeStudioRender();
     setSaving(true);
     try {
       await requestExport(projectId, 'render', async () => {
@@ -195,7 +188,7 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
     })();
   }, []);
 
-  // The preview: a scaled copy of the render, watermarked unless this kitchen may export.
+  // The preview: a scaled copy of the render. Downloads are free since the showroom pivot, so no watermark.
   useEffect(() => {
     if (!result) return;
     const s = previewSize(result.width, result.height, 1600);
@@ -206,10 +199,9 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
     if (!ctx) return;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(result.canvas, 0, 0, s.width, s.height);
-    if (watermark) drawWatermark(ctx, s.width, s.height);
     setPreview(c.toDataURL('image/jpeg', 0.9));
-    qaStudio({ preview: { width: s.width, height: s.height, watermarked: watermark } });
-  }, [result, watermark]);
+    qaStudio({ preview: { width: s.width, height: s.height, watermarked: false } });
+  }, [result]);
 
   const sizeOf = STUDIO_SIZES.find((s) => s.id === prefs.size) ?? STUDIO_SIZES[0];
 
@@ -220,7 +212,7 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
         data-state={status}
         data-width={result?.width ?? 0}
         data-height={result?.height ?? 0}
-        data-watermark={result ? (watermark ? '1' : '0') : ''}
+        data-watermark={result ? '0' : ''}
       >
         {preview && <img src={preview} alt={`Studio render of ${name}`} />}
         {!preview && !busy && status !== 'error' && <span className="studio-preview-note">Your render shows up here.</span>}
@@ -275,23 +267,13 @@ export default function RenderDialog({ projectId }: { projectId: string | null }
         />
       </div>
 
-      {watermark && !loading && (
-        <p className="studio-paywall">
-          <Lock width={14} height={14} aria-hidden="true" />
-          <span>
-            {payments === 'none'
-              ? 'Free previews carry a watermark. Downloading the full-resolution render is a paid export, and paid exports open soon.'
-              : 'Free previews carry a watermark. Downloading the full-resolution render is an export: choose Download to see your options, and it downloads clean.'}
-          </span>
-        </p>
-      )}
 
       <div className="modal-actions studio-actions">
         <button type="button" className="btn" onClick={() => void render()} disabled={busy}>
           {result ? 'Render again' : 'Render'}
         </button>
         <button type="button" className="btn primary" onClick={() => void download()} disabled={!result || busy || stale || saving}>
-          {watermark && !loading ? <Lock width={14} height={14} aria-hidden="true" /> : <Download width={15} height={15} aria-hidden="true" />}
+          <Download width={15} height={15} aria-hidden="true" />
           {saving ? 'Saving…' : 'Download PNG'}
         </button>
       </div>

@@ -307,20 +307,21 @@ export function CatalogPanel() {
   const brands = useMemo(() => brandFacets(inCategory, nameOf), [inCategory, nameOf]);
   const activeBrand = brand !== ALL && brands.some((b) => b.id === brand) ? brand : ALL;
   const prefsOn = hasBrandPrefs(brandPrefs) && mine && activeBrand === ALL;
-  const storeList = useMemo(() => storeFacets(inCategory, stores), [inCategory, stores]);
+  // No store on a showroom: the company sells its products itself.
+  const storeList = useMemo(() => (showroom ? [] : storeFacets(inCategory, stores)), [inCategory, stores, showroom]);
   const activeStore = store !== ALL && storeList.some((s) => s.id === store) ? store : ALL;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (prefsOn ? filterToPrefs(inCategory, brandPrefs) : inCategory).filter((p) => {
       if (activeBrand !== ALL && nameOf(p) !== activeBrand) return false;
-      const sold = storesOf(retailOf(p.id));
+      const sold = showroom ? [] : storesOf(retailOf(p.id));
       if (activeStore !== ALL && !sold.includes(activeStore)) return false;
       if (!q) return true;
       const where = sold.map((s) => stores.get(s)?.name ?? s).join(' ');
       return `${p.name} ${p.brand} ${p.line ?? ''} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb} ${where}`.toLowerCase().includes(q);
     });
-  }, [inCategory, activeBrand, activeStore, query, prefsOn, brandPrefs, stores, nameOf]);
+  }, [inCategory, activeBrand, activeStore, query, prefsOn, brandPrefs, stores, nameOf, showroom]);
 
   const grouped = useMemo(() => {
     if (cat !== ALL || query || activeBrand !== ALL || activeStore !== ALL) return [{ id: 'results', label: '', items: results }];
@@ -446,7 +447,7 @@ export function CatalogPanel() {
                   const from = p.widthOptions?.length ? Math.min(...p.widthOptions.map(at)) : at(p.widthIn);
                   const custom = p.source === 'custom';
                   const mine = p.source === 'contractor';
-                  const info = retailOf(p.id);
+                  const info = showroom ? undefined : retailOf(p.id);
                   const sold = storesOf(info);
                   // A real product with no checked store price shows none rather than a made-up one.
                   const priceText = info && !priceOf && !retailPriceKnown(info) ? 'See store' : `${money(from)}${p.widthOptions?.length ? '+' : ''}`;

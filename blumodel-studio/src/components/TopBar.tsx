@@ -6,7 +6,6 @@ import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporte
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
-import { usePayments } from '../lib/config';
 import { AccountMenu } from './AccountMenu';
 import { useShowEstimator } from '../lib/prefs';
 import { Check } from './Icons';
@@ -112,8 +111,8 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
     toast(kind === 'plan' ? 'Floor plan saved as PNG.' : '3D view saved as PNG.', 'ok');
   };
 
-  // Every export goes through the paywall (requestExport): the server records it, and makes the
-  // CSV and the project file itself. After paying, the export the user picked finishes by itself.
+  // Every export goes through requestExport (free since the showroom pivot): the server records it,
+  // and makes the CSV and the project file itself.
   const saveFile = (done: string) => (file?: ExportFile) => {
     if (!file) return;
     downloadText(file.content, file.filename, file.contentType);
@@ -127,14 +126,13 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   };
   const exportProject = view ? null : projectId;
   const { canExport } = useEntitlements(exportProject);
-  const payments = usePayments();
   const { isContractor } = usePriceBook();
   useResumeExport(exportProject, runners);
   const doExport = (kind: ExportKind) => {
     setMenu(false);
     void requestExport(exportProject, kind, runners[kind]!);
   };
-  const lock = canExport ? null : <Lock width={13} height={13} aria-label="Paid" />;
+  const lock = canExport ? null : <Lock width={13} height={13} aria-label="Sign in first" />;
 
   const onImport = async (file: File) => {
     try {
@@ -256,7 +254,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
                     )}
                     {!canExport && (
                       <p className="menu-note">
-                        <Lock width={12} height={12} /> {payments === 'none' ? 'Exports are a paid feature and open soon. Designing and sharing are free.' : 'Exports are a paid feature. Pick one to see the options.'}
+                        <Lock width={12} height={12} /> Downloads are free. Sign in and save this kitchen to your account to download it.
                       </p>
                     )}
                     <div className="menu-sep" />
