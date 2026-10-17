@@ -39,6 +39,8 @@ function audit(touch) {
     for (const el of document.querySelectorAll('a, button, summary, input:not([type="hidden"]), textarea')) {
       const r = shown(el);
       if (!r) continue;
+      // A link inside running text is exempt, as WCAG 2.5.8 allows: it is sized by its line.
+      if (el.tagName === 'A' && getComputedStyle(el).display === 'inline' && el.closest('p, li, dd')) continue;
       if (r.height < 43.5) out.small.push(`${name(el)} ${Math.round(r.width)}×${Math.round(r.height)}`);
     }
   for (const el of document.querySelectorAll('input:not([type="hidden"]), textarea')) {
@@ -274,7 +276,9 @@ export default [
         if (doc === 'terms' && !/Service agreement/i.test(text)) throw new Error('the terms page isn’t the B2B service agreement');
         if (doc === 'privacy' && !/processor/i.test(text)) throw new Error('the privacy policy doesn’t explain we process visitor data for companies');
         if (doc === 'refunds' && !/monthly plan/i.test(text)) throw new Error('the refund policy doesn’t cover the monthly plan');
-        for (const re of [/\bUnlimited\b/, /Start from a photo/i, /kitchen unlock/i]) if (re.test(text.split('Earlier purchases')[0])) throw new Error(`${doc} still says ${re} outside the legacy section`);
+        // The removed homeowner and contractor products are named only in the earlier-purchases section.
+        const current = await h.evaluate(() => [...document.querySelectorAll('.legal-doc section:not(#legal-earlier)')].map((x) => x.innerText).join('\n'));
+        for (const re of [/\bUnlimited\b/, /Start from a photo/i, /kitchen unlock/i, /Contractor plan/i]) if (re.test(current)) throw new Error(`${doc} still says ${re} outside the earlier-purchases section`);
         await layoutOk(h);
       },
     })),

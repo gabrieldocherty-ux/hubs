@@ -244,3 +244,13 @@
     text-decoration-color: rgba(238, 138, 97, 0.4);
   }
 }
+
+/* Touch screens: the logo and the footer's legal links are 44px tap targets too. */
+@media (pointer: coarse) {
+  .legal-bar .brand,
+  .legal-foot .legal-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

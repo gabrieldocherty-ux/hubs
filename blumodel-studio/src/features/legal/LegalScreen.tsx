@@ -7,12 +7,12 @@ import { LegalLinks, LegalUnsetBadge } from './LegalLinks';
 import './legal.css';
 
 const DOCS: { id: LegalDocId; label: string }[] = [
-  { id: 'terms', label: 'Terms' },
+  { id: 'terms', label: 'Agreement' },
   { id: 'privacy', label: 'Privacy' },
   { id: 'refunds', label: 'Refunds' },
 ];
 
-/** `#/terms`, `#/privacy`, `#/refunds`: the three legal pages, readable on a phone. */
+/** `#/terms` (the service agreement), `#/privacy`, `#/refunds`: the three legal pages, readable on a phone. */
 export default function LegalScreen({ doc }: { doc: LegalDocId }) {
   const config = useAppConfig();
   const signedIn = useSession((s) => s.status === 'signedIn');
@@ -42,7 +42,7 @@ export default function LegalScreen({ doc }: { doc: LegalDocId }) {
           ))}
         </nav>
         <a className="btn legal-bar-cta" href={signedIn ? '#/' : '#/signin'}>
-          {signedIn ? 'My kitchens' : 'Sign in'}
+          {signedIn ? 'My account' : 'Sign in'}
         </a>
       </header>
       <main className="legal-main">
