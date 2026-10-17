@@ -11,6 +11,7 @@ import { AccountMenu } from './AccountMenu';
 import { useShowEstimator } from '../lib/prefs';
 import { Check } from './Icons';
 import { RenderButton } from '../features/viewer';
+import { PhotorealButton } from '../features/renders';
 import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
@@ -205,6 +206,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
           </button>
         )}
         <RenderButton />
+        <PhotorealButton />
         {!view && <ShareButton projectId={projectId} />}
         {!view && <PresentButton compact={compact} />}
         {!(view && hideExport) && (

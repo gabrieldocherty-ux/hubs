@@ -12,7 +12,7 @@
 //                                                    503 renders_not_configured (nothing charged), 402
 //                                                    insufficient_credits, 403 visitor_renders_off, 429
 //                                                    daily_cap_reached, 409 render_in_progress, 413 too_large
-//   GET    /api/renders                  user      ?projectId=&before=<createdAt>&limit= -> { renders, more }
+//   GET    /api/renders                  user      ?projectId= | shareToken= (team)&before=<createdAt>&limit= -> { renders, more }
 //   GET    /api/renders/:id              user      { render } (with its scene)
 //   GET    /api/renders/:id/image        user      the result (PNG/JPEG/WebP), private, no-store
 //   GET    /api/renders/:id/input        user      the captured 3D view
@@ -88,7 +88,9 @@ export default function routes(ctx) {
       handler: (rc) => {
         const projectId = rc.query.get('projectId') || undefined;
         if (projectId && !PROJECT.test(projectId)) throw new HttpError(400, 'That design id isn’t valid.', { field: 'projectId' });
-        return renders.list(rc, { projectId, before: before(rc), limit: Number(rc.query.get('limit')) || undefined });
+        const shareToken = rc.query.get('shareToken') || undefined;
+        if (shareToken && !/^[A-Za-z0-9_-]{8,128}$/.test(shareToken)) throw new HttpError(400, 'That link isn’t valid.', { field: 'shareToken' });
+        return renders.list(rc, { projectId, shareToken, before: before(rc), limit: Number(rc.query.get('limit')) || undefined });
       },
     },
     {

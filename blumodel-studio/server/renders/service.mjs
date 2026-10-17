@@ -293,10 +293,19 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
      * Renders, newest first. A design's (`projectId`) or, for the team without one, every render
      * of the showroom; a visitor sees only their own. `before` pages by createdAt.
      */
-    list(rc, { projectId, before, limit = 30 } = {}) {
+    list(rc, { projectId, shareToken, before, limit = 30 } = {}) {
       const tenantId = rc.tenant.id;
       sweep(tenantId);
       const team = !!rc.memberRole;
+      // The team, on a lead's design opened from its share link: that design's renders.
+      if (!projectId && shareToken) {
+        if (!team) return { renders: [], more: false };
+        try {
+          projectId = designFor(rc, { shareToken }, true).projectId;
+        } catch {
+          return { renders: [], more: false };
+        }
+      }
       const n = Math.max(1, Math.min(100, Number(limit) || 30));
       const where = ['tenant_id = ?', 'hidden_at IS NULL'];
       const args = [tenantId];

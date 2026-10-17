@@ -304,6 +304,10 @@ test('visitors: off by default, then on with a daily cap across the showroom; th
     assert.equal((await w.visitor.get(`/api/renders/${s.body.render.id}/image`)).status, 404);
     const all = await w.staff.get(`/api/renders?projectId=${w.visitorProject}`);
     assert.deepEqual(all.body.renders.map((x) => x.id).sort(), [ok.body.render.id, s.body.render.id].sort());
+    // The team's gallery for a lead's design opened from its share link; a visitor gets nothing that way.
+    const byShare = await w.staff.get(`/api/renders?shareToken=${vshare.body.share.token}`);
+    assert.deepEqual(byShare.body.renders.map((x) => x.id).sort(), [ok.body.render.id, s.body.render.id].sort());
+    assert.deepEqual((await w.visitor.get(`/api/renders?shareToken=${vshare.body.share.token}`)).body.renders, []);
     // Signed out: told to sign in; can't render.
     const anon = new Agent(t.url, { host: w.tn.host });
     assert.equal((await anon.get('/api/renders/status')).body.reason, 'sign_in');
