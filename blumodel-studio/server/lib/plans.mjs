@@ -4,8 +4,9 @@
 //
 // Since the showroom pivot (docs/SHOWROOM_PIVOT.md §2, 2026-10-17) two things are for sale, both to
 // kitchen and bath companies, in CAD:
-//   showroom_license   yearly, set per company when the deal is signed (list price $1,995 including
-//                      up to 50 products modelled), recorded by an admin, invoiced, not Stripe
+//   showroom_license   setup and a yearly license, QUOTED per company (there is no list price:
+//                      the sign-up fee differs company to company); an admin records the amount
+//                      agreed for each deal, invoiced, not Stripe
 //   showroom_monthly   $50/month through Stripe: $25 hosting (including the web address) and $25 of
 //                      AI render credits, which roll over for 3 months
 // Homeowners never pay. The four homeowner/contractor plans below are legacy: nothing new can be
@@ -17,13 +18,14 @@
 
 import data from '../../src/data/plans.json' with { type: 'json' };
 
-/** @typedef {{ id: string, name: string, priceCents: number, currency: 'cad', interval: null|'month'|'year', tagline: string, bullets: string[], forSale: boolean, legacy?: boolean, includedModels?: number, includedProducts?: number, breakdown?: { id: string, label: string, cents: number }[], creditRolloverMonths?: number, billing?: 'invoice'|'stripe' }} Plan */
+/** @typedef {{ id: string, name: string, priceCents: number|null, quoted?: boolean, currency: 'cad', interval: null|'month'|'year', tagline: string, bullets: string[], forSale: boolean, legacy?: boolean, includedModels?: number, includedProducts?: number, breakdown?: { id: string, label: string, cents: number }[], creditRolloverMonths?: number, billing?: 'invoice'|'stripe' }} Plan */
 
 /** The currency of every new checkout, subscription, receipt and order. */
 export const CURRENCY = 'cad';
 
-// A price change is a deliberate decision: change it here and in the JSON together.
-const EXPECTED = { showroom_license: 199500, showroom_monthly: 5000, free: 0, kitchen_unlock: 500, unlimited: 1500, contractor: 9900 };
+// A price change is a deliberate decision: change it here and in the JSON together. `null` marks a
+// quoted plan: it has no price at all (priceCents null, quoted true), and an amount is agreed per deal.
+const EXPECTED = { showroom_license: null, showroom_monthly: 5000, free: 0, kitchen_unlock: 500, unlimited: 1500, contractor: 9900 };
 
 /**
  * What the plans cost before 2026-10-15, in US dollars. Never charged again: only used to
@@ -36,8 +38,14 @@ export const PLANS = Object.freeze(data.map((p) => Object.freeze({ ...p, bullets
 
 for (const [id, cents] of Object.entries(EXPECTED)) {
   const p = PLANS.find((x) => x.id === id);
-  if (!p || !Number.isInteger(p.priceCents) || p.priceCents < 0) throw new Error(`src/data/plans.json: plan "${id}" is missing or has no price.`);
-  if (p.priceCents !== cents) throw new Error(`src/data/plans.json: plan "${id}" costs ${p.priceCents} cents, expected ${cents}.`);
+  if (!p) throw new Error(`src/data/plans.json: plan "${id}" is missing.`);
+  if (cents === null) {
+    if (p.priceCents !== null || p.quoted !== true) throw new Error(`src/data/plans.json: plan "${id}" is quoted per company: it must have "priceCents": null and "quoted": true.`);
+  } else {
+    if (p.quoted) throw new Error(`src/data/plans.json: plan "${id}" has a price, so it can't be quoted.`);
+    if (!Number.isInteger(p.priceCents) || p.priceCents < 0) throw new Error(`src/data/plans.json: plan "${id}" has no price.`);
+    if (p.priceCents !== cents) throw new Error(`src/data/plans.json: plan "${id}" costs ${p.priceCents} cents, expected ${cents}.`);
+  }
   if (p.currency !== CURRENCY) throw new Error(`src/data/plans.json: plan "${id}" is priced in "${p.currency}", expected "${CURRENCY}".`);
 }
 
@@ -45,10 +53,15 @@ for (const [id, cents] of Object.entries(EXPECTED)) {
 export const LEGACY_PLAN_IDS = Object.freeze(['free', 'kitchen_unlock', 'unlimited', 'contractor']);
 for (const id of LEGACY_PLAN_IDS) if (PLANS.find((p) => p.id === id)?.forSale !== false) throw new Error(`src/data/plans.json: legacy plan "${id}" must have forSale: false.`);
 
-/** The yearly license's list price and what it includes (an admin records the real amount per deal). */
+/**
+ * The setup and yearly license. It has no price: each company's is quoted, and an admin must record
+ * the amount agreed (POST /api/admin/tenants/:id/licenses requires amountCents). `includedProducts`
+ * is only the internal default for the products-modelled counter in the workspace and admin; it is
+ * never shown as a promise on the sales site or in the agreement.
+ */
 export const SHOWROOM_LICENSE = Object.freeze({
   id: 'showroom_license',
-  priceCents: EXPECTED.showroom_license,
+  quoted: true,
   includedProducts: PLANS.find((p) => p.id === 'showroom_license')?.includedProducts ?? 50,
 });
 

@@ -39,12 +39,12 @@ async function demoBuy(agent, body) {
   return c.body.ref;
 }
 
-test('every plan is priced in CAD: the showroom license and monthly plan; legacy $5 unlock, $15 Unlimited, $99 Contractor', async () => {
+test('every plan is priced in CAD: the $50 monthly plan; the setup and license is quoted per company (no price); legacy $5 unlock, $15 Unlimited, $99 Contractor', async () => {
   assert.equal(CURRENCY, 'cad');
   assert.deepEqual(
     PLANS.map((p) => [p.id, p.priceCents, p.currency]),
     [
-      ['showroom_license', 199500, 'cad'],
+      ['showroom_license', null, 'cad'],
       ['showroom_monthly', 5000, 'cad'],
       ['free', 0, 'cad'],
       ['kitchen_unlock', 500, 'cad'],
@@ -52,6 +52,13 @@ test('every plan is priced in CAD: the showroom license and monthly plan; legacy
       ['contractor', 9900, 'cad'],
     ],
   );
+  // The setup and yearly license has no list price (2026-10-17: the sign-up fee differs company to
+  // company): it is quoted, and its bullets promise no amount and no product count.
+  const lic = PLANS.find((p) => p.id === 'showroom_license');
+  assert.equal(lic.quoted, true);
+  assert.doesNotMatch(lic.bullets.join(' '), /\$|\d/);
+  assert.ok(lic.bullets.some((b) => /quoted/i.test(b)));
+  for (const p of PLANS.filter((x) => x.id !== 'showroom_license')) assert.ok(!p.quoted, `${p.id} has a price`);
   const s = await startTestServer({ env: { PAYMENTS: 'demo' } });
   try {
     const r = await s.agent().get('/api/billing/plans');

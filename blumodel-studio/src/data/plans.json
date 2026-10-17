@@ -2,7 +2,8 @@
   {
     "id": "showroom_license",
     "name": "Showroom license",
-    "priceCents": 199500,
+    "priceCents": null,
+    "quoted": true,
     "currency": "cad",
     "interval": "year",
     "forSale": true,
@@ -10,10 +11,10 @@
     "includedProducts": 50,
     "tagline": "Your own virtual showroom, set up and modelled for you",
     "bullets": [
-      "The showroom software and its setup",
-      "Modelling of your starting range: up to 50 of your products",
-      "More products are quoted separately",
-      "Set per company when the deal is signed; this is the list price"
+      "Setup and your yearly license, quoted for your company",
+      "Modelling of your starting product range",
+      "The showroom software for the year of your license",
+      "Book a call and we'll price it for your product range"
     ]
   },
   {
