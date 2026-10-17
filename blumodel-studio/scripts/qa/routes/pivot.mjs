@@ -6,6 +6,8 @@
 //     details, and sign-up refused (403 showroom_not_open).
 //   - the demo showroom's seeded designs pass every design check (nothing through a wall), and every
 //     demo lead has its design attached.
+//   - the showroom catalog leads with the company's products; BluModel Basics come last, under their
+//     own heading, and last in the line select.
 // Every screen route checks: no sideways scroll, and 44 px touch targets on phones.
 // Run: node scripts/qa.mjs --pkg pivot --port 8955
 
@@ -149,6 +151,35 @@ export default [
     waitFor: ['.plan-view canvas'],
     expectText: ['Layout passes every design check'],
     waitMs: 1500,
+  })),
+  ...[views[0], views[3]].map((v) => ({
+    name: `catalog-company-first${v.suffix}`,
+    host: 'demo',
+    as: 'showroom-visitor',
+    ...view(v),
+    setup: async ({ api }) => {
+      const row = api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = 'demo-visitor@blumodel.test' AND p.tenant_id = 't_demo' ORDER BY p.name LIMIT 1")[0];
+      return { path: `/k/${row.id}` };
+    },
+    waitFor: ['.plan-view canvas'],
+    check: async (h) => {
+      if (isPhone(h)) {
+        await h.evaluate(() => [...document.querySelectorAll('button')].find((b) => /^\s*Add\s*$/.test(b.textContent))?.click());
+      }
+      await h.waitFor('.catalog-group h4', 10_000);
+      const r = await h.evaluate(() => ({
+        groups: [...document.querySelectorAll('.catalog-group')].map((g) => ({ h: g.querySelector('h4')?.textContent ?? '', first: g.querySelector('.product-card')?.textContent ?? '' })),
+        options: [...document.querySelectorAll('#catalog-brand option, select[aria-label="Line"] option')].map((o) => o.textContent),
+      }));
+      const cab = r.groups[0];
+      if (!cab || cab.h !== 'Cabinets') throw new Error(`the first group is ${JSON.stringify(cab)}`);
+      if (/BluModel Basics/.test(cab.first)) throw new Error(`the first cabinet is a Basics one: ${cab.first.slice(0, 80)}`);
+      const basicsAt = r.groups.findIndex((g) => /basics/i.test(g.h));
+      if (basicsAt < 1) throw new Error(`no Basics heading after the company's cabinets: ${r.groups.map((g) => g.h).join(' | ')}`);
+      const opts = r.options.filter((o) => !/^All lines/.test(o));
+      if (opts.length && !/BluModel Basics/.test(opts[opts.length - 1])) throw new Error(`Basics isn't last in the line select: ${opts.join(', ')}`);
+      await h.shot('catalog');
+    },
   })),
   {
     name: 'demo-leads-have-designs',

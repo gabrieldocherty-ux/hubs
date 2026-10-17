@@ -30,12 +30,14 @@ interface Facet {
 /** Brand facets with product counts: BluModel Basics first, then every other brand A–Z. On a showroom, the company's lines. */
 const byBrand = (p: Product) => p.brand;
 
-function brandFacets(list: Product[], nameOf: (p: Product) => string = byBrand): Facet[] {
+function brandFacets(list: Product[], nameOf: (p: Product) => string = byBrand, basicsLast = false): Facet[] {
   const n = new Map<string, number>();
   for (const p of list) n.set(nameOf(p), (n.get(nameOf(p)) ?? 0) + 1);
+  // On a showroom the company's lines lead and BluModel Basics (only filling the gaps) comes last.
+  const first = basicsLast ? 1 : -1;
   return [...n]
     .map(([id, count]) => ({ id, label: id, n: count }))
-    .sort((a, b) => (a.id === BASICS_BRAND ? -1 : b.id === BASICS_BRAND ? 1 : a.label.localeCompare(b.label)));
+    .sort((a, b) => (a.id === BASICS_BRAND ? first : b.id === BASICS_BRAND ? -first : a.label.localeCompare(b.label)));
 }
 
 /** Store facets: the real-retailer stores the listed products are sold at, most products first. */
@@ -273,7 +275,11 @@ export function CatalogPanel() {
   // with them; never the retail catalog or any store (docs/SHOWROOM_PIVOT.md §3).
   const showroom = useShowroom();
   const fillGaps = !!showroom?.features.fillGaps;
-  const products = useMemo(() => (showroom ? all.filter((p) => p.source === 'tenant' || (fillGaps && isBuiltin(p.id))) : all), [all, showroom, fillGaps]);
+  // The company's own products first; Basics after them (SHOWROOM_PIVOT §5: they only fill gaps).
+  const products = useMemo(
+    () => (showroom ? [...all.filter((p) => p.source === 'tenant'), ...(fillGaps ? all.filter((p) => p.source !== 'tenant' && isBuiltin(p.id)) : [])] : all),
+    [all, showroom, fillGaps],
+  );
   const nameOf = showroom ? prefName : byBrand;
   const priceOf = useKitchenPriceOf();
   const surfaces = useDesignStore((s) => s.doc.surfaces);
@@ -304,7 +310,7 @@ export function CatalogPanel() {
   const [store, setStore] = useState<string>(ALL);
 
   const inCategory = useMemo(() => products.filter((p) => cat === ALL || p.category === cat), [products, cat]);
-  const brands = useMemo(() => brandFacets(inCategory, nameOf), [inCategory, nameOf]);
+  const brands = useMemo(() => brandFacets(inCategory, nameOf, !!showroom), [inCategory, nameOf, showroom]);
   const activeBrand = brand !== ALL && brands.some((b) => b.id === brand) ? brand : ALL;
   const prefsOn = hasBrandPrefs(brandPrefs) && mine && activeBrand === ALL;
   // No store on a showroom: the company sells its products itself.
@@ -332,10 +338,20 @@ export function CatalogPanel() {
     const mine = [...lines].map(([line, items]) => ({ id: `line:${line}`, label: `${line === 'My catalog' ? line : `My catalog · ${line}`}: ${items.length} piece${items.length === 1 ? '' : 's'}`, items }));
     const rest = results.filter((p) => p.source !== 'contractor');
     const known = new Set<string>(CATEGORIES.map((c) => c.id));
-    const groups = CATEGORIES.map((c) => ({ id: c.id as string, label: c.label, items: rest.filter((p) => p.category === c.id) }));
+    // On a showroom each category shows the company's products, then BluModel Basics under their own heading.
+    const groups = CATEGORIES.flatMap((c) => {
+      const items = rest.filter((p) => p.category === c.id);
+      if (!showroom) return [{ id: c.id as string, label: c.label, items }];
+      const own = items.filter((p) => p.source === 'tenant');
+      const basics = items.filter((p) => p.source !== 'tenant');
+      return [
+        { id: c.id as string, label: c.label, items: own },
+        { id: `${c.id}:basics`, label: own.length ? `More basics: ${c.label.toLowerCase()}` : `${c.label}: BluModel Basics`, items: basics },
+      ];
+    });
     const other = rest.filter((p) => !known.has(p.category));
     return [...mine, ...groups, ...(other.length ? [{ id: 'other', label: 'Other', items: other }] : [])];
-  }, [results, cat, query, activeBrand, activeStore]);
+  }, [results, cat, query, activeBrand, activeStore, showroom]);
 
   const pick = (p: Product) => {
     if (performance.now() < swallowClickUntil) return;
