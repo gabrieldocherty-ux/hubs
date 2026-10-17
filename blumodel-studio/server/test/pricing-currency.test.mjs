@@ -6,12 +6,15 @@
 //   - a Stripe customer that paid in USD is never reused for a CAD checkout (Stripe refuses mixed
 //     currencies): the checkout starts a fresh customer, which is then remembered for CAD;
 //   - a Stripe subscription billed in USD can't be switched in place (409 currency_change).
+// Since the showroom pivot (docs/SHOWROOM_PIVOT.md §3) those plans are legacy: no checkout or plan
+// change is sold (410 not_for_sale), so the purchases here are checkouts made before it
+// (legacyCheckout), and what this file pins is how existing rows keep their currency.
 // Stripe is only ever a mocked fetch, with obviously fake keys.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { legacyCheckout, startTestServer, sampleDoc } from './helpers.mjs';
 import { openDb } from '../db/index.mjs';
 import { migrate } from '../db/migrate.mjs';
 import { MIGRATION_MODULES, MIGRATION_KEYS } from '../db/migrations/index.mjs';
@@ -29,18 +32,20 @@ function signed(event) {
 const hook = (s, ev) => s.agent().request('POST', '/api/webhooks/stripe', { raw: ev.body, contentType: 'application/json', headers: { 'Stripe-Signature': ev.header }, csrf: false });
 
 async function demoBuy(agent, body) {
-  const c = await agent.post('/api/billing/checkout', body);
+  const c = await legacyCheckout(agent, body);
   assert.equal(c.status, 200, c.text);
   const done = await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' });
   assert.equal(done.status, 200, done.text);
   return c.body.ref;
 }
 
-test('every plan is priced in CAD: $5 unlock, $15 Unlimited, $99 Contractor', async () => {
+test('every plan is priced in CAD: the showroom license and monthly plan; legacy $5 unlock, $15 Unlimited, $99 Contractor', async () => {
   assert.equal(CURRENCY, 'cad');
   assert.deepEqual(
     PLANS.map((p) => [p.id, p.priceCents, p.currency]),
     [
+      ['showroom_license', 199500, 'cad'],
+      ['showroom_monthly', 5000, 'cad'],
       ['free', 0, 'cad'],
       ['kitchen_unlock', 500, 'cad'],
       ['unlimited', 1500, 'cad'],
@@ -124,11 +129,10 @@ test('demo: new unlocks, plans and receipts are CAD; an older USD plan renews at
     assert.equal(stats.mrrByCurrency.usd, 4000);
     assert.equal(stats.mrrByCurrency.cad, 9900);
     assert.equal(stats.mrrCents, 9900, 'the headline MRR is CAD only');
-    // …and a plan change is billed at today's CAD price.
+    // …and no plan change is sold any more, so it stays at its own price.
     const changed = await bob.post('/api/billing/change', { plan: 'unlimited' });
-    assert.equal(changed.status, 200, changed.text);
-    assert.equal(changed.body.subscription.amountCents, 1500);
-    assert.equal(changed.body.subscription.currency, 'cad');
+    assert.equal(changed.status, 410, changed.text);
+    assert.equal((await bob.get('/api/billing/me')).body.subscription.amountCents, 4000);
   } finally {
     await s.close();
   }
@@ -150,7 +154,7 @@ function stripeMock() {
   return { fetch, calls };
 }
 
-test('Stripe: a customer that paid in USD is never reused for a CAD checkout; the new CAD customer is remembered', async () => {
+test('Stripe: a legacy CAD checkout completed now records its CAD customer next to the USD one; no new checkout reaches Stripe', async () => {
   const mock = stripeMock();
   const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
   try {
@@ -165,13 +169,10 @@ test('Stripe: a customer that paid in USD is never reused for a CAD checkout; th
       .run(ann.id, t0 - 86_400_000, t0 - 86_400_000, t0 - 60 * 86_400_000, t0);
     s.db.prepare("INSERT INTO billing_customers (user_id, currency, customer_ref, created_at) VALUES (?, 'usd', 'cus_usd_ann', ?)").run(ann.id, t0);
 
-    const c = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
-    assert.equal(c.status, 200, c.text);
-    const first = mock.calls.find((x) => x.path === '/v1/checkout/sessions');
-    assert.equal(first.form.get('line_items[0][price_data][currency]'), 'cad');
-    assert.equal(first.form.get('line_items[0][price_data][unit_amount]'), '9900');
-    assert.equal(first.form.get('customer'), null, 'the USD customer is not passed to a CAD checkout');
-    assert.equal(first.form.get('customer_email'), ann.user.email);
+    // A new checkout is refused before Stripe is called; one made before the pivot can still complete.
+    assert.equal((await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' })).status, 410);
+    assert.equal(mock.calls.length, 0);
+    const c = await legacyCheckout(ann, { kind: 'subscription', plan: 'contractor' });
 
     // Paid: Stripe made a new customer; it is recorded for CAD, and the USD one stays as it was.
     const done = await hook(s, signed({ id: 'evt_cad_1', type: 'checkout.session.completed', data: { object: { id: 'cs_test_1', payment_status: 'paid', amount_total: 9900, currency: 'cad', client_reference_id: c.body.ref, customer: 'cus_cad_ann', subscription: 'sub_cad_ann', metadata: { kind: 'subscription', checkout_ref: c.body.ref } } } }));
@@ -186,20 +187,10 @@ test('Stripe: a customer that paid in USD is never reused for a CAD checkout; th
     assert.equal(me.subscription.currency, 'cad');
     assert.equal(me.subscription.amountCents, 9900);
 
-    // The next CAD checkout reuses the CAD customer.
-    const k = await kitchen(ann);
-    s.db.prepare("UPDATE subscriptions SET status = 'canceled' WHERE user_id = ?").run(ann.id); // free again, so the unlock is offered
-    const u = await ann.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k.id });
-    assert.equal(u.status, 200, u.text);
-    const second = mock.calls.filter((x) => x.path === '/v1/checkout/sessions')[1];
-    assert.equal(second.form.get('customer'), 'cus_cad_ann');
-    assert.equal(second.form.get('line_items[0][price_data][currency]'), 'cad');
-    assert.equal(second.form.get('line_items[0][price_data][unit_amount]'), '500');
-
-    // A webhook paying the CAD checkout in USD (or another amount) is not fulfilled.
+    // A webhook paying a CAD checkout in USD (or another amount) is not fulfilled.
     const bob = await s.user();
     const k2 = await kitchen(bob);
-    const c2 = await bob.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k2.id });
+    const c2 = await legacyCheckout(bob, { kind: 'kitchen_unlock', projectId: k2.id });
     await hook(s, signed({ id: 'evt_usd_wrong', type: 'checkout.session.completed', data: { object: { id: 'cs_test_x', payment_status: 'paid', amount_total: 500, currency: 'usd', client_reference_id: c2.body.ref, metadata: { kind: 'kitchen_unlock', checkout_ref: c2.body.ref } } } }));
     assert.equal(s.db.prepare('SELECT COUNT(*) AS n FROM kitchen_unlocks WHERE project_id = ?').get(k2.id).n, 0);
   } finally {
@@ -222,13 +213,13 @@ test('Stripe: a subscription still billed in USD keeps its price on updates and 
     assert.equal(me.subscription.currency, 'usd');
     assert.equal(s.db.prepare("SELECT customer_ref FROM billing_customers WHERE user_id = ? AND currency = 'usd'").get(ann.id).customer_ref, 'cus_usd_1');
 
+    // No plan change is sold since the showroom pivot (before it, this was 409 currency_change).
     const before = mock.calls.length;
     const change = await ann.post('/api/billing/change', { plan: 'unlimited' });
-    assert.equal(change.status, 409, change.text);
-    assert.equal(change.body.code, 'currency_change');
-    assert.equal(change.body.currency, 'usd');
-    assert.equal(change.body.periodEnd, end * 1000);
+    assert.equal(change.status, 410, change.text);
+    assert.equal(change.body.code, 'not_for_sale');
     assert.equal(mock.calls.length, before, 'nothing was sent to Stripe');
+    assert.equal((await ann.get('/api/billing/me')).body.subscription.currentPeriodEnd, end * 1000);
   } finally {
     await s.close();
   }

@@ -4,7 +4,7 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer } from './helpers.mjs';
+import { startTestServer, legacyCheckout } from './helpers.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { makeGlb } from './fixtures/glb.mjs';
 import { seed as seedBrands } from '../seed/brands.mjs';
@@ -23,7 +23,7 @@ const DAY = 86_400_000;
 let shade = 10;
 
 async function buy(agent, body) {
-  const c = await agent.post('/api/billing/checkout', body);
+  const c = await legacyCheckout(agent, body);
   assert.equal(c.status, 200, c.text);
   assert.equal((await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
 }

@@ -14,7 +14,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { legacyCheckout, startTestServer, sampleDoc } from './helpers.mjs';
 import { STRIPE_WEBHOOK_EVENTS } from '../payments/webhookEvents.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -34,7 +34,7 @@ const hook = (s, ev) => s.agent().request('POST', '/api/webhooks/stripe', { raw:
 
 // ── admin export without paying ──────────────────────────────────────────
 
-test('an admin exports their own kitchens without paying; each such export is audit-logged; nobody else gets it', async () => {
+test('exports are free for everyone since the showroom pivot: nothing to bypass, nothing audited; nobody exports another’s kitchen', async () => {
   const s = await startTestServer({ env: { PAYMENTS: 'demo' } });
   try {
     const admin = await s.user({ role: 'admin' });
@@ -44,30 +44,21 @@ test('an admin exports their own kitchens without paying; each such export is au
 
     const ent = (await admin.get('/api/billing/entitlements')).body;
     assert.equal(ent.plan, 'free', 'the plan is what they pay for: nothing');
-    assert.equal(ent.adminBypass, true);
+    assert.equal(ent.adminBypass, undefined);
     assert.deepEqual(ent.unlockedProjectIds, [k.id]);
+    assert.equal(ent.exportsFree, true);
 
     for (const kind of ['csv', 'json', 'plan_png']) {
       const r = await admin.post(`/api/projects/${k.id}/exports`, { kind });
       assert.equal(r.status, 200, `${kind}: ${r.text}`);
     }
-    const rows = auditRows(s, 'export_without_payment');
-    assert.equal(rows.length, 3);
-    assert.equal(rows[0].admin_user_id, admin.id);
-    assert.equal(rows[0].admin_email, admin.user.email);
-    assert.deepEqual(JSON.parse(rows[0].detail), { projectId: k.id, kind: 'csv' });
+    assert.equal(auditRows(s, 'export_without_payment').length, 0);
 
     // Not someone else's kitchen, admin or not.
     assert.equal((await admin.post(`/api/projects/${theirs.id}/exports`, { kind: 'csv' })).status, 404);
-    // A customer gets the paywall, and their entitlements carry no bypass flag.
-    assert.equal((await ann.post(`/api/projects/${theirs.id}/exports`, { kind: 'csv' })).status, 403);
-    assert.deepEqual((await ann.get('/api/billing/entitlements')).body, { plan: 'free', unlockedProjectIds: [] });
-
-    // An admin who did pay (an unlock) exports as a payer: nothing to audit.
-    const paid = await kitchen(admin, 'Paid');
-    s.db.prepare("INSERT INTO kitchen_unlocks (project_id, user_id, provider, payment_ref, amount_cents, created_at) VALUES (?, ?, 'demo', 'demo_x', 500, ?)").run(paid.id, admin.id, Date.now());
-    assert.equal((await admin.post(`/api/projects/${paid.id}/exports`, { kind: 'csv' })).status, 200);
-    assert.equal(auditRows(s, 'export_without_payment').length, 3);
+    // A customer exports their own, free.
+    assert.equal((await ann.post(`/api/projects/${theirs.id}/exports`, { kind: 'csv' })).status, 200);
+    assert.deepEqual((await ann.get('/api/billing/entitlements')).body, { plan: 'free', unlockedProjectIds: [theirs.id], exportsFree: true });
   } finally {
     await s.close();
   }
@@ -116,7 +107,8 @@ test('complimentary plans: admin-only and CSRF-gated; grant, use, list, revoke; 
     assert.equal(me.subscription.provider, 'comp');
     assert.equal(me.receipts.length, 0, 'no charge, no receipt');
     for (const p of ['/api/billing/cancel', '/api/billing/resume']) assert.equal((await bob.post(p)).body.code, 'complimentary_plan', p);
-    assert.equal((await bob.post('/api/billing/change', { plan: 'contractor' })).body.code, 'complimentary_plan');
+    // A plan change isn't sold at all since the showroom pivot.
+    assert.equal((await bob.post('/api/billing/change', { plan: 'contractor' })).body.code, 'not_for_sale');
 
     // Re-granting (another plan) replaces it, and the audit says what it replaced.
     const g2 = await admin.post('/api/admin/billing/grant', { ...body, plan: 'contractor', note: '' });
@@ -145,7 +137,7 @@ test('complimentary plans: admin-only and CSRF-gated; grant, use, list, revoke; 
     assert.equal(rv.body.grant.active, false);
     assert.ok(rv.body.grant.revokedAt);
     assert.equal((await bob.get('/api/billing/me')).body.plan.id, 'free');
-    assert.equal((await bob.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 403);
+    assert.equal((await bob.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 200, 'exports are free whatever the plan');
     assert.equal((await admin.delete(`/api/admin/billing/grant/${g.body.grant.id}`)).status, 404);
     assert.equal((await admin.delete('/api/admin/billing/grant/sub_nothing')).status, 404);
     const revokes = auditRows(s, 'comp_revoke');
@@ -179,7 +171,7 @@ test('the webhook event list is exactly the events the server handles (from the 
     const registered = s.services.webhooks.registered();
     const byType = registered.filter((k) => k.includes('.'));
     for (const type of byType) assert.ok(STRIPE_WEBHOOK_EVENTS.includes(type), `a handler listens for ${type}, but the event list doesn't name it`);
-    assert.deepEqual(registered.filter((k) => !k.includes('.')).sort(), ['kitchen_unlock', 'order', 'subscription']);
+    assert.deepEqual(registered.filter((k) => !k.includes('.')).sort(), ['kitchen_unlock', 'order', 'showroom_monthly', 'subscription']);
 
     // The checkout events the kind handlers switch on, straight from the route source.
     const src = ['billing.mjs', 'orders.mjs'].map((f) => fs.readFileSync(path.join(HERE, '..', 'routes', f), 'utf8')).join('\n');
@@ -228,15 +220,15 @@ function stripeMock(userIdRef) {
   return { fetch, calls, subscription, end };
 }
 
-test('Stripe chain: subscription checkout → signed webhook (300 s tolerance) → plan change → cancel → failed renewal grace → portal', async () => {
+test('Stripe chain for a legacy subscription: checkout → signed webhook (300 s tolerance) → no plan change → cancel → failed renewal grace → portal', async () => {
   const who = { id: null };
   const mock = stripeMock(who);
   const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
   try {
     const ann = await s.user();
     who.id = ann.id;
-    const c = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
-    assert.equal(c.status, 200, c.text);
+    // A checkout made before the showroom pivot; Stripe completes it now.
+    const c = await legacyCheckout(ann, { kind: 'subscription', plan: 'unlimited', provider: 'stripe' });
     const completed = (id) => ({
       id,
       type: 'checkout.session.completed',
@@ -263,47 +255,34 @@ test('Stripe chain: subscription checkout → signed webhook (300 s tolerance) �
     assert.equal(me.subscription.currentPeriodEnd, mock.end * 1000);
     assert.equal(me.receipts.filter((r) => r.kind === 'subscription').length, 1);
 
-    // Plan change goes through Stripe: the item gets the Contractor price on a product made once.
+    // A plan change isn't sold since the showroom pivot: refused before Stripe is called.
+    const before = mock.calls.length;
     const up = await ann.post('/api/billing/change', { plan: 'contractor' });
-    assert.equal(up.status, 200, up.text);
-    assert.equal(up.body.plan.id, 'contractor');
-    const upd = mock.calls.find((x) => x.method === 'POST' && x.path === '/v1/subscriptions/sub_live_1');
-    assert.equal(upd.form.get('items[0][id]'), 'si_1');
-    assert.equal(upd.form.get('items[0][price_data][unit_amount]'), '9900');
-    assert.equal(upd.form.get('items[0][price_data][currency]'), 'cad');
-    assert.equal(upd.form.get('items[0][price_data][product]'), 'prod_1');
-    assert.equal(upd.form.get('items[0][price_data][recurring][interval]'), 'month');
-    // An upgrade to Contractor is charged now, and only applies once paid (server/test/fix-billing-change.test.mjs).
-    assert.equal(upd.form.get('proration_behavior'), 'always_invoice');
-    assert.equal(upd.form.get('payment_behavior'), 'error_if_incomplete');
-    assert.ok(upd.headers['Idempotency-Key']);
-    const down = await ann.post('/api/billing/change', { plan: 'unlimited' });
-    assert.equal(down.body.plan.id, 'unlimited');
-    assert.equal(mock.calls.filter((x) => x.path === '/v1/products').length, 2, 'one product per plan, made on first use');
-    await ann.post('/api/billing/change', { plan: 'contractor' });
-    assert.equal(mock.calls.filter((x) => x.path === '/v1/products').length, 2, 'reused after that');
+    assert.equal(up.status, 410, up.text);
+    assert.equal(up.body.code, 'not_for_sale');
+    assert.equal(mock.calls.length, before);
 
     // Cancel at period end, then resume.
     const cancel = await ann.post('/api/billing/cancel');
     assert.equal(cancel.body.subscription.cancelAtPeriodEnd, true);
-    assert.equal(cancel.body.plan.id, 'contractor', 'kept to the end of the paid month');
+    assert.equal(cancel.body.plan.id, 'unlimited', 'kept to the end of the paid month');
     assert.equal((await ann.post('/api/billing/resume')).body.subscription.cancelAtPeriodEnd, false);
 
     // A failed renewal: past due with 7 days of grace, still on the plan; paid → active again.
     await hook(s, signed({ id: 'evt_fail', type: 'invoice.payment_failed', data: { object: { id: 'in_1', parent: { subscription_details: { subscription: 'sub_live_1' } } } } }));
     me = (await ann.get('/api/billing/me')).body;
     assert.equal(me.subscription.status, 'past_due');
-    assert.equal(me.plan.id, 'contractor');
+    assert.equal(me.plan.id, 'unlimited');
     const grace = me.subscription.graceUntil;
     assert.ok(Math.abs(grace - (Date.now() + 7 * 86_400_000)) < 60_000);
     s.setNow(grace + 1);
     assert.equal((await ann.get('/api/billing/me')).body.plan.id, 'free', 'after the grace, Free until it pays');
     s.setNow(null);
-    await hook(s, signed({ id: 'evt_paid', type: 'invoice.paid', data: { object: { id: 'in_2', billing_reason: 'subscription_cycle', amount_paid: 9900, currency: 'cad', subscription: 'sub_live_1', lines: { data: [{ period: { end: mock.end + 30 * 86400 } }] } } } }));
+    await hook(s, signed({ id: 'evt_paid', type: 'invoice.paid', data: { object: { id: 'in_2', billing_reason: 'subscription_cycle', amount_paid: 1500, currency: 'cad', subscription: 'sub_live_1', lines: { data: [{ period: { end: mock.end + 30 * 86400 } }] } } } }));
     me = (await ann.get('/api/billing/me')).body;
     assert.equal(me.subscription.status, 'active');
-    assert.equal(me.plan.id, 'contractor');
-    assert.ok(me.receipts.some((r) => r.kind === 'renewal' && r.amountCents === 9900 && r.currency === 'cad'));
+    assert.equal(me.plan.id, 'unlimited');
+    assert.ok(me.receipts.some((r) => r.kind === 'renewal' && r.amountCents === 1500 && r.currency === 'cad'));
 
     // The customer portal comes back to PUBLIC_URL.
     const portal = await ann.post('/api/billing/portal');

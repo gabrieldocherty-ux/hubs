@@ -140,26 +140,22 @@ export function createBillingService({ db, now, log = console }) {
       return !!db.prepare('SELECT 1 FROM kitchen_unlocks WHERE project_id = ? AND user_id = ?').get(projectId, userId);
     },
 
-    /** True when `userId` owns `projectId` and may export it: paid for, or the owner is an admin. */
+    /**
+     * True when `userId` owns `projectId`. Since the showroom pivot (docs/SHOWROOM_PIVOT.md §2-3)
+     * downloading a design is free for everyone: owning the kitchen is the only condition.
+     */
     canExport(userId, projectId) {
-      if (!db.prepare('SELECT 1 FROM projects WHERE id = ? AND user_id = ?').get(projectId, userId)) return false;
-      return isAdmin(userId) || svc.paidExport(userId, projectId);
+      return !!db.prepare('SELECT 1 FROM projects WHERE id = ? AND user_id = ?').get(projectId, userId);
     },
 
     /**
-     * `{ plan, unlockedProjectIds, adminBypass? }` for the editor. An admin's own kitchens are all
-     * listed as unlocked (they export without paying) and `adminBypass: true` says why; `plan`
-     * stays what they actually pay for.
+     * `{ plan, unlockedProjectIds, exportsFree: true }` for the editor. Exports are free since the
+     * showroom pivot, so every kitchen the user owns is listed as unlocked (older clients read
+     * this list); `plan` stays what a legacy subscriber actually pays for.
      */
     entitlements(userId) {
-      const admin = isAdmin(userId);
-      const ids = admin
-        ? db.prepare('SELECT id FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(userId).map((r) => r.id)
-        : db
-            .prepare('SELECT u.project_id FROM kitchen_unlocks u JOIN projects p ON p.id = u.project_id WHERE u.user_id = ? AND p.user_id = ? ORDER BY u.created_at DESC')
-            .all(userId, userId)
-            .map((r) => r.project_id);
-      return { plan: svc.planOf(userId).id, unlockedProjectIds: ids, ...(admin ? { adminBypass: true } : {}) };
+      const ids = db.prepare('SELECT id FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(userId).map((r) => r.id);
+      return { plan: svc.planOf(userId).id, unlockedProjectIds: ids, exportsFree: true };
     },
 
     /** Sets (or creates) the user's one subscription row. */

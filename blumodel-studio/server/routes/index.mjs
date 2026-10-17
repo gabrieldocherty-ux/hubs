@@ -22,8 +22,9 @@ import ops from './ops.mjs';
 import adminPanel from './adminPanel.mjs';
 import tenants from './tenants.mjs';
 import tenantsAdmin from './tenantsAdmin.mjs';
+import tenantsBilling from './tenantsBilling.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, finder, orders, generate, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -46,6 +47,7 @@ export const ROUTE_MODULE_NAMES = [
   'admin-panel',
   'tenants',
   'tenants-admin',
+  'tenants-billing',
 ];
 
 /**
@@ -53,7 +55,7 @@ export const ROUTE_MODULE_NAMES = [
  * Every other module answers only on the sales site, so a module is safe until someone has scoped
  * its queries to rc.site.tenantId and added it here. A route can still say `hosts` itself.
  */
-export const SHOWROOM_MODULES = new Set(['auth', 'projects', 'config', 'catalog', 'files', 'events', 'share', 'account', 'ops', 'tenants', 'tenants-admin']);
+export const SHOWROOM_MODULES = new Set(['auth', 'projects', 'config', 'catalog', 'files', 'events', 'share', 'account', 'ops', 'tenants', 'tenants-admin', 'tenants-billing']);
 
 /** The default `hosts` for a module's routes: 'any' for SHOWROOM_MODULES, else 'sales'. */
 export const moduleHosts = (name) => (SHOWROOM_MODULES.has(name) ? 'any' : 'sales');

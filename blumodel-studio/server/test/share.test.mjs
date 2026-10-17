@@ -4,7 +4,7 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { startTestServer, sampleDoc, legacyCheckout } from './helpers.mjs';
 import { makeGlb } from './fixtures/glb.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { seed as seedShare, SHARE_DEMO_LINKS, SHARE_DEMO_PROJECT_ID } from '../seed/share.mjs';
@@ -339,7 +339,7 @@ test('a private custom model is readable through a live share of a kitchen that 
 
 test('a contractor’s share: sell prices, “Prepared by”, no duplicate, and no cost anywhere (real pricing)', async () => {
   const c = await t.user();
-  const ck = await c.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
+  const ck = await legacyCheckout(c, { kind: 'subscription', plan: 'contractor' });
   assert.equal(ck.status, 200, ck.text);
   assert.equal((await c.post(`/api/billing/demo/${ck.body.ref}/complete`, { outcome: 'success' })).status, 200);
   const prof = await c.put('/api/pro/profile', { company: 'Birch & Bevel', phone: '905-555-0199', email: 'studio@birch.test', website: 'birch.test', defaultMarkupPct: 25 });

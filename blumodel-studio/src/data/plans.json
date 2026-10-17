@@ -1,5 +1,51 @@
 [
   {
+    "id": "showroom_license",
+    "name": "Showroom license",
+    "priceCents": 199500,
+    "currency": "cad",
+    "interval": "year",
+    "forSale": true,
+    "billing": "invoice",
+    "includedProducts": 50,
+    "tagline": "Your own virtual showroom, set up and modelled for you",
+    "bullets": [
+      "The showroom software and its setup",
+      "Modelling of your starting range: up to 50 of your products",
+      "More products are quoted separately",
+      "Set per company when the deal is signed; this is the list price"
+    ]
+  },
+  {
+    "id": "showroom_monthly",
+    "name": "Monthly plan",
+    "priceCents": 5000,
+    "currency": "cad",
+    "interval": "month",
+    "forSale": true,
+    "billing": "stripe",
+    "breakdown": [
+      {
+        "id": "hosting",
+        "label": "Hosting and running your showroom, including its own web address",
+        "cents": 2500
+      },
+      {
+        "id": "render_credits",
+        "label": "AI rendering credits",
+        "cents": 2500
+      }
+    ],
+    "creditRolloverMonths": 3,
+    "tagline": "Hosting, your web address and AI render credits",
+    "bullets": [
+      "$25 for hosting and running your showroom, including its own web address",
+      "$25 of AI rendering credits every paid month",
+      "Unused credits roll over for 3 months",
+      "Cancel anytime"
+    ]
+  },
+  {
     "id": "free",
     "name": "Free",
     "priceCents": 0,
@@ -11,7 +57,9 @@
       "Every view: plan, 3D, side by side and wall elevations",
       "Studio renders preview with a watermark",
       "Exports are locked"
-    ]
+    ],
+    "forSale": false,
+    "legacy": true
   },
   {
     "id": "kitchen_unlock",
@@ -25,7 +73,9 @@
       "Including re-exports after you change it",
       "Floor plan, 3D image, shopping list and project file",
       "Studio renders of this kitchen without a watermark"
-    ]
+    ],
+    "forSale": false,
+    "legacy": true
   },
   {
     "id": "unlimited",
@@ -38,7 +88,9 @@
       "Every export of every kitchen you own",
       "No watermarks",
       "Cancel anytime; you keep access to the end of the month you paid for"
-    ]
+    ],
+    "forSale": false,
+    "legacy": true
   },
   {
     "id": "contractor",
@@ -55,6 +107,8 @@
       "A price book with your cost and markup; clients only ever see your sell price",
       "Branded quotes, client and contractor estimate views, and presentation mode",
       "Get found: a brand page with your products in 3D, and a leads inbox"
-    ]
+    ],
+    "forSale": false,
+    "legacy": true
   }
 ]

@@ -4,7 +4,7 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer } from './helpers.mjs';
+import { startTestServer, legacyCheckout } from './helpers.mjs';
 import { matchScore, normaliseNear, FINDER_RATE } from '../routes/finder.mjs';
 
 let t;
@@ -21,7 +21,7 @@ const DAY = 86_400_000;
 let n = 0;
 
 async function buy(server, agent, body) {
-  const c = await agent.post('/api/billing/checkout', body);
+  const c = await legacyCheckout(agent, body);
   assert.equal(c.status, 200, c.text);
   assert.equal((await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
 }

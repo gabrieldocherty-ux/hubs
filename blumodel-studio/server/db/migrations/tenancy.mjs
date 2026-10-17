@@ -11,6 +11,9 @@
 //                becomes a tenant in 'setup' (its owner on the team, its private catalog and those
 //                products' files moved into the showroom; nothing is deleted or changed for the
 //                contractor on the sales site)
+//   tenancy-004  the showroom's money: tenant_licenses (yearly, recorded by an admin),
+//                tenant_subscriptions (the $50 monthly plan: stripe | demo | comp), tenant_checkouts
+//                (the Checkout links an admin sends) and tenant_payments (receipts)
 
 /**
  * Rebuilds `table` with SQLite's procedure (create new, copy, drop old, rename), for the changes
@@ -178,6 +181,72 @@ export const steps = [
         }
         for (const f of ids) db.prepare('UPDATE files SET tenant_id = ? WHERE id = ? AND owner_user_id = ? AND tenant_id IS NULL').run(id, f, p.user_id);
       }
+    },
+  },
+  {
+    id: 'tenancy-004-licenses-monthly',
+    up(db) {
+      db.exec(`
+        CREATE TABLE tenant_licenses (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          amount_cents INTEGER NOT NULL CHECK (amount_cents >= 0),
+          currency TEXT NOT NULL DEFAULT 'cad',
+          -- calendar days (UTC), both included: current while starts_on <= today <= ends_on
+          starts_on TEXT NOT NULL,
+          ends_on TEXT NOT NULL,
+          paid_how TEXT NOT NULL CHECK (paid_how IN ('invoice','etransfer','cheque','card','cash','comp','other')),
+          note TEXT NOT NULL DEFAULT '',
+          created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+          created_by_email TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          voided_at INTEGER,
+          voided_by TEXT REFERENCES users(id) ON DELETE SET NULL);
+        CREATE INDEX tenant_licenses_tenant ON tenant_licenses(tenant_id, ends_on);
+
+        CREATE TABLE tenant_subscriptions (
+          tenant_id TEXT PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+          provider TEXT NOT NULL CHECK (provider IN ('stripe','demo','comp')),
+          status TEXT NOT NULL CHECK (status IN ('active','past_due','canceled','incomplete')),
+          customer_ref TEXT,
+          subscription_ref TEXT UNIQUE,
+          current_period_end INTEGER,
+          grace_until INTEGER,
+          cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+          amount_cents INTEGER NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'cad',
+          note TEXT NOT NULL DEFAULT '',
+          canceled_at INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL);
+
+        CREATE TABLE tenant_checkouts (
+          ref TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          provider TEXT NOT NULL CHECK (provider IN ('stripe','demo')),
+          provider_ref TEXT,
+          url TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','completed','expired','canceled')),
+          amount_cents INTEGER NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'cad',
+          created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+          created_at INTEGER NOT NULL,
+          completed_at INTEGER);
+        CREATE INDEX tenant_checkouts_tenant ON tenant_checkouts(tenant_id, created_at DESC);
+
+        CREATE TABLE tenant_payments (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL CHECK (kind IN ('monthly','license')),
+          amount_cents INTEGER NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'cad',
+          provider TEXT NOT NULL,
+          -- the Stripe invoice (or demo / license) reference: one receipt per payment
+          ref TEXT NOT NULL UNIQUE,
+          period_end INTEGER,
+          created_at INTEGER NOT NULL);
+        CREATE INDEX tenant_payments_tenant ON tenant_payments(tenant_id, created_at DESC);
+      `);
     },
   },
 ];

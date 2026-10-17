@@ -19,6 +19,7 @@ import { createEventService } from './catalog/events.mjs';
 import { createBillingHooks, createContractorHooks, createPricingHooks, createWebhookService } from './lib/hooks.mjs';
 import { ROUTE_MODULES, ROUTE_MODULE_NAMES, moduleHosts } from './routes/index.mjs';
 import { createTenantService } from './tenancy/service.mjs';
+import { createShowroomBilling } from './billing/showroom.mjs';
 import { createSiteResolver } from './tenancy/hosts.mjs';
 import { unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
 
@@ -67,6 +68,10 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   // Tenants and which site a request is for (docs/SHOWROOM_PIVOT.md §4, docs/handoff/tenancy.md).
   const tenants = createTenantService({ db, config, now, files, log });
   const sites = createSiteResolver({ tenants, config });
+  // A showroom is live while its license is current and its monthly plan is paid.
+  const showroomBilling = createShowroomBilling({ db, now, log });
+  tenants.registerStanding((tenantId) => showroomBilling.standing(tenantId));
+  showroomBilling.onChange((tenantId) => tenants.refresh(tenantId));
 
   /**
    * The client's real address. With TRUST_PROXY=1 AND a loopback peer (cloudflared on this
@@ -92,7 +97,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants },
+    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling },
     /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp, sites },
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */

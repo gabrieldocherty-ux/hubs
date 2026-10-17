@@ -1,5 +1,11 @@
-// Package G (billing): the export paywall, the kitchen unlock, the Unlimited and Contractor
-// monthly plans, Account → Billing and Admin → Billing (PLANS_AND_CONTRACTORS §1–§3, §5).
+// Package G (billing): the kitchen unlock, the Unlimited and Contractor monthly plans, Account →
+// Billing and Admin → Billing (PLANS_AND_CONTRACTORS §1–§3, §5).
+//
+// Since the showroom pivot (docs/SHOWROOM_PIVOT.md §2-3) all of that is LEGACY: no new checkout,
+// unlock or plan change is sold (410 not_for_sale), and exports are free for everyone. What was
+// paid keeps working until it ends: receipts, the Stripe portal, cancel/resume, renewals and the
+// webhooks. The showroom's own money (license, monthly plan, credits) is server/billing/showroom.mjs
+// and server/billing/credits.mjs.
 //
 // Payments go through Stripe Checkout when the server has both Stripe keys, otherwise
 // through the clearly labelled DEMO provider, which moves no money and collects no card
@@ -18,6 +24,13 @@ import { createAllowance } from '../payments/allowance.mjs';
 import { audit, auditLog } from '../lib/audit.mjs';
 
 export const EXPORT_KINDS = ['plan_png', 'scene_png', 'csv', 'json', 'render', 'quote'];
+
+/** True: the legacy checkout and plan change are refused (docs/SHOWROOM_PIVOT.md §3). */
+const LEGACY_CHECKOUT = true;
+const notForSale = () =>
+  new HttpError(410, 'BluModel Studio no longer sells plans or kitchen unlocks: designing, saving and downloading are free. Anything you already paid for keeps working until it ends.', {
+    code: 'not_for_sale',
+  });
 const RETURN_RE = /^#\/[A-Za-z0-9/_\-?=&.%]{0,200}$/;
 const slug = (name) =>
   String(name ?? '')
@@ -64,8 +77,8 @@ export default function routes(ctx) {
   services.webhooks.on('invoice.payment_failed', (e) => billing.invoiceFailed(e.data?.object ?? {}));
 
   // ── helpers ─────────────────────────────────────────────────────────────
-  const ownedProject = (userId, id) => {
-    const p = db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ?').get(id, userId);
+  const ownedProject = (userId, id, tenantId = null) => {
+    const p = db.prepare('SELECT * FROM projects WHERE id = ? AND user_id = ? AND tenant_id IS ?').get(id, userId, tenantId);
     if (!p) throw new HttpError(404, 'That kitchen does not exist.');
     return p;
   };
@@ -112,12 +125,12 @@ export default function routes(ctx) {
    * The live wire product (at list price) for each server product a doc uses; its snapshots
    * cover the rest. The export kit applies the owner's price book itself, once.
    */
-  const liveProducts = (doc, user) => {
+  const liveProducts = (doc, user, site) => {
     const out = [];
     for (const id of new Set((doc.items ?? []).map((i) => i.productId))) {
       if (!PRODUCT_ID_RE.test(id)) continue;
       const row = services.products.get(id);
-      if (row && services.products.inCatalog(row, user)) {
+      if (row && services.products.inCatalog(row, user, site)) {
         const w = services.products.toWire(row, { which: 'live', viewer: user });
         if (w) out.push(w);
       }
@@ -200,6 +213,8 @@ export default function routes(ctx) {
       path: '/api/billing/checkout',
       rateLimit: { name: 'billing-checkout', max: 30, windowMs: 3_600_000, by: 'user' },
       handler: async (rc) => {
+        // Nothing new is sold to homeowners or contractors (docs/SHOWROOM_PIVOT.md §3).
+        if (LEGACY_CHECKOUT) throw notForSale();
         requirePayments();
         const { kind } = rc.body;
         const user = rc.user;
@@ -339,6 +354,9 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/billing/change',
       handler: async (rc) => {
+        // A plan change buys a different plan, so it is refused like a new checkout; cancel and
+        // resume still work for a plan that is running.
+        if (LEGACY_CHECKOUT) throw notForSale();
         requirePayments();
         const plan = rc.body.plan;
         if (!SUBSCRIPTION_PLANS.includes(plan)) throw new HttpError(400, 'Choose Unlimited or Contractor.');
@@ -429,28 +447,24 @@ export default function routes(ctx) {
       // yes; the CSV and the project file are made here, only for an entitled owner.
       method: 'POST',
       path: '/api/projects/:id/exports',
+      // Free for everyone, on every site; a showroom visitor exports their own kitchen there.
+      hosts: 'any',
       rateLimit: { name: 'exports', max: 300, windowMs: 3_600_000, by: 'user' },
       handler: async (rc) => {
         const kind = rc.body.kind;
         if (!EXPORT_KINDS.includes(kind)) throw new HttpError(400, 'Choose what to export.');
-        const project = ownedProject(rc.user.id, rc.params.id);
-        if (!billing.canExport(rc.user.id, project.id)) throw new HttpError(403, 'Exports are a paid feature.', { needs: 'unlock' });
-        // An admin exporting without paying is allowed (launch contract) and goes on the record.
-        const bypass = !billing.paidExport(rc.user.id, project.id);
+        const project = ownedProject(rc.user.id, rc.params.id, rc.site.tenantId);
         const doc = { ...JSON.parse(project.doc), name: project.name };
         let file = null;
         if (kind === 'csv') {
           const kit = await loadKit();
-          const out = kit.csvFor(doc, { products: liveProducts(doc, rc.user), priceBook: services.pricing.priceBookFor(rc.user.id) });
+          const out = kit.csvFor(doc, { products: liveProducts(doc, rc.user, rc.site), priceBook: services.pricing.priceBookFor(rc.user.id) });
           file = { filename: out.filename, contentType: 'text/csv', content: out.content };
         } else if (kind === 'json') {
           const clean = services.pricing.stripDoc(doc, { viewer: null, ownerUserId: rc.user.id });
           file = { filename: `${slug(project.name)}.kitchen.json`, contentType: 'application/json', content: JSON.stringify({ app: 'blumodel-studio', version: 2, doc: clean }, null, 2) };
         }
-        ctx.tx(() => {
-          db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, rc.user.id, kind, ctx.now());
-          if (bypass) audit(db, { admin: rc.user, action: 'export_without_payment', targetUserId: rc.user.id, targetEmail: rc.user.email, detail: { projectId: project.id, kind }, at: ctx.now() });
-        });
+        db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, rc.user.id, kind, ctx.now());
         return { ok: true, ...(file ? { file } : {}) };
       },
     },

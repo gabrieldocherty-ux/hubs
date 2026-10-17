@@ -4,7 +4,7 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer } from './helpers.mjs';
+import { startTestServer, legacyCheckout } from './helpers.mjs';
 import { readCompanyContact } from '../contractors/service.mjs';
 
 let t;
@@ -17,7 +17,7 @@ after(async () => {
 
 async function onContractorPlan() {
   const a = await t.user();
-  const c = await a.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
+  const c = await legacyCheckout(a, { kind: 'subscription', plan: 'contractor' });
   assert.equal(c.status, 200, c.text);
   assert.equal((await a.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
   return a;

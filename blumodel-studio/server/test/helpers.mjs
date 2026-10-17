@@ -193,6 +193,50 @@ export class Agent {
 
 let seq = 0;
 
+/** Every running test server by its URL, so legacyCheckout can find an Agent's database. */
+const SERVERS = new Map();
+
+/**
+ * A pending demo checkout for a legacy plan or kitchen unlock, as POST /api/billing/checkout made
+ * one before the showroom pivot (the route now answers 410 not_for_sale). Tests of what still
+ * works for existing customers (completing, renewing, cancelling, receipts, the Contractor
+ * program) start from one. Returns the old route's answer: { status: 200, body: { url, ref, provider } }.
+ * @param {Agent} agent  a signed-in Agent from t.user()
+ * @param {{ kind: 'kitchen_unlock' | 'subscription', plan?: string, projectId?: string, returnTo?: string, provider?: 'demo' | 'stripe' }} body
+ *   `provider` defaults to the server's (a Stripe-mode server makes a checkout Stripe will complete).
+ */
+export async function legacyCheckout(agent, body) {
+  const t = SERVERS.get(agent.base);
+  if (!t) throw new Error('legacyCheckout: that Agent is not on a running test server');
+  const { randomId: rid } = await import('../lib/ids.mjs');
+  const { planById } = await import('../lib/plans.mjs');
+  const userId = agent.user?.id;
+  let projectId = null;
+  let projectName = '';
+  let plan = null;
+  let amount;
+  if (body.kind === 'kitchen_unlock') {
+    const p = t.db.prepare('SELECT id, name FROM projects WHERE id = ? AND user_id = ?').get(String(body.projectId ?? ''), userId);
+    if (!p) return { status: 404, body: { error: 'That kitchen does not exist.' } };
+    projectId = p.id;
+    projectName = p.name;
+    amount = planById('kitchen_unlock').priceCents;
+  } else {
+    plan = body.plan;
+    amount = planById(plan).priceCents;
+  }
+  const ref = rid('bc_');
+  const provider = body.provider ?? (t.config.paymentsProvider === 'stripe' ? 'stripe' : 'demo');
+  const returnTo = body.returnTo ?? (projectId ? `#/k/${projectId}` : plan === 'contractor' ? '#/pro' : '#/account/billing');
+  t.db
+    .prepare(
+      `INSERT INTO billing_checkouts (ref, user_id, kind, project_id, project_name, plan, amount_cents, currency, status, provider, return_to, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'cad', 'pending', ?, ?, ?)`,
+    )
+    .run(ref, userId, body.kind, projectId, projectName, plan, amount, provider, returnTo, Date.now());
+  return { status: 200, body: { url: provider === 'demo' ? `#/pay/demo-plan/${ref}` : `https://checkout.stripe.com/c/pay/${ref}`, ref, provider }, text: '' };
+}
+
 /**
  * Starts the app on 127.0.0.1:0 with a fresh in-memory database.
  * @param {{ env?: Record<string, string>, fetch?: typeof fetch, rateLimits?: boolean, log?: any, dbPath?: string }} [opts]
@@ -250,10 +294,15 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
     tenant({ name = `Test Showroom ${++seq}`, slug, status = 'live', settings, branding, contact } = {}) {
       const ts = ctx.services.tenants;
       const tn = ts.create({ name, slug, settings, branding, contact });
-      if (status === 'live' || status === 'lapsed') {
-        if (status === 'live') ctx.services.showroomBilling?.grantForTests?.(tn.id);
+      if (status === 'live') {
+        // What an admin does for a signed deal: a license from today, and (here) a complimentary
+        // monthly plan, so no payment provider is involved.
+        const sb = ctx.services.showroomBilling;
+        sb.recordLicense(tn.id, { paidHow: 'comp', startsOn: new Date(now()).toISOString().slice(0, 10) });
+        sb.setComplimentary(tn.id, true, { note: 'test harness' });
         ts.setStatus(tn.id, 'live');
-      } else if (status !== 'setup') ts.setStatus(tn.id, status);
+      } else if (status === 'lapsed') ts.setStatus(tn.id, 'live'); // launched with nothing paid: lapses at once
+      else if (status !== 'setup') ts.setStatus(tn.id, status);
       const fresh = ts.get(tn.id);
       return { id: fresh.id, slug: fresh.slug, name: fresh.name, host: `${fresh.slug}.${config.BASE_DOMAIN}:${port}`, tenant: fresh };
     },
@@ -333,6 +382,7 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
     },
 
     async close() {
+      SERVERS.delete(url);
       server.closeAllConnections?.();
       await new Promise((resolve) => server.close(() => resolve()));
       try {
@@ -343,5 +393,6 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
       fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     },
   };
+  SERVERS.set(url, t);
   return t;
 }

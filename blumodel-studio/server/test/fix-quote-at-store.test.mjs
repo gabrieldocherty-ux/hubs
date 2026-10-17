@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { startTestServer, sampleDoc, legacyCheckout } from './helpers.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const retail = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/data/retail.json'), 'utf8'));
@@ -21,7 +21,7 @@ test('a contractor quote lists an unpriced retail product as Price at store, out
   const s = await startTestServer({ env: { PAYMENTS: 'demo' } });
   try {
     const c = await s.user();
-    const co = await c.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
+    const co = await legacyCheckout(c, { kind: 'subscription', plan: 'contractor' });
     assert.equal((await c.post(`/api/billing/demo/${co.body.ref}/complete`, { outcome: 'success' })).status, 200);
     assert.equal((await c.put('/api/pro/profile', { company: 'Smith Kitchens', phone: '905-555-0100', email: 'hello@smith.test', defaultMarkupPct: 30 })).status, 200);
 

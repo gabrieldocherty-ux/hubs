@@ -1,4 +1,6 @@
-// Package G (billing): the export paywall, unlocks, plans, renewals and Stripe plumbing.
+// Package G (billing): unlocks, plans, renewals and Stripe plumbing, all LEGACY since the showroom
+// pivot (docs/SHOWROOM_PIVOT.md §3): nothing new is sold (410 not_for_sale) and exports are free,
+// but what was paid keeps working. Checkouts made before the pivot are legacyCheckout(...).
 // No real Stripe call is ever made: Stripe-mode tests inject a mock fetch.
 
 import { test, before, after } from 'node:test';
@@ -7,7 +9,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { legacyCheckout, startTestServer, sampleDoc } from './helpers.mjs';
 
 const GOLDEN_CSV = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'golden', 'sample-shopping-list.csv');
 const KINDS = ['plan_png', 'scene_png', 'csv', 'json', 'render', 'quote'];
@@ -29,9 +31,9 @@ async function relogin(agent) {
   assert.equal(r.status, 200, r.text);
 }
 
-/** Buys through the DEMO provider: checkout, then "Simulate successful payment". */
+/** A legacy purchase through the DEMO provider: a checkout from before the pivot, then "Simulate successful payment". */
 async function demoBuy(agent, body) {
-  const c = await agent.post('/api/billing/checkout', body);
+  const c = await legacyCheckout(agent, body);
   assert.equal(c.status, 200, c.text);
   assert.match(c.body.url, /^#\/pay\/demo-plan\/bc_[a-z0-9]{24}$/);
   const done = await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' });
@@ -40,23 +42,32 @@ async function demoBuy(agent, body) {
   return c.body.ref;
 }
 
-test('a free user is refused every export kind (403, needs unlock); someone else’s kitchen is a 404', async () => {
+test('exports are free: an owner exports every kind; someone else’s kitchen is a 404; nothing new is sold', async () => {
   const ann = await t.user();
   const bob = await t.user();
   const k = await kitchen(ann);
+  const before = t.db.prepare('SELECT COUNT(*) AS n FROM export_events').get().n;
   for (const kind of KINDS) {
     const r = await ann.post(`/api/projects/${k.id}/exports`, { kind });
-    assert.equal(r.status, 403, kind);
-    assert.deepEqual(r.body, { error: 'Exports are a paid feature.', needs: 'unlock' });
+    assert.equal(r.status, 200, kind);
     assert.equal((await bob.post(`/api/projects/${k.id}/exports`, { kind })).status, 404);
   }
   assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'pdf' })).status, 400);
-  assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM export_events').get().n, 0, 'refused exports are not recorded');
+  assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM export_events').get().n - before, KINDS.length);
+  assert.equal(t.db.prepare("SELECT COUNT(*) AS n FROM admin_audit WHERE action = 'export_without_payment'").get().n, 0);
   const ent = await ann.get('/api/billing/entitlements');
-  assert.deepEqual(ent.body, { plan: 'free', unlockedProjectIds: [] });
+  assert.deepEqual(ent.body, { plan: 'free', unlockedProjectIds: [k.id], exportsFree: true });
+  for (const body of [{ kind: 'kitchen_unlock', projectId: k.id }, { kind: 'subscription', plan: 'unlimited' }, { kind: 'subscription', plan: 'contractor' }]) {
+    const r = await ann.post('/api/billing/checkout', body);
+    assert.equal(r.status, 410, JSON.stringify(body));
+    assert.equal(r.body.code, 'not_for_sale');
+  }
+  assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM billing_checkouts WHERE user_id = ?').get(ann.id).n, 0);
+  const plans = (await t.agent().get('/api/billing/plans')).body.plans;
+  assert.deepEqual(plans.filter((p) => p.forSale).map((p) => p.id), ['showroom_license', 'showroom_monthly']);
 });
 
-test('a $5 unlock covers that kitchen forever, including after edits; not another kitchen, not its duplicate', async () => {
+test('a legacy $5 unlock keeps its record and receipt; every kitchen exports anyway, edited or duplicated', async () => {
   const ann = await t.user();
   const k1 = await kitchen(ann);
   const k2 = await kitchen(ann);
@@ -65,7 +76,7 @@ test('a $5 unlock covers that kitchen forever, including after edits; not anothe
   assert.equal(csv.status, 200);
   assert.equal(csv.body.file.contentType, 'text/csv');
   assert.equal(csv.body.file.filename, 'test-kitchen-shopping-list.csv');
-  assert.equal((await ann.post(`/api/projects/${k2.id}/exports`, { kind: 'csv' })).status, 403);
+  assert.equal((await ann.post(`/api/projects/${k2.id}/exports`, { kind: 'csv' })).status, 200);
 
   // Edited and renamed: still unlocked.
   const saved = await ann.put(`/api/projects/${k1.id}`, { name: 'Renamed', revision: k1.revision, doc: sampleDoc({ items: [] }) });
@@ -73,19 +84,20 @@ test('a $5 unlock covers that kitchen forever, including after edits; not anothe
   assert.equal((await ann.post(`/api/projects/${k1.id}/exports`, { kind: 'plan_png' })).status, 200);
 
   const dup = (await ann.post(`/api/projects/${k1.id}/duplicate`)).body.project;
-  assert.equal((await ann.post(`/api/projects/${dup.id}/exports`, { kind: 'csv' })).status, 403, 'a duplicate is a new kitchen');
+  assert.equal((await ann.post(`/api/projects/${dup.id}/exports`, { kind: 'csv' })).status, 200);
 
   const ent = (await ann.get('/api/billing/entitlements')).body;
-  assert.deepEqual(ent, { plan: 'free', unlockedProjectIds: [k1.id] });
+  assert.deepEqual([...ent.unlockedProjectIds].sort(), [k1.id, k2.id, dup.id].sort());
+  assert.equal(ent.exportsFree, true);
   const me = (await ann.get('/api/billing/me')).body;
   assert.equal(me.unlocks.length, 1);
   assert.equal(me.receipts[0].kind, 'kitchen_unlock');
   assert.equal(me.receipts[0].amountCents, 500, 'the server price, not the client’s');
-  // Buying it again is refused.
-  assert.equal((await ann.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k1.id })).status, 409);
+  // Nothing more can be bought.
+  assert.equal((await ann.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k2.id })).status, 410);
 });
 
-test('Unlimited exports every kitchen its subscriber owns, never someone else’s', async () => {
+test('a legacy Unlimited plan stays on; exports are anyone’s own kitchens only', async () => {
   const ann = await t.user();
   const bob = await t.user();
   const mine = [await kitchen(ann), await kitchen(ann)];
@@ -93,14 +105,14 @@ test('Unlimited exports every kitchen its subscriber owns, never someone else’
   await demoBuy(ann, { kind: 'subscription', plan: 'unlimited' });
   for (const k of mine) assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'json' })).status, 200);
   assert.equal((await ann.post(`/api/projects/${theirs.id}/exports`, { kind: 'json' })).status, 404);
-  assert.equal((await bob.post(`/api/projects/${theirs.id}/exports`, { kind: 'json' })).status, 403, 'a plan never covers other people');
+  assert.equal((await bob.post(`/api/projects/${theirs.id}/exports`, { kind: 'json' })).status, 200, 'free for bob too');
   const me = (await ann.get('/api/auth/me')).body.user;
   assert.equal(me.plan.id, 'unlimited');
   assert.equal(me.plan.status, 'active');
-  // A second subscription is refused; plan changes go through Billing.
+  // Nothing new is sold, a second plan included.
   const again = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
-  assert.equal(again.status, 409);
-  assert.equal(again.body.plan, 'unlimited');
+  assert.equal(again.status, 410);
+  assert.equal(again.body.code, 'not_for_sale');
 });
 
 test('cancelling keeps the plan to the end of the paid period, then it is Free; resume undoes a cancel', async () => {
@@ -122,19 +134,19 @@ test('cancelling keeps the plan to the end of the paid period, then it is Free; 
     assert.equal(resumed.body.subscription.cancelAtPeriodEnd, false);
     await ann.post('/api/billing/cancel');
     t.setNow(end + 1000);
-    assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 403, 'ended');
+    assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 200, 'exports are free whatever the plan');
     const me = (await ann.get('/api/billing/me')).body;
     assert.equal(me.plan.id, 'free');
     assert.equal(me.subscription.status, 'canceled');
-    // They can subscribe again.
-    await demoBuy(ann, { kind: 'subscription', plan: 'contractor' });
-    assert.equal((await ann.get('/api/auth/me')).body.user.plan.id, 'contractor');
+    // It can't be bought again.
+    assert.equal((await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' })).status, 410);
+    assert.equal((await ann.get('/api/auth/me')).body.user.plan.id, 'free');
   } finally {
     t.setNow(null);
   }
 });
 
-test('a failed renewal keeps the plan for 7 days of grace, then exports stop until it is paid', async () => {
+test('a failed renewal keeps a legacy plan for 7 days of grace, then it is Free until it is paid', async () => {
   const ann = await t.user();
   const k = await kitchen(ann);
   const t0 = Date.now();
@@ -148,7 +160,7 @@ test('a failed renewal keeps the plan for 7 days of grace, then exports stop unt
     t.setNow(t0 + 7 * DAY - 1);
     assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 200);
     t.setNow(t0 + 7 * DAY + 1);
-    assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 403);
+    assert.equal((await ann.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 200, 'exports are free whatever the plan');
     assert.equal((await ann.get('/api/auth/me')).body.user.plan.id, 'free');
     const renewed = await ann.post('/api/billing/demo/simulate', { event: 'renewal' });
     assert.equal(renewed.body.plan.id, 'unlimited', 'paying again restores the plan');
@@ -177,9 +189,9 @@ test('a demo plan renews itself at the end of each period, with a receipt', asyn
   }
 });
 
-test('changing plan (demo) moves Unlimited ↔ Contractor; a declined demo payment can be retried', async () => {
+test('a plan change is refused (not sold); a declined legacy demo payment can be retried', async () => {
   const ann = await t.user();
-  const c = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
+  const c = await legacyCheckout(ann, { kind: 'subscription', plan: 'unlimited' });
   const declined = await ann.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'decline' });
   assert.equal(declined.body.checkout.status, 'failed');
   assert.equal((await ann.get('/api/auth/me')).body.user.plan.id, 'free');
@@ -189,10 +201,12 @@ test('changing plan (demo) moves Unlimited ↔ Contractor; a declined demo payme
   assert.equal(twice.status, 200, 'completing twice is harmless');
   assert.equal((await ann.get('/api/billing/me')).body.receipts.length, 1, 'and charges once');
   const up = await ann.post('/api/billing/change', { plan: 'contractor' });
-  assert.equal(up.body.plan.id, 'contractor');
-  assert.equal((await ann.post('/api/billing/change', { plan: 'contractor' })).status, 409);
-  const down = await ann.post('/api/billing/change', { plan: 'unlimited' });
-  assert.equal(down.body.plan.id, 'unlimited');
+  assert.equal(up.status, 410);
+  assert.equal(up.body.code, 'not_for_sale');
+  assert.equal((await ann.get('/api/auth/me')).body.user.plan.id, 'unlimited');
+  // Cancel and resume still work for the plan that runs.
+  assert.equal((await ann.post('/api/billing/cancel')).body.subscription.cancelAtPeriodEnd, true);
+  assert.equal((await ann.post('/api/billing/resume')).body.subscription.cancelAtPeriodEnd, false);
   // Another user can't touch this checkout.
   const bob = await t.user();
   assert.equal((await bob.get(`/api/billing/checkouts/${c.body.ref}`)).status, 404);
@@ -227,7 +241,7 @@ test('demo payments are refused in production unless DEMO_PAYMENTS=1 (payments: 
   try {
     const u = await prod.user();
     assert.equal((await u.get('/api/config')).body.payments, 'none');
-    const c = await u.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
+    const c = await u.post('/api/billing/portal');
     assert.equal(c.status, 503);
     assert.deepEqual(c.body, { error: 'Payments are not available yet.', code: 'payments_unavailable' });
   } finally {
@@ -236,7 +250,8 @@ test('demo payments are refused in production unless DEMO_PAYMENTS=1 (payments: 
   const allowed = await startTestServer({ env: { PAYMENTS: 'demo', NODE_ENV: 'production', DEMO_PAYMENTS: '1' } });
   try {
     const u = await allowed.user();
-    assert.equal((await u.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' })).status, 200);
+    assert.equal((await u.get('/api/config')).body.payments, 'demo');
+    assert.equal((await u.post('/api/billing/portal')).status, 200);
   } finally {
     await allowed.close();
   }
@@ -280,45 +295,23 @@ function stripeMock() {
   return { fetch, calls };
 }
 
-test('Stripe mode: checkout is built on the server’s price with metadata, return URLs and an idempotency key', async () => {
+test('Stripe mode: nothing new is sold; the checkout and a plan change are refused before Stripe is called', async () => {
   const mock = stripeMock();
   const s = await startTestServer({ env: { STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: SECRET, PUBLIC_URL: 'https://blumodel.example' }, fetch: mock.fetch });
   try {
     assert.equal((await s.agent().get('/api/config')).body.payments, 'stripe');
     const ann = await s.user();
     const k = await kitchen(ann);
-    const unlock = await ann.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k.id, amountCents: 1, priceCents: 1 });
-    assert.equal(unlock.status, 200, unlock.text);
-    assert.match(unlock.body.url, /^https:\/\/checkout\.stripe\.com\//);
-    const c1 = mock.calls[0];
-    assert.equal(c1.path, '/v1/checkout/sessions');
-    assert.equal(c1.headers.Authorization, 'Bearer sk_test_x');
-    assert.equal(c1.headers['Idempotency-Key'], `${unlock.body.ref}-checkout`);
-    assert.equal(c1.form.get('mode'), 'payment');
-    assert.equal(c1.form.get('line_items[0][price_data][unit_amount]'), '500', 'server price; client amounts ignored');
-    assert.equal(c1.form.get('line_items[0][price_data][currency]'), 'cad');
-    assert.match(c1.form.get('line_items[0][price_data][product_data][name]'), /^BluModel Studio - Kitchen unlock: /, 'what the buyer sees on Stripe');
-    assert.equal(c1.form.get('metadata[kind]'), 'kitchen_unlock');
-    assert.equal(c1.form.get('metadata[checkout_ref]'), unlock.body.ref);
-    assert.equal(c1.form.get('metadata[project_id]'), k.id);
-    assert.equal(c1.form.get('client_reference_id'), unlock.body.ref);
-    assert.equal(c1.form.get('success_url'), `https://blumodel.example/?session_id={CHECKOUT_SESSION_ID}#/k/${k.id}`);
-    assert.equal(c1.form.get('cancel_url'), `https://blumodel.example/#/k/${k.id}`);
-
-    const sub = await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
-    const c2 = mock.calls[1];
-    assert.equal(c2.form.get('mode'), 'subscription');
-    assert.equal(c2.form.get('line_items[0][price_data][unit_amount]'), '9900');
-    assert.equal(c2.form.get('line_items[0][price_data][currency]'), 'cad');
-    assert.equal(c2.form.get('line_items[0][price_data][recurring][interval]'), 'month');
-    assert.equal(c2.form.get('line_items[0][price_data][product_data][name]'), 'BluModel Studio - Contractor');
-    assert.equal(c2.form.get('subscription_data[metadata][plan]'), 'contractor');
-    assert.equal(c2.form.get('subscription_data[metadata][user_id]'), ann.id);
-    assert.equal(c2.form.get('success_url'), 'https://blumodel.example/?session_id={CHECKOUT_SESSION_ID}#/pro');
-    assert.ok(sub.body.ref);
-
-    // Demo completion is refused when Stripe is the provider.
-    assert.equal((await ann.post(`/api/billing/demo/${unlock.body.ref}/complete`, { outcome: 'success' })).status, 403);
+    for (const body of [{ kind: 'kitchen_unlock', projectId: k.id, amountCents: 1, priceCents: 1 }, { kind: 'subscription', plan: 'contractor' }]) {
+      const r = await ann.post('/api/billing/checkout', body);
+      assert.equal(r.status, 410);
+      assert.equal(r.body.code, 'not_for_sale');
+    }
+    assert.equal((await ann.post('/api/billing/change', { plan: 'unlimited' })).status, 410);
+    assert.equal(mock.calls.length, 0, 'Stripe was never called');
+    // A legacy demo checkout's completion is still refused when Stripe is the provider.
+    const legacy = await legacyCheckout(ann, { kind: 'kitchen_unlock', projectId: k.id, provider: 'demo' });
+    assert.equal((await ann.post(`/api/billing/demo/${legacy.body.ref}/complete`, { outcome: 'success' })).status, 403);
   } finally {
     await s.close();
   }
@@ -331,7 +324,7 @@ test('Stripe webhooks: verified, deduplicated, amount-checked; subscription even
   try {
     const ann = await s.user();
     const k = await kitchen(ann);
-    const ref = (await ann.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k.id })).body.ref;
+    const ref = (await legacyCheckout(ann, { kind: 'kitchen_unlock', projectId: k.id })).body.ref;
     const session = (over = {}) => ({
       id: `evt_${crypto.randomBytes(6).toString('hex')}`,
       type: 'checkout.session.completed',
@@ -419,7 +412,7 @@ test('Stripe mode: return sync, cancel and the customer portal call Stripe with 
   const s = await startTestServer({ env: { STRIPE_SECRET_KEY: 'sk_test_x', STRIPE_WEBHOOK_SECRET: SECRET }, fetch: mock.fetch });
   try {
     const ann = await s.user();
-    const ref = (await ann.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' })).body.ref;
+    const ref = (await legacyCheckout(ann, { kind: 'subscription', plan: 'unlimited' })).body.ref;
     const end = Math.floor(Date.now() / 1000) + 31 * 86400;
     stripeMock.subscription = { id: 'sub_9', status: 'active', customer: 'cus_9', cancel_at_period_end: false, current_period_end: end, metadata: { kind: 'subscription', user_id: ann.id, plan: 'unlimited' } };
     stripeMock.session = { id: 'cs_test_9', payment_status: 'paid', amount_total: 1500, currency: 'cad', client_reference_id: ref, customer: 'cus_9', subscription: stripeMock.subscription, metadata: { kind: 'subscription', checkout_ref: ref } };
