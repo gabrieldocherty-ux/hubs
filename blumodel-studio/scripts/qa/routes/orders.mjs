@@ -367,40 +367,6 @@ export default [
   },
   // ── contractors: the workspace page and My catalog ────────────────────
   {
-    // (The workspace opens once the company has a business name and phone; scripts/qa/routes/
-    // contractors.mjs saves its own company when it runs, so only fill one in if there is none.)
-    // The workspace's Make custom models page says what the plan includes and what is left, and
-    // opens the request form with My catalog chosen.
-    name: 'orders-pro-modelling',
-    path: '#/pro/modelling',
-    as: 'contractor',
-    setup: async ({ api }) => {
-      const me = api.as('contractor');
-      const p = (await me.get('/api/pro/profile')).body?.profile;
-      if (!p?.company || !p?.phone) {
-        const r = await me.put('/api/pro/profile', { company: 'Harbor Kitchens (QA)', phone: '905-555-0177', serviceArea: 'Testville' });
-        if (r.status !== 200) throw new Error(`saving the QA contractor's company failed: ${r.status} ${JSON.stringify(r.body)}`);
-      }
-      return {};
-    },
-    viewport: { w: 1440, h: 900 },
-    waitFor: '.pro-modelling',
-    expectText: ['Have BluModel Studio model your products', 'Your Contractor plan includes 3 custom 3D models a month', 'Delivered models land straight in My catalog'],
-    check: async ({ evaluate, shot }) => {
-      if (!(await evaluate(waitFor(`/\\d+ of \\d+ models? left this month - resets|No models left this month/.test(document.querySelector('.pro-allowance')?.textContent ?? '')`)))) throw new Error('the page does not show what is left this month');
-      if (await evaluate(`/\\$\\d|Model pack|per item/.test(document.querySelector('.pro-modelling').textContent)`)) throw new Error('the page still shows a price or the Model pack');
-      await shot('page');
-      const go = await evaluate(`(() => {
-        const a = [...document.querySelectorAll('.pro-modelling .btn.primary')].find((x) => x.textContent.trim() === 'Make custom models');
-        if (!a) return false;
-        a.click();
-        return true;
-      })()`);
-      if (!go) throw new Error('no Make custom models button');
-      if (!(await evaluate(waitFor(`location.hash.startsWith('#/orders/new') && document.querySelector('.ord-target select')?.value === 'contractor'`)))) throw new Error('the request form did not open with My catalog chosen');
-    },
-  },
-  {
     // A contractor's product identified by UPC alone, reviewed: included in the plan, into My catalog.
     name: 'orders-new-contractor',
     path: '#/orders/new?target=contractor',
@@ -437,35 +403,9 @@ export default [
       if (await evaluate(SIDEWAYS)) throw new Error('the contractor request scrolls sideways on a phone');
     },
   },
-  {
-    // The pricing page's custom-model section: included in the Contractor plan, no price.
-    name: 'pricing-custom-models',
-    path: '#/pricing',
-    as: 'anon',
-    viewport: { w: 1440, h: 900 },
-    waitFor: '.mk-pack',
-    expectText: ['Not in the catalog? Our studio models it.', '3 models a month', 'in the Contractor plan', 'What you send', 'Don’t carry over'],
-    check: async ({ evaluate, shot }) => {
-      const n = await evaluate(`document.querySelectorAll('.mk-tiers .mk-tier').length`);
-      if (n !== 3) throw new Error(`expected 3 custom-model cards, found ${n}`);
-      if (await evaluate(`/\\$\\d|Model pack|Rush/.test(document.querySelector('#models').textContent)`)) throw new Error('a custom-model price, pack or rush is still on the pricing page');
-      await evaluate(`document.getElementById('models').scrollIntoView({ block: 'start' })`);
-      await shot('models');
-    },
-  },
-  {
-    name: 'pricing-custom-models-phone',
-    path: '#/pricing',
-    as: 'anon',
-    viewport: PHONE,
-    waitFor: '.mk-pack',
-    expectText: ['in the Contractor plan'],
-    check: async ({ evaluate, shot }) => {
-      if (await evaluate(SIDEWAYS)) throw new Error('the pricing page scrolls sideways on a phone');
-      await evaluate(`document.getElementById('models').scrollIntoView({ block: 'start' })`);
-      await shot('models');
-    },
-  },
+
+  // (Retired with the showroom pivot, SHOWROOM_PIVOT §3: orders-pro-modelling and
+  // pricing-custom-models(-phone), the Contractor plan's included models and their pitch.)
 
   // ── list and detail ───────────────────────────────────────────────────
   {
@@ -476,7 +416,7 @@ export default [
     as: 'customer',
     viewport: { w: 1440, h: 900 },
     waitFor: ['.ord-list', '.ord-plan-note'],
-    expectText: ['Custom models', 'Fireclay apron-front sink (Demo)', 'Delivered', 'In progress', 'Custom 3D models come with the Contractor plan', '$279 USD'],
+    expectText: ['Custom models', 'Fireclay apron-front sink (Demo)', 'Delivered', 'In progress', 'New custom models are no longer sold here', '$279 USD'],
     check: async ({ evaluate }) => {
       if (await evaluate(`[...document.querySelectorAll('a')].some((a) => a.textContent.includes('Make a custom model'))`)) throw new Error('a non-contractor is offered a new custom model');
     },
@@ -487,7 +427,7 @@ export default [
     as: 'customer',
     viewport: PHONE,
     waitFor: '.ord-list',
-    expectText: ['Custom models', 'Contractor plan'],
+    expectText: ['Custom models', 'no longer sold here'],
     check: async ({ evaluate }) => {
       if (await evaluate('document.documentElement.scrollWidth > window.innerWidth + 1')) throw new Error('the list scrolls sideways on a phone');
     },

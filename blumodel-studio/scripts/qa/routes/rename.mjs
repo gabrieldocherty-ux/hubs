@@ -291,43 +291,19 @@ export default [
       await h.reload();
       await h.waitFor('.plan-view canvas');
       await h.waitUntil(() => document.querySelector('.topbar .project-name')?.value === 'Kitchen from before the rename', 10_000, 'the device kitchen from before the rename in the editor');
-      // Its photos moved too: the floating photo panel (or its pill) is there.
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      const r = await h.evaluate(async () => {
-        const read = () =>
-          new Promise((resolve) => {
-            const open = indexedDB.open('blumodel-generate', 1);
-            open.onsuccess = () => {
-              const db = open.result;
-              const get = db.transaction('photos').objectStore('photos').get('local');
-              get.onsuccess = () => { db.close(); resolve(get.result); };
-              get.onerror = () => { db.close(); resolve(null); };
-            };
-            open.onerror = () => resolve(null);
-          });
-        const rows = await read();
-        let dbs = [];
-        for (let i = 0; i < 40; i++) {
-          dbs = (await indexedDB.databases()).map((d) => d.name);
-          if (!dbs.includes('mise-generate')) break;
-          await new Promise((res) => setTimeout(res, 100));
-        }
-        return {
-          local: Object.keys(localStorage).sort(),
-          session: Object.keys(sessionStorage).sort(),
-          draftName: JSON.parse(localStorage.getItem('blumodel-local-draft') || 'null')?.name ?? null,
-          prefs: localStorage.getItem('blumodel.studio.prefs'),
-          photos: Array.isArray(rows) ? rows.map((p) => ({ id: p.id, name: p.name, blob: p.blob instanceof Blob ? p.blob.size : 0 })) : rows,
-          dbs,
-        };
-      });
+      // (Start from a photo went in the showroom pivot, and with it the photo database's move: the
+      // old 'mise-generate' database is left alone now. The keys still move.)
+      const r = await h.evaluate(() => ({
+        local: Object.keys(localStorage).sort(),
+        session: Object.keys(sessionStorage).sort(),
+        draftName: JSON.parse(localStorage.getItem('blumodel-local-draft') || 'null')?.name ?? null,
+        prefs: localStorage.getItem('blumodel.studio.prefs'),
+      }));
       const old = [...r.local, ...r.session].filter((k) => /^mise[.-]/.test(k));
       if (old.length) throw new Error(`old keys left behind: ${old.join(', ')}`);
       if (r.draftName !== name) throw new Error(`blumodel-local-draft holds "${r.draftName}"`);
       if (!r.prefs || !r.session.includes('blumodel.exportIntent')) throw new Error(`studio prefs or the export intent didn't move: ${JSON.stringify(r)}`);
-      if (!Array.isArray(r.photos) || r.photos.length !== 1 || r.photos[0].id !== 'old-1' || !(r.photos[0].blob > 0)) throw new Error(`the photo didn't move: ${JSON.stringify(r.photos)}`);
-      if (r.dbs.includes('mise-generate')) throw new Error('the old photo database is still there');
-      h.note(`moved: ${r.local.join(', ')} | session ${r.session.join(', ')} | photos ${JSON.stringify(r.photos)} | databases ${r.dbs.join(', ')}`);
+      h.note(`moved: ${r.local.join(', ')} | session ${r.session.join(', ')}`);
     },
   },
 ];

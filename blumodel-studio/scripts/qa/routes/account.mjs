@@ -37,11 +37,14 @@ async function mark({ evaluate }, selector, text, tag) {
   return `[data-qa-mark="${tag}"]`;
 }
 
-/** A fresh user on the Contractor plan (the demo checkout, as the app does it). */
+/**
+ * A fresh legacy user on the Contractor plan: a pre-pivot demo checkout (new ones answer 410 since
+ * the showroom pivot), completed through the app's demo payment as it was then.
+ */
 async function freshContractor(api) {
   const me = api.as('fresh');
-  const c = must(await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
-  must(await me.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' }), 'Completing the demo checkout');
+  const ref = api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'contractor' });
+  must(await me.post(`/api/billing/demo/${ref}/complete`, { outcome: 'success' }), 'Completing the demo checkout');
   return me;
 }
 

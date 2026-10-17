@@ -93,8 +93,9 @@ export default [
     path: '#/new',
     as: 'fresh',
     viewport: DESK,
-    waitFor: ['.wizard', '.gen-wiz-photo'],
-    expectText: ['Let’s set up a new kitchen.', 'Start from a photo of my kitchen'],
+    waitFor: ['.wizard'],
+    // (Start from a photo is gone since the showroom pivot, SHOWROOM_PIVOT §3.)
+    expectText: ['Let’s set up a new kitchen.'],
     check: async (h) => {
       const steps = await h.evaluate(() => [...document.querySelectorAll('.steps li')].map((li) => li.textContent.replace(/\d/g, '').trim()));
       if (steps.join('|') !== 'Basics|Room|Layout|Brands') throw new Error(`the steps are ${steps.join(', ')}`);

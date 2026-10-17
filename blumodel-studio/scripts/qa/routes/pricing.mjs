@@ -112,85 +112,10 @@ const NO_UNLOCK = `(() => {
 })()`;
 
 export default [
-  // ── Pricing and landing: three plans, CAD, no unlock ──────────────────
-  {
-    name: 'pricing-plans',
-    path: '#/pricing',
-    as: 'anon',
-    viewport: DESKTOP,
-    waitFor: ['.mk-plans .mk-plan', '.mk-pack'],
-    expectText: ['Free', 'Unlimited', 'Contractor', '$15', '$99', 'CAD a month', '3 custom 3D models a month, made by our studio', 'Prices are in Canadian dollars'],
-    check: async ({ evaluate, shot }) => {
-      const plans = await evaluate(`[...document.querySelectorAll('.mk-plans .mk-plan h3')].map((x) => x.textContent.trim())`);
-      if (JSON.stringify(plans) !== JSON.stringify(['Free', 'Unlimited', 'Contractor'])) throw new Error(`the plan cards are ${JSON.stringify(plans)}`);
-      const free = await evaluate(`document.querySelector('.mk-plans .mk-plan').textContent`);
-      if (/\$\d+(?!\d)/.test(free.replace('$0', ''))) throw new Error(`the Free card quotes an export price: ${free}`);
-      const bad = await evaluate(NO_UNLOCK);
-      if (bad.length) throw new Error(`the pricing page still says ${JSON.stringify(bad)}`);
-      await shot('plans');
-      await evaluate(`document.getElementById('contractor').scrollIntoView({ block: 'start' })`);
-      if (!(await evaluate(bodyHas('custom 3D models a month, made by our studio and delivered straight into your catalog')))) throw new Error('the Contractor program does not list the included models');
-      await shot('contractor');
-      await evaluate(`document.getElementById('faq').scrollIntoView({ block: 'start' })`);
-      await shot('faq');
-    },
-  },
-  {
-    name: 'pricing-plans-phone',
-    path: '#/pricing',
-    as: 'anon',
-    viewport: PHONE,
-    waitFor: ['.mk-plans .mk-plan'],
-    expectText: ['$99', 'CAD a month'],
-    check: async ({ evaluate, shot }) => {
-      if (await evaluate(SIDEWAYS)) throw new Error('the pricing page scrolls sideways on a phone');
-      await evaluate(`document.querySelectorAll('.mk-plans .mk-plan')[2].scrollIntoView({ block: 'start' })`);
-      await shot('contractor-card');
-    },
-  },
-  {
-    name: 'landing-no-unlock',
-    path: '#/',
-    as: 'anon',
-    viewport: DESKTOP,
-    waitFor: ['.mk-band'],
-    expectText: ['$99 CAD/month', '3 custom 3D models a month, made by our studio'],
-    check: async ({ evaluate }) => {
-      const bad = await evaluate(NO_UNLOCK);
-      if (bad.length) throw new Error(`the landing page still says ${JSON.stringify(bad)}`);
-    },
-  },
-
-  // ── The export dialog is where a free user meets the unlock ───────────
-  {
-    name: 'export-offers-unlock',
-    as: 'fresh',
-    viewport: DESKTOP,
-    setup: async ({ me }) => newKitchen(me, 'QA Pricing Kitchen'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month']);
-      await h.sleep(300);
-      await h.shot('dialog');
-    },
-  },
-  {
-    name: 'export-offers-unlock-phone',
-    as: 'fresh',
-    viewport: PHONE,
-    setup: async ({ me }) => newKitchen(me, 'QA Pricing Phone'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month']);
-      if (await h.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) throw new Error('the export dialog scrolls sideways on a phone');
-      await h.sleep(300);
-      await h.shot('dialog');
-    },
-  },
+  // Retired with the showroom pivot (SHOWROOM_PIVOT §3: no homeowner plans, unlocks or paywall):
+  // pricing-plans(-phone), landing-no-unlock and export-offers-unlock(-phone). #/pricing and the
+  // landing page are the sales site's now (QA package 'sales'); a free export is in 'core'.
+  // ── Billing: nothing for sale ───────────────────────────────────────────
   {
     // Billing doesn't sell the unlock either; a non-contractor with earlier custom-model orders is
     // pointed to them (they have no menu entry).
@@ -198,11 +123,12 @@ export default [
     path: '#/account/billing',
     as: 'customer',
     viewport: DESKTOP,
-    waitFor: ['.billing-plans'],
-    expectText: ['Unlimited', 'Contractor', 'CAD / month', 'see your custom model orders'],
+    waitFor: ['.billing-current'],
+    expectText: ['see your custom model orders'],
     check: async ({ evaluate, shot }) => {
       const t = await evaluate(`document.querySelector('.billing-main').textContent`);
-      for (const bad of ['Kitchen unlock', '$5 ', '$5 CAD']) if (t.includes(bad)) throw new Error(`Billing still says "${bad}"`);
+      // Nothing is sold to homeowners any more: no unlock, no plan cards.
+      for (const bad of ['Kitchen unlock', '$5 ', '$5 CAD', 'Choose Unlimited', 'Choose Contractor']) if (t.includes(bad)) throw new Error(`Billing still says "${bad}"`);
       await shot('page');
     },
   },
@@ -331,7 +257,7 @@ export default [
     as: 'customer',
     viewport: PHONE,
     waitFor: ['.ord-plan-note'],
-    expectText: ['Custom 3D models come with the Contractor plan', 'See the Contractor plan'],
+    expectText: ['New custom models are no longer sold here'],
     check: async ({ evaluate, shot }) => {
       if (await evaluate(`!!document.querySelector('.ord-product')`)) throw new Error('a non-contractor gets the request form');
       if (await evaluate(SIDEWAYS)) throw new Error('the page scrolls sideways on a phone');
@@ -349,7 +275,10 @@ export default [
     waitFor: ['.menu-wrap .avatar'],
     check: async ({ evaluate, shot }) => {
       const menu = await evaluate(openMenu);
-      if (!menu?.includes('Make custom models')) throw new Error(`the contractor's account menu has no Make custom models: ${menu}`);
+      // Custom models went with the Contractor plan's allowance (SHOWROOM_PIVOT §3): the legacy
+      // contractor keeps the workspace and Billing, and is offered no new models.
+      if (!menu?.includes('Contractor workspace')) throw new Error(`the contractor's account menu has no Contractor workspace: ${menu}`);
+      if (menu.includes('Make custom models')) throw new Error(`the contractor's account menu still offers Make custom models: ${menu}`);
       await shot('menu');
     },
   },

@@ -430,12 +430,11 @@ export default [
 
   // ─── copy ──────────────────────────────────────────────────────────────────
   {
-    // A homeowner: no brand-portal entry point anywhere, and the way in is a photo.
+    // A homeowner: no brand-portal entry point anywhere (Start from a photo is gone since the pivot).
     name: 'int-copy-customer',
     path: '#/',
     as: 'customer',
     waitFor: ['.home-main'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await assertCopy(h, 'Home');
       // The account menu: no contractor entry for a homeowner (the Contractor plan is on the Pricing

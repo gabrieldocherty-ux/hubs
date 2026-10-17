@@ -60,7 +60,8 @@ const isPhone = (h) => !!h.viewport?.mobile;
 /** A fresh user (the route's own) on the Contractor plan, with its company saved. */
 async function freshContractor(api, company = 'Copper Kettle Kitchens (QA)') {
   const me = api.as('fresh');
-  const c = must(await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
+  // A pre-pivot checkout (new ones answer 410 since the showroom pivot), completed as it was then.
+  const c = { ref: api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'contractor' }) };
   must(await me.post(`/api/billing/demo/${c.ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
   if (company) must(await me.put('/api/pro/profile', { company, phone: '905-555-0148', serviceArea: 'Testville', defaultMarkupPct: 30 }), 'Saving the company');
   return me;
@@ -123,7 +124,7 @@ async function listedPro(api) {
       must(await a.post('/api/auth/login', { email: DARK_PRO.email, password: PRO_PASSWORD }), 'Signing in as the dark-mode contractor');
       const me = must(await a.get('/api/auth/me'), 'Reading the contractor').user;
       if (me.plan?.id !== 'contractor') {
-        const co = must(await a.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
+        const co = { ref: api.legacyCheckout(me.id, { kind: 'subscription', plan: 'contractor' }) };
         must(await a.post(`/api/billing/demo/${co.ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
       }
       must(await a.put('/api/pro/profile', { company: DARK_PRO.company, phone: DARK_PRO.phone, website: DARK_PRO.website, serviceArea: DARK_PRO.serviceArea, defaultMarkupPct: 30 }), 'The company profile');
@@ -607,7 +608,6 @@ const PRO_TOUR = [
   { name: 'price-book', hash: '#/pro/price-book', text: 'Cost, markup and sell price' },
   { name: 'brands', hash: '#/pro/brands', text: 'What shows while you design' },
   { name: 'quotes', hash: '#/pro/quotes', text: 'Your kitchens, priced' },
-  { name: 'modelling', hash: '#/pro/modelling', text: 'Have BluModel Studio model your products' },
   { name: 'company', hash: '#/pro/company', text: 'What your clients see' },
   { name: 'brand', hash: '#/pro/brand', wait: '.brand-stats' },
   { name: 'brand-products', hash: '#/pro/brand/products', wait: '.brand-row' },
@@ -624,7 +624,7 @@ const ADMIN_TOUR = [
   { name: 'studio', hash: '#/admin/studio', wait: '.ord-queue' },
   { name: 'revenue', hash: '#/admin/revenue', wait: '.ord-kpis' },
   { name: 'billing', hash: '#/admin/billing', text: 'Cancelling at period end' },
-  { name: 'users', hash: '#/admin/users', text: 'Create reset link' },
+  { name: 'users', hash: '#/admin/users', text: 'Search by name or email' },
 ];
 
 const crashNoise = [/deliberate crash/i, /The above error occurred/i, /React will try to recreate/i, /Consider adding an error boundary/i];
@@ -767,8 +767,8 @@ export default [
   ...both({
     name: 'dark-pay-demo-plan',
     as: 'fresh',
-    setup: async ({ me }) => {
-      const c = must(await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' }), 'Unlimited demo checkout');
+    setup: async ({ me, api }) => {
+      const c = { ref: api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'unlimited' }) };
       return { path: `#/pay/demo-plan/${c.ref}` };
     },
     check: darkCheck(),
@@ -946,9 +946,12 @@ export default [
       await h.click('.admin-users .home-search input');
       await h.type(h.data.email);
       await press(h, '.admin-users .home-search button', 'Search');
-      await h.waitUntil(() => document.querySelectorAll('.admin-table tbody tr').length === 1, 6000, 'the search finding one user');
-      await h.evaluate(() => document.querySelector('.admin-table tbody tr button').click());
-      await h.waitFor('.admin-reset-url');
+      // The Users tab lists matches; the reset link is on the account's own page (admin panel).
+      await h.waitUntil(() => document.querySelectorAll('.admin-users button.adm-link').length === 1, 6000, 'the search finding one user');
+      await h.evaluate(() => document.querySelector('.admin-users button.adm-link').click());
+      await h.waitFor('button[aria-label^="Create a reset link"]');
+      await h.evaluate(() => document.querySelector('button[aria-label^="Create a reset link"]').click());
+      await h.waitFor('.adm-reset-url');
       await h.sleep(300);
     }),
   }),
