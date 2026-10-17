@@ -82,7 +82,7 @@ export default function ShowroomLanding() {
               {t.branding.welcomeText && <p className="sr-lede">{t.branding.welcomeText}</p>}
               {comingSoon ? (
                 <p className="sr-soon" role="status">
-                  Our virtual showroom opens soon. In the meantime, call or email us below.
+                  {t.contact.phone || t.contact.email ? 'Our virtual showroom opens soon. In the meantime, call or email us below.' : 'Our virtual showroom opens soon.'}
                 </p>
               ) : (
                 <>
@@ -100,10 +100,12 @@ export default function ShowroomLanding() {
                 </>
               )}
             </div>
-            <figure className="sr-hero-plan" aria-hidden>
-              <div className="sr-plan-card">{sample ? <MiniPlan doc={sample} /> : <span className="sr-plan-empty" />}</div>
-              <figcaption>A sample layout made with our products</figcaption>
-            </figure>
+            {!(comingSoon && !sample) && (
+              <figure className="sr-hero-plan" aria-hidden>
+                <div className="sr-plan-card">{sample ? <MiniPlan doc={sample} /> : <span className="sr-plan-empty" />}</div>
+                <figcaption>A sample layout made with our products</figcaption>
+              </figure>
+            )}
           </div>
         </section>
 

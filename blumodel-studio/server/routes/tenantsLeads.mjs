@@ -73,6 +73,7 @@ export default function routes(ctx) {
         { name: 'showroom-lead-day', max: 30, windowMs: 24 * HOUR, by: 'ip' },
       ],
       handler: (rc) => {
+        if (rc.tenant.status === 'setup') throw new HttpError(403, 'This showroom isn’t open yet.', { code: 'showroom_not_open' });
         if (honeypot(rc.body)) return rc.send(201, { ok: true, id: `ld_${crypto.randomBytes(12).toString('base64url')}` });
         const lead = ctx.tx(() => leads.create(rc.tenant, rc.body, { userId: rc.user?.id ?? null, designUrlOf: designUrlOf(rc) }));
         if (mailer.enabled) {

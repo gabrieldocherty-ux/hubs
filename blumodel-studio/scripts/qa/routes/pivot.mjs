@@ -2,6 +2,8 @@
 // and dark where a screen is involved:
 //   - #/pay/showroom/<ref>: the page a company's monthly-plan link and Stripe's return land on (sales
 //     site, no sign-in): the demo payment completes and says the plan is active and the showroom live.
+//   - a showroom still in setup: no empty sample preview, no "call or email us below" without contact
+//     details, and sign-up refused (403 showroom_not_open).
 // Every screen route checks: no sideways scroll, and 44 px touch targets on phones.
 // Run: node scripts/qa.mjs --pkg pivot --port 8955
 
@@ -63,6 +65,14 @@ async function pendingMonthly(api, tag) {
   return { path: `/pay/showroom/${c.ref}`, tenantId: t.id, slug, ref: c.ref };
 }
 
+/** The company 'qa-setup' (status setup, no contact details), made once. */
+async function setupCompany(api) {
+  const admin = api.as('admin');
+  const list = (await must(admin.get('/api/admin/tenants'), 'Listing companies')).tenants;
+  if (!list.some((t) => t.slug === 'qa-setup')) await must(admin.post('/api/admin/tenants', { name: 'Setup Street Kitchens', slug: 'qa-setup' }), 'Creating the setup company');
+  return { path: '/' };
+}
+
 export default [
   // ── the monthly-plan payment page ──────────────────────────────────────────
   ...views.map((v) => ({
@@ -98,6 +108,27 @@ export default [
       await layoutOk(h);
     },
   },
+  ...[views[0], views[3]].map((v) => ({
+    name: `setup-landing${v.suffix}`,
+    as: 'anon',
+    host: 'qa-setup',
+    ...view(v),
+    setup: async ({ api }) => setupCompany(api),
+    waitFor: ['#sr-title'],
+    expectText: ['Our virtual showroom opens soon.'],
+    check: async (h) => {
+      const r = await h.evaluate(() => ({ text: document.body.innerText, plan: !!document.querySelector('.sr-hero-plan'), cta: !!document.querySelector('.sr-cta') }));
+      if (/call or email us below/i.test(r.text)) throw new Error('it says "call or email us below" with no contact details');
+      if (r.plan) throw new Error('the empty sample preview is shown');
+      if (r.cta) throw new Error('a Design button is offered before the showroom opens');
+      const su = await h.evaluate(async () => {
+        const res = await fetch('/api/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-BluModel': '1' }, body: JSON.stringify({ name: 'QA', email: `qa${Date.now()}@walk.test`, password: 'qa password 123' }) });
+        return { status: res.status, code: (await res.json()).code };
+      });
+      if (su.status !== 403 || su.code !== 'showroom_not_open') throw new Error(`sign-up answered ${su.status} ${su.code}`);
+      await layoutOk(h);
+    },
+  })),
   {
     name: 'pay-showroom-unknown',
     path: '#/pay/showroom/tc_doesNotExist0000000',

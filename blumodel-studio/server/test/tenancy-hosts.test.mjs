@@ -106,6 +106,28 @@ test('an extra subdomain reserves its slug: a later company with that slug is re
   }
 });
 
+test('a showroom in setup takes no sign-ups and no leads; its invited team still signs in', async () => {
+  const t = await startTestServer();
+  try {
+    const admin = await t.user({ role: 'admin' });
+    const tn = (await admin.post('/api/admin/tenants', { name: 'Walk Test', slug: 'walktest', ownerEmail: 'owner@walk.test' })).body;
+    const shop = t.agent({ host: t.hostFor('walktest') });
+    const su = await shop.post('/api/auth/signup', { name: 'Visitor', email: 'v@walk.test', password: 'visitor pass 123' });
+    assert.equal(su.status, 403);
+    assert.equal(su.body.code, 'showroom_not_open');
+    const lead = await shop.post('/api/leads', { name: 'V', email: 'v@walk.test', consent: true });
+    assert.equal(lead.status, 403);
+    assert.equal(lead.body.code, 'showroom_not_open');
+    // The owner's invite link works there, and the workspace opens.
+    const token = new URL(tn.invite.url.replace('/#/', '/')).searchParams.get('reset');
+    const owner = t.agent({ host: t.hostFor('walktest') });
+    assert.equal((await owner.post('/api/auth/reset', { token, password: 'owner pass 1234' })).status, 200);
+    assert.equal((await owner.get('/api/workspace/showroom')).status, 200);
+  } finally {
+    await t.close();
+  }
+});
+
 test('a suspended showroom is temporarily unavailable; data is kept', async () => {
   const t = await startTestServer();
   try {

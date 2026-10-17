@@ -11,8 +11,8 @@ import { SHOWROOM_MODULES } from '../routes/index.mjs';
 
 /** Two showrooms, each with an owner and a signed-in visitor, and a sales-site user. */
 async function world(t) {
-  const A = t.tenant({ name: 'Alpha Kitchens', slug: 'alpha', status: 'setup' });
-  const B = t.tenant({ name: 'Bravo Baths', slug: 'bravo', status: 'setup' });
+  const A = t.tenant({ name: 'Alpha Kitchens', slug: 'alpha' });
+  const B = t.tenant({ name: 'Bravo Baths', slug: 'bravo' });
   const aOwner = await t.showroomUser(A, { role: 'owner' });
   const bOwner = await t.showroomUser(B, { role: 'owner' });
   const aVisitor = await t.showroomUser(A);

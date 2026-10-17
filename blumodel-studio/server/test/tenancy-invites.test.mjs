@@ -75,9 +75,11 @@ test('an email change to the address before the invite gives nothing either; a p
 test('the admin route holds the invite too, even for an owner of a company in setup', async () => {
   const t = await startTestServer();
   try {
-    const C = t.tenant({ name: 'Charlie', slug: 'charlie', status: 'setup' });
+    const C = t.tenant({ name: 'Charlie', slug: 'charlie' });
     const admin = await t.user({ role: 'admin' });
+    // (A company in setup refuses sign-ups now; an account made while it was open still counts.)
     const eve = await t.showroomUser(C, { email: 'boss@charlie.test', password: 'eve password 1234' });
+    t.ctx.services.tenants.setStatus(C.id, 'setup');
     const r = await admin.post(`/api/admin/tenants/${C.id}/members`, { email: 'boss@charlie.test', role: 'owner' });
     assert.equal(r.status, 200, r.text);
     assert.equal(r.body.pending, true);

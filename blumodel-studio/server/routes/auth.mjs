@@ -134,6 +134,8 @@ export default function routes(ctx) {
         const taken = () => new HttpError(409, 'An account with that email already exists. Try signing in.');
         // An account is made on this site (a showroom's visitors are its own; the sales site's are ours).
         const tenantId = rc.site.tenantId;
+        // A showroom still being set up isn't open to the public: its team is invited, nobody signs up.
+        if (rc.site.tenant?.status === 'setup') throw new HttpError(403, 'This showroom isn’t open yet.', { code: 'showroom_not_open' });
         // On a showroom an address a sales-site team member signs in with is taken too.
         if (addressTaken(db, email, tenantId)) throw taken();
         const hash = await hashPassword(password);
