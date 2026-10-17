@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { ApiError } from '../../lib/api';
 import { amount } from '../../lib/money';
 import { hrefFor } from '../../lib/router';
 import { day, when, wsApi, type CreditEntry, type CreditsWire } from './api';
 import { useWorkspace } from './context';
+import { RendersGallery } from '../renders';
 
 const KIND: Record<CreditEntry['kind'], string> = {
   grant: 'Monthly credits',
@@ -119,6 +120,13 @@ export default function RendersTab() {
           </div>
         </section>
       )}
+
+      {/* Every render the showroom made (the renders package). */}
+      <section className="ws-card" aria-label="Renders">
+        <Suspense fallback={<p className="muted">Loading renders…</p>}>
+          <RendersGallery title="Renders" />
+        </Suspense>
+      </section>
 
       <section className="ws-card" aria-labelledby="ws-ledger-title">
         <h2 id="ws-ledger-title">History</h2>
