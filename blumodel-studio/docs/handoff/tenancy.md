@@ -135,7 +135,7 @@ Auth, projects, share, files, account and events work on a showroom exactly as b
 | GET | `/api/workspace/showroom` | | `{ tenant: StaffTenant, role }` |
 | PATCH | `/api/workspace/showroom` | `{ name?, branding?, contact?, settings? }` (settings: owner) | `{ tenant }`. `branding.logoFileId`: an image uploaded on the showroom (PUT `/api/files?kind=image&visibility=public`). |
 | GET | `/api/workspace/team` | | `{ members, role }` |
-| POST | `/api/workspace/team` *owner* | `{ email, name?, role: 'owner'\|'staff' }` | `201 { member, invite?: { url, expiresAt, emailed } }` (a 7-day set-your-password link on the showroom; emailed when email is on, else show it once) / `200 { member }` when the account existed |
+| POST | `/api/workspace/team` *owner* | `{ email, name?, role: 'owner'\|'staff' }` | `201 { member, invite?: { url, expiresAt, emailed } }` (a 7-day set-your-password link on the showroom; emailed when email is on, else show it once) / `200 { member, pending }` when the account existed. **`pending: true`** (with an `invite`): the address already had a showroom account that isn't on the team, so nothing is granted until the invite link is used (POST /api/auth/reset accepts it; tenancy-007 `tenant_invites`). There is no email verification, so an existing account proves nothing about the address |
 | PATCH | `/api/workspace/team/:userId` *owner* | `{ role }` | `{ member }` (never the last owner: 409 `last_owner`) |
 | DELETE | `/api/workspace/team/:userId` *owner* | | `{ members }` |
 | GET | `/api/workspace/products` | | `{ products }`: every product of the showroom, working copy, any status |
@@ -178,7 +178,7 @@ The staff open a lead's design at `lead.design.url` (`#/s/<token>` on the showro
 | POST | `/api/admin/tenants/:id/status` | `{ status: 'setup'\|'live'\|'suspended', note? }` | `{ tenant }` (`live` = launch/restore: comes out `lapsed` when unpaid) |
 | POST | `/api/admin/tenants/:id/hostnames` | `{ hostname, kind?: 'custom'\|'subdomain', verified?, primary? }` | `201 { hostname, tenant }` (409 `hostname_taken`) |
 | PATCH / DELETE | `/api/admin/tenants/:id/hostnames/:hostname` | `{ verified?, primary? }` | `{ tenant }` (the own subdomain can't be removed) |
-| POST | `/api/admin/tenants/:id/members` | `{ email, name?, role }` | `201 { member, invite? }` / `200 { member }` |
+| POST | `/api/admin/tenants/:id/members` | `{ email, name?, role }` | `201 { member, invite? }` / `200 { member, pending, invite? }` (pending as for the workspace route) |
 | DELETE | `/api/admin/tenants/:id/members/:userId` | | `{ members }` |
 | POST | `/api/admin/tenants/:id/licenses` | `{ amountCents? (default 199500), currency? ('cad'), startsOn? (today), endsOn? (a year, the day before), paidHow: invoice\|etransfer\|cheque\|card\|cash\|comp\|other, note? }` | `201 { license, tenant }` |
 | DELETE | `/api/admin/tenants/:id/licenses/:licenseId` | | `{ license, tenant }` (voided, kept) |

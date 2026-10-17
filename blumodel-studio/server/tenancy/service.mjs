@@ -461,7 +461,52 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
             WHERE m.tenant_id = ? ORDER BY CASE m.role WHEN 'owner' THEN 0 ELSE 1 END, u.name COLLATE NOCASE, u.email`,
         )
         .all(tenantId)
-        .map((r) => ({ userId: r.user_id, email: r.email, name: r.name, role: r.role, addedAt: r.created_at, lastSeenAt: r.last_seen_at ?? null }));
+        .map((r) => ({ userId: r.user_id, email: r.email, name: r.name, role: r.role, addedAt: r.created_at, lastSeenAt: r.last_seen_at ?? null }))
+        .concat(svc.pendingInvites(tenantId));
+    },
+
+    /**
+     * Invites waiting for their link to be used (tenancy-007): the address already had an account
+     * on this showroom, so it joins the team only once the invite link is used. Listed with the
+     * team as `pending: true`; they grant nothing until then.
+     */
+    pendingInvites(tenantId) {
+      return db
+        .prepare(
+          `SELECT i.user_id, i.role, i.created_at, u.email, u.name FROM tenant_invites i JOIN users u ON u.id = i.user_id
+            WHERE i.tenant_id = ? AND NOT EXISTS (SELECT 1 FROM tenant_members m WHERE m.tenant_id = i.tenant_id AND m.user_id = i.user_id)
+            ORDER BY u.email`,
+        )
+        .all(tenantId)
+        .map((r) => ({ userId: r.user_id, email: r.email, name: r.name, role: r.role, addedAt: r.created_at, lastSeenAt: null, pending: true }));
+    },
+
+    /** Holds an invite for an existing account until its link is used. Returns the pending member. */
+    addPendingInvite(tenantId, userId, role = 'staff', { by = null } = {}) {
+      if (!MEMBER_ROLES.includes(role)) throw invalid([{ field: 'role', message: 'Role is owner or staff.' }]);
+      db.prepare(
+        'INSERT INTO tenant_invites (tenant_id, user_id, role, invited_by, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(tenant_id, user_id) DO UPDATE SET role = excluded.role, invited_by = excluded.invited_by, created_at = excluded.created_at',
+      ).run(tenantId, userId, role, by, now());
+      return svc.pendingInvites(tenantId).find((m) => m.userId === userId);
+    },
+
+    /**
+     * The invite link for `userId` was used (POST /api/auth/reset): that proves the address, so every
+     * invite held for the account becomes a membership. Returns how many.
+     */
+    acceptInvites(userId) {
+      const rows = db.prepare('SELECT tenant_id, role, invited_by FROM tenant_invites WHERE user_id = ?').all(userId);
+      for (const r of rows) {
+        db.prepare('INSERT INTO tenant_members (tenant_id, user_id, role, invited_by, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(tenant_id, user_id) DO UPDATE SET role = excluded.role').run(
+          r.tenant_id,
+          userId,
+          r.role,
+          r.invited_by,
+          now(),
+        );
+      }
+      db.prepare('DELETE FROM tenant_invites WHERE user_id = ?').run(userId);
+      return rows.length;
     },
 
     /** Adds (or changes the role of) a member. */
@@ -479,6 +524,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
     /** Removes a member (never the last owner). Their sessions on this showroom end. */
     removeMember(tenantId, userId) {
       const role = svc.roleOf(tenantId, userId);
+      if (!role && db.prepare('DELETE FROM tenant_invites WHERE tenant_id = ? AND user_id = ?').run(tenantId, userId).changes) return true;
       if (!role) throw new HttpError(404, 'That person isn’t on this showroom’s team.');
       if (role === 'owner' && db.prepare("SELECT COUNT(*) AS n FROM tenant_members WHERE tenant_id = ? AND role = 'owner'").get(tenantId).n <= 1) {
         throw new HttpError(409, 'A showroom needs at least one owner. Make someone else an owner first.', { code: 'last_owner' });
@@ -490,8 +536,11 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
     /** Changes a member's role, keeping at least one owner. */
     setMemberRole(tenantId, userId, role) {
       const cur = svc.roleOf(tenantId, userId);
-      if (!cur) throw new HttpError(404, 'That person isn’t on this showroom’s team.');
       if (!MEMBER_ROLES.includes(role)) throw invalid([{ field: 'role', message: 'Role is owner or staff.' }]);
+      if (!cur && db.prepare('UPDATE tenant_invites SET role = ? WHERE tenant_id = ? AND user_id = ?').run(role, tenantId, userId).changes) {
+        return svc.pendingInvites(tenantId).find((m) => m.userId === userId);
+      }
+      if (!cur) throw new HttpError(404, 'That person isn’t on this showroom’s team.');
       if (cur === 'owner' && role !== 'owner' && db.prepare("SELECT COUNT(*) AS n FROM tenant_members WHERE tenant_id = ? AND role = 'owner'").get(tenantId).n <= 1) {
         throw new HttpError(409, 'A showroom needs at least one owner. Make someone else an owner first.', { code: 'last_owner' });
       }

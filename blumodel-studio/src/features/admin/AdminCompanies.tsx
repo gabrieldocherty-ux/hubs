@@ -1092,7 +1092,7 @@ function TeamSection({ t, onChange }: { t: AdminTenant; onChange: () => void }) 
             ),
           },
           { label: 'Role', cell: (m) => <Pill tone={m.role === 'owner' ? 'info' : 'plain'}>{m.role}</Pill> },
-          { label: 'Last seen', cell: (m) => (m.lastSeenAt ? timeAgo(m.lastSeenAt) : 'Never') },
+          { label: 'Last seen', cell: (m) => (m.pending ? 'Invited (link not used yet)' : m.lastSeenAt ? timeAgo(m.lastSeenAt) : 'Never') },
           {
             label: 'Actions',
             cell: (m) =>

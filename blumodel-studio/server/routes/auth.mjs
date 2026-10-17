@@ -24,7 +24,7 @@ import { passwordChangedEmail, resetEmail, signInAlertEmail } from '../email/mes
 import { createResetStore, maskEmail, RESET_MINUTES } from '../auth/resets.mjs';
 import { audit } from '../lib/audit.mjs';
 import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
-import { findSiteUser, siteAllows } from '../tenancy/accounts.mjs';
+import { addressTaken, findSiteUser, siteAllows } from '../tenancy/accounts.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -134,7 +134,8 @@ export default function routes(ctx) {
         const taken = () => new HttpError(409, 'An account with that email already exists. Try signing in.');
         // An account is made on this site (a showroom's visitors are its own; the sales site's are ours).
         const tenantId = rc.site.tenantId;
-        if (db.prepare('SELECT 1 FROM users WHERE email = ? AND tenant_id IS ?').get(email, tenantId)) throw taken();
+        // On a showroom an address a sales-site team member signs in with is taken too.
+        if (addressTaken(db, email, tenantId)) throw taken();
         const hash = await hashPassword(password);
         const id = crypto.randomUUID();
         try {
@@ -285,6 +286,8 @@ export default function routes(ctx) {
         if (!userId) throw gone();
         db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, userId);
         resets.revokeFor(userId);
+        // The link reached the address, so a team invite held for this account (tenancy-007) is accepted.
+        services.tenants.acceptInvites(userId);
         sessions.endAll(userId);
         limiter.reset(`login-email:${rc.site.tenantId ?? 'sales'}|${db.prepare('SELECT email FROM users WHERE id = ?').get(userId)?.email ?? ''}`);
         const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(userId);

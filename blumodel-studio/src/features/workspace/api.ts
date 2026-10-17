@@ -76,6 +76,8 @@ export interface Member {
   role: MemberRole;
   addedAt: number;
   lastSeenAt: number | null;
+  /** Invited, but the address already had an account here: joins once the invite link is used. */
+  pending?: boolean;
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'quoted' | 'won' | 'lost';
@@ -246,7 +248,7 @@ export const wsApi = {
 
   team: () => call<{ members: Member[]; role: MemberRole }>('GET', '/api/workspace/team'),
   invite: (body: { email: string; name?: string; role: MemberRole }) =>
-    call<{ member: Member; invite?: { url: string; expiresAt: number; emailed: boolean } }>('POST', '/api/workspace/team', body),
+    call<{ member: Member; pending?: boolean; invite?: { url: string; expiresAt: number; emailed: boolean } }>('POST', '/api/workspace/team', body),
   setRole: (userId: string, role: MemberRole) => call<{ member: Member }>('PATCH', `/api/workspace/team/${enc(userId)}`, { role }),
   removeMember: (userId: string) => call<{ members: Member[] }>('DELETE', `/api/workspace/team/${enc(userId)}`),
 

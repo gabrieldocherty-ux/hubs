@@ -18,7 +18,7 @@
 import { HttpError } from '../http/respond.mjs';
 import { audit } from '../lib/audit.mjs';
 import { EMAIL_RE } from '../auth/userWire.mjs';
-import { ensureSiteUser, inviteLink } from '../tenancy/accounts.mjs';
+import { inviteToTeam } from '../tenancy/accounts.mjs';
 import { MEMBER_ROLES } from '../tenancy/service.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
 
@@ -45,10 +45,7 @@ export default function routes(ctx) {
     const e = str(email, 254).toLowerCase();
     if (!EMAIL_RE.test(e) || /[\r\n,;<>]/.test(e)) throw new HttpError(400, 'Enter the person’s email address.', { errors: [{ field: 'email', message: 'Enter the person’s email address.' }] });
     if (!MEMBER_ROLES.includes(role)) throw new HttpError(400, 'Role is owner or staff.', { errors: [{ field: 'role', message: 'Role is owner or staff.' }] });
-    const user = await ensureSiteUser(db, { tenantId: t.id, email: e, name, now: ctx.now });
-    const member = ctx.tx(() => tenants.addMember(t.id, user.id, role, { by: rc.user.id }));
-    const invite = user.created ? inviteLink(db, { userId: user.id, origin: tenants.originOf(t, from(rc)), createdBy: rc.user.id, now: ctx.now }) : null;
-    return { member, invite, created: user.created };
+    return inviteToTeam(db, tenants, { tenant: t, email: e, name, role, by: rc.user.id, origin: tenants.originOf(t, from(rc)), now: ctx.now });
   }
 
   return [
@@ -176,7 +173,7 @@ export default function routes(ctx) {
         const b = rc.body ?? {};
         const out = await addToTeam(rc, t, { email: b.email, name: b.name, role: b.role ?? 'staff' });
         log(rc, 'tenant_member_add', t, { email: out.member.email, role: out.member.role });
-        rc.send(out.created ? 201 : 200, { member: out.member, ...(out.invite ? { invite: out.invite } : {}) });
+        rc.send(out.created ? 201 : 200, { member: out.member, pending: out.pending, ...(out.invite ? { invite: out.invite } : {}) });
       },
     },
     {

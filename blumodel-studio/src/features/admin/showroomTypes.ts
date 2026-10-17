@@ -23,6 +23,8 @@ export interface TenantMember {
   role: 'owner' | 'staff';
   addedAt: number;
   lastSeenAt: number | null;
+  /** The address already had an account on the showroom: joins once the invite link is used. */
+  pending?: boolean;
 }
 
 export interface TenantLicense {

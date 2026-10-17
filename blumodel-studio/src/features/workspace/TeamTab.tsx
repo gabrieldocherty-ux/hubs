@@ -89,7 +89,7 @@ export default function TeamTab() {
                     <span className="muted">{m.email}</span>
                     <span className="fine">
                       Added {day(m.addedAt)}
-                      {m.lastSeenAt ? ` · last seen ${day(m.lastSeenAt)}` : ' · hasn’t signed in yet'}
+                      {m.pending ? ' · invited, joins once they use the invite link' : m.lastSeenAt ? ` · last seen ${day(m.lastSeenAt)}` : ' · hasn’t signed in yet'}
                     </span>
                   </span>
                   <span className="ws-member-actions">
@@ -151,7 +151,19 @@ function InviteForm({ onAdded }: { onAdded: (m: Member) => void }) {
       const r = await wsApi.invite({ email: email.trim(), ...(name.trim() ? { name: name.trim() } : {}), role });
       onAdded(r.member);
       if (r.invite && !r.invite.emailed) setLink({ email: email.trim(), url: r.invite.url, expiresAt: r.invite.expiresAt });
-      toast(r.invite ? (r.invite.emailed ? `Invitation emailed to ${email.trim()}.` : `${email.trim()} is on the team. Send them the link below.`) : `${email.trim()} already had an account here and is on the team now.`, 'ok');
+      const who = email.trim();
+      toast(
+        r.pending
+          ? r.invite?.emailed
+            ? `${who} already had an account here. They join once they use the invitation we emailed.`
+            : `${who} already had an account here. They join once they use the link below.`
+          : r.invite
+            ? r.invite.emailed
+              ? `Invitation emailed to ${who}.`
+              : `${who} is on the team. Send them the link below.`
+            : `${who} is on the team.`,
+        'ok',
+      );
       setEmail('');
       setName('');
       setRole('staff');

@@ -35,7 +35,7 @@ export const showroomApi = {
   addHostname: (id: string, hostname: string, kind: 'subdomain' | 'custom') => call<One>('POST', `${tn(id)}/hostnames`, { hostname, kind }),
   updateHostname: (id: string, hostname: string, b: { verified?: boolean; primary?: boolean }) => call<One>('PATCH', `${tn(id)}/hostnames/${enc(hostname)}`, b),
   removeHostname: (id: string, hostname: string) => call<One>('DELETE', `${tn(id)}/hostnames/${enc(hostname)}`),
-  addMember: (id: string, b: { email: string; role: 'owner' | 'staff'; name?: string }) => call<{ member: TenantMember; invite?: InviteLink }>('POST', `${tn(id)}/members`, b),
+  addMember: (id: string, b: { email: string; role: 'owner' | 'staff'; name?: string }) => call<{ member: TenantMember; pending?: boolean; invite?: InviteLink }>('POST', `${tn(id)}/members`, b),
   removeMember: (id: string, userId: string) => call<{ members: TenantMember[] }>('DELETE', `${tn(id)}/members/${enc(userId)}`),
   recordLicense: (id: string, b: { amountCents: number; startsOn?: string; endsOn?: string; paidHow: PaidHow; note?: string }) =>
     call<One & { license: TenantLicense }>('POST', `${tn(id)}/licenses`, b),

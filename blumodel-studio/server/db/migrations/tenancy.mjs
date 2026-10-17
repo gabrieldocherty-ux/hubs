@@ -351,4 +351,22 @@ export const steps = [
       `);
     },
   },
+  {
+    // A team invite to an address that already has an account on the showroom (a visitor who signed
+    // up, or changed their email, before the invite) is held here until the invite link is used:
+    // there is no email verification, so the account itself proves nothing about the address.
+    id: 'tenancy-007-pending-invites',
+    up(db) {
+      db.exec(`
+        CREATE TABLE tenant_invites (
+          tenant_id TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          role TEXT NOT NULL CHECK (role IN ('owner','staff')),
+          invited_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (tenant_id, user_id));
+        CREATE INDEX tenant_invites_user ON tenant_invites(user_id);
+      `);
+    },
+  },
 ];
