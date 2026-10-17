@@ -85,6 +85,11 @@ export default function routes(ctx) {
         if (!(await checkPassword(rc.user.id, rc.body.password))) {
           throw new HttpError(400, 'Your password is not right.', { code: 'wrong_password' });
         }
+        // A sales-site account on a showroom's team (a contractor whose company became a showroom)
+        // is the whole blumodel.studio account: it is deleted there, never from a showroom.
+        if (rc.site.tenantId && db.prepare('SELECT tenant_id FROM users WHERE id = ?').get(rc.user.id)?.tenant_id == null) {
+          throw new HttpError(409, 'This account is your BluModel Studio account. Delete it on blumodel.studio, or ask an owner to remove you from this showroom’s team.', { code: 'sales_account' });
+        }
         if (account.activePaidPlan(rc.user.id)) {
           throw new HttpError(409, 'Cancel your plan first (Account > Billing). You can delete your account once it is set to end.', { code: 'active_subscription' });
         }

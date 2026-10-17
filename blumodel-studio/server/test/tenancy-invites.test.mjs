@@ -119,3 +119,23 @@ test("a sales-site team member's address can't be taken on the showroom by signi
     await t.close();
   }
 });
+
+test("a sales-site team member can't delete their whole account from a showroom", async () => {
+  const t = await startTestServer();
+  try {
+    const B = t.tenant({ name: 'Bravo Bath', slug: 'bravo' });
+    const pro = await t.user({ email: 'pro2@bravo.test', password: 'pro password 1234' });
+    t.ctx.services.tenants.addMember(B.id, pro.id, 'owner');
+    const onShowroom = new Agent(t.url, { host: B.host });
+    await onShowroom.post('/api/auth/login', { email: 'pro2@bravo.test', password: 'pro password 1234' });
+    const del = await onShowroom.post('/api/account/delete', { password: 'pro password 1234' });
+    assert.equal(del.status, 409);
+    assert.equal(del.body.code, 'sales_account');
+    assert.ok(t.db.prepare('SELECT 1 FROM users WHERE id = ?').get(pro.id));
+    // A visitor's own showroom account still deletes there.
+    const v = await t.showroomUser(B, { password: 'visitor pass 123' });
+    assert.equal((await v.post('/api/account/delete', { password: 'visitor pass 123' })).status, 204);
+  } finally {
+    await t.close();
+  }
+});
