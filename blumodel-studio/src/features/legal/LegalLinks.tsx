@@ -1,4 +1,4 @@
-import { useLegal } from '../../lib/config';
+import { useConfig, useLegal } from '../../lib/config';
 import { useSession } from '../../store/useSession';
 
 /**
@@ -8,6 +8,9 @@ import { useSession } from '../../store/useSession';
  */
 export function LegalLinks({ className = '', newTab = false }: { className?: string; newTab?: boolean }) {
   const legal = useLegal();
+  // On a showroom the footer is the company's: visitors never pay (no Refunds), and the © is theirs.
+  const tenant = useConfig((s) => s.config?.tenant ?? null);
+  const owner = tenant ? tenant.name.replace(/\s*\((demo|sample)\)\s*$/i, '').trim() || tenant.name : (legal.businessName ?? 'BluModel Studio');
   const tab = newTab ? { target: '_blank', rel: 'noopener' } : {};
   return (
     <nav className={`legal-links ${className}`} aria-label="Legal">
@@ -17,11 +20,13 @@ export function LegalLinks({ className = '', newTab = false }: { className?: str
       <a href="#/privacy" {...tab}>
         Privacy
       </a>
-      <a href="#/refunds" {...tab}>
-        Refunds
-      </a>
-      {legal.supportEmail && <a href={`mailto:${legal.supportEmail}`}>Contact</a>}
-      <span className="legal-links-owner">© {new Date().getFullYear()} {legal.businessName ?? 'BluModel Studio'}</span>
+      {!tenant && (
+        <a href="#/refunds" {...tab}>
+          Refunds
+        </a>
+      )}
+      {!tenant && legal.supportEmail && <a href={`mailto:${legal.supportEmail}`}>Contact</a>}
+      <span className="legal-links-owner">© {new Date().getFullYear()} {owner}</span>
       <LegalUnsetBadge />
     </nav>
   );

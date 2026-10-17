@@ -10,6 +10,8 @@
 //     own heading, and last in the line select.
 //   - on a phone the links the review measured under 44 px (the editor's back link, the workspace's
 //     company link, product names, the Renders tab's inline link) are 44 px tall.
+//   - a showroom's 404 and legal pages keep the company's header and footer: no Refunds (visitors
+//     never pay), the © is the company's, #/refunds goes to the terms, which open at the visitors' part.
 // Every screen route checks: no sideways scroll, and 44 px touch targets on phones.
 // Run: node scripts/qa.mjs --pkg pivot --port 8955
 
@@ -236,6 +238,43 @@ export default [
       if (await h.evaluate(() => !!document.querySelector('.back-link'))) await tall(h, '.back-link');
     },
   },
+  ...[views[0], views[3]].map((v) => ({
+    name: `showroom-404${v.suffix}`,
+    host: 'demo',
+    as: 'anon',
+    path: '#/no/such/page',
+    ...view(v),
+    expectText: ['We can’t find that page', 'Design your kitchen', '© 2026 Northline Kitchen & Bath'],
+    check: async (h) => {
+      const r = await h.evaluate(() => ({ refunds: !!document.querySelector('a[href="#/refunds"]'), text: document.body.innerText }));
+      if (r.refunds) throw new Error('the showroom 404 links Refunds');
+      if (/BluModel Studio/.test(r.text)) throw new Error('the showroom 404 says BluModel Studio');
+      await layoutOk(h);
+    },
+  })),
+  ...[views[0], views[3]].map((v) => ({
+    name: `showroom-terms${v.suffix}`,
+    host: 'demo',
+    as: 'anon',
+    path: '#/refunds',
+    ...view(v),
+    waitFor: ['#legal-visitors', '.legal-bar .site-logo, .legal-bar .brand'],
+    expectText: ['If you are visiting a showroom', 'Northline Kitchen & Bath’s showroom'],
+    check: async (h) => {
+      await h.waitUntil(() => location.hash === '#/terms', 5000, '#/refunds going to #/terms');
+      const r = await h.evaluate(() => ({
+        refunds: !!document.querySelector('a[href="#/refunds"]'),
+        owner: document.querySelector('.legal-links-owner')?.textContent ?? '',
+        top: Math.round(document.getElementById('legal-visitors').getBoundingClientRect().top),
+        brand: document.querySelector('.legal-bar .brand')?.getAttribute('aria-label') ?? '',
+      }));
+      if (r.refunds) throw new Error('the showroom legal pages link Refunds');
+      if (!/Northline/.test(r.owner)) throw new Error(`the footer says ${r.owner}`);
+      if (!/Northline/.test(r.brand)) throw new Error(`the header is ${r.brand}`);
+      if (r.top > 300) throw new Error(`the terms didn't open at the visitors' part (it is ${r.top}px down)`);
+      await layoutOk(h);
+    },
+  })),
   {
     name: 'demo-leads-have-designs',
     host: 'demo',

@@ -254,3 +254,10 @@
     min-height: 44px;
   }
 }
+
+/* On a phone the sticky bar wraps to two or three rows: a section scrolled to stays below it. */
+@media (max-width: 640px) {
+  .legal-doc section {
+    scroll-margin-top: 180px;
+  }
+}
