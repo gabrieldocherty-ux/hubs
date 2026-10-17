@@ -66,7 +66,7 @@ async function pendingMonthly(api, tag) {
   const admin = api.as('admin');
   const slug = `qa-pay-${tag}-${Date.now().toString(36)}`.slice(0, 40);
   const t = (await must(admin.post('/api/admin/tenants', { name: 'Harbour Cabinet Co (QA)', slug, contact: { phone: '519-555-0142' } }), 'Creating the company')).tenant;
-  await must(admin.post(`/api/admin/tenants/${t.id}/licenses`, { paidHow: 'comp' }), 'Recording the license');
+  await must(admin.post(`/api/admin/tenants/${t.id}/licenses`, { paidHow: 'comp', amountCents: 0 }), 'Recording the license');
   await must(admin.post(`/api/admin/tenants/${t.id}/status`, { status: 'live' }), 'Launching it');
   const c = (await must(admin.post(`/api/admin/tenants/${t.id}/monthly/checkout`), 'Making the monthly link')).checkout;
   if (!String(c.url).endsWith(`#/pay/showroom/${c.ref}`)) throw new Error(`the demo link is ${c.url}`);

@@ -298,7 +298,7 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
         // What an admin does for a signed deal: a license from today, and (here) a complimentary
         // monthly plan, so no payment provider is involved.
         const sb = ctx.services.showroomBilling;
-        sb.recordLicense(tn.id, { paidHow: 'comp', startsOn: new Date(now()).toISOString().slice(0, 10) });
+        sb.recordLicense(tn.id, { paidHow: 'comp', amountCents: 0, startsOn: new Date(now()).toISOString().slice(0, 10) });
         sb.setComplimentary(tn.id, true, { note: 'test harness' });
         ts.setStatus(tn.id, 'live');
       } else if (status === 'lapsed') ts.setStatus(tn.id, 'live'); // launched with nothing paid: lapses at once

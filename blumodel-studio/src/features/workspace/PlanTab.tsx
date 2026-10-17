@@ -102,7 +102,7 @@ export default function PlanTab() {
             <p>There’s no license in force today. We record it once your agreement is signed; contact us if you’ve already paid.</p>
           )}
           <p className="fine">
-            The license covers the showroom software, its setup and modelling your starting range (up to {plan.prices.license.includedProducts} products; list price from {money(plan.prices.license.listCents, plan.prices.currency)} a year). More products are quoted
+            The license covers the showroom software, its setup and modelling your starting range, at the amount on your order or invoice. More products are quoted
             from the Products tab. We contact you before it renews.
           </p>
         </section>

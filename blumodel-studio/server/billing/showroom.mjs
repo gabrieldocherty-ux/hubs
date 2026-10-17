@@ -18,7 +18,7 @@
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
-import { CURRENCY, SHOWROOM_LICENSE, SHOWROOM_MONTHLY } from '../lib/plans.mjs';
+import { CURRENCY, SHOWROOM_MONTHLY } from '../lib/plans.mjs';
 import { idOf, invoicePeriodEnd, invoiceSubscriptionId, periodEndOf } from './stripe.mjs';
 import { addMonths } from './service.mjs';
 
@@ -108,13 +108,15 @@ export function createShowroomBilling({ db, now = Date.now, log = console }) {
     },
 
     /**
-     * Records a license an admin sold. `amountCents` defaults to the list price, `endsOn` to a
-     * year after `startsOn` (the day before). Returns the license.
+     * Records a license an admin sold. `amountCents` is required: there is no list price (the setup
+     * and license are quoted per company), so the admin always gives the amount agreed. `endsOn`
+     * defaults to a year after `startsOn` (the day before). Returns the license.
      */
     recordLicense(tenantId, { amountCents, currency = CURRENCY, startsOn, endsOn, paidHow, note = '' }, { by = null } = {}) {
       const errors = [];
-      const amount = amountCents === undefined || amountCents === null ? SHOWROOM_LICENSE.priceCents : amountCents;
-      if (!Number.isInteger(amount) || amount < 0 || amount > 100_000_000) errors.push({ field: 'amountCents', message: 'The amount is a whole number of cents.' });
+      const amount = amountCents;
+      if (amount === undefined || amount === null || amount === '') errors.push({ field: 'amountCents', message: 'Enter the amount agreed with the company: the license has no list price.' });
+      else if (!Number.isInteger(amount) || amount < 0 || amount > 100_000_000) errors.push({ field: 'amountCents', message: 'The amount is a whole number of cents.' });
       const cur = String(currency || '').toLowerCase();
       if (!/^[a-z]{3}$/.test(cur)) errors.push({ field: 'currency', message: 'Currency is a 3-letter code like cad.' });
       const start = cleanDate(startsOn ?? utcDate(now()));

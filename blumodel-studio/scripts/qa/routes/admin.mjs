@@ -284,9 +284,17 @@ export default [
       await h.type(`owner-${tag}@maple-qa.test`);
       await press(h, 'Create company');
       await h.waitForText(['Sign-in link', 'Yearly license', 'Setting up']);
-      // Record the license at the list price, make the monthly plan complimentary, launch.
+      // Record the license (there is no list price: the amount must be typed, and the button waits
+      // for it), make the monthly plan complimentary, launch.
+      const amountInput = 'input[placeholder="The amount agreed"]';
+      const prefilled = await h.evaluate((sel) => document.querySelector(sel)?.value ?? null, amountInput);
+      if (prefilled !== '') throw new Error(`the license amount is prefilled: ${JSON.stringify(prefilled)}`);
+      const recordDisabled = await h.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Record license')?.disabled);
+      if (recordDisabled !== true) throw new Error('Record license is enabled without an amount');
+      await h.click(amountInput);
+      await h.type('1250');
       await press(h, 'Record license');
-      await h.waitForText('License recorded');
+      await h.waitForText('License recorded: $1,250 CAD');
       await h.click('input[aria-label="Why the plan is complimentary"]');
       await h.type('Launch partner (QA)');
       await press(h, 'Make it complimentary');

@@ -27,7 +27,7 @@
 
 import { HttpError } from '../http/respond.mjs';
 import { audit } from '../lib/audit.mjs';
-import { CURRENCY, SHOWROOM_LICENSE, SHOWROOM_MONTHLY } from '../lib/plans.mjs';
+import { CURRENCY, SHOWROOM_MONTHLY } from '../lib/plans.mjs';
 import { createStripe, idOf, periodEndOf } from '../billing/stripe.mjs';
 import { paymentsUnavailable } from '../payments/stripeApi.mjs';
 import { GRACE_DAYS } from '../billing/showroom.mjs';
@@ -82,7 +82,8 @@ export default function routes(ctx) {
     receipts: sb.payments(t.id),
     standing: { ...sb.standing(t.id), status: t.status },
     prices: {
-      license: { listCents: SHOWROOM_LICENSE.priceCents, includedProducts: SHOWROOM_LICENSE.includedProducts },
+      // No list price: the setup and license are quoted per company (the amount is on the license).
+      license: { quoted: true },
       monthly: { cents: SHOWROOM_MONTHLY.priceCents, hostingCents: SHOWROOM_MONTHLY.hostingCents, creditCents: SHOWROOM_MONTHLY.creditCents },
       currency: CURRENCY,
     },

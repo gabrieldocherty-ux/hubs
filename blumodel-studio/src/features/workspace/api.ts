@@ -147,7 +147,7 @@ export interface PlanWire {
   monthly: Monthly | null;
   receipts: Receipt[];
   standing: { licenseCurrent: boolean; monthlyPaid: boolean; status: TenantStatus };
-  prices: { license: { listCents: number; includedProducts: number }; monthly: { cents: number; hostingCents: number; creditCents: number }; currency: string };
+  prices: { license: { quoted: true }; monthly: { cents: number; hostingCents: number; creditCents: number }; currency: string };
   graceDays: number;
 }
 

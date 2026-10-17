@@ -146,7 +146,7 @@ Auth, projects, share, files, account and events work on a showroom exactly as b
 | GET | `/api/workspace/leads/export` | | `{ filename, contentType: 'text/csv', content }` (spreadsheet-safe cells) |
 | GET | `/api/workspace/leads/:id` | | `{ lead }` (marks read) |
 | PATCH | `/api/workspace/leads/:id` | `{ status?, staffNotes? }` | `{ lead }` |
-| GET | `/api/workspace/plan` | | `{ license, licenses, monthly, receipts, standing: { licenseCurrent, monthlyPaid, status }, prices: { license: { listCents, includedProducts }, monthly: { cents, hostingCents, creditCents }, currency }, graceDays }` |
+| GET | `/api/workspace/plan` | | `{ license, licenses, monthly, receipts, standing: { licenseCurrent, monthlyPaid, status }, prices: { license: { quoted: true } (no list price), monthly: { cents, hostingCents, creditCents }, currency }, graceDays }` |
 | POST | `/api/workspace/plan/portal` *owner* | | `{ url }` (Stripe's billing portal; 409 `no_customer` without a card) |
 | GET | `/api/workspace/credits` | `?before=<entry id>` | `{ balanceCents, lots: [{ id, source, cents, remaining, expiresAt, createdAt }], nextExpiry: { at, cents } \| null, heldCents, renderCostCents, rolloverMonths, history: CreditEntry[] }` |
 
@@ -180,7 +180,7 @@ The staff open a lead's design at `lead.design.url` (`#/s/<token>` on the showro
 | PATCH / DELETE | `/api/admin/tenants/:id/hostnames/:hostname` | `{ verified?, primary? }` | `{ tenant }` (the own subdomain can't be removed) |
 | POST | `/api/admin/tenants/:id/members` | `{ email, name?, role }` | `201 { member, invite? }` / `200 { member, pending, invite? }` (pending as for the workspace route) |
 | DELETE | `/api/admin/tenants/:id/members/:userId` | | `{ members }` |
-| POST | `/api/admin/tenants/:id/licenses` | `{ amountCents? (default 199500), currency? ('cad'), startsOn? (today), endsOn? (a year, the day before), paidHow: invoice\|etransfer\|cheque\|card\|cash\|comp\|other, note? }` | `201 { license, tenant }` |
+| POST | `/api/admin/tenants/:id/licenses` | `{ amountCents (required: the amount agreed, whole cents; there is no default or list price), currency? ('cad'), startsOn? (today), endsOn? (a year, the day before), paidHow: invoice\|etransfer\|cheque\|card\|cash\|comp\|other, note? }` | `201 { license, tenant }` (400 `amountCents` when it's missing or not a whole number of cents; a complimentary license is `amountCents: 0, paidHow: 'comp'`) |
 | DELETE | `/api/admin/tenants/:id/licenses/:licenseId` | | `{ license, tenant }` (voided, kept) |
 | POST | `/api/admin/tenants/:id/monthly/checkout` | | `201 { checkout: { ref, url, status, ... }, tenant }`: the Stripe Checkout link to send (demo: `${PUBLIC_URL}/#/pay/showroom/<ref>`); 409 `already_paid` |
 | POST | `/api/admin/tenants/:id/monthly/comp` | `{ on: boolean, note? }` | `{ tenant }` (complimentary monthly plan) |
@@ -192,7 +192,9 @@ The staff open a lead's design at `lead.design.url` (`#/s/<token>` on the showro
 
 ## 6. Money
 
-Prices: `src/data/plans.json` (`showroom_license` 199500 yearly, admin-recorded; `showroom_monthly`
+Prices: `src/data/plans.json` (`showroom_license` has **no price**: `priceCents: null, quoted: true`,
+since 2026-10-17 the setup and yearly license are quoted per company and an admin records the amount
+agreed for each deal; `showroom_monthly`
 5000/month = 2500 hosting incl. the web address + 2500 render credits, 3-month rollover; the four
 homeowner/contractor plans are `forSale: false`). Server constants: `server/lib/plans.mjs`
 `SHOWROOM_LICENSE`, `SHOWROOM_MONTHLY`, `LEGACY_PLAN_IDS`.

@@ -59,13 +59,28 @@ test('licenses: recorded by an admin (default list price, a year), audited, void
     assert.deepEqual(r.body.tenant.standing, { licenseCurrent: false, monthlyPaid: false, live: false });
     assert.equal((await shop.get('/api/showroom')).status, 503);
 
-    // Bad input, then a license at the list price for a year from today.
-    for (const bad of [{ paidHow: 'barter' }, { paidHow: 'invoice', startsOn: '2026-13-01' }, { paidHow: 'invoice', amountCents: -5 }, { paidHow: 'invoice', startsOn: '2026-11-01', endsOn: '2026-10-01' }]) {
+    // Bad input. There is no list price (the setup and license are quoted per company), so a license
+    // without an amount is refused: the admin always types the amount agreed.
+    for (const bad of [
+      { paidHow: 'barter', amountCents: 120000 },
+      { paidHow: 'invoice', amountCents: 120000, startsOn: '2026-13-01' },
+      { paidHow: 'invoice', amountCents: -5 },
+      { paidHow: 'invoice', amountCents: 12.5 },
+      { paidHow: 'invoice', amountCents: '1200' },
+      { paidHow: 'invoice', amountCents: 120000, startsOn: '2026-11-01', endsOn: '2026-10-01' },
+    ]) {
       assert.equal((await admin.post(`/api/admin/tenants/${id}/licenses`, bad)).status, 400, JSON.stringify(bad));
     }
-    r = await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'etransfer', note: 'Signed on the call 2026-10-17' });
+    for (const missing of [{ paidHow: 'etransfer' }, { paidHow: 'etransfer', amountCents: null }, { paidHow: 'comp' }]) {
+      r = await admin.post(`/api/admin/tenants/${id}/licenses`, missing);
+      assert.equal(r.status, 400, JSON.stringify(missing));
+      assert.equal(r.body.errors?.[0]?.field, 'amountCents', r.text);
+    }
+    assert.equal(s.db.prepare('SELECT COUNT(*) AS n FROM tenant_licenses WHERE tenant_id = ?').get(id).n, 0, 'nothing recorded without an amount');
+    // The amount agreed for this company, for a year from today.
+    r = await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'etransfer', amountCents: 120000, note: 'Signed on the call 2026-10-17' });
     assert.equal(r.status, 201, r.text);
-    assert.equal(r.body.license.amountCents, 199500);
+    assert.equal(r.body.license.amountCents, 120000);
     assert.equal(r.body.license.currency, 'cad');
     assert.equal(r.body.license.startsOn, today());
     assert.equal(r.body.license.endsOn, yearEnd(today()));
@@ -104,7 +119,7 @@ test('licenses: recorded by an admin (default list price, a year), audited, void
     assert.equal(plan.standing.status, 'live');
     assert.equal(plan.license.amountCents, 150000);
     assert.deepEqual(plan.prices.monthly, { cents: 5000, hostingCents: 2500, creditCents: 2500 });
-    assert.equal(plan.prices.license.listCents, 199500);
+    assert.deepEqual(plan.prices.license, { quoted: true }, 'no list price: the license is quoted per company');
     assert.equal(plan.graceDays, 14);
     assert.deepEqual(plan.receipts.map((x) => [x.kind, x.amountCents]).sort(), [['license', 150000], ['license', 150000]]);
   } finally {
@@ -119,7 +134,7 @@ test('the monthly plan through Stripe: admin link, signed webhook, invoices, 14-
     const admin = await s.user({ role: 'admin' });
     const created = await admin.post('/api/admin/tenants', { name: 'Oak & Iron Kitchens', slug: 'oak-iron', contact: { email: 'office@oakiron.test' } });
     const id = created.body.tenant.id;
-    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice' });
+    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice', amountCents: 150000 });
     await admin.post(`/api/admin/tenants/${id}/status`, { status: 'live' });
 
     const link = await admin.post(`/api/admin/tenants/${id}/monthly/checkout`);
@@ -211,7 +226,7 @@ test('Stripe events in any order: an early invoice.paid keeps its credits, a lat
   try {
     const admin = await s.user({ role: 'admin' });
     const id = (await admin.post('/api/admin/tenants', { name: 'Order Co', slug: 'order-co' })).body.tenant.id;
-    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice' });
+    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice', amountCents: 150000 });
     await admin.post(`/api/admin/tenants/${id}/status`, { status: 'live' });
     const ref = (await admin.post(`/api/admin/tenants/${id}/monthly/checkout`)).body.checkout.ref;
     const meta = { kind: 'showroom_monthly', checkout_ref: ref, tenant_id: id };
@@ -249,7 +264,7 @@ test('a new link over a past-due Stripe subscription cancels it first, and a pay
   try {
     const admin = await s.user({ role: 'admin' });
     const id = (await admin.post('/api/admin/tenants', { name: 'Lapse Co', slug: 'lapse-co' })).body.tenant.id;
-    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice' });
+    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'invoice', amountCents: 150000 });
     await admin.post(`/api/admin/tenants/${id}/status`, { status: 'live' });
     const ref = (await admin.post(`/api/admin/tenants/${id}/monthly/checkout`)).body.checkout.ref;
     const meta = { kind: 'showroom_monthly', checkout_ref: ref, tenant_id: id };
@@ -303,7 +318,7 @@ test('the demo provider: the link page pays without money; renewals, failure, gr
   try {
     const admin = await s.user({ role: 'admin' });
     const id = (await admin.post('/api/admin/tenants', { name: 'Demo Pay Co', slug: 'demo-pay' })).body.tenant.id;
-    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'comp' });
+    await admin.post(`/api/admin/tenants/${id}/licenses`, { paidHow: 'comp', amountCents: 0 });
     await admin.post(`/api/admin/tenants/${id}/status`, { status: 'live' });
     const link = await admin.post(`/api/admin/tenants/${id}/monthly/checkout`);
     assert.match(link.body.checkout.url, /\/#\/pay\/showroom\/tc_[A-Za-z0-9_-]+$/);

@@ -35,19 +35,17 @@ const PAID_HOW: [PaidHow, string][] = [
 ];
 const PAID_LABEL = Object.fromEntries(PAID_HOW) as Record<PaidHow, string>;
 
-// Prices from src/data/plans.json, the server's own price list (fallbacks: SHOWROOM_PIVOT §2).
+// Prices from src/data/plans.json, the server's own price list (fallbacks: SHOWROOM_PIVOT §2). The
+// setup and yearly license has no price there: it is quoted per company, and the admin types the
+// amount agreed for each deal.
 interface ShowroomPlanJson {
   id: string;
-  priceCents: number;
-  includedProducts?: number;
+  priceCents: number | null;
   creditRolloverMonths?: number;
   breakdown?: { id: string; cents: number }[];
 }
 const PLAN_LIST = plansJson as unknown as ShowroomPlanJson[];
-const LICENSE_PLAN = PLAN_LIST.find((p) => p.id === 'showroom_license');
 const MONTHLY_PLAN = PLAN_LIST.find((p) => p.id === 'showroom_monthly');
-const LIST_PRICE_CENTS = LICENSE_PLAN?.priceCents ?? 199500;
-const INCLUDED_PRODUCTS = LICENSE_PLAN?.includedProducts ?? 50;
 const MONTHLY_CENTS = MONTHLY_PLAN?.priceCents ?? 5000;
 const part = (id: string, fallback: number) => MONTHLY_PLAN?.breakdown?.find((b) => b.id === id)?.cents ?? fallback;
 const HOSTING_CENTS = part('hosting', 2500);
@@ -70,7 +68,7 @@ export function slugPreview(name: string): string {
   );
 }
 
-/** "1,995" or "1995.50" (dollars) → cents; null when it isn't an amount. */
+/** "1,250" or "1250.50" (dollars) → cents; null when it isn't an amount. */
 export function dollarsToCents(s: string): number | null {
   const t = s.replace(/[$,\s]/g, '');
   if (!/^\d+(\.\d{1,2})?$/.test(t)) return null;
@@ -558,25 +556,39 @@ function StatusSection({ t, act, busy }: SectionProps) {
   );
 }
 
+/** Most a license can be recorded at (the server's limit, 100,000,000 cents). */
+const MAX_LICENSE_CENTS = 100_000_000;
+
+/** Why the typed license amount can't be recorded, or null when it can. There is no default amount. */
+export function licenseAmountProblem(s: string): string | null {
+  if (!s.trim()) return 'Type the amount agreed with the company.';
+  const cents = dollarsToCents(s);
+  if (cents === null) return 'Type an amount in dollars, like 1250 or 1250.50.';
+  if (cents > MAX_LICENSE_CENTS) return 'That amount is too large.';
+  return null;
+}
+
 function LicenseSection({ t, act, busy }: SectionProps) {
-  const [amount, setAmount] = useState(String(LIST_PRICE_CENTS / 100));
+  const [amount, setAmount] = useState('');
   const [startsOn, setStartsOn] = useState('');
   const [endsOn, setEndsOn] = useState('');
   const [paidHow, setPaidHow] = useState<PaidHow>('invoice');
   const [note, setNote] = useState('');
   const [voiding, setVoiding] = useState<string | null>(null);
   const cents = dollarsToCents(amount);
+  const problem = licenseAmountProblem(amount);
   const licenses = t.licenses ?? [];
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (cents === null) return;
+    if (problem || cents === null) return;
     const ok = await act(
       'license',
       () => showroomApi.recordLicense(t.id, { amountCents: cents, startsOn: startsOn || undefined, endsOn: endsOn || undefined, paidHow, note: note.trim() }),
       (r) => `License recorded: ${money(r.license.amountCents, r.license.currency)}, ${r.license.startsOn} to ${r.license.endsOn}.`,
     );
     if (ok) {
+      setAmount('');
       setNote('');
       setStartsOn('');
       setEndsOn('');
@@ -635,7 +647,15 @@ function LicenseSection({ t, act, busy }: SectionProps) {
         <div className="adm-form-row">
           <label className="adm-field">
             <span>Amount (CAD)</span>
-            <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} aria-invalid={cents === null} />
+            <input
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="The amount agreed"
+              required
+              aria-invalid={amount.trim() !== '' && problem !== null}
+              aria-describedby="adm-license-amount-hint"
+            />
           </label>
           <label className="adm-field">
             <span>How it was paid</span>
@@ -660,11 +680,15 @@ function LicenseSection({ t, act, busy }: SectionProps) {
         </div>
         <label className="adm-field">
           <span>Note</span>
-          <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="e.g. Invoice 1042, includes 50 products" />
+          <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="e.g. Invoice 1042, starting range as quoted" />
         </label>
-        <p className="adm-note">List price {money(LIST_PRICE_CENTS)} a year with setup and up to {INCLUDED_PRODUCTS} products modelled. Type what the deal was signed at. Dates are calendar days (UTC), both included.</p>
+        <p className="adm-note" id="adm-license-amount-hint">
+          {amount.trim() !== '' && problem ? <b>{problem} </b> : null}
+          There is no list price: the setup and license are quoted per company, so type the amount on this company’s order or invoice. Dates are calendar days (UTC), both
+          included.
+        </p>
         <div>
-          <button type="submit" className="btn" disabled={!!busy || cents === null}>
+          <button type="submit" className="btn" disabled={!!busy || problem !== null}>
             {busy === 'license' ? 'Recording…' : 'Record license'}
           </button>
         </div>
