@@ -390,7 +390,7 @@ export default [
     name: 'pay-stripe-pricing-companies',
     path: '#/pricing?qa-payments=stripe',
     as: 'anon',
-    expectText: ['That’s the whole price.'],
+    expectText: ['a month, plus a setup quoted for your company.'],
     check: async (h) => {
       // ("demo showroom" is the product's own wording here, so no DEMO-payment wording check.)
       for (const bad of ['Go Unlimited', 'Become a BluModel Studio contractor', 'Start free']) if ((await buttonsLabelled(h, bad)).length) throw new Error(`the pricing page still offers "${bad}"`);
@@ -588,7 +588,7 @@ export default [
     check: async (h) => {
       const pages = [
         ['#/', 'the landing page', 'Your own virtual showroom, with your products, under your name.'],
-        ['#/pricing', 'pricing', 'That’s the whole price.'],
+        ['#/pricing', 'pricing', 'a month, plus a setup quoted for your company.'],
         ['#/signin', 'sign in', 'Welcome back'],
         ['#/signup', 'sign up', 'By creating an account you agree to the Terms and the Privacy policy'],
         [`#/p/${h.data.productId}`, 'a product page', 'Sample Gas Range'],
