@@ -59,6 +59,12 @@ export function dollarsToCents(s: string): number | null {
   return Math.round(Number(t) * 100);
 }
 
+/** GET /api/config's baseDomain (blumodel.studio in production, localhost in dev and QA). */
+const baseDomainOf = (cfg: unknown) => {
+  const v = (cfg as { baseDomain?: unknown } | null)?.baseDomain;
+  return typeof v === 'string' && v ? v : 'blumodel.studio';
+};
+
 /** `<host>` of an origin, for showing the address without the scheme. */
 const hostOf = (url: string) => url.replace(/^[a-z]+:\/\//i, '').replace(/\/$/, '');
 
@@ -277,7 +283,7 @@ export default function AdminCompanies() {
 
 function CreateCompany({ onCreated }: { onCreated: (t: AdminTenant, invite: InviteLink | undefined, email: string) => void }) {
   const cfg = useAppConfig();
-  const base = cfg?.baseDomain || 'blumodel.studio';
+  const base = baseDomainOf(cfg);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [ownerEmail, setOwnerEmail] = useState('');
@@ -756,7 +762,7 @@ function MonthlySection({ t, act, busy }: SectionProps) {
 
 function HostnamesSection({ t, act, busy }: SectionProps) {
   const cfg = useAppConfig();
-  const base = cfg?.baseDomain || 'blumodel.studio';
+  const base = baseDomainOf(cfg);
   const [host, setHost] = useState('');
   const [kind, setKind] = useState<'custom' | 'subdomain'>('custom');
   const own = `${t.slug}.${base}`;
