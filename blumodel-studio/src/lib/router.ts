@@ -28,6 +28,7 @@ export type Route =
   | { name: 'billing' } // #/account/billing
   | { name: 'account' } // #/account (settings: name, password, download or delete my data)
   | { name: 'pro'; rest: string } // #/pro, #/pro/<rest…> (the Contractor workspace)
+  | { name: 'studio'; rest: string } // #/studio, #/studio/<tab>/<rest…> (the company workspace on a showroom)
   | { name: 'payDemoPlan'; ref: string } // #/pay/demo-plan/:ref
   | { name: 'legal'; doc: LegalDocId } // #/terms, #/privacy, #/refunds
   | { name: 'notFound' }; // anything else
@@ -127,7 +128,8 @@ export function parseRoute(hash: string): Route {
     }
     case 'brand':
     case 'orders':
-    case 'pro': {
+    case 'pro':
+    case 'studio': {
       const rest = seg.slice(1).join('/');
       if (!rest || REST.test(rest)) return { name: a, rest };
       break;
@@ -178,6 +180,7 @@ export function hrefFor(r: Route): string {
     case 'brand':
     case 'orders':
     case 'pro':
+    case 'studio':
       return r.rest ? `#/${r.name}/${r.rest}` : `#/${r.name}`;
     case 'billing':
       return '#/account/billing';

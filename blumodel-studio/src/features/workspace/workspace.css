@@ -1,0 +1,493 @@
+/* The company workspace (#/studio on a showroom, docs/SHOWROOM_PIVOT.md §5). Colours only
+   through the theme's tokens; the company's own colours appear only in the live preview. */
+
+.ws {
+  min-height: 100%;
+  background: var(--paper);
+}
+
+.ws-bar {
+  gap: 12px;
+}
+
+.ws-company {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 650;
+}
+
+.ws-company img {
+  height: 30px;
+  max-width: 96px;
+  object-fit: contain;
+}
+
+.ws-initial {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+  font-family: var(--display);
+}
+
+.ws-company-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ws-label {
+  margin-right: auto;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ws-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.ws-tabs .chip {
+  gap: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ws-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+}
+
+.ws-status.info {
+  background: var(--info-soft);
+  color: var(--info-ink);
+}
+
+.ws-status.warn {
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+}
+
+.ws-status .btn {
+  margin-left: auto;
+}
+
+.ws-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 64px;
+}
+
+.ws-closed {
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.ws-closed h1 {
+  font-family: var(--display);
+  font-weight: 600;
+}
+
+/* ── shared pieces ─────────────────────────────────────────────────────── */
+
+.ws-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.ws-head h1 {
+  margin: 2px 0 4px;
+  font-family: var(--display);
+  font-size: clamp(24px, 2.6vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ws-head p {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--ink-2);
+}
+
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.ws-card > h2,
+.ws-card legend {
+  margin: 0;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ws-card p {
+  margin: 0;
+}
+
+fieldset.ws-card {
+  min-inline-size: 0;
+}
+
+.ws-card .fine,
+.ws .fine {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.ws-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+.ws-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 14px;
+}
+
+.ws .field {
+  margin-bottom: 4px;
+}
+
+.ws .field select,
+.ws .field textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  outline: none;
+}
+
+.ws .field select {
+  height: 42px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ws .field textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.ws .field select:focus,
+.ws .field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.ws-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.ws-switch input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.ws-switch span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ws-switch em {
+  font-style: normal;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.ws-save {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 0 -4px;
+  padding: 12px 4px;
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+}
+
+.ws-save .muted {
+  margin-right: auto;
+}
+
+.ws-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 26px;
+  border: 1px dashed var(--line-2);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink-2);
+}
+
+.ws-empty p {
+  margin: 0;
+}
+
+.ws-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.ws-pill.ok {
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.ws-pill.warn {
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+}
+
+.ws-pill.bad {
+  background: var(--bad-soft);
+  color: var(--bad-ink);
+}
+
+.ws-pill.info {
+  background: var(--info-soft);
+  color: var(--info-ink);
+}
+
+.ws-pill.accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.ws-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ws-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ws-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.ws-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.ws-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ws-scroll {
+  overflow-x: auto;
+}
+
+.ws-kv {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0;
+}
+
+.ws-kv dt {
+  color: var(--ink-3);
+}
+
+.ws-kv dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ws-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ws-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.ws-stat b {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-stat span {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.ws-error {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--bad-soft);
+  color: var(--bad-ink);
+}
+
+.ws-ok {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.ws-note {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--info-soft);
+  color: var(--info-ink);
+}
+
+.ws-copy {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ws-copy code {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .ws-main {
+    padding: 20px 16px 56px;
+  }
+
+  .ws-tabs {
+    padding: 8px 16px;
+  }
+
+  .ws-bar {
+    padding: 0 16px;
+  }
+
+  .ws-label,
+  .ws-view {
+    display: none;
+  }
+
+  .ws-company {
+    margin-right: auto;
+  }
+
+  .ws-grid-2,
+  .ws-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ws-head {
+    align-items: flex-start;
+  }
+}
+
+/* Touch screens: every control is a 44px target. */
+@media (pointer: coarse) {
+  .ws .btn,
+  .ws .chip,
+  .ws .field input,
+  .ws .field select,
+  .ws-switch,
+  .ws .icon-btn {
+    min-height: 44px;
+  }
+
+  .ws .icon-btn {
+    min-width: 44px;
+  }
+
+  .ws-switch {
+    align-items: center;
+  }
+
+  .ws-switch input {
+    margin-top: 0;
+  }
+}

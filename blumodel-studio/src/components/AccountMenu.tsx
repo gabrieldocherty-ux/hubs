@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../store/useSession';
 import { navigate } from '../lib/router';
 
+interface ShowroomMembership {
+  tenantId: string;
+  role: 'owner' | 'staff' | null;
+}
+
 function initials(name: string) {
   return name
     .split(/\s+/)
@@ -13,6 +18,8 @@ function initials(name: string) {
 
 export function AccountMenu() {
   const user = useSession((s) => s.user);
+  // On a showroom the server adds `showroom: { tenantId, role }` (docs/handoff/tenancy.md §2).
+  const showroom = (user as (typeof user & { showroom?: ShowroomMembership | null }) | null)?.showroom ?? null;
   const signOut = useSession((s) => s.signOut);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,20 +54,22 @@ export function AccountMenu() {
           <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'home' }))}>
             <b>My kitchens</b>
           </button>
-          {/* Custom models come with the Contractor plan (3 a month). A lapsed contractor still
-              reaches their requests here; anyone else's earlier orders are linked from Billing. */}
-          {(user.plan.id === 'contractor' || user.contractor) && (
-            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'orders', rest: '' }))}>
-              <b>Make custom models</b>
+          {/* On a showroom: its team opens the company workspace; nobody there has a plan to bill. */}
+          {showroom?.role && (
+            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'studio', rest: '' }))}>
+              <b>Company workspace</b>
+              <span>{showroom.role === 'owner' ? 'Owner' : 'Staff'}</span>
             </button>
           )}
-          <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'billing' }))}>
-            <b>Billing</b>
-            <span>{user.plan.id === 'free' ? 'Free plan' : `${user.plan.id === 'contractor' ? 'Contractor' : 'Unlimited'} plan`}</span>
-          </button>
-          {/* Only contractors (on the plan, or with a company whose plan lapsed) see their workspace.
-              Everyone else finds the Contractor plan on the Pricing page, not in this menu. */}
-          {(user.plan.id === 'contractor' || user.contractor) && (
+          {!showroom && (
+            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'billing' }))}>
+              <b>Billing</b>
+              <span>{user.plan.id === 'free' ? 'Free plan' : `${user.plan.id === 'contractor' ? 'Contractor' : 'Unlimited'} plan`}</span>
+            </button>
+          )}
+          {/* A contractor from before the showroom pivot keeps their workspace on the sales site
+              until their plan ends; their earlier model requests are linked from it. */}
+          {!showroom && (user.plan.id === 'contractor' || user.contractor) && (
             <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'pro', rest: '' }))}>
               <b>Contractor workspace</b>
               {user.contractor && <span>{user.contractor.company}{user.contractor.active ? '' : ' · plan lapsed'}</span>}

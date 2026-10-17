@@ -16,6 +16,7 @@ import { GenerateScreen, PhotoReference } from './features/generate';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
 import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
+import { WorkspaceRoot } from './features/workspace';
 import { ContractorsPage } from './features/finder';
 import { LegalScreen } from './features/legal';
 
@@ -27,7 +28,7 @@ const KitchenEditor = lazy(() => import('./screens/Editor').then((m) => ({ defau
 const LocalEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.LocalEditor })));
 
 /** Routes that need an account; signed-out visitors are sent to sign in (and brought back after). */
-const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'account', 'pro', 'payDemoPlan']);
+const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'account', 'pro', 'payDemoPlan', 'studio']);
 
 const loading = <div className="screen-msg">Loading…</div>;
 
@@ -170,6 +171,8 @@ function screenFor(route: Route, signedIn: boolean) {
       return <AccountScreen />;
     case 'pro':
       return <ContractorRoot rest={route.rest} />;
+    case 'studio':
+      return <WorkspaceRoot rest={route.rest} />;
     case 'payDemoPlan':
       return <DemoPlanPay key={route.ref} checkoutRef={route.ref} />;
     case 'legal':
