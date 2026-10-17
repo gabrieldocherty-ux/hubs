@@ -200,7 +200,8 @@ export default function PhotorealDialog({ projectId, shareToken, team }: { proje
       )}
 
       <div className="photoreal-meta">
-        {note ? <span className={notConfigured ? 'photoreal-setup' : 'photoreal-why'}>{note}</span> : costLine && <span>{costLine}</span>}
+        {/* "Being set up" is said once: in the stage when it has nothing else to show, else here. */}
+        {note && !(notConfigured && !shown && !preview && !busy) ? <span className={notConfigured ? 'photoreal-setup' : 'photoreal-why'}>{note}</span> : !note && costLine && <span>{costLine}</span>}
         {shown && (
           <span className="photoreal-made">
             {when(shown.createdAt)}

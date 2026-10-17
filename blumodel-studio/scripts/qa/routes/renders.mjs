@@ -133,6 +133,8 @@ export default [
       const rows = h.api.sql('SELECT COUNT(*) AS n FROM showroom_renders')[0].n;
       await press(h, '.topbar .photoreal-btn');
       await h.waitForText('Photoreal renders are being set up');
+      const said = await h.evaluate(() => (document.querySelector('.photoreal-dialog')?.textContent ?? '').split('Photoreal renders are being set up').length - 1);
+      if (said !== 1) throw new Error(`the dialog says "being set up" ${said} times`);
       const b = await h.evaluate(() => {
         const btn = document.querySelector('.photoreal-actions .btn.primary');
         return { disabled: !!btn?.disabled, text: btn?.textContent?.trim() };
