@@ -12,6 +12,7 @@ import { ordersApi, type Allowance, type GlbReport, type ModelGrant, type OrderD
 import { briefSize, modelsLeftText, orderPrice, pricingLabel, resetDay, shortDate, sizeText, statusLabel } from './model';
 import { formatUpc, UPC_FORMAT_LABEL } from './upc';
 import { StatusPill, Timeline } from './parts';
+import { StudioProductRequests } from './StudioProductRequests';
 import './orders.css';
 
 const FILTERS: { id: StudioFilter; label: string; count?: OrderStatus[] }[] = [
@@ -64,6 +65,8 @@ export default function AdminStudioTab() {
   return (
     <div className="ord-studio">
       <h1>Studio queue</h1>
+      <StudioProductRequests />
+      <h2 className="ord-legacy-head">Custom-model orders from before the showroom pivot</h2>
       <div className="chips ord-studio-chips" role="group" aria-label="Filter by status">
         {FILTERS.map((f) => (
           <button key={f.id} type="button" className={f.id === filter ? 'chip on' : 'chip'} aria-pressed={f.id === filter} onClick={() => setFilter(f.id)}>

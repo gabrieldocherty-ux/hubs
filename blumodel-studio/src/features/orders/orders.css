@@ -2021,3 +2021,206 @@
     color: var(--warn-ink);
   }
 }
+
+/* The studio's queue of showroom product requests (StudioProductRequests). */
+.ord-spr {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.ord-spr h2,
+.ord-legacy-head {
+  margin: 8px 0 0;
+  font-size: 18px;
+}
+
+.ord-spr > p {
+  margin: 0;
+}
+
+.ord-spr-group h3 {
+  margin: 10px 0 6px;
+  font-size: 15px;
+}
+
+.ord-spr-group h3 .muted {
+  font-weight: 400;
+}
+
+.ord-spr-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  list-style: none;
+}
+
+.ord-spr-list > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.ord-spr-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ord-spr-row:hover {
+  background: var(--panel);
+}
+
+.ord-spr-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ord-spr-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ord-spr-pill.is-requested,
+.ord-spr-pill.is-approved {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.ord-spr-pill.is-in_progress,
+.ord-spr-pill.is-delivered {
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.ord-spr-pill.is-quoted {
+  background: var(--info-soft);
+  color: var(--info-ink);
+}
+
+.ord-spr-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 14px 16px;
+  border-top: 1px dashed var(--line);
+}
+
+.ord-spr-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.ord-spr-items li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.ord-spr-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ord-spr-refs img {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.ord-spr-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.ord-spr-events {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.ord-spr-quote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.ord-spr-quote label,
+.ord-spr-notefield {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.ord-spr-quote input:not([type='checkbox']),
+.ord-spr-notefield textarea {
+  min-width: 0;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ord-spr-quote input:not([type='checkbox']) {
+  width: 120px;
+}
+
+.ord-spr-notefield textarea {
+  height: auto;
+  padding: 8px 10px;
+}
+
+.ord-spr-quote .ord-spr-check {
+  flex-direction: row;
+  align-items: center;
+  min-height: 38px;
+}
+
+.ord-spr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (pointer: coarse) {
+  .ord-spr-quote input:not([type='checkbox']),
+  .ord-spr-quote .ord-spr-check {
+    min-height: 44px;
+  }
+}
