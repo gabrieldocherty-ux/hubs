@@ -184,6 +184,8 @@ Write-Host '  3. The data from the old machine: docs/MOVING_DATA.md'
 Write-Host '  4. The cutover (stop the old machine''s server and tunnel FIRST), from PowerShell run as administrator:'
 Write-Host "       node `"$AppSrc\scripts\register-tasks.mjs`" --home `"$HomeDir`" --at-startup --only tunnel"
 Write-Host '       schtasks /Run /TN BluModelTunnel'
+Write-Host '  5. Showrooms (once, in Cloudflare): the wildcard DNS record *.blumodel.studio for the tunnel, and the demo showroom:'
+Write-Host "       cd `"$HomeDir\app`"; node server\scripts\seed-demo-tenant.mjs   (docs/ONBOARDING_A_COMPANY.md, `"Once: Cloudflare`")"
 Write-Host '  Power: never sleep on mains power: powercfg /change standby-timeout-ac 0'
 Write-Host "  Updates later: node `"$AppSrc\scripts\host\update.mjs`""
 if ($DryRun) { Write-Host ''; Write-Host 'Dry run: nothing was installed, written, started or changed.' }

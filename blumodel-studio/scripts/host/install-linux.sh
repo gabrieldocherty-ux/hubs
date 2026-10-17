@@ -23,7 +23,8 @@
 #      <home>/app (keeping the old one as app.previous), writes the settings template only if there
 #      is no blumodel.env, starts the server and checks http://127.0.0.1:<port>/api/health
 #   8. cloudflared.yml (scripts/tunnel/setup-tunnel.mjs --validate, an offline check)
-#   9. prints what is left for you: the settings, the tunnel's credentials, the data, the cutover
+#   9. prints what is left for you: the settings, the tunnel's credentials, the data, the cutover,
+#      the wildcard DNS record for the showrooms
 # It never starts the tunnel, never opens blumodel.env or the tunnel's credentials, and never
 # copies anything from another machine.
 #
@@ -299,6 +300,9 @@ cat <<EOF
   3. The data from the old machine: docs/MOVING_DATA.md
   4. The cutover (stop the old machine's server and tunnel FIRST, then):
        sudo systemctl enable --now blumodel-tunnel
+  5. Showrooms (once, in Cloudflare): the wildcard DNS record *.blumodel.studio for the tunnel, and
+     the demo showroom: sudo -u $SVC_USER node $HOME_DIR/app/server/scripts/seed-demo-tenant.mjs
+     (docs/ONBOARDING_A_COMPANY.md, "Once: Cloudflare")
   Updates later: sudo bash $APP_SRC/scripts/host/update-linux.sh
   Logs: sudo tail -f $HOME_DIR/logs/server.log   sudo journalctl -u blumodel-studio -u blumodel-tunnel -f
 EOF

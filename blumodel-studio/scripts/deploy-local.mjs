@@ -77,6 +77,8 @@ import {
 } from '../server/ops/home.mjs';
 import { homePort } from '../server/ops/homePort.mjs';
 import { EXIT, listening, readDeployed, rollbackApp, stageApp, swapInApp, unitState, waitForHealth } from './host/lib.mjs';
+import { checkSites, tunnelGaps } from '../server/ops/sites.mjs';
+import { tunnelRoutes } from './tunnel/tunnel.mjs';
 
 /** BLUMODEL_<name>, else the deprecated MISE_<name>, else `def`. */
 function setting(name, def) {
@@ -291,7 +293,34 @@ async function healthy() {
   if (h.ok) console.log(`BluModel Studio ${h.body?.version ?? ''} is up at http://127.0.0.1:${PORT} (payments: ${h.payments}). Its log: ${L.serverLog}`);
   else if (h.status === 503) console.error(`The server started but reports a problem: ${JSON.stringify(h.body)}. Check ${logs}.`);
   else console.error(`The server did not answer on port ${PORT} within ${HEALTH_MS / 1000} s. Check ${logs}.`);
+  if (h.ok) await reportSites();
   return h.ok;
+}
+
+/**
+ * Which site the server answers as for each kind of host (asked on 127.0.0.1 with a Host header),
+ * and whether cloudflared.yml sends them all here. Reported only: a gap here never fails or rolls
+ * back a deploy, since the sales site works either way.
+ */
+async function reportSites() {
+  let sites;
+  try {
+    sites = await checkSites({ port: PORT });
+  } catch (err) {
+    console.warn(`Could not check the sites (${err?.message ?? err}).`);
+    return;
+  }
+  console.log('Sites (asked on 127.0.0.1 by Host):');
+  for (const l of sites.lines) console.log(`  ${l.note ? 'NOTE' : l.ok ? 'ok  ' : 'FIX '}  ${l.text}`);
+  if (!sites.baseDomain) return;
+  let text = null;
+  try {
+    text = fs.readFileSync(L.tunnelConfig, 'utf8'); // not a secret: hostnames and the credentials file's path
+  } catch {
+    return; // no tunnel set up here: said after the deploy
+  }
+  const rerun = `node scripts/tunnel/setup-tunnel.mjs${LINUX ? ` --home ${HOME}` : ''} --validate`;
+  for (const s of tunnelGaps({ file: L.tunnelConfig, baseDomain: sites.baseDomain, routes: tunnelRoutes(text, sites.baseDomain), rerun })) console.warn(`  ${s}`);
 }
 
 /** Linux: data/ and logs/ must exist (the unit's ReadWritePaths) and belong to the server's account. */
