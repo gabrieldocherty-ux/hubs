@@ -657,6 +657,10 @@ test('a line of products into My catalog: one request, delivered when every prod
   assert.equal(p.source, 'contractor');
   assert.deepEqual([p.spec.widthIn, p.spec.heightIn, p.spec.depthIn].map(Math.round), [36, 35, 24]);
   assert.match(p.spec.blurb, /Brand: Harbor Cabinets \(Test\) · UPC 96385074\./);
+  // And as structured fields, which link the model to a retail listing with the same UPC.
+  assert.deepEqual([p.spec.brand, p.spec.upc], ['Harbor Cabinets (Test)', '96385074']);
+  const wire = t.services.products.toWire(p);
+  assert.deepEqual([wire.productBrand, wire.upc], ['Harbor Cabinets (Test)', '96385074']);
 });
 
 test('two revision rounds, then no more; a redelivery updates the same product', async () => {

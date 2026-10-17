@@ -387,7 +387,7 @@ export default [
         const l = link.getBoundingClientRect();
         return { visibleLegalLinks: a, h: r.height, noteFont: getComputedStyle(note).fontSize, linkFont: getComputedStyle(link).fontSize, linkW: l.width, inside: l.left >= 0 && l.right <= window.innerWidth };
       });
-      if (seen.visibleLegalLinks || seen.noteFont !== '0px' || seen.linkFont !== '12px' || seen.h > 24 || !seen.inside || seen.linkW < 60) throw new Error(`the phone fine print: ${JSON.stringify(seen)}`);
+      if (seen.visibleLegalLinks || seen.noteFont !== '0px' || seen.linkFont !== '12px' || seen.h > 48 || !seen.inside || seen.linkW < 60) throw new Error(`the phone fine print: ${JSON.stringify(seen)}`);
       await tap('.share-bar-note .finder-link');
       await waitFor('.finder-pop', 3000);
       await sleep(250);

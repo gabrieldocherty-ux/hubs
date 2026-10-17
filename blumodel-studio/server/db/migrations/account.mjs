@@ -11,6 +11,9 @@
 //   password_resets    single-use reset links: only the SHA-256 of the token is stored, with a
 //                      60-minute expiry; created_by is the admin who made the link, or NULL when
 //                      the person asked for it by email
+//   signin_alerts      (account-002) one row per new-device sign-in alert sent: the account, the
+//                      device's browser and system names, and when. Keeps a repeat sign-in from the
+//                      same new device (or the same unrecognisable one) to one email a day
 
 /** @type {{ id: string, up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
@@ -41,6 +44,18 @@ export const steps = [
           used_at INTEGER,
           created_by TEXT);
         CREATE INDEX password_resets_user ON password_resets(user_id, created_at);
+      `);
+    },
+  },
+  {
+    id: 'account-002-signin-alerts',
+    up(db) {
+      db.exec(`
+        CREATE TABLE signin_alerts (
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          device TEXT NOT NULL,
+          sent_at INTEGER NOT NULL);
+        CREATE INDEX signin_alerts_user ON signin_alerts(user_id, device, sent_at);
       `);
     },
   },

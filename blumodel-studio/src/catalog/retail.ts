@@ -17,6 +17,7 @@ import { BASICS_BRAND, BUILTIN_PRODUCTS } from '../data/builtins';
 import { priceFor } from '../data/catalog';
 import { call } from '../lib/api';
 import { useCatalog } from '../store/useCatalog';
+import { fixtureFromWire, registerFixtures, type FixtureWire } from '../lib/fixtures';
 
 export const RETAIL_PREFIX = 'r-';
 /** True for a retail product id (`r-…`). No built-in id starts this way. */
@@ -43,8 +44,8 @@ export interface RetailInfo {
   checkedAt: string;
   /** The size the listing gave, in inches; null where it gave none. */
   size: { w: number | null; d: number | null; h: number | null };
-  /** Placed dimensions taken from the type's typical size because the listing had none. */
-  typical: ('depth' | 'height')[];
+  /** Placed dimensions taken from the type's typical size because the listing had none (width only for stools and pendants). */
+  typical: ('width' | 'depth' | 'height')[];
   /** How it is drawn when that differs from the listing (a sink in its base cabinet…). */
   note?: string;
   /** A door style the app doesn't draw (raised panel…), for the facts. */
@@ -60,12 +61,17 @@ export interface RetailStore {
 
 type RetailWire = Omit<Product, 'price' | 'source'> & { price: number | null; retail: RetailInfo };
 
+/** A faucet, pull or knob: chosen kitchen-wide in Room & finishes rather than placed (`src/lib/fixtures.ts`). */
+export type RetailFixtureWire = FixtureWire & { retail: Omit<RetailInfo, 'typical'> & { typical: string[] } };
+
 export interface RetailData {
   version: number;
   checkedAt: string | null;
   researched: number;
   stores: RetailStore[];
   products: RetailWire[];
+  /** Faucets, pulls and knobs. Absent on data built before round 2. */
+  fixtures?: RetailFixtureWire[];
   leftOut: { count: number; byReason: Record<string, number> };
 }
 
@@ -82,18 +88,21 @@ function basicFor(kind: Kind, variant?: string): Product | undefined {
 export function toProduct(w: RetailWire): Product {
   const { retail: _retail, price, ...rest } = w;
   const basic = price === null ? basicFor(w.kind, w.variant) : undefined;
-  return { ...rest, sku: w.code, price: price ?? (basic ? priceFor(basic, w.widthIn) : 0), source: 'brand' };
+  return { ...rest, sku: w.code, price: price ?? (basic ? priceFor(basic, w.widthIn) : 0), ...(price === null ? { priceAtStore: true } : {}), source: 'brand' };
 }
 
 interface RetailState {
   status: 'idle' | 'loading' | 'ready' | 'error';
   data: RetailData | null;
   products: Product[];
+  /** Store facts by id, for products and fixtures alike. */
   byId: Map<string, RetailInfo>;
+  /** The faucets, pulls and knobs, in catalog order. */
+  fixtures: RetailFixtureWire[];
   stores: Map<string, RetailStore>;
 }
 
-export const useRetail = create<RetailState>()(() => ({ status: 'idle', data: null, products: [], byId: new Map(), stores: new Map() }));
+export const useRetail = create<RetailState>()(() => ({ status: 'idle', data: null, products: [], byId: new Map(), fixtures: [], stores: new Map() }));
 
 let inflight: Promise<void> | null = null;
 let watching = false;
@@ -113,14 +122,17 @@ function register(products: Product[]) {
 /** Applies loaded data (exported for tests, which can't use the lazy chunk). */
 export function applyRetailData(data: RetailData): void {
   const products = data.products.map(toProduct);
+  const fixtures = Array.isArray(data.fixtures) ? data.fixtures : [];
   useRetail.setState({
     status: 'ready',
     data,
     products,
-    byId: new Map(data.products.map((p) => [p.id, p.retail])),
+    fixtures,
+    byId: new Map<string, RetailInfo>([...data.products.map((p) => [p.id, p.retail] as const), ...fixtures.map((f) => [f.id, f.retail as RetailInfo] as const)]),
     stores: new Map(data.stores.map((s) => [s.slug, s])),
   });
   register(products);
+  registerFixtures(fixtures.map(fixtureFromWire));
 }
 
 /** Loads the retail chunk once and registers its products. Never throws. */
@@ -140,6 +152,22 @@ export function loadRetail(): Promise<void> {
 /** The store facts for a retail product id (once loaded). */
 export function retailOf(id: string): RetailInfo | undefined {
   return useRetail.getState().byId.get(id);
+}
+
+/** A UPC as digits, with a 13-digit code that starts with 0 read as the 12-digit UPC-A it encodes (server/payments/upc.mjs). */
+export function upcKey(raw: string | null | undefined): string {
+  const s = String(raw ?? '').replace(/\D/g, '');
+  return s.length === 13 && s.startsWith('0') ? s.slice(1) : s;
+}
+
+/**
+ * The retail product or fixture listed under this UPC, by id (once the retail data is loaded): how
+ * a delivered custom model whose request gave a UPC finds its stores. Undefined without a match.
+ */
+export function retailIdByUpc(upc: string | null | undefined, data: RetailData | null = useRetail.getState().data): string | undefined {
+  const key = upcKey(upc);
+  if (key.length < 8 || !data) return undefined;
+  return [...data.products, ...(data.fixtures ?? [])].find((p) => p.retail.upc && upcKey(p.retail.upc) === key)?.id;
 }
 
 /** The store's display name for a slug. */

@@ -88,6 +88,11 @@ export interface Product {
   elevationIn: number;
   widthOptions?: number[];
   price: number;
+  /**
+   * A retail product with no checked store price: `price` is only a typical one (BluModel Basics
+   * of the same type) for sorting, and estimates show "Price at store" and leave it out of the total.
+   */
+  priceAtStore?: boolean;
   /** `'cabinet'` means the shared cabinet finish palette. */
   finishes: Finish[] | 'cabinet';
   blurb: string;
@@ -116,6 +121,13 @@ export interface Product {
   imageFileIds?: string[];
   /** A product line or collection ("Smith Shaker"); groups a contractor's catalog. */
   line?: string;
+  /**
+   * The maker of the real product a model stands for ("Bosch"), from the spec's `brand`. `brand`
+   * above stays the catalog's display brand ("Your model", a contractor's company).
+   */
+  productBrand?: string;
+  /** The real product's UPC/EAN, digits only (12, 13 or 8). Links it to the retail catalog's store listings. */
+  upc?: string;
   /** The door style a cabinet line is sold in. The kitchen-wide style still draws the doors. */
   doorStyle?: DoorStyle;
 }
@@ -146,10 +158,41 @@ export interface Room {
 
 export type DoorStyle = 'shaker' | 'slab' | 'fluted';
 
+/** A real faucet, pull or knob from the retail catalog, chosen kitchen-wide in Room & finishes. */
+export type FixtureKind = 'faucet' | 'pull' | 'knob';
+/** How it is drawn: faucet pulldown/pullout/single/side-spray/spring; pull bar/arch/rect/finger; knob mushroom/disc. */
+export type FixtureStyle = 'pulldown' | 'pullout' | 'single' | 'side-spray' | 'spring' | 'bar' | 'arch' | 'rect' | 'finger' | 'mushroom' | 'disc';
+
+/**
+ * The parts of a retail fixture a kitchen needs to draw and price it (`doc.fixtures`, like
+ * `doc.products`): kept in the saved kitchen so it renders and prices with the catalog unloaded,
+ * and on the server (paid exports).
+ */
+export interface Fixture {
+  id: string;
+  kind: FixtureKind;
+  style: FixtureStyle;
+  brand: string;
+  name: string;
+  code: string;
+  finish: { id: string; name: string; hex: string };
+  roughness: number;
+  /** Inches: `length` and `cc` (post spacing) for a pull, `dia` for a knob, `height` for a faucet. */
+  sizeIn: { length?: number; cc?: number; dia?: number; height?: number };
+  /** Per piece, in the kitchen's currency. */
+  price: number;
+  /** False when no store price was checked and `price` is a typical one. */
+  priceKnown: boolean;
+  extras?: { soap?: boolean; sideSpray?: boolean };
+}
+
 export interface Surfaces {
   cabinetFinishId: string;
   doorStyle: DoorStyle;
+  /** A built-in hardware finish (`brass`…) or a retail pull or knob (`r-…`, see `Fixture`). */
   hardwareId: string;
+  /** A retail faucet (`r-…`) drawn on every sink. Absent: each sink draws its own, in the hardware finish. */
+  faucetId?: string;
   countertopId: string;
   backsplashId: string;
   flooringId: string;
@@ -185,6 +228,8 @@ export interface DesignDoc {
   version?: 2;
   /** Snapshots of every non-built-in product the kitchen uses, so it still renders after a product is unpublished. */
   products?: Record<string, Product>;
+  /** Snapshots of the retail faucet and hardware the surfaces name (`faucetId`, `hardwareId`). */
+  fixtures?: Record<string, Fixture>;
   /** Extra estimate lines (installation, delivery…). */
   extras?: EstimateExtra[];
 }

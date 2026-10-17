@@ -66,6 +66,9 @@ export function createBillingService({ db, now, log = console }) {
     id: r.plan,
     status: r.status,
     periodEnd: r.current_period_end ?? null,
+    // Where the current billing period began, when known (pricing-003): the allowance period
+    // starts here, so consecutive periods tile exactly around short months.
+    periodStart: r.current_period_start ?? null,
     cancelAtPeriodEnd: !!r.cancel_at_period_end,
     graceUntil: r.grace_until ?? null,
     provider: r.provider,
@@ -95,7 +98,7 @@ export function createBillingService({ db, now, log = console }) {
     }
     if (end <= t) end = addMonths(t, 1);
     db.prepare('UPDATE subscriptions SET current_period_end = ?, updated_at = ? WHERE id = ?').run(end, t, r.id);
-    return { ...r, current_period_end: end };
+    return db.prepare('SELECT * FROM subscriptions WHERE id = ?').get(r.id) ?? { ...r, current_period_end: end };
   }
 
   const isAdmin = (userId) => db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role === 'admin';
@@ -120,7 +123,8 @@ export function createBillingService({ db, now, log = console }) {
       if (!r) return FREE;
       const t = now();
       if (r.provider === 'demo' && r.status === 'active' && !r.cancel_at_period_end && r.current_period_end && t >= r.current_period_end) r = rollDemo(r);
-      if (r.status === 'active' && r.cancel_at_period_end && r.current_period_end && t >= r.current_period_end) {
+      // A complimentary plan given with an end date (Admin > Users) ends then, whatever its cancel flag says.
+      if (r.status === 'active' && (r.cancel_at_period_end || r.provider === 'comp') && r.current_period_end && t >= r.current_period_end) {
         db.prepare("UPDATE subscriptions SET status = 'canceled', canceled_at = COALESCE(canceled_at, ?), updated_at = ? WHERE id = ?").run(r.current_period_end, t, r.id);
         return { ...FREE, status: 'canceled' };
       }

@@ -439,15 +439,16 @@ export default [
     expectText: ['Start from a photo'],
     check: async (h) => {
       await assertCopy(h, 'Home');
-      // The account menu: Make custom models; no contractor entry for a homeowner (the Contractor
-      // plan is on the Pricing page), never List your products / Brand portal.
+      // The account menu: no contractor entry for a homeowner (the Contractor plan is on the Pricing
+      // page), so no Make custom models either (custom models come with that plan), never List
+      // your products / Brand portal.
       await h.click('.home-bar .menu-wrap > button, .home-bar [aria-haspopup]');
       await h.waitFor('.menu[role="menu"]');
-      await h.waitForText('Make custom models');
+      await h.waitForText('Account settings');
       await assertCopy(h, 'the account menu');
       const items = await h.evaluate(() => [...document.querySelectorAll('.menu [role="menuitem"]')].map((b) => b.textContent.trim().replace(/\s+/g, ' ')));
       h.note(`account menu: ${items.join(' | ')}`);
-      if (items.some((t) => /for contractors|contractor workspace|my orders/i.test(t))) throw new Error(`a homeowner's account menu offers: ${items.join(' | ')}`);
+      if (items.some((t) => /for contractors|contractor workspace|my orders|make custom models/i.test(t))) throw new Error(`a homeowner's account menu offers: ${items.join(' | ')}`);
       await h.key('Escape');
       for (const hash of ['#/new', '#/generate', '#/pricing', '#/welcome', '#/orders', '#/account/billing', '#/pro']) {
         await h.goto(hash);
@@ -552,27 +553,30 @@ export default [
 
   // ─── order ─────────────────────────────────────────────────────────────────
   {
-    // A custom model, end to end through the API: demo payment, the studio delivers a GLB, and only
-    // the buyer can see it. Then it goes into a kitchen and a share link of that kitchen serves it.
+    // A custom model, end to end through the API: the QA contractor sends a request from the
+    // Contractor plan's included models (no payment), the studio delivers a GLB, and only the buyer
+    // can see it. Then it goes into a kitchen and a share link of that kitchen serves it.
     name: 'int-order-custom-model',
     path: '#/orders',
-    as: 'customer',
+    as: 'contractor',
     waitFor: ['#root *'],
     check: async (h) => {
-      const me = h.api.as('customer');
+      const me = h.api.as('contractor');
       const studio = h.api.as('studio');
+      // At least one model left this month (an audited admin grant if not), whatever ran before.
+      const left = must(await me.get('/api/orders/allowance'), 'Reading the allowance').allowance;
+      if (!left?.active) throw new Error(`the QA contractor is not on the Contractor plan: ${JSON.stringify(left)}`);
+      if (left.left < 1) must(await h.api.as('admin').post('/api/admin/model-grants', { email: 'qa-contractor@blumodel.test', models: 1, note: 'QA' }), 'Granting a QA model');
       order.name = `Integration Farm Sink ${Date.now().toString(36)} (QA)`;
       const created = must(
         await me.post('/api/orders', {
-          target: 'customer',
-          items: [{ tier: 'simple', extraFinishes: 0, brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: order.name, widthIn: 33, depthIn: 22, heightIn: 36, notes: 'integration', referenceFileIds: [], refProductId: 'sink-farm' } }],
+          target: 'contractor',
+          items: [{ brief: { productTypeId: 'sink-farmhouse', kind: 'sink', variant: 'farmhouse', name: order.name, widthIn: 33, depthIn: 22, heightIn: 36, notes: 'integration', referenceFileIds: [], refProductId: 'sink-farm' } }],
         }),
-        'Creating the order',
+        'Sending the request',
       );
       order.id = created.order.id;
-      must(await me.post(`/api/orders/${order.id}/checkout`, {}), 'Starting the checkout');
-      const paid = must(await me.post(`/api/payments/demo/${order.id}/complete`, { outcome: 'success' }), 'Completing the demo payment');
-      if (paid.order?.status !== 'paid') throw new Error(`after the demo payment the order is "${paid.order?.status}"`);
+      if (created.order?.status !== 'paid') throw new Error(`a plan request should go straight to the studio queue, it is "${created.order?.status}"`);
 
       // The studio starts and delivers.
       must(await studio.post(`/api/studio/orders/${order.id}/start`, {}), 'Starting the order');
@@ -593,7 +597,7 @@ export default [
       if (!order.modelUrl) throw new Error('the delivered product has no model URL');
       const filePath = order.modelUrl.replace(/^https?:\/\/[^/]+/, '');
       if ((await me.get(filePath)).status !== 200) throw new Error('the buyer cannot fetch their own model');
-      for (const role of ['anon', 'brand', 'contractor', 'studio', 'admin']) {
+      for (const role of ['anon', 'brand', 'customer', 'studio', 'admin']) {
         const who = role === 'anon' ? h.api : h.api.as(role);
         const cat = must(await who.get('/api/catalog'), `${role}'s catalog`);
         if (cat.products.some((p) => p.id === order.productId)) throw new Error(`the private model is in ${role}'s catalog`);

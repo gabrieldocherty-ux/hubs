@@ -1,7 +1,8 @@
 import type { DesignDoc, Product } from '../types';
 import type { PriceQuote } from '../types/platform';
 import { hasCountertop, isBuiltin, priceFor, productCode } from '../data/catalog';
-import { BACKSPLASHES, COUNTERTOPS, FLOORING, HARDWARE, PAINTS, byId, resolveBacksplash } from '../data/finishes';
+import { BACKSPLASHES, COUNTERTOPS, FLOORING, PAINTS, byId, resolveBacksplash } from '../data/finishes';
+import { resolveFaucet, resolveHardware } from './fixtures';
 import { backsplashSegments, resolveAll } from './geometry';
 import { resolveFinish } from './finish';
 
@@ -31,12 +32,16 @@ export interface EstimateLine {
   /** The brand's buy link, when it has one (product lines only). */
   buyUrl?: string;
   productId?: string;
+  /** A retail faucet, pull or knob line (`doc.fixtures`): not a placed product. */
+  fixtureId?: string;
   /** A contractor's cost per unit, when they entered one. Only ever shown in Contractor view. */
   unitCost?: number;
   /** The markup that produced `unitPrice` from `unitCost`, in percent. */
   markupPct?: number;
   /** An extra line (installation, delivery…) rather than a product or surface. */
   extraId?: string;
+  /** A retail product with no checked store price: shown as "Price at store", 0 in the total. */
+  atStore?: boolean;
 }
 
 export interface Estimate {
@@ -51,6 +56,8 @@ export interface Estimate {
   costedTotal: number;
   /** Lines priced at list because no cost was entered. */
   uncosted: number;
+  /** Items priced at the store (no checked price), left out of the total. */
+  atStore: number;
 }
 
 export interface EstimateOptions {
@@ -93,11 +100,27 @@ export function pullCount(p: Product, w: number): number {
   }
 }
 
+/**
+ * True when the estimate can't price `product`: a retail product with no checked store price, and
+ * no price of the contractor's own (a cost, or a sell price other than list).
+ */
+export function pricedAtStore(product: Product, quote?: PriceQuote | null): boolean {
+  if (!product.priceAtStore || product.source === 'missing') return false;
+  return !(quote && (typeof quote.cost === 'number' || quote.sell !== quote.list));
+}
+
+/** The line under an estimate that leaves store-priced items out of its total. */
+export function atStoreNote(n: number): string {
+  return `${n} item${n === 1 ? ' is' : 's are'} priced at the store and not in this total.`;
+}
+
 export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estimate {
   const all = resolveAll(doc.items);
   const map = new Map<string, EstimateLine>();
   let pulls = 0;
+  let sinks = 0;
   let hasBuiltin = false;
+  let atStore = 0;
 
   for (const r of all) {
     if (isBuiltin(r.product.id)) hasBuiltin = true;
@@ -106,7 +129,9 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
     const key = `${r.product.id}|${r.w}|${finish.id}`;
     const missing = r.product.source === 'missing';
     const quote = opts.priceOf && !missing ? opts.priceOf(r.product, r.w) : null;
-    const unitPrice = quote ? quote.sell : priceFor(r.product, r.w);
+    const storePriced = pricedAtStore(r.product, quote);
+    if (storePriced) atStore++;
+    const unitPrice = storePriced ? 0 : quote ? quote.sell : priceFor(r.product, r.w);
     const line = map.get(key);
     if (line) {
       line.qty += 1;
@@ -117,7 +142,7 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
         // A category this build doesn't know still counts: it lands in "Other", never out of the total.
         group: GROUP_BY_CATEGORY[r.product.category] ?? 'Other',
         label: missing ? r.product.name : `${r.product.brand} ${r.product.name}`,
-        sub: missing ? 'Price unavailable until the product is listed again' : `${code} · ${finish.name}`,
+        sub: missing ? 'Price unavailable until the product is listed again' : `${code} · ${finish.name}${storePriced ? ' · Price at store' : ''}`,
         qty: 1,
         unit: 'ea',
         unitPrice,
@@ -126,9 +151,11 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
         ...(missing ? {} : { sku: code }),
         ...(r.product.buyUrl ? { buyUrl: r.product.buyUrl } : {}),
         ...(quote && typeof quote.cost === 'number' ? { unitCost: quote.cost, markupPct: quote.markupPct } : {}),
+        ...(storePriced ? { atStore: true } : {}),
       });
     }
     pulls += pullCount(r.product, r.w);
+    if (r.product.kind === 'sink' && !missing) sinks++;
   }
 
   const lines = [...map.values()];
@@ -164,8 +191,28 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   lines.push({ key: 'paint', group: 'Surfaces', label: `${paint.brand} ${paint.name}`, sub: 'Wall paint, two coats', qty: gallons, unit: 'gal', unitPrice: paint.price, total: gallons * paint.price });
 
   if (pulls > 0) {
-    const hw = byId(HARDWARE, surfaces.hardwareId);
-    lines.push({ key: 'hardware', group: 'Hardware', label: `${hw.brand} ${hw.name} pulls`, sub: 'Cabinet pulls and knobs', qty: pulls, unit: 'ea', unitPrice: hw.price, total: pulls * hw.price });
+    const hw = resolveHardware(surfaces, doc.fixtures);
+    const f = hw.fixture;
+    const label = f ? `${f.brand} ${f.name}` : `${hw.brand} ${hw.name} pulls`;
+    const sub = f ? `${f.kind === 'knob' ? 'Cabinet knobs' : 'Cabinet pulls'} · ${f.code}${f.priceKnown ? '' : ' · typical price, check the store'}` : 'Cabinet pulls and knobs';
+    lines.push({ key: 'hardware', group: 'Hardware', label, sub, qty: pulls, unit: 'ea', unitPrice: hw.price, total: Math.round(pulls * hw.price * 100) / 100, ...(f ? { fixtureId: f.id } : {}) });
+  }
+
+  // A chosen retail faucet, one per sink (a sink's own faucet is in the sink's price otherwise).
+  const faucet = resolveFaucet(surfaces, doc.fixtures);
+  if (faucet && sinks > 0) {
+    const f = faucet.fixture;
+    lines.push({
+      key: 'faucet',
+      group: 'Sinks & faucets',
+      label: `${f.brand} ${f.name}`,
+      sub: `Faucet · ${f.code}${f.priceKnown ? '' : ' · typical price, check the store'}`,
+      qty: sinks,
+      unit: 'ea',
+      unitPrice: f.price,
+      total: Math.round(sinks * f.price * 100) / 100,
+      fixtureId: f.id,
+    });
   }
 
   // Labour and services the contractor added, in the order they were entered.
@@ -190,7 +237,7 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   lines.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || (a.extraId || b.extraId ? 0 : b.total - a.total));
   const groups = order
     .map((name) => ({ name, total: lines.filter((l) => l.group === name).reduce((s, l) => s + l.total, 0) }))
-    .filter((g) => g.total > 0);
+    .filter((g) => g.total > 0 || lines.some((l) => l.group === g.name && l.atStore));
   const costed = lines.filter((l) => typeof l.unitCost === 'number');
   const costTotal = costed.length ? costed.reduce((s, l) => s + (l.unitCost as number) * l.qty, 0) : null;
   // The total is every line, so nothing can fall out of it even if a group were somehow unlisted.
@@ -201,6 +248,7 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
     hasBuiltin,
     costTotal,
     costedTotal: costed.reduce((s, l) => s + l.total, 0),
-    uncosted: lines.length - costed.length,
+    uncosted: lines.filter((l) => !l.atStore).length - costed.length,
+    atStore,
   };
 }

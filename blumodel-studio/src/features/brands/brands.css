@@ -244,15 +244,22 @@
   box-shadow: var(--shadow);
 }
 
+/* The art box is 4:3 whatever is in it. The thumbnail is laid out over the box instead of in it:
+   as a grid item its 100% height resolved against an auto row, so the row took the picture's own
+   height once it loaded and the card grew about 43px on a phone, moving the buttons under a finger
+   on its way to "Request a quote". overflow: hidden also drops aspect-ratio's content minimum. */
 .bp-card-art {
   position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 4 / 3;
+  overflow: hidden;
   background: var(--art-bg);
 }
 
 .bp-card-art img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

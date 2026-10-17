@@ -362,8 +362,9 @@ export default [
     check: async (h) => {
       await h.evaluate(() => [...document.querySelectorAll('.left-panel [role="tab"]')].find((b) => /Room/.test(b.textContent))?.click());
       await h.waitForText('Colour palettes');
-      const first = await h.evaluate(() => document.querySelector('.room-panel .room-section')?.classList.contains('room-palettes'));
-      if (!first) throw new Error('Colour palettes is not the first section of Room & finishes');
+      // Gabe, 2026-10-16: the finishes come first; the style presets and the layouts sit at the bottom.
+      const lastTwo = await h.evaluate(() => [...document.querySelectorAll('.room-panel > .room-section')].slice(-2).map((s) => s.classList.contains('room-palettes') ? 'palettes' : s.classList.contains('room-layouts') ? 'layouts' : 'other'));
+      if (lastTwo.join() !== 'palettes,layouts') throw new Error(`Room & finishes should end with Colour palettes then Layouts, got ${lastTwo.join(', ')}`);
     },
   },
 ];

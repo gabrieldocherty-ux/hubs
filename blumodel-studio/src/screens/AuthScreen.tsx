@@ -274,6 +274,8 @@ function ForgotForm({ keepNext }: { keepNext: string }) {
 /** The link from the email (or from an admin): checks it, then sets the new password and signs in. */
 function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
   const setUser = useSession((s) => s.setUser);
+  // The link can be opened in a browser that is signed in already, maybe as someone else.
+  const signedInAs = useSession((s) => s.user?.email ?? null);
   const [check, setCheck] = useState<'checking' | 'invalid' | 'unreachable' | { email: string }>('checking');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -345,6 +347,11 @@ function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
       <p className="auth-sub">
         For <strong>{check.email}</strong>. Saving it signs this account out on every other device.
       </p>
+      {signedInAs && (
+        <div className="auth-note reset-signed-in">
+          This browser is signed in as <strong>{signedInAs}</strong>. Saving signs it in to the account this link is for instead.
+        </div>
+      )}
       <label className="field">
         <span>
           New password<em> · at least 8 characters</em>

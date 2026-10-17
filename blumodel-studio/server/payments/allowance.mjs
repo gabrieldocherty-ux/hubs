@@ -24,17 +24,41 @@ export const MAX_GRANT_NOTE = 500;
  * The allowance period around `t`: `{ start, end }` (ms, end exclusive). The subscription's current
  * billing period when it has one (`plan.periodEnd`), rolled forward if that end has passed (a
  * renewal still being retried); otherwise the calendar month, UTC.
+ *
+ * Consecutive periods tile exactly, with no overlap and no gap: each one starts where the one
+ * before it ended. The current period starts at the subscription's recorded period start
+ * (`plan.periodStart`, kept by pricing-003 as the previous period end), never at "a month before
+ * the end", which overlaps around short months: an end of Feb 28 would start Jan 28, inside a
+ * period that ended Jan 31, and one request would count against both. Periods rolled forward start
+ * at the end before them; periods walked back end at the start after them. Only without a
+ * recorded start (a row from before pricing-003, until its next renewal) is the start a month
+ * before the end. A recorded start more than a month before the end (a renewal after a lapse) is
+ * cut to a month before it, which can't overlap the period before.
  */
 export function periodOf(plan, t) {
   if (plan && Number.isFinite(plan.periodEnd) && plan.periodEnd > 0) {
-    let end = plan.periodEnd;
-    for (let i = 0; i < 1200 && end <= t; i++) end = addMonths(end, 1);
-    let start = addMonths(end, -1);
-    for (let i = 0; i < 1200 && start > t; i++) {
-      end = start;
-      start = addMonths(end, -1);
+    const end0 = plan.periodEnd;
+    const monthBefore = addMonths(end0, -1);
+    const recorded = Number.isFinite(plan.periodStart) && plan.periodStart > 0 && plan.periodStart < end0 ? plan.periodStart : null;
+    const start0 = recorded == null ? monthBefore : Math.max(recorded, monthBefore);
+    if (start0 <= t && t < end0) return { start: start0, end: end0 };
+    if (t >= end0) {
+      let start = end0;
+      let end = addMonths(end0, 1);
+      for (let i = 0; i < 1200 && end <= t; i++) {
+        start = end;
+        end = addMonths(end, 1);
+      }
+      if (start <= t && t < end) return { start, end };
+    } else {
+      let end = start0;
+      let start = addMonths(end, -1);
+      for (let i = 0; i < 1200 && start > t; i++) {
+        end = start;
+        start = addMonths(end, -1);
+      }
+      if (start <= t && t < end) return { start, end };
     }
-    if (start <= t && t < end) return { start, end };
   }
   const d = new Date(t);
   return { start: Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1), end: Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) };

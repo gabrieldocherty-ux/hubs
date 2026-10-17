@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api';
 import { feetInches } from '../../lib/format';
 import { hrefFor } from '../../lib/router';
 import { PLACEHOLDER_PRICES_NOTE } from '../../lib/csv';
+import { atStoreNote } from '../../lib/estimate';
 import { useCatalog } from '../../store/useCatalog';
 import { useDesignStore } from '../../store/useDesignStore';
 import { requestExport } from '../billing';
@@ -172,8 +173,8 @@ export default function QuotePage({ projectId }: { projectId: string }) {
                   <td className="num">
                     {l.qty} {l.unit}
                   </td>
-                  <td className="num">{usd(l.unitPrice)}</td>
-                  <td className="num">{usd(l.total)}</td>
+                  <td className="num">{l.atStore ? 'Price at store' : usd(l.unitPrice)}</td>
+                  <td className="num">{l.atStore ? '—' : usd(l.total)}</td>
                 </tr>
               ))}
             </tbody>
@@ -211,6 +212,7 @@ export default function QuotePage({ projectId }: { projectId: string }) {
         </section>
 
         <footer className="quote-foot">
+          {(quote.atStore ?? 0) > 0 && <p>{atStoreNote(quote.atStore ?? 0)}</p>}
           {quote.hasBuiltin && <p>{PLACEHOLDER_PRICES_NOTE}</p>}
           <p>{quote.disclaimer}</p>
           <p className="quote-made-with">Prepared with BluModel Studio</p>

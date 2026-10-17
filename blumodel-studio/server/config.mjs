@@ -81,6 +81,9 @@ export function loadConfig(env = process.env, argv = process.argv) {
   if (!['auto', 'demo', 'stripe'].includes(PAYMENTS)) throw new Error(`PAYMENTS must be auto, demo or stripe (got "${PAYMENTS}").`);
   if (PAYMENTS === 'stripe' && !(STRIPE_SECRET_KEY && STRIPE_WEBHOOK_SECRET)) throw new Error('PAYMENTS=stripe needs both STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET.');
   const DEMO_PAYMENTS = bool(env.DEMO_PAYMENTS);
+  // The seeded "… (Demo)" brands show outside production, and in production only on a server
+  // started with SHOW_DEMO_BRANDS=1 (QA and a demo server); never on the live site otherwise.
+  const SHOW_DEMO_BRANDS = !PROD || bool(env.SHOW_DEMO_BRANDS);
   const posture = paymentsPosture({ PAYMENTS, PROD, PUBLIC_URL, DEMO_PAYMENTS, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET });
   const paymentsProvider = posture.provider;
 
@@ -117,6 +120,7 @@ export function loadConfig(env = process.env, argv = process.argv) {
     BRAND_PRODUCT_LIMIT,
     PAYMENTS,
     DEMO_PAYMENTS,
+    SHOW_DEMO_BRANDS,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
     ANTHROPIC_API_KEY,

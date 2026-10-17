@@ -6,6 +6,13 @@
 //   node scripts/deploy-local.mjs --rollback      # put back the app the last deploy replaced
 //   options: --commit <sha> (written to DEPLOYED.txt; default: git rev-parse --short HEAD)
 //            --health-timeout <seconds> (60)
+//            --allow-dirty (deploy even with uncommitted changes, see below)
+//
+// It refuses (before stopping anything) when a file it ships, or one dist/ is built from, is
+// changed or untracked in this checkout (server/, src/, public/, index.html, the package and Vite
+// files: DEPLOY_SOURCE_PATHS in server/ops/home.mjs). Deploy a commit: commit first, or deploy from
+// a clean `git worktree add <folder> <commit>`. DEPLOYED.txt records the commit and whether it was
+// clean. --rollback ships nothing new, so it skips this check.
 //
 // Windows: the home is %USERPROFILE%\Projects\BluModelStudio and the server runs under the
 // run-server.cmd supervisor written here. Linux: the home is /srv/blumodel-studio, the server is
@@ -50,12 +57,14 @@ import path from 'node:path';
 import { execFileSync, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
+  DEPLOY_SOURCE_PATHS,
   SERVER_TASK,
   SERVER_UNIT,
   SERVICE_USER,
   createSettingsTemplate,
   defaultHome,
   deployBackupDirs,
+  dirtyDeployFiles,
   giveToServiceUser,
   homeLayout,
   homeProcesses,
@@ -84,13 +93,14 @@ function setting(name, def) {
 const argv = process.argv.slice(2);
 const opt = (flag) => (argv.indexOf(flag) >= 0 ? argv[argv.indexOf(flag) + 1] : null);
 const valued = ['--dist', '--commit', '--health-timeout'];
-const unknown = argv.filter((a, i) => a.startsWith('--') && !['--rollback', ...valued].includes(a) && !valued.includes(argv[i - 1]));
+const unknown = argv.filter((a, i) => a.startsWith('--') && !['--rollback', '--allow-dirty', ...valued].includes(a) && !valued.includes(argv[i - 1]));
 if (unknown.length) {
-  console.error(`Unknown option ${unknown.join(' ')}. Usage: node scripts/deploy-local.mjs [--dist <dir>] [--commit <sha>] [--health-timeout 60] | --rollback`);
+  console.error(`Unknown option ${unknown.join(' ')}. Usage: node scripts/deploy-local.mjs [--dist <dir>] [--commit <sha>] [--health-timeout 60] [--allow-dirty] | --rollback`);
   process.exit(EXIT.USAGE);
 }
 const ROLLBACK = argv.includes('--rollback');
 const distArg = opt('--dist');
+const allowDirty = argv.includes('--allow-dirty');
 
 const WIN = process.platform === 'win32';
 const LINUX = process.platform === 'linux';
@@ -120,6 +130,30 @@ if (!/^\d{1,5}$/.test(PORT)) {
 if (!ROLLBACK && (!fs.existsSync(path.join(DIST, 'index.html')) || !fs.existsSync(path.join(ROOT, 'server', 'generated', 'export-kit.mjs')))) {
   console.error(`No build found in ${DIST}. Run \`npm run build\` (or node scripts/host/build.mjs) first, or use \`npm run deploy:local\`.`);
   process.exit(EXIT.REFUSED);
+}
+// Ship a commit, not a half-edited working tree (see DEPLOY_SOURCE_PATHS): checked before anything
+// is stopped or copied. --allow-dirty deploys the files on disk anyway and says so in DEPLOYED.txt.
+let dirty = null;
+if (!ROLLBACK) {
+  try {
+    const porcelain = execFileSync('git', ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', ...DEPLOY_SOURCE_PATHS], { cwd: ROOT, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
+    dirty = dirtyDeployFiles(porcelain);
+  } catch {
+    console.warn('Not a git checkout (or git is not on PATH): could not check for uncommitted changes.');
+  }
+}
+if (dirty?.length) {
+  const list = dirty.slice(0, 15).map((d) => `  ${d.status.padEnd(2)} ${d.file}`).join('\n') + (dirty.length > 15 ? `\n  ... and ${dirty.length - 15} more` : '');
+  if (!allowDirty) {
+    console.error(
+      `Not deploying: ${dirty.length} file(s) that a deploy ships are changed or untracked in ${ROOT}:\n${list}\n` +
+        'Commit them (or deploy from a clean checkout of the commit you want: git worktree add <folder> <commit>). ' +
+        'A migration that is only on disk would be applied to the real database and never re-run. ' +
+        'Pass --allow-dirty to deploy the files on disk anyway.',
+    );
+    process.exit(EXIT.REFUSED);
+  }
+  console.warn(`--allow-dirty: deploying ${dirty.length} uncommitted file(s):\n${list}`);
 }
 for (const old of ['BLUMODEL_DEMO_PAYMENTS', 'MISE_DEMO_PAYMENTS']) {
   if (process.env[old]) console.warn(`${old} is no longer used by the deploy: set DEMO_PAYMENTS in ${L.settings} instead.`);
@@ -370,7 +404,8 @@ try {
   }
 
   const commit = commitOf();
-  stageApp({ root: ROOT, dist: DIST, staging: L.appNew, commit });
+  const uncommitted = dirty === null ? 'unknown (not checked)' : dirty.length ? `yes, ${dirty.length} uncommitted file(s) (--allow-dirty)` : 'no';
+  stageApp({ root: ROOT, dist: DIST, staging: L.appNew, commit, uncommitted });
   try {
     const { kept } = swapInApp(L);
     swapped = true;

@@ -516,7 +516,7 @@ function PlanSection() {
   const plan = useSession((s) => s.user!.plan);
   const status =
     plan.id === 'free'
-      ? 'Design, save and share for free. Exports are paid per kitchen or with a plan.'
+      ? 'Design, save and share for free. Unlimited and Contractor plans add more.'
       : plan.provider === 'comp'
         ? 'Complimentary.'
         : plan.graceUntil
@@ -532,7 +532,15 @@ function PlanSection() {
         <div>
           <span className="set-label">Current plan</span>
           <b className="set-value">{PLAN_NAME[plan.id]}</b>
-          <p className="set-hint">{status}</p>
+          <p className="set-hint">
+            {status}
+            {plan.id === 'free' && (
+              <>
+                {' '}
+                <a href="#/pricing">See pricing</a>
+              </>
+            )}
+          </p>
         </div>
         <a className="btn" href="#/account/billing">
           {plan.id === 'free' ? 'See plans' : 'Manage billing'}

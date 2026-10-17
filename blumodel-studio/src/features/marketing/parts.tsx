@@ -91,7 +91,7 @@ export function MarketingFooter() {
         </nav>
       </div>
       <p className="mk-disclaimer">{VISUALIZER_DISCLAIMER}</p>
-      <p className="mk-fine">The brands in the built-in sample catalog are fictional. Products from contractors and partner brands appear once an admin has verified them.</p>
+      <p className="mk-fine">BluModel Basics are generic sample products. Retailer products list real brands and the stores that sell them, with prices as checked on the date shown. Products from contractors and partner brands appear once an admin has verified them.</p>
       <LegalLinks className="mk-legal" />
     </footer>
   );

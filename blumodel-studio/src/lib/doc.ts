@@ -4,6 +4,7 @@ import { getProduct, isBuiltin, isProductIdShape, missingProduct } from '../data
 import { useCatalog } from '../store/useCatalog';
 import { finishAt, finishList } from './finish';
 import { cleanBrandPrefs } from './generate/brands';
+import { FIXTURE_ID_RE, fixturesForSave, registerFixtures } from './fixtures';
 
 /**
  * Kitchen-document hygiene shared by every load and save path. Pure apart from the catalog
@@ -35,6 +36,8 @@ function cleanSurfaces(raw: Partial<Surfaces> | undefined): Surfaces {
       if (k === 'doorStyle' && !DOOR_STYLES.includes(v)) continue;
       (out as Record<string, string>)[k] = v;
     }
+    // Optional: a retail faucet. Without one, every sink draws its own.
+    if (typeof raw.faucetId === 'string' && FIXTURE_ID_RE.test(raw.faucetId)) out.faucetId = raw.faucetId;
   }
   return out;
 }
@@ -131,6 +134,8 @@ export function sanitizeDoc(doc: DesignDoc): DesignDoc {
   const d = (doc && typeof doc === 'object' ? doc : {}) as Partial<DesignDoc>;
   const catalog = useCatalog.getState();
   if (d.products && typeof d.products === 'object') catalog.registerSnapshots(d.products);
+  // The retail faucet and hardware it names; a live catalog copy already loaded wins.
+  if (d.fixtures && typeof d.fixtures === 'object') registerFixtures(d.fixtures, { replace: false });
   const items = cleanItems(d.items);
   const unknown = [...new Set(items.map((i) => i.productId).filter((id) => !getProduct(id)))];
   if (unknown.length) catalog.registerMissing(unknown.map(missingProduct));
@@ -180,6 +185,8 @@ export function snapshotOf(p: Product): Product {
     ...(p.buyUrl ? { buyUrl: p.buyUrl } : {}),
     ...(p.model ? { model: p.model } : {}),
     ...(p.flags ? { flags: p.flags } : {}),
+    ...(p.productBrand ? { productBrand: p.productBrand } : {}),
+    ...(p.upc ? { upc: p.upc } : {}),
   };
   if (JSON.stringify(snap).length <= MAX_SNAPSHOT_BYTES) return snap;
   // Oversized (very long copy or many finishes): drop what a render doesn't need.
@@ -206,6 +213,7 @@ export function prepareDocForSave(doc: DesignDoc): DesignDoc {
     products[id] = snapshotOf(p);
     n++;
   }
-  const { products: _previous, ...rest } = doc;
-  return n ? { ...rest, version: 2, products } : { ...rest, version: 2 };
+  const { products: _previous, fixtures: _fixtures, ...rest } = doc;
+  const fixtures = fixturesForSave(doc);
+  return { ...rest, version: 2, ...(n ? { products } : {}), ...(fixtures ? { fixtures } : {}) };
 }

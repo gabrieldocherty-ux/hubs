@@ -5,6 +5,7 @@ import { CATEGORIES, getProduct, priceFor } from '../data/catalog';
 import type { CategoryId, Product, Surfaces } from '../types';
 import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog } from '../store/useCatalog';
+import { useSession } from '../store/useSession';
 import { findDropTarget, placeAt, usePlacement, type ViewId } from '../lib/interaction';
 import { ProductArt } from './ProductArt';
 import { Info, Plus, Search } from './Icons';
@@ -255,6 +256,8 @@ function DragGhost() {
 }
 
 export function CatalogPanel() {
+  // Custom models come with the Contractor plan (the server refuses anyone else).
+  const canRequestModel = useSession((s) => s.user?.plan.id === 'contractor');
   const [query, setQuery] = useState('');
   const [cat, setCat] = useState<CategoryId | typeof ALL>(ALL);
   const [brand, setBrand] = useState<string>(ALL);
@@ -379,36 +382,41 @@ export function CatalogPanel() {
               Your brands
             </button>
           )}
-          {brands.length > 1 && (
-            <span className={activeBrand !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
-              <select
-                id="catalog-brand"
-                aria-label="Brand"
-                value={activeBrand}
-                onChange={(e) => {
-                  setBrand(e.target.value);
-                  if (e.target.value === ALL) setMine(false);
-                }}
-              >
-                <option value={ALL}>All brands</option>
-                {brands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.label} ({b.n})
-                  </option>
-                ))}
-              </select>
-            </span>
-          )}
-          {storeList.length > 0 && (
-            <span className={activeStore !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
-              <select id="catalog-store" aria-label="Store" value={activeStore} onChange={(e) => setStore(e.target.value)}>
-                <option value={ALL}>Any store</option>
-                {storeList.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label} ({s.n})
-                  </option>
-                ))}
-              </select>
+          {/* The two dropdowns wrap as one row under the chip when they don't fit beside it. */}
+          {(brands.length > 1 || storeList.length > 0) && (
+            <span className="catalog-selects">
+              {brands.length > 1 && (
+                <span className={activeBrand !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
+                  <select
+                    id="catalog-brand"
+                    aria-label="Brand"
+                    value={activeBrand}
+                    onChange={(e) => {
+                      setBrand(e.target.value);
+                      if (e.target.value === ALL) setMine(false);
+                    }}
+                  >
+                    <option value={ALL}>All brands</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.label} ({b.n})
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              )}
+              {storeList.length > 0 && (
+                <span className={activeStore !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
+                  <select id="catalog-store" aria-label="Store" value={activeStore} onChange={(e) => setStore(e.target.value)}>
+                    <option value={ALL}>Any store</option>
+                    {storeList.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.n})
+                      </option>
+                    ))}
+                  </select>
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -481,9 +489,11 @@ export function CatalogPanel() {
             </section>
           ) : null,
         )}
-        <p className="catalog-foot">
-          Can’t find it? <a href={hrefFor({ name: 'orders', rest: 'new' })}>Request a custom model</a>
-        </p>
+        {canRequestModel && (
+          <p className="catalog-foot">
+            Can’t find it? <a href={hrefFor({ name: 'orders', rest: 'new' })}>Request a custom model</a>
+          </p>
+        )}
       </div>
       <DragGhost />
     </div>

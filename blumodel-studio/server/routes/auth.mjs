@@ -23,6 +23,7 @@ import { createMailer } from '../email/index.mjs';
 import { passwordChangedEmail, resetEmail, signInAlertEmail } from '../email/messages.mjs';
 import { createResetStore, maskEmail, RESET_MINUTES } from '../auth/resets.mjs';
 import { audit } from '../lib/audit.mjs';
+import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
@@ -33,6 +34,8 @@ const LOGIN_MAX_PER_EMAIL = 30;
 const HOUR = 3_600_000;
 /** Reset emails per address per hour, whoever asks: nobody can flood an inbox. */
 const FORGOT_MAX_PER_EMAIL = 3;
+/** One sign-in alert per device per account in this window (a day). */
+export const ALERT_REPEAT_MS = 24 * HOUR;
 
 /** "2026-10-14 20:15 UTC": an unambiguous time for an email. */
 const utc = (ms) => `${new Date(ms).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
@@ -55,24 +58,38 @@ export default function routes(ctx) {
 
   // Roles are never granted by signing up or signing in. There is no email verification, so an
   // address proves nothing: an admin is made only on the server, with
-  // `node server/scripts/make-admin.mjs <email>`. ADMIN_EMAILS grants nothing; it only reserves its
-  // addresses against being moved onto another account (/api/account/email).
+  // `node server/scripts/make-admin.mjs <email>`. ADMIN_EMAILS grants and reserves nothing.
 
   /**
-   * Email notifications > Sign-in alerts: when email is on, the person hasn't turned alerts off,
-   * and none of their signed-in sessions is the same browser on the same system, tell them.
+   * Email notifications > Sign-in alerts: when email is on and the person hasn't turned alerts
+   * off, a sign-in from a device that isn't already signed in to the account is told about.
    * Decided before the new session exists; sent without waiting, so a sign-in never waits on the
    * provider and its timing says nothing about the account.
+   *
+   * A device is "known" only when its browser AND system are both recognised and a live session
+   * of this account has the same pair. An unrecognised or missing User-Agent (empty names) is
+   * always a new device: empty names would otherwise match every other unrecognised session and
+   * every session created before account-001 recorded devices, so anyone could sign in silently
+   * by sending no User-Agent. To keep that from mailing on every attempt, one device (by its
+   * names, the unrecognisable one included) is alerted about at most once per account per
+   * ALERT_REPEAT_MS (signin_alerts, account-002).
    */
   const alertNewDevice = (req, user) => {
     if (!mailer.enabled || !prefs.get(user.id).prefs.signInAlerts) return;
     const { browser, os } = deviceOf(req);
-    const known = db.prepare('SELECT 1 FROM sessions WHERE user_id = ? AND browser = ? AND os = ? AND expires_at >= ?').get(user.id, browser, os, ctx.now());
+    const t = ctx.now();
+    const known =
+      !!browser &&
+      !!os &&
+      !!db.prepare("SELECT 1 FROM sessions WHERE user_id = ? AND browser = ? AND os = ? AND browser <> '' AND os <> '' AND expires_at >= ?").get(user.id, browser, os, t);
     if (known) return;
+    const device = `${browser}|${os}`;
+    if (db.prepare('SELECT 1 FROM signin_alerts WHERE user_id = ? AND device = ? AND sent_at > ?').get(user.id, device, t - ALERT_REPEAT_MS)) return;
+    db.prepare('DELETE FROM signin_alerts WHERE user_id = ? AND sent_at <= ?').run(user.id, t - ALERT_REPEAT_MS);
+    db.prepare('INSERT INTO signin_alerts (user_id, device, sent_at) VALUES (?, ?, ?)').run(user.id, device, t);
     const msg = signInAlertEmail({
-      name: user.name,
       device: deviceLabel({ browser, os }),
-      when: utc(ctx.now()),
+      when: utc(t),
       settingsUrl: `${config.PUBLIC_URL}/#/account`,
       supportEmail: config.legal?.supportEmail,
     });
@@ -132,6 +149,8 @@ export default function routes(ctx) {
           throw new HttpError(401, 'That email and password do not match.');
         }
         limiter.reset(keyPair);
+        // Only after the right password, so it says nothing about an address to anyone else.
+        if (isDisabled(db, user.id)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
         alertNewDevice(rc.req, user);
         sessions.start(rc.req, rc.res, user.id);
         return { user: userWire(user) };
@@ -177,7 +196,7 @@ export default function routes(ctx) {
         // Sign out every other device; keep this one. Any reset link still outstanding stops working.
         sessions.endOthers(rc.req, rc.user.id);
         resets.revokeFor(rc.user.id);
-        if (mailer.enabled) void mailer.send({ to: rc.user.email, ...passwordChangedEmail({ name: rc.user.name, supportEmail: config.legal?.supportEmail, viaReset: false }) });
+        if (mailer.enabled) void mailer.send({ to: rc.user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: false }) });
         return { ok: true };
       },
     },
@@ -205,7 +224,7 @@ export default function routes(ctx) {
         const user = db.prepare('SELECT id, email, name FROM users WHERE email = ?').get(email);
         if (user) {
           const { token } = resets.issue(user.id);
-          void mailer.send({ to: user.email, ...resetEmail({ name: user.name, url: resetUrl(token), minutes: RESET_MINUTES }) });
+          void mailer.send({ to: user.email, ...resetEmail({ url: resetUrl(token), minutes: RESET_MINUTES }) });
         }
         return { ok: true, emailEnabled: true };
       },
@@ -243,8 +262,11 @@ export default function routes(ctx) {
         sessions.endAll(userId);
         limiter.reset(`login-email:${db.prepare('SELECT email FROM users WHERE id = ?').get(userId)?.email ?? ''}`);
         const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(userId);
+        // A browser signed in as someone else (a reset link opened there) leaves that session too;
+        // the new session's cookie replaces it.
+        sessions.end(rc.req, rc.res);
         sessions.start(rc.req, rc.res, userId);
-        if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ name: user.name, supportEmail: config.legal?.supportEmail, viaReset: true }) });
+        if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: true }) });
         log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
         return { user: userWire(user) };
       },

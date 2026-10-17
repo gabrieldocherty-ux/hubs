@@ -227,7 +227,7 @@ export default function BillingPage() {
                 </div>
                 {!soon && <AgreeToPay />}
                 <p className="fine">
-                  One kitchen only? Open it and choose Export to see your options{soon ? ' when payments open.' : '.'} Prices are in Canadian dollars.
+                  Prices are in Canadian dollars.
                 </p>
               </section>
             )}

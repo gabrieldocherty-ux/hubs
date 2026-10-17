@@ -38,7 +38,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const sessions = createSessionStore({ db, config, now });
   const auth = createAuthService({ db });
   const files = createFileService({ db, config, now, auth });
-  const brands = createBrandService({ db, files });
+  // In production the demo brands never show, even if a demo seed was forced in (seed --force-demo).
+  const brands = createBrandService({ db, files, hideDemo: !config.SHOW_DEMO_BRANDS });
   // Seams the billing and contractor packages register into (BUILD_PLAN §13.2).
   const webhooks = createWebhookService();
   const billing = createBillingHooks();

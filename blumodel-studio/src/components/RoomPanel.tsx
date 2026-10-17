@@ -7,6 +7,7 @@ import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
 import { PLAIN_PRESET, STYLE_PRESETS } from '../data/styles';
 import { PresetStrip } from './PresetStrip';
+import { RetailFixtures } from '../catalog/RetailFixtures';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
   // The runs and the room outline follow the theme (styles.css --plan-wall).
@@ -97,34 +98,6 @@ export function RoomPanel() {
 
   return (
     <div className="room-panel">
-      <section className="room-section room-palettes" aria-labelledby="room-palettes-title">
-        <header>
-          <h4 id="room-palettes-title">Colour palettes</h4>
-          {/* Short enough to share the heading's line in the 300px panel (it wrapped to two). */}
-          <span className="sub" title="A palette changes the whole kitchen; Ctrl+Z undoes it">Whole-kitchen looks</span>
-        </header>
-        <div className="presets">
-          {[PLAIN_PRESET, ...STYLE_PRESETS].map((p) => {
-            const active = (Object.keys(p.surfaces) as (keyof Surfaces)[]).every((k) => p.surfaces[k] === surfaces[k]);
-            return (
-              <button
-                key={p.id}
-                className={active ? 'preset on' : 'preset'}
-                aria-pressed={active}
-                onClick={() => {
-                  useDesignStore.getState().applyStyle(p);
-                  useDesignStore.getState().toast(p.id === PLAIN_PRESET.id ? 'Back to plain finishes. Ctrl+Z to go back.' : `${p.name} applied. Ctrl+Z to go back.`, 'ok');
-                }}
-              >
-                <PresetStrip preset={p} />
-                <b>{p.name}</b>
-                <small>{p.blurb}</small>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       <section className="room-section">
         <header>
           <h4>Room</h4>
@@ -134,25 +107,6 @@ export function RoomPanel() {
           <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={72} max={480} onCommit={(v) => setRoom({ widthIn: v })} />
           <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={72} max={480} onCommit={(v) => setRoom({ lengthIn: v })} />
           <FeetInchesInput label="Ceiling" valueIn={room.ceilingIn} min={90} max={144} onCommit={(v) => setRoom({ ceilingIn: v })} />
-        </div>
-      </section>
-
-      <section className="room-section">
-        <header>
-          <h4>Layouts</h4>
-          <span className="sub">Ctrl+Z to undo</span>
-        </header>
-        <div className="templates">
-          {TEMPLATES.map((t) => {
-            const fits = room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
-            return (
-              <button key={t.id} className="template" disabled={!fits} onClick={() => applyTemplate(t.id)} title={fits ? t.blurb : `Needs at least ${feetInches(t.minWidth)} × ${feetInches(t.minLength)}`}>
-                <TemplateGlyph id={t.id} />
-                <span className="template-name">{t.name}</span>
-                <span className="template-blurb">{fits ? t.blurb : `Needs ${Math.ceil(t.minWidth / 12)}′ × ${Math.ceil(t.minLength / 12)}′`}</span>
-              </button>
-            );
-          })}
         </div>
       </section>
 
@@ -200,6 +154,7 @@ export function RoomPanel() {
               />
             ))}
           </div>
+          <RetailFixtures surfaces={surfaces} set={set} />
         </div>
       </section>
 
@@ -215,6 +170,53 @@ export function RoomPanel() {
           {PAINTS.map((p) => (
             <button key={p.id} className={p.id === surfaces.paintId ? 'swatch on' : 'swatch'} style={{ background: p.hex }} title={p.name} aria-label={p.name} aria-pressed={p.id === surfaces.paintId} onClick={() => set({ paintId: p.id })} />
           ))}
+        </div>
+      </section>
+
+      <section className="room-section room-palettes" aria-labelledby="room-palettes-title">
+        <header>
+          <h4 id="room-palettes-title">Colour palettes</h4>
+          {/* Short enough to share the heading's line in the 300px panel (it wrapped to two). */}
+          <span className="sub" title="A palette changes the whole kitchen; Ctrl+Z undoes it">Whole-kitchen looks</span>
+        </header>
+        <div className="presets">
+          {[PLAIN_PRESET, ...STYLE_PRESETS].map((p) => {
+            const active = (Object.keys(p.surfaces) as (keyof Surfaces)[]).every((k) => p.surfaces[k] === surfaces[k]);
+            return (
+              <button
+                key={p.id}
+                className={active ? 'preset on' : 'preset'}
+                aria-pressed={active}
+                onClick={() => {
+                  useDesignStore.getState().applyStyle(p);
+                  useDesignStore.getState().toast(p.id === PLAIN_PRESET.id ? 'Back to plain finishes. Ctrl+Z to go back.' : `${p.name} applied. Ctrl+Z to go back.`, 'ok');
+                }}
+              >
+                <PresetStrip preset={p} />
+                <b>{p.name}</b>
+                <small>{p.blurb}</small>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="room-section room-layouts">
+        <header>
+          <h4>Layouts</h4>
+          <span className="sub">Ctrl+Z to undo</span>
+        </header>
+        <div className="templates">
+          {TEMPLATES.map((t) => {
+            const fits = room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
+            return (
+              <button key={t.id} className="template" disabled={!fits} onClick={() => applyTemplate(t.id)} title={fits ? t.blurb : `Needs at least ${feetInches(t.minWidth)} × ${feetInches(t.minLength)}`}>
+                <TemplateGlyph id={t.id} />
+                <span className="template-name">{t.name}</span>
+                <span className="template-blurb">{fits ? t.blurb : `Needs ${Math.ceil(t.minWidth / 12)}′ × ${Math.ceil(t.minLength / 12)}′`}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
     </div>

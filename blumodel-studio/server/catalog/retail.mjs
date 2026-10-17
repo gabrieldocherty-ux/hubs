@@ -42,14 +42,17 @@ export function loadRetail(file = RETAIL_FILE) {
     data = { version: 0, checkedAt: null, researched: 0, stores: [], products: [], leftOut: { count: 0, byReason: {} }, error: String(err?.message ?? err) };
   }
   const products = Array.isArray(data.products) ? data.products : [];
+  // Faucets, pulls and knobs: chosen in Room & finishes, linked out like products.
+  const fixtures = Array.isArray(data.fixtures) ? data.fixtures : [];
   const stores = Array.isArray(data.stores) ? data.stores : [];
   cache = {
     file,
     data,
     products,
+    fixtures,
     stores,
     storeBySlug: new Map(stores.map((s) => [s.slug, s])),
-    byId: new Map(products.map((p) => [p.id, p])),
+    byId: new Map([...products, ...fixtures].map((p) => [p.id, p])),
   };
   return cache;
 }

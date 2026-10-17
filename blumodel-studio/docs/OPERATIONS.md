@@ -76,6 +76,27 @@ npm run deploy:local      (builds, then deploys to the home and restarts the ser
 ```
 
 `node scripts/deploy-local.mjs --dist <folder>` deploys a build you already made (a `vite build` output).
+
+**It ships a commit, not a working tree.** Before it stops or copies anything, the deploy runs
+`git status` over everything it ships or builds from (`server`, `src`, `public`, `index.html`,
+`package.json`, `package-lock.json`, `vite.config.ts`, `tsconfig.json`: `DEPLOY_SOURCE_PATHS` in
+`server/ops/home.mjs`). If any of those files is changed or untracked it lists them and exits 1,
+leaving the home untouched: a migration that is only on disk would be applied to the real database,
+recorded as done, and never re-run once it changed and was committed. Commit the work or, when the
+checkout holds someone else's unfinished changes, deploy from a clean worktree of the commit you want:
+
+```
+git worktree add --detach %TEMP%\bm-deploy <commit>
+cd %TEMP%\bm-deploy\blumodel-studio
+npm ci
+npm run deploy:local
+git worktree remove %TEMP%\bm-deploy      (afterwards, from the main checkout)
+```
+
+`--allow-dirty` deploys the files on disk anyway (it lists them first), and `app\DEPLOYED.txt`
+records whether a deploy was clean, so a dirty one stays visible. Without git on PATH the check is
+skipped with a warning.
+
 The deploy:
 
 1. stops this home's server gracefully and ends its supervisor (never the tunnel; never anything not
@@ -116,8 +137,9 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `STRIPE_SECRET_KEY` | `rk_live_…` (restricted key; LAUNCH.md lists its permissions) | Stripe API calls. A live key works only in production with an https `PUBLIC_URL`. |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` | verifies Stripe's webhook signatures (5-minute tolerance) |
 | `PUBLIC_URL` | `https://blumodel.studio` | checkout success/cancel/portal return links and the webhook check; never taken from a request |
-| `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing.** It only reserves the addresses: no other account can change its email to one. Admins are made with `make-admin` (below) |
+| `ADMIN_EMAILS` | your email(s), comma separated | **grants nothing and reserves nothing** (signing up or changing an email to a listed address is like any other). Admins are made with `make-admin` (below) |
 | `DEMO_PAYMENTS` | `0` | `1` allows the labelled DEMO checkout in production when Stripe isn't set (never with a live key) |
+| `SHOW_DEMO_BRANDS` | `0` | `1` shows the seeded "(Demo)" brands, their products and pages in production (QA sets it); without it production hides every `is_demo` brand |
 | `TRUST_PROXY` | `1` | believe `CF-Connecting-IP` / `X-Forwarded-For` / `X-Forwarded-Proto` from 127.0.0.1 (per-visitor rate limits, Secure cookies, HSTS) |
 | `LEGAL_NAME`, `SUPPORT_EMAIL`, `LEGAL_JURISDICTION` | the business's legal name, a support address, where it's established | the terms, privacy and refund pages, receipts and the footer's Contact link |
 | `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional | *Start from a photo* reads photos with Claude when both are set |
@@ -165,13 +187,19 @@ this machine, against the live database, after that person has signed up:
 
 ```
 cd %USERPROFILE%\Projects\BluModelStudio\app
-set DB_PATH=%USERPROFILE%\Projects\BluModelStudio\data\blumodel.db
 node server\scripts\make-admin.mjs you@example.com
 ```
 
-It prints `you@example.com is now an admin.` (or that no account has that email). `--role studio`
-makes a studio member instead; `--role customer` takes a role away. Admin > Users can change roles
-too, but never your own. Until an admin exists, the server log says `Warning: No admin account
+Run from the home's `app\`, it finds the home's `data\blumodel.db` by itself, the same way
+`restore.mjs` does, so no `DB_PATH` is needed (before 2026-10-16 it opened
+`app\server\data\blumodel.db` instead and reported no account). `--db <file>` or `DB_PATH` names
+another database and wins. It first prints the database it used (`Database: ...\data\blumodel.db
+(the deployed home's database)`), and stops with an error if there is no database at that path
+rather than creating an empty one. Then it prints `you@example.com is now an admin.` (or that no
+account has that email). `--role studio`
+makes a studio member instead; `--role customer` takes a role away. Admin > Users can switch an
+account between customer and studio, never your own, and never to or from admin: that is only
+this script. Until an admin exists, the server log says `Warning: No admin account
 exists: run node server/scripts/make-admin.mjs <email>` at every start. Run it only for an account
 you know is the right person's: you signed it up yourself and can sign in to it.
 

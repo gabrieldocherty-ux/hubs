@@ -259,14 +259,17 @@ test('ADMIN_EMAILS grants nothing: signing up or signing in with a listed addres
     t2.db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(id);
     const l2 = await t2.agent().post('/api/auth/login', { email: 'later@test.blumodel', password: 'password123' });
     assert.equal(l2.body.user.role, 'admin');
-    // A listed address can't be moved onto another account through an email change.
+    // A listed address is treated like any other in an email change: taken while an account has it,
+    // free once none does (ADMIN_EMAILS reserves nothing, as it never could at signup), and moving
+    // onto it grants nothing.
     const other = await t2.user();
     const moved = await other.post('/api/account/email', { email: 'later@test.blumodel', password: other.user.password });
     assert.equal(moved.status, 409, 'that address belongs to an account');
     t2.db.prepare('DELETE FROM users WHERE id = ?').run(id);
-    const reserved = await other.post('/api/account/email', { email: 'later@test.blumodel', password: other.user.password });
-    assert.equal(reserved.status, 400, reserved.text);
-    assert.equal(t2.db.prepare('SELECT role FROM users WHERE id = ?').get(other.id).role, 'customer');
+    const freed = await other.post('/api/account/email', { email: 'later@test.blumodel', password: other.user.password });
+    assert.equal(freed.status, 200, freed.text);
+    assert.equal(t2.db.prepare('SELECT role FROM users WHERE id = ?').get(other.user.id).role, 'customer');
+    assert.equal((await other.get('/api/auth/me')).body.user.role, 'customer');
   } finally {
     await t2.close();
   }

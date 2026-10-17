@@ -18,6 +18,16 @@
 //                (amount 0, straight to the studio), remember the allowance period they counted
 //                against, and admins can grant extra models for a period (model_grants).
 
+//   pricing-003  subscriptions.current_period_start: where the current billing period began, so
+//                the custom-model allowance period (server/payments/allowance.mjs periodOf) starts
+//                exactly where the last one ended. Deriving it as "one month before the period
+//                end" overlaps around short months (an end of Feb 28 gave a start of Jan 28,
+//                inside a January period that ended Jan 31). A trigger keeps it: whenever
+//                current_period_end moves forward and the write didn't set the start itself, the
+//                start becomes the old end. Rows from before have none until their next renewal
+//                (periodOf falls back to a month before the end). A future rebuild of
+//                subscriptions must recreate the trigger.
+
 /** @type {{ id: string, foreignKeys?: 'off', up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
   {
@@ -129,6 +139,21 @@ export const steps = [
           created_at INTEGER NOT NULL
         );
         CREATE INDEX model_grants_user ON model_grants(user_id, period_end);
+      `);
+    },
+  },
+  {
+    id: 'pricing-003-period-start',
+    up(db) {
+      db.exec(`
+        ALTER TABLE subscriptions ADD COLUMN current_period_start INTEGER;
+        CREATE TRIGGER subscriptions_period_start AFTER UPDATE OF current_period_end ON subscriptions
+          WHEN OLD.current_period_end IS NOT NULL
+            AND NEW.current_period_end > OLD.current_period_end
+            AND NEW.current_period_start IS OLD.current_period_start
+        BEGIN
+          UPDATE subscriptions SET current_period_start = OLD.current_period_end WHERE id = NEW.id;
+        END;
       `);
     },
   },

@@ -15,7 +15,11 @@ export function slugify(name) {
   );
 }
 
-export function createBrandService({ db, files }) {
+/**
+ * `hideDemo` (production): brands flagged is_demo (the seed's "… (Demo)" partners and pages) are
+ * left out of every public list and the catalog, even if a demo seed was forced into the database.
+ */
+export function createBrandService({ db, files, hideDemo = false }) {
   const toRow = (r) =>
     r && {
       id: r.id,
@@ -37,6 +41,11 @@ export function createBrandService({ db, files }) {
     };
 
   const svc = {
+    hideDemo: !!hideDemo,
+    /** True when a brand's products and page may be shown: active, and not a demo brand in production. */
+    isListed(row) {
+      return !!row && row.status === 'active' && !(hideDemo && row.isDemo);
+    },
     /** BrandRow (camelCase) or null. */
     get(id) {
       if (typeof id !== 'string' || !id) return null;
@@ -48,7 +57,10 @@ export function createBrandService({ db, files }) {
     },
     /** Active brands, by name. */
     listActive() {
-      return db.prepare("SELECT * FROM brands WHERE status = 'active' ORDER BY name COLLATE NOCASE").all().map(toRow);
+      return db
+        .prepare(`SELECT * FROM brands WHERE status = 'active'${hideDemo ? ' AND is_demo = 0' : ''} ORDER BY name COLLATE NOCASE`)
+        .all()
+        .map(toRow);
     },
     /** A slug derived from `name` that no other brand uses (`-2`, `-3`… appended). */
     uniqueSlug(name) {

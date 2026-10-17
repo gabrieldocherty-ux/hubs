@@ -130,7 +130,12 @@ export const M = {
 };
 
 export function hardwareMaterial(hex: string, roughness: number): THREE.Material {
-  return cached(`hw:${hex}:${roughness}`, () => new THREE.MeshStandardMaterial({ color: hex, metalness: 0.95, roughness }));
+  // Black hardware is a powder coat over metal, not polished black metal: at full metalness a
+  // near-black colour reflects almost nothing and a knob or faucet reads as a flat silhouette.
+  const coated = luminance(hex) < 0.06;
+  return cached(`hw:${hex}:${roughness}`, () =>
+    coated ? new THREE.MeshStandardMaterial({ color: shade(hex, 0.07), metalness: 0.55, roughness: Math.min(Math.max(roughness, 0.3), 0.38) }) : new THREE.MeshStandardMaterial({ color: hex, metalness: 0.95, roughness }),
+  );
 }
 
 /** Tangent-space normal map of vertical reeds, for fluted cabinet doors. */

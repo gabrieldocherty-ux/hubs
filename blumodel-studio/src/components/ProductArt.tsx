@@ -1,7 +1,8 @@
 import { memo, type ReactNode } from 'react';
 import type { DoorStyle, Finish, Product, Surfaces } from '../types';
 import { baseFronts, farmhouseFronts, farmhouseSink, type FrontSpec } from '../lib/fronts';
-import { CABINET_FINISHES, COUNTERTOPS, HARDWARE, byId } from '../data/finishes';
+import { CABINET_FINISHES, COUNTERTOPS, byId } from '../data/finishes';
+import { resolveHardware } from '../lib/fixtures';
 import { luminance, shade } from '../lib/color';
 
 const INK = '#2a2622';
@@ -31,7 +32,7 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
   const f = finish ?? (product.finishes === 'cabinet' ? cab : list[0]);
   const color = f.material === 'panel' ? cab.hex : f.hex;
   const counter = byId(COUNTERTOPS, surfaces.countertopId).hex;
-  const hw = byId(HARDWARE, surfaces.hardwareId).hex;
+  const hw = resolveHardware(surfaces).hex;
   const style = surfaces.doorStyle;
   const w = width ?? product.widthIn;
   const k = product.kind;

@@ -390,12 +390,15 @@ An admin can refund paid, in-progress or delivered orders. With the demo provide
 
 | Tab | Content | Package |
 |---|---|---|
-| Overview | Counts of users, kitchens, brands by status, products by status; latest signups | foundation |
+| Overview | Sign-ups (7/30 d), paying / complimentary / demo plans, MRR in CAD with legacy USD apart, unlocks, refunds, custom models used, studio queue, leads, retail link-outs, recent sign-ups and payments (`docs/handoff/admin.md`) | admin |
 | Moderation | Submitted products (preview, GLB report, approve, or reject with a note) and pending brands | brands |
 | Brands | All brands: approve, reject, suspend, verify, view as brand | brands |
 | Studio | The custom-model queue (§7.6) | orders |
 | Revenue | Gross paid, refunds, net; by tier; by day (90 d); average turnaround; demo vs Stripe kept separate | orders |
-| Users | Search users, set role (`customer` / `studio` / `admin`; you can't demote yourself) | foundation |
+| Users | Search; one account in full; role `customer` / `studio` only (admin is `make-admin` on the server, never the API); complimentary plan with an optional end date; reset link; sign out everywhere; disable / enable; delete (email typed back). Every action audit-logged | admin |
+| Contractors | Company, phone, plan, brand page, models this period; verify / unverify; extra models | admin |
+| System | Uptime, deployed commit, database, backups, disk, payments and webhooks, email, legal; every key only as set / not set; recent log problems, redacted | admin |
+| Audit | The admin audit log, filtered by admin, action and dates, 50 a page | admin |
 
 ---
 
@@ -435,7 +438,8 @@ These are new SQLite tables, created through a real migration runner. Today ther
 | orders | `/api/orders/tiers`, `/api/orders…`, `/api/payments/demo/:id/complete`, `/api/webhooks/stripe`, `/api/studio/orders…`, `/api/admin/orders/:id/refund`, `/api/admin/revenue` |
 | generate | `POST /api/generate/brief` (503 unless an LLM is configured) |
 | share | `/api/projects/:id/shares…`, `GET /api/share/:token`, `POST /api/share/:token/duplicate` |
-| admin core | `GET /api/admin/overview`, `GET /api/admin/users`, `PATCH /api/admin/users/:id` |
+| admin core | `GET /api/admin/overview`, `GET /api/admin/users`, `PATCH /api/admin/users/:id` (customer / studio only) |
+| admin panel | `GET /api/admin/dashboard`, `GET /api/admin/users/:id`, `POST /api/admin/users/:id/{role,comp,comp/revoke,sign-out,disable,enable,delete}`, `GET /api/admin/contractors`, `POST /api/admin/contractors/:id/verify`, `GET /api/admin/system`, `GET /api/admin/audit` |
 
 ---
 

@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import type { Room, Surfaces } from '../../types';
-import { COUNTERTOPS, HARDWARE, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
+import { COUNTERTOPS, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
+import { resolveFaucet, resolveHardware } from '../../lib/fixtures';
+import { useFixtureVersion } from '../../lib/useFixtures';
 import { cabinetFinish } from '../../lib/finish';
 import { DEFAULT_ROOM, DEFAULT_SURFACES } from '../../data/defaults';
 import { hardwareMaterial, surfaceMaterial } from './materials';
@@ -16,7 +18,8 @@ export function makeSceneCtx(surfaces: Surfaces, room: Pick<Room, 'ceilingIn'>):
   const counter = surfaceMaterial(`counter:${ct.id}`, ct.pattern, ct.gloss);
   const bs = resolveBacksplash(surfaces.backsplashId, surfaces.countertopId);
   const splash = surfaceMaterial(`splash:${bs.id}:${ct.id}`, bs.pattern, bs.gloss);
-  const hw = byId(HARDWARE, surfaces.hardwareId);
+  const hw = resolveHardware(surfaces);
+  const faucet = resolveFaucet(surfaces);
   return {
     counterMat: counter.mat,
     counterTile: counter.tileIn,
@@ -26,13 +29,18 @@ export function makeSceneCtx(surfaces: Surfaces, room: Pick<Room, 'ceilingIn'>):
     cabinet: cabinetFinish(surfaces),
     doorStyle: surfaces.doorStyle,
     hwMat: hardwareMaterial(hw.hex, hw.roughness),
+    pull: hw.fixture,
+    faucet: faucet?.fixture ?? null,
+    faucetMat: faucet ? hardwareMaterial(faucet.hex, faucet.roughness) : hardwareMaterial(hw.hex, hw.roughness),
     ceiling: room.ceilingIn,
     paintHex: byId(PAINTS, surfaces.paintId).hex,
   };
 }
 
 export function useSceneCtx(surfaces: Surfaces, room: Pick<Room, 'ceilingIn'>): SceneCtx {
-  return useMemo(() => makeSceneCtx(surfaces, room), [surfaces, room.ceilingIn]);
+  // The retail faucet and hardware draw once their catalog entry or the kitchen's snapshot is registered.
+  const fixtures = useFixtureVersion();
+  return useMemo(() => makeSceneCtx(surfaces, room), [surfaces, room.ceilingIn, fixtures]);
 }
 
 /** The context a product is shown in on its own page: the default kitchen's surfaces. */

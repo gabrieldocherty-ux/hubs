@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import type { DoorStyle, Finish } from '../../types';
+import type { DoorStyle, Finish, Fixture } from '../../types';
+import { FixturePull, FixtureFaucet } from './fixtureParts';
 import type { Resolved } from '../../lib/geometry';
 import { boxGeo, grainBoxGeo, scaleUV, worldUVBox } from './geom3d';
 import type { FrontSpec, PullSpec } from '../../lib/fronts';
@@ -17,6 +18,11 @@ export interface SceneCtx {
   cabinet: Finish;
   doorStyle: DoorStyle;
   hwMat: THREE.Material;
+  /** A retail pull or knob every front wears; null draws the built-in bar pull sized to each front. */
+  pull: Fixture | null;
+  /** A retail faucet every sink draws; null draws the sink's own. */
+  faucet: Fixture | null;
+  faucetMat: THREE.Material;
   ceiling: number;
   paintHex: string;
 }
@@ -82,7 +88,7 @@ const REVEAL = 0.125;
 const T = 0.75;
 
 /** One door or drawer face in the kitchen's door style, face-forward (+z) from `z`. */
-export function Front({ f, z, finish, style, hw }: { f: FrontSpec; z: number; finish: Finish; style: DoorStyle; hw: THREE.Material }) {
+export function Front({ f, z, finish, style, hw, look = null }: { f: FrontSpec; z: number; finish: Finish; style: DoorStyle; hw: THREE.Material; look?: Fixture | null }) {
   const w = f.w - REVEAL * 2;
   const h = f.h - REVEAL * 2;
   const cx = f.x;
@@ -122,7 +128,7 @@ export function Front({ f, z, finish, style, hw }: { f: FrontSpec; z: number; fi
   return (
     <group>
       {face}
-      <Pull spec={f.pull} z={z + T} mat={hw} />
+      {look && f.pull ? <FixturePull spec={f.pull} z={z + T} mat={hw} fixture={look} frontW={w} /> : <Pull spec={f.pull} z={z + T} mat={hw} />}
     </group>
   );
 }
@@ -178,7 +184,8 @@ function faucetGeo(bridge: boolean): THREE.TubeGeometry {
   return g;
 }
 
-export function Faucet({ z, y = 36, mat, bridge = false }: { z: number; y?: number; mat: THREE.Material; bridge?: boolean }) {
+export function Faucet({ z, y = 36, mat, bridge = false, fixture = null }: { z: number; y?: number; mat: THREE.Material; bridge?: boolean; fixture?: Fixture | null }) {
+  if (fixture) return <FixtureFaucet z={z} y={y} mat={mat} fixture={fixture} />;
   return (
     <group position={[0, y, z]}>
       <Cyl r={1.1} h={1.4} pos={[0, 0.7, 0]} mat={mat} />

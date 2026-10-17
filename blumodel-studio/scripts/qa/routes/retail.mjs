@@ -1,7 +1,8 @@
 // The real-retailer catalog's QA routes: the catalog panel's store chips and brand/store filters
 // (with click-to-add, pointer-drag and phone tap-to-place still working on a retail product), the
 // product page's "Where to buy" (sponsored first, the affiliate parameter, rel, the disclaimer, an
-// anonymous click count), Admin > Retailers (admin only, audited) and the wizard's brand list API.
+// anonymous click count), Admin > Retailers (admin only, audited), the wizard's brand list API, and
+// the store faucets, pulls and knobs in Room & finishes (every drawn style, up close in 3D).
 // Run: node scripts/qa.mjs --pkg retail --port 8875 --dist .build/retail --strict-external
 //
 // Nothing here follows a store link: the runner fails a route on any request to a non-local host,
@@ -19,7 +20,8 @@ const byId = (id) => {
 const RANGE = 'r-samsung-ne63a6511ss';
 /** A RONA cabinet line ("Landon & Co"), for the catalog filters and the drags. */
 const RONA_CABINET = RETAIL.products.find((p) => p.category === 'cabinets' && p.brand === 'Landon & Co' && p.retail.stores.some((l) => l.store === 'rona'));
-const CHECKED = new Date(`${RETAIL.checkedAt}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+/** "Oct 15, 2026": the date a product's listing was checked (each research round has its own). */
+const checkedOn = (p) => new Date(`${p.retail.checkedAt}T12:00:00Z`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 
 const EMPTY_DOC = { name: 'QA Retail Kitchen', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: {}, items: [], version: 2 };
 
@@ -105,6 +107,223 @@ const buyRows = (h) =>
       };
     }),
   );
+
+// ── Faucets, pulls and knobs (the retail `fixtures`, chosen in Room & finishes) ──
+
+const FIX = RETAIL.fixtures ?? [];
+const fixture = (test, what) => {
+  const f = FIX.find(test);
+  if (!f) throw new Error(`no ${what} in src/data/retail.json fixtures; pick another for this route`);
+  return f;
+};
+/** One of each drawn shape, so the screenshots show every style up close. */
+const LOOKS = [
+  { name: 'bar-spring', pull: fixture((f) => f.style === 'bar' && f.sizeIn.cc > 5, 'a 128 mm bar pull'), faucet: fixture((f) => f.style === 'spring', 'a coil-spring faucet') },
+  { name: 'knob-pulldown', pull: fixture((f) => f.style === 'mushroom', 'a turned knob'), faucet: fixture((f) => f.style === 'pulldown' && f.extras?.soap, 'a pull-down faucet with a soap pump') },
+  { name: 'arch-pullout', pull: fixture((f) => f.style === 'arch' && f.finish.name.toLowerCase().includes('black'), 'a black arched pull'), faucet: fixture((f) => f.style === 'pullout', 'a pull-out faucet') },
+  { name: 'rect-sidespray', pull: fixture((f) => f.style === 'rect', 'a rectangular pull'), faucet: fixture((f) => f.style === 'side-spray', 'a faucet with a side spray') },
+];
+const FIXTURE_DOC = {
+  name: 'QA Fixtures Kitchen',
+  room: { widthIn: 120, lengthIn: 120, ceilingIn: 96 },
+  surfaces: { cabinetFinishId: 'navy', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'calacatta', backsplashId: 'zellige-white', flooringId: 'oak-natural', paintId: 'chalk' },
+  items: [
+    { id: 'b1', productId: 'drawer-base', x: 15, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 },
+    { id: 's1', productId: 'sink-under', x: 46.5, y: 12, rotation: 0, finishIndex: 0, widthIn: 33 },
+    { id: 'b2', productId: 'base', x: 78, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 },
+    { id: 'w1', productId: 'wall', x: 78, y: 6, rotation: 0, finishIndex: 0, widthIn: 30 },
+  ],
+  version: 2,
+};
+const HW_SELECT = 'select[aria-label="Cabinet pulls and knobs from stores"]';
+const FAUCET_SELECT = 'select[aria-label="Faucet on every sink"]';
+
+/** The editor with the fixtures kitchen and Room & finishes open. */
+async function fixturesKitchen(h, { phone = false } = {}) {
+  await h.waitUntil(() => !!window.__blumodel?.store, 15_000, 'window.__blumodel (the ?qa hook)');
+  await h.evaluate((doc) => {
+    const s = window.__blumodel.store.getState();
+    s.loadDoc(doc);
+    s.setUI({ viewMode: 'plan', leftTab: 'room' });
+  }, FIXTURE_DOC);
+  if (phone) {
+    await tap(h, '.mbar-actions button[aria-label="Room and finishes"]');
+    await h.waitFor('.sheet.is-open', 5000);
+  }
+  await h.waitFor(HW_SELECT, 15_000);
+  await h.waitUntil(() => document.querySelectorAll('select[aria-label="Cabinet pulls and knobs from stores"] option').length > 20, 15_000, 'the store hardware list');
+}
+
+/** Camera views (feet): the sink run, the faucet (sink centre 3.875 ft east, deck at 3 ft), the 30″ base's door and drawer. */
+const VIEWS = {
+  run: { pos: [6.4, 4.6, 6.2], target: [4.0, 2.3, 1.0] },
+  faucet: { pos: [5.0, 4.5, 3.3], target: [3.875, 3.75, 0.3] },
+  pulls: { pos: [7.3, 2.75, 4.0], target: [6.4, 2.15, 2.0] },
+};
+
+/** A close look at the sink run in 3D: feet, the room's north-west corner at the origin. */
+async function closeUp(h, at) {
+  await h.evaluate(() => {
+    const s = window.__blumodel.store.getState();
+    s.select(null);
+    s.setUI({ viewMode: '3d' });
+  });
+  await h.waitUntil(() => window.__blumodelQa?.canvas === 'room' && (window.__blumodelQa?.frames ?? 0) > 0, 25_000, 'the room canvas drawing');
+  await h.waitUntil(() => !!window.__blumodelQA?.controls, 10_000, 'the 3D camera controls');
+  await h.evaluate((v) => {
+    const { camera, controls } = window.__blumodelQA;
+    camera.position.set(...v.pos);
+    controls.target.set(...v.target);
+    controls.update();
+    controls.dispatchEvent?.({ type: 'change' });
+  }, at);
+  await h.sleep(1500);
+}
+
+const fixtureRoutes = [
+  {
+    name: 'retail-fixtures-desktop',
+    path: '#/local',
+    as: 'anon',
+    waitFor: ['.topbar', '.left-panel'],
+    timeoutMs: 90_000,
+    check: async (h) => {
+      await fixturesKitchen(h);
+      const hwOpts = await options(h, HW_SELECT);
+      const faucetOpts = await options(h, FAUCET_SELECT);
+      const pulls = FIX.filter((f) => f.kind !== 'faucet').length;
+      const faucets = FIX.filter((f) => f.kind === 'faucet').length;
+      h.note(`store hardware: ${hwOpts.length - 1} options (data ${pulls}); faucets: ${faucetOpts.length - 1} (data ${faucets})`);
+      if (hwOpts.length - 1 !== pulls || faucetOpts.length - 1 !== faucets) throw new Error('the pickers do not list every fixture');
+      if (await h.evaluate(() => !!document.querySelector('.fixture-chosen'))) throw new Error('a store fixture shows as chosen in a kitchen with the built-in hardware');
+
+      for (const look of LOOKS) {
+        await h.evaluate(() => window.__blumodel.store.getState().setUI({ viewMode: 'plan', leftTab: 'room' }));
+        await h.waitFor(HW_SELECT, 8000);
+        await pick(h, HW_SELECT, look.pull.id);
+        await pick(h, FAUCET_SELECT, look.faucet.id);
+        await h.sleep(250);
+        const s = await h.evaluate(() => window.__blumodel.store.getState().doc.surfaces);
+        if (s.hardwareId !== look.pull.id || s.faucetId !== look.faucet.id) throw new Error(`${look.name}: the surfaces read ${JSON.stringify(s)}`);
+        const chosen = await h.evaluate(() => [...document.querySelectorAll('.fixture-chosen')].map((c) => ({ id: c.dataset.fixture, text: c.textContent.replace(/\s+/g, ' ').trim(), links: [...c.querySelectorAll('a')].map((a) => ({ href: a.href, rel: a.rel, text: a.textContent.trim() })) })));
+        if (chosen.map((c) => c.id).join() !== `${look.pull.id},${look.faucet.id}`) throw new Error(`${look.name}: chosen cards ${JSON.stringify(chosen.map((c) => c.id))}`);
+        for (const c of chosen) {
+          if (!c.links.length || !c.links.every((l) => l.href.startsWith('https://') && l.rel === 'sponsored nofollow noopener' && /^View at /.test(l.text))) throw new Error(`${look.name}: ${c.id} store links ${JSON.stringify(c.links)}`);
+        }
+        await h.shot(`${look.name}-panel`);
+        // 3D: the run, then close on the faucet, then close on a door and drawer's hardware.
+        for (const [view, at] of Object.entries(VIEWS)) {
+          await closeUp(h, at);
+          await h.shot(`${look.name}-${view}`);
+        }
+      }
+
+      const last = LOOKS.at(-1);
+      // A link-out from Room & finishes is counted like the product page's.
+      const before = h.api.sql('SELECT COALESCE(SUM(clicks), 0) AS n FROM retail_clicks WHERE product_id = ?', last.faucet.id)[0].n;
+      await h.evaluate(() => window.__blumodel.store.getState().setUI({ viewMode: 'plan', leftTab: 'room' }));
+      await h.waitFor(`.fixture-chosen[data-fixture="${last.faucet.id}"] a`, 8000);
+      await h.evaluate((id) => {
+        window.addEventListener('click', (e) => e.preventDefault(), { capture: true });
+        document.querySelector(`.fixture-chosen[data-fixture="${id}"] a`).click();
+      }, last.faucet.id);
+      await h.sleep(800);
+      const after = h.api.sql('SELECT COALESCE(SUM(clicks), 0) AS n FROM retail_clicks WHERE product_id = ?', last.faucet.id)[0].n;
+      if (after !== before + 1) throw new Error(`the faucet link-out was counted ${after - before} times`);
+      // Back to the sink's own faucet and a built-in finish: the cards go.
+      await pick(h, FAUCET_SELECT, '');
+      await h.click('.hardware .swatch[aria-label="Matte Black"]');
+      await h.sleep(250);
+      const back = await h.evaluate(() => window.__blumodel.store.getState().doc.surfaces);
+      if (back.faucetId || back.hardwareId !== 'black') throw new Error(`back to built-ins: ${JSON.stringify(back)}`);
+      if (await h.evaluate(() => document.querySelectorAll('.fixture-chosen').length)) throw new Error('a chosen card is still shown');
+      await noSideScroll(h);
+    },
+  },
+  {
+    name: 'retail-fixtures-phone',
+    path: '#/local',
+    as: 'anon',
+    viewport: 'phone',
+    waitFor: ['.plan-view canvas', '.mbar-actions'],
+    timeoutMs: 60_000,
+    check: async (h) => {
+      await fixturesKitchen(h, { phone: true });
+      const look = LOOKS[1];
+      await pick(h, `.sheet ${HW_SELECT}`, look.pull.id);
+      await pick(h, `.sheet ${FAUCET_SELECT}`, look.faucet.id);
+      await h.sleep(300);
+      await h.evaluate(() => document.querySelector('.sheet .fixtures')?.scrollIntoView({ block: 'center' }));
+      await h.sleep(300);
+      const fit = await h.evaluate(() => [...document.querySelectorAll('.sheet .fixtures select, .sheet .fixture-chosen, .sheet .fixture-chosen a')].map((e) => e.getBoundingClientRect()).map((r) => ({ l: r.left, r: r.right })));
+      if (!fit.length || fit.some((r) => r.l < 0 || r.r > 391)) throw new Error(`the store hardware and faucet pickers run off a phone screen: ${JSON.stringify(fit)}`);
+      await h.shot('sheet');
+      await noSideScroll(h);
+    },
+  },
+];
+
+// ── A product carrying a UPC (a delivered custom model) gets the matching retail listing's stores ──
+
+/** A retail product with a UPC: the custom model below stands for it. */
+const UPC_LISTED = RETAIL.products.find((p) => p.retail.upc);
+
+const upcRoutes = [
+  {
+    name: 'retail-upc-where-to-buy',
+    as: 'contractor',
+    waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
+    expectText: ['Where to buy', 'Made by', `These stores list UPC ${UPC_LISTED.retail.upc}`],
+    timeoutMs: 30_000,
+    setup: async ({ api }) => {
+      const me = api.as('contractor');
+      const ok = (r, what) => {
+        if (r.status >= 300) throw new Error(`${what} failed (${r.status}): ${JSON.stringify(r.body).slice(0, 200)}`);
+        return r.body;
+      };
+      ok(await me.put('/api/pro/profile', { company: 'Quinn & Co. Kitchens (QA)', phone: '905-555-0164', serviceArea: 'Testville', defaultMarkupPct: 30 }), 'Saving the company');
+      const made = ok(
+        await me.post('/api/pro/products', {
+          spec: {
+            kind: UPC_LISTED.kind,
+            ...(UPC_LISTED.variant ? { variant: UPC_LISTED.variant } : {}),
+            category: UPC_LISTED.category,
+            name: `${UPC_LISTED.brand} model (QA, by UPC)`,
+            widthIn: UPC_LISTED.widthIn,
+            depthIn: UPC_LISTED.depthIn,
+            heightIn: UPC_LISTED.heightIn,
+            elevationIn: UPC_LISTED.elevationIn,
+            price: 0,
+            finishes: [{ id: 'as-modelled', name: 'As modelled', hex: '#c4c8cb', material: 'metal' }],
+            brand: UPC_LISTED.brand,
+            upc: UPC_LISTED.retail.upc,
+          },
+        }),
+        'Creating the product',
+      );
+      if (made.product.upc !== UPC_LISTED.retail.upc || made.product.productBrand !== UPC_LISTED.brand) throw new Error(`the product came back with ${JSON.stringify({ upc: made.product.upc, productBrand: made.product.productBrand })}`);
+      return { path: `#/p/${made.product.id}`, data: { id: made.product.id } };
+    },
+    check: async (h) => {
+      const rows = await buyRows(h);
+      const want = [...new Set(UPC_LISTED.retail.stores.map((l) => l.store))];
+      if (rows.map((r) => r.store).sort().join() !== want.sort().join()) throw new Error(`rows for ${rows.map((r) => r.store)}; the listing has ${want}`);
+      const upcCell = await h.evaluate(() => [...document.querySelectorAll('.pp-specs tr')].find((tr) => tr.querySelector('th')?.textContent === 'UPC')?.querySelector('td')?.textContent ?? '');
+      if (upcCell !== UPC_LISTED.retail.upc) throw new Error(`the UPC row reads "${upcCell}"`);
+      // A click is counted against the retail listing (the server only counts real listings).
+      const before = h.api.sql('SELECT COALESCE(SUM(clicks), 0) AS n FROM retail_clicks WHERE product_id = ?', UPC_LISTED.id)[0].n;
+      await h.evaluate(() => {
+        window.addEventListener('click', (e) => e.preventDefault(), { capture: true });
+        document.querySelector('.pp-buy-row a.pp-buy-link').click();
+      });
+      await h.sleep(800);
+      const after = h.api.sql('SELECT COALESCE(SUM(clicks), 0) AS n FROM retail_clicks WHERE product_id = ?', UPC_LISTED.id)[0].n;
+      if (after !== before + 1) throw new Error(`the link-out was counted ${after - before} times against ${UPC_LISTED.id}`);
+      await h.shot('linked');
+      await noSideScroll(h);
+    },
+  },
+];
 
 export default [
   // ── Catalog panel ───────────────────────────────────────────────────────
@@ -213,7 +432,8 @@ export default [
   {
     name: 'retail-product-where-to-buy',
     as: 'anon',
-    waitFor: ['.pp-buy-row'],
+    // The rows show once the store settings (sponsored first) have loaded: read them then.
+    waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Prices in CAD', 'Prices and availability change', 'confirm with the store'],
     timeoutMs: 30_000,
     setup: async ({ api }) => {
@@ -235,7 +455,7 @@ export default [
         if (r.rel !== 'sponsored nofollow noopener') throw new Error(`${r.store}: rel="${r.rel}"`);
         if (r.target !== '_blank') throw new Error(`${r.store}: target="${r.target}"`);
         if (!r.href.startsWith('https://')) throw new Error(`${r.store}: ${r.href}`);
-        if (!r.text.includes(`checked ${CHECKED}`)) throw new Error(`${r.store}: no "checked ${CHECKED}" in "${r.text}"`);
+        if (!r.text.includes(`checked ${checkedOn(p)}`)) throw new Error(`${r.store}: no "checked ${checkedOn(p)}" in "${r.text}"`);
       }
       const rona = new URL(rows[0].href);
       if (rona.searchParams.get('aff') !== 'blumodel-qa') throw new Error(`RONA's link has no affiliate parameter: ${rows[0].href}`);
@@ -266,9 +486,13 @@ export default [
     name: 'retail-product-phone',
     as: 'anon',
     viewport: 'phone',
-    waitFor: ['.pp-buy-row'],
+    waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Prices and availability change'],
-    setup: async () => ({ path: `#/p/${RONA_CABINET.id}` }),
+    setup: async ({ api }) => {
+      // Plain RONA whatever the route before left behind.
+      await setStore(api, 'rona', { sponsored: false, affiliate: '' });
+      return { path: `#/p/${RONA_CABINET.id}` };
+    },
     check: async (h) => {
       await noSideScroll(h);
       const rows = await buyRows(h);
@@ -382,4 +606,6 @@ export default [
       if (bad.status !== 400) throw new Error(`an unknown category → ${bad.status}`);
     },
   },
+  ...fixtureRoutes,
+  ...upcRoutes,
 ];

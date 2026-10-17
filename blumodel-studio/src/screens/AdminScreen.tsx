@@ -1,15 +1,13 @@
-import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
-import { api, ApiError } from '../lib/api';
+import { lazy, Suspense, useEffect } from 'react';
 import { ADMIN_TABS, hrefFor, navigate, type AdminTab } from '../lib/router';
-import { timeAgo, useSession } from '../store/useSession';
-import type { AdminOverview, AdminUser, Role } from '../types/platform';
+import { useSession } from '../store/useSession';
+import type { Role } from '../types/platform';
 import { AccountMenu } from '../components/AccountMenu';
-import { Logo, Wordmark, Search } from '../components/Icons';
+import { Logo, Wordmark } from '../components/Icons';
 import { AdminBrandsTab, AdminModerationTab } from '../features/brands';
 import { AdminRevenueTab, AdminStudioTab } from '../features/orders';
 import { AdminBillingTab } from '../features/billing';
-import { accountApi } from '../lib/accountApi';
-import './admin-users.css';
+import { AdminAuditTab, AdminContractorsTab, AdminDashboardTab, AdminSystemTab, AdminUsersTab } from '../features/admin';
 
 // Real-retailer link settings and link-out counts (its own chunk: admins only).
 const AdminRetailersTab = lazy(() => import('../catalog/retailAdmin'));
@@ -23,6 +21,9 @@ const LABELS: Record<AdminTab, string> = {
   revenue: 'Revenue',
   billing: 'Billing',
   users: 'Users',
+  contractors: 'Contractors',
+  system: 'System',
+  audit: 'Audit',
 };
 
 const STUDIO_TABS: AdminTab[] = ['studio'];
@@ -72,8 +73,11 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
       <main className="admin-main">
         {allowed && (
           <Suspense fallback={<div className="screen-msg">Loading…</div>}>
-            {tab === 'overview' && <OverviewTab />}
-            {tab === 'users' && <UsersTab />}
+            {tab === 'overview' && <AdminDashboardTab />}
+            {tab === 'users' && <AdminUsersTab />}
+            {tab === 'contractors' && <AdminContractorsTab />}
+            {tab === 'system' && <AdminSystemTab />}
+            {tab === 'audit' && <AdminAuditTab />}
             {tab === 'moderation' && <AdminModerationTab />}
             {tab === 'brands' && <AdminBrandsTab />}
             {tab === 'retailers' && <AdminRetailersTab />}
@@ -83,246 +87,6 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
           </Suspense>
         )}
       </main>
-    </div>
-  );
-}
-
-function Counts({ title, counts }: { title: string; counts: Partial<Record<string, number>> | undefined }) {
-  const entries = Object.entries(counts ?? {});
-  return (
-    <section className="admin-card">
-      <span className="eyebrow">{title}</span>
-      {entries.length === 0 ? (
-        <p className="empty-note">None yet.</p>
-      ) : (
-        <dl className="admin-counts">
-          {entries.map(([k, v]) => (
-            <div key={k}>
-              <dt>{k.replace(/_/g, ' ')}</dt>
-              <dd className="mono">{v ?? 0}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </section>
-  );
-}
-
-function OverviewTab() {
-  const [data, setData] = useState<AdminOverview | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let live = true;
-    api
-      .adminOverview()
-      .then((d) => live && setData(d))
-      .catch((err) => live && setError(err instanceof ApiError ? err.message : 'Could not load the overview.'));
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  if (error) return <div className="auth-error">{error}</div>;
-  if (!data) return <div className="screen-msg">Loading the overview…</div>;
-  return (
-    <div className="admin-overview">
-      <h1>Overview</h1>
-      <div className="admin-grid">
-        <section className="admin-card">
-          <span className="eyebrow">Users</span>
-          <b className="admin-big mono">{data.users?.total ?? 0}</b>
-          <dl className="admin-counts">
-            {Object.entries(data.users?.byRole ?? {}).map(([k, v]) => (
-              <div key={k}>
-                <dt>{k}</dt>
-                <dd className="mono">{v ?? 0}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-        <section className="admin-card">
-          <span className="eyebrow">Kitchens</span>
-          <b className="admin-big mono">{data.projects?.total ?? 0}</b>
-        </section>
-        <Counts title="Brands by status" counts={data.brands} />
-        <Counts title="Products by status" counts={data.products} />
-      </div>
-      <section className="admin-card">
-        <span className="eyebrow">Latest signups</span>
-        {(data.latestUsers ?? []).length === 0 ? (
-          <p className="empty-note">No signups yet.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.latestUsers.map((u) => (
-                <tr key={u.id}>
-                  <td>{u.name}</td>
-                  <td>{u.email}</td>
-                  <td>{u.role}</td>
-                  <td>{u.createdAt ? timeAgo(u.createdAt) : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
-    </div>
-  );
-}
-
-const ROLES: Role[] = ['customer', 'studio', 'admin'];
-
-function UsersTab() {
-  const me = useSession((s) => s.user);
-  const [q, setQ] = useState('');
-  const [users, setUsers] = useState<AdminUser[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState<string | null>(null);
-  /** The reset link just made: shown once, here, and never again. */
-  const [link, setLink] = useState<{ email: string; url: string; expiresAt: number } | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [making, setMaking] = useState<string | null>(null);
-
-  const search = async (query: string) => {
-    setError(null);
-    try {
-      setUsers((await api.adminUsers(query.trim())).users);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load users.');
-    }
-  };
-
-  useEffect(() => {
-    void search('');
-  }, []);
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    void search(q);
-  };
-
-  const setRole = async (u: AdminUser, role: Role) => {
-    if (role === u.role) return;
-    setSaving(u.id);
-    setError(null);
-    try {
-      const { user } = await api.adminSetRole(u.id, role);
-      setUsers((list) => list?.map((x) => (x.id === u.id ? { ...x, ...user } : x)) ?? null);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not change the role.');
-    } finally {
-      setSaving(null);
-    }
-  };
-
-  /** Password resets with no email provider: the admin makes a single-use link and sends it themself. */
-  const makeResetLink = async (u: AdminUser) => {
-    setMaking(u.id);
-    setError(null);
-    setCopied(false);
-    try {
-      const { url, expiresAt } = await accountApi.adminResetLink(u.id);
-      setLink({ email: u.email, url, expiresAt });
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not make a reset link.');
-    } finally {
-      setMaking(null);
-    }
-  };
-
-  const copyLink = async () => {
-    if (!link) return;
-    try {
-      await navigator.clipboard.writeText(link.url);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  return (
-    <div className="admin-users">
-      <h1>Users</h1>
-      <form className="home-search" onSubmit={submit} role="search">
-        <Search />
-        <input placeholder="Search by name or email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search users" />
-        <button className="btn" type="submit">Search</button>
-      </form>
-      {error && <div className="auth-error">{error}</div>}
-      {link && (
-        <div className="admin-reset" role="status">
-          <div className="admin-reset-head">
-            <b>Reset link for {link.email}</b>
-            <button type="button" className="btn small" onClick={() => setLink(null)}>
-              Done
-            </button>
-          </div>
-          <p>
-            Works once, until {new Date(link.expiresAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}, and using it signs the account out everywhere. Send it only to the address above, from the support address. It won’t be shown again; any older link for this account has stopped working.
-          </p>
-          <div className="admin-reset-url">
-            <input readOnly value={link.url} aria-label="Reset link" onFocus={(e) => e.currentTarget.select()} />
-            <button type="button" className="btn small" onClick={() => void copyLink()}>
-              {copied ? 'Copied' : 'Copy'}
-            </button>
-          </div>
-        </div>
-      )}
-      {users === null ? (
-        <div className="screen-msg">Loading users…</div>
-      ) : users.length === 0 ? (
-        <p className="empty-note">No users match.</p>
-      ) : (
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Joined</th>
-              <th>Role</th>
-              <th>Password</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td>{u.createdAt ? timeAgo(u.createdAt) : '—'}</td>
-                <td>
-                  <select
-                    value={u.role}
-                    disabled={saving === u.id || u.id === me?.id}
-                    title={u.id === me?.id ? 'You can’t change your own role.' : undefined}
-                    onChange={(e) => void setRole(u, e.target.value as Role)}
-                    aria-label={`Role for ${u.email}`}
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td>
-                  <button type="button" className="btn small" disabled={making === u.id} onClick={() => void makeResetLink(u)} aria-label={`Create a reset link for ${u.email}`}>
-                    {making === u.id ? 'Making…' : 'Create reset link'}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
     </div>
   );
 }

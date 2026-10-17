@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { randomId, FILE_ID_RE, PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { KIND_SET, CATEGORY_SET, MATERIAL_SET, VARIANTS } from './kinds.mjs';
+import { normalizeUpc } from '../payments/upc.mjs';
 
 export const STATUSES = ['draft', 'submitted', 'published', 'rejected', 'archived'];
 export const SOURCES = ['brand', 'custom', 'contractor'];
@@ -85,6 +86,23 @@ export function validateSpec(input, { partial = false } = {}) {
     if (s === null || s.length > 60) err('line', 'Keep the line name to 60 characters or fewer.');
     else if (s) out.line = s;
     else if (partial) out.line = null;
+  }
+  // The real product a model stands for: its maker ("Bosch") and its UPC/EAN, stored as digits
+  // (server/payments/upc.mjs). The UPC links a product to the retail catalog's store listings.
+  if (has('brand')) {
+    const s = input.brand === null ? '' : typeof input.brand === 'string' ? input.brand.replace(/\s+/g, ' ').trim() : null;
+    if (s === null || s.length > 60) err('brand', 'Keep the brand to 60 characters or fewer.');
+    else if (s) out.brand = s;
+    else if (partial) out.brand = null;
+  }
+  if (has('upc')) {
+    if (cleared('upc')) {
+      if (partial) out.upc = null;
+    } else {
+      const u = normalizeUpc(input.upc);
+      if (!u.ok) err('upc', u.message);
+      else out.upc = u.code;
+    }
   }
   if (has('doorStyle')) {
     if (cleared('doorStyle')) {
@@ -403,6 +421,8 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
               ? ownerLabel(row.ownerUserId) || 'My catalog'
               : 'Unknown brand',
         ...(spec.line ? { line: spec.line } : {}),
+        ...(spec.brand ? { productBrand: spec.brand } : {}),
+        ...(spec.upc ? { upc: spec.upc } : {}),
         ...(spec.doorStyle ? { doorStyle: spec.doorStyle } : {}),
         name: spec.name,
         code: spec.sku || '',
@@ -455,7 +475,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
         .prepare(
           `SELECT p.* FROM products p LEFT JOIN brands b ON b.id = p.brand_id
             WHERE p.live_spec IS NOT NULL AND p.status <> 'archived'
-              AND (p.brand_id IS NULL OR b.status = 'active')
+              AND (p.brand_id IS NULL OR (b.status = 'active'${brands.hideDemo ? ' AND b.is_demo = 0' : ''}))
               AND (p.visibility = 'public' OR p.owner_user_id = ?)
             ORDER BY COALESCE(b.name, '') COLLATE NOCASE, p.name COLLATE NOCASE, p.id`,
         )
@@ -467,7 +487,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
     inCatalog(row, user) {
       if (row?.brandId) runCatalogGuards();
       if (!row || !row.liveSpec || row.status === 'archived') return false;
-      if (row.brandId && brands.get(row.brandId)?.status !== 'active') return false;
+      if (row.brandId && !brands.isListed(brands.get(row.brandId))) return false;
       return row.visibility === 'public' || (!!user && row.ownerUserId === user.id);
     },
 

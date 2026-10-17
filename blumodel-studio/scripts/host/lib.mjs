@@ -85,8 +85,9 @@ export const runtimeFiles = (root) =>
     .sort()
     .map((f) => `src/data/${f}`);
 
-/** DEPLOYED.txt's text. */
-export const deployedText = ({ commit, root, now = new Date() }) => `commit ${commit}\ndeployed ${now.toISOString()}\nfrom ${root}\n`;
+/** DEPLOYED.txt's text. `uncommitted` (deploy-local's clean-checkout check) is recorded when given. */
+export const deployedText = ({ commit, root, now = new Date(), uncommitted = null }) =>
+  `commit ${commit}\n${uncommitted ? `uncommitted changes: ${uncommitted}\n` : ''}deployed ${now.toISOString()}\nfrom ${root}\n`;
 
 /** `{ commit, deployed, from }` from <app>/DEPLOYED.txt, or null when there is no deployed app. */
 export function readDeployed(appDir) {
@@ -117,9 +118,9 @@ export function normalizeModes(dir) {
  * Builds <home>/app.new from a build: dist/ (the vite output), server/ (not server/data or
  * server/test; server/generated, the export kit, goes with it), every src/data/*.json,
  * package.json and DEPLOYED.txt.
- * @param {{ root: string, dist: string, staging: string, commit: string, now?: Date, platform?: string }} o
+ * @param {{ root: string, dist: string, staging: string, commit: string, uncommitted?: string | null, now?: Date, platform?: string }} o
  */
-export function stageApp({ root, dist, staging, commit, now = new Date(), platform = process.platform }) {
+export function stageApp({ root, dist, staging, commit, uncommitted = null, now = new Date(), platform = process.platform }) {
   fs.rmSync(staging, { recursive: true, force: true });
   fs.cpSync(dist, path.join(staging, 'dist'), { recursive: true });
   const serverDir = path.join(root, 'server');
@@ -135,7 +136,7 @@ export function stageApp({ root, dist, staging, commit, now = new Date(), platfo
     fs.copyFileSync(path.join(root, rel), path.join(staging, rel));
   }
   fs.copyFileSync(path.join(root, 'package.json'), path.join(staging, 'package.json'));
-  fs.writeFileSync(path.join(staging, 'DEPLOYED.txt'), deployedText({ commit, root, now }));
+  fs.writeFileSync(path.join(staging, 'DEPLOYED.txt'), deployedText({ commit, root, now, uncommitted }));
   if (platform !== 'win32') normalizeModes(staging);
 }
 

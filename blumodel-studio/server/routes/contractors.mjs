@@ -237,7 +237,7 @@ export default function routes(ctx) {
       let g = groups.find((x) => x.name === l.group);
       if (!g) groups.push((g = { name: l.group, lines: [], total: 0 }));
       // Sell prices only: never unitCost or markup.
-      g.lines.push({ label: l.label, sub: l.sub, sku: l.sku ?? '', qty: l.qty, unit: l.unit, unitPrice: l.unitPrice, total: l.total });
+      g.lines.push({ label: l.label, sub: l.sub, sku: l.sku ?? '', qty: l.qty, unit: l.unit, unitPrice: l.unitPrice, total: l.total, ...(l.atStore ? { atStore: true } : {}) });
       g.total += l.total;
     }
     return {
@@ -254,6 +254,8 @@ export default function routes(ctx) {
       validUntil: settings?.valid_until ?? ctx.now() + 30 * DAY,
       notes: settings?.notes ?? '',
       hasBuiltin: est.hasBuiltin,
+      // Retail products with no checked store price: listed as "Price at store", not in the total.
+      atStore: est.atStore ?? 0,
       disclaimer: DISCLAIMER,
     };
   }

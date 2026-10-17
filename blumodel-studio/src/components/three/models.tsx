@@ -37,7 +37,7 @@ function BaseModel({ r, finish, ctx }: ModelProps) {
       <Toe w={w} d={d} />
       <Box size={[w, 30.5, d - 0.1]} pos={[0, 19.25, 0]} mat={finishMaterial(finish)} />
       {fronts.map((f, i) => (
-        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} />
+        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
       <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 1.5} />
     </group>
@@ -53,9 +53,9 @@ function CornerModel({ r, finish, ctx }: ModelProps) {
       <Box size={[20.5, 4, 12]} pos={[sx * -7.75, 2, 12]} mat={M.toeKick()} />
       <Box size={[36, 30.5, 24]} pos={[0, 19.25, -6]} mat={body} />
       <Box size={[24, 30.5, 12]} pos={[sx * -6, 19.25, 12]} mat={body} />
-      <Front f={{ x: sx * 12, y: 4, w: 12, h: 30.5, pull: { dir: 'v', x: sx * 7.8, y: 24, len: 5 } }} z={6} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} />
+      <Front f={{ x: sx * 12, y: 4, w: 12, h: 30.5, pull: { dir: 'v', x: sx * 7.8, y: 24, len: 5 } }} z={6} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       <group position={[sx * 6, 0, 12]} rotation={[0, sx * (Math.PI / 2), 0]}>
-        <Front f={{ x: 0, y: 4, w: 12, h: 30.5, pull: null }} z={0} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} />
+        <Front f={{ x: 0, y: 4, w: 12, h: 30.5, pull: null }} z={0} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       </group>
       <Counter r={r} ctx={ctx} x0={-18} x1={18} z0={-18} z1={7.5} />
       <Counter r={r} ctx={ctx} x0={sx > 0 ? -18 : -7.5} x1={sx > 0 ? 7.5 : 18} z0={7.5} z1={18} />
@@ -111,7 +111,7 @@ function WallCabModel({ r, finish, ctx }: ModelProps) {
         <Box size={[w, h, d - 0.1]} pos={[0, y0 + h / 2, 0]} mat={body} />
       )}
       {fronts.map((f, i) => (
-        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} />
+        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
       {!bridge && <Box size={[w - 3, 0.25, 0.6]} pos={[0, y0 - 0.12, d / 2 - 2]} mat={M.led()} cast={false} />}
     </group>
@@ -137,7 +137,7 @@ function TallModel({ r, finish, ctx }: ModelProps) {
       <Toe w={w} d={d} />
       <Box size={[w, 80, d - 0.1]} pos={[0, 44, 0]} mat={finishMaterial(finish)} />
       {fronts.map((f, i) => (
-        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} />
+        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
     </group>
   );
@@ -164,10 +164,10 @@ function OvenTowerModel({ r, finish, ctx }: ModelProps) {
     <group>
       <Toe w={w} d={d} />
       <Box size={[w, 80, d - 0.1]} pos={[0, 44, 0]} mat={finishMaterial(cab)} />
-      <Front f={{ x: 0, y: 4, w, h: 14, pull: { dir: 'h', x: 0, y: 15, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} />
+      <Front f={{ x: 0, y: 4, w, h: 14, pull: { dir: 'h', x: 0, y: 15, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       <OvenFront w={w - 1.5} y0={18.2} y1={43.8} z={d / 2} mat={steel} trim={trim} />
       <OvenFront w={w - 1.5} y0={44.2} y1={69.8} z={d / 2} mat={steel} trim={trim} />
-      <Front f={{ x: 0, y: 70, w, h: 14, pull: { dir: 'h', x: 0, y: 73, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} />
+      <Front f={{ x: 0, y: 70, w, h: 14, pull: { dir: 'h', x: 0, y: 73, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
     </group>
   );
 }
@@ -188,12 +188,12 @@ function IslandModel({ r, finish, ctx }: ModelProps) {
       <group position={[0, 0, -d / 2]} rotation={[0, Math.PI, 0]}>
         {Array.from({ length: cols }).map((_, c) =>
           baseFronts(colW, c % 2 === 0 ? 'door-drawer' : 'drawers').map((f, i) => (
-            <Front key={`${c}-${i}`} f={{ ...f, x: f.x - cw / 2 + colW * (c + 0.5), pull: f.pull && { ...f.pull, x: f.pull.x - cw / 2 + colW * (c + 0.5) } }} z={0} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} />
+            <Front key={`${c}-${i}`} f={{ ...f, x: f.x - cw / 2 + colW * (c + 0.5), pull: f.pull && { ...f.pull, x: f.pull.x - cw / 2 + colW * (c + 0.5) } }} z={0} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
           )),
         )}
       </group>
       {Array.from({ length: cols }).map((_, c) => (
-        <Front key={`p${c}`} f={{ x: -cw / 2 + colW * (c + 0.5), y: 4, w: colW, h: 30.5, pull: null }} z={zc + dc / 2} finish={finish} style={ctx.doorStyle === 'fluted' ? 'fluted' : 'shaker'} hw={ctx.hwMat} />
+        <Front key={`p${c}`} f={{ x: -cw / 2 + colW * (c + 0.5), y: 4, w: colW, h: 30.5, pull: null }} z={zc + dc / 2} finish={finish} style={ctx.doorStyle === 'fluted' ? 'fluted' : 'shaker'} hw={ctx.hwMat} look={ctx.pull} />
       ))}
       <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2 - 0.75} z1={d / 2} />
       {waterfall ? (
@@ -283,12 +283,12 @@ function SinkModel({ r, finish, ctx }: ModelProps) {
       <Box size={[w, 9.5, 0.75]} pos={[0, 29.75, -d / 2 + 0.375]} mat={body} />
       {!farm && <Box size={[w, 9.5, 0.75]} pos={[0, 29.75, d / 2 - 0.4]} mat={body} />}
       {fronts.map((f, i) => (
-        <Front key={i} f={f} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} />
+        <Front key={i} f={f} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
       {apronFrame}
       <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 1.5} cutouts={cutouts} />
       {basins}
-      <Faucet z={-d / 2 + 2.4} mat={ctx.hwMat} bridge={farm} />
+      <Faucet z={-d / 2 + 2.4} mat={ctx.faucet ? ctx.faucetMat : ctx.hwMat} bridge={farm} fixture={ctx.faucet} />
     </group>
   );
 }
@@ -302,7 +302,7 @@ function DishwasherModel({ r, finish, ctx }: ModelProps) {
       <Box size={[w - 0.5, 4, d - 3.5]} pos={[0, 2, -1.75]} mat={M.darkSteel()} />
       <Box size={[w - 0.5, 30.5, d - 1.5]} pos={[0, 19.25, -0.75]} mat={M.darkSteel()} />
       {panel ? (
-        <Front f={{ x: 0, y: 4, w, h: 30.5, pull: { dir: 'h', x: 0, y: 31.2, len: 12 } }} z={d / 2 - 0.75} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} />
+        <Front f={{ x: 0, y: 4, w, h: 30.5, pull: { dir: 'h', x: 0, y: 31.2, len: 12 } }} z={d / 2 - 0.75} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ) : (
         <group>
           <Box size={[w - 0.25, 30.3, 1.2]} pos={[0, 19.25, d / 2 - 0.4]} mat={finishMaterial(finish)} />
@@ -463,7 +463,7 @@ function FridgeModel({ r, finish, ctx }: ModelProps) {
         <Toe w={w} d={d} />
         <Box size={[w, h - 4, d - 1]} pos={[0, 4 + (h - 4) / 2, -0.5]} mat={bodyMat} />
         {panel ? (
-          <Front f={{ x: 0, y: 4, w, h: h - 4, pull: { dir: 'v', x: hingeLeft ? w / 2 - 2.5 : -w / 2 + 2.5, y: 44, len: 24 } }} z={d / 2 - 0.75} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} />
+          <Front f={{ x: 0, y: 4, w, h: h - 4, pull: { dir: 'v', x: hingeLeft ? w / 2 - 2.5 : -w / 2 + 2.5, y: 44, len: 24 } }} z={d / 2 - 0.75} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
         ) : (
           <group>
             <Box size={[w - 0.2, h - 4.2, 1.6]} pos={[0, 4 + (h - 4) / 2, d / 2 - 0.3]} mat={bodyMat} />
@@ -480,9 +480,9 @@ function FridgeModel({ r, finish, ctx }: ModelProps) {
       <Box size={[w, h - 1, d - 2]} pos={[0, 1 + (h - 1) / 2, -1]} mat={bodyMat} />
       {panel ? (
         <group>
-          <Front f={{ x: -w / 4, y: split, w: w / 2, h: h - split, pull: { dir: 'v', x: -2, y: split + 16, len: 12 } }} z={dz} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} />
-          <Front f={{ x: w / 4, y: split, w: w / 2, h: h - split, pull: { dir: 'v', x: 2, y: split + 16, len: 12 } }} z={dz} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} />
-          <Front f={{ x: 0, y: 1, w, h: split - 1, pull: { dir: 'h', x: 0, y: split - 4, len: 14 } }} z={dz} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} />
+          <Front f={{ x: -w / 4, y: split, w: w / 2, h: h - split, pull: { dir: 'v', x: -2, y: split + 16, len: 12 } }} z={dz} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+          <Front f={{ x: w / 4, y: split, w: w / 2, h: h - split, pull: { dir: 'v', x: 2, y: split + 16, len: 12 } }} z={dz} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+          <Front f={{ x: 0, y: 1, w, h: split - 1, pull: { dir: 'h', x: 0, y: split - 4, len: 14 } }} z={dz} finish={ctx.cabinet} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
         </group>
       ) : (
         <group>

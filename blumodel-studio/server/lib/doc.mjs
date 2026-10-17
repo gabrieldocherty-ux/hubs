@@ -24,7 +24,47 @@ const BRAND_CATEGORIES = ['cabinets', 'appliances', 'sinks', 'lighting'];
 
 const ROTATIONS = new Set([0, 90, 180, 270]);
 const DOOR_STYLES = new Set(['shaker', 'slab', 'fluted']);
-const SURFACE_KEYS = ['cabinetFinishId', 'doorStyle', 'hardwareId', 'countertopId', 'backsplashId', 'flooringId', 'paintId'];
+const SURFACE_KEYS = ['cabinetFinishId', 'doorStyle', 'hardwareId', 'faucetId', 'countertopId', 'backsplashId', 'flooringId', 'paintId'];
+
+/** A retail faucet, pull or knob id (src/lib/fixtures.ts FIXTURE_ID_RE). */
+const FIXTURE_ID_RE = /^r-[a-z0-9][a-z0-9-]{0,38}$/;
+const FIXTURE_KINDS = new Set(['faucet', 'pull', 'knob']);
+const FIXTURE_STYLES = new Set(['pulldown', 'pullout', 'single', 'side-spray', 'spring', 'bar', 'arch', 'rect', 'finger', 'mushroom', 'disc']);
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+
+/**
+ * The snapshot of a retail faucet, pull or knob a kitchen uses (`doc.fixtures`, see `Fixture` in
+ * src/types.ts; cleanFixture in src/lib/fixtures.ts keeps the same rules). Known fields only, or
+ * null when it isn't one; the kitchen then draws the default hardware.
+ */
+function cleanFixture(f, id) {
+  const str = (v, max) => typeof v === 'string' && v.length > 0 && v.length <= max;
+  const inRange = (v, lo, hi) => isNum(v) && v >= lo && v <= hi;
+  if (!isObj(f) || !FIXTURE_ID_RE.test(id) || f.id !== id || !FIXTURE_KINDS.has(f.kind) || !FIXTURE_STYLES.has(f.style)) return null;
+  if (!str(f.brand, 80) || !str(f.name, 120) || typeof f.code !== 'string' || f.code.length > 60) return null;
+  const fin = f.finish;
+  if (!isObj(fin) || !str(fin.id, 40) || !str(fin.name, 60) || !HEX_RE.test(fin.hex ?? '')) return null;
+  if (!inRange(f.roughness, 0, 1) || !inRange(f.price, 0, 100_000)) return null;
+  const sizeIn = {};
+  for (const k of ['length', 'cc', 'dia', 'height']) if (isObj(f.sizeIn) && inRange(f.sizeIn[k], 0.2, 40)) sizeIn[k] = f.sizeIn[k];
+  const extras = {};
+  if (isObj(f.extras) && f.extras.soap === true) extras.soap = true;
+  if (isObj(f.extras) && f.extras.sideSpray === true) extras.sideSpray = true;
+  return {
+    id,
+    kind: f.kind,
+    style: f.style,
+    brand: f.brand,
+    name: f.name,
+    code: f.code,
+    finish: { id: fin.id, name: fin.name, hex: fin.hex.toLowerCase() },
+    roughness: f.roughness,
+    sizeIn,
+    price: Math.round(f.price * 100) / 100,
+    priceKnown: f.priceKnown === true,
+    ...(Object.keys(extras).length ? { extras } : {}),
+  };
+}
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -164,6 +204,7 @@ export function normalizeDoc(doc) {
       if (v === undefined) continue;
       if (typeof v !== 'string' || v.length > 64) bad(`surfaces.${k}`, 'A room finish is not valid.');
       if (k === 'doorStyle' && !DOOR_STYLES.has(v)) bad('surfaces.doorStyle', 'The door style is not valid.');
+      if (k === 'faucetId' && !FIXTURE_ID_RE.test(v)) bad('surfaces.faucetId', 'The faucet is not valid.');
       surfaces[k] = v;
     }
     if (!Array.isArray(doc.items)) bad('items', 'That is not a kitchen design.');
@@ -184,6 +225,17 @@ export function normalizeDoc(doc) {
         products[key] = cleanSnapshot(p, key);
       }
       out.products = products;
+    }
+    if (doc.fixtures !== undefined && doc.fixtures !== null) {
+      if (!isObj(doc.fixtures)) bad('fixtures', 'Saved faucets and hardware are not valid.');
+      // Only the ones the surfaces name are kept: a kitchen has one faucet and one hardware.
+      const fixtures = {};
+      for (const id of [surfaces.hardwareId, surfaces.faucetId]) {
+        if (!id || !Object.hasOwn(doc.fixtures, id)) continue;
+        const f = cleanFixture(doc.fixtures[id], id);
+        if (f) fixtures[id] = f;
+      }
+      if (Object.keys(fixtures).length) out.fixtures = fixtures;
     }
     if (doc.extras !== undefined && doc.extras !== null) {
       if (!Array.isArray(doc.extras)) bad('extras', 'Extra estimate lines are not valid.');

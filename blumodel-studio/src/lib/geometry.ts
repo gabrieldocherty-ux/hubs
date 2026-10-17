@@ -111,6 +111,16 @@ export function flushWall(r: Resolved, room: Room, tol = 1): Wall | null {
   return flush ? wall : null;
 }
 
+/** Every wall a footprint sits flush against (a piece in a corner touches two). */
+export function wallsTouched(b: AABB, room: Room, tol = 1): Wall[] {
+  const out: Wall[] = [];
+  if (Math.abs(b.minY) < tol) out.push('north');
+  if (Math.abs(b.maxY - room.lengthIn) < tol) out.push('south');
+  if (Math.abs(b.minX) < tol) out.push('west');
+  if (Math.abs(b.maxX - room.widthIn) < tol) out.push('east');
+  return out;
+}
+
 /** Position along a wall, measured from its west/north end. */
 export function alongWall(wall: Wall, box: AABB): [number, number] {
   return wall === 'north' || wall === 'south' ? [box.minX, box.maxX] : [box.minY, box.maxY];
@@ -297,23 +307,28 @@ export function backsplashSegments(all: Resolved[], room: Room): BacksplashSegme
   for (const r of all) {
     const k = r.product.kind;
     if (!(hasCountertop(r.product) || k === 'range') || k === 'island') continue;
-    const wall = flushWall(r, room);
-    if (!wall) continue;
-    const [s, e] = alongWall(wall, r.box);
-    let top = 54;
-    let overheadFound = false;
-    for (const o of all) {
-      if (o === r || o.z0 < 40) continue;
-      if (flushWall(o, room) !== wall) continue;
-      const [os, oe] = alongWall(wall, o.box);
-      if (overlap1D(s, e, os, oe) <= 1) continue;
-      if (o.product.kind === 'window') continue;
-      if (!overheadFound || o.z0 < top) top = o.z0;
-      overheadFound = true;
+    const back = flushWall(r, room);
+    if (!back) continue;
+    // A corner cabinet's counter meets two walls, so it gets tile on both. Other pieces only
+    // get it on their back wall: a base that merely butts a side wall has no counter along it.
+    const walls = k === 'corner' ? [back, ...wallsTouched(r.box, room).filter((w) => w !== back)] : [back];
+    for (const wall of walls) {
+      const [s, e] = alongWall(wall, r.box);
+      let top = 54;
+      let overheadFound = false;
+      for (const o of all) {
+        if (o === r || o.z0 < 40) continue;
+        if (flushWall(o, room) !== wall) continue;
+        const [os, oe] = alongWall(wall, o.box);
+        if (overlap1D(s, e, os, oe) <= 1) continue;
+        if (o.product.kind === 'window') continue;
+        if (!overheadFound || o.z0 < top) top = o.z0;
+        overheadFound = true;
+      }
+      if (!overheadFound && k === 'range') top = 66;
+      top = Math.min(Math.max(top, 44), room.ceilingIn);
+      raw.push({ wall, start: s, end: e, bottom: 36, top });
     }
-    if (!overheadFound && k === 'range') top = 66;
-    top = Math.min(Math.max(top, 44), room.ceilingIn);
-    raw.push({ wall, start: s, end: e, bottom: 36, top });
   }
 
   const windows = all.filter((r) => r.product.kind === 'window');

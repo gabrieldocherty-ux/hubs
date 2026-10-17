@@ -77,6 +77,17 @@ Looked at and left as they are: the admin Users table's role selects (native sel
 the 3D view and product stages (real colours, by design), product art tiles (light, by design),
 the quote sheet (a light printed page on the dark page, by design).
 
+## A parallel dark pass (merged)
+
+A second session ran its own dark QA pass on `claude/gallant-ptolemy-lm7fux` (7bc673f) at the same
+time. Its CSS fixes merged as they were; these QA routes (a superset of its routes) were kept. It
+noted these non-dark issues (same in light); the first three were fixed since:
+- Fixed: the Pricing Contractor button's cut-off second line (86f3733); Account > Plan & billing
+  hinting at the per-kitchen unlock (79b0dcb); "Request a custom version" for non-contractors (9e1e80d).
+- Open: catalog cards wrap "BluModel Basics" onto two lines and squeeze the width range ("9–36″");
+  Home's "Start a new kitchen" tile still says "Room size, layout and style in four quick steps"
+  (step 4 is brands now); Brands I carry's "Shown" checkboxes use the browser's blue, not the accent.
+
 ## Open points for Gabe
 
 - Light mode's muted grey (`--ink-3`, 2.9–3.7:1) and the accent as small text (3.8–4.0:1) were

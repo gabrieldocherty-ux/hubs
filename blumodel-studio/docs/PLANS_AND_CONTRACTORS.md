@@ -70,7 +70,7 @@ The prices live in one file, `src/data/plans.json` (with `currency: "cad"` and t
    - **Start your catalog:** quick-add a first product, upload a model, have our studio model it (one of the plan's 3 included models a month), or skip.
 3. They land in the **Contractor workspace** (`#/pro`). Its tabs are Dashboard, My catalog, Price book, Brands I carry, Quotes, Make custom models and Company.
 
-An Unlimited subscriber who upgrades is moved to Contractor; Stripe prorates the change, and demo mode simulates it.
+An Unlimited subscriber who upgrades is moved to Contractor once the prorated difference is paid: the change is invoiced and charged at once (`always_invoice`, `error_if_incomplete`), and a declined payment leaves the plan as it was (402 `upgrade_payment_failed`), so the included models are never unlocked on credit. Leaving Contractor after requesting models in the current period gives no proration credit back (`proration_behavior: none`); leaving with none requested is prorated as usual. Demo mode simulates the change.
 
 ### 4.2 My catalog: three ways to add what they sell
 Everything in My catalog is **private to that contractor**. Other contractors, the public catalog and brand pages never see it.
@@ -180,6 +180,7 @@ Supersedes the Model pack ($129 for up to 8 products, 2026-10-14, never on the l
 
 **The allowance** (`server/payments/allowance.mjs`; the server enforces all of it, the form only explains it):
 - The month is the subscription's **current billing period**; a complimentary plan (no period) uses the calendar month, UTC.
+- Periods tile exactly: each starts where the last one ended (`subscriptions.current_period_start`, kept by a trigger from `pricing-003-period-start` as the previous period end), never "a month before the end", which overlapped around short months (an end of Feb 28 started Jan 28, inside a January period ending Jan 31). A row from before pricing-003 uses a month before the end until its next renewal.
 - A model counts **when its request is sent**. It goes **back to the allowance** if the request is cancelled **before work starts**, by the contractor (*Withdraw request* on its page) or by the studio (*Cancel request…* in the queue drawer, with a reason the contractor sees). Once the studio starts, it counts.
 - **Unused models don't roll over.** Grants apply to the period they were given in only.
 - Past the allowance the form says how many are left and when it resets (*"N of 3 models left this month - resets November 15"*), lets the request be prepared but not sent, and offers *Need more? Contact us*. The server answers `409 { needs: 'allowance', allowance }` with the reset date.

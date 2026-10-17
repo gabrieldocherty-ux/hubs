@@ -58,7 +58,10 @@ export default function App() {
   }, [status, userId]);
 
   const needsAccount = NEEDS_ACCOUNT.has(route.name);
-  const authPage = route.name === 'signin' || route.name === 'signup';
+  // A password-reset link (`#/signin?reset=`) opens even when this browser is signed in: setting
+  // the new password signs the browser in as the account it belongs to.
+  const resetPage = route.name === 'signin' && splitHash(location.hash).query.has('reset');
+  const authPage = (route.name === 'signin' || route.name === 'signup') && !resetPage;
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -104,7 +107,7 @@ export default function App() {
   if (status === 'loading') return loading;
 
   const signedIn = status === 'signedIn';
-  if (authPage || (needsAccount && !signedIn))
+  if (authPage || resetPage || (needsAccount && !signedIn))
     return (
       <>
         <AuthScreen mode={route.name === 'signup' ? 'signup' : 'signin'} />

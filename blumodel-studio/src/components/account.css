@@ -350,3 +350,12 @@
     flex: 1 1 auto;
   }
 }
+
+/* A finger needs 44px: the section buttons (a chip row on phones) and the switches grow on touch
+   screens only; mouse layouts keep their compact size. */
+@media (pointer: coarse) {
+  .set-nav button,
+  .set-switch {
+    min-height: 44px;
+  }
+}

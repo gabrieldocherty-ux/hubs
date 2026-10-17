@@ -696,6 +696,35 @@ export function deployBackupDirs(backupsDir) {
 }
 
 /**
+ * What a deploy ships from the checkout (relative to blumodel-studio/): server\ and src\data\*.json
+ * are copied as they are on disk, and dist\ is built from src\, index.html, public\ and the
+ * package and Vite files. A deploy must ship a commit, not whatever is half-edited in the working
+ * tree: a migration that is only on disk would be applied to the real database and recorded as
+ * done, and never re-run once it is changed and committed.
+ */
+export const DEPLOY_SOURCE_PATHS = Object.freeze(['server', 'src', 'public', 'index.html', 'package.json', 'package-lock.json', 'vite.config.ts', 'tsconfig.json']);
+
+/**
+ * The changed or untracked files under DEPLOY_SOURCE_PATHS, from the output of
+ * `git status --porcelain=v1 -z --untracked-files=all -- <paths>` (gitignored files, such as
+ * server/generated/ and server/data/, never appear there). `[{ status, file }]`, file as git prints it.
+ * @param {string} porcelainZ
+ */
+export function dirtyDeployFiles(porcelainZ) {
+  const out = [];
+  const parts = String(porcelainZ || '').split('\0');
+  for (let i = 0; i < parts.length; i++) {
+    const e = parts[i];
+    if (e.length < 4) continue;
+    const status = e.slice(0, 2);
+    out.push({ status: status.trim() || status, file: e.slice(3) });
+    // A rename or copy is followed by its source path as a separate entry.
+    if (/[RC]/.test(status)) i++;
+  }
+  return out;
+}
+
+/**
  * The processes started from `home`, by their command lines (read-only: PowerShell's CIM query):
  * `{ servers, supervisors, tunnels, others }`, each `[{ pid, name }]`. Windows only. The caller
  * and its ancestors (whose command lines may name the folder: `npm run ... --from <folder>`)
