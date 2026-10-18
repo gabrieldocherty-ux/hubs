@@ -389,7 +389,7 @@ test('the update units: a oneshot update.mjs --auto as root at low priority; the
 });
 
 test('Windows update tasks: daily at the update time and a two-minute Update now check, both hidden via update-hidden.vbs, one at a time, two hours at most; a stored password with --at-startup', async () => {
-  const { updateTasks, updateLauncherVbs } = await import('../ops/home.mjs');
+  const { updateTasks, updateLauncherVbs, taskXml } = await import('../ops/home.mjs');
   const [daily, now] = updateTasks('C:\\Users\\owner\\Projects\\BluModelStudio', 'WYSE\\owner', { time: '04:00', password: true });
   assert.deepEqual([daily.name, now.name], ['BluModelStudioUpdate', 'BluModelStudioUpdateNow']);
   assert.match(daily.xml, /<CalendarTrigger>\s*<StartBoundary>2026-01-01T04:00:00<\/StartBoundary>\s*<Enabled>true<\/Enabled>\s*<ScheduleByDay>\s*<DaysInterval>1<\/DaysInterval>/);
@@ -400,11 +400,17 @@ test('Windows update tasks: daily at the update time and a two-minute Update now
     assert.match(t.xml, /<LogonType>Password<\/LogonType>/);
     assert.match(t.xml, /<ExecutionTimeLimit>PT2H<\/ExecutionTimeLimit>/);
     assert.match(t.xml, /<MultipleInstancesPolicy>IgnoreNew<\/MultipleInstancesPolicy>/);
-    assert.match(t.xml, /<Command>wscript\.exe<\/Command>/);
     assert.doesNotMatch(t.xml, /<Password>|<RunAsPassword/i);
   }
+  assert.match(daily.xml, /<Command>wscript\.exe<\/Command>/);
+  // The two-minute check: cmd.exe in the stored-password (non-interactive, windowless) session, no wscript or node.
+  assert.match(now.xml, /<Command>cmd\.exe<\/Command>/);
   assert.match(daily.xml, /<Arguments>"C:\\Users\\owner\\Projects\\BluModelStudio\\update-hidden\.vbs" --auto<\/Arguments>/);
-  assert.match(now.xml, /<Arguments>"C:\\Users\\owner\\Projects\\BluModelStudio\\update-hidden\.vbs" --auto --trigger-only<\/Arguments>/);
+  assert.match(now.xml, /<Arguments>\/d \/c "C:\\Users\\owner\\Projects\\BluModelStudio\\update-check\.cmd"<\/Arguments>/);
+  // Without a stored password the task would run on the desktop, where cmd.exe flashes a console: the VBS, which quits early.
+  const interactiveNow = updateTasks('C:\\H', 'PC\\me')[1];
+  assert.match(interactiveNow.xml, /<Command>wscript\.exe<\/Command>\s*<Arguments>"C:\\H\\update-hidden\.vbs" --auto --trigger-only<\/Arguments>/);
+  assert.throws(() => taskXml({ name: 'T', description: 'd', launcher: 'a', workingDir: 'b', user: 'u', command: 'powershell.exe' }), /Not a task command/);
   assert.match(updateTasks('C:\\H', 'PC\\me')[0].xml, /<LogonType>InteractiveToken<\/LogonType>/);
   assert.match(updateTasks('C:\\H', 'PC\\me', { time: '23:45' })[0].xml, /T23:45:00/);
   assert.throws(() => updateTasks('C:\\H', 'PC\\me', { time: '7am' }), /Not a time of day/);

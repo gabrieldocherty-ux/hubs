@@ -23,8 +23,10 @@
 //   AUTOMATIC UPDATES (docs/HOSTING.md, "Automatic updates"), when the home has the checkout the
 //   install scripts make (<home>\repo\blumodel-studio), or with --only update:
 //   BluModelStudioUpdate     wscript.exe "<home>\update-hidden.vbs" --auto, daily at AUTO_UPDATE_TIME
-//   BluModelStudioUpdateNow  the same with --auto --trigger-only every two minutes: a no-op unless
-//                            Admin > System > Update now left logs\update-now.request
+//   BluModelStudioUpdateNow  every two minutes: with --at-startup, cmd.exe "<home>\update-check.cmd",
+//                            which exits at once unless Update now left logs\update-now.request (no
+//                            wscript, no node); without it, update-hidden.vbs --auto --trigger-only,
+//                            which also quits before starting node when there is no trigger
 //   update-hidden.vbs (written here) runs scripts\host\update.mjs with no window. With --at-startup
 //   they run whether or not anyone is signed in (schtasks asks for the password for each).
 //   --auto-update-time HH:MM (default: the home's auto-update.conf, else AUTO_UPDATE_TIME, else
@@ -76,6 +78,7 @@ import {
   sys32,
   systemdInstallPlan,
   systemdUnits,
+  updateCheckCmd,
   updateLauncherVbs,
   updateTasks,
   writeStartupTasks,
@@ -231,9 +234,12 @@ try {
     console.log('Automatic updates: OFF. Update by hand: node <home>\\repo\\blumodel-studio\\scripts\\host\\update.mjs');
   }
   if (tasks.some((t) => t.name === UPDATE_TASK)) {
-    const vbs = updateLauncherVbs({ node: process.platform === 'win32' ? process.execPath : 'C:\\Program Files\\nodejs\\node.exe' });
-    if (dryRun) console.log(`would write ${WL.updateLauncher}:\n${vbs.replace(/\r\n/g, '\n').replace(/^/gm, '    ')}`);
-    else if (hasCheckout) fs.writeFileSync(WL.updateLauncher, vbs);
+    const nodeExe = process.platform === 'win32' ? process.execPath : 'C:\\Program Files\\nodejs\\node.exe';
+    const files = [[WL.updateLauncher, updateLauncherVbs({ node: nodeExe })], [WL.updateCheck, updateCheckCmd({ node: nodeExe })]];
+    for (const [file, text] of files) {
+      if (dryRun) console.log(`would write ${file}:\n${text.replace(/\r\n/g, '\n').replace(/^/gm, '    ')}`);
+      else if (hasCheckout) fs.writeFileSync(file, text);
+    }
     writeConf(WL.autoUpdateConf, time);
   }
   for (const t of tasks) {
@@ -246,7 +252,8 @@ try {
     const launcherOk = canCheck && fs.existsSync(t.launcher);
     const as = atStartup ? `as ${user} (signed in or not)` : `while ${user} is signed in`;
     const when = t.name === UPDATE_TASK ? `daily at ${time}, ${as}` : t.name === UPDATE_NOW_TASK ? `every 2 minutes (a no-op unless Update now was pressed), ${as}` : atStartup ? `when Windows starts, as ${user} (signed in or not)` : `at logon of ${user}`;
-    console.log(`${t.name}: ${when}, runs wscript.exe "${t.launcher}"${isUpdate ? (t.name === UPDATE_TASK ? ' --auto' : ' --auto --trigger-only') : ''}${launcherOk ? '' : '  (that file does not exist yet)'}`);
+    const runs = t.command === 'cmd.exe' ? `cmd.exe /d /c "${t.launcher}" (no window; no node unless Update now was pressed)` : `wscript.exe "${t.launcher}"${t.args ? ` ${t.args}` : ''}`;
+    console.log(`${t.name}: ${when}, runs ${runs}${launcherOk ? '' : '  (that file does not exist yet)'}`);
     // With --at-startup schtasks stores the account's password: /RP * makes it ask for it.
     const args = ['/Create', '/TN', t.name, '/XML', file, ...(atStartup ? ['/RU', user, '/RP', '*'] : []), '/F'];
     if (dryRun) {

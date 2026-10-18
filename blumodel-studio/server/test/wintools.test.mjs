@@ -72,3 +72,37 @@ test('the .cmd files run: without a checkout they say so; with one they hand the
     fs.rmSync(home, { recursive: true, force: true });
   }
 });
+
+test('the Update now check costs nothing without the trigger: update-check.cmd (and the VBS fallback) start node only when logs\\update-now.request exists', { skip: !WIN && 'Windows .cmd and .vbs' }, async () => {
+  const { updateCheckCmd, updateLauncherVbs } = await import('../ops/home.mjs');
+  assert.throws(() => updateCheckCmd({ node: 'C:\\a"b\\node.exe' }), /no quotes/);
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'blumodel-upcheck-'));
+  try {
+    fs.mkdirSync(path.join(home, 'logs'));
+    const host = path.join(home, 'repo', 'blumodel-studio', 'scripts', 'host');
+    fs.mkdirSync(host, { recursive: true });
+    const marker = path.join(home, 'ran.txt');
+    // A stub update.mjs: records that node ran, and with what.
+    fs.writeFileSync(path.join(host, 'update.mjs'), `require('node:fs').writeFileSync(${JSON.stringify(marker)}, JSON.stringify(process.argv.slice(2)));\n`.replace("require('node:fs')", "(await import('node:fs')).default"));
+    fs.writeFileSync(path.join(home, 'update-check.cmd'), updateCheckCmd({ node: process.execPath }));
+    fs.writeFileSync(path.join(home, 'update-hidden.vbs'), updateLauncherVbs({ node: process.execPath }));
+    const check = () => spawnSync(process.env.ComSpec || 'cmd.exe', ['/d', '/c', path.join(home, 'update-check.cmd')], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+    const vbs = () => spawnSync(path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'cscript.exe'), ['//nologo', path.join(home, 'update-hidden.vbs'), '--auto', '--trigger-only'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+    let r = check();
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout, '', 'nothing printed');
+    assert.ok(!fs.existsSync(marker), 'node never started');
+    assert.equal(vbs().status, 0);
+    assert.ok(!fs.existsSync(marker), 'the VBS quits before node too');
+    fs.writeFileSync(path.join(home, 'logs', 'update-now.request'), '{}');
+    r = check();
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const args = JSON.parse(fs.readFileSync(marker, 'utf8'));
+    assert.deepEqual([args[0], path.resolve(args[1]), ...args.slice(2)], ['--home', path.resolve(home), '--auto', '--trigger-only']);
+    fs.rmSync(marker);
+    assert.equal(vbs().status, 0);
+    assert.ok(fs.existsSync(marker), 'with the trigger the VBS runs node');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
+});

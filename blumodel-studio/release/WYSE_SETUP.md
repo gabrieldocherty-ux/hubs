@@ -126,8 +126,8 @@ What it does (the script's header says the same):
 - The server runs with a **384 MB V8 heap cap** (`--max-old-space-size=384` in `run-server.cmd`;
   `-HeapMb` changes it). It idles at about 80 MB.
 - Registers **`BluModelStudioServer`** (at startup, nobody signed in), and the automatic update's
-  **`BluModelStudioUpdate`** (daily at 04:00) and **`BluModelStudioUpdateNow`** (every two minutes, a
-  no-op unless Update now was pressed). `schtasks` asks for Gabe's Windows password **once for each
+  **`BluModelStudioUpdate`** (daily at 04:00) and **`BluModelStudioUpdateNow`** (every two minutes:
+  `update-check.cmd` looks for the Update now file and exits; no Node, no window, unless it is there). `schtasks` asks for Gabe's Windows password **once for each
   of the three**: Windows needs it to run them while nobody is signed in. It is never on a command
   line. Options: `-AutoUpdateTime 05:30`, `-NoAutoUpdate`.
 - Writes the tunnel's files and restricts `C:\Users\gdoch\.cloudflared` to `gdoch`. It does **not**
@@ -272,7 +272,8 @@ The last step, once step 9 passes:
 3. **Memory to expect** on the 8 GB Wyse: the server idles at about **80 MB** (measured: under 90 MB
    through a burst of 1,000 requests; its heap is capped at 384 MB), cloudflared at roughly **30-60
    MB**, the update tasks nothing between runs (each run is a Node process of about 50 MB for a few
-   seconds; the two-minute check exits at once). About 150 MB in all, leaving more than 7 GB free.
+   seconds; the two-minute check is one cmd.exe `if exist` that exits at once, with no Node and no
+   window unless Update now was pressed). About 150 MB in all, leaving more than 7 GB free.
 4. **Report to Gabe, then close.** Send Gabe a short report: what passed, what is left for him
    (anything marked [Gabe] not yet done), and the three shortcuts/commands he needs (BluModel Server,
    Update BluModel, `blumodel.cmd sites status`). Then end this session and **quit the Claude desktop

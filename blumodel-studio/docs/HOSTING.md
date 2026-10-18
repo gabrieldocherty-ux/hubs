@@ -580,7 +580,15 @@ Publishing is all it takes: the Wyse picks a new release up by itself.
 - **Update now.** Admin > System > Updates > *Update now* (admins only, audited) applies a release at
   once: the server leaves `logs/update-now.request`, which `blumodel-update.path` acts on immediately
   (inotify, so it costs nothing while idle); on Windows `BluModelStudioUpdateNow` looks for it every two
-  minutes and otherwise does nothing at all. The update deletes the file.
+  minutes. That check is made nearly free: the task runs `cmd.exe /d /c <home>\update-check.cmd`, which
+  is one `if not exist` and an exit; no wscript and no Node start unless the file is there (then it runs
+  `update.mjs --auto --trigger-only`). The task has a stored password (`--at-startup`), so Windows runs
+  it in a non-interactive session and no console window can flash. A home registered without
+  `--at-startup` would run the task on the desktop, where cmd.exe shows a window, so there it stays
+  `update-hidden.vbs`, which also quits before starting Node without the file. Why not start the update
+  from the server when the button is pressed: the server's import graph has no child processes at all
+  (a test holds it to that), and the update stops the server it would be the child of; a scheduled
+  task outlives the deploy by design. The update deletes the file.
 - **What a run does.** It fetches the branch and compares `app/DEPLOYED.txt` with
   `origin/blumodel-studio`. Equal: one `current` line, nothing else. A newer commit: `git merge
   --ff-only`, then the steps above (database backup, deploy, health check, rollback if unhealthy), run
