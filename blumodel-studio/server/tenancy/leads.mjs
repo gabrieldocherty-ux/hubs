@@ -24,6 +24,7 @@ import { csvCell } from '../contractors/csv.mjs';
 import { normalizePhone } from '../account/phone.mjs';
 import { readCookie, secureAttr, sha256 } from '../auth/sessions.mjs';
 import { phoneKeyOf } from '../db/migrations/leads.mjs';
+import { pseudonymiseAudit } from '../lib/audit.mjs';
 
 export const LEAD_STATUSES = ['new', 'contacted', 'quoted', 'won', 'lost'];
 export const VISITOR_COOKIE = 'blumodel_visitor';
@@ -514,6 +515,9 @@ export function createLeadService({ db, now = Date.now }) {
       const designs = db.prepare('DELETE FROM projects WHERE lead_id = ? AND tenant_id = ? AND user_id IS NULL').run(leadId, tenantId).changes;
       const unlinked = db.prepare('UPDATE projects SET lead_id = NULL WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId).changes;
       const sends = db.prepare('DELETE FROM showroom_leads WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId).changes;
+      // Every address this person (or a browser of theirs) typed leaves the audit log too.
+      const typed = db.prepare('SELECT email, phone FROM tenant_lead_visitors WHERE lead_id = ? AND tenant_id = ?').all(leadId, tenantId);
+      pseudonymiseAudit(db, { emails: [cur.email, ...typed.map((v) => v.email)], phones: [cur.phone, ...typed.map((v) => v.phone)] });
       db.prepare('DELETE FROM tenant_lead_visitors WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId);
       db.prepare('DELETE FROM tenant_lead_events WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId);
       // Its possible duplicates: the oldest becomes the lead for the address (once this one is gone,

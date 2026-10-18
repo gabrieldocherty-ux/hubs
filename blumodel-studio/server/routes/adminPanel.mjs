@@ -23,7 +23,7 @@
 // delete an ADMIN through the API: that stays `node server/scripts/make-admin.mjs` on the server.
 
 import { HttpError } from '../http/respond.mjs';
-import { audit } from '../lib/audit.mjs';
+import { audit, pseudonymOf } from '../lib/audit.mjs';
 import { SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
 import { createBillingService } from '../billing/service.mjs';
 import { createAllowance } from '../payments/allowance.mjs';
@@ -262,8 +262,9 @@ export default function routes(ctx) {
           throw new HttpError(409, 'This account pays for a plan that still renews. Cancel it in Stripe (or wait for it to end) before deleting the account.', { code: 'active_subscription' });
         }
         const counts = account.deleteAccount(u.id);
-        // admin_audit has no foreign key to users: the record (with the email copied in) stays.
-        record(rc, 'account_delete', u, { name: u.name, role: u.role, counts });
+        // admin_audit has no foreign key to users: the record stays, about a pseudonym (the account's
+        // earlier entries were pseudonymised with it), never the person's name or address.
+        record(rc, 'account_delete', { ...u, email: pseudonymOf(u.email) }, { role: u.role, counts });
         log.info?.(`Account ${u.id} deleted by admin ${rc.user.id} (${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ')}).`);
         return { deleted: true, counts };
       },
