@@ -93,15 +93,12 @@ export function showroomIndexHtml(html, t, { origin, logoUrl = null, images = nu
     (h) => h.replace(/<meta name="twitter:card" content="summary_large_image" \/>/, '<meta name="twitter:card" content="summary" />'),
   ];
   let out = steps.reduce((h, f) => f(h), html);
-  // The landing page's hero picture (server/tenancy/images.mjs): fetched with the document, at the
-  // size the screen will use (the portrait one on a phone), and the link preview's picture.
+  // The landing page's hero picture (server/tenancy/images.mjs) is the link preview's picture. It is
+  // not preloaded here: every page of the showroom is this one document (the route is in the hash),
+  // so a preload would fetch it for the editor and shared designs too. The landing page asks for it
+  // first instead (fetchpriority high, never lazy).
   const hero = typeof images?.hero?.url === 'string' && images.hero.url.startsWith('/') ? images.hero : null;
   if (hero) {
-    const tall = typeof images.heroTall?.url === 'string' && images.heroTall.url.startsWith('/') ? images.heroTall : null;
-    const links = tall
-      ? `<link rel="preload" as="image" href="${esc(tall.url)}" media="(max-width: 700px)" fetchpriority="high" />\n    <link rel="preload" as="image" href="${esc(hero.url)}" media="(min-width: 701px)" fetchpriority="high" />`
-      : `<link rel="preload" as="image" href="${esc(hero.url)}" fetchpriority="high" />`;
-    out = out.replace('</head>', `  ${links}\n  </head>`);
     out = out.replace(
       /(<meta property="og:url" content="[^"]*" \/>)/,
       `$1\n    <meta property="og:image" content="${esc(origin + hero.url)}" />\n    <meta property="og:image:width" content="${Number(hero.w) || 0}" />\n    <meta property="og:image:height" content="${Number(hero.h) || 0}" />`,

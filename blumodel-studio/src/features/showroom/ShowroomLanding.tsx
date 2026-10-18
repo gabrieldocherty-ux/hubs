@@ -299,8 +299,10 @@ function LineCard({ line, pic, signedIn, disabled, wide }: { line: ShowroomLine;
 function Steps({ t, name, sample, lines }: { t: PublicTenant; name: string; sample: DesignDoc | null; lines: ShowroomLine[] }) {
   const im = t.images;
   const productPic = (lines.length ? im.lines[lines[0].key] : undefined) ?? im.gallery[0] ?? null;
+  // Pictures on every step, or on none (a showroom with no products yet keeps plain cards).
+  const art = !!(sample && productPic);
   return (
-    <section className="sr-steps sr-section" aria-labelledby="sr-how">
+    <section className={`sr-steps sr-section${art ? '' : ' sr-steps--plain'}`} aria-labelledby="sr-how">
       <div className="sr-section-head">
         <div>
           <p className="sr-eyebrow">How it works</p>
@@ -311,9 +313,11 @@ function Steps({ t, name, sample, lines }: { t: PublicTenant; name: string; samp
       </div>
       <ol>
         <li>
-          <div className="sr-step-art sr-step-art--plan" aria-hidden>
-            {sample ? <MiniPlan doc={sample} /> : null}
-          </div>
+          {art && sample && (
+            <div className="sr-step-art sr-step-art--plan" aria-hidden>
+              <MiniPlan doc={sample} />
+            </div>
+          )}
           <span className="sr-step-n" aria-hidden>
             1
           </span>
@@ -321,9 +325,11 @@ function Steps({ t, name, sample, lines }: { t: PublicTenant; name: string; samp
           <span>Enter the room’s size and pick a starting layout. It takes about a minute.</span>
         </li>
         <li>
-          <div className="sr-step-art" aria-hidden>
-            {productPic ? <img src={productPic.url} width={productPic.w} height={productPic.h} alt="" loading="lazy" decoding="async" /> : null}
-          </div>
+          {art && productPic && (
+            <div className="sr-step-art" aria-hidden>
+              <img src={productPic.url} width={productPic.w} height={productPic.h} alt="" loading="lazy" decoding="async" />
+            </div>
+          )}
           <span className="sr-step-n" aria-hidden>
             2
           </span>
@@ -331,6 +337,7 @@ function Steps({ t, name, sample, lines }: { t: PublicTenant; name: string; samp
           <span>Choose cabinets, sinks, appliances and lighting from {name}’s range, and walk through it in 3D.</span>
         </li>
         <li>
+          {art && (
           <div className="sr-step-art sr-step-art--send" aria-hidden>
             <div className="sr-mock">
               <CompanyLogo tenant={t} size={30} />
@@ -340,6 +347,7 @@ function Steps({ t, name, sample, lines }: { t: PublicTenant; name: string; samp
               <span className="sr-mock-btn">Send my design</span>
             </div>
           </div>
+          )}
           <span className="sr-step-n" aria-hidden>
             3
           </span>

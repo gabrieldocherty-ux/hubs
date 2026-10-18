@@ -588,6 +588,10 @@
   line-height: 1.5;
 }
 
+.sr-steps--plain li {
+  padding-top: 22px;
+}
+
 .sr-step-art {
   aspect-ratio: 16 / 10;
   background: var(--stage-2);

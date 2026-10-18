@@ -4,6 +4,9 @@
 // editor with the company's catalog only (no store links, no prices or plans of ours), the free
 // branded downloads, "Send this design to Northline" from the editor and the share page, and a
 // whole visitor journey (signed out from the landing to a device design, then an account to send it) ending in a lead in the company's inbox.
+// The landing page with its pictures (the hero first and the right one for the screen, every line
+// card and gallery kitchen with its picture, lazy below the fold, sizes reserved, nothing shifting),
+// the demo-only pitch (never on another showroom), the picture generator and the workspace's pictures.
 // Run: node scripts/qa.mjs --pkg showroom --port 8910
 
 /** No horizontal page scroll. */
@@ -57,24 +60,131 @@ const each = (r) =>
 
 export default [
   // ── the landing page ─────────────────────────────────────────────────────
-  ...each({
-    name: 'landing',
+  // Desktop: the whole page in one picture. Phone: a picture per section (a 390 px page at 3x is
+  // taller than a screenshot can be), then the top again for the route's own picture.
+  ...views.map((v) => ({
+    name: `landing${v.suffix}`,
     host: 'demo',
     path: '#/',
     as: 'anon',
-    fullPage: true,
-    waitFor: ['.sr-hero h1', '.sr-line'],
-    expectText: ['Design your kitchen', 'Design your bathroom', 'Lakeshore Shaker', 'Harbourfront Slab', 'Talk to Northline'],
+    viewport: v.viewport,
+    colorScheme: v.colorScheme,
+    fullPage: v.viewport === 'desktop',
+    timeoutMs: 40000,
+    waitFor: ['.sr-hero h1', '.sr-hero-pic img', '.sr-line img'],
+    expectText: ['Design your kitchen', 'Design your bathroom', 'Lakeshore Shaker', 'Harbourfront Slab', 'Kitchens designed in our showroom', 'Talk to Northline'],
     check: async (h) => {
       const t = await h.evaluate(() => ({ title: document.title, brand: getComputedStyle(document.documentElement).getPropertyValue('--brand').trim(), desc: document.querySelector('meta[name="description"]')?.getAttribute('content') }));
       if (!/^Northline Kitchen & Bath/.test(t.title)) throw new Error(`the tab title is "${t.title}"`);
       if (!t.brand) throw new Error('the company colour tokens are not applied');
       if (!/Northline/.test(t.desc ?? '')) throw new Error(`the description is "${t.desc}"`);
+      await heroChecks(h);
+      await settleImages(h);
+      await imageChecks(h);
+      await noShift(h);
       await noSideScroll(h);
       await noUpsell(h);
       await touchTargets(h);
+      await pitchChecks(h);
+      if (isPhone(h)) {
+        for (const [sel, name] of [['.sr-hero', 'hero'], ['#sr-lines', 'lines'], ['.sr-line:nth-child(2)', 'line-card'], ['.sr-pitch', 'pitch'], ['.sr-lead', 'lead'], ['#sr-gallery', 'gallery'], ['.sr-steps', 'steps'], ['#sr-contact', 'contact']]) {
+          await h.evaluate((s) => document.querySelector(s)?.scrollIntoView({ block: 'start' }), sel);
+          await h.sleep(250);
+          await h.shot(name);
+        }
+        await h.evaluate(() => window.scrollTo(0, 0));
+        await h.sleep(200);
+      }
     },
-  }),
+  })),
+  // The link preview is the hero; the document preloads nothing (every route shares it).
+  {
+    name: 'landing-document',
+    host: 'demo',
+    path: '#/',
+    as: 'anon',
+    waitFor: ['.sr-hero h1'],
+    check: async (h) => {
+      const r = await h.evaluate(async () => {
+        const html = await (await fetch('/', { headers: { Accept: 'text/html' } })).text();
+        return {
+          preload: [...html.matchAll(/<link rel="preload" as="image" href="([^"]+)"/g)].map((m) => m[1]),
+          og: html.match(/<meta property="og:image" content="([^"]+)"/)?.[1] ?? null,
+          card: html.match(/<meta name="twitter:card" content="([^"]+)"/)?.[1] ?? null,
+          hero: document.querySelector('.sr-hero-pic img')?.getAttribute('src'),
+          tall: document.querySelector('.sr-hero-pic source')?.getAttribute('srcset'),
+        };
+      });
+      if (r.preload.length) throw new Error(`the document preloads ${r.preload.join(', ')} for every route`);
+      if (!r.og?.endsWith(r.hero)) throw new Error(`the link preview picture is ${r.og}`);
+      if (r.card !== 'summary_large_image') throw new Error(`twitter:card is ${r.card}`);
+    },
+  },
+  // Admin > Companies opens the generator with a ticket; it lists every scene and nothing is made until asked.
+  ...[views[0], views[3]].map((v) => ({
+    name: `images-generator${v.suffix}`,
+    host: 'demo',
+    as: 'showroom-owner',
+    path: '#/showroom-images',
+    viewport: v.viewport,
+    colorScheme: v.colorScheme,
+    waitFor: ['.sri-list li', '.sri-actions .btn'],
+    expectText: ['Showroom pictures for Northline Kitchen & Bath', 'The main picture', 'Lakeshore Shaker', 'Bayview Bath'],
+    check: async (h) => {
+      const r = await h.evaluate(() => ({ rows: document.querySelectorAll('.sri-list li').length, skipped: [...document.querySelectorAll('.sri-list li[data-state="skipped"]')].map((li) => li.textContent), btn: document.querySelector('.sri-actions .btn')?.textContent }));
+      if (r.rows < 10) throw new Error(`only ${r.rows} scenes`);
+      if (r.skipped.length) throw new Error(`scenes with layout problems: ${r.skipped.join('; ')}`);
+      if (!/^Make \d+ pictures$/.test(r.btn ?? '')) throw new Error(`the button says "${r.btn}"`);
+      await noSideScroll(h);
+      await touchTargets(h);
+    },
+  })),
+  {
+    name: 'images-generator-visitor',
+    host: 'demo',
+    as: 'showroom-visitor',
+    path: '#/showroom-images',
+    waitFor: ['.sri-msg--bad'],
+    expectText: ['Only the showroom’s team can change its pictures'],
+    ignoreConsole: [/403/],
+  },
+  // The workspace's Showroom tab: where each picture came from, and the team's own photos.
+  ...[views[0], views[3]].map((v) => ({
+    name: `workspace-pictures${v.suffix}`,
+    host: 'demo',
+    as: 'showroom-owner',
+    path: '#/studio',
+    viewport: v.viewport,
+    colorScheme: v.colorScheme,
+    waitFor: ['.ws-pics .ws-pic img'],
+    expectText: ['Showroom pictures', 'Generate showroom images', 'Main picture', 'Made from your products'],
+    check: async (h) => {
+      await h.evaluate(() => document.querySelector('.ws-pics')?.scrollIntoView({ block: 'start' }));
+      await h.sleep(300);
+      await h.shot('pictures');
+      await noSideScroll(h);
+    },
+  })),
+  // A showroom that isn't the demo: no demo band, no pitch; without pictures, no picture hero.
+  ...[views[0], views[3]].map((v) => ({
+    name: `plain-showroom${v.suffix}`,
+    host: 'qa-plain',
+    as: 'anon',
+    path: '#/',
+    viewport: v.viewport,
+    colorScheme: v.colorScheme,
+    setup: async ({ api }) => plainCompany(api),
+    waitFor: ['.sr-hero h1'],
+    expectText: ['Plainfield Cabinets'],
+    check: async (h) => {
+      const r = await h.evaluate(() => ({ band: !!document.querySelector('.sr-demo-band'), pitch: !!document.querySelector('.sr-pitch, [data-demo-only]'), text: document.body.innerText, pic: !!document.querySelector('.sr-hero-pic') }));
+      if (r.band || r.pitch) throw new Error('a real showroom shows the demo-only band or pitch');
+      if (/What .* gets from this showroom|Get a showroom like this/i.test(r.text)) throw new Error('a real showroom shows the demo pitch');
+      if (r.pic) throw new Error('a hero picture without any pictures');
+      await noSideScroll(h);
+      await touchTargets(h);
+    },
+  })),
 
   // ── signing up on the showroom, and a visitor's designs ─────────────────
   ...each({
@@ -476,4 +586,138 @@ function leadFor(h, email, { signedIn }) {
   if (got.phone !== '(519) 555-0175' || got.postal !== 'N1H 6J2' || got.budget !== '$25,000 - $40,000' || got.timeline !== '3-6 months') throw new Error(`the lead's details are ${JSON.stringify(got)}`);
   if (signedIn !== !!r.user_id) throw new Error(`the lead's account is ${r.user_id}`);
   return r;
+}
+
+/** The hero picture: loaded, the right one for the screen, fetched first, its size reserved, and the words readable on it. */
+async function heroChecks(h) {
+  await h.waitUntil(() => {
+    const img = document.querySelector('.sr-hero-pic img');
+    return !!img && img.complete && img.naturalWidth > 0;
+  }, 20000, 'the hero picture loading');
+  const r = await h.evaluate(() => {
+    const img = document.querySelector('.sr-hero-pic img');
+    const box = img.getBoundingClientRect();
+    const h1 = document.querySelector('.sr-hero h1');
+    return {
+      src: img.currentSrc,
+      natural: [img.naturalWidth, img.naturalHeight],
+      attrs: [img.getAttribute('width'), img.getAttribute('height')],
+      lazy: img.getAttribute('loading'),
+      priority: img.getAttribute('fetchpriority'),
+      box: [box.width, box.height],
+      h1: getComputedStyle(h1).color,
+      ink: getComputedStyle(document.documentElement).getPropertyValue('--brand-ink').trim(),
+      w: innerWidth,
+    };
+  });
+  if (r.lazy === 'lazy') throw new Error('the hero picture is lazy-loaded');
+  if (r.priority !== 'high') throw new Error('the hero picture is not fetched first');
+  if (!r.attrs[0] || !r.attrs[1]) throw new Error('the hero picture has no width and height');
+  const tall = r.natural[1] > r.natural[0];
+  if (r.w <= 700 && !tall) throw new Error(`a phone got the wide hero (${r.natural.join('x')})`);
+  if (r.w > 700 && tall) throw new Error(`a wide screen got the portrait hero (${r.natural.join('x')})`);
+  if (r.box[1] < 300) throw new Error(`the hero picture is only ${Math.round(r.box[1])}px tall`);
+  // The headline is the brand's own text colour (palette.ts makes that AA on the brand), over the brand scrim.
+  if (r.h1 !== 'rgb(255, 255, 255)') throw new Error(`the hero headline is ${r.h1}, not the brand's text colour`);
+}
+
+/** Scrolls the page through so lazy pictures load, waits for them, and goes back to the top. */
+async function settleImages(h) {
+  await h.evaluate(async () => {
+    const step = innerHeight * 0.8;
+    for (let y = 0; y < document.documentElement.scrollHeight; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+  });
+  await h.waitUntil(() => [...document.images].every((i) => i.complete), 20000, 'every picture loading');
+  await h.evaluate(() => window.scrollTo(0, 0));
+  await h.sleep(250);
+}
+
+/** Every line card and gallery kitchen has its picture, loaded lazily, with its size reserved; nothing failed. */
+async function imageChecks(h) {
+  const r = await h.evaluate(() => {
+    const info = (img) => ({ src: img.getAttribute('src'), ok: img.complete && img.naturalWidth > 0, lazy: img.getAttribute('loading'), w: img.getAttribute('width'), h: img.getAttribute('height') });
+    return {
+      cards: [...document.querySelectorAll('.sr-line')].map((c) => ({ name: c.querySelector('h3')?.textContent, img: c.querySelector('.sr-line-media > img') ? info(c.querySelector('.sr-line-media > img')) : null })),
+      gallery: [...document.querySelectorAll('.sr-shot img')].map(info),
+      broken: [...document.images].filter((i) => !(i.naturalWidth > 0)).map((i) => i.getAttribute('src')),
+    };
+  });
+  const noPic = r.cards.filter((c) => !c.img).map((c) => c.name);
+  if (noPic.length) throw new Error(`line cards without a picture: ${noPic.join(', ')}`);
+  for (const p of [...r.cards.map((c) => c.img), ...r.gallery]) {
+    if (!p.ok) throw new Error(`a picture didn't load: ${p.src}`);
+    if (p.lazy !== 'lazy') throw new Error(`a picture below the hero isn't lazy: ${p.src}`);
+    if (!p.w || !p.h) throw new Error(`a picture has no width and height: ${p.src}`);
+  }
+  if (r.gallery.length < 3) throw new Error(`the gallery shows ${r.gallery.length} kitchens`);
+  if (r.broken.length) throw new Error(`broken pictures: ${r.broken.join(', ')}`);
+}
+
+/** Nothing shifts as the page loads (cumulative layout shift, from the first paint). */
+async function noShift(h) {
+  const cls = await h.evaluate(
+    () =>
+      new Promise((resolve) => {
+        let sum = 0;
+        new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) if (!e.hadRecentInput) sum += e.value;
+        }).observe({ type: 'layout-shift', buffered: true });
+        setTimeout(() => resolve(sum), 300);
+      }),
+  );
+  h.note(`layout shift ${cls.toFixed(4)}`);
+  if (cls > 0.05) throw new Error(`the page shifts as it loads (layout shift ${cls.toFixed(3)})`);
+}
+
+/** The demo's pitch: after the featured lines, a lead with its picture, product list and a link that opens the design; the way back to Book a call. */
+async function pitchChecks(h) {
+  await h.waitUntil(() => document.querySelectorAll('.sr-lead-lines li:not(.sr-lead-wait)').length >= 3, 20000, 'the lead’s product list');
+  const r = await h.evaluate(() => {
+    const pitch = document.querySelector('.sr-pitch');
+    const lines = document.querySelector('#sr-lines');
+    return {
+      after: !!(pitch && lines && lines.compareDocumentPosition(pitch) & Node.DOCUMENT_POSITION_FOLLOWING),
+      title: pitch?.querySelector('h2')?.textContent,
+      points: [...(pitch?.querySelectorAll('.sr-pitch-points b') ?? [])].map((b) => b.textContent),
+      cta: pitch?.querySelector('.sr-pitch-cta')?.getAttribute('href'),
+      open: pitch?.querySelector('a.sr-lead-btn')?.getAttribute('href'),
+      img: (() => {
+        const i = pitch?.querySelector('.sr-lead-design img');
+        return i ? i.complete && i.naturalWidth > 0 : false;
+      })(),
+      products: [...document.querySelectorAll('.sr-lead-lines li b')].map((b) => b.textContent),
+      facts: pitch?.querySelector('.sr-lead-facts')?.textContent,
+      who: pitch?.querySelector('.sr-lead-who')?.textContent,
+    };
+  });
+  if (!r.after) throw new Error('the demo pitch is not after the featured lines');
+  if (r.title !== 'What Northline Kitchen & Bath gets from this showroom') throw new Error(`the pitch title is "${r.title}"`);
+  const want = ['Your products, your brand, your web address', 'Every design arrives as a lead with the plan and product list', 'Your team uses it in sales meetings, with photoreal AI renders'];
+  if (JSON.stringify(r.points) !== JSON.stringify(want)) throw new Error(`the pitch points are ${JSON.stringify(r.points)}`);
+  if (!/^http:\/\/localhost:\d+\/#\/book$/.test(r.cta ?? '')) throw new Error(`the pitch button goes to ${r.cta}`);
+  if (!/^#\/s\/[A-Za-z0-9_-]{16,}$/.test(r.open ?? '')) throw new Error(`"Open the design in 3D" goes to ${r.open}`);
+  if (!r.img) throw new Error('the lead has no design picture');
+  if (!/Budget/.test(r.facts ?? '') || !/Timeline/.test(r.facts ?? '') || !/\(\d{3}\) 555-\d{4}/.test(r.who ?? '') || !/[A-Z]\d[A-Z] \d[A-Z]\d/.test(r.who ?? '')) throw new Error('the lead misses its phone, postal code, budget or timeline');
+  if (!r.products.some((p) => /Lakeshore|Harbourfront/.test(p))) throw new Error(`the lead's product list has none of the company's lines: ${r.products.join(', ')}`);
+  // It opens: the link is a live view of a design on this showroom.
+  const status = await h.evaluate(async (href) => (await fetch(`/api/share/${href.slice(4)}`)).status, r.open);
+  if (status !== 200) throw new Error(`the lead's design answers ${status}`);
+}
+
+/** A live showroom that isn't the demo (no products, no pictures): "Plainfield Cabinets" at qa-plain. */
+async function plainCompany(api) {
+  const admin = api.as('admin');
+  const list = (await admin.get('/api/admin/tenants')).body.tenants;
+  let t = list.find((x) => x.slug === 'qa-plain');
+  if (!t) {
+    t = (await admin.post('/api/admin/tenants', { name: 'Plainfield Cabinets', slug: 'qa-plain' })).body.tenant;
+    await admin.post(`/api/admin/tenants/${t.id}/licenses`, { amountCents: 0, paidHow: 'comp' });
+    await admin.post(`/api/admin/tenants/${t.id}/monthly/comp`, { on: true });
+    const r = await admin.post(`/api/admin/tenants/${t.id}/status`, { status: 'live' });
+    if (r.body?.tenant?.status !== 'live') throw new Error(`qa-plain is ${r.body?.tenant?.status}`);
+  }
+  return { path: '/' };
 }
