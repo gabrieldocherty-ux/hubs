@@ -603,6 +603,7 @@ export default [
     path: '#/signin?next=%23%2Fadmin%2Foverview',
     as: 'anon',
     viewport: 'phone',
+    waitFor: ['input[type="email"]', 'input[autocomplete="current-password"]'],
     setup: async ({ api }) => ({ email: 'demo-admin@blumodel.test', password: api.password, code: await api.totpCode() }),
     check: async (h) => {
       await fill(h, 'input[type="email"]', h.data.email);
