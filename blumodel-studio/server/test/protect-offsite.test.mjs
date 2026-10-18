@@ -361,6 +361,26 @@ test('Admin > System shows the off-site backups (GET /api/admin/system -> backup
   }
 });
 
+test('off-site: a folder the server can’t write to is reported, not crashed on (POSIX: a read-only folder)', { skip: process.platform === 'win32' || process.getuid?.() === 0 }, () => {
+  const dir = tempDir();
+  try {
+    const { config } = home(dir);
+    fs.chmodSync(config.BACKUP_OFFSITE_DIR, 0o500);
+    const r = offsiteBackupNow({ config, now: () => NOW });
+    assert.equal(r.ok, false);
+    assert.match(r.error, /can't write to/);
+    if (process.platform === 'linux') assert.match(r.error, /ReadWritePaths/);
+    assert.match(offsiteStatus(config, { now: () => NOW }).problem, /can't write to/);
+  } finally {
+    try {
+      fs.chmodSync(path.join(dir, 'OneDrive', 'BluModel-backups'), 0o700);
+    } catch {
+      /* gone */
+    }
+    rm(dir);
+  }
+});
+
 // ── export bundles ──────────────────────────────────────────────────────────
 
 test('export bundles: encrypted with the same scheme, round trip through import, secrets only encrypted, the CLI refuses a plain bundle unless --plain', () => {

@@ -114,8 +114,19 @@ export function offsiteProblem(config) {
     return `the folder ${config.BACKUP_OFFSITE_DIR} doesn't exist (is the drive plugged in, or the cloud drive signed in?)`;
   }
   if (!st.isDirectory()) return `${config.BACKUP_OFFSITE_DIR} is not a folder`;
+  try {
+    fs.accessSync(config.BACKUP_OFFSITE_DIR, fs.constants.W_OK);
+  } catch (err) {
+    return `the server can't write to ${config.BACKUP_OFFSITE_DIR} (${err?.code ?? 'error'})${LINUX_HINT}`;
+  }
   return null;
 }
+
+/** On Linux the service may write only its data and logs folders (ProtectSystem=strict): HOSTING.md. */
+const LINUX_HINT =
+  process.platform === 'linux'
+    ? '; on Linux the service may write only its own folders: add the folder with sudo systemctl edit blumodel-studio ([Service] ReadWritePaths=<the folder>), make it owned by blumodel, then restart (docs/HOSTING.md, Off-site backups)'
+    : '';
 
 function readStatus(backupDir) {
   try {
@@ -195,7 +206,8 @@ export function offsiteBackupNow({ config, now = Date.now, force = false }) {
     writeStatus(config.BACKUP_DIR, status);
     return { ok: true, file: r.bundle, bytes: r.bytes, removed, verified: kept.length - unreadable.length, unreadable };
   } catch (err) {
-    return fail(String(err?.message ?? err).slice(0, 300));
+    const denied = err?.code === 'EROFS' || err?.code === 'EACCES' || err?.code === 'EPERM';
+    return fail(`${String(err?.message ?? err).slice(0, 300)}${denied ? LINUX_HINT : ''}`);
   }
 }
 

@@ -668,7 +668,21 @@ fields and the restore are in OPERATIONS.md, *Off-site backups*. On the Wyse:
    ```
 
    `nofail` keeps the Wyse booting without it; with the drive missing, the server just reports
-   *the folder doesn't exist* until it is back. A cloud folder works too: a Windows home uses its
+   *the folder doesn't exist* until it is back.
+
+   **Let the service write there.** The service is sandboxed (`ProtectSystem=strict`,
+   `ProtectHome=yes`): it may write only `data/` and `logs/`. Add the folder once with a drop-in,
+   which survives reinstalls of the unit:
+
+   ```
+   sudo systemctl edit blumodel-studio
+   #   [Service]
+   #   ReadWritePaths=/media/usb/blumodel-backups
+   sudo systemctl restart blumodel-studio
+   ```
+
+   Without it Admin > System says *the server can't write to …* with this hint. A folder under
+   `/home` stays unreachable (`ProtectHome=yes`); use `/media`, `/mnt` or `/srv`. A cloud folder works too: a Windows home uses its
    OneDrive / Google Drive / Dropbox folder directly; on Linux, any folder a sync client (rclone
    `mount`, the Dropbox client) keeps in step, writable by `blumodel`.
 2. **The passphrase.** A long random one from your password manager; keep it there and on paper.
