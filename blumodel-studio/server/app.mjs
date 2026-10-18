@@ -12,6 +12,7 @@ import { serveDist } from './http/static.mjs';
 import { createRateLimiter } from './auth/rateLimit.mjs';
 import { createSessionStore, isHttps, isLoopback } from './auth/sessions.mjs';
 import { createAuthService } from './auth/guards.mjs';
+import { createMfaStore } from './auth/mfa.mjs';
 import { createFileService } from './files/store.mjs';
 import { createBrandService } from './catalog/brands.mjs';
 import { createProductService } from './catalog/products.mjs';
@@ -59,6 +60,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const sessions = createSessionStore({ db, config, now });
   const auth = createAuthService({ db });
   const files = createFileService({ db, config, now, auth });
+  // Two-factor sign-in: required for BluModel admins, optional for everyone else.
+  const mfa = createMfaStore({ db, now });
   // In production the demo brands never show, even if a demo seed was forced in (seed --force-demo).
   const brands = createBrandService({ db, files, hideDemo: !config.SHOW_DEMO_BRANDS });
   // Seams the billing and contractor packages register into (BUILD_PLAN §13.2).
@@ -105,7 +108,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits, leads, imageTickets: createImageTickets({ now }) },
+    services: { auth, mfa, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits, leads, imageTickets: createImageTickets({ now }) },
     /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp, sites },
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */
@@ -119,6 +122,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
         credits.expire();
       } catch (err) {
         log.warn?.(`tenants: status refresh or credit expiry failed: ${err?.message ?? err}`);
+      mfa.purgeExpired();
       }
       limiter.prune();
       const tmp = path.join(config.UPLOAD_DIR, 'tmp');
@@ -144,7 +148,23 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     maxBytes: r.maxBytes,
     rateLimits: r.rateLimits.map(({ name, max, windowMs, by }) => ({ name, max, windowMs, by })),
   }));
-  const deps = { currentUser: sessions.currentUser, limiter, clientIp, siteOf: (req) => req.blumodelSite, memberRole: tenants.roleOf };
+  /**
+   * A BluModel admin's routes: 2FA must be on for the account (403 mfa_enrol_required: the client
+   * then shows the enrolment page, the grace flow for an admin made before 2FA existed) and this
+   * session must have passed it (401 mfa_required: sign in again).
+   */
+  const adminGate = (rc) => {
+    if (!mfa.enabled(rc.user.id)) throw new HttpError(403, 'Turn on two-factor sign-in to use the admin pages.', { code: 'mfa_enrol_required' });
+    if (!rc.user.session?.mfa) throw new HttpError(401, 'Sign in again with your authenticator code.', { code: 'mfa_required' });
+  };
+  /** Dangerous actions: the password (and the 2FA code) given within REAUTH_MINUTES. */
+  const reauthGate = (rc) => {
+    if (!rc.user) throw new HttpError(401, 'Please sign in.');
+    if (now() - (rc.user.session?.authAt ?? 0) > config.REAUTH_MINUTES * 60_000) {
+      throw new HttpError(401, 'Confirm it’s you: enter your password and authenticator code again.', { code: 'reauth_required', mfa: mfa.enabled(rc.user.id) });
+    }
+  };
+  const deps = { currentUser: sessions.currentUser, limiter, clientIp, siteOf: (req) => req.blumodelSite, memberRole: tenants.roleOf, adminGate, reauthGate };
 
   /** Responses not yet finished, so shutdown can tell them to close their connection. */
   const inflight = new Set();

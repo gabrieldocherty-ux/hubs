@@ -29,7 +29,7 @@ test('signup → 201 with role, brands and plan, an httpOnly SameSite=Lax cookie
   const r = await a.post('/api/auth/signup', { name: '  Ada  ', email: 'ADA@Example.com', password: 'password123' });
   assert.equal(r.status, 201);
   // `showroom` (tenancy): null on the sales site, { tenantId, role } on a showroom.
-  assert.deepEqual(Object.keys(r.body.user).sort(), ['brands', 'contractor', 'email', 'id', 'name', 'plan', 'role', 'showroom']);
+  assert.deepEqual(Object.keys(r.body.user).sort(), ['brands', 'contractor', 'email', 'id', 'mfa', 'name', 'plan', 'role', 'showroom']);
   assert.equal(r.body.user.showroom, null);
   assert.equal(r.body.user.email, 'ada@example.com');
   assert.equal(r.body.user.name, 'Ada');

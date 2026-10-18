@@ -31,6 +31,8 @@ export interface SessionUser {
   plan: PlanState;
   /** Set once the user has set up a contractor company; `active` is false while the plan has lapsed. */
   contractor: ContractorSummary | null;
+  /** Two-factor sign-in: on for the account, required (an admin's), passed by this session. */
+  mfa?: { enabled: boolean; required: boolean; verified: boolean };
 }
 
 // ─── Plans and billing (packages G and H; PLANS_AND_CONTRACTORS.md) ─────

@@ -591,6 +591,78 @@ export default [
       await h.waitForText('License recorded: $1,250 CAD');
       await h.click('input[aria-label="Why the plan is complimentary"]');
       await h.type('Launch partner (QA)');
+  // ── two-factor sign-in (server/auth/mfa.mjs) ────────────────────────────
+  {
+    // The admin signs in through the page: password, then the code from the app; the admin pages open.
+    name: 'admin-signin-2fa',
+    path: '#/signin?next=%23%2Fadmin%2Foverview',
+    as: 'anon',
+    viewport: 'phone',
+    setup: async ({ api }) => ({ email: 'demo-admin@blumodel.test', password: api.password, code: await api.totpCode() }),
+    check: async (h) => {
+      await fill(h, 'input[type="email"]', h.data.email);
+      await fill(h, 'input[autocomplete="current-password"]', h.data.password);
+      await press(h, 'Sign in');
+      await h.waitForText(['Enter your code', 'Lost your phone? Use a recovery code']);
+      await touchTargets(h, '.auth-form');
+      await h.shot('code-step');
+      await fill(h, 'input[autocomplete="one-time-code"]', h.data.code);
+      await press(h, 'Sign in');
+      await h.waitUntil(() => location.hash === '#/admin/overview', 10_000, 'the admin overview after the code');
+      await h.waitForText(['Monthly recurring revenue']);
+      const me = await h.evaluate(async () => (await (await fetch('/api/auth/me', { credentials: 'same-origin' })).json()).user.mfa);
+      if (!me?.enabled || !me.verified) throw new Error(`after the code the session says ${JSON.stringify(me)}`);
+      await noSideScroll(h);
+    },
+  },
+  {
+    // A dangerous action after the re-authentication window: "Confirm it's you" asks for the password
+    // and a code, then the action goes through.
+    name: 'admin-reauth-dialog',
+    path: '#/admin/users',
+    as: 'admin',
+    setup: async ({ api }) => {
+      const email = (await api.as('fresh').user()).email;
+      // This admin last proved the password long ago (the QA server's window is 240 minutes).
+      api.sql("UPDATE sessions SET auth_at = 0 WHERE user_id = (SELECT id FROM users WHERE email = 'demo-admin@blumodel.test' AND tenant_id IS NULL)");
+      return { email, password: api.password, code: await api.totpCode() };
+    },
+    check: async (h) => {
+      await settle(h);
+      await openAccount(h, h.data.email);
+      await press(h, 'Create reset link');
+      await h.waitForText(['Confirm it’s you', 'and a code from your authenticator app']);
+      await touchTargets(h, '.reauth-form');
+      await h.shot('confirm');
+      await fill(h, '.reauth-form input[type="password"]', h.data.password);
+      await fill(h, '.reauth-form input[autocomplete="one-time-code"]', h.data.code);
+      await press(h, 'Confirm');
+      await h.waitForText(`Reset link for ${h.data.email}`, 10_000);
+    },
+  },
+  {
+    // An admin without two-factor sign-in sees only the enrolment, then the admin pages once it is on.
+    name: 'admin-enrol-2fa',
+    path: '#/admin/overview',
+    as: 'fresh',
+    setup: async ({ api }) => {
+      const me = await api.as('fresh').user();
+      api.sql("UPDATE users SET role = 'admin' WHERE id = ?", me.id);
+      return { password: api.password };
+    },
+    check: async (h) => {
+      await h.waitForText(['Turn on two-factor sign-in', 'Set it up now to open the admin pages']);
+      const status = await h.evaluate(async () => (await fetch('/api/admin/tenants', { credentials: 'same-origin' })).status);
+      if (status !== 403) throw new Error(`an admin without 2FA got ${status} from an admin route`);
+      await fill(h, '.mfa input[type="password"]', h.data.password);
+      await press(h, 'Set up');
+      await h.waitForText(['open this link in your authenticator app', 'Enter the 6-digit code']);
+      await touchTargets(h, '.mfa');
+      await noSideScroll(h);
+      await h.shot('enrol');
+    },
+  },
+
       await press(h, 'Make it complimentary');
       await h.waitForText('Complimentary monthly plan on.');
       await press(h, 'Launch showroom');

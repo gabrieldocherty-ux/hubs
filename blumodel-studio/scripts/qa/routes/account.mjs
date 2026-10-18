@@ -96,7 +96,7 @@ export default [
     name: 'settings-security',
     path: '#/account',
     as: 'fresh',
-    expectText: ['This device', 'Change password'],
+    expectText: ['This device', 'Change password', 'Two-factor sign-in', 'Optional. Signing in will also ask for a code'],
     check: async (h) => {
       await h.evaluate(() => document.getElementById('set-security')?.scrollIntoView({ block: 'start' }));
       await h.sleep(200);

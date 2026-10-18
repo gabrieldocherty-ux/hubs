@@ -107,6 +107,8 @@ export function loadConfig(env = process.env, argv = process.argv) {
   // MISE_LLM_MODEL is the deprecated name from before the rename; still read.
   const BLUMODEL_LLM_MODEL = env.BLUMODEL_LLM_MODEL || env.MISE_LLM_MODEL || '';
   const SEED_PASSWORD = env.SEED_PASSWORD || '';
+  // QA only (scripts/qa.mjs): the demo admin's two-factor secret, so QA can sign in with a code. Base32.
+  const SEED_TOTP_SECRET = /^[A-Z2-7]{16,64}$/.test(String(env.SEED_TOTP_SECRET || '')) ? String(env.SEED_TOTP_SECRET) : '';
 
   // The domain showrooms live under (docs/SHOWROOM_PIVOT.md §4): the request's Host picks the site.
   // <base> and www.<base> are the sales site, <slug>.<base> a company's showroom. 'localhost' in dev
@@ -123,6 +125,16 @@ export function loadConfig(env = process.env, argv = process.argv) {
   // of render credits are given once when it starts (0: none).
   const TRIAL_DAYS = int(env.TRIAL_DAYS, 14, 1, 90);
   const TRIAL_CREDIT_CENTS = int(env.TRIAL_CREDIT_CENTS, 0, 0, 10_000);
+  // Account protection (docs/handoff/data-lifecycle.md). An admin's session lasts ADMIN_SESSION_HOURS
+  // from sign-in, never sliding; dangerous admin actions (reset links, deletes, credit and plan grants)
+  // need the password (and 2FA code) again within REAUTH_MINUTES.
+  const ADMIN_SESSION_HOURS = int(env.ADMIN_SESSION_HOURS, 12, 1, 72);
+  const REAUTH_MINUTES = int(env.REAUTH_MINUTES, 10, 1, 24 * 60);
+  // Retention: a showroom lead that never sent a design and whose status was never changed is
+  // deleted this many months after its last activity (a company may choose fewer); a "Book a call"
+  // sales lead this many months after it was last updated.
+  const LEAD_RETENTION_MONTHS = int(env.LEAD_RETENTION_MONTHS, 24, 1, 120);
+  const SALES_LEAD_RETENTION_MONTHS = int(env.SALES_LEAD_RETENTION_MONTHS, 24, 1, 120);
   // Who makes the photoreal renders (server/renders, docs/handoff/renders.md): Gabe's architecture
   // AI over HTTP when ARCHITECT_AI_URL and ARCHITECT_AI_KEY are set; else the stamped demo provider
   // outside production (or with DEMO_RENDERS=1); else none ("Photoreal renders are being set up",
@@ -189,6 +201,7 @@ export function loadConfig(env = process.env, argv = process.argv) {
     ANTHROPIC_API_KEY,
     BLUMODEL_LLM_MODEL,
     SEED_PASSWORD,
+    SEED_TOTP_SECRET,
     RATE_LIMITS,
     LEGAL_NAME,
     SUPPORT_EMAIL,
@@ -208,6 +221,10 @@ export function loadConfig(env = process.env, argv = process.argv) {
     RENDER_CREDIT_CENTS,
     TRIAL_DAYS,
     TRIAL_CREDIT_CENTS,
+    ADMIN_SESSION_HOURS,
+    REAUTH_MINUTES,
+    LEAD_RETENTION_MONTHS,
+    SALES_LEAD_RETENTION_MONTHS,
     ARCHITECT_AI_URL,
     ARCHITECT_AI_KEY,
     RENDER_PROVIDER,

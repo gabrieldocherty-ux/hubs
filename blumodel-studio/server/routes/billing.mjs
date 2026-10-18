@@ -495,6 +495,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/billing/grant',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       maxBytes: 8_192,
       rateLimit: { name: 'admin-grant', max: 120, windowMs: 3_600_000, by: 'user' },
       handler: (rc) => {

@@ -73,6 +73,8 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Two-factor sign-in: the password was right, now the code (a 5-minute ticket holds the first step).
+  const [ticket, setTicket] = useState<string | null>(null);
   const offline = status === 'offline';
   const signup = mode === 'signup';
   const showroom = useShowroom();
@@ -83,8 +85,17 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
     if (signup && password.length < 8) return setError('Use at least 8 characters for your password.');
     setBusy(true);
     try {
-      const { user } = signup ? await api.signup(name, email, password) : await api.login(email, password);
-      setUser(user);
+      if (signup) {
+        setUser((await api.signup(name, email, password)).user);
+      } else {
+        const r = await api.login(email, password);
+        if (r.mfa === 'required') {
+          setTicket(r.ticket);
+          setPassword('');
+          return;
+        }
+        setUser(r.user);
+      }
       navigateHash(safeNext(splitHash(location.hash).query), true);
     } catch (err) {
       setError(message(err));
@@ -92,6 +103,8 @@ function SignInForm({ mode, keepNext }: { mode: 'signin' | 'signup'; keepNext: s
       setBusy(false);
     }
   };
+
+  if (ticket) return <CodeStep ticket={ticket} onRestart={() => setTicket(null)} />;
 
   return (
     <form className="auth-form" onSubmit={submit} noValidate>
@@ -301,8 +314,9 @@ function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
   const setUser = useSession((s) => s.setUser);
   // The link can be opened in a browser that is signed in already, maybe as someone else.
   const signedInAs = useSession((s) => s.user?.email ?? null);
-  const [check, setCheck] = useState<'checking' | 'invalid' | 'unreachable' | { email: string }>('checking');
+  const [check, setCheck] = useState<'checking' | 'invalid' | 'unreachable' | { email: string; mfa: boolean }>('checking');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -311,7 +325,7 @@ function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
     let live = true;
     accountApi
       .checkReset(token)
-      .then((r) => live && setCheck(r.valid && r.email ? { email: r.email } : 'invalid'))
+      .then((r) => live && setCheck(r.valid && r.email ? { email: r.email, mfa: !!r.mfa } : 'invalid'))
       .catch((err) => live && setCheck(err instanceof ApiError && err.status === 0 ? 'unreachable' : 'invalid'));
     return () => {
       live = false;
@@ -324,7 +338,7 @@ function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
     if (password.length < 8) return setError('Use at least 8 characters for your password.');
     setBusy(true);
     try {
-      const { user } = await accountApi.reset(token, password);
+      const { user } = await accountApi.reset(token, password, typeof check === 'object' && check.mfa ? code.trim() : undefined);
       setUser(user);
       // The token leaves the address bar with this page.
       navigateHash(safeNext(splitHash(location.hash).query), true);
@@ -388,12 +402,18 @@ function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
           </button>
         </div>
       </label>
+      {check.mfa && (
+        <label className="field">
+          <span>Code from your authenticator app (or a recovery code)</span>
+          <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={20} required />
+        </label>
+      )}
       {error && (
         <div className="auth-error" role="alert">
           {error}
         </div>
       )}
-      <button className="btn primary wide big" type="submit" disabled={busy}>
+      <button className="btn primary wide big" type="submit" disabled={busy || (check.mfa && !code.trim())}>
         {busy ? 'One moment…' : 'Save and sign in'}
       </button>
     </form>
@@ -492,6 +512,59 @@ function JoinForm({ token }: { token: string }) {
       </button>
       <p className="auth-forgot">
         <a href="#/signin?forgot=1">Forgot password?</a> The invitation keeps working after you reset it.
+      </p>
+    </form>
+  );
+}
+
+/** The second step of a sign-in with two-factor sign-in on: a code from the app, or a recovery code. */
+function CodeStep({ ticket, onRestart }: { ticket: string; onRestart: () => void }) {
+  const setUser = useSession((s) => s.setUser);
+  const [code, setCode] = useState('');
+  const [recovery, setRecovery] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const r = await api.loginMfa(ticket, code.trim());
+      setUser(r.user);
+      if (typeof r.recoveryLeft === 'number' && r.recoveryLeft <= 3) alert(`You have ${r.recoveryLeft} recovery code${r.recoveryLeft === 1 ? '' : 's'} left. Make new ones in Account settings > Security.`);
+      navigateHash(safeNext(splitHash(location.hash).query), true);
+    } catch (err) {
+      if (err instanceof ApiError && (err.body as { code?: string } | undefined)?.code === 'mfa_ticket_invalid') onRestart();
+      setError(message(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="auth-form" onSubmit={submit} noValidate aria-label="Two-factor sign-in">
+      <h2>Enter your code</h2>
+      <p className="auth-sub">{recovery ? 'Enter one of the recovery codes you saved when you set up two-factor sign-in. Each works once.' : 'Open your authenticator app and enter the 6-digit code for BluModel Studio.'}</p>
+      <label className="field">
+        <span>{recovery ? 'Recovery code' : 'Code'}</span>
+        <input value={code} onChange={(e) => setCode(e.target.value)} inputMode={recovery ? 'text' : 'numeric'} autoComplete="one-time-code" maxLength={20} required autoFocus />
+      </label>
+      {error && (
+        <div className="auth-error" role="alert">
+          {error}
+        </div>
+      )}
+      <button className="btn primary wide big" type="submit" disabled={busy || !code.trim()}>
+        {busy ? 'Checking…' : 'Sign in'}
+      </button>
+      <p className="auth-forgot">
+        <button type="button" className="auth-linkbtn" onClick={() => (setRecovery((v) => !v), setCode(''))}>
+          {recovery ? 'Use a code from the app instead' : 'Lost your phone? Use a recovery code'}
+        </button>
+      </p>
+      <p className="auth-switch">
+        <button type="button" className="auth-linkbtn" onClick={onRestart}>
+          Start again
+        </button>
       </p>
     </form>
   );

@@ -59,6 +59,7 @@ export function readCookie(req, name) {
 }
 
 export function createSessionStore({ db, config, now = Date.now }) {
+  const adminSessionMs = (Number(config?.ADMIN_SESSION_HOURS) || 12) * 3_600_000;
   const cookieFor = (req, token, expires) => {
     const maxAge = Math.max(0, Math.floor((expires - now()) / 1000));
     return `${COOKIE}=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${secureAttr(req, config)}`;
@@ -77,7 +78,7 @@ export function createSessionStore({ db, config, now = Date.now }) {
      * Starts a session on the request's site and sets its cookie on `res`. An account that doesn't
      * belong to this site (tenancy/accounts.mjs siteAllows) never gets one, whichever route asks.
      */
-    start(req, res, userId) {
+    start(req, res, userId, { mfa = false } = {}) {
       // A disabled account (Admin > Users) never gets a session, whichever route signs it in.
       if (isDisabled(db, userId)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
       const tenantId = siteTenantOf(req);
@@ -87,7 +88,8 @@ export function createSessionStore({ db, config, now = Date.now }) {
       const expires = t + SESSION_DAYS * DAY;
       const { browser, os } = deviceOf(req);
       const id = crypto.randomBytes(12).toString('hex');
-      db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, id, created_at, last_seen_at, browser, os, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      // auth_at: the password was just proved; mfa_at: and a second factor, when the sign-in passed one.
+      db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at, id, created_at, last_seen_at, browser, os, tenant_id, auth_at, mfa_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
         sha256(token),
         userId,
         expires,
@@ -97,6 +99,8 @@ export function createSessionStore({ db, config, now = Date.now }) {
         browser,
         os,
         tenantId,
+        t,
+        mfa ? t : null,
       );
       res.setHeader('Set-Cookie', cookieFor(req, token, expires));
       return { token, expires, id };
@@ -114,14 +118,17 @@ export function createSessionStore({ db, config, now = Date.now }) {
       const tenantId = siteTenantOf(req);
       const row = db
         .prepare(
-          `SELECT s.expires_at, s.last_seen_at, u.id, u.email, u.name, u.role, u.tenant_id FROM sessions s JOIN users u ON u.id = s.user_id
+          `SELECT s.expires_at, s.last_seen_at, s.created_at, s.auth_at, s.mfa_at, u.id, u.email, u.name, u.role, u.tenant_id FROM sessions s JOIN users u ON u.id = s.user_id
             WHERE s.token_hash = ? AND s.tenant_id IS ? AND NOT EXISTS (SELECT 1 FROM account_status d WHERE d.user_id = u.id)
               AND (u.tenant_id IS ? OR (? IS NOT NULL AND u.tenant_id IS NULL AND EXISTS (SELECT 1 FROM tenant_members m WHERE m.tenant_id = ? AND m.user_id = u.id)))`,
         )
         .get(hash, tenantId, tenantId, tenantId, tenantId);
       if (!row) return null;
       const t = now();
-      if (row.expires_at < t) {
+      // An admin's session on the sales site ends ADMIN_SESSION_HOURS after it started, however busy:
+      // a stolen admin cookie is worth hours, not the 30 sliding days of an ordinary account.
+      const adminEnds = !tenantId && row.role === 'admin' ? (row.created_at ?? 0) + adminSessionMs : Infinity;
+      if (row.expires_at < t || adminEnds < t) {
         db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hash);
         return null;
       }
@@ -134,7 +141,27 @@ export function createSessionStore({ db, config, now = Date.now }) {
       }
       // BluModel's own roles (studio, admin) mean nothing on a showroom.
       const role = tenantId ? 'customer' : row.role || 'customer';
-      return { id: row.id, email: row.email, name: row.name, role, tenantId: row.tenant_id ?? null };
+      return {
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        role,
+        tenantId: row.tenant_id ?? null,
+        /** This session's proofs: mfa (it passed a second factor) and when it last proved the password. */
+        session: { mfa: row.mfa_at != null, authAt: row.auth_at ?? row.created_at ?? 0, createdAt: row.created_at ?? 0 },
+      };
+    },
+
+    /** The request's session just passed a second factor (2FA turned on, or re-authenticated with a code). */
+    markMfa(req) {
+      const hash = ownHash(req);
+      if (hash) db.prepare('UPDATE sessions SET mfa_at = ?, auth_at = ? WHERE token_hash = ?').run(now(), now(), hash);
+    },
+
+    /** The request's session just proved the password again (re-authentication). */
+    markAuth(req) {
+      const hash = ownHash(req);
+      if (hash) db.prepare('UPDATE sessions SET auth_at = ? WHERE token_hash = ?').run(now(), hash);
     },
 
     /** Ends the request's session (if any) and clears the cookie. */

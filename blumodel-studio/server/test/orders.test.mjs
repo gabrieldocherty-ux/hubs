@@ -806,7 +806,7 @@ test('revenue: orders paid before (gross, refunds, net, by tier, by day, turnaro
     // Outside the window: nothing.
     s.setNow(t0 + 100 * DAY);
     // Sessions last 30 days: sign in again after the time jump.
-    assert.equal((await admin.post('/api/auth/login', { email: admin.user.email, password: admin.user.password })).status, 200);
+    assert.equal((await s.signIn(admin)).status, 200);
     const later = await admin.get('/api/admin/revenue?days=30');
     assert.equal(later.status, 200);
     assert.equal(later.body.gross, 0);

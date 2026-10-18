@@ -56,6 +56,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { hashPassword } from '../server/auth/passwords.mjs';
 import { assertAllowedPort, isLocalUrl, killTree, launchBrowser, openPage, resolveViewport, sleep } from './qa-shot.mjs';
 
+import { base32Encode, hotp, stepAt } from '../server/auth/totp.mjs';
 // node:sqlite prints an ExperimentalWarning on load; it is expected here, so keep it out of the output.
 const { DatabaseSync } = await (async () => {
   const emit = process.emitWarning;
@@ -278,13 +279,15 @@ const must = async (promise, what) => {
 
 /** Signs users in on demand and keeps one session per role for the whole run. */
 class Users {
-  constructor({ base, dbPath, password }) {
+  constructor({ base, dbPath, password, totpSecret }) {
     this.base = base;
     this.dbPath = dbPath;
     this.password = password;
     this.anon = new Agent(base, 'anon');
     /** @type {Map<string, Promise<Agent>>} */
     this.byRole = new Map();
+    /** The demo admin's two-factor secret for this run (SEED_TOTP_SECRET). */
+    this.totpSecret = totpSecret;
     this.freshCount = 0;
   }
 
@@ -339,7 +342,9 @@ class Users {
 
   async login(email, label) {
     const a = new Agent(this.base, label);
-    const r = await a.post('/api/auth/login', { email, password: this.password });
+    let r = await a.post('/api/auth/login', { email, password: this.password });
+    // Two-factor sign-in (the demo admin, with this run's SEED_TOTP_SECRET).
+    if (r.status === 200 && r.body?.mfa === 'required') r = await a.post('/api/auth/login/mfa', { ticket: r.body.ticket, code: await this.totpCode(email) });
     if (r.status !== 200) throw new Error(`Could not sign in as ${email} (${r.status}): ${r.body?.error ?? r.text.slice(0, 200)}`);
     a.user = r.body.user;
     return a;
@@ -348,6 +353,22 @@ class Users {
   async #make(role) {
     if (role === 'contractor') {
       await this.createUser(CONTRACTOR_EMAIL, 'Quinn Contractor');
+  /**
+   * A code from this run's demo-admin secret the server hasn't taken yet: a code works once, so
+   * when this 30-second step was already used, the next step's code (still inside the window), or
+   * after waiting for the step after that.
+   */
+  async totpCode(email = DEMO_EMAIL.admin) {
+    if (!this.totpSecret) throw new Error('QA has no two-factor secret for the demo admin.');
+    for (;;) {
+      const last = this.sql('SELECT m.last_step FROM user_mfa m JOIN users u ON u.id = m.user_id WHERE u.email = ? AND u.tenant_id IS NULL', email)[0]?.last_step ?? -1;
+      const now = stepAt(Date.now());
+      if (last < now) return hotp(this.totpSecret, now);
+      if (last === now) return hotp(this.totpSecret, now + 1);
+      await sleep(2_000);
+    }
+  }
+
       const a = await this.login(CONTRACTOR_EMAIL, role);
       if (a.user.plan?.id !== 'contractor') {
         // A Contractor plan bought before the showroom pivot (nothing new is sold since): its
@@ -448,6 +469,9 @@ function makeApi(users, getFresh) {
     get: (...a) => anon.get(...a),
     post: (...a) => anon.post(...a),
     put: (...a) => anon.put(...a),
+    /** The seeded password, and a fresh two-factor code for the demo admin (routes that sign in through the UI). */
+    password: users.password,
+    totpCode: (email) => users.totpCode(email),
     patch: (...a) => anon.patch(...a),
     delete: (...a) => anon.delete(...a),
     sql: (q, ...p) => users.sql(q, ...p),
@@ -492,6 +516,9 @@ function serverEnv(extra) {
     'PAYMENTS',
     'DEMO_PAYMENTS',
     'SHOW_DEMO_BRANDS',
+    'SEED_TOTP_SECRET',
+    'REAUTH_MINUTES',
+    'ADMIN_SESSION_HOURS',
     'BASE_DOMAIN',
     // Photoreal renders: the QA server never calls a real rendering service (it uses the demo).
     'ARCHITECT_AI_URL',
@@ -934,6 +961,8 @@ export async function main(argv = process.argv.slice(2)) {
     DB_PATH: path.join(tmp, 'blumodel.db'),
     UPLOAD_DIR: path.join(tmp, 'uploads'),
     PAYMENTS: 'demo',
+  // The demo admin's two-factor secret for this run (admins must sign in with a code).
+  const totpSecret = base32Encode(crypto.randomBytes(20));
     DEMO_PAYMENTS: '1',
     // The routes use the seeded "(Demo)" brands, which a production server hides without this.
     SHOW_DEMO_BRANDS: '1',
@@ -950,6 +979,10 @@ export async function main(argv = process.argv.slice(2)) {
     ...(opts.dist ? { DIST_DIR: dist } : {}),
   });
   fs.mkdirSync(path.join(tmp, 'home', 'logs'), { recursive: true });
+    SEED_TOTP_SECRET: totpSecret,
+    // The admin package runs longer than the 10-minute re-authentication; the "Confirm it's you"
+    // dialog has its own route (admin-reauth-dialog), which ages the session on purpose.
+    REAUTH_MINUTES: '240',
 
   let server = null;
   let browser = null;
@@ -979,7 +1012,7 @@ export async function main(argv = process.argv.slice(2)) {
     server = await startServer({ port, env, logFile, onStderr: (s) => serverErr.push(s) });
     browser = await launchBrowser({ chrome: opts.chrome, swiftshader: opts.swiftshader });
     console.log(`  ${browser.version}${opts.swiftshader ? ' (SwiftShader)' : ''}`);
-    const users = new Users({ base: server.base, dbPath: env.DB_PATH, password });
+    const users = new Users({ base: server.base, dbPath: env.DB_PATH, password, totpSecret });
     const runEnv = {
       cdp: browser.cdp,
       users,

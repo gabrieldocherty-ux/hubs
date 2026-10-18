@@ -100,6 +100,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/tenants/:id/licenses',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       params: { id: ID_PARAM },
       maxBytes: 4_096,
       handler: (rc) => {
@@ -117,6 +119,8 @@ export default function routes(ctx) {
       method: 'DELETE',
       path: '/api/admin/tenants/:id/licenses/:licenseId',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       params: { id: ID_PARAM, licenseId: ID_PARAM },
       handler: (rc) => {
         const t = mustGet(rc.params.id);
@@ -195,6 +199,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/tenants/:id/monthly/comp',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       params: { id: ID_PARAM },
       maxBytes: 2_048,
       handler: (rc) => {
@@ -252,6 +258,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/tenants/:id/credits',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       params: { id: ID_PARAM },
       maxBytes: 2_048,
       handler: (rc) => {

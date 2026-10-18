@@ -458,6 +458,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/orders/:id/refund',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       handler: async (rc) => {
         const o = visibleOrder(rc, rc.params.id);
         if (orders.isPlan(o)) throw new HttpError(409, 'Nothing was paid for this request: it is included in the Contractor plan. Cancel it before work starts instead.', { status: o.status });
@@ -500,6 +502,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/model-grants',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       rateLimit: { name: 'admin-model-grant', max: 120, windowMs: 3_600_000, by: 'user' },
       handler: (rc) => {
         const b = rc.body;

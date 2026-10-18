@@ -115,6 +115,8 @@ export default function routes(ctx) {
       path: '/api/admin/users/:id/role',
       auth: 'admin',
       rateLimit: WRITE,
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       maxBytes: 2_048,
       params: { id: ID },
       handler: (rc) => {
@@ -134,6 +136,8 @@ export default function routes(ctx) {
       path: '/api/admin/users/:id/comp',
       auth: 'admin',
       rateLimit: WRITE,
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       maxBytes: 4_096,
       params: { id: ID },
       handler: (rc) => {
@@ -205,6 +209,8 @@ export default function routes(ctx) {
       path: '/api/admin/users/:id/disable',
       auth: 'admin',
       rateLimit: WRITE,
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       maxBytes: 4_096,
       params: { id: ID },
       handler: (rc) => {
@@ -243,6 +249,8 @@ export default function routes(ctx) {
       path: '/api/admin/users/:id/delete',
       auth: 'admin',
       rateLimit: DESTROY,
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       maxBytes: 2_048,
       params: { id: ID },
       handler: (rc) => {

@@ -132,6 +132,7 @@ export class Agent {
    * @param {{ body?: unknown, raw?: Buffer | string, contentType?: string, headers?: Record<string, string>, csrf?: boolean }} [o]
    */
   async request(method, p, { body, raw, contentType, headers = {}, csrf = true } = {}) {
+    this.beforeRequest?.();
     const h = { ...headers };
     const write = method !== 'GET' && method !== 'HEAD';
     if (write && csrf) h['X-BluModel'] = '1';
@@ -328,7 +329,7 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
      * Signs a new user up through the API, then sets the role in the DB.
      * @returns {Promise<Agent>} with `.user = { id, email, name, role, brands, password }`
      */
-    async user({ role = 'customer', name, email, password } = {}) {
+    async user({ role = 'customer', name, email, password, mfa = true } = {}) {
       const n = ++seq;
       const a = new Agent(url);
       const creds = { name: name ?? `Test User ${n}`, email: email ?? `user${n}-${randomId('', 6)}@test.blumodel`, password: password ?? `correct horse ${n}` };
@@ -338,6 +339,22 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
       ctx.internal.limiter.reset('route:signup:ip:127.0.0.1');
       if (role !== 'customer') db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, r.body.user.id);
       a.user = { ...r.body.user, role, password: creds.password };
+      // An admin must have two-factor sign-in on, and its session must have passed it (server/auth/mfa.mjs):
+      // the harness enrols one with a known secret (a.user.totpSecret) and marks the session, as a
+      // real sign-in with the code would. Pass mfa: false to get an admin who hasn't enrolled yet.
+      if (role === 'admin' && mfa) t.enrolMfa(a);
+      // Tests move the clock (t.setNow) for reasons of their own: an admin Agent's session counts as
+      // just signed in (and just re-authenticated) before each request, so the 12-hour admin session
+      // and the 10-minute re-authentication don't get in their way. Tests OF those set
+      // a.keepFresh = false.
+      if (role === 'admin') {
+        a.keepFresh = true;
+        a.beforeRequest = () => {
+          if (!a.keepFresh) return;
+          const t0 = now();
+          db.prepare('UPDATE sessions SET created_at = ?, auth_at = ?, mfa_at = CASE WHEN mfa_at IS NULL THEN NULL ELSE ? END WHERE user_id = ? AND tenant_id IS NULL').run(t0, t0, t0, a.user.id);
+        };
+      }
       return a;
     },
 
@@ -374,6 +391,32 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
     file(owner, buf, { kind = 'image', visibility = 'private', brandId = null, originalName = 'fixture' } = {}) {
       const ownerUserId = typeof owner === 'string' ? owner : owner?.user?.id ?? null;
       return files.saveBuffer(buf, { kind, visibility, ownerUserId, brandId, originalName });
+    },
+
+    /**
+     * Turns two-factor sign-in on for an Agent's account with a fixed test secret and marks its
+     * current sessions as having passed it just now. Returns the secret (also a.user.totpSecret).
+     */
+    enrolMfa(a, secret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP') {
+      const t0 = now();
+      db.prepare('INSERT INTO user_mfa (user_id, secret, enabled_at, last_step, created_at) VALUES (?, ?, ?, -1, ?) ON CONFLICT(user_id) DO UPDATE SET secret = excluded.secret, enabled_at = excluded.enabled_at').run(a.user.id, secret, t0, t0);
+      db.prepare('UPDATE sessions SET mfa_at = ?, auth_at = ? WHERE user_id = ?').run(t0, t0, a.user.id);
+      a.user.totpSecret = secret;
+      return secret;
+    },
+
+    /**
+     * Signs an Agent in again with its password, and with a code from its test secret when the
+     * account has two-factor sign-in on (a fresh step each time, as a real app would give).
+     * Returns the final answer ({ status, body }).
+     */
+    async signIn(a) {
+      const r = await a.post('/api/auth/login', { email: a.user.email, password: a.user.password });
+      if (r.body?.mfa !== 'required') return r;
+      const { hotp, stepAt } = await import('../auth/totp.mjs');
+      const last = db.prepare('SELECT last_step FROM user_mfa WHERE user_id = ?').get(a.user.id)?.last_step ?? -1;
+      const step = Math.max(stepAt(now()) - 1, last + 1);
+      return a.post('/api/auth/login/mfa', { ticket: r.body.ticket, code: hotp(a.user.totpSecret, step) });
     },
 
     /** Freezes the server clock at `ms` (null to resume real time). */

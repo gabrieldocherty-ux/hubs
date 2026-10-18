@@ -206,6 +206,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/tenants/:id/members',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       params: { id: ID_PARAM },
       maxBytes: 4_096,
       handler: async (rc) => {

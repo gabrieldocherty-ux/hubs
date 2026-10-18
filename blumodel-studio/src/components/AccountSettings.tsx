@@ -11,6 +11,7 @@ import { timeAgo, useSession } from '../store/useSession';
 import { useConfig } from '../lib/config';
 import { proApi } from '../features/contractors/api';
 import { draftToInput, type CompanyDraft } from '../features/contractors/CompanyFields';
+import { TwoFactorSettings } from './TwoFactor';
 import './account.css';
 
 /**
@@ -286,8 +287,10 @@ function ChangeEmail() {
 
 function SecuritySection() {
   return (
-    <Section id="security" title="Security" intro="Your password and the devices signed in to your account.">
+    <Section id="security" title="Security" intro="Your password, two-factor sign-in and the devices signed in to your account.">
       <ChangePassword />
+      <div className="set-divider" />
+      <TwoFactorSettings />
       <div className="set-divider" />
       <Devices />
     </Section>

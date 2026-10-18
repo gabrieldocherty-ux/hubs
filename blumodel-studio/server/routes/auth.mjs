@@ -16,6 +16,18 @@
 //                                            the team and signs this browser in. Never sets a password
 //
 // Tokens are stored hashed and expire after an hour (server/auth/resets.mjs).
+//
+// Two-factor sign-in (server/auth/mfa.mjs; required for admins, optional for everyone else):
+//   POST /api/auth/login                     with 2FA on: { mfa: 'required', ticket, expiresAt }, no session
+//   POST /api/auth/login/mfa {ticket, code}  the 6-digit code or a recovery code -> { user } (session passed 2FA)
+//   POST /api/auth/reauth {password, code?}  "confirm it's you" for routes marked reauth (10 minutes)
+//   GET  /api/account/mfa                    { enabled, enabledAt, recoveryLeft, required, verified }
+//   POST /api/account/mfa/setup {password}   { secret, key, otpauthUrl } (shown once; 15 minutes to confirm)
+//   POST /api/account/mfa/enable {code}      { recoveryCodes (10, shown once), ... }; other devices signed out
+//   POST /api/account/mfa/recovery-codes {password, code}   10 new codes, the old ones stop working
+//   POST /api/account/mfa/disable {password, code}          not for admins (409 mfa_required_for_admin)
+//   POST /api/admin/users/:id/mfa/reset      admin, reauth, audited: 2FA off and signed out everywhere
+// A reset link or a team-invite link for an account with 2FA on needs the code as well.
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -26,6 +38,8 @@ import { createPrefsStore } from '../account/prefs.mjs';
 import { createMailer } from '../email/index.mjs';
 import { passwordChangedEmail, resetEmail, signInAlertEmail } from '../email/messages.mjs';
 import { createResetStore, maskEmail, RESET_MINUTES } from '../auth/resets.mjs';
+import { SETUP_MINUTES } from '../auth/mfa.mjs';
+import { groupKey, newRecoveryCodes } from '../auth/totp.mjs';
 import { audit } from '../lib/audit.mjs';
 import { DISABLED_MESSAGE, isDisabled } from '../admin/status.mjs';
 import { addressTaken, findSiteUser, siteAllows } from '../tenancy/accounts.mjs';
@@ -72,10 +86,30 @@ export default function routes(ctx) {
    * On a showroom the user also carries `showroom: { tenantId, role: 'owner'|'staff'|null }` (role
    * null for a visitor); on the sales site `showroom` is null.
    */
-  const userWire = (u, rc) => {
+  const userWire = (u, rc, { verified } = {}) => {
     const w = baseWire(u);
     const tid = rc?.site?.tenantId ?? null;
-    return { ...w, ...(tid ? { role: 'customer' } : {}), showroom: tid ? { tenantId: tid, role: services.tenants.roleOf(tid, u.id) } : null };
+    return {
+      ...w,
+      ...(tid ? { role: 'customer' } : {}),
+      showroom: tid ? { tenantId: tid, role: services.tenants.roleOf(tid, u.id) } : null,
+      mfa: mfaWire(u.id, rc, verified ?? (rc?.user?.id === u.id ? !!rc.user.session?.mfa : false)),
+    };
+  };
+  const { mfa } = services;
+  /** Required for a BluModel admin's own (sales-site) account. */
+  const mfaRequired = (userId, rc) => !rc?.site?.tenantId && db.prepare('SELECT role FROM users WHERE id = ?').get(userId)?.role === 'admin';
+  /** `{ enabled, required, verified }`: 2FA on the account, whether it must be, and whether this session passed it. */
+  const mfaWire = (userId, rc, verified) => ({ enabled: mfa.enabled(userId), required: mfaRequired(userId, rc), verified: !!verified });
+  const codeOf = (b) => (typeof b?.code === 'string' ? b.code.trim().slice(0, 32) : '');
+  /** For an account with 2FA on: the code in the body must be right (401 mfa_required / mfa_code_invalid). */
+  const requireCode = (userId, body) => {
+    if (!mfa.enabled(userId)) return null;
+    const code = codeOf(body);
+    if (!code) throw new HttpError(401, 'Enter the code from your authenticator app.', { code: 'mfa_required', field: 'code' });
+    const how = mfa.verify(userId, code);
+    if (!how) throw new HttpError(401, 'That code isn’t right. Use the newest code from your app, or a recovery code.', { code: 'mfa_code_invalid', field: 'code' });
+    return how;
   };
 
 
@@ -182,9 +216,139 @@ export default function routes(ctx) {
         limiter.reset(keyPair);
         // Only after the right password, so it says nothing about an address to anyone else.
         if (isDisabled(db, user.id)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
+        // Two-factor sign-in: no session yet, only a 5-minute ticket for POST /api/auth/login/mfa.
+        if (mfa.enabled(user.id)) {
+          const { ticket, expiresAt } = mfa.issueTicket(user.id, rc.site.tenantId);
+          rc.res.setHeader('Cache-Control', 'no-store');
+          return { mfa: 'required', ticket, expiresAt };
+        }
         alertNewDevice(rc, user);
         sessions.start(rc.req, rc.res, user.id);
-        return { user: userWire(user, rc) };
+        return { user: userWire(user, rc, { verified: false }) };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/auth/login/mfa',
+      auth: 'none',
+      maxBytes: 1_024,
+      rateLimit: { name: 'login-mfa', max: 30, windowMs: LOGIN_WINDOW, by: 'ip' },
+      handler: (rc) => {
+        // The ticket says the password was right moments ago on this site; it allows 5 tries.
+        const userId = mfa.ticketUser(rc.body.ticket, rc.site.tenantId);
+        if (!userId) throw new HttpError(401, 'That sign-in took too long or had too many tries. Sign in again.', { code: 'mfa_ticket_invalid' });
+        const how = mfa.verify(userId, codeOf(rc.body));
+        if (!how) throw new HttpError(401, 'That code isn’t right. Use the newest code from your app, or a recovery code.', { code: 'mfa_code_invalid', field: 'code' });
+        mfa.endTicket(rc.body.ticket);
+        if (isDisabled(db, userId)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
+        const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(userId);
+        alertNewDevice(rc, user);
+        sessions.start(rc.req, rc.res, userId, { mfa: true });
+        return { user: userWire(user, rc, { verified: true }), ...(how === 'recovery' ? { recoveryLeft: mfa.status(userId).recoveryLeft } : {}) };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/auth/reauth',
+      maxBytes: 2_048,
+      rateLimit: { name: 'reauth', max: 10, windowMs: 15 * 60_000, by: 'user' },
+      handler: async (rc) => {
+        // "Confirm it's you" before a dangerous admin action (route reauth: true).
+        const password = typeof rc.body.password === 'string' ? rc.body.password : '';
+        const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(rc.user.id);
+        if (!(await verifyPassword(password.slice(0, MAX_PASSWORD), row.password_hash))) throw new HttpError(401, 'That password isn’t right.', { code: 'password_invalid', field: 'password' });
+        const how = requireCode(rc.user.id, rc.body);
+        if (how) sessions.markMfa(rc.req);
+        else sessions.markAuth(rc.req);
+        return { ok: true, until: ctx.now() + config.REAUTH_MINUTES * 60_000 };
+      },
+    },
+
+    // ── two-factor sign-in (Account settings > Security) ─────────────────────
+    {
+      method: 'GET',
+      path: '/api/account/mfa',
+      handler: (rc) => ({ ...mfa.status(rc.user.id), required: mfaRequired(rc.user.id, rc), verified: !!rc.user.session?.mfa }),
+    },
+    {
+      method: 'POST',
+      path: '/api/account/mfa/setup',
+      maxBytes: 2_048,
+      rateLimit: { name: 'mfa-setup', max: 10, windowMs: 15 * 60_000, by: 'user' },
+      handler: async (rc) => {
+        if (mfa.enabled(rc.user.id)) throw new HttpError(409, 'Two-factor sign-in is already on.', { code: 'mfa_enabled' });
+        const password = typeof rc.body.password === 'string' ? rc.body.password : '';
+        const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(rc.user.id);
+        if (!(await verifyPassword(password.slice(0, MAX_PASSWORD), row.password_hash))) throw new HttpError(401, 'That password isn’t right.', { code: 'password_invalid', field: 'password' });
+        const { secret, otpauthUrl: url } = mfa.begin(rc.user.id, rc.user.email);
+        rc.res.setHeader('Cache-Control', 'no-store');
+        // Shown once, to set up the app; never logged.
+        return { secret, key: groupKey(secret), otpauthUrl: url, expiresInMinutes: SETUP_MINUTES };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/account/mfa/enable',
+      maxBytes: 1_024,
+      rateLimit: { name: 'mfa-enable', max: 20, windowMs: 15 * 60_000, by: 'user' },
+      handler: (rc) => {
+        const codes = mfa.confirm(rc.user.id, codeOf(rc.body));
+        if (!codes) throw new HttpError(400, 'That code isn’t right, or the setup took more than 15 minutes. Check the time on your phone and try the newest code.', { code: 'mfa_code_invalid', field: 'code' });
+        // This session just passed a code; every other device signed in with the password alone is signed out.
+        sessions.markMfa(rc.req);
+        const others = sessions.endOthers(rc.req, rc.user.id);
+        if (mfaRequired(rc.user.id, rc)) audit(db, { admin: rc.user, action: 'mfa_enabled', targetUserId: rc.user.id, targetEmail: rc.user.email, detail: { signedOut: others }, at: ctx.now() });
+        rc.res.setHeader('Cache-Control', 'no-store');
+        return { recoveryCodes: codes, ...mfa.status(rc.user.id), required: mfaRequired(rc.user.id, rc), verified: true };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/account/mfa/recovery-codes',
+      maxBytes: 2_048,
+      rateLimit: { name: 'mfa-recovery', max: 10, windowMs: 15 * 60_000, by: 'user' },
+      handler: async (rc) => {
+        const password = typeof rc.body.password === 'string' ? rc.body.password : '';
+        const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(rc.user.id);
+        if (!(await verifyPassword(password.slice(0, MAX_PASSWORD), row.password_hash))) throw new HttpError(401, 'That password isn’t right.', { code: 'password_invalid', field: 'password' });
+        if (!mfa.enabled(rc.user.id)) throw new HttpError(409, 'Two-factor sign-in is off.', { code: 'mfa_off' });
+        requireCode(rc.user.id, rc.body);
+        rc.res.setHeader('Cache-Control', 'no-store');
+        return { recoveryCodes: mfa.setRecovery(rc.user.id, newRecoveryCodes()), ...mfa.status(rc.user.id) };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/account/mfa/disable',
+      maxBytes: 2_048,
+      rateLimit: { name: 'mfa-disable', max: 10, windowMs: 15 * 60_000, by: 'user' },
+      handler: async (rc) => {
+        if (mfaRequired(rc.user.id, rc)) throw new HttpError(409, 'Admins must keep two-factor sign-in on.', { code: 'mfa_required_for_admin' });
+        const password = typeof rc.body.password === 'string' ? rc.body.password : '';
+        const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(rc.user.id);
+        if (!(await verifyPassword(password.slice(0, MAX_PASSWORD), row.password_hash))) throw new HttpError(401, 'That password isn’t right.', { code: 'password_invalid', field: 'password' });
+        if (!mfa.enabled(rc.user.id)) return { ...mfa.status(rc.user.id), required: false, verified: false };
+        requireCode(rc.user.id, rc.body);
+        mfa.disable(rc.user.id);
+        return { ...mfa.status(rc.user.id), required: false, verified: false };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/users/:id/mfa/reset',
+      auth: 'admin',
+      reauth: true,
+      body: 'none',
+      params: { id: /^[A-Za-z0-9_-]{1,64}$/ },
+      handler: (rc) => {
+        // Someone who lost both their phone and their recovery codes: 2FA off, every session ended.
+        const target = db.prepare('SELECT id, email FROM users WHERE id = ?').get(rc.params.id);
+        if (!target) throw new HttpError(404, 'That user does not exist.');
+        if (target.id === rc.user.id) throw new HttpError(409, 'Use Account settings to change your own two-factor sign-in.');
+        mfa.disable(target.id);
+        const ended = sessions.endAll(target.id);
+        audit(db, { admin: rc.user, action: 'mfa_reset', targetUserId: target.id, targetEmail: target.email, detail: { signedOut: ended }, at: ctx.now() });
+        return { ok: true };
       },
     },
     {
@@ -269,7 +433,7 @@ export default function routes(ctx) {
       handler: (rc) => {
         const found = resets.find(rc.body.token);
         // A link works only on the site its account belongs to.
-        return found && siteAllows(db, found.userId, rc.site.tenantId) ? { valid: true, email: maskEmail(found.email) } : { valid: false };
+        return found && siteAllows(db, found.userId, rc.site.tenantId) ? { valid: true, email: maskEmail(found.email), mfa: mfa.enabled(found.userId) } : { valid: false };
       },
     },
     {
@@ -286,6 +450,8 @@ export default function routes(ctx) {
         if (!live || !siteAllows(db, live.userId, rc.site.tenantId)) throw gone();
         if (password.length < 8) throw new HttpError(400, 'Use at least 8 characters for your password.', { field: 'password' });
         if (password.length > MAX_PASSWORD) throw new HttpError(400, 'That password is too long.', { field: 'password' });
+        // With 2FA on, the mailbox alone doesn't open the account: the code is needed as well.
+        const how = requireCode(live.userId, rc.body);
         const hash = await hashPassword(password);
         // Used up here, atomically: two tabs racing with one link can't both set a password.
         const userId = resets.consume(token);
@@ -300,10 +466,10 @@ export default function routes(ctx) {
         // A browser signed in as someone else (a reset link opened there) leaves that session too;
         // the new session's cookie replaces it.
         sessions.end(rc.req, rc.res);
-        sessions.start(rc.req, rc.res, userId);
+        sessions.start(rc.req, rc.res, userId, { mfa: !!how });
         if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: true }) });
         log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
-        return { user: userWire(user, rc) };
+        return { user: userWire(user, rc, { verified: !!how }) };
       },
     },
     // ── accepting a team invite held for an existing account (protect-001) ──
@@ -344,17 +510,19 @@ export default function routes(ctx) {
           throw new HttpError(401, 'That password isn’t right for this account.', { field: 'password' });
         }
         if (isDisabled(db, inv.userId)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
+        const how = requireCode(inv.userId, rc.body);
         ctx.tx(() => services.tenants.acceptInvite(inv.tenantId, inv.userId));
         sessions.end(rc.req, rc.res);
-        sessions.start(rc.req, rc.res, inv.userId);
+        sessions.start(rc.req, rc.res, inv.userId, { mfa: !!how });
         const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(inv.userId);
-        return { user: userWire(user, rc) };
+        return { user: userWire(user, rc, { verified: !!how }) };
       },
     },
     {
       method: 'POST',
       path: '/api/admin/users/:id/reset-link',
       auth: 'admin',
+      reauth: true,
       body: 'none',
       params: { id: /^[A-Za-z0-9_-]{1,64}$/ },
       rateLimit: { name: 'admin-reset-link', max: 30, windowMs: HOUR, by: 'user' },

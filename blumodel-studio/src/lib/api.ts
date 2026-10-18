@@ -42,6 +42,16 @@ export interface CallOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * Dangerous admin actions answer 401 `reauth_required` when the password (and 2FA code) weren't
+ * given in the last 10 minutes. The admin screen registers a handler that asks for them
+ * (components/TwoFactor.tsx ReauthPrompt); `call` then sends the request once more.
+ */
+let reauthHandler: ((mfa: boolean) => Promise<boolean>) | null = null;
+export function setReauthHandler(fn: ((mfa: boolean) => Promise<boolean>) | null) {
+  reauthHandler = fn;
+}
+
 async function parse<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     markUp();
@@ -65,6 +75,16 @@ async function parse<T>(res: Response): Promise<T> {
  * a network failure or a non-JSON answer is `status 0` (see `isUnreachable`).
  */
 export async function call<T>(method: string, path: string, body?: unknown, opts: CallOptions = {}): Promise<T> {
+  try {
+    return await callOnce<T>(method, path, body, opts);
+  } catch (err) {
+    const b = err instanceof ApiError ? (err.body as { code?: string; mfa?: boolean } | undefined) : undefined;
+    if (err instanceof ApiError && err.status === 401 && b?.code === 'reauth_required' && reauthHandler && (await reauthHandler(!!b.mfa))) return callOnce<T>(method, path, body, opts);
+    throw err;
+  }
+}
+
+async function callOnce<T>(method: string, path: string, body?: unknown, opts: CallOptions = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
@@ -110,7 +130,9 @@ export const api = {
   // auth
   me: () => call<{ user: User | null }>('GET', '/api/auth/me'),
   signup: (name: string, email: string, password: string) => call<{ user: User }>('POST', '/api/auth/signup', { name, email, password }),
-  login: (email: string, password: string) => call<{ user: User }>('POST', '/api/auth/login', { email, password }),
+  /** With two-factor sign-in on: `{ mfa: 'required', ticket }` and no session yet (then `loginMfa`). */
+  login: (email: string, password: string) => call<{ user: User; mfa?: undefined } | { user?: undefined; mfa: 'required'; ticket: string; expiresAt: number }>('POST', '/api/auth/login', { email, password }),
+  loginMfa: (ticket: string, code: string) => call<{ user: User; recoveryLeft?: number }>('POST', '/api/auth/login/mfa', { ticket, code }),
   logout: () => call<{ ok: true }>('POST', '/api/auth/logout'),
   updateMe: (name: string) => call<{ user: User }>('PATCH', '/api/auth/me', { name }),
   changePassword: (current: string, next: string) => call<{ ok: true }>('POST', '/api/auth/password', { current, next }),

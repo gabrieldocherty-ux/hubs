@@ -150,6 +150,18 @@ async function ensureUsers({ db, now }, password, source) {
   return { ids, created };
 }
 
+/**
+ * Admins must sign in with two-factor (server/auth/mfa.mjs). With SEED_TOTP_SECRET (QA sets a
+ * random one per run) the demo admin has it on with that secret; without it the demo admin is asked
+ * to set it up at the first sign-in, like any admin.
+ */
+function ensureAdminMfa({ db, now }, adminId, secret) {
+  if (!secret || !adminId) return;
+  db.prepare(
+    'INSERT INTO user_mfa (user_id, secret, enabled_at, last_step, created_at) VALUES (?, ?, ?, -1, ?) ON CONFLICT(user_id) DO UPDATE SET secret = excluded.secret, enabled_at = COALESCE(user_mfa.enabled_at, excluded.enabled_at)',
+  ).run(adminId, secret, now(), now());
+}
+
 function ensureBrand({ db, now, services }, ownerId) {
   let brand = services.brands.bySlug(DEMO_BRAND.slug);
   let created = false;
@@ -206,6 +218,7 @@ function ensureProducts({ db, services }, brand, ownerId) {
 export async function seed(ctx) {
   const { password, source, file } = demoPassword(ctx.config);
   const users = await ensureUsers(ctx, password, source);
+  ensureAdminMfa(ctx, users.ids.admin, ctx.config.SEED_TOTP_SECRET);
   const { brand, created: brandCreated } = ensureBrand(ctx, users.ids.brand);
   const products = ensureProducts(ctx, brand, users.ids.brand);
   const summary =

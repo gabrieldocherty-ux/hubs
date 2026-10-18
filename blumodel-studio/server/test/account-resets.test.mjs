@@ -125,7 +125,7 @@ test('reset: a live link sets the password, signs out every device, signs this b
     const browser = t.agent();
     const check = await browser.post('/api/auth/reset/check', { token });
     assert.equal(check.status, 200);
-    assert.deepEqual(check.body, { valid: true, email: 'a•••@test.blumodel' });
+    assert.deepEqual(check.body, { valid: true, email: 'a•••@test.blumodel', mfa: false });
     assert.equal((await browser.post('/api/auth/reset', { token, password: 'new pass word' }, { csrf: false })).status, 403);
     const short = await browser.post('/api/auth/reset', { token, password: 'short' });
     assert.equal(short.status, 400);

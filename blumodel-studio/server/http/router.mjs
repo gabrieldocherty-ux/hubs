@@ -22,7 +22,9 @@ const BY = new Set(['ip', 'user', 'ip+user']);
  *   routes are always 'sales'; 'staff' and 'owner' routes always 'showroom'.
  * @typedef {{ method: string, path: string, auth?: string, csrf?: boolean, body?: string, hosts?: string,
  *   maxBytes?: number, rateLimit?: RateLimitDef | RateLimitDef[],
- *   params?: Record<string, RegExp>, handler: (rc: any) => any }} RouteDef
+ *   params?: Record<string, RegExp>, reauth?: boolean, handler: (rc: any) => any }} RouteDef
+ *   `reauth: true`: a dangerous action (reset links, deletes, grants): the password, and the 2FA code
+ *   when the account has 2FA, must have been given within REAUTH_MINUTES (401 reauth_required).
  */
 
 function compileRoute(def, moduleName, moduleHosts = 'any') {
@@ -63,6 +65,8 @@ function compileRoute(def, moduleName, moduleHosts = 'any') {
     maxBytes: def.maxBytes ?? 1_000_000,
     rateLimits: limits.map((rl) => ({ by: 'ip', ...rl })),
     params: def.params || {},
+    /** True: the session must have proved the password (and 2FA) within REAUTH_MINUTES (deps.reauthGate). */
+    reauth: def.reauth === true,
     handler: def.handler,
     module: moduleName,
   };
@@ -190,7 +194,10 @@ export async function runRoute({ req, res, url, route, params, ctx, deps }) {
     if (route.auth === 'owner' && rc.memberRole !== 'owner') throw new HttpError(403, 'Only an owner of this showroom can do that.', { code: 'owner_only' });
     if (route.auth === 'studio' && rc.user.role !== 'studio' && rc.user.role !== 'admin') throw new HttpError(403, 'You don’t have access to that.');
     if (route.auth === 'admin' && rc.user.role !== 'admin') throw new HttpError(403, 'You don’t have access to that.');
+    // A BluModel admin's own routes need 2FA on the account AND on this session (server/auth/mfa.mjs).
+    if ((route.auth === 'admin' || route.auth === 'studio') && rc.user.role === 'admin' && deps.adminGate) deps.adminGate(rc);
   }
+  if (route.reauth && deps.reauthGate) deps.reauthGate(rc);
 
   // 3. Rate limits (every one counts the request; the first one over its budget refuses it).
   if (route.rateLimits.length && deps.limiter) {
