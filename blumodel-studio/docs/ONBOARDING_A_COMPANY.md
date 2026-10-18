@@ -9,11 +9,70 @@ Every step below is either in **Admin** (sign in at https://blumodel.studio as a
 *Admin*) or in **Cloudflare** (dash.cloudflare.com, the `blumodel.studio` zone). Nothing here needs a
 terminal except the one-time setup and the demo showroom.
 
-Contents: [Once: Cloudflare](#once-cloudflare) · [1 Create the company](#1-create-the-company) ·
+Contents: [The quick path](#the-quick-path-a-live-showroom-in-a-minute) · [Once: Cloudflare](#once-cloudflare) · [1 Create the company](#1-create-the-company) ·
 [2 Record the license](#2-record-the-license) · [3 Send the monthly link](#3-send-the-monthly-link) ·
 [4 Model their products](#4-model-their-products) · [5 Their web address](#5-their-web-address) ·
 [6 Their own domain](#6-their-own-domain-cloudflare-for-saas) · [7 Go-live checklist](#7-go-live-checklist) ·
 [Later](#later-renewals-lapses-and-changes) · [Troubleshooting](#troubleshooting)
+
+## The quick path: a live showroom in a minute
+
+Use this on a cold call, or right after one, so the prospect sees **their own** showroom live; it is
+also the real onboarding once they buy (steps 1 to 4 below are what it does for you). It needs
+[Once: Cloudflare](#once-cloudflare) done, like every showroom.
+
+Admin → **Companies** → **Quick setup** (at the top):
+
+| Field | What to put |
+| --- | --- |
+| **Company name** | their trading name ("Acme Kitchens & Bath") |
+| **Web address** | suggested from the name as you type and checked live: it says when an address is taken (with a free one to use) or reserved (`www`, `admin`, `support`, `tunnel`…). Agree it on the call: links they share use it |
+| **Logo** (optional) | PNG, JPEG or WebP, 2 MB at most. Its two main colours are put in the colour pickers (the darker as the main colour); **Swap** swaps them |
+| **Main colour, second colour** | the contrast check under them says how white text reads on the main colour and how the colour reads as text on the light and dark page. A pale colour is fine: the showroom darkens or lightens it where text needs it |
+| **Their website** (optional), **city or service area**, **phone**, **email** | shown to visitors on the showroom |
+| **Starter catalog** | **Demo range, renamed to theirs**: the demo showroom's 35 products (two cabinet lines, sinks, appliances, lighting, seating, bath) copied as *their own* products, under their name: "Acme Shaker", "Acme Slab", "Acme Sinks"… Nothing in them says Northline or Demo. Or **Empty, we'll model theirs**: visitors design with BluModel Basics meanwhile |
+| **Purpose** | **Prospect trial** (the default) or **Paying customer** |
+
+**Set up the showroom** makes all of it in one go (it all happens, or nothing does), at
+`https://<address>.blumodel.studio`:
+
+- **Prospect trial**: live for visitors at once, for **14 days** (`TRIAL_DAYS` in blumodel.env). Visitors
+  aren't told it's a trial. It never charges anything and gets no render credits (`TRIAL_CREDIT_CENTS`,
+  0). When it ends it shows "temporarily unavailable", by itself, and **nothing is deleted**.
+- **Paying customer**: in **setup**, as with [New company](#1-create-the-company): open for the team,
+  launched once the license and monthly plan are in (step 7).
+
+With the demo range, a new tab opens the **showroom picture maker** for it (the hero, one picture per
+line, a small gallery, rendered from their products in your browser). **Keep that tab in front** until
+it says Done: a minute or two. If the browser blocks the tab, the panel has a link to open it. The
+Quick setup panel follows it and then shows:
+
+- **the live link**, with **Copy** and **Open the showroom** (send it to them while you're on the phone);
+- **Invite the owner**: their email, and you get their 7-day sign-in link to send (it is emailed when
+  email is set up);
+- **the next steps** for when they buy.
+
+*Skip: show me the link* goes straight to that panel; the pictures keep coming in the other tab.
+
+### Trials in the list
+
+The **Trials** filter lists every trial, running or ended. Each shows **Trial · N days left** (or
+**Trial ended**), with **Extend 7 days** (from its end, or from today once it has ended; it is live
+again at once) and **End trial** (now; it shows "temporarily unavailable", nothing deleted). All three
+are audited.
+
+### When a trial buys
+
+On the company's page:
+
+1. **Yearly license** → record the license (step 2).
+2. **Monthly plan** → create the checkout link and send it (step 3), or make it complimentary.
+3. **Trial** → **Convert to paying customer**. It is greyed out, saying what's missing, until both are
+   in place; then it keeps everything (products, pictures, designs, leads, team) and makes it live.
+
+A trial whose license and monthly plan are in place when it ends goes live by itself, and an ended
+trial goes live as soon as both are in place. Then continue with step 4 (their real products) and the
+[go-live checklist](#7-go-live-checklist).
 
 ## Once: Cloudflare
 
@@ -93,6 +152,9 @@ and the tunnel are right.
    as its example; use `tunnel.blumodel.studio`, which can't collide with a company called Showrooms.)
 
 ## 1. Create the company
+
+(The [quick path](#the-quick-path-a-live-showroom-in-a-minute) does this, with branding and a starter
+catalog, in one form. This is the bare version.)
 
 Admin → **Companies** → **New company**:
 

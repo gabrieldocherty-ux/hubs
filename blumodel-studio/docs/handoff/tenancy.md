@@ -27,6 +27,9 @@ The request's `Host` header picks the site (`server/tenancy/hosts.mjs`):
   with the company's phone/email if set), except `GET /api/config` and `/api/health`. Data is kept.
 - A **setup** showroom is reachable (the team builds it there); show visitors a "coming soon" if you
   like, from `tenant.status`.
+- A **trial** showroom (Admin > Companies > Quick setup) is live until `trial_ends_at`, then lapses
+  like any unpaid one (503, data kept). Visitors' `tenant.status` says `live` for it; the workspace and
+  admin wires say `trial`.
 
 ### Routes and hosts
 
@@ -67,15 +70,15 @@ showroom.
 
 ```ts
 PublicTenant = {
-  id, slug, name, status: 'setup'|'live'|'lapsed'|'suspended', isDemo, url,       // url: the showroom's origin
+  id, slug, name, status: 'setup'|'live'|'lapsed'|'suspended', isDemo, url,       // url: the showroom's origin; a trial says 'live'
   branding: { logoUrl, primaryColor, accentColor, welcomeTitle, welcomeText, featuredLines: string[] },
   contact:  { phone, email, website, address, serviceArea, hours },
   features: { fillGaps, bathrooms, visitorRenders },
 }
-StaffTenant = PublicTenant & { statusNote, branding: {...,logoFileId}, settings: { fillGaps, bathrooms,
+StaffTenant = PublicTenant & { status: ...|'trial', trialEndsAt (a running trial's end, else null), statusNote, branding: {...,logoFileId}, settings: { fillGaps, bathrooms,
   visitorRenders, dailyRenderCap }, hostnames: [{ hostname, kind: 'subdomain'|'custom', verified, primary, createdAt }],
   createdAt, updatedAt }
-AdminTenant = StaffTenant & { members: Member[], standing: { licenseCurrent, monthlyPaid, live },
+AdminTenant = StaffTenant & { trial: { endsAt, daysLeft, active } | null, members: Member[], standing: { licenseCurrent, monthlyPaid, live },
   license, licenses, monthly, checkouts, credits: { balanceCents }, leads: { total, new } }
 Member = { userId, email, name, role: 'owner'|'staff', addedAt, lastSeenAt }
 ```
@@ -90,6 +93,8 @@ Member = { userId, email, name, role: 'owner'|'staff', addedAt, lastSeenAt }
 | tenancy-004 | `tenant_licenses`, `tenant_subscriptions` (stripe\|demo\|comp), `tenant_checkouts`, `tenant_payments` |
 | tenancy-005 | `tenant_credit_lots`, `tenant_credit_holds`, `tenant_credit_entries` |
 | tenancy-006 | `showroom_leads`, `sales_leads` |
+| tenancy-007 | `tenant_invites` |
+| tenancy-008 | `tenants` rebuilt: `status` may be `'trial'`, and `trial_ends_at` (NULL: not a trial) |
 
 ## 4. Isolation (the most important property)
 
@@ -187,6 +192,13 @@ The staff open a lead's design at `lead.design.url` (`#/s/<token>` on the showro
 | POST | `/api/admin/tenants/:id/monthly/cancel` | | `{ tenant }` (Stripe: at the period end) |
 | POST | `/api/admin/tenants/:id/monthly/demo` | `{ event: renewal\|renewal_failed\|grace_end\|cancel }` | demo payments only |
 | GET / POST | `/api/admin/tenants/:id/credits` | POST `{ cents: ±int, note }` | `{ balanceCents, lots, nextExpiry, heldCents, history }` |
+| GET | `/api/admin/quick-setup/slug` | `?slug=&name=` | `{ slug, available, problem: 'invalid'\|'reserved'\|'taken'\|null, suggestion }` |
+| POST | `/api/admin/quick-setup` | `{ name, slug?, logo?: base64 or data URL (PNG/JPEG/WebP, 2 MB), branding?: { primaryColor?, accentColor? }, contact?: { website?, serviceArea?, phone?, email? }, catalog: 'demo'\|'empty', purpose: 'trial'\|'customer' }` | `201 { tenant, products, trialEndsAt }`. One transaction (server/tenancy/quickSetup.mjs): the tenant and subdomain, branding (welcome, featured lines), contact, `fillGaps` on, and with `demo` the demo's products copied as the tenant's own products and files, renamed `<stem> Shaker` etc. (`lineStem`: the name without legal and trade words). `trial`: status `trial` for TRIAL_DAYS (14), TRIAL_CREDIT_CENTS (0) once; `customer`: `setup`. Audited `tenant_quick_setup` |
+| POST | `/api/admin/tenants/:id/trial/extend` | `{ days?: 1..30 (7) }` | `{ tenant }`: from the end (or now once ended), live again, at most 90 days ahead (409 `not_trial`) |
+| POST | `/api/admin/tenants/:id/trial/end` | | `{ tenant }`: lapses now (409 `not_trial` unless running) |
+| POST | `/api/admin/tenants/:id/trial/convert` | | `{ tenant }`: live, trial cleared, everything kept; 409 `not_paid_up` with `missing: ['license'\|'monthly']` |
+| POST | `/api/admin/tenants/:id/showroom-images` | `?auto=1` | `{ url, expiresAt, run }`: the generator link (auto: starts at once) |
+| GET | `/api/admin/tenants/:id/showroom-images/:run` | | `{ state: 'waiting'\|'running'\|'done', uploads, made, failed, finishedAt, expiresAt }` (the generator posts `/api/showroom-images/done` with its ticket when it finishes) |
 | GET | `/api/admin/sales-leads` | `?status=` | `{ leads: [{ id, company, name, phone, email, city, message, status: new\|contacted\|demo\|won\|lost, adminNotes, emailed, createdAt }], counts }` |
 | PATCH | `/api/admin/sales-leads/:id` | `{ status?, adminNotes? }` | `{ lead }` |
 
@@ -206,6 +218,10 @@ homeowner/contractor plans are `forSale: false`). Server constants: `server/lib/
 - **Live** = a current license (start ≤ today ≤ end, UTC days, not voided) AND a paid monthly plan
   (active; or within 14 days of a failed renewal or a missed period end; or complimentary). The
   status is recomputed on every change, on each request to the showroom and every 10 minutes.
+- **Trial** (`server/tenancy/service.mjs computeStatus`): `trial` while now < `trial_ends_at`, whatever
+  the standing; after that it is computed like a launched showroom: live when the license and monthly
+  plan are in place (then `trial_ends_at` is cleared), else lapsed. A trial never charges anything
+  and grants only TRIAL_CREDIT_CENTS (default 0) once. Converting needs the same two things.
 - Monthly through Stripe: the admin's Checkout is `mode: subscription`, CAD 5000/month, metadata
   `{ kind: 'showroom_monthly', checkout_ref, tenant_id }` on the session and the subscription. The
   webhook handles `checkout.session.completed` (by `metadata.kind`), `customer.subscription.*`,
@@ -247,6 +263,11 @@ catalog products, so the demo catalog has none; deciding how a showroom offers f
   up on it and returns an Agent bound to its host; `t.agent({ host: t.hostFor('acme') })` is an
   anonymous client there. Agents with a `host` send that Host header over node:http.
   `legacyCheckout(agent, body)` (helpers) makes a pre-pivot pending checkout for legacy tests.
+- `server/test/quick-setup.test.mjs`: the creation transaction (nothing made on a bad field), the
+  address check, a trial lapsing and extended / ended, conversion, each showroom's own copy of the
+  catalog and files, and the picture run.
+- QA `admin`: `admin-quick-setup*` (the whole flow at 1440 and 390, light and dark, ending on the new
+  showroom at `<slug>.localhost`), `admin-quick-setup-customer`, `admin-trial-actions`.
 - QA (`scripts/qa.mjs`): a route may say `host: 'demo'` to open on `http://demo.localhost:<port>`;
   `as` is then `'anon'` or `'showroom-owner' | 'showroom-staff' | 'showroom-visitor'` (the seeded
   demo people; the session is made in the database, bound to the showroom). `allowStatus: [404]`
