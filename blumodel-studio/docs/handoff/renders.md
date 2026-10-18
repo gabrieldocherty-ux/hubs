@@ -33,6 +33,14 @@ Authorization: Bearer <ARCHITECT_AI_KEY>
 Any other answer counts as a failure: the credits go back and the team sees a plain message. The key
 is only sent in that header. It is never logged and never put in an error message.
 
+The answer is read as a stream with a 25 MB cap enforced while reading: past 25 MB (or a
+Content-Length over it) the stream is cancelled and the render fails, so a huge or endless answer
+never sits in memory. Only `image/png`, `image/jpeg`, `image/webp` or a JSON type is read at all, and
+the picture (sent as bytes or inside JSON) must start with PNG, JPEG or WebP magic bytes.
+`RENDER_TIMEOUT_MS` covers the whole answer, body included. In production `ARCHITECT_AI_URL` must be
+`https://` (plain `http://` only to `localhost` or `127.0.0.1`); the server refuses to start
+otherwise. Tests: `server/test/protect-architect-stream.test.mjs`.
+
 ## 3. Money
 
 The render row, the captured view and `credits.reserve` happen in one transaction. A finished

@@ -124,6 +124,16 @@ export function loadConfig(env = process.env, argv = process.argv) {
   const ARCHITECT_AI_URL = String(env.ARCHITECT_AI_URL || '').trim();
   const ARCHITECT_AI_KEY = String(env.ARCHITECT_AI_KEY || '').trim();
   if (ARCHITECT_AI_URL && !/^https?:\/\/[^\s]+$/i.test(ARCHITECT_AI_URL)) throw new Error('ARCHITECT_AI_URL must be an http(s) URL.');
+  // The key travels in a header: in production only over https, or plain http to this machine.
+  if (PROD && ARCHITECT_AI_URL && /^http:/i.test(ARCHITECT_AI_URL)) {
+    let local = false;
+    try {
+      local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(ARCHITECT_AI_URL).hostname.toLowerCase());
+    } catch {
+      local = false;
+    }
+    if (!local) throw new Error('ARCHITECT_AI_URL must be https:// in production (plain http:// only to localhost or 127.0.0.1), so ARCHITECT_AI_KEY never crosses the network unencrypted.');
+  }
   const RENDER_PROVIDER = String(env.RENDER_PROVIDER || 'auto').trim().toLowerCase();
   if (!['auto', 'architect', 'demo', 'off'].includes(RENDER_PROVIDER)) throw new Error(`RENDER_PROVIDER must be auto, architect, demo or off (got "${RENDER_PROVIDER}").`);
   const DEMO_RENDERS = bool(env.DEMO_RENDERS);

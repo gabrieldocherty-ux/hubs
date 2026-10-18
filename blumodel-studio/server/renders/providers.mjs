@@ -22,7 +22,58 @@
 
 import { decodePng, demoCard, encodePng, stampDemo } from './png.mjs';
 
-const MAX_RESULT_BYTES = 25 * 1024 * 1024;
+export const MAX_RESULT_BYTES = 25 * 1024 * 1024;
+const RESULT_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+/** 'png' | 'jpeg' | 'webp' by the file's first bytes, or null: the Content-Type alone isn't trusted. */
+export function imageKind(buf) {
+  if (!Buffer.isBuffer(buf) || buf.length < 12) return null;
+  if (buf[0] === 0x89 && buf.toString('latin1', 1, 4) === 'PNG' && buf[4] === 0x0d && buf[5] === 0x0a && buf[6] === 0x1a && buf[7] === 0x0a) return 'png';
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpeg';
+  if (buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return 'webp';
+  return null;
+}
+
+/**
+ * The answer's body, read chunk by chunk and given up (the stream cancelled, the request aborted)
+ * as soon as it passes `max` bytes, whatever Content-Length says or doesn't. A long answer still
+ * stops at the render's timeout, since `signal` covers the body as well as the headers.
+ */
+export async function readCapped(res, max, signal) {
+  const tooLarge = () => new RenderFailure('The rendering service sent an image that is too large. Your credits were returned.', { code: 'render_bad_result' });
+  const len = Number(res.headers.get('content-length'));
+  if (Number.isFinite(len) && len > max) {
+    await res.body?.cancel?.().catch(() => {});
+    throw tooLarge();
+  }
+  if (!res.body) return Buffer.alloc(0);
+  const reader = res.body.getReader();
+  const parts = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > max) {
+        await reader.cancel().catch(() => {});
+        throw tooLarge();
+      }
+      parts.push(Buffer.from(value.buffer, value.byteOffset, value.byteLength));
+    }
+  } catch (err) {
+    if (err instanceof RenderFailure) throw err;
+    if (signal?.aborted) throw new RenderFailure('The rendering service took too long. Your credits were returned.', { code: 'render_timeout' });
+    throw new RenderFailure('The rendering service’s answer was cut off. Your credits were returned.', { code: 'render_failed' });
+  } finally {
+    try {
+      reader.releaseLock();
+    } catch {
+      /* still reading: cancelled above */
+    }
+  }
+  return Buffer.concat(parts, total);
+}
 
 /** A failure safe to show the team (no key, no response body). */
 export class RenderFailure extends Error {
@@ -94,27 +145,25 @@ export function createArchitectProvider({ url, key, fetch, timeoutMs, log }) {
         log?.warn?.(`renders: the rendering service answered ${res.status}`);
         throw new RenderFailure(`The rendering service answered ${res.status}. Your credits were returned.`, { code: 'render_failed' });
       }
-      const len = Number(res.headers.get('content-length'));
-      if (Number.isFinite(len) && len > MAX_RESULT_BYTES) throw new RenderFailure('The rendering service sent an image that is too large.', { code: 'render_bad_result' });
-      let buf;
+      const type = String(res.headers.get('content-type') || '').toLowerCase().split(';')[0].trim();
+      const asImage = RESULT_TYPES.has(type);
+      if (!asImage && !/^application\/([\w.+-]+\+)?json$/.test(type)) {
+        await res.body?.cancel?.().catch(() => {});
+        throw new RenderFailure('The rendering service didn’t send an image back. Your credits were returned.', { code: 'render_bad_result' });
+      }
+      const buf = await readCapped(res, MAX_RESULT_BYTES, sig);
+      if (asImage) {
+        if (!imageKind(buf)) throw new RenderFailure('The rendering service didn’t send an image back. Your credits were returned.', { code: 'render_bad_result' });
+        return { image: buf };
+      }
+      let body = null;
       try {
-        buf = Buffer.from(await res.arrayBuffer());
+        body = JSON.parse(buf.toString('utf8'));
       } catch {
-        throw new RenderFailure('The rendering service’s answer was cut off. Your credits were returned.', { code: 'render_failed' });
+        body = null;
       }
-      if (buf.length > MAX_RESULT_BYTES) throw new RenderFailure('The rendering service sent an image that is too large.', { code: 'render_bad_result' });
-      const type = String(res.headers.get('content-type') || '').toLowerCase();
-      if (type.startsWith('image/')) return { image: buf };
-      if (type.includes('json')) {
-        let body = null;
-        try {
-          body = JSON.parse(buf.toString('utf8'));
-        } catch {
-          body = null;
-        }
-        const img = imageFromJson(body);
-        if (img) return { image: img };
-      }
+      const img = imageFromJson(body);
+      if (img && imageKind(img)) return { image: img };
       throw new RenderFailure('The rendering service didn’t send an image back. Your credits were returned.', { code: 'render_bad_result' });
     },
   };
