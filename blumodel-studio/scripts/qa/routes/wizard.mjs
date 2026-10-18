@@ -91,10 +91,12 @@ export default [
   {
     name: 'wizard-steps',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: DESK,
-    waitFor: ['.wizard', '.gen-wiz-photo'],
-    expectText: ['Let’s set up a new kitchen.', 'Start from a photo of my kitchen'],
+    waitFor: ['.wizard'],
+    // (Start from a photo is gone since the showroom pivot, SHOWROOM_PIVOT §3.)
+    expectText: ['Let’s set up a new kitchen.'],
     check: async (h) => {
       const steps = await h.evaluate(() => [...document.querySelectorAll('.steps li')].map((li) => li.textContent.replace(/\d/g, '').trim()));
       if (steps.join('|') !== 'Basics|Room|Layout|Brands') throw new Error(`the steps are ${steps.join(', ')}`);
@@ -140,7 +142,8 @@ export default [
   {
     name: 'wizard-brands-create',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: DESK,
     waitFor: '.wizard',
     check: async (h) => {
@@ -244,7 +247,8 @@ export default [
     // a layout applied from the blank room's own buttons in the editor uses those brands too.
     name: 'wizard-custom-blank',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: DESK,
     waitFor: '.wizard',
     check: async (h) => {
@@ -310,26 +314,10 @@ export default [
     },
   },
   {
-    // "Start from a photo of my kitchen" is the first thing on Basics, and on a phone it opens the
-    // photo flow.
-    name: 'wizard-photo-entry-phone',
-    path: '#/new',
-    as: 'fresh',
-    viewport: PHONE,
-    waitFor: ['.wizard', '.gen-wiz-photo'],
-    check: async (h) => {
-      await noSideScroll(h);
-      await h.shot('basics');
-      await h.click('.gen-wiz-photo');
-      await h.waitUntil(() => location.hash.startsWith('#/generate'), 10_000, 'the photo flow opening');
-      await h.waitFor('.gen-drop', 15_000);
-      await noSideScroll(h);
-    },
-  },
-  {
     name: 'wizard-brands-phone',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: PHONE,
     waitFor: '.wizard',
     check: async (h) => {

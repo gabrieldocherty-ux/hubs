@@ -1,9 +1,17 @@
 // Uploads and file serving (BUILD_PLAN §3.5). Public blobs are content-addressed and
 // immutable; private bytes go through an authenticated route that never caches.
+//
+// Sites (docs/handoff/tenancy.md): on a showroom only its team uploads (files belong to the
+// showroom), and a file is readable only by files.canReadOnSite: never another showroom's.
+//
+// Copy protection (docs/handoff/protect.md): public files are named by their sha256 (nothing to
+// guess or count up), every read is limited per address (server/http/readLimits.mjs), and every
+// model, image and file answer says X-Robots-Tag: noindex, noimageindex, noai, noimageai.
 
 import { HttpError } from '../http/respond.mjs';
 import { serveFile } from '../http/static.mjs';
 import { mimeFor } from '../files/meta.mjs';
+import { NO_INDEX, READ_LIMITS } from '../http/readLimits.mjs';
 
 const SANDBOX = "default-src 'none'; sandbox";
 
@@ -24,7 +32,9 @@ export default function routes(ctx) {
       handler: async (rc) => {
         const kind = rc.query.get('kind') || '';
         if (!['model', 'image', 'reference'].includes(kind)) throw new HttpError(400, 'Choose a file kind: model, image or reference.');
+        if (rc.tenant && !rc.memberRole) throw new HttpError(403, 'Only the showroom’s team can upload files here.', { code: 'not_staff' });
         const brandId = rc.query.get('brandId') || null;
+        if (brandId && rc.tenant) throw new HttpError(400, 'Brand files are uploaded on the BluModel Studio site.');
         if (brandId) auth.requireBrandMember(rc, brandId);
         const visibility = rc.query.get('visibility') === 'public' && kind !== 'reference' ? 'public' : 'private';
         const file = await files.saveUpload(rc, { kind, visibility, brandId, originalName: rc.query.get('name') || '' });
@@ -35,9 +45,10 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/files/:id',
       auth: 'optional',
+      rateLimit: READ_LIMITS.product,
       handler: (rc) => {
         const file = files.get(rc.params.id);
-        if (!file || !files.canRead(rc.user, file, rc)) throw new HttpError(404, 'Not found.');
+        if (!file || !files.canReadOnSite(rc, file)) throw new HttpError(404, 'Not found.');
         return { file: files.toWire(file, { shareToken: rc.query.get('share') || undefined }) };
       },
     },
@@ -45,26 +56,30 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/files/:id/content',
       auth: 'optional',
+      rateLimit: READ_LIMITS.files,
       handler: (rc) => {
         const file = files.get(rc.params.id);
-        if (!file || !files.canRead(rc.user, file, rc)) throw new HttpError(404, 'Not found.');
+        if (!file || !files.canReadOnSite(rc, file)) throw new HttpError(404, 'Not found.');
         rc.sent = true;
         serveFile(rc.req, rc.res, files.blobPath(file.sha256, file.ext), {
           'Content-Type': mimeFor(file.ext),
           'Cache-Control': 'private, no-store',
           'Content-Security-Policy': SANDBOX,
           'Cross-Origin-Resource-Policy': 'same-origin',
+          ...NO_INDEX,
         });
       },
     },
     {
       method: 'GET',
       path: '/files/:name',
-      auth: 'none',
+      // optional: an admin or the studio on the sales site may see a showroom's files.
+      auth: 'optional',
       params: { name: /^[0-9a-f]{64}\.(glb|png|jpg|webp)$/ },
+      rateLimit: READ_LIMITS.files,
       handler: (rc) => {
         const [sha, ext] = rc.params.name.split('.');
-        const file = files.publicBlob(sha, ext);
+        const file = files.publicBlob(sha, ext, rc.site, rc.user ?? null);
         if (!file) throw new HttpError(404, 'Not found.');
         rc.sent = true;
         serveFile(rc.req, rc.res, files.blobPath(sha, ext), {
@@ -72,6 +87,7 @@ export default function routes(ctx) {
           'Cache-Control': 'public, max-age=31536000, immutable',
           'Content-Security-Policy': SANDBOX,
           'Cross-Origin-Resource-Policy': 'same-origin',
+          ...NO_INDEX,
         });
       },
     },

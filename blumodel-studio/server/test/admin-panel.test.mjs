@@ -274,7 +274,9 @@ test('delete: typed email confirmation, not yourself, not an admin, not while a 
     assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM projects WHERE user_id = ?').get(eve.id).n, 0);
     const log = (await admin.get('/api/admin/audit?action=account_delete')).body;
     assert.equal(log.total, 1);
-    assert.equal(log.entries[0].targetEmail, 'eve-delete@test.blumodel');
+    // Kept as a record of what happened, about a pseudonym: never the deleted person's address.
+    assert.match(log.entries[0].targetEmail, /^deleted-[0-9a-f]{8}$/);
+    assert.equal(log.entries[0].targetUserId, eve.id);
     // Rate-limited: 20 an hour per admin.
     let last = 0;
     for (let i = 0; i < 20; i++) last = (await admin.post(`/api/admin/users/nobody_here/delete`, { confirm: 'x' })).status;

@@ -63,7 +63,13 @@ export function loadConfig(env = process.env, argv = process.argv) {
   // Daily database backups (VACUUM INTO) and an uploads mirror, next to the database by default.
   const BACKUPS = (env.BACKUPS || 'on').trim().toLowerCase() === 'off' || DB_PATH === ':memory:' ? 'off' : 'on';
   const BACKUP_DIR = path.resolve(env.BACKUP_DIR || path.join(DB_PATH === ':memory:' ? path.join(SERVER_DIR, 'data') : path.dirname(path.resolve(DB_PATH)), 'backups'));
-  const BACKUP_KEEP = int(env.BACKUP_KEEP, 14, 1, 365);
+  // At most 30 daily copies: the privacy policy promises deleted data leaves every backup within 35 days.
+  const BACKUP_KEEP = int(env.BACKUP_KEEP, 14, 1, 30);
+  // Encrypted off-site backups (server/ops/offsite.mjs): BACKUP_OFFSITE_DIR is a folder Gabe points
+  // at a synced cloud drive or a mounted USB drive; BACKUP_PASSPHRASE (12+ characters) makes the key.
+  const BACKUP_OFFSITE_DIR = String(env.BACKUP_OFFSITE_DIR || '').trim() ? path.resolve(String(env.BACKUP_OFFSITE_DIR).trim()) : '';
+  const BACKUP_OFFSITE_KEEP = int(env.BACKUP_OFFSITE_KEEP, 30, 1, 30);
+  const BACKUP_PASSPHRASE = String(env.BACKUP_PASSPHRASE ?? '');
   // A file whose appearance asks the server to shut down gracefully (stop-server.cmd and the
   // deploy create it; Windows can't send a console-less process a catchable signal).
   const SHUTDOWN_FILE = String(env.BLUMODEL_SHUTDOWN_FILE || '').trim() || null;
@@ -101,6 +107,75 @@ export function loadConfig(env = process.env, argv = process.argv) {
   // MISE_LLM_MODEL is the deprecated name from before the rename; still read.
   const BLUMODEL_LLM_MODEL = env.BLUMODEL_LLM_MODEL || env.MISE_LLM_MODEL || '';
   const SEED_PASSWORD = env.SEED_PASSWORD || '';
+  // QA only (scripts/qa.mjs): the demo admin's two-factor secret, so QA can sign in with a code. Base32.
+  const SEED_TOTP_SECRET = /^[A-Z2-7]{16,64}$/.test(String(env.SEED_TOTP_SECRET || '')) ? String(env.SEED_TOTP_SECRET) : '';
+
+  // The domain showrooms live under (docs/SHOWROOM_PIVOT.md §4): the request's Host picks the site.
+  // <base> and www.<base> are the sales site, <slug>.<base> a company's showroom. 'localhost' in dev
+  // and QA (Chromium resolves *.localhost to 127.0.0.1), 'blumodel.studio' in production.
+  const BASE_DOMAIN = String(env.BASE_DOMAIN || (PROD ? 'blumodel.studio' : 'localhost'))
+    .trim()
+    .toLowerCase()
+    .replace(/^\.+|\.+$/g, '');
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(BASE_DOMAIN)) throw new Error(`BASE_DOMAIN must be a domain name like blumodel.studio (got "${BASE_DOMAIN}").`);
+  // Credits one AI render costs (docs/SHOWROOM_PIVOT.md §7), in cents. 25 until Gabe sets it.
+  const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 25, 1, 100_000);
+  // A prospect trial (Admin > Companies > Quick setup): live for TRIAL_DAYS, then it lapses to the
+  // "temporarily unavailable" page and keeps every row. It never charges anything; TRIAL_CREDIT_CENTS
+  // of render credits are given once when it starts (0: none).
+  const TRIAL_DAYS = int(env.TRIAL_DAYS, 14, 1, 90);
+  const TRIAL_CREDIT_CENTS = int(env.TRIAL_CREDIT_CENTS, 0, 0, 10_000);
+  // Account protection (docs/handoff/data-lifecycle.md). An admin's session lasts ADMIN_SESSION_HOURS
+  // from sign-in, never sliding; dangerous admin actions (reset links, deletes, credit and plan grants)
+  // need the password (and 2FA code) again within REAUTH_MINUTES.
+  const ADMIN_SESSION_HOURS = int(env.ADMIN_SESSION_HOURS, 12, 1, 72);
+  const REAUTH_MINUTES = int(env.REAUTH_MINUTES, 10, 1, 24 * 60);
+  // Retention: a showroom lead that never sent a design and whose status was never changed is
+  // deleted this many months after its last activity (a company may choose fewer); a "Book a call"
+  // sales lead this many months after it was last updated.
+  const LEAD_RETENTION_MONTHS = int(env.LEAD_RETENTION_MONTHS, 24, 1, 120);
+  const SALES_LEAD_RETENTION_MONTHS = int(env.SALES_LEAD_RETENTION_MONTHS, 24, 1, 120);
+  // Who makes the photoreal renders (server/renders, docs/handoff/renders.md): Gabe's architecture
+  // AI over HTTP when ARCHITECT_AI_URL and ARCHITECT_AI_KEY are set; else the stamped demo provider
+  // outside production (or with DEMO_RENDERS=1); else none ("Photoreal renders are being set up",
+  // nothing charged). RENDER_PROVIDER=architect|demo|off forces one (architect still needs both).
+  const ARCHITECT_AI_URL = String(env.ARCHITECT_AI_URL || '').trim();
+  const ARCHITECT_AI_KEY = String(env.ARCHITECT_AI_KEY || '').trim();
+  if (ARCHITECT_AI_URL && !/^https?:\/\/[^\s]+$/i.test(ARCHITECT_AI_URL)) throw new Error('ARCHITECT_AI_URL must be an http(s) URL.');
+  // The key travels in a header: in production only over https, or plain http to this machine.
+  if (PROD && ARCHITECT_AI_URL && /^http:/i.test(ARCHITECT_AI_URL)) {
+    let local = false;
+    try {
+      local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(ARCHITECT_AI_URL).hostname.toLowerCase());
+    } catch {
+      local = false;
+    }
+    if (!local) throw new Error('ARCHITECT_AI_URL must be https:// in production (plain http:// only to localhost or 127.0.0.1), so ARCHITECT_AI_KEY never crosses the network unencrypted.');
+  }
+  const RENDER_PROVIDER = String(env.RENDER_PROVIDER || 'auto').trim().toLowerCase();
+  if (!['auto', 'architect', 'demo', 'off'].includes(RENDER_PROVIDER)) throw new Error(`RENDER_PROVIDER must be auto, architect, demo or off (got "${RENDER_PROVIDER}").`);
+  const DEMO_RENDERS = bool(env.DEMO_RENDERS);
+  const architectReady = !!(ARCHITECT_AI_URL && ARCHITECT_AI_KEY);
+  const demoRendersAllowed = !PROD || DEMO_RENDERS;
+  const rendersProvider =
+    RENDER_PROVIDER === 'off'
+      ? 'none'
+      : RENDER_PROVIDER === 'architect'
+        ? architectReady
+          ? 'architect'
+          : 'none'
+        : RENDER_PROVIDER === 'demo'
+          ? demoRendersAllowed
+            ? 'demo'
+            : 'none'
+          : architectReady
+            ? 'architect'
+            : demoRendersAllowed
+              ? 'demo'
+              : 'none';
+  // The captured 3D view a render request may carry, and how long the AI may take.
+  const RENDER_MAX_IMAGE_MB = int(env.RENDER_MAX_IMAGE_MB, 6, 1, 20);
+  const RENDER_TIMEOUT_MS = int(env.RENDER_TIMEOUT_MS, 180_000, 1_000, 900_000);
 
   const RATE_LIMITS = (env.RATE_LIMITS || 'on').trim().toLowerCase() === 'off' ? 'off' : 'on';
   if (RATE_LIMITS === 'off' && PROD) throw new Error('RATE_LIMITS=off is refused in production.');
@@ -126,6 +201,7 @@ export function loadConfig(env = process.env, argv = process.argv) {
     ANTHROPIC_API_KEY,
     BLUMODEL_LLM_MODEL,
     SEED_PASSWORD,
+    SEED_TOTP_SECRET,
     RATE_LIMITS,
     LEGAL_NAME,
     SUPPORT_EMAIL,
@@ -136,8 +212,28 @@ export function loadConfig(env = process.env, argv = process.argv) {
     BACKUP_DIR,
     BACKUPS,
     BACKUP_KEEP,
+    BACKUP_OFFSITE_DIR,
+    BACKUP_OFFSITE_KEEP,
+    /** Secret: never logged or returned (Admin > System says only whether it is set). */
+    BACKUP_PASSPHRASE,
     SHUTDOWN_FILE,
+    BASE_DOMAIN,
+    RENDER_CREDIT_CENTS,
+    TRIAL_DAYS,
+    TRIAL_CREDIT_CENTS,
+    ADMIN_SESSION_HOURS,
+    REAUTH_MINUTES,
+    LEAD_RETENTION_MONTHS,
+    SALES_LEAD_RETENTION_MONTHS,
+    ARCHITECT_AI_URL,
+    ARCHITECT_AI_KEY,
+    RENDER_PROVIDER,
+    DEMO_RENDERS,
+    RENDER_MAX_IMAGE_MB,
+    RENDER_TIMEOUT_MS,
     // derived
+    /** 'architect' | 'demo' | 'none': who makes photoreal renders (server/renders). */
+    rendersProvider,
     /** 'stripe' | 'demo' | 'none': see paymentsPosture(). */
     paymentsProvider,
     /** 'live' | 'test' | null: the Stripe key's mode (from its prefix), when Stripe is on. */

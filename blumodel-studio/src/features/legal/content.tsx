@@ -1,18 +1,23 @@
 /*
- * SOURCE: AI-drafted templates, written by Claude (Anthropic) on 2026-10-14 for BluModel Studio from
- * what the code actually does (docs/PLANS_AND_CONTRACTORS.md, docs/BRAND_PAGE.md, server/**). They
+ * SOURCE: AI-drafted templates, written by Claude (Anthropic) for BluModel Studio from what the
+ * product and the code actually do: first on 2026-10-14 for the homeowner and contractor plans,
+ * rewritten on 2026-10-17 for the showroom pivot (docs/SHOWROOM_PIVOT.md): a B2B service agreement
+ * with kitchen and bath companies, a privacy policy in which the company is the controller of its
+ * showroom visitors' data and we are its processor, and a refund policy for the monthly plan. They
  * are NOT legal advice and have not been reviewed by a lawyer. Have a lawyer in the operator's
- * jurisdiction review all three before relying on them, in particular: the refund windows (14 days
- * for an unused kitchen unlock, 7 days for an unwanted renewal), the age limit, the liability cap,
- * the governing-law clause and anything your local consumer law requires. docs/handoff/launch.md
- * lists what to check.
+ * jurisdiction review all three before relying on them, in particular: the license refund terms,
+ * the liability cap, taxes, the processor terms (PIPEDA, Quebec's Law 25, CASL for the leads), the
+ * governing-law clause, and what happens to data after a company leaves. The anti-copying clauses
+ * added on 2026-10-18 (ownership, licence not sale, no reverse engineering, scraping, automated
+ * access, competing products or AI training, trademarks, confidentiality, and the same rules for
+ * visitors in section 15) need that review too: docs/handoff/protect.md.
  *
  * Who runs the site comes from `/api/config` → `legal` (LEGAL_NAME, SUPPORT_EMAIL, LEGAL_JURISDICTION
  * on the server). When a value isn't set, the text uses neutral wording ("the operator of this
- * site") and never a placeholder.
+ * site") and never a placeholder. Prices come from src/data/plans.json, the server's own list.
  */
 import type { ReactNode } from 'react';
-import type { LegalConfig, Plan } from '../../types/platform';
+import type { LegalConfig } from '../../types/platform';
 import plansJson from '../../data/plans.json';
 import { VISUALIZER_DISCLAIMER } from '../../lib/csv';
 import type { LegalDocId } from '../../lib/router';
@@ -36,14 +41,25 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-export const LAST_UPDATED = '15 October 2026';
+export const LAST_UPDATED = '18 October 2026';
+/** The day the showroom pivot took effect: purchases before it keep their own terms. */
+const PIVOT_DATE = '17 October 2026';
 
-const PLANS = plansJson as Plan[];
-/** "$15 CAD": every price is in Canadian dollars since 15 October 2026. */
-const price = (id: Plan['id']) => {
-  const c = PLANS.find((p) => p.id === id)?.priceCents ?? 0;
-  return `$${(c / 100).toFixed(c % 100 ? 2 : 0)} CAD`;
-};
+interface PlanJson {
+  id: string;
+  priceCents: number | null;
+  creditRolloverMonths?: number;
+  breakdown?: { id: string; cents: number }[];
+}
+const PLANS = plansJson as unknown as PlanJson[];
+const MONTHLY = PLANS.find((p) => p.id === 'showroom_monthly');
+const cad = (cents: number) => `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })} CAD`;
+const MONTHLY_PRICE = cad(MONTHLY?.priceCents ?? 5000);
+const HOSTING_PRICE = cad(MONTHLY?.breakdown?.find((b) => b.id === 'hosting')?.cents ?? 2500);
+const CREDIT_PRICE = cad(MONTHLY?.breakdown?.find((b) => b.id === 'render_credits')?.cents ?? 2500);
+const ROLLOVER = MONTHLY?.creditRolloverMonths ?? 3;
+/** Days a showroom stays live after a failed monthly payment (server/billing, GRACE_DAYS). */
+const GRACE_DAYS = 14;
 
 /** The words that depend on who runs the site. */
 export interface LegalWords {
@@ -84,379 +100,502 @@ export function legalWords(legal: LegalConfig, payments: PaymentsMode | null = n
 const ContactBlock = ({ w }: { w: LegalWords }) =>
   w.email ? (
     <p>
-      Write to <a href={`mailto:${w.email}`}>{w.email}</a> from the email address on your account, so we can find it. We answer as soon as we can.
+      Write to <a href={`mailto:${w.email}`}>{w.email}</a>. A company should write from an address on its team, and say which showroom it is about, so we can find it. We answer as
+      soon as we can.
     </p>
   ) : (
     <p>
-      Contact the operator of this site through the contact details it provides, from the email address on your account. Much of what you might ask for, you can do yourself:{' '}
-      <a href="#/account">Account settings</a> has <b>Download my data</b> and <b>Delete my account</b>, and <a href="#/account/billing">Billing</a> cancels a plan.
+      Contact the operator of this site through the contact details it provides. Much of what you might ask for, you can do yourself: <a href="#/account">Account settings</a> has{' '}
+      <b>Download my data</b> and <b>Delete my account</b>.
     </p>
   );
 
-// ─── Terms ───────────────────────────────────────────────────────────────────
+const PaymentsNote = ({ w }: { w: LegalWords }) => (
+  <>
+    {w.payments === 'demo' && (
+      <>
+        {' '}
+        A checkout page marked <b>DEMO</b> is a simulation: nothing is charged and nothing is bought.
+      </>
+    )}
+    {w.payments === 'none' && ' Payments aren’t open yet: until they are, nothing can be bought here and nothing is charged.'}
+  </>
+);
+
+// ─── Service agreement (was: Terms of Service) ───────────────────────────────
 
 export function termsDoc(w: LegalWords): LegalDoc {
   return {
     id: 'terms',
-    title: 'Terms of Service',
-    short: 'Terms',
+    title: 'Service agreement',
+    short: 'Service agreement',
     updated: LAST_UPDATED,
     lede: (
       <>
-        BluModel Studio is a kitchen design tool at blumodel.studio, run by {w.who} (“we”, “us”). These terms are the agreement between you and us when you use it. They are written
-        to be read: if something is unclear, contact us {w.contact}.
+        BluModel Studio builds, hosts and runs virtual showrooms for kitchen and bath companies. This agreement is between {w.who} (“we”, “us”) and the company that uses a showroom
+        (“you”). It is written to be read: if something is unclear, contact us {w.contact}. Section 15 covers people who visit a showroom, and section 16 covers anything bought
+        before {PIVOT_DATE}.
       </>
     ),
     sections: [
       {
-        id: 'accounts',
-        heading: '1. Your account',
+        id: 'parties',
+        heading: '1. Who this agreement is with',
         body: (
           <>
             <p>
-              You can design on a device without an account. To save kitchens, share them or buy anything you need a free account. You must be at least 18, or the age of majority
-              where you live if that is higher, and give an email address you can receive mail at.
+              The agreement starts when you accept our quote or order, or pay the first invoice or the first month, whichever comes first. The person who accepts it confirms they
+              can act for the company. Your quote or order can add to these terms, or change them for your company, and where the two differ, the quote or order wins.
             </p>
-            <p>
-              Keep your password to yourself: you are responsible for what happens in your account. A Contractor account is one login for one business. If you think someone else
-              has used your account, change your password in Account settings (that signs out every other device) and tell us.
-            </p>
+            <p>BluModel Studio is a service for businesses. It is not sold to consumers.</p>
           </>
         ),
       },
       {
-        id: 'free-paid',
-        heading: '2. What is free and what you pay for',
+        id: 'service',
+        heading: '2. What we provide',
         body: (
           <>
-            <p>
-              Designing, saving, starting from photos and sharing kitchens are free, with no limit. <b>Exports are paid</b>: the floor plan, the 3D image, the shopping list, the
-              project file, studio renders without a watermark and contractor quotes. You can pay for them in one of three ways:
-            </p>
+            <p>For as long as your showroom is live (section 6), we provide:</p>
             <ul>
               <li>
-                <b>Kitchen unlock, a one-time payment</b> offered when you export: every export of one kitchen, for as long as the kitchen exists, including after you change it. A
-                duplicate is a new kitchen and is not unlocked.
+                <b>Your showroom:</b> a website under your company’s name, logo and colours where your customers design kitchens and bathrooms in 3D with your products.
               </li>
               <li>
-                <b>Unlimited, {price('unlimited')} a month:</b> every export of every kitchen you own.
+                <b>Its web address:</b> a subdomain of blumodel.studio named for your company and, if you own a domain, that domain connected to the showroom at no extra charge.
+                You stay responsible for the domain itself and its registration.
               </li>
               <li>
-                <b>Contractor, {price('contractor')} a month:</b> everything in Unlimited, plus 3 custom 3D models a month made by our studio (section 5), a private catalog, a price
-                book, branded quotes and a public brand page (section 6).
+                <b>Hosting, updates and backups:</b> we run the servers, keep the software up to date and back up its data every day.
+              </li>
+              <li>
+                <b>Your products, modelled:</b> 3D models of your starting range (section 3), and more on request, quoted first.
+              </li>
+              <li>
+                <b>A lead inbox and team accounts:</b> leads from your visitors, and accounts for your staff with owner and staff roles.
+              </li>
+              <li>
+                <b>AI renderings:</b> photoreal images of designs, paid for with rendering credits (section 5).
               </li>
             </ul>
             <p>
-              <b>Custom 3D models</b> aren’t sold on their own: they come with the Contractor plan (section 5). Orders paid for before 15 October 2026 keep the price, currency and
-              terms they were sold at.
-            </p>
-            <p>
-              Every paid feature is priced at the point of purchase, in Canadian dollars (CAD), before you pay; the checkout page shows the final amount, including any tax. Payments made before 15 October 2026
-              were in US dollars: their receipts stay in US dollars, and a plan started then renews at its price in US dollars until you change or cancel it. Someone else’s plan
-              never covers your exports, even of a kitchen they shared with you.
+              A showroom is a sales tool, not a CAD or construction tool. {VISUALIZER_DISCLAIMER} Measurements, final drawings, prices and installation are yours to check and
+              confirm with your customers.
             </p>
           </>
         ),
       },
       {
-        id: 'payments',
-        heading: '3. Payments',
+        id: 'license',
+        heading: '3. Setup and the yearly license',
         body: (
           <>
             <p>
-              Payments are taken by Stripe on its own secure checkout page. We never see or store your card number; we keep a record of what you bought, when, and the amount.
-              {w.payments === 'demo' && (
-                <>
-                  {' '}
-                  A page marked <b>DEMO</b> is a simulation: nothing is charged and nothing is bought.
-                </>
-              )}
-              {w.payments === 'none' && ' Payments aren’t open yet: until they are, nothing can be bought here and nothing is charged.'}
+              The license pays for the showroom software for its term (one year unless your order says otherwise), its setup, and 3D modelling of your starting range. You pay{' '}
+              <b>the setup and license fee set out in your order or invoice</b>, which is quoted for your company; your starting range is the one set out there too.
             </p>
             <p>
-              After a payment we check every export on our server, so the files you paid for are made for you even if your browser was closed mid-way. Anyone can screenshot a screen;
-              what an export gives you is the clean, full-resolution, dimensioned file.
+              We invoice the setup and license fee, and it is due as the invoice says. Products beyond those in your order are quoted before we model them, and nothing is charged without your
+              agreement. Before the term ends we will contact you about renewing; the license does not renew by itself unless your order says it does.
             </p>
           </>
         ),
       },
       {
-        id: 'subscriptions',
-        heading: '4. Subscriptions and cancelling',
+        id: 'monthly',
+        heading: '4. The monthly plan',
         body: (
           <>
             <p>
-              Unlimited and Contractor renew every month until you cancel. Cancel any time in <a href="#/account/billing">Account → Billing</a>.{' '}
-              <b>Cancelling takes effect at the end of the period you have already paid for</b>: you keep the plan until then, and it does not renew. A kitchen you unlocked with a
-              one-time payment stays unlocked whatever happens to a plan.
+              The monthly plan is <b>{MONTHLY_PRICE} a month</b>: <b>{HOSTING_PRICE}</b> for hosting and running your showroom, including its web address, and{' '}
+              <b>{CREDIT_PRICE}</b> of AI rendering credits. It is paid by card through Stripe’s secure checkout, from a link we send you, and renews every month until it is
+              cancelled. We never see or store your card number.
+              <PaymentsNote w={w} />
             </p>
             <p>
-              If a renewal payment fails you keep the plan for a 7-day grace period while it is retried; after that the account moves to Free and nothing you designed is deleted.
-              When a Contractor plan ends, the catalog, price book and quotes become read-only and the share links you gave clients keep working.
-            </p>
-            <p>
-              If we change a plan’s price we will tell you at least 30 days before your next renewal, and the new price applies only from a renewal after that notice. Refunds are
-              covered by the <a href="#/refunds">Refund policy</a>.
+              <b>Cancel any time</b> by asking us, or from your showroom’s plan page where it offers it. Cancelling takes effect at the end of the month you have already paid for,
+              and the plan does not renew after that. If we change the monthly price, we will tell you at least 30 days before the renewal it first applies to.
             </p>
           </>
         ),
       },
       {
-        id: 'models',
-        heading: '5. Custom 3D models',
+        id: 'credits',
+        heading: '5. Rendering credits',
         body: (
           <>
             <p>
-              The Contractor plan includes <b>3 custom 3D models a month</b>, made by our studio: one model per product, with up to 3 finishes and 2 revision rounds each. A model
-              counts when you send its request. The month is your plan’s billing month; models you don’t use don’t carry over. If you withdraw a request, or we cancel it, before
-              modelling starts, its models go back to that month’s allowance. If the plan ends, requests you already sent are still made and delivered, but no new ones can be sent.
+              Each paid month adds {CREDIT_PRICE} of rendering credits to your showroom. Credits you don’t use roll over for {ROLLOVER} months and then expire, oldest first. Your team
+              can see the balance, what each rendering costs before making one, and the history of every credit added, spent, refunded or expired.
             </p>
             <p>
-              You send each product’s name and its UPC, photos or both, and the size if you have it; our studio builds a true-to-size 3D model. Turnaround counts business days from
-              your request. A revision corrects the model against the brief you sent, it isn’t a new product. When you accept a delivery, the request is complete.
-            </p>
-            <p>
-              Only send material you have the right to use. A custom model is private to your account (a contractor’s goes into their private catalog). It shows inside kitchens you
-              share while the link works. We may decline a request we can’t model faithfully, or one that would infringe someone else’s rights; a declined request goes back to your
-              allowance. Orders paid for before 15 October 2026 keep the turnaround, revisions and refund terms they were sold with.
+              Credits are reserved when a rendering starts and given back if it fails. They have no cash value, can’t be transferred to another company, and aren’t refunded when
+              they expire or when the plan ends. We may add credits, or correct a mistake, and every change is recorded.
             </p>
           </>
         ),
       },
       {
-        id: 'contractors',
-        heading: '6. Contractors, brand pages and leads',
+        id: 'live',
+        heading: '6. When your showroom is live',
         body: (
           <>
             <p>
-              Contractors who use BluModel Studio are independent businesses. Their products, prices, quotes, installation and any contract with a homeowner are between them and the
-              homeowner. We are not a party to that contract and we don’t sell or install anything. A <b>Verified</b> badge means we checked the business is real; it is not a
-              recommendation or a guarantee of their work.
+              Your showroom is live while your license is current <b>and</b> your monthly plan is paid. If a monthly payment fails, the showroom stays live for {GRACE_DAYS} days
+              while the payment is retried. After that, or once the license ends, visitors see a polite “temporarily unavailable” page until it is paid again.
             </p>
             <p>
-              If you publish a brand page, everything on it (company details, logos, photos, models, prices) must be accurate and yours to publish. Pages and products go live only
-              after an admin approves them, and we can remove anything that breaks these terms.
-            </p>
-            <p>
-              <b>Leads.</b> When a homeowner sends a quote request from a brand page, their name, contact details, message and (if they choose) their kitchen go to that one contractor,
-              because they asked for it. A contractor may use those details only to answer that request, and must follow the privacy and anti-spam laws that apply to them.
+              A lapsed showroom’s products, designs, leads and settings are kept. We don’t delete them automatically; section 13 says what happens when you leave for good.
             </p>
           </>
         ),
       },
       {
         id: 'content',
-        heading: '7. Your designs, photos and files',
+        heading: '7. Who owns what, and your licence',
         body: (
           <>
             <p>
-              What you make and upload stays yours. You let us store, process and show it only as needed to run BluModel Studio for you: saving your kitchens, drawing them, making the
-              exports you pay for, showing a kitchen to people who have your share link, and reading your photos when you use Start from a photo. We don’t sell your content, and we
-              don’t use your designs or photos to train AI models.
+              <b>Yours:</b> your company name, logo and brand, your product information, photos and prices, your leads, and anything else you give us. You let us use them only to
+              build and run your showroom, and you confirm you have the right to give them to us. Product details, prices and availability shown on your showroom are yours to keep
+              accurate.
             </p>
             <p>
-              Anyone with an active share link can view that kitchen. You can turn a link off or let it expire at any time. The <a href="#/privacy">Privacy policy</a> says who can see
-              what.
+              <b>Ours:</b> the BluModel Studio software and its code, its designs and layouts, the showroom template your showroom is built on, our product library, and the 3D models,
+              textures and renderings we make, including the models we make of your products. The 3D models we make of your products are made for your showroom and shown only
+              there; we don’t offer models made from your material to another company without your permission. If you leave and want the model files, ask us.
+            </p>
+            <p>
+              <b>A licence, not a sale.</b> While your license and monthly plan are current, we give you a limited, non-exclusive, non-transferable right to use the service and your
+              showroom for your own business. Nothing in this agreement sells or transfers our software, designs or models to you, and every right we don’t expressly give you stays
+              with us.
             </p>
           </>
         ),
       },
       {
-        id: 'rules',
-        heading: '8. Fair use',
-        body: (
-          <ul>
-            <li>Don’t upload anything illegal, or anything you don’t have the right to use.</li>
-            <li>Don’t try to get into accounts, data or parts of the service that aren’t yours, or to get around the export paywall.</li>
-            <li>Don’t copy the catalog’s models or our software out of the service, scrape it, or overload it.</li>
-            <li>Don’t use the lead form or brand pages to send spam, or to collect people’s details for anything else.</li>
-          </ul>
-        ),
-      },
-      {
-        id: 'accuracy',
-        heading: '9. Plans, prices and estimates are for planning',
+        id: 'leads',
+        heading: '8. Leads and your visitors’ data',
         body: (
           <>
-            <p>{VISUALIZER_DISCLAIMER}</p>
             <p>
-              The built-in catalog’s brands and prices are illustrations. Product sizes and prices from contractors and brands are theirs. Before you order, build or demolish
-              anything, have the space measured and the plan checked by a qualified professional.
+              <b>Leads are yours.</b> When a visitor sends a design to your company, their contact details, the design and their consent go to your team only. We store them for
+              you and never sell them, share them with another company or use them to market to your customers.
+            </p>
+            <p>
+              For the personal data of your showroom’s visitors, you are the controller and we are your processor: we handle it only to run your showroom and on your instructions,
+              as the <a href="#/privacy">Privacy policy</a> describes. You agree to use leads only to answer the people who sent them, and to follow the privacy and anti-spam laws
+              that apply to you, including Canada’s CASL when you email them.
             </p>
           </>
         ),
       },
       {
-        id: 'service',
-        heading: '10. Keeping the service running',
+        id: 'team',
+        heading: '9. Your team',
         body: (
           <p>
-            We work to keep BluModel Studio available and back up its data every day, but we can’t promise it will never be interrupted or lose data, so keep your own copies of
-            exports that matter to you. We may change, add or remove features. If we ever close the service, we will tell account holders at least 30 days ahead so you can download
-            your data, and refund any period you have paid for and can no longer use.
+            Owners can invite staff, change roles and remove people. You are responsible for who you give access to and what they do in your showroom: keep passwords private, and
+            remove anyone who leaves. If you think an account has been misused, change its password and tell us.
           </p>
         ),
       },
       {
-        id: 'liability',
-        heading: '11. Liability',
+        id: 'rules',
+        heading: '10. Fair use, and no copying',
         body: (
           <>
-            <p>
-              BluModel Studio is provided as it is. As far as the law allows, we are not liable for indirect losses, such as lost profit or the cost of building work, and our total
-              liability to you is limited to what you paid us in the 12 months before the claim.
-            </p>
-            <p>Nothing in these terms limits a right you have under consumer law that can’t be limited, or our liability for anything the law doesn’t let us exclude.</p>
+            <ul>
+              <li>Don’t upload anything illegal, or anything you don’t have the right to use.</li>
+              <li>Don’t try to get into another company’s showroom, accounts or data, or parts of the service that aren’t yours.</li>
+              <li>
+                Don’t copy, download in bulk, resell or republish our software, the showroom template, our product library or the 3D models and images we make, except as part of
+                using your showroom.
+              </li>
+              <li>Don’t reverse engineer, decompile, disassemble or take apart the service, its code or its 3D files, or try to find their source, except where the law allows it.</li>
+              <li>
+                Don’t scrape the service or reach it with bots, crawlers or other automated tools, except the downloads and exports the service itself offers. Don’t overload it or
+                get around its limits.
+              </li>
+              <li>Don’t use the service, or anything you learn or take from it, to build or help build a competing product.</li>
+              <li>Don’t use any part of the service or its content (the software, the models, the images, the catalog) to train, test or improve an AI or machine-learning model.</li>
+              <li>Don’t use the lead form or your showroom to send spam, or to collect people’s details for anything else.</li>
+            </ul>
+            <p>These apply to your whole team. If someone breaks them, we may block that access and, if it is serious, suspend the showroom as section 13 describes.</p>
           </>
         ),
       },
       {
-        id: 'ending',
-        heading: '12. Ending',
+        id: 'availability',
+        heading: '11. Keeping it running',
         body: (
           <p>
-            You can stop at any time and delete your account in <a href="#/account">Account settings</a>. We may suspend or close an account that seriously or repeatedly breaks these
-            terms; unless the law or safety stops us, we will tell you why and let you download your data first.
+            We work to keep every showroom available and back its data up every day, but we can’t promise the service will never be interrupted. We may change, add or remove
+            features as the product improves, without reducing what you have paid for. If we ever close the service, we will tell you at least 30 days ahead, help you take your
+            leads and data with you, and refund any period you have paid for and can no longer use.
+          </p>
+        ),
+      },
+      {
+        id: 'fees',
+        heading: '12. Prices and taxes',
+        body: (
+          <p>
+            Prices are in Canadian dollars and don’t include sales taxes, which are added where the law requires them; your invoice or receipt shows the total. If an invoice stays
+            unpaid after we have reminded you, we may pause your showroom until it is paid (section 6). Payment questions are best raised with us before disputing a charge with
+            your bank.
+          </p>
+        ),
+      },
+      {
+        id: 'ending',
+        heading: '13. Ending',
+        body: (
+          <>
+            <p>
+              You can cancel the monthly plan at any time (section 4); the license runs to the end of its term. We may suspend a showroom that is unpaid or that seriously breaks
+              this agreement; unless the law or safety stops us, we will tell you why first and give you a chance to put it right.
+            </p>
+            <p>
+              When you leave, you can export your leads as a spreadsheet from the lead inbox before the showroom goes offline, and ask us for a copy of your other data. Ask us to
+              delete your showroom’s data and we will, except records the law requires us to keep, such as invoices and payments.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: 'liability',
+        heading: '14. Liability',
+        body: (
+          <>
+            <p>
+              The service is provided as it is. As far as the law allows, neither of us is liable to the other for indirect losses such as lost profit or lost jobs, and our total
+              liability to you is limited to what you paid us in the 12 months before the claim.
+            </p>
+            <p>Nothing here limits liability that the law doesn’t allow to be limited.</p>
+          </>
+        ),
+      },
+      {
+        id: 'visitors',
+        heading: '15. If you are visiting a showroom',
+        body: (
+          <>
+            <p>
+              A showroom is run for the company named on it. Designing, saving, sharing and downloading a design there are free. The company’s products, prices, quotes and any work
+              it does for you are between you and that company; we don’t sell or install anything. Your account on a showroom belongs to that showroom only.
+            </p>
+            <p>
+              Designs are for planning conversations: have the space measured and the plan checked by a professional before you order or build anything. If you send a design to the
+              company, it receives your details and the design because you asked it to; the <a href="#/privacy">Privacy policy</a> explains what happens to them.
+            </p>
+            <p>
+              <b>Using this site.</b> Anyone using this site, a showroom or blumodel.studio, may use it for their own planning. The software, the showroom’s design, and the 3D
+              models and images on it belong to us or to the company. You may not copy them in bulk, scrape the site or reach it with bots, crawlers or other automated tools,
+              reverse engineer or decompile it or its 3D files, use it to build a competing product, or use any of it to train or improve an AI or machine-learning model.
+              “BluModel Studio” and its logo are our trademarks; the company’s name and logo are its own. Using the site means you agree to this section.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: 'earlier',
+        heading: '16. Earlier purchases',
+        body: (
+          <p>
+            Before {PIVOT_DATE} BluModel Studio sold plans to homeowners and contractors: the Free and Unlimited plans, one-time kitchen unlocks, the Contractor plan and custom
+            model orders. They aren’t sold any more. Anything already paid for keeps working, on the terms it was sold with, until it ends or is cancelled: receipts, cancelling,
+            the billing portal and refunds stay available in Account → Billing. Exporting your own designs is now free.
           </p>
         ),
       },
       {
         id: 'changes',
-        heading: '13. Changes to these terms',
+        heading: '17. Changes and governing law',
         body: (
-          <p>
-            We will post any new version here with a new date. If a change matters to you (what you pay, what you get, or your rights) we will tell you in the app or by email before
-            it takes effect. If you don’t agree, you can cancel and delete your account.
-          </p>
+          <>
+            <p>
+              We will post any new version here with a new date, and tell companies by email at least 30 days before a change that affects what they pay, what they get or their
+              rights. If you don’t agree, you can cancel before it takes effect.
+            </p>
+            {w.jurisdiction ? (
+              <p>This agreement is governed by the laws of {w.jurisdiction}.</p>
+            ) : (
+              <p>This agreement is governed by the laws of the place where {w.who} is established.</p>
+            )}
+          </>
         ),
       },
       {
-        id: 'law',
-        heading: '14. Governing law',
-        body: w.jurisdiction ? (
+        id: 'confidential',
+        heading: '18. Confidentiality',
+        body: (
+          <>
+            <p>
+              Each of us will see things about the other that aren’t public. For you that includes your product data before it is published, your prices and costs, your leads and
+              your customers. For us it includes our prices and quotes, how the service works inside, and features that aren’t released yet.
+            </p>
+            <p>
+              Each of us keeps the other’s non-public information confidential, uses it only for this agreement, and shares it only with the people who need it to do their part
+              (our team, your team, and the services the <a href="#/privacy">Privacy policy</a> lists), who must keep it confidential too. This doesn’t cover information that is
+              public through no fault of the one who received it, that the law requires to be shared, or that you ask us to share. It lasts while we work together and for 3 years
+              after; for leads and personal data, as long as we hold them.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: 'trademarks',
+        heading: '19. Trademarks and copyright',
+        body: (
           <p>
-            These terms are governed by the laws of {w.jurisdiction}. If you are a consumer, you also keep the protection of the mandatory laws of the place you live, and you can
-            bring a claim there.
-          </p>
-        ) : (
-          <p>
-            These terms are governed by the laws of the place where {w.who} is established. If you are a consumer, you also keep the protection of the mandatory laws of the place you
-            live, and you can bring a claim there.
+            “BluModel Studio”, its logo and our product names are our trademarks. This agreement doesn’t give you the right to use them, except to say truthfully that your showroom
+            runs on BluModel Studio. Your name and logo stay yours; you let us show them on your showroom and, if you agree, name you as a customer. The software, the showroom
+            template and the models and images we make are protected by copyright: © {new Date().getFullYear()} {w.who === 'the operator of this site' ? 'BluModel Studio' : w.who}.
           </p>
         ),
       },
-      { id: 'contact', heading: '15. Contact', body: <ContactBlock w={w} /> },
+      { id: 'contact', heading: '20. Contact', body: <ContactBlock w={w} /> },
     ],
   };
 }
 
 // ─── Privacy ─────────────────────────────────────────────────────────────────
 
-export function privacyDoc(w: LegalWords): LegalDoc {
-  return {
+/**
+ * `company`: on a company's showroom, its name. The policy then opens with what that showroom
+ * keeps about the people who design on it (docs/handoff/leads.md), who is responsible for it, and
+ * how to have it deleted, before the general policy.
+ */
+export function privacyDoc(w: LegalWords, company: string | null = null): LegalDoc {
+  const base: LegalDoc = {
     id: 'privacy',
     title: 'Privacy policy',
     short: 'Privacy',
     updated: LAST_UPDATED,
     lede: (
       <>
-        {w.Who} runs BluModel Studio and is responsible for the personal data it holds. In short: we keep what we need to save your kitchens and run your account, on our own
-        server; we set one sign-in cookie and nothing that tracks or advertises; and you can download or delete your data yourself.
+        {w.Who} runs BluModel Studio, which hosts virtual showrooms for kitchen and bath companies. We hold personal data in two roles. For the companies we work with, their staff
+        and people who contact us, we decide how it is used. For the people who visit a company’s showroom, <b>the company is in charge of their data and we process it for the
+        company</b>. Either way: we keep what is needed, on our own server; we set one sign-in cookie and nothing that tracks or advertises; and we never sell personal data.
       </>
     ),
     sections: [
       {
-        id: 'what',
-        heading: '1. What we keep',
+        id: 'roles',
+        heading: '1. Who is responsible',
         body: (
           <ul>
             <li>
-              <b>Your account:</b> your name, email address and role. Your password is stored only as a salted hash; nobody can read it back.
+              <b>On blumodel.studio</b>, and for company accounts, staff accounts and billing, {w.who} is the controller: we decide what is kept and why, and this policy is ours.
             </li>
             <li>
-              <b>Your kitchens:</b> the designs, their names, and anything you type into them, such as a client’s name or extra estimate lines.
-            </li>
-            <li>
-              <b>Files you upload:</b> photos of your kitchen (Start from a photo), reference photos and spec sheets for a model order, and, for contractors and brands, logos,
-              product photos and 3D models.
-            </li>
-            <li>
-              <b>Contractor details:</b> company name, logo, phone, email, website and service area, and a private price book with your costs and markups.
-            </li>
-            <li>
-              <b>Purchases:</b> what you bought, when, the amount, and Stripe’s reference numbers for the payment and subscription. Never your card number: Stripe holds that.
-            </li>
-            <li>
-              <b>Leads:</b> if you send a quote request to a contractor, your name, email, phone (if you give it), message and, if you choose, your kitchen.
-            </li>
-            <li>
-              <b>How the service is used:</b> counts of product views and clicks, and a record of each export (which kitchen, which kind, when), with no file contents. Your IP
-              address is used while you sign in to slow down password guessing.
+              <b>On a company’s showroom</b>, the company named on it is the controller of its visitors’ data, and {w.who} is its <b>processor</b>: we store and handle that data
+              only to run the showroom for the company, on its instructions and under our agreement with it. Questions about how a company uses your details are best sent to the
+              company first; we will help it answer.
             </li>
           </ul>
         ),
       },
       {
-        id: 'cookies',
-        heading: '2. One cookie, no tracking',
+        id: 'what',
+        heading: '2. What we keep',
         body: (
           <>
             <p>
-              We set a single cookie, <code>blumodel_session</code>, when you sign in. It keeps you signed in for 30 days and renews while you use the site; signing out removes it. It
-              can’t be read by scripts or sent from other sites.
+              <b>About companies and their teams</b>
+            </p>
+            <ul>
+              <li>Staff accounts: name, email address and role. Passwords are stored only as salted hashes; nobody can read them back.</li>
+              <li>
+                Two-factor sign-in, for accounts that turn it on (required for BluModel admins): the authenticator secret, on our server, and the one-time recovery codes, stored
+                only as hashes.
+              </li>
+              <li>The company’s details: name, logo, colours, contact details shown to visitors, web addresses and products.</li>
+              <li>
+                Billing: licenses, invoices and receipts, and Stripe’s references for the monthly plan. Never a card number: Stripe holds that.
+              </li>
+              <li>Rendering credits: every credit added, spent, refunded or expired, and which team member made each rendering.</li>
+              <li>Book a call requests from blumodel.studio: company, name, phone, email, city and message.</li>
+            </ul>
+            <p>
+              <b>About visitors to a showroom, for the company</b>
+            </p>
+            <ul>
+              <li>
+                Before designing: the visitor’s name, an email address or phone number (at least one), the consent they gave with its wording and time, and when they first came
+                and were last active.
+              </li>
+              <li>An account, if the visitor makes one: name and email address, kept for that showroom only.</li>
+              <li>Designs the visitor saves, share links they make, and when each design was started, saved and sent.</li>
+              <li>
+                Leads: when a visitor sends a design to the company, their name, email, phone, postal code, budget, timeline and notes, the consent they gave with its wording and
+                time, and a view-only link to the design.
+              </li>
+            </ul>
+            <p>
+              <b>About how the service is used:</b> counts of product views, and IP addresses while signing in, sending a form or loading the catalog and its files, to slow down
+              password guessing, spam and bulk copying. Each time a company’s team exports its lead list we record who did it, when and how many rows.
             </p>
             <p>
-              There are no advertising or analytics cookies, no tracking pixels and no third-party scripts. Fonts and every other file are served by us, so loading a page tells no
-              one else that you visited. A kitchen you design without an account is kept in your browser’s own storage and never leaves your device until you save it to an account.
+              <b>An audit log</b> of administrative actions (who did what, and when). When an account, a lead or a company is deleted, the email addresses and phone numbers in its
+              entries are replaced with a pseudonym, so the log still shows what happened without saying to whom.
             </p>
           </>
         ),
       },
       {
-        id: 'who-sees',
-        heading: '3. Who can see what',
+        id: 'use',
+        heading: '3. How visitor data is used',
         body: (
           <ul>
-            <li>
-              <b>Your kitchens</b> are private to your account. If you make a share link, anyone who has it can view that kitchen, view-only, until you turn the link off or it
-              expires. A contractor’s link shows their sell prices, never their costs.
-            </li>
-            <li>
-              <b>Photos you start a kitchen from</b> are private to you. They are not shown on share links.
-            </li>
-            <li>
-              <b>Model orders:</b> your reference photos and brief are seen by you and the studio staff making your model. The finished model is private to your account, and appears
-              inside kitchens you share.
-            </li>
-            <li>
-              <b>Brand pages</b> are public once approved, with the company details and products the contractor chose to publish.
-            </li>
-            <li>
-              <b>Leads</b> go to the one contractor you sent them to, because you asked for that when you sent the form. We don’t pass them to anyone else.
-            </li>
-            <li>
-              <b>Our staff</b> (admins and the modelling studio) can open account data when it is needed to run the service: approving brand pages, fulfilling orders, or answering
-              you.
-            </li>
+            <li>Only to run that company’s showroom: saving designs, showing them, and delivering leads to the company’s team.</li>
+            <li>A lead goes to the one company whose showroom it was sent from. No other company can see it, and showrooms are kept apart from one another.</li>
+            <li>We don’t sell visitor data, use it to market our own services, or use designs or photos to train AI models.</li>
+            <li>Our own staff open a showroom’s data only when needed to run or support it, for example when the company asks for help.</li>
           </ul>
         ),
       },
       {
-        id: 'processors',
-        heading: '4. Services we use',
+        id: 'cookies',
+        heading: '4. One cookie, no tracking',
         body: (
           <>
-            <p>We don’t sell or rent personal data. A few services handle some of it for us, only to do their job:</p>
+            <p>
+              We set a cookie, <code>blumodel_session</code>, when someone signs in. It keeps them signed in for 30 days (a BluModel admin for 12 hours), renews while they use the site, and is removed when they
+              sign out. It belongs to the one site that set it, so a sign-in on one showroom means nothing on another, and it can’t be read by scripts.
+            </p>
+            <p>
+              On a showroom, a visitor who gives their details before designing gets a second cookie, <code>blumodel_visitor</code>, so their designs are saved and they aren’t asked
+              again. It lasts 180 days, belongs to that one showroom, can’t be read by scripts, and is removed by clearing the browser’s cookies.
+            </p>
+            <p>
+              There are no advertising or analytics cookies, no tracking pixels and no third-party scripts. Fonts and every other file are served by us, so loading a page tells no one
+              else that you visited.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: 'processors',
+        heading: '5. Services we use',
+        body: (
+          <>
+            <p>A few services handle some data for us, only to do their job:</p>
             <ul>
               <li>
-                <b>Stripe</b> takes payments on its own checkout page and holds your card details under its own privacy policy.
+                <b>Stripe</b> takes companies’ monthly payments on its own checkout page and holds card details under its own privacy policy.
               </li>
               <li>
-                <b>Cloudflare</b> carries traffic between your browser and our server, so it handles your IP address and requests in transit.
+                <b>Cloudflare</b> carries traffic between browsers and our server, so it handles IP addresses and requests in transit.
               </li>
               <li>
-                <b>Anthropic</b> (an AI provider): only if you use Start from a photo while photo reading is switched on, the photos you add and your measurements are sent to it to
-                read the room for that one request.
+                <b>An email delivery service</b> sends sign-in and password emails, team invitations, and notices to a company that a new lead has arrived. The notice doesn’t contain
+                the lead’s message.
+              </li>
+              <li>
+                <b>An AI rendering service</b> makes photoreal renderings when a company’s team asks for one. It receives an image of the 3D view and a short description of the room,
+                its finishes and products, never a visitor’s contact details.
               </li>
             </ul>
           </>
@@ -464,66 +603,134 @@ export function privacyDoc(w: LegalWords): LegalDoc {
       },
       {
         id: 'where',
-        heading: '5. Where your data is kept, and for how long',
+        heading: '6. Where data is kept, and for how long',
         body: (
           <>
             <p>
-              BluModel Studio’s database and files live on the operator’s own server, with a backup made every day. We keep your data while your account exists. When you delete
-              your account it is removed from the live database at once and drops out of backups as they are replaced.
+              BluModel Studio’s database and files live on the operator’s own server, with a backup made every day. Any copy kept off that server is encrypted, and only we hold
+              the key.
             </p>
             <p>
-              Records of payments and model orders are kept, with your name and email removed, because accounting law requires it. Leads you received as a contractor are deleted
-              with your account; a lead you sent stays with the contractor who received it.
+              <b>Deleted data leaves every backup within 35 days.</b> The daily copies on the server are kept 14 days; the encrypted off-site copies 30 days; the copies made
+              before an update, a restore or a data move 30 days; data exports 7 days. Each copy is deleted on that schedule automatically.
             </p>
+            <ul>
+              <li>
+                <b>A visitor who never sent a design</b>, and whose details the company’s team never acted on, is deleted 24 months after their last visit, or sooner if the company
+                chooses 6, 12 or 18 months. Deleting a visitor’s details also deletes the designs only they had, their history and the links to them.
+              </li>
+              <li>
+                <b>A visitor who sent a design</b> stays in the company’s leads while the company is a customer, unless the company or the visitor asks for it to be deleted sooner.
+                Someone else typing the same email or phone never joins it: that starts a separate lead, which the company can merge if it is the same person.
+              </li>
+              <li>
+                <b>The visitor cookie</b> lasts 180 days; the sign-in cookie 30 days from the last visit.
+              </li>
+              <li>
+                <b>Company and staff data</b> is kept while the company is a customer. <b>Book a call requests</b> are deleted 24 months after they were last updated.
+              </li>
+              <li>
+                <b>When a company leaves</b>, it can have all of its data exported, and when it asks, we delete its showroom: its settings, team, accounts, products, designs, leads,
+                renderings, credits and files. Nothing is deleted just because a showroom lapses or a trial ends.
+              </li>
+              <li>
+                <b>Invoices and payment records</b> are kept as long as tax and accounting law requires (6 years in Canada); after a company is deleted they keep the amounts, dates
+                and the payment provider’s reference, but no names, emails or phone numbers.
+              </li>
+            </ul>
           </>
         ),
       },
       {
         id: 'rights',
-        heading: '6. Your choices and rights',
+        heading: '7. Your choices and rights',
         body: (
           <>
             <ul>
               <li>
-                <b>Download your data:</b> <a href="#/account">Account settings</a> → <b>Download my data</b> gives you a file with your account, kitchens, share links, orders and,
-                for contractors, your brand page and leads.
+                <b>Download your data:</b> <a href="#/account">Account settings</a> → <b>Download my data</b> gives you a file with your account and designs.
               </li>
               <li>
-                <b>Delete your account:</b> <a href="#/account">Account settings</a> → <b>Delete my account</b>. If a paid plan is still running, cancel it in Billing first; you can
-                delete as soon as it no longer renews.
+                <b>Delete your account:</b> <a href="#/account">Account settings</a> → <b>Delete my account</b>. Your details as a lead stay with the company whose showroom you
+                used: ask the company to delete them.
               </li>
               <li>
-                <b>Correct your details:</b> change your name and password in Account settings, and contractor details under Company.
+                <b>Have a company forget you:</b> ask the company whose showroom you used. Its team can delete your details, your designs and their history from its leads in one
+                step; deleted data then leaves every backup within 35 days.
+              </li>
+              <li>
+                <b>Correct your details:</b> change your name and password in Account settings.
               </li>
             </ul>
             <p>
-              Depending on where you live (for example under the GDPR, the UK GDPR, Canada’s PIPEDA or California’s CCPA) you may also have the right to ask what we hold about you, to
-              object to some uses, and to complain to your data protection authority. Contact us {w.contact} and we will help.
+              Depending on where you live (for example under Canada’s PIPEDA, Quebec’s Law 25, the GDPR or California’s CCPA) you may also have the right to ask what is held about
+              you, to correct it, to object to some uses, and to complain to your data protection authority. Visitors to a showroom should ask the company first; anyone can
+              contact us {w.contact} and we will help or pass the request to the company.
             </p>
           </>
         ),
       },
       {
         id: 'security',
-        heading: '7. Security',
+        heading: '8. Security',
         body: (
           <p>
-            Pages and data travel over HTTPS. Passwords are hashed; sign-in sessions are random tokens we store only in hashed form; changes to your account need a request from this
-            site itself; repeated failed sign-ins are slowed down. If we ever learn of a breach that affects you, we will tell you.
+            Pages and data travel over HTTPS. Every showroom’s data is kept apart from every other’s, and each request is checked against the site it came from. Passwords are hashed;
+            sign-in sessions are random tokens stored only in hashed form; repeated failed sign-ins and form sends are slowed down. Two-factor sign-in is available to every account
+            and required for BluModel admins. Backups that leave our server are encrypted. If we learn of a breach that affects personal data
+            we hold for a company, we tell that company without delay so it can tell the people affected, and we tell the people affected where we are the controller.
           </p>
         ),
       },
       {
         id: 'children',
-        heading: '8. Children',
-        body: <p>BluModel Studio is for adults planning real kitchens. We don’t knowingly keep data about anyone under 16; if you think we do, contact us and we will delete it.</p>,
+        heading: '9. Children',
+        body: <p>BluModel Studio is for adults planning real kitchens and bathrooms. We don’t knowingly keep data about anyone under 16; if you think we do, contact us and we will delete it.</p>,
       },
       {
         id: 'changes',
-        heading: '9. Changes',
-        body: <p>We will post any new version here with a new date, and tell account holders in the app or by email before a change that affects how we use their data.</p>,
+        heading: '10. Changes',
+        body: <p>We will post any new version here with a new date, and tell companies before a change that affects how their visitors’ data is handled.</p>,
       },
-      { id: 'contact', heading: '10. Contact', body: <ContactBlock w={w} /> },
+      { id: 'contact', heading: '11. Contact', body: <ContactBlock w={w} /> },
+    ],
+  };
+  if (!company) return base;
+  return {
+    ...base,
+    lede: (
+      <>
+        This showroom is run for <b>{company}</b> by BluModel Studio. When you design here, <b>{company} is responsible for your details</b> and {w.who} keeps them for{' '}
+        {company}. The first section says what that means for you; the rest is BluModel Studio’s general policy.
+      </>
+    ),
+    sections: [
+      {
+        id: 'showroom',
+        heading: `On ${company}’s showroom`,
+        body: (
+          <>
+            <p>
+              <b>What is collected.</b> Before you start a design you give your name and an email address or phone number, and tick a box agreeing that {company} may contact you
+              about your design; the words you agreed to and the time are kept. Then your designs, when you started, saved and came back to them, and anything you write when you
+              send a design to {company} (postal code, budget, timeline, notes).
+            </p>
+            <p>
+              <b>Why.</b> So your designs are saved and you can come back to them, and so {company} can contact you about your project. Nothing else: your details aren’t sold,
+              shared with other companies or used for advertising.
+            </p>
+            <p>
+              <b>Who is responsible.</b> {company} is the controller of your details and decides how it follows up with you. {w.Who}, which runs BluModel Studio, is its processor:
+              it stores your details only to run this showroom for {company}. Other companies on BluModel Studio can’t see them.
+            </p>
+            <p>
+              <b>Deleting your details.</b> Ask {company} to delete them, using the contact details on this showroom. Its team can delete your details, your designs and their
+              history in one step. If you can’t reach {company}, contact BluModel Studio {w.contact} and we will pass your request on and make sure it is done.
+            </p>
+          </>
+        ),
+      },
+      ...base.sections,
     ],
   };
 }
@@ -538,70 +745,78 @@ export function refundsDoc(w: LegalWords): LegalDoc {
     updated: LAST_UPDATED,
     lede: (
       <>
-        You can try everything in BluModel Studio for free before you pay: design, view in 3D, share. What you pay for is the files and the services listed here. This policy says
-        when you get your money back. It doesn’t take away any right you have under the consumer law where you live.
+        This policy covers what a company pays for a showroom: the monthly plan, rendering credits and the yearly license. Visitors to a showroom never pay anything. Section 5
+        covers purchases made before {PIVOT_DATE}.
       </>
     ),
     sections: [
       {
-        id: 'unlock',
-        heading: '1. Kitchen unlock (one-time)',
-        body: (
-          <p>
-            If you haven’t exported anything from that kitchen yet, ask within 14 days of paying for a full refund. Once you have downloaded an export, the unlock has been used and
-            isn’t refundable, unless the export was broken and we couldn’t fix it, in which case you get your money back.
-          </p>
-        ),
-      },
-      {
-        id: 'plans',
-        heading: '2. Unlimited and Contractor plans',
+        id: 'monthly',
+        heading: '1. The monthly plan',
         body: (
           <>
             <p>
-              Cancel any time in <a href="#/account/billing">Account → Billing</a>. Cancelling stops the next renewal; you keep the plan until the end of the period you’ve paid for, and
-              we don’t refund the rest of a month you have started.
+              Cancel any time. Cancelling stops the next renewal; the showroom stays on the plan until the end of the month you have paid for, and we don’t refund the rest of a month
+              that has started.
             </p>
             <p>
-              If a renewal went through that you didn’t want and you haven’t exported anything since, ask within 7 days of the renewal and we will refund it and end the plan. If we
-              charged you twice or by mistake, we refund the mistake in full.
+              If a renewal went through that you didn’t want, ask within 7 days: if none of that month’s rendering credits have been used, we refund it and end the plan. If we charged
+              you twice or by mistake, we refund the mistake in full.
             </p>
           </>
         ),
       },
       {
-        id: 'models',
-        heading: '3. Custom 3D models paid for before 15 October 2026',
+        id: 'credits',
+        heading: '2. Rendering credits',
         body: (
-          <ul>
-            <li>
-              Custom models now come with the Contractor plan and aren’t paid for separately, so there is nothing to refund on a new request: withdraw it before modelling starts
-              and its models go back to your allowance. The rest of this section covers orders paid for before then.
-            </li>
-            <li>
-              <b>Before you pay</b>, cancel the order from its page and nothing is charged. <b>After you pay but before modelling starts</b>, contact us to cancel it for a full
-              refund.
-            </li>
-            <li>
-              <b>Once modelling has started</b>, the price covers the work. If the model we deliver still doesn’t match your brief (size, shape or finishes) after the two included
-              revision rounds, ask and we will refund the order in full or in part, depending on how far it falls short.
-            </li>
-            <li>
-              <b>If we decline the order</b>, or can’t deliver it, you get a full refund. If a rush order arrives later than the rush turnaround, the rush fee is refunded.
-            </li>
-          </ul>
+          <p>
+            Credits are part of the monthly plan and have no cash value, so they aren’t refunded on their own, when they expire, or when the plan ends. A rendering that fails gives its
+            credits back automatically. If a rendering was charged and came out unusable, tell us and we will return its credits.
+          </p>
+        ),
+      },
+      {
+        id: 'license',
+        heading: '3. The yearly license and extra modelling',
+        body: (
+          <>
+            <p>
+              <b>Before we start setting up your showroom</b>, you can cancel the license for a full refund. <b>Once setup has started</b>, the license pays for work already done and
+              isn’t refundable, unless your order says otherwise or we fail to deliver the showroom, in which case we refund what we didn’t deliver.
+            </p>
+            <p>
+              Products modelled beyond those in your license are quoted first. Cancel before modelling starts and nothing is owed; if a model we deliver doesn’t match the material
+              you sent and we can’t put it right, we refund that model.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: 'closing',
+        heading: '4. If we close the service',
+        body: <p>If we ever close BluModel Studio, we refund any part of the license or the monthly plan you have paid for and can no longer use.</p>,
+      },
+      {
+        id: 'earlier',
+        heading: '5. Purchases made before 17 October 2026',
+        body: (
+          <p>
+            Kitchen unlocks, the Unlimited and Contractor plans and custom model orders bought before then keep the refund terms they were sold with: an unused kitchen unlock within
+            14 days of paying, an unwanted plan renewal within 7 days if nothing was exported since, and a model order before modelling started. Ask us as described below.
+          </p>
         ),
       },
       {
         id: 'how',
-        heading: '4. How to ask',
+        heading: '6. How to ask',
         body: (
           <>
             <p>
-              Contact us {w.contact} from the email address on your account, and say which purchase it is (the date and amount on your receipt in Billing is enough). Refunds go back
-              to the card or account you paid with, through Stripe; your bank usually shows them within 5 to 10 business days.
+              Contact us {w.contact} and say which showroom and which payment it is: the date and amount on the invoice or receipt is enough. Refunds go back the way you paid: to the
+              card through Stripe, where your bank usually shows them within 5 to 10 business days, or by the same method as the invoice was paid.
             </p>
-            <p>Please contact us before disputing a charge with your bank: it is quicker for you, and a dispute can freeze your account while it is open.</p>
+            <p>Please contact us before disputing a charge with your bank: it is quicker, and a dispute can pause the showroom while it is open.</p>
           </>
         ),
       },
@@ -609,17 +824,18 @@ export function refundsDoc(w: LegalWords): LegalDoc {
         ? [
             {
               id: 'demo',
-              heading: '5. Demo payments',
+              heading: '7. Demo payments',
               body: <p>A checkout marked DEMO is a simulation. Nothing is charged, so there is nothing to refund.</p>,
             },
           ]
         : []),
-      { id: 'contact', heading: w.payments === 'demo' ? '6. Contact' : '5. Contact', body: <ContactBlock w={w} /> },
+      { id: 'contact', heading: w.payments === 'demo' ? '8. Contact' : '7. Contact', body: <ContactBlock w={w} /> },
     ],
   };
 }
 
-export function legalDoc(id: LegalDocId, legal: LegalConfig, payments: PaymentsMode | null = null): LegalDoc {
+/** `company`: the showroom's company name on a showroom (the privacy policy then opens with its own section). */
+export function legalDoc(id: LegalDocId, legal: LegalConfig, payments: PaymentsMode | null = null, company: string | null = null): LegalDoc {
   const w = legalWords(legal, payments);
-  return id === 'terms' ? termsDoc(w) : id === 'privacy' ? privacyDoc(w) : refundsDoc(w);
+  return id === 'terms' ? termsDoc(w) : id === 'privacy' ? privacyDoc(w, company) : refundsDoc(w);
 }

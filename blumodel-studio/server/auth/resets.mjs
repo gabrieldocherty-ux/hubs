@@ -8,6 +8,8 @@ import crypto from 'node:crypto';
 import { sha256 } from './sessions.mjs';
 
 export const RESET_MINUTES = 60;
+/** A team invite (server/tenancy/accounts.mjs) is a set-your-password link that lasts 7 days. */
+export const INVITE_MINUTES = 7 * 24 * 60;
 const DAY = 86_400_000;
 /** 32 random bytes as base64url, and nothing else. */
 export const RESET_TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
@@ -18,12 +20,13 @@ export function createResetStore({ db, now = Date.now }) {
     /**
      * A new single-use link token for `userId`. `createdBy` is the admin who made it, or null when
      * the person asked by email. Returns the token (shown or sent once, never stored) and its expiry.
+     * `minutes` overrides RESET_MINUTES (a showroom team invite lasts INVITE_MINUTES).
      */
-    issue(userId, { createdBy = null } = {}) {
+    issue(userId, { createdBy = null, minutes = RESET_MINUTES } = {}) {
       const t = now();
       db.prepare('DELETE FROM password_resets WHERE user_id = ? OR expires_at < ?').run(userId, t - DAY);
       const token = crypto.randomBytes(32).toString('base64url');
-      const expiresAt = t + RESET_MINUTES * 60_000;
+      const expiresAt = t + Math.max(1, Math.min(minutes, INVITE_MINUTES)) * 60_000;
       db.prepare('INSERT INTO password_resets (token_hash, user_id, created_at, expires_at, used_at, created_by) VALUES (?, ?, ?, ?, NULL, ?)').run(sha256(token), userId, t, expiresAt, createdBy);
       return { token, expiresAt };
     },

@@ -8,8 +8,10 @@ import { markDown } from '../lib/reachability';
 import { navigateHash } from '../lib/router';
 import { THEME_PREFS, type ThemePref } from '../lib/theme';
 import { timeAgo, useSession } from '../store/useSession';
+import { useConfig } from '../lib/config';
 import { proApi } from '../features/contractors/api';
 import { draftToInput, type CompanyDraft } from '../features/contractors/CompanyFields';
+import { TwoFactorSettings } from './TwoFactor';
 import './account.css';
 
 /**
@@ -75,13 +77,15 @@ export function Switch({ id, label, hint, checked, onChange, disabled }: { id: s
 export function AccountSettingsPage() {
   const user = useSession((s) => s.user)!;
   const emailEnabled = usePrefs((s) => s.emailEnabled);
-  const contractor = user.plan.id === 'contractor' || !!user.contractor;
+  // A showroom visitor or team member has no plan of ours to see or buy (docs/SHOWROOM_PIVOT.md §3).
+  const onShowroom = !!useConfig((s) => s.config?.tenant);
+  const contractor = !onShowroom && (user.plan.id === 'contractor' || !!user.contractor);
   const sections: [string, string][] = [
     ['profile', 'Profile'],
     ['security', 'Security'],
     ['preferences', 'Preferences'],
     ...(emailEnabled ? ([['email', 'Email notifications']] as [string, string][]) : []),
-    ['plan', 'Plan & billing'],
+    ...(onShowroom ? [] : ([['plan', 'Plan & billing']] as [string, string][])),
     ...(contractor ? ([['company', 'Company']] as [string, string][]) : []),
     ['data', 'Your data'],
   ];
@@ -100,7 +104,7 @@ export function AccountSettingsPage() {
         <SecuritySection />
         <PreferencesSection />
         {emailEnabled && <EmailSection />}
-        <PlanSection />
+        {!onShowroom && <PlanSection />}
         {contractor && <CompanySection />}
         <Section id="data" title="Your data">
           <YourData />
@@ -283,8 +287,10 @@ function ChangeEmail() {
 
 function SecuritySection() {
   return (
-    <Section id="security" title="Security" intro="Your password and the devices signed in to your account.">
+    <Section id="security" title="Security" intro="Your password, two-factor sign-in and the devices signed in to your account.">
       <ChangePassword />
+      <div className="set-divider" />
+      <TwoFactorSettings />
       <div className="set-divider" />
       <Devices />
     </Section>

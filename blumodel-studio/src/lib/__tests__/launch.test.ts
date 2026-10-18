@@ -142,6 +142,9 @@ test('legal pages, account settings and the 404 route', () => {
   assert.deepEqual(parseRoute('#/privacy'), { name: 'legal', doc: 'privacy' });
   assert.deepEqual(parseRoute('#/refunds?qa-payments=stripe'), { name: 'legal', doc: 'refunds' });
   assert.deepEqual(parseRoute('#/account'), { name: 'account' });
+  // A company's monthly-plan payment link (the admin's link and Stripe's return land here).
+  assert.deepEqual(parseRoute('#/pay/showroom/tc_TcdJr-OYVzruAoCq7dR_Bg'), { name: 'payShowroom', ref: 'tc_TcdJr-OYVzruAoCq7dR_Bg' });
+  assert.equal(hrefFor({ name: 'payShowroom', ref: 'tc_abc' }), '#/pay/showroom/tc_abc');
   assert.deepEqual(parseRoute('#/account/billing'), { name: 'billing' });
   for (const h of ['#/nope', '#/terms/extra', '#/pricing/x', '#/k/not-a-uuid', '#/%E0%A4%A']) assert.deepEqual(parseRoute(h), { name: 'notFound' }, h);
   assert.deepEqual(parseRoute(''), { name: 'home' });

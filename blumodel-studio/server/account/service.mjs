@@ -19,6 +19,7 @@
 // another upload row still points at the same bytes). An upload someone else still uses (granted
 // to another account, a partner brand's logo, a product that stays) is kept, without its owner.
 
+import { pseudonymiseAudit } from '../lib/audit.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -238,6 +239,9 @@ export function createAccountService({ db, config, now = Date.now, tx, files }) 
         removedBlobs.push({ sha256: f.sha256, ext: f.ext });
       }
 
+      // The audit log keeps what happened, not to whom: this account's email and phone become a pseudonym.
+      const who = db.prepare('SELECT email, phone FROM users WHERE id = ?').get(userId);
+      if (who) pseudonymiseAudit(db, { emails: [who.email], phones: [who.phone] });
       db.prepare('DELETE FROM users WHERE id = ?').run(userId);
       return c;
     });

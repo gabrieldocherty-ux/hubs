@@ -19,6 +19,7 @@ import './billing.css';
 
 const PLANS = plansJson as Plan[];
 const planName = (id: string) => PLANS.find((p) => p.id === id)?.name ?? id;
+const forSale = (id: string) => (PLANS.find((p) => p.id === id) as { forSale?: boolean } | undefined)?.forSale === true;
 const date = (ms: number | null) => (ms ? new Date(ms).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '—');
 
 /**
@@ -165,7 +166,8 @@ export default function BillingPage() {
               <div className="billing-actions">
                 {onPlan && sub && !comp && !soon && (
                   <>
-                    {!sub.cancelAtPeriodEnd && (
+                    {/* Only to a plan that is still sold (plans.json forSale): the legacy plans aren't. */}
+                    {!sub.cancelAtPeriodEnd && forSale(other) && (
                       <button className="btn" onClick={() => run('change', () => billingApi.change(other))} disabled={!!busy}>
                         {busy === 'change' ? 'Changing…' : `Switch to ${planName(other)} (${planPrice(PLANS.find((p) => p.id === other)!)})`}
                       </button>
@@ -189,7 +191,7 @@ export default function BillingPage() {
               </div>
             </section>
 
-            {!onPlan && (
+            {!onPlan && (['unlimited', 'contractor'] as const).some(forSale) && (
               <section aria-labelledby="plans-title">
                 <h2 id="plans-title" className="billing-h2">
                   Plans
@@ -389,7 +391,7 @@ function statusLine(me: BillingMe, comp: boolean): string {
   if (plan.id === 'free') {
     if (sub?.status === 'past_due') return `Your ${planName(sub.plan)} renewal failed and the ${me.graceDays}-day grace period has ended. Update your payment to restore it.`;
     if (sub?.status === 'canceled') return `Your ${planName(sub.plan)} plan ended. Exports are locked; everything you designed is still here.`;
-    return 'Design, save and share for free. Exports are a paid feature.';
+    return 'Design, save, share and download for free.';
   }
   if (comp) return plan.periodEnd ? `Complimentary, until ${date(plan.periodEnd)}. There is nothing to pay.` : 'Complimentary. There is nothing to pay.';
   if (plan.status === 'past_due') return `The last payment failed. You keep ${planName(plan.id)} until ${date(plan.graceUntil)} while it is retried.`;

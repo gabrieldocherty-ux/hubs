@@ -45,6 +45,8 @@ export function createFileService({ db, config, now = Date.now, auth }) {
       visibility: r.visibility,
       ownerUserId: r.owner_user_id ?? null,
       brandId: r.brand_id ?? null,
+      /** The showroom the file belongs to (tenancy-003), null for the sales site and our library. */
+      tenantId: r.tenant_id ?? null,
       originalName: r.original_name,
       meta: parseMeta(r.meta),
       createdAt: r.created_at,
@@ -72,7 +74,7 @@ export function createFileService({ db, config, now = Date.now, auth }) {
     return dest;
   }
 
-  function store(buf, { sha256, tempPath, kind, visibility, ownerUserId, brandId, originalName }) {
+  function store(buf, { sha256, tempPath, kind, visibility, ownerUserId, brandId, tenantId = null, originalName }) {
     if (!KINDS.includes(kind)) throw new HttpError(400, 'Choose a file kind: model, image or reference.');
     const info = inspectUpload(buf);
     if (!info.ok) throw new HttpError(400, info.error);
@@ -85,9 +87,9 @@ export function createFileService({ db, config, now = Date.now, auth }) {
     const id = randomId('f_');
     const vis = kind === 'reference' ? 'private' : visibility === 'public' ? 'public' : 'private';
     db.prepare(
-      `INSERT INTO files (id, sha256, ext, mime, size_bytes, kind, visibility, owner_user_id, brand_id, original_name, meta, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(id, sha, info.ext, info.mime, buf.length, kind, vis, ownerUserId ?? null, brandId ?? null, cleanName(originalName), JSON.stringify(info.meta), now());
+      `INSERT INTO files (id, sha256, ext, mime, size_bytes, kind, visibility, owner_user_id, brand_id, original_name, meta, created_at, tenant_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(id, sha, info.ext, info.mime, buf.length, kind, vis, ownerUserId ?? null, brandId ?? null, cleanName(originalName), JSON.stringify(info.meta), now(), tenantId ?? null);
     return svc.get(id);
   }
 
@@ -98,7 +100,7 @@ export function createFileService({ db, config, now = Date.now, auth }) {
      * Streams the request body into storage. The route checks brand membership first.
      * @returns {Promise<object>} the FileRecord
      */
-    async saveUpload(rc, { kind, visibility = 'private', brandId = null, maxBytes, originalName } = {}) {
+    async saveUpload(rc, { kind, visibility = 'private', brandId = null, maxBytes, originalName, tenantId } = {}) {
       const user = auth.requireUser(rc);
       if (!KINDS.includes(kind)) throw new HttpError(400, 'Choose a file kind: model, image or reference.');
       const tmp = await streamToTemp(rc.req, maxBytes ?? capFor(kind), tmpDir);
@@ -111,6 +113,8 @@ export function createFileService({ db, config, now = Date.now, auth }) {
           visibility,
           ownerUserId: user.id,
           brandId,
+          // An upload on a showroom belongs to it (rc.site from the router), unless told otherwise.
+          tenantId: tenantId !== undefined ? tenantId : (rc.site?.tenantId ?? null),
           originalName: originalName ?? rc.query?.get('name'),
         });
       } finally {
@@ -119,8 +123,8 @@ export function createFileService({ db, config, now = Date.now, auth }) {
     },
 
     /** Stores bytes that are already in memory (seeds, server-made files). Same validation. */
-    saveBuffer(buf, { kind, visibility = 'private', ownerUserId = null, brandId = null, originalName = '' }) {
-      return store(Buffer.from(buf), { kind, visibility, ownerUserId, brandId, originalName });
+    saveBuffer(buf, { kind, visibility = 'private', ownerUserId = null, brandId = null, tenantId = null, originalName = '' }) {
+      return store(Buffer.from(buf), { kind, visibility, ownerUserId, brandId, tenantId, originalName });
     },
 
     get(id) {
@@ -128,9 +132,54 @@ export function createFileService({ db, config, now = Date.now, auth }) {
       return toRecord(db.prepare('SELECT * FROM files WHERE id = ?').get(id)) || null;
     },
 
-    /** A public row for this blob, if any (what `/files/<sha>.<ext>` may serve). */
-    publicBlob(sha, ext) {
-      return toRecord(db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' LIMIT 1").get(sha, ext)) || null;
+    /**
+     * A public row for this blob, if any (what `/files/<sha>.<ext>` may serve). With `site` (a
+     * showroom), only our library's and that showroom's own: another company's public files
+     * aren't served on it.
+     */
+    publicBlob(sha, ext, site, user = null) {
+      const tenantId = site?.tenantId ?? null;
+      const staffOfOurs = user && (user.role === 'admin' || user.role === 'studio');
+      const row = tenantId
+        ? db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' AND (tenant_id IS NULL OR tenant_id = ?) LIMIT 1").get(sha, ext, tenantId)
+        : staffOfOurs
+          ? db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' LIMIT 1").get(sha, ext)
+          : // On the sales site a company's files are invisible, except to whoever uploaded them.
+            db.prepare("SELECT * FROM files WHERE sha256 = ? AND ext = ? AND visibility = 'public' AND (tenant_id IS NULL OR owner_user_id IS ?) LIMIT 1").get(sha, ext, user?.id ?? null);
+      return toRecord(row) || null;
+    },
+
+    /**
+     * Whether `rc` may read `file`, by site (docs/handoff/tenancy.md):
+     *   on a showroom   another showroom's file never; the showroom's own file when it is public,
+     *                   its team asks, or it is a picture or model of one of its live products
+     *                   (or its logo); otherwise the usual rule (canRead)
+     *   on the sales site a showroom's file only for admins, the studio and its uploader;
+     *                   otherwise the usual rule
+     */
+    canReadOnSite(rc, file) {
+      if (!file) return false;
+      const tenantId = rc?.site?.tenantId ?? null;
+      if (!tenantId) {
+        // A company's file is invisible on the sales site except to our admins and studio, and to
+        // the account that uploaded it (a contractor whose company became a showroom).
+        const u = rc?.user ?? null;
+        if (file.tenantId && !(u && (u.role === 'admin' || u.role === 'studio' || (file.ownerUserId && file.ownerUserId === u.id)))) return false;
+        return read.canRead(u, file, rc);
+      }
+      if (file.tenantId && file.tenantId !== tenantId) return false;
+      if (file.tenantId === tenantId) {
+        if (file.visibility === 'public' || rc.memberRole) return true;
+        if (file.kind !== 'reference') {
+          const used = db
+            .prepare("SELECT 1 FROM products WHERE tenant_id = ? AND status <> 'archived' AND live_spec IS NOT NULL AND instr(live_spec, ?) > 0 LIMIT 1")
+            .get(tenantId, `"${file.id}"`);
+          if (used) return true;
+          const logo = db.prepare('SELECT 1 FROM tenants WHERE id = ? AND instr(branding, ?) > 0').get(tenantId, `"${file.id}"`);
+          if (logo) return true;
+        }
+      }
+      return read.canRead(rc?.user ?? null, file, rc);
     },
 
     /**

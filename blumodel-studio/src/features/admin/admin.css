@@ -471,6 +471,148 @@
   overflow-wrap: anywhere;
 }
 
+/* ── companies and sales leads ──────────────────────────────── */
+
+.adm-group {
+  margin: 4px 0 -6px;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.adm-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adm-filters .chip .mono {
+  color: inherit;
+}
+
+.adm-company .adm-section > *,
+.adm-lead > * {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.adm-company .adm-section > :last-child,
+.adm-lead > :last-child {
+  margin-bottom: 0;
+}
+
+.adm-subform {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.adm-callout {
+  padding: 12px 14px;
+  border: 1px solid var(--info-ink);
+  border-radius: var(--radius);
+  background: var(--info-soft);
+  color: var(--ink);
+}
+
+.adm-copy input {
+  flex: 1 1 200px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.adm-wrap {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.adm-narrow {
+  max-width: 260px;
+}
+
+.adm-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.adm-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.adm-check > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-check b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.adm-steps {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.adm-steps summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+.adm-steps ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.5;
+}
+
+.adm-rows li {
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.adm-rows li > span {
+  grid-column: 1 / -1;
+  color: var(--ink-2);
+}
+
+.adm-leads {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+
+.adm-lead-msg {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .adm-leads {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .adm-narrow {
+    max-width: none;
+  }
+}
+
 @media (max-width: 980px) {
   .adm-cols,
   .adm-cols3 {

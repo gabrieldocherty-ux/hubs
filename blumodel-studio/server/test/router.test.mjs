@@ -92,6 +92,17 @@ test('auth levels: none, optional, user, studio, admin', async () => {
     const admin = await signup('admin@probe.test');
     p.db.prepare("UPDATE users SET role = 'studio' WHERE id = ?").run(studio.id);
     p.db.prepare("UPDATE users SET role = 'admin' WHERE id = ?").run(admin.id);
+    // An admin without two-factor sign-in gets nothing from admin or studio routes; told to enrol.
+    const noMfa = await get('/api/probe/admin', admin.cookie);
+    assert.equal(noMfa.status, 403);
+    assert.equal((await noMfa.json()).code, 'mfa_enrol_required');
+    assert.equal((await get('/api/probe/studio', admin.cookie)).status, 403);
+    // 2FA on, but this session only passed the password: sign in again with the code.
+    p.db.prepare("INSERT INTO user_mfa (user_id, secret, enabled_at, last_step, created_at) VALUES (?, 'JBSWY3DPEHPK3PXP', 1, -1, 1)").run(admin.id);
+    const noCode = await get('/api/probe/admin', admin.cookie);
+    assert.equal(noCode.status, 401);
+    assert.equal((await noCode.json()).code, 'mfa_required');
+    p.db.prepare('UPDATE sessions SET mfa_at = ? WHERE user_id = ?').run(Date.now(), admin.id);
 
     assert.equal((await get('/api/probe/none')).status, 200);
     assert.deepEqual(await (await get('/api/probe/optional')).json(), { user: null });

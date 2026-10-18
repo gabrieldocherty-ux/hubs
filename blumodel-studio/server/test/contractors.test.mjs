@@ -3,7 +3,7 @@
 
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { startTestServer, sampleDoc, legacyCheckout } from './helpers.mjs';
 import { makePng } from './fixtures/images.mjs';
 
 let t;
@@ -17,7 +17,7 @@ after(async () => {
 const DAY = 86_400_000;
 
 async function buy(agent, body) {
-  const c = await agent.post('/api/billing/checkout', body);
+  const c = await legacyCheckout(agent, body);
   assert.equal(c.status, 200, c.text);
   assert.equal((await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
 }

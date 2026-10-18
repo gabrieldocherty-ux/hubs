@@ -83,7 +83,7 @@ const TABS = [
   ['#/pro/price-book', 'Cost, markup and sell price'],
   ['#/pro/brands', 'What shows while you design'],
   ['#/pro/quotes', 'Your kitchens, priced'],
-  ['#/pro/modelling', 'Have BluModel Studio model your products'],
+  // (#/pro/modelling went with the Contractor plan's included models: SHOWROOM_PIVOT §3.)
   ['#/pro/company', 'What your clients see'],
 ];
 

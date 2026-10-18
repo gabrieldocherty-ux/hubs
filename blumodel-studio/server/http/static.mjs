@@ -12,6 +12,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import { HttpError, send } from './respond.mjs';
+import { NO_INDEX } from './readLimits.mjs';
 
 const brotli = promisify(zlib.brotliCompress);
 const gzip = promisify(zlib.gzip);
@@ -91,6 +92,7 @@ export function serveFile(req, res, file, headers = {}) {
 }
 
 /** Text types worth compressing. Images, models and fonts are already compressed. */
+const MEDIA_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.glb', '.gltf', '.ktx2', '.hdr', '.mp4', '.webm']);
 const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.map', '.svg', '.txt', '.wasm', '.webmanifest']);
 const MIN_COMPRESS = 1024;
 const CACHE_BUDGET = 64 * 1024 * 1024;
@@ -157,8 +159,11 @@ export function etagMatches(header, etag) {
     .some((t) => t === '*' || t === etag);
 }
 
-/** Serves the built single-page app from `distDir`. GET and HEAD only. */
-export async function serveDist(req, res, url, distDir) {
+/**
+ * Serves the built single-page app from `distDir`. GET and HEAD only. `indexHtml(html)`, when
+ * given, rewrites the app document (a showroom's head; server/tenancy/pages.mjs) before it's sent.
+ */
+export async function serveDist(req, res, url, distDir, { indexHtml = null } = {}) {
   const indexFile = path.join(distDir, 'index.html');
   if (!isFile(indexFile)) return send(res, 404, { error: 'Run `npm run build` first, or use `npm run dev`.' });
   const { file, decoded } = safeJoin(distDir, url.pathname);
@@ -175,6 +180,17 @@ export async function serveDist(req, res, url, distDir) {
     return send(res, 404, { error: 'Not found.' });
   }
   const ext = path.extname(target).toLowerCase();
+  if (target === indexFile && indexHtml) {
+    let body;
+    try {
+      body = Buffer.from(indexHtml(fs.readFileSync(indexFile, 'utf8')), 'utf8');
+    } catch {
+      return send(res, 500, { error: 'Could not read the app.' });
+    }
+    res.writeHead(200, { 'Content-Type': MIME['.html'] || 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'Content-Length': body.length });
+    res.end(req.method === 'HEAD' ? undefined : body);
+    return;
+  }
   // Vite content-hashes everything under /assets/: a changed file gets a new name.
   const immutable = url.pathname.startsWith('/assets/') && target !== indexFile;
   const enc = COMPRESSIBLE.has(ext) && stat.size >= MIN_COMPRESS ? pickEncoding(req.headers['accept-encoding']) : null;
@@ -184,6 +200,8 @@ export async function serveDist(req, res, url, distDir) {
     'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
     ETag: etag,
     ...(COMPRESSIBLE.has(ext) ? { Vary: 'Accept-Encoding' } : {}),
+    // The showroom pictures, models and textures the app ships: not for image search or AI training.
+    ...(MEDIA_EXT.has(ext) ? NO_INDEX : {}),
   };
   if (etagMatches(req.headers['if-none-match'], etag)) {
     res.writeHead(304, headers);

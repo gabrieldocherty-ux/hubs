@@ -1,5 +1,4 @@
-// Package E QA routes (BUILD_PLAN §9 E-T8 and acceptance, §13.3 E): the landing page (#/welcome
-// and signed-out #/), the pricing page, the share dialog in the editor, and the shared kitchen
+// Package E QA routes (BUILD_PLAN §9 E-T8 and acceptance, §13.3 E): the share dialog in the editor, and the shared kitchen
 // (#/s/:token) for an anonymous visitor: prices on and off, a contractor's "Prepared by" share,
 // duplicate, and the revoked / expired / unknown dead ends. Desktop, plus 375 px phones for the
 // marketing pages and 390 px phones for the share pages.
@@ -170,109 +169,9 @@ async function grab({ send, rectOf, sleep }, selector) {
 }
 
 export default [
-  // ── Landing ──────────────────────────────────────────────────────────────
-  {
-    name: 'welcome',
-    path: '#/welcome',
-    as: 'anon',
-    waitFor: ['.mk-hero', 'a[href="#/signin"]'],
-    expectText: ['See your new kitchen before anyone picks up a hammer', 'Start from a photo of your kitchen'],
-    waitMs: 300,
-    fullPage: true,
-    check: landingContent,
-  },
-  {
-    name: 'home-signed-out',
-    path: '#/',
-    as: 'anon',
-    waitFor: ['.mk-hero', 'a[href="#/signin"]'],
-    expectText: ['Start from a photo of your kitchen', 'How it works'],
-    check: landingContent,
-  },
-  {
-    name: 'welcome-signed-in',
-    path: '#/welcome',
-    as: 'customer',
-    waitFor: ['.mk-hero', '.mk-bar-actions a[href="#/"]'],
-    expectText: ['My kitchens', 'Start from a photo of your kitchen'],
-    check: async (h) => {
-      if (await h.evaluate(() => !!document.querySelector('a.mk-signin'))) throw new Error('a signed-in visitor is offered "Sign in"');
-    },
-  },
-  {
-    name: 'welcome-phone',
-    path: '#/welcome',
-    as: 'anon',
-    viewport: PHONE_375,
-    waitFor: ['.mk-hero'],
-    expectText: ['Start from a photo of your kitchen', 'Try without an account'],
-    waitMs: 300,
-    check: async (h) => {
-      await landingContent(h);
-      await phoneTour(h, ['#how', '#contractors', '#brands', '.mk-foot']);
-      await h.evaluate(() => window.scrollTo(0, 0));
-    },
-  },
-
-  // ── Pricing ──────────────────────────────────────────────────────────────
-  {
-    name: 'pricing',
-    path: '#/pricing',
-    as: 'anon',
-    waitFor: ['.mk-plans', '.mk-tiers'],
-    // Since 2026-10-15: three plans (Free, Unlimited $15 CAD/month, Contractor $99 CAD/month with 3
-    // custom models a month). The one-kitchen unlock is offered only in the export dialog, so
-    // nothing here names it or its price.
-    expectText: [
-      'Design for free. Pay when you take it with you.',
-      'Free',
-      'Unlimited',
-      'Contractor',
-      '$15',
-      '$99',
-      'CAD a month',
-      '3 custom 3D models a month, made by our studio',
-      'Show your customers the exact cabinets you sell, in their kitchen, at your price.',
-      'Why are exports paid?',
-      'Can I cancel?',
-      'BluModel Studio is a visualizer',
-    ],
-    fullPage: true,
-    check: async (h) => {
-      const n = await h.evaluate(() => document.querySelectorAll('.mk-plans .mk-plan').length);
-      if (n !== 3) throw new Error(`expected 3 plan cards (Free, Unlimited, Contractor), found ${n}`);
-      const text = await h.evaluate(() => document.querySelector('main').textContent);
-      for (const bad of ['Kitchen unlock', '$5 ', '$5.', '$5)', '$40', '$129', 'Model pack', 'unlock cover']) if (text.includes(bad)) throw new Error(`the pricing page still says "${bad}"`);
-      const tiers = await h.evaluate(() => document.querySelectorAll('.mk-tiers .mk-tier').length);
-      if (tiers !== 3) throw new Error(`expected 3 custom-model cards, found ${tiers}`);
-      const ctas = await h.evaluate(() => [...document.querySelectorAll('.mk-plan-cta a')].map((a) => a.getAttribute('href')));
-      if (ctas.some((href) => !href || !href.startsWith('#/'))) throw new Error(`a plan button goes nowhere: ${JSON.stringify(ctas)}`);
-      // No card fields anywhere: payments are Stripe-hosted (or demo).
-      if (await h.evaluate(() => !!document.querySelector('input[autocomplete^="cc-"], input[name*="card" i]'))) throw new Error('the pricing page has a card field');
-      await noSideScroll(h);
-    },
-  },
-  {
-    name: 'pricing-phone',
-    path: '#/pricing',
-    as: 'anon',
-    viewport: PHONE_375,
-    waitFor: ['.mk-plans', '.mk-tiers'],
-    expectText: ['Contractor', 'Why are exports paid?'],
-    waitMs: 300,
-    check: async (h) => {
-      await noSideScroll(h);
-      await phoneTour(h, ['.mk-plans', '#contractor', '#models', '#faq']);
-      await h.evaluate(() => window.scrollTo(0, 0));
-    },
-  },
-  {
-    name: 'pricing-contractor',
-    path: '#/pricing',
-    as: 'contractor',
-    waitFor: ['.mk-plans .mk-plan-badge'],
-    expectText: ['Your plan', 'Open your workspace'],
-  },
+  // Retired with the showroom pivot: welcome, home-signed-out, welcome-signed-in, welcome-phone,
+  // pricing, pricing-phone and pricing-contractor tested the homeowner landing and plan pricing;
+  // #/, #/welcome and #/pricing are the sales site's now (QA package 'sales').
 
   // ── The share dialog in the editor ───────────────────────────────────────
   {

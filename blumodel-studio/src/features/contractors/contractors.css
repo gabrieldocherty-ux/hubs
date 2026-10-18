@@ -1172,30 +1172,6 @@
   font-size: 15px;
 }
 
-/* The Contractor plan's included models (Make custom models). */
-.pro-allowance {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0 0 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
-  border-radius: 10px;
-  background: var(--panel);
-  font-size: 13.5px;
-  color: var(--ink-2);
-}
-
-.pro-allowance b {
-  color: var(--ink);
-  font-size: 14px;
-}
-
-.pro-allowance.empty {
-  border-left-color: var(--warn);
-}
-
 /* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
 @media screen {
   :root[data-theme='dark'] .pro-lapsed {
@@ -1205,4 +1181,12 @@
   :root[data-theme='dark'] .pro-image em {
     background: rgba(var(--panel-rgb), 0.86);
   }
+}
+
+/* The retired Contractor plan's page: where showrooms are now. */
+.pro-pitch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 10px;
 }

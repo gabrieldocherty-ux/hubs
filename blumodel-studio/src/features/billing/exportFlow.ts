@@ -6,28 +6,20 @@ import { flushAutosave } from '../../hooks/useAutosave';
 import { useDesignStore } from '../../store/useDesignStore';
 import { useSession } from '../../store/useSession';
 import type { ExportKind } from '../../types/platform';
-import { clearIntent, isEntitled, loadEntitlements, openUnlock, peekIntent, type ExportFile, type ExportRunner } from './entitlements';
+import { clearIntent, isEntitled, loadEntitlements, peekIntent, type ExportFile, type ExportRunner } from './entitlements';
 
 const toast = (text: string, tone: 'ok' | 'warn' | 'info' = 'warn') => useDesignStore.getState().toast(text, tone);
 
 /**
- * Every export goes through here (PLANS_AND_CONTRACTORS §2). When the account may export this
- * kitchen, the server records the export and `run` makes the file; for the CSV and the project
- * file the server makes it and `run` receives it. Otherwise the Unlock dialog opens, remembering
- * the export so it finishes by itself after payment.
+ * Every export goes through here (PLANS_AND_CONTRACTORS §2). Since the showroom pivot downloads
+ * are free for the kitchen's owner on every site: the server records the export and `run` makes
+ * the file; for the CSV and the project file the server makes it and `run` receives it. Nothing
+ * here asks for a payment. A kitchen that is only on this device has to be signed in and saved first.
  */
 export async function requestExport(projectId: string | null, kind: ExportKind, run: ExportRunner): Promise<void> {
-  if (!projectId || !useSession.getState().user) {
-    openUnlock({ projectId, kind });
+  if (!projectId || !isEntitled(projectId)) {
+    toast('Downloads are free. Sign in and save this kitchen to your account, then download it.', 'info');
     return;
-  }
-  // Known not to be entitled: straight to the options (the server would only say 403).
-  if (!isEntitled(projectId)) {
-    await loadEntitlements();
-    if (!isEntitled(projectId)) {
-      openUnlock({ projectId, kind });
-      return;
-    }
   }
   // Exports are made from the saved kitchen, so save what's on screen first.
   if (useSession.getState().projectId === projectId && !(await flushAutosave())) {
@@ -39,11 +31,6 @@ export async function requestExport(projectId: string | null, kind: ExportKind, 
     const res = await call<{ ok: true; file?: ExportFile }>('POST', `/api/projects/${encodeURIComponent(projectId)}/exports`, { kind });
     file = res.file;
   } catch (e) {
-    if (e instanceof ApiError && e.status === 403 && (e.body as { needs?: string } | undefined)?.needs === 'unlock') {
-      void loadEntitlements(true);
-      openUnlock({ projectId, kind });
-      return;
-    }
     toast(e instanceof ApiError ? e.message : 'That export didn’t work. Try again.');
     return;
   }

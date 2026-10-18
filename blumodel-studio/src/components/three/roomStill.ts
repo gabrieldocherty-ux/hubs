@@ -76,9 +76,13 @@ export async function renderRoomStill(get: () => RootState, o: StillOptions, roo
   out.height = h;
   try {
     // Camera: the current view (reframed for the image's aspect, see stillFov) or a preset.
-    if (o.camera === 'current') camera.fov = stillFov(saved.fov, saved.aspect, w / h);
+    if (o.view) camera.fov = o.view.fov ?? saved.fov;
+    else if (o.camera === 'current') camera.fov = stillFov(saved.fov, saved.aspect, w / h);
     camera.aspect = w / h;
-    if (o.camera !== 'current') {
+    if (o.view) {
+      camera.position.set(...o.view.pos);
+      camera.lookAt(new THREE.Vector3(...o.view.target));
+    } else if (o.camera !== 'current') {
       const { pos, target } = presetFor(o.camera, room, w / h);
       camera.position.copy(pos);
       camera.lookAt(target);

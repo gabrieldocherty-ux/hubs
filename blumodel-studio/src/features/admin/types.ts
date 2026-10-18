@@ -156,7 +156,7 @@ export interface SystemStatus {
   generatedAt: number;
   server: { version: string; commit: string | null; deployedAt: number | null; startedAt: number; uptimeSec: number; node: string; production: boolean; publicUrl: string; httpsPublicUrl: boolean; shuttingDown: boolean };
   database: { inMemory: boolean; sizeBytes: number | null; walBytes: number | null; integrity: 'ok' | 'problems' | 'not checked' };
-  backups: { enabled: boolean; count: number; keep: number; lastDay: string | null; lastAt: number | null };
+  backups: { enabled: boolean; count: number; keep: number; lastDay: string | null; lastAt: number | null; offsite?: OffsiteStatus };
   disk: { freeBytes: number; totalBytes: number } | null;
   payments: {
     provider: 'stripe' | 'demo' | 'none';
@@ -174,7 +174,65 @@ export interface SystemStatus {
   legal: { supportEmailSet: boolean; legalNameSet: boolean; jurisdictionSet: boolean; ready: boolean };
   llm: { configured: boolean };
   log: { available: boolean; entries: { at: number | null; level: 'error' | 'warn'; text: string }[] };
+  updates: UpdatesStatus;
+  /** Every site on, or off for maintenance (server/ops/sitesSwitch.mjs). */
+  sites: SitesState;
 }
+
+/** Encrypted off-site copies (server/ops/offsite.mjs). Never the passphrase. */
+export interface OffsiteStatus {
+  configured: boolean;
+  dir: string | null;
+  keep: number;
+  passphraseSet: boolean;
+  problem: string | null;
+  lastSuccessAt: number | null;
+  lastAttemptAt: number | null;
+  lastFile: string | null;
+  lastBytes: number | null;
+  copies: number | null;
+  oldestAt: number | null;
+  verifiedAt: number | null;
+  lastError: string | null;
+  stale: boolean;
+}
+
+export interface SitesState {
+  on: boolean;
+  since: number | null;
+  by: string | null;
+  via: 'face' | 'admin' | 'cli' | null;
+}
+
+export type UpdateOutcome = 'current' | 'updated' | 'skipped' | 'refused' | 'busy' | 'rolled-back' | 'failed' | 'down' | 'error';
+export interface UpdateResult {
+  outcome: UpdateOutcome;
+  at: number | null;
+  from: string | null;
+  to: string | null;
+  durationMs: number | null;
+  error: string | null;
+  by: 'schedule' | 'update-now';
+}
+/** Admin > System > Updates (server/admin/updates.mjs). `available` is false on a development server. */
+export type UpdatesStatus =
+  | { available: false; reason: string }
+  | {
+      available: true;
+      installed: boolean;
+      enabled: boolean;
+      time: string;
+      branch: string | null;
+      deployed: string | null;
+      head: string | null;
+      source: string | null;
+      lastCheckAt: number | null;
+      last: UpdateResult | null;
+      lastUpdate: UpdateResult | null;
+      failed: { commit: string; at: number | null } | null;
+      rolledBack: boolean;
+      pending: boolean;
+    };
 
 export interface AuditPage {
   entries: AuditEntry[];

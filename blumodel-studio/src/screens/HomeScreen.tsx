@@ -6,22 +6,27 @@ import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog, useCatalogVersion } from '../store/useCatalog';
 import { MiniPlan } from '../components/MiniPlan';
 import { AccountMenu } from '../components/AccountMenu';
-import { Copy, Logo, Wordmark, Plus, Search, Trash } from '../components/Icons';
+import { Copy, Plus, Search, Trash } from '../components/Icons';
 import { buildEstimate } from '../lib/estimate';
 import { feetInches, money } from '../lib/format';
 import { Toasts } from '../components/Toasts';
 import { usePriceBook } from '../features/contractors';
 import { useShowEstimator } from '../lib/prefs';
 import { LegalLinks } from '../features/legal/LegalLinks';
+import { newDesignHash, shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
 
 export function HomeScreen() {
-  const user = useSession((s) => s.user)!;
+  const user = useSession((s) => s.user);
+  // On a showroom, a visitor who gave their details sees their designs here without an account.
+  const visitor = useVisitor();
   const toast = useDesignStore((s) => s.toast);
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [renaming, setRenaming] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  // On a company's showroom: its mark, its words, and Design your bathroom when it offers one.
+  const showroom = useShowroom();
 
   const catalogVersion = useCatalogVersion();
 
@@ -105,28 +110,42 @@ export function HomeScreen() {
     <div className="home">
       <header className="home-bar">
         <a className="brand" href="#/">
-          <Logo />
-          <Wordmark />
+          <SiteMark />
         </a>
-        <AccountMenu />
+        <span className="home-bar-end">
+          {showroom && (
+            <a className="home-bar-link" href="#/welcome">
+              Showroom
+            </a>
+          )}
+          {user ? <AccountMenu /> : null}
+        </span>
       </header>
 
       <main className="home-main">
         <div className="home-head">
           <div>
-            <h1>{greeting(user.name)}.</h1>
+            <h1>{greeting(user?.name ?? visitor?.name ?? '')}.</h1>
             <p>
               {projects === null
-                ? 'Loading your kitchens…'
-                : projects.length === 0
-                  ? 'Let’s design your first kitchen.'
-                  : `${projects.length} kitchen${projects.length > 1 ? 's' : ''} in progress. Pick up where you left off.`}
+                ? showroom
+                  ? 'Loading your designs…'
+                  : 'Loading your kitchens…'
+                : showroom
+                  ? projects.length === 0
+                    ? `Let’s design your first room with ${shortName(showroom)}.`
+                    : `${projects.length} design${projects.length > 1 ? 's' : ''} saved. Open one to keep going, or send it to ${shortName(showroom)} from the editor.`
+                  : projects.length === 0
+                    ? 'Let’s design your first kitchen.'
+                    : `${projects.length} kitchen${projects.length > 1 ? 's' : ''} in progress. Pick up where you left off.`}
             </p>
           </div>
           <div className="home-cta">
-            <button className="btn big" onClick={() => navigate({ name: 'generate' })}>
-              Start from a photo
-            </button>
+            {showroom?.features.bathrooms && (
+              <a className="btn big" href={newDesignHash('bathroom')}>
+                <Plus /> New bathroom
+              </a>
+            )}
             <button className="btn primary big" onClick={() => navigate({ name: 'new' })}>
               <Plus /> New kitchen
             </button>
@@ -160,7 +179,7 @@ export function HomeScreen() {
                     <Plus width={22} height={22} />
                   </span>
                   <b>Start a new kitchen</b>
-                  <span>Room size, layout and brands in four quick steps</span>
+                  <span>{showroom ? `Room size, layout and ${shortName(showroom)}’s product lines in four quick steps` : 'Room size, layout and brands in four quick steps'}</span>
                 </button>
               )}
 

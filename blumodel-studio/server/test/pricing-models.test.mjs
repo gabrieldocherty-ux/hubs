@@ -12,7 +12,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { startTestServer } from './helpers.mjs';
+import { startTestServer, legacyCheckout } from './helpers.mjs';
 import { makeGlb } from './fixtures/glb.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { periodOf } from '../payments/allowance.mjs';
@@ -34,7 +34,7 @@ async function refPhoto(agent) {
 /** A contractor through billing's DEMO checkout: a real subscription with a current period. */
 async function demoContractor(s) {
   const pro = await s.user();
-  const c = await pro.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' });
+  const c = await legacyCheckout(pro, { kind: 'subscription', plan: 'contractor' });
   assert.equal(c.status, 200, c.text);
   assert.equal((await pro.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
   return pro;

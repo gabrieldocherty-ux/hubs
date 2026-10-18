@@ -31,10 +31,19 @@
 //   { name, path: '#/local', as: 'anon'|'customer'|'contractor'|'brand'|'studio'|'admin'|'fresh',
 //     viewport: 'desktop'|'phone'|'tablet'|'phone-landscape'|{ w, h, dpr?, mobile? },
 //     waitFor: '.plan-view canvas' | [...], waitMs, expectText: 'Text' | [...] (visible text, any case), timeoutMs, fullPage,
-//     setup: async ({ api, as, me, user, base, sleep }) => ({ path?, ...data }),
+//     setup: async ({ api, as, me, user, base, sleep, home }) => ({ path?, ...data }),   home: a temp BLUMODEL_HOME
 //     check: async ({ evaluate, send, api, sleep, mouseDrag, touchDrag, pinch, tap, click, rectOf,
 //                     key, type, waitFor, waitForText, reload, goto, shot, note, data, me, viewport }) => {},
-//     ignoreConsole: [/known message/], knownIssue: 'why this route is expected to fail' }
+//     ignoreConsole: [/known message/], knownIssue: 'why this route is expected to fail',
+//     host: 'demo', allowStatus: [503], face: true }
+// `host: '<slug>'` opens the route on that showroom, http://<slug>.localhost:<port> (BASE_DOMAIN is
+// localhost here; docs/handoff/tenancy.md), instead of the sales site at 127.0.0.1. On a showroom
+// `as` is 'anon' or one of the seeded demo showroom's people: 'showroom-owner', 'showroom-staff',
+// 'showroom-visitor' (their session is made straight in the database, bound to that showroom).
+// `face: true` opens the server face instead (server/face/face.mjs: http://127.0.0.1:<port + 1>/, which QA
+// starts with SERVER_FACE_PORT=<port + 1>; path is '/'); `as` must be anon there.
+// `allowStatus` lists HTTP statuses the page itself may answer (an unknown host's 404, a lapsed
+// showroom's 503) without failing the route.
 // `as: 'fresh'` is a brand-new free customer made for that route alone. `knownIssue` reports a
 // failure as known instead of failing the run, and fails the run if the route starts passing
 // (so the marker gets removed once the bug is fixed).
@@ -47,6 +56,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { hashPassword } from '../server/auth/passwords.mjs';
+import { base32Encode, hotp, stepAt } from '../server/auth/totp.mjs';
 import { assertAllowedPort, isLocalUrl, killTree, launchBrowser, openPage, resolveViewport, sleep } from './qa-shot.mjs';
 
 // node:sqlite prints an ExperimentalWarning on load; it is expected here, so keep it out of the output.
@@ -65,7 +75,9 @@ const ROUTES_DIR = path.join(ROOT, 'scripts', 'qa', 'routes');
 const QA_DIR = path.join(ROOT, '.qa');
 const COOKIE = 'blumodel_session';
 
-export const ROLES = Object.freeze(['anon', 'customer', 'contractor', 'brand', 'studio', 'admin', 'fresh']);
+export const ROLES = Object.freeze(['anon', 'customer', 'contractor', 'brand', 'studio', 'admin', 'fresh', 'showroom-owner', 'showroom-staff', 'showroom-visitor']);
+/** The demo showroom's people (server/tenancy/demo.mjs), signed in on a `host` route. */
+const SHOWROOM_EMAIL = { 'showroom-owner': 'demo-owner@blumodel.test', 'showroom-staff': 'demo-staff@blumodel.test', 'showroom-visitor': 'demo-visitor@blumodel.test' };
 /** Seeded by server/seed/core.mjs. */
 const DEMO_EMAIL = { customer: 'demo-customer@blumodel.test', brand: 'demo-brand@blumodel.test', studio: 'demo-studio@blumodel.test', admin: 'demo-admin@blumodel.test' };
 const CONTRACTOR_EMAIL = 'qa-contractor@blumodel.test';
@@ -147,6 +159,11 @@ function validateRoute(r, file, seen) {
   if (r.path !== undefined && (typeof r.path !== 'string' || !/^#?\//.test(r.path))) throw new Error(`${where}: path must look like '#/local'.`);
   if (r.path === undefined && typeof r.setup !== 'function') throw new Error(`${where}: needs a path, or a setup that returns one.`);
   if (!ROLES.includes(r.as ?? 'anon')) throw new Error(`${where}: as must be one of ${ROLES.join(', ')}.`);
+  if (r.host !== undefined && (typeof r.host !== 'string' || !/^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/.test(r.host))) throw new Error(`${where}: host is a showroom slug like 'demo'.`);
+  if (SHOWROOM_EMAIL[r.as] && !r.host) throw new Error(`${where}: as '${r.as}' needs host (the showroom).`);
+  if (r.face && (r.host || (r.as ?? 'anon') !== 'anon' || r.path !== '/')) throw new Error(`${where}: a face route is anon, path '/', no host.`);
+  if (r.host && !(r.as === undefined || r.as === 'anon' || SHOWROOM_EMAIL[r.as])) throw new Error(`${where}: on a showroom, as is anon or showroom-owner|showroom-staff|showroom-visitor.`);
+  for (const s of asList(r.allowStatus)) if (!Number.isInteger(s) || s < 400 || s > 599) throw new Error(`${where}: allowStatus takes HTTP error statuses.`);
   resolveViewport(r.viewport);
   for (const s of asList(r.waitFor)) if (typeof s !== 'string' || !s) throw new Error(`${where}: waitFor must be a selector or a list of selectors.`);
   for (const t of asList(r.expectText)) if (typeof t !== 'string' || !t) throw new Error(`${where}: expectText must be a string or a list of strings.`);
@@ -265,10 +282,12 @@ const must = async (promise, what) => {
 
 /** Signs users in on demand and keeps one session per role for the whole run. */
 class Users {
-  constructor({ base, dbPath, password }) {
+  constructor({ base, dbPath, password, totpSecret }) {
     this.base = base;
     this.dbPath = dbPath;
     this.password = password;
+    /** The demo admin's two-factor secret for this run (SEED_TOTP_SECRET). */
+    this.totpSecret = totpSecret;
     this.anon = new Agent(base, 'anon');
     /** @type {Map<string, Promise<Agent>>} */
     this.byRole = new Map();
@@ -287,6 +306,33 @@ class Users {
     }
   }
 
+  /**
+   * A pending demo checkout for a legacy plan or unlock, as POST /api/billing/checkout made one
+   * before the showroom pivot (it answers 410 not_for_sale now). Returns its ref.
+   * @param {string} userId
+   * @param {{ kind: 'subscription' | 'kitchen_unlock', plan?: string, projectId?: string, returnTo?: string }} body
+   */
+  legacyCheckout(userId, { kind, plan = null, projectId = null, returnTo }) {
+    const prices = { unlimited: 1500, contractor: 9900, kitchen_unlock: 500 };
+    const project = projectId ? this.sql('SELECT id, name FROM projects WHERE id = ? AND user_id = ?', projectId, userId)[0] : null;
+    if (projectId && !project) throw new Error(`legacyCheckout: ${projectId} is not this user's kitchen`);
+    const ref = `bc_${crypto.randomBytes(12).toString('hex').slice(0, 24)}`;
+    this.sql(
+      `INSERT INTO billing_checkouts (ref, user_id, kind, project_id, project_name, plan, amount_cents, currency, status, provider, return_to, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'cad', 'pending', 'demo', ?, ?)`,
+      ref,
+      userId,
+      kind,
+      project?.id ?? null,
+      project?.name ?? '',
+      kind === 'subscription' ? plan : null,
+      prices[kind === 'subscription' ? plan : 'kitchen_unlock'],
+      returnTo ?? (project ? `#/k/${project.id}` : plan === 'contractor' ? '#/pro' : '#/account/billing'),
+      Date.now(),
+    );
+    return ref;
+  }
+
   /** Inserts a user straight into the DB (no signup rate limit), unless the email exists. */
   async createUser(email, name, role = 'customer') {
     const hash = await hashPassword(this.password);
@@ -299,10 +345,28 @@ class Users {
 
   async login(email, label) {
     const a = new Agent(this.base, label);
-    const r = await a.post('/api/auth/login', { email, password: this.password });
+    let r = await a.post('/api/auth/login', { email, password: this.password });
+    // Two-factor sign-in (the demo admin, with this run's SEED_TOTP_SECRET).
+    if (r.status === 200 && r.body?.mfa === 'required') r = await a.post('/api/auth/login/mfa', { ticket: r.body.ticket, code: await this.totpCode(email) });
     if (r.status !== 200) throw new Error(`Could not sign in as ${email} (${r.status}): ${r.body?.error ?? r.text.slice(0, 200)}`);
     a.user = r.body.user;
     return a;
+  }
+
+  /**
+   * A code from this run's demo-admin secret the server hasn't taken yet: a code works once, so
+   * when this 30-second step was already used, the next step's code (still inside the window), or
+   * after waiting for the step after that.
+   */
+  async totpCode(email = DEMO_EMAIL.admin) {
+    if (!this.totpSecret) throw new Error('QA has no two-factor secret for the demo admin.');
+    for (;;) {
+      const last = this.sql('SELECT m.last_step FROM user_mfa m JOIN users u ON u.id = m.user_id WHERE u.email = ? AND u.tenant_id IS NULL', email)[0]?.last_step ?? -1;
+      const now = stepAt(Date.now());
+      if (last < now) return hotp(this.totpSecret, now);
+      if (last === now) return hotp(this.totpSecret, now + 1);
+      await sleep(2_000);
+    }
   }
 
   async #make(role) {
@@ -310,9 +374,10 @@ class Users {
       await this.createUser(CONTRACTOR_EMAIL, 'Quinn Contractor');
       const a = await this.login(CONTRACTOR_EMAIL, role);
       if (a.user.plan?.id !== 'contractor') {
-        // The real demo checkout, as the app does it: start, then complete with success.
-        const c = await must(a.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
-        await must(a.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
+        // A Contractor plan bought before the showroom pivot (nothing new is sold since): its
+        // pending demo checkout, completed through the app's demo payment as it was then.
+        const ref = this.legacyCheckout(a.user.id, { kind: 'subscription', plan: 'contractor' });
+        await must(a.post(`/api/billing/demo/${ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
         a.user = (await must(a.get('/api/auth/me'), 'Reading the contractor')).body.user;
         if (a.user.plan?.id !== 'contractor') throw new Error(`The QA contractor is on plan "${a.user.plan?.id}" after a successful demo checkout.`);
       }
@@ -342,6 +407,32 @@ class Users {
     // A route signed out (which ends the session server-side): sign in again.
     this.byRole.delete(role);
     return this.agentFor(role);
+  }
+
+  /**
+   * A session for one of a showroom's people, made straight in the database (Node can't send a
+   * showroom's Host through fetch), bound to that showroom as a real sign-in there would be.
+   * Returns the cookie value.
+   */
+  showroomSession(email, slug) {
+    const row = this.sql('SELECT u.id FROM users u JOIN tenants t ON t.id = u.tenant_id WHERE u.email = ? AND t.slug = ?', email, slug)[0];
+    if (!row) throw new Error(`${email} has no account on the ${slug} showroom. Did the tenants seed run?`);
+    const tenant = this.sql('SELECT id FROM tenants WHERE slug = ?', slug)[0];
+    const token = crypto.randomBytes(32).toString('base64url');
+    const t = Date.now();
+    this.sql(
+      'INSERT INTO sessions (token_hash, user_id, expires_at, id, created_at, last_seen_at, browser, os, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      crypto.createHash('sha256').update(token).digest('hex'),
+      row.id,
+      t + 86_400_000,
+      crypto.randomBytes(12).toString('hex'),
+      t,
+      t,
+      'QA',
+      'QA',
+      tenant.id,
+    );
+    return token;
   }
 
   /** A brand-new free customer. */
@@ -378,12 +469,17 @@ function makeApi(users, getFresh) {
   return {
     base: users.base,
     as,
+    /** The seeded password, and a fresh two-factor code for the demo admin (routes that sign in through the UI). */
+    password: users.password,
+    totpCode: (email) => users.totpCode(email),
     get: (...a) => anon.get(...a),
     post: (...a) => anon.post(...a),
     put: (...a) => anon.put(...a),
     patch: (...a) => anon.patch(...a),
     delete: (...a) => anon.delete(...a),
     sql: (q, ...p) => users.sql(q, ...p),
+    /** A legacy (pre-pivot) pending demo checkout for `userId`: its ref. */
+    legacyCheckout: (userId, body) => users.legacyCheckout(userId, body),
   };
 }
 
@@ -420,9 +516,21 @@ function serverEnv(extra) {
     'DIST_DIR',
     'ADMIN_EMAILS',
     'SEED_PASSWORD',
+    'SEED_TOTP_SECRET',
+    'REAUTH_MINUTES',
+    'ADMIN_SESSION_HOURS',
     'PAYMENTS',
     'DEMO_PAYMENTS',
     'SHOW_DEMO_BRANDS',
+    'BASE_DOMAIN',
+    // Photoreal renders: the QA server never calls a real rendering service (it uses the demo).
+    'ARCHITECT_AI_URL',
+    'ARCHITECT_AI_KEY',
+    'RENDER_PROVIDER',
+    'DEMO_RENDERS',
+    'RENDER_CREDIT_CENTS',
+    'TRIAL_DAYS',
+    'TRIAL_CREDIT_CENTS',
   ])
     delete env[k];
   return { ...env, ...extra };
@@ -668,11 +776,14 @@ async function runRoute(env, pkg, route, outDir) {
   };
 
   try {
-    const agent = as === 'anon' ? null : as === 'fresh' ? await getFresh() : await users.agentFor(as);
-    const me = as === 'anon' ? null : api.as(as);
+    const showroomAs = !!SHOWROOM_EMAIL[as];
+    const agent = as === 'anon' || showroomAs ? null : as === 'fresh' ? await getFresh() : await users.agentFor(as);
+    const me = as === 'anon' || showroomAs ? null : api.as(as);
+    // A showroom route opens on <slug>.localhost; the sales site stays 127.0.0.1.
+    const pageBase = route.face ? env.faceBase : route.host ? base.replace('//127.0.0.1', `//${route.host}.localhost`) : base;
     let data = {};
     if (route.setup) {
-      const out = await route.setup({ api, as, me, user: agent?.user ?? null, base, sleep });
+      const out = await route.setup({ api, as, me, user: agent?.user ?? null, base, sleep, home: env.home });
       if (out && typeof out === 'object') data = out;
     }
     const hashPath = String(data.path ?? route.path ?? '').replace(/^#/, '');
@@ -680,8 +791,9 @@ async function runRoute(env, pkg, route, outDir) {
     res.path = `#${hashPath}`;
 
     page = await openPage(cdp, { viewport });
-    if (agent?.session) {
-      const ok = await page.send('Network.setCookie', { name: COOKIE, value: agent.session, url: base, httpOnly: true, sameSite: 'Lax' });
+    const session = showroomAs ? users.showroomSession(SHOWROOM_EMAIL[as], route.host) : agent?.session;
+    if (session) {
+      const ok = await page.send('Network.setCookie', { name: COOKIE, value: session, url: pageBase, httpOnly: true, sameSite: 'Lax' });
       if (ok && ok.success === false) throw new Error('The browser refused the session cookie.');
     }
     // colorScheme: 'dark' | 'light' emulates the device's choice, which Appearance = System (the default) follows.
@@ -689,7 +801,7 @@ async function runRoute(env, pkg, route, outDir) {
     if (route.reducedMotion) media.push({ name: 'prefers-reduced-motion', value: 'reduce' });
     if (route.colorScheme) media.push({ name: 'prefers-color-scheme', value: String(route.colorScheme) });
     if (media.length) await page.send('Emulation.setEmulatedMedia', { features: media });
-    await page.goto(`${base}/?qa=1#${hashPath}`, routeTimeout);
+    await page.goto(route.face ? `${pageBase}/` : `${pageBase}/?qa=1#${hashPath}`, routeTimeout);
     if (!env.renderer) {
       env.renderer = await page
         .evaluate(() => {
@@ -710,6 +822,7 @@ async function runRoute(env, pkg, route, outDir) {
       if (route.waitMs) await sleep(Number(route.waitMs));
       if (route.check) {
         const helpers = {
+          home: env.home,
           ...inputHelpers(page),
           page,
           send: page.send,
@@ -719,7 +832,7 @@ async function runRoute(env, pkg, route, outDir) {
           as,
           me,
           data,
-          base,
+          base: pageBase,
           viewport,
           note: (msg) => res.notes.push(String(msg)),
           shot: (suffix) => shoot(suffix),
@@ -786,6 +899,8 @@ async function runRoute(env, pkg, route, outDir) {
         if (!isLocalUrl(r.url)) continue;
         const u = new URL(r.url);
         const isApi = u.pathname.startsWith('/api/');
+        // The page itself answering a status the route expects (an unknown host's 404, a 503).
+        if (!isApi && u.pathname === '/' && asList(route.allowStatus).includes(r.status)) continue;
         if (r.status >= 500) res.failures.push(`HTTP ${r.status} from ${r.method ?? 'GET'} ${u.pathname}`);
         else if (r.status >= 400 && !isApi) res.failures.push(`HTTP ${r.status} for ${u.pathname} (missing asset?)`);
         else if (r.status >= 400) res.apiErrors.push(`${r.status} ${r.method ?? 'GET'} ${u.pathname}${u.search}`);
@@ -839,10 +954,15 @@ export async function main(argv = process.argv.slice(2)) {
   const dist = path.resolve(ROOT, opts.dist ?? 'dist');
   if (!fs.existsSync(path.join(dist, 'index.html'))) throw new Error(`No built app at ${dist} (index.html missing). Run npm run build${opts.dist ? ` or vite build --outDir ${opts.dist}` : ''} first.`);
   if (!(await portFree(port))) throw new Error(`Port ${port} is already in use. QA starts its own server; stop whatever you started there (by PID), or pick another port.`);
+  // The server face (server/face/face.mjs) listens on the next port up.
+  const facePort = assertAllowedPort(port + 1);
+  if (!(await portFree(facePort))) throw new Error(`Port ${facePort} (the server face, --port + 1) is already in use; pick another --port.`);
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `blumodel-qa-${opts.pkg}-`));
   const logFile = path.join(tmp, 'server.log');
   const password = crypto.randomBytes(18).toString('base64url');
+  // The demo admin's two-factor secret for this run (admins must sign in with a code).
+  const totpSecret = base32Encode(crypto.randomBytes(20));
   const env = serverEnv({
     PORT: String(port),
     HOST: '127.0.0.1',
@@ -852,10 +972,25 @@ export async function main(argv = process.argv.slice(2)) {
     DEMO_PAYMENTS: '1',
     // The routes use the seeded "(Demo)" brands, which a production server hides without this.
     SHOW_DEMO_BRANDS: '1',
+    // Showrooms are <slug>.localhost:<port> (Chromium resolves *.localhost to 127.0.0.1); the sales
+    // site stays http://127.0.0.1:<port>. See docs/handoff/tenancy.md "QA".
+    BASE_DOMAIN: 'localhost',
+    // The stamped demo renderer (server/renders), which production refuses without this.
+    DEMO_RENDERS: '1',
     ADMIN_EMAILS: DEMO_EMAIL.admin,
     SEED_PASSWORD: password,
+    SEED_TOTP_SECRET: totpSecret,
+    // The admin package runs longer than the 10-minute re-authentication; the "Confirm it's you"
+    // dialog has its own route (admin-reauth-dialog), which ages the session on purpose.
+    REAUTH_MINUTES: '240',
+    // A temp home for Admin > System > Updates (server/admin/updates.mjs): routes write its
+    // auto-update.conf and logs/update-status.json in setup ({ home }). Never a real home.
+    BLUMODEL_HOME: path.join(tmp, 'home'),
+    SERVER_FACE_PORT: String(facePort),
+    SERVER_FACE_PIN: '',
     ...(opts.dist ? { DIST_DIR: dist } : {}),
   });
+  fs.mkdirSync(path.join(tmp, 'home', 'logs'), { recursive: true });
 
   let server = null;
   let browser = null;
@@ -885,11 +1020,13 @@ export async function main(argv = process.argv.slice(2)) {
     server = await startServer({ port, env, logFile, onStderr: (s) => serverErr.push(s) });
     browser = await launchBrowser({ chrome: opts.chrome, swiftshader: opts.swiftshader });
     console.log(`  ${browser.version}${opts.swiftshader ? ' (SwiftShader)' : ''}`);
-    const users = new Users({ base: server.base, dbPath: env.DB_PATH, password });
+    const users = new Users({ base: server.base, dbPath: env.DB_PATH, password, totpSecret });
     const runEnv = {
       cdp: browser.cdp,
       users,
       base: server.base,
+      home: path.join(tmp, 'home'),
+      faceBase: `http://127.0.0.1:${facePort}`,
       timeout: opts.timeout,
       serverErr,
       renderer: null,

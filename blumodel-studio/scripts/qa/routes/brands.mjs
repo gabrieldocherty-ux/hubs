@@ -250,7 +250,8 @@ export default [
     path: '#/brand/join',
     as: 'customer',
     waitFor: ['.pro-pitch-brand'],
-    expectText: ['Get found', 'Start the Contractor plan'],
+    // Brand pages went with the Contractor plan (SHOWROOM_PIVOT §3): the old address explains that.
+    expectText: ['The Contractor plan has been retired', 'See how showrooms work'],
     check: noSideScroll,
   },
 

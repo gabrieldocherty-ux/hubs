@@ -1,0 +1,1 @@
+const n=["new","contacted","demo","won","lost"];function o(t){return t?[String(t.total),t.thisMonth!==void 0?`${t.thisMonth} this month`:"",t.sent!==void 0?`${t.sent} sent`:"",t.new?`${t.new} new`:""].filter(Boolean).join(" · "):"0"}export{n as S,o as l};

@@ -262,7 +262,7 @@ export function modelsLeftText(a: { left: number; total: number }): string {
  */
 export function allowanceCheck(products: number, a: { active: boolean; left: number; resetsAt: number } | null): { ok: boolean; message: string | null } {
   if (!a) return { ok: false, message: null };
-  if (!a.active) return { ok: false, message: 'Custom 3D models come with the Contractor plan.' };
+  if (!a.active) return { ok: false, message: 'New custom models are no longer sold here.' };
   if (a.left <= 0) return { ok: false, message: `You’ve used this month’s models. Your allowance resets on ${resetDay(a.resetsAt)}.` };
   if (products > a.left) {
     const extra = products - a.left;

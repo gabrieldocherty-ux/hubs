@@ -68,3 +68,33 @@ fetch: no test calls Resend, Postmark or Stripe.
 - A browser that is already signed in and opens a reset link is sent to its home page (the app
   sends signed-in people away from the sign-in route); sign out first. Rare, and the link stays valid
   for its hour.
+
+## Two-factor sign-in (protect-002, 2026-10 audit)
+
+TOTP (RFC 6238, `server/auth/totp.mjs`, node:crypto only) plus ten one-time recovery codes
+(`server/auth/mfa.mjs`; tables `user_mfa`, `user_mfa_recovery`, `mfa_tickets`; sessions gain `mfa_at`
+and `auth_at`). No QR code (no encoder without a dependency): Account settings > Security shows an
+`otpauth://` link that opens the authenticator app on the same phone, and the key to type in.
+
+- **Required for BluModel admins.** Every `auth: 'admin'` route (and `'studio'` routes for an admin)
+  answers **403 `mfa_enrol_required`** until the account has it on, and **401 `mfa_required`** on a
+  session that didn't pass a code. The admin screen shows the enrolment instead of the tabs (the grace
+  flow for an admin made before this existed). An admin can't turn it off.
+- **Optional for everyone else** (showroom owners and staff included): Account settings > Security.
+- **Sign-in**: `POST /api/auth/login` answers `{ mfa: 'required', ticket }` (5 minutes, 5 tries, this
+  site only) and no session; `POST /api/auth/login/mfa { ticket, code }` takes the 6-digit code or a
+  recovery code. A code works once (`last_step`).
+- **Admin sessions** end `ADMIN_SESSION_HOURS` (12) after sign-in, never sliding.
+- **Re-authentication**: routes marked `reauth: true` (reset links, user role/comp/disable/delete,
+  2FA reset, billing and model grants, order refunds, licenses, the monthly comp, credit adjustments,
+  adding a team member as admin, render refunds, company export and delete) need the password and
+  code within `REAUTH_MINUTES` (10): **401 `reauth_required`**; the client's "Confirm it's you"
+  dialog calls `POST /api/auth/reauth { password, code }` and resends the request.
+- **Reset and invite links** for an account with 2FA on need the code as well, so a mailbox alone no
+  longer opens it. `POST /api/admin/users/:id/mfa/reset` (reauth, audited) clears a lost 2FA;
+  `node server/scripts/make-admin.mjs <email> --reset-2fa` does it on the server.
+- Tests: `server/test/protect-mfa.test.mjs`. The harness enrols `t.user({ role: 'admin' })` with a
+  fixed test secret and keeps its session fresh across `t.setNow` (`a.keepFresh = false` to test the
+  limits). QA: the seed enrols the demo admin with `SEED_TOTP_SECRET` (random per QA run), QA signs
+  in with codes, and the QA server sets `REAUTH_MINUTES=240` (routes `admin-signin-2fa`,
+  `admin-reauth-dialog`, `admin-enrol-2fa` test the flows themselves).

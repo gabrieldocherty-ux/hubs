@@ -12,10 +12,12 @@ export function createEventService({ db, now = Date.now }) {
     /**
      * Records one event. A built-in or unknown product id is a no-op (returns false).
      */
-    record({ productId, type, userId = null }) {
+    record({ productId, type, userId = null, tenantId = null }) {
       if (!EVENT_TYPES.includes(type)) throw new Error(`events.record: bad type ${type}`);
       if (typeof productId !== 'string' || !PRODUCT_ID_RE.test(productId)) return false;
-      const p = db.prepare('SELECT id, brand_id FROM products WHERE id = ?').get(productId);
+      // Only a product of the site the event comes from (a showroom's own; a sales-site event about
+      // a showroom's product is ignored too).
+      const p = db.prepare('SELECT id, brand_id FROM products WHERE id = ? AND tenant_id IS ?').get(productId, tenantId ?? null);
       if (!p) return false;
       const t = now();
       db.prepare('INSERT INTO product_events (product_id, brand_id, type, user_id, day, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(p.id, p.brand_id ?? null, type, userId, utcDay(t), t);

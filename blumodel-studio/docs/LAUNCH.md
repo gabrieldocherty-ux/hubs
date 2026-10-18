@@ -125,6 +125,7 @@ Developers → **Webhooks** (in Workbench: *Webhooks → Add destination*) → *
   - `invoice.paid`
   - `invoice.payment_failed`
   - `charge.refunded`
+  - `charge.dispute.created` (a showroom monthly payment charged back: its unspent credits go, the company is flagged for review, grace starts)
 - API version: your account's default is fine (the server reads both the old and the 2025+ shapes of
   subscriptions and invoices).
 
@@ -165,6 +166,11 @@ don't recognise. Save and close.
 The terms, privacy and refund pages were drafted by Claude from what the code does and **have not been
 reviewed by a lawyer**; `docs/handoff/launch.md` lists what to have checked (refund windows, consumer
 withdrawal rights, the age limit, liability, governing law). Do that before taking money from the public.
+The anti-copying clauses added on 2026-10-18 (who owns what, licence not sale, no reverse engineering,
+scraping, automated access, competing products or AI training, trademarks, confidentiality, and the
+same rules for visitors) need the same review before anyone relies on them: `docs/handoff/protect.md`
+section 5. Until `LEGAL_NAME` is set the terms and the footer's © name "BluModel Studio" / "the operator
+of this site", not a legal person, which weakens them.
 
 ### B7. Restart and read the log
 

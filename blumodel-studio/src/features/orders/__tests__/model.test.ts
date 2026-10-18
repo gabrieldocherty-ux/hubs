@@ -143,7 +143,7 @@ test('the plan’s allowance: one model per product, what is left, the reset day
   assert.equal(allowanceCheck(3, a).ok, false);
   assert.equal(allowanceCheck(3, a).message, 'This request has 3 products and you have 2 models left this month. Remove 1, or send it after November 15.');
   assert.match(allowanceCheck(1, { ...a, left: 0 }).message!, /used this month’s models.*November 15/);
-  assert.match(allowanceCheck(1, { ...a, active: false }).message!, /Contractor plan/);
+  assert.match(allowanceCheck(1, { ...a, active: false }).message!, /no longer sold/);
   assert.deepEqual(allowanceCheck(1, null), { ok: false, message: null });
   // A plan request was never paid for: "Submitted", "Included".
   assert.equal(statusLabel({ status: 'paid', pricing: 'plan' }), 'Submitted · in the queue');

@@ -12,13 +12,20 @@ import { startTestServer } from './helpers.mjs';
 import { HTTP_LIMITS, createHttpServer } from '../http/listen.mjs';
 import { ROBOTS } from '../routes/ops.mjs';
 
-test('robots.txt: crawl the app, not /api or /files', async () => {
+test('robots.txt: search engines crawl the pages, not /api or /files; the AI crawlers take nothing', async () => {
   const s = await startTestServer();
   try {
     const r = await s.agent().get('/robots.txt');
     assert.equal(r.status, 200);
-    assert.equal(r.text, 'User-agent: *\nAllow: /\nDisallow: /api\nDisallow: /files\n');
     assert.equal(r.text, ROBOTS);
+    // The AI crawlers are one group, refused everything.
+    const groups = r.text.trim().split(/\n\n/);
+    const ai = groups[0].split('\n');
+    assert.deepEqual(ai.slice(-1), ['Disallow: /']);
+    for (const bot of ['GPTBot', 'CCBot', 'Google-Extended', 'ClaudeBot', 'PerplexityBot', 'Bytespider', 'anthropic-ai', 'Applebot-Extended', 'meta-externalagent']) assert.ok(ai.includes(`User-agent: ${bot}`), bot);
+    // Everyone else (Googlebot, Bingbot): the sales and showroom pages, never the API or the files.
+    assert.deepEqual(groups[1].split('\n'), ['User-agent: *', 'Content-Signal: search=yes, ai-input=no, ai-train=no', 'Allow: /', 'Disallow: /api', 'Disallow: /files']);
+    assert.ok(!/User-agent: (Googlebot|Bingbot)\b/.test(r.text), 'search engines are not refused');
     assert.equal(r.headers.get('content-type'), 'text/plain; charset=utf-8');
     assert.equal(r.headers.get('cache-control'), 'public, max-age=86400');
     const h = await s.agent().head('/robots.txt');
@@ -57,7 +64,7 @@ test('TRUST_PROXY off: forwarding headers are ignored, so a client can’t pick 
   }
 });
 
-test('signup, login, uploads, leads and photo analysis each carry a per-real-IP rate limit', async () => {
+test('signup, login, uploads and leads each carry a per-real-IP rate limit', async () => {
   const s = await startTestServer();
   try {
     const want = [
@@ -65,7 +72,6 @@ test('signup, login, uploads, leads and photo analysis each carry a per-real-IP 
       ['POST', '/api/auth/login'],
       ['PUT', '/api/files'],
       ['POST', '/api/brands/by-slug/:slug/leads'],
-      ['POST', '/api/generate/photo'],
       ['POST', '/api/account/delete'],
     ];
     for (const [method, p] of want) {

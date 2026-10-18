@@ -72,6 +72,12 @@
   text-overflow: ellipsis;
 }
 
+.share-bar-on {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
 .share-bar-actions {
   display: flex;
   align-items: center;
@@ -151,6 +157,7 @@
     padding: 8px 12px;
   }
   .share-bar-note,
+  .share-bar-on,
   .share-bar-when {
     display: none;
   }
@@ -602,5 +609,20 @@
   /* Product art is dark line work over real finish colours: it keeps a light tile. */
   :root[data-theme='dark'] .share-plist-art {
     background: var(--art-bg);
+  }
+}
+
+/* A phone on a showroom: "Send to <Company>" gets its own full-width row under Products and
+   Duplicate, so the strip never runs off the side of the screen. */
+@media (max-width: 560px) {
+  .share-bar-actions {
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    min-width: 0;
+    width: 100%;
+  }
+  .share-bar-actions .sr-send-btn {
+    order: 3;
+    flex-basis: 100%;
   }
 }

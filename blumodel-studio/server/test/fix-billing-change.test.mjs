@@ -1,15 +1,12 @@
-// Plan changes and the Contractor plan's included custom models (fixer finding: upgrade, request
-// three models, downgrade, and the models were made for a credited-back upgrade).
-//   - an upgrade to Contractor is invoiced and paid at once (always_invoice +
-//     error_if_incomplete); a declined payment changes nothing and gives no models;
-//   - leaving Contractor after models were requested this period gets no proration credit;
-//   - leaving it with nothing requested is prorated as before.
+// Plan changes on a legacy Stripe subscription. Before the showroom pivot an upgrade to Contractor
+// was invoiced at once and a downgrade after requesting models gave no credit back (fixer finding);
+// since the pivot (docs/SHOWROOM_PIVOT.md §3) no plan change is sold at all, so the route refuses
+// it before Stripe is called, and cancelling still works.
 // Stripe is only ever a mocked fetch, with obviously fake keys.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { startTestServer } from './helpers.mjs';
-import { makePng } from './fixtures/images.mjs';
 
 const STRIPE_ENV = { STRIPE_SECRET_KEY: 'sk_test_FAKE_FOR_TESTS', STRIPE_WEBHOOK_SECRET: 'whsec_FAKE_FOR_TESTS', PUBLIC_URL: 'https://blumodel.example' };
 const DAY = 86_400_000;
@@ -61,68 +58,21 @@ async function unlimitedOnStripe(s, mock) {
   return ann;
 }
 
-async function submitThree(agent) {
-  const up = await agent.putRaw('/api/files?kind=reference&name=photo.png', makePng({ w: 6, h: 6, rgba: [120, 90, 60, 255] }), 'image/png');
-  assert.equal(up.status, 201, up.text);
-  const items = [1, 2, 3].map((i) => ({ brief: { productTypeId: 'base-cabinet', kind: 'base', variant: 'door-drawer', name: `Harbor Base ${i}`, widthIn: 30, depthIn: 24, heightIn: 34.5, notes: '', referenceFileIds: [up.body.file.id] } }));
-  return agent.post('/api/orders', { target: 'contractor', items });
-}
-
-const lastUpdate = (mock) => mock.calls.filter((c) => c.method === 'POST' && c.path === '/v1/subscriptions/sub_fix').at(-1)?.form;
-
-test('an upgrade to Contractor is charged at once; leaving after requesting models gives no credit back', async () => {
+test('since the showroom pivot a plan change is not sold: refused before Stripe is called, up or down; cancel still works', async () => {
   const mock = stripeMock();
   const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
   try {
     const ann = await unlimitedOnStripe(s, mock);
-    const up = await ann.post('/api/billing/change', { plan: 'contractor' });
-    assert.equal(up.status, 200, up.text);
-    let f = lastUpdate(mock);
-    assert.equal(f.get('items[0][price_data][unit_amount]'), '9900');
-    assert.equal(f.get('proration_behavior'), 'always_invoice', 'the difference is invoiced now, not on the next bill');
-    assert.equal(f.get('payment_behavior'), 'error_if_incomplete', 'Stripe refuses the change if that invoice isn’t paid');
-
-    const o = await submitThree(ann);
-    assert.equal(o.status, 201, o.text);
-
-    const down = await ann.post('/api/billing/change', { plan: 'unlimited' });
-    assert.equal(down.status, 200, down.text);
-    f = lastUpdate(mock);
-    assert.equal(f.get('items[0][price_data][unit_amount]'), '1500');
-    assert.equal(f.get('proration_behavior'), 'none', 'no credit back for a period whose models were used');
-    assert.equal(f.get('payment_behavior'), null);
+    for (const plan of ['contractor', 'unlimited']) {
+      const r = await ann.post('/api/billing/change', { plan });
+      assert.equal(r.status, 410, r.text);
+      assert.equal(r.body.code, 'not_for_sale');
+    }
+    assert.equal(mock.calls.length, 0, 'Stripe was never called');
     assert.equal((await ann.get('/api/billing/me')).body.plan.id, 'unlimited');
-  } finally {
-    await s.close();
-  }
-});
-
-test('a declined upgrade payment leaves the plan as it was and no models can be requested', async () => {
-  const mock = stripeMock();
-  const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
-  try {
-    const ann = await unlimitedOnStripe(s, mock);
-    mock.state.decline = true;
-    const up = await ann.post('/api/billing/change', { plan: 'contractor' });
-    assert.equal(up.status, 402, up.text);
-    assert.equal(up.body.code, 'upgrade_payment_failed');
-    assert.equal((await ann.get('/api/billing/me')).body.plan.id, 'unlimited');
-    const o = await submitThree(ann);
-    assert.equal(o.status, 403, o.text);
-  } finally {
-    await s.close();
-  }
-});
-
-test('leaving Contractor with no models requested this period is prorated as before', async () => {
-  const mock = stripeMock();
-  const s = await startTestServer({ env: STRIPE_ENV, fetch: mock.fetch });
-  try {
-    const ann = await unlimitedOnStripe(s, mock);
-    assert.equal((await ann.post('/api/billing/change', { plan: 'contractor' })).status, 200);
-    const down = await ann.post('/api/billing/change', { plan: 'unlimited' });
-    assert.equal(down.status, 200, down.text);
-    assert.equal(lastUpdate(mock).get('proration_behavior'), 'create_prorations');
+    const cancel = await ann.post('/api/billing/cancel');
+    assert.equal(cancel.status, 200, cancel.text);
+    assert.equal(mock.calls.filter((c) => c.method === 'POST' && c.path === '/v1/subscriptions/sub_fix').at(-1)?.form.get('cancel_at_period_end'), 'true');
   } finally {
     await s.close();
   }

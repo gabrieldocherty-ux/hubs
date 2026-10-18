@@ -3,17 +3,20 @@ import { ADMIN_TABS, hrefFor, navigate, type AdminTab } from '../lib/router';
 import { useSession } from '../store/useSession';
 import type { Role } from '../types/platform';
 import { AccountMenu } from '../components/AccountMenu';
+import { MfaEnrolScreen, ReauthPrompt } from '../components/TwoFactor';
 import { Logo, Wordmark } from '../components/Icons';
 import { AdminBrandsTab, AdminModerationTab } from '../features/brands';
 import { AdminRevenueTab, AdminStudioTab } from '../features/orders';
 import { AdminBillingTab } from '../features/billing';
-import { AdminAuditTab, AdminContractorsTab, AdminDashboardTab, AdminSystemTab, AdminUsersTab } from '../features/admin';
+import { AdminAuditTab, AdminCompaniesTab, AdminContractorsTab, AdminDashboardTab, AdminSalesLeadsTab, AdminSystemTab, AdminUsersTab } from '../features/admin';
 
 // Real-retailer link settings and link-out counts (its own chunk: admins only).
 const AdminRetailersTab = lazy(() => import('../catalog/retailAdmin'));
 
 const LABELS: Record<AdminTab, string> = {
   overview: 'Overview',
+  companies: 'Companies',
+  'sales-leads': 'Sales leads',
   moderation: 'Moderation',
   brands: 'Brands',
   retailers: 'Retailers',
@@ -54,8 +57,13 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
       </div>
     );
 
+  // An admin without two-factor sign-in sees only the enrolment (the server refuses every admin route
+  // with mfa_enrol_required until then).
+  const mustEnrol = user?.role === 'admin' && !!user.mfa?.required && !user.mfa.enabled;
+
   return (
     <div className="admin">
+      <ReauthPrompt />
       <header className="home-bar">
         <a className="brand" href="#/">
           <Logo />
@@ -71,9 +79,12 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
         <AccountMenu />
       </header>
       <main className="admin-main">
-        {allowed && (
+        {mustEnrol && <MfaEnrolScreen />}
+        {allowed && !mustEnrol && (
           <Suspense fallback={<div className="screen-msg">Loading…</div>}>
             {tab === 'overview' && <AdminDashboardTab />}
+            {tab === 'companies' && <AdminCompaniesTab />}
+            {tab === 'sales-leads' && <AdminSalesLeadsTab />}
             {tab === 'users' && <AdminUsersTab />}
             {tab === 'contractors' && <AdminContractorsTab />}
             {tab === 'system' && <AdminSystemTab />}

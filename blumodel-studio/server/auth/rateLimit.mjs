@@ -1,4 +1,4 @@
-// A bounded, generic fixed-window rate limiter. The key map is LRU-capped, so a flood
+// A bounded, generic rate limiter: fixed windows (hit) and token buckets (take). The key map is LRU-capped, so a flood
 // of distinct keys (rotating emails or addresses) can't grow memory without limit.
 
 export function createRateLimiter({ maxKeys = 20_000, now = Date.now, enabled = true } = {}) {
@@ -27,6 +27,24 @@ export function createRateLimiter({ maxKeys = 20_000, now = Date.now, enabled = 
       touch(key, e);
       const retryAfterMs = Math.max(0, e.start + windowMs - now());
       return { ok: e.count <= max, remaining: Math.max(0, max - e.count), retryAfterMs };
+    },
+    /**
+     * A token bucket: `burst` tokens to start, `refill` more every `everyMs` (smoothly), never above
+     * `burst`. Takes one; `{ ok:false, retryAfterMs }` when the bucket is empty. Generous for a
+     * person (a burst of page loads is fine), tight for a script (it soon runs at the refill rate).
+     */
+    take(key, burst, refill, everyMs) {
+      if (!enabled) return { ok: true, remaining: burst, retryAfterMs: 0 };
+      const t = now();
+      const perMs = refill / everyMs;
+      const prev = map.get(key);
+      // A bucket idle long enough to be full again is the same as a new one.
+      const tokens = prev ? Math.min(burst, prev.tokens + (t - prev.at) * perMs) : burst;
+      const ok = tokens >= 1;
+      const left = ok ? tokens - 1 : tokens;
+      // windowMs/start/count keep prune() working: the entry expires once it would be full again.
+      touch(key, { tokens: left, at: t, start: t, count: 0, windowMs: Math.ceil((burst - left) / perMs) + 1 });
+      return { ok, remaining: Math.floor(left), retryAfterMs: ok ? 0 : Math.ceil((1 - left) / perMs) };
     },
     /** True when `key` already has `max` or more hits in its window (does not count). */
     blocked(key, max, windowMs) {

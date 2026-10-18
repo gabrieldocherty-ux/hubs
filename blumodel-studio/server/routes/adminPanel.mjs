@@ -12,6 +12,8 @@
 //   GET  /api/admin/contractors?q=                 contractors with plan, page and models
 //   POST /api/admin/contractors/:id/verify {verified}   the Verified badge on their brand page
 //   GET  /api/admin/system                         health and setup, secrets as yes/no only
+//   POST /api/admin/system/update-now              leave the Update now trigger for the automatic update
+//   POST /api/admin/system/sites {on}              every site on, or off for maintenance (ops/sitesSwitch.mjs)
 //   GET  /api/admin/audit?actor=&action=&from=&to=&page=
 //
 // Every route is admin-only (the router answers 401 / 403 before the handler runs), every write
@@ -21,7 +23,7 @@
 // delete an ADMIN through the API: that stays `node server/scripts/make-admin.mjs` on the server.
 
 import { HttpError } from '../http/respond.mjs';
-import { audit } from '../lib/audit.mjs';
+import { audit, pseudonymOf } from '../lib/audit.mjs';
 import { SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
 import { createBillingService } from '../billing/service.mjs';
 import { createAllowance } from '../payments/allowance.mjs';
@@ -29,6 +31,7 @@ import { createAccountService } from '../account/service.mjs';
 import { createDashboard } from '../admin/dashboard.mjs';
 import { auditPage, createPeople } from '../admin/people.mjs';
 import { systemStatus } from '../admin/system.mjs';
+import { requestUpdate, serverHome } from '../admin/updates.mjs';
 import { disableAccount, enableAccount, isDisabled } from '../admin/status.mjs';
 
 const HOUR = 3_600_000;
@@ -112,6 +115,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/role',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       rateLimit: WRITE,
       maxBytes: 2_048,
       params: { id: ID },
@@ -131,6 +136,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/comp',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       rateLimit: WRITE,
       maxBytes: 4_096,
       params: { id: ID },
@@ -202,6 +209,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/disable',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       rateLimit: WRITE,
       maxBytes: 4_096,
       params: { id: ID },
@@ -240,6 +249,8 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/delete',
       auth: 'admin',
+      // Money or access: the password and 2FA code again within REAUTH_MINUTES.
+      reauth: true,
       rateLimit: DESTROY,
       maxBytes: 2_048,
       params: { id: ID },
@@ -251,8 +262,9 @@ export default function routes(ctx) {
           throw new HttpError(409, 'This account pays for a plan that still renews. Cancel it in Stripe (or wait for it to end) before deleting the account.', { code: 'active_subscription' });
         }
         const counts = account.deleteAccount(u.id);
-        // admin_audit has no foreign key to users: the record (with the email copied in) stays.
-        record(rc, 'account_delete', u, { name: u.name, role: u.role, counts });
+        // admin_audit has no foreign key to users: the record stays, about a pseudonym (the account's
+        // earlier entries were pseudonymised with it), never the person's name or address.
+        record(rc, 'account_delete', { ...u, email: pseudonymOf(u.email) }, { role: u.role, counts });
         log.info?.(`Account ${u.id} deleted by admin ${rc.user.id} (${Object.entries(counts).map(([k, v]) => `${v} ${k}`).join(', ')}).`);
         return { deleted: true, counts };
       },
@@ -296,7 +308,44 @@ export default function routes(ctx) {
       rateLimit: READ,
       handler: (rc) => {
         rc.res.setHeader('Cache-Control', 'no-store');
-        return systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health });
+        return systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home: ctx.home === undefined ? serverHome() : ctx.home, sitesSwitch: ctx.sitesSwitch });
+      },
+    },
+    {
+      // Admin > System > All websites: the site-wide switch (ops/sitesSwitch.mjs). OFF leaves the
+      // sales site's sign-in and Admin working for admins, so this same button turns it back on.
+      method: 'POST',
+      path: '/api/admin/system/sites',
+      auth: 'admin',
+      rateLimit: { name: 'admin-sites-switch', max: 30, windowMs: HOUR, by: 'user' },
+      maxBytes: 256,
+      handler: (rc) => {
+        if (typeof rc.body.on !== 'boolean') throw bad('on', 'Say whether the sites should be on (true or false).');
+        const state = ctx.sitesSwitch.set(rc.body.on, { via: 'admin', admin: rc.user });
+        return { sites: { on: state.on, since: state.since, by: state.by, via: state.via }, changed: state.changed };
+      },
+    },
+    {
+      // Admin > System > Updates > Update now: leaves logs/update-now.request in the home, which the
+      // automatic update picks up (Linux: blumodel-update.path at once; Windows: within two minutes).
+      // Nothing is run from here. Audited.
+      method: 'POST',
+      path: '/api/admin/system/update-now',
+      auth: 'admin',
+      rateLimit: { name: 'admin-update-now', max: 10, windowMs: HOUR, by: 'user' },
+      maxBytes: 256,
+      handler: (rc) => {
+        const home = ctx.home === undefined ? serverHome() : ctx.home;
+        let r;
+        try {
+          r = requestUpdate({ home, now: ctx.now, by: rc.user.email });
+        } catch (err) {
+          if (err?.code) throw new HttpError(409, err.message, { code: err.code });
+          throw err;
+        }
+        audit(db, { admin: rc.user, action: 'update_now', detail: { alreadyPending: r.already }, at: ctx.now() });
+        log.info?.(`admin: ${rc.user.email} asked for an update now`);
+        return { requested: true, alreadyPending: r.already, updates: systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home }).updates };
       },
     },
     {

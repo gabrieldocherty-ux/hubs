@@ -27,7 +27,6 @@
 
 import { makeGlb } from '../../../server/test/fixtures/glb.mjs';
 import { makePng } from '../../../server/test/fixtures/images.mjs';
-import { kitchenPhoto } from './generate.mjs';
 
 const COMPANY = { company: 'Cedar & Sill Millwork (QA)', phone: '905-555-0173', email: 'hello@cedarsill.example', website: 'https://cedarsill.example', serviceArea: 'Hamilton and Burlington', defaultMarkupPct: 40 };
 const PRODUCT_NAME = 'Cedar Sill Walnut Base 24 (QA)';
@@ -431,12 +430,11 @@ export default [
 
   // ─── copy ──────────────────────────────────────────────────────────────────
   {
-    // A homeowner: no brand-portal entry point anywhere, and the way in is a photo.
+    // A homeowner: no brand-portal entry point anywhere (Start from a photo is gone since the pivot).
     name: 'int-copy-customer',
     path: '#/',
     as: 'customer',
     waitFor: ['.home-main'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await assertCopy(h, 'Home');
       // The account menu: no contractor entry for a homeowner (the Contractor plan is on the Pricing
@@ -450,7 +448,7 @@ export default [
       h.note(`account menu: ${items.join(' | ')}`);
       if (items.some((t) => /for contractors|contractor workspace|my orders|make custom models/i.test(t))) throw new Error(`a homeowner's account menu offers: ${items.join(' | ')}`);
       await h.key('Escape');
-      for (const hash of ['#/new', '#/generate', '#/pricing', '#/welcome', '#/orders', '#/account/billing', '#/pro']) {
+      for (const hash of ['#/new', '#/pricing', '#/welcome', '#/orders', '#/account/billing', '#/pro']) {
         await h.goto(hash);
         await h.sleep(900);
         await assertCopy(h, hash);
@@ -466,24 +464,11 @@ export default [
     path: '#/',
     as: 'anon',
     waitFor: ['a[href="#/signin"]'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await assertCopy(h, 'the landing page');
       await h.goto('#/pricing');
       await h.sleep(900);
       await assertCopy(h, 'the pricing page');
-    },
-  },
-  {
-    // Signed in, the Home call to action is Start from a photo and it opens the photo screen.
-    name: 'int-home-start-from-a-photo',
-    path: '#/',
-    as: 'customer',
-    waitFor: ['.home-cta'],
-    check: async (h) => {
-      await h.click(await mark(h, '.home-cta button', 'Start from a photo', 'cta'));
-      await h.waitUntil(() => location.hash.startsWith('#/generate'), 8000, '#/generate');
-      await h.waitForText('Start from a photo of your kitchen');
     },
   },
 
@@ -517,39 +502,6 @@ export default [
     },
   },
 
-  // ─── photo ─────────────────────────────────────────────────────────────────
-  {
-    // Photo -> Check the space (the manual form: the QA server has no model key) -> Build my
-    // kitchen -> the editor, with the photo reference mounted and the photo attached.
-    name: 'int-photo-to-editor',
-    as: 'customer',
-    setup: async ({ api }) => {
-      const up = await api.as('customer').putRaw('/api/files?kind=reference&name=qa-kitchen.png', kitchenPhoto(), 'image/png');
-      const id = must(up, 'Uploading the fixture photo').file.id;
-      brand.photoId = id;
-      return { path: `#/generate?qaPhotos=${id}&qaStep=space` };
-    },
-    waitFor: ['.gen-form', '.gen-footer .gen-go'],
-    expectText: ['Check the space'],
-    waitMs: 500,
-    check: async (h) => {
-      await noSideScroll(h);
-      await assertCopy(h, 'Start from a photo');
-      await h.click('.gen-footer .gen-go');
-      await h.waitUntil(() => /^#\/k\//.test(location.hash), 25_000, 'the editor after Build my kitchen');
-      const id = await h.evaluate(() => location.hash.slice(4).split('?')[0]);
-      await h.waitFor('.topbar');
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      const photos = must(await h.api.as('customer').get(`/api/generate/photos/${id}`), 'Reading the kitchen\'s photos');
-      if (!photos.files?.some((f) => f.id === brand.photoId)) throw new Error('the photo was not attached to the new kitchen');
-      const items = await h.evaluate(() => window.__blumodelQA.store.getState().doc.items.length);
-      if (items < 5) throw new Error(`the built kitchen has only ${items} pieces`);
-      // A signed-in kitchen survives a reload with its photo reference.
-      await h.reload();
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      await h.shot('editor');
-    },
-  },
 
   // ─── order ─────────────────────────────────────────────────────────────────
   {
@@ -709,39 +661,24 @@ export default [
 
   // ─── export ────────────────────────────────────────────────────────────────
   {
-    // A free user: Export -> the Unlock dialog -> $5 unlock (demo checkout) -> back in the kitchen
-    // the export they asked for runs by itself.
-    name: 'int-free-export-unlock-runs',
+    // A free user's download just runs (the showroom pivot): no dialog, no payment, and the server
+    // records it. Another account can't export someone else's kitchen.
+    name: 'int-free-export-runs',
     as: 'fresh',
     setup: async ({ me }) => {
-      const k = await newKitchen(me, 'QA Unlock Kitchen');
+      const k = await newKitchen(me, 'QA Free Export Kitchen');
       return { path: `#/k/${k.id}`, projectId: k.id };
     },
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
-      const before = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
-      if (before.status !== 403) throw new Error(`a free user's export answers ${before.status} before paying, expected 403`);
       const compact = await h.evaluate(() => !!document.querySelector('.export-btn'));
       await h.click(compact ? '.export-btn' : '.topbar .menu-wrap > .btn.primary');
       await h.waitFor('.topbar .menu[role="menu"]');
       await h.click(await mark(h, '.topbar .menu [role="menuitem"]', 'Shopping list', 'csv'));
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock “QA Unlock Kitchen”', 'Unlock this kitchen - $5 CAD once']);
-      await h.click(await mark(h, '.modal.unlock button', 'Unlock this kitchen', 'unlock'));
-      await h.waitUntil(() => location.hash.startsWith('#/pay/'), 10_000, 'the demo checkout');
-      await h.waitForText(['DEMO PAYMENT', 'BluModel Studio never sees or stores card details']);
-      const cardish = await h.evaluate(() => [...document.querySelectorAll('input')].filter((i) => /card|cc-|cvc|cvv|expir/i.test(`${i.name} ${i.id} ${i.autocomplete} ${i.placeholder}`)).length);
-      if (cardish) throw new Error(`${cardish} card-like field(s) on the demo checkout`);
-      await h.click('.demo-pay-actions .btn.primary');
-      // Back in the kitchen, the export finishes by itself.
-      await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'returning to the kitchen');
       await h.waitForText('Shopping list saved as CSV.', 25_000);
-      const after = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
-      if (after.status !== 200) throw new Error(`after unlocking, the export answers ${after.status}`);
-      // Unlocking one kitchen does not unlock another.
-      const other = await newKitchen(h.me, 'QA Other Kitchen');
-      const r = await h.me.post(`/api/projects/${other.id}/exports`, { kind: 'csv' });
-      if (r.status !== 403) throw new Error(`a second kitchen exports without being unlocked (${r.status})`);
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock'))) throw new Error('a payment dialog opened for a free download');
+      const r = await h.api.as('customer').post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
+      if (r.status !== 403 && r.status !== 404) throw new Error(`another account exported this kitchen (${r.status})`);
       await h.shot('exported');
     },
   },

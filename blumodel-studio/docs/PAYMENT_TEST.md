@@ -1,45 +1,118 @@
-# Payment test on the live site
+# Payment test on the live site (showroom model)
 
-A checklist for Gabe to prove payments work on https://blumodel.studio with real money, start to
-finish. It takes about 30 minutes and costs $5 CAD (refunded) plus up to one month of Unlimited
-($15 CAD, which you can refund too).
+A checklist for Gabe to prove the showroom money works on https://blumodel.studio with real money,
+start to finish. It replaces the old homeowner checklist (the $5 unlock, Unlimited and the Contractor
+plan are no longer sold; see docs/SHOWROOM_PIVOT.md §2-3).
 
-Use a **normal browser window** and an account that is **not your admin account**. Admins can
-export without paying, so an admin account never sees the paywall. Use your own card.
+**Run it only after the showroom release is deployed.** The live site at commit 9d90a64 still runs
+the old model.
 
-Before a live run, the same flows were run on a temporary local deploy with a mocked Stripe (fake
-keys, no real Stripe call): checkout in CAD, webhook signatures and the 5-minute tolerance,
-duplicate events, fulfilment, the return sync, the portal, plan change, cancel and resume, a failed
-renewal and its 7-day grace, the Contractor plan's 3 models a month, refunds of older USD orders,
-and a customer that paid in USD being charged in CAD. All of them passed. This list checks the parts
-only the real Stripe account can show.
+You will:
 
-Never paste a key, a webhook secret or a password into a chat, a ticket or this file.
+1. make a **test company** and record a **$0 test license** for it;
+2. buy **one $50 CAD monthly plan** with your own card through the Checkout link;
+3. confirm the webhook deliveries answer **200** and the company has **$25.00 (2,500 cents) of render
+   credits**;
+4. cancel the plan and refund the $50.
+
+It takes about 30 minutes. The $50 is refunded at the end. Stripe keeps its processing fee on a
+refund, so expect about $1.75 CAD of fees.
+
+Never paste a key, a webhook secret or a password into a chat, a ticket or this file. Don't open
+`blumodel.env`; `npm run stripe:check` reads it for you.
+
+### What was already checked without real money
+
+These flows were run on a clean copy of the code (commit 6074f7c) with a mocked Stripe. The keys were
+fake and no real Stripe call was made:
+
+- the admin's Checkout link: subscription mode, **CA$50.00 a month** from the server's own price,
+  `metadata.kind = showroom_monthly`, and the company's email;
+- webhook signatures: a wrong secret, a changed body, a `v0`-only header and no header are all
+  refused, and so is a timestamp more than 5 minutes off in either direction;
+- a resent event is recorded once;
+- fulfilment, and the return sync, which only accepts a paid session made for that very link;
+- `invoice.paid` grants exactly 2,500 cents once per invoice;
+- a failed renewal: 14 days of grace, then lapsed and the "temporarily unavailable" page, then paid
+  again and live;
+- credits roll over for 3 months and the oldest is spent first;
+- renders reserve credits first, then are charged, or refunded when they fail;
+- admin credit adjustments are audited and can't go below zero;
+- legacy receipts, the portal, cancel/resume and order refunds still work;
+- every homeowner or contractor checkout and plan change answers **410 not_for_sale** before Stripe
+  is called.
+
+This checklist covers what only the real Stripe account can show.
+
+---
+
+## Known issues at commit 6074f7c (read before you start)
+
+These came out of the verification. Until they are fixed, expect the following:
+
+- ~~The return page after paying doesn't exist yet~~ (fixed in pivot-fix): `#/pay/showroom/<ref>`
+  on the sales site shows the company and the amount, sends an unpaid link to Stripe ("Pay by card"),
+  confirms the payment as soon as Stripe sends the payer back (`?session_id=`), and ends on "Paid. …
+  monthly plan is active" or "Payment didn't go through".
+- ~~The order of Stripe's events matters~~ (fixed in pivot-fix): an `invoice.paid` that arrives
+  before the subscription is known is placed by the subscription's metadata, so the first month's
+  2,500 credits and receipt are kept whatever the order. If step 3 still shows **$0.00**, that is a
+  real bug: note it and add the $25 by hand (**Admin → Companies → the company → Render credits →
+  Add or remove**).
+- **A lapsed company can't fix its own card.** Every page and API call on a lapsed showroom answers
+  "temporarily unavailable", including sign-in and the Plan tab's card portal. Before going live
+  with real companies, set Stripe to email failed-payment links (section 0) so a company can pay
+  from Stripe's own page. To recover a lapsed company, send a new monthly link: the server now
+  cancels the old past-due subscription at Stripe first, so the company is never charged twice
+  (pivot-fix).
 
 ---
 
 ## 0. Before you start
 
-- [ ] In the home folder, `logs\server.log` has these lines from the last start, and no `Stripe is NOT on:` line:
+- [ ] In the home folder, `logs\server.log` has these lines from the last start, and no
+  `Stripe is NOT on:` line:
   ```
   BluModel Studio listening on http://127.0.0.1:8790 (payments: stripe, production)
   Stripe: LIVE mode
   ```
-  The server reports `stripe` + LIVE only when all of these are true: the key starts `sk_live_` or
-  `rk_live_`, `STRIPE_WEBHOOK_SECRET` starts `whsec_`, `PUBLIC_URL` is `https://blumodel.studio`,
-  and the server runs in production. Otherwise it reports `none`, and every checkout answers
-  "Payments are not available yet". A test key (`sk_test_`) reports `stripe` in TEST mode.
-- [ ] From the repo's `blumodel-studio\` folder, run `npm run stripe:check`. Every line is
-  **PASS** or a NOTE you accept. **FIX** lines must be fixed first. It reads `blumodel.env` itself,
-  so don't open or copy the file. It never prints a key.
-- [ ] Stripe Dashboard → **Developers → Webhooks** → the endpoint
-  `https://blumodel.studio/api/webhooks/stripe` is **Enabled**, in **Live** mode, and sends all
-  ten events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
-  `checkout.session.async_payment_failed`, `checkout.session.expired`,
-  `customer.subscription.created`, `customer.subscription.updated`,
-  `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded`.
-  (`stripe:check` checks this too.)
+  The server reports `stripe` with LIVE only when all of these hold:
+  - the key starts with `sk_live_` or `rk_live_`;
+  - `STRIPE_WEBHOOK_SECRET` starts with `whsec_`;
+  - `PUBLIC_URL` is `https://blumodel.studio`;
+  - the server runs in production.
+
+  Otherwise it reports `none`, and creating a checkout link answers "Payments are not available
+  yet".
+- [ ] From the repo's `blumodel-studio\` folder, run `npm run stripe:check`. Every line must be
+  **PASS**, or a NOTE you accept. Fix any **FIX** line before going on. The check never prints a
+  key.
+- [ ] In the Stripe Dashboard, go to **Developers → Webhooks**. The endpoint
+  `https://blumodel.studio/api/webhooks/stripe` must be **Enabled** in **Live** mode and send all ten
+  events (`stripe:check` checks this too):
+  - `checkout.session.completed`
+  - `checkout.session.async_payment_succeeded`
+  - `checkout.session.async_payment_failed`
+  - `checkout.session.expired`
+  - `customer.subscription.created`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+  - `invoice.paid`
+  - `invoice.payment_failed`
+  - `charge.refunded`
+  - `charge.dispute.created` (a showroom monthly payment charged back: its unspent credits go, the company is flagged for review, grace starts)
 - [ ] Keep that endpoint's **Event deliveries** tab open in a second tab. You check it after each step.
+- [ ] Set these once in the Stripe Dashboard, for real companies later:
+  - **Settings → Billing → Customer portal** is activated. It lets the company update its card and
+    see invoices.
+  - **Settings → Billing → Revenue recovery → Retries**: when all retries fail, **cancel the
+    subscription**. If it is left *past due*, Stripe keeps retrying the old plan after the showroom
+    has lapsed. A new link would then start a second plan, and a late payment on the old one would
+    charge the company twice, with nothing recorded here.
+  - **Revenue recovery → Emails**: turn on the failed-payment emails, with Stripe's link to update
+    the card. A lapsed company can't reach the portal from its own showroom.
+- [ ] `https://<anything>.blumodel.studio` resolves, because the wildcard DNS record exists
+  (ONBOARDING_A_COMPANY.md, part A).
 
 What a delivery that isn't 200 means:
 
@@ -48,97 +121,123 @@ What a delivery that isn't 200 means:
 | 400 *Invalid signature* | `STRIPE_WEBHOOK_SECRET` is wrong, or the server clock is more than 5 minutes off |
 | 503 *payments_unavailable* | the server isn't in Stripe mode (step 0) |
 | Cloudflare challenge or 403 page | Bot Fight Mode or a WAF rule (LAUNCH.md part C) |
-| 500 | a handler failed. Stripe retries it. Note the event id and tell Claude |
+| 500 | a handler failed and Stripe will retry it. Note the event id and tell Claude |
 
 ---
 
-## 1. One $5 CAD kitchen unlock, then a refund
+## 1. A test company and a $0 test license
 
-1. [ ] Sign out. **Sign up** with a fresh email that isn't your admin account, for example
-   `gabe+paytest1@…`.
-2. [ ] Look at the Pricing page and the landing page. Neither should mention a $5 unlock. Pricing
-   shows Free, **Unlimited $15 CAD/month** and **Contractor $99 CAD/month** only.
-3. [ ] Make a kitchen (any layout) and press **Export** (PNG, CSV or any other).
-4. [ ] The export dialog offers **Unlock this kitchen - $5 CAD once** next to **Unlimited -
-   $15 CAD/month**. There are no card fields and nothing says DEMO.
-5. [ ] Choose **Unlock this kitchen**. The address bar shows `checkout.stripe.com`. The amount is
-   **CA$5.00**. Pay.
-6. [ ] You come back to `https://blumodel.studio/...#/k/...` (not some other address). The export you
-   clicked finishes. Export again: no dialog this time.
-7. [ ] **Account → Billing** lists the receipt: *Kitchen unlock: <kitchen name>*, **$5.00 CAD**.
-8. [ ] Stripe → **Payments**: one CA$5.00 payment. Webhook deliveries: `checkout.session.completed`
-   → **200**.
-9. [ ] Refund it: open the payment → **Refund** → full amount. Deliveries: `charge.refunded` →
-   **200**. Stripe emails a refund receipt.
-   - Expected: the kitchen **stays unlocked** and the Billing receipt stays listed. A refund made in
-     the Stripe dashboard changes nothing in the app for unlocks. This is how it is built
-     (docs/LAUNCH.md B10), not a fault.
+Sign in on `https://blumodel.studio` with your **admin** account.
 
-## 2. One subscription start, then cancel
+1. [ ] Go to **Admin → Companies → New company**:
+   - Name: `Payment Test Co (delete me)`.
+   - Slug: `paytest`.
+   - Owner's email: an address you read, for example `gabe+paytest@…`.
 
-Use the same test account (or a second one, `gabe+paytest2@…`).
+   With no contact email set, Stripe's Checkout and receipts use the owner's email. The page shows a
+   **Sign-in link** for that owner: copy it for step 3.
+2. [ ] Open it. In **Yearly license → Record a license**:
+   - **Amount (CAD)**: `0`.
+   - **How it was paid**: *Complimentary*.
+   - **Note**: `PAYMENT TEST`.
+   - Leave both dates empty: today, and a year.
 
-1. [ ] **Pricing → Unlimited**, or **Account → Billing → Unlimited**. On `checkout.stripe.com` the
-   price reads **CA$15.00 per month**. Pay.
-2. [ ] Back on the site, Billing shows **Unlimited**, the renewal date about a month away and
-   **$15.00 CAD / month**. Every kitchen exports without the dialog.
-3. [ ] Deliveries, all **200**: `checkout.session.completed`, `customer.subscription.created`,
-   `invoice.paid` (`customer.subscription.updated` may arrive as well).
-4. [ ] Billing → **Manage payment & invoices** opens `billing.stripe.com`. The portal's return link (it carries your Stripe business name)
-   lands on `https://blumodel.studio/#/account/billing`.
-5. [ ] Billing → **Cancel plan** → confirm. Billing says the plan ends on the renewal date and you
-   still have Unlimited until then. Deliveries: `customer.subscription.updated` → **200**. In
-   Stripe → **Subscriptions**, the subscription shows *Cancels <date>*.
-6. [ ] Optional: **Keep my plan**. Billing shows it renewing again, and `customer.subscription.updated` →
-   **200**. Then cancel again.
-7. [ ] Optional: refund the $15 in Stripe → Payments (`charge.refunded` → **200**). The plan stays
-   until the period ends. To end it now, cancel the subscription **immediately** in the Stripe
-   dashboard: `customer.subscription.deleted` → **200**, and Billing shows Free.
+   Press **Record license**. The license shows today to a year less a day, and **$0.00 CAD**. A $0
+   complimentary license adds no receipt and no revenue.
+3. [ ] In **Status**, launch the company. It must come out **lapsed**, with *monthly plan not paid*
+   as the reason. Open `https://paytest.blumodel.studio`: it shows the **temporarily unavailable**
+   page. That proves a showroom needs both halves.
 
-Don't switch plans up and down during this test (see *Known issue* below).
+## 2. Buy one $50 CAD monthly plan
 
-## 3. One Contractor custom-model request using the allowance
+1. [ ] In **Monthly plan ($50/month)**, press **Create checkout link**. A link starting
+   `https://checkout.stripe.com/` appears under *Checkout link to send*.
+2. [ ] Open it in a **private window**, as the company would. The page shows:
+   - your Stripe business name;
+   - **BluModel Studio showroom - Payment Test Co (delete me)**;
+   - **CA$50.00 per month**;
+   - the owner's email from step 1.1.
 
-This needs an account on the Contractor plan. Either:
+   Nothing on the page should say USD or show another amount.
+3. [ ] Pay with **your own card**.
+4. [ ] Stripe → **Payments**: one **CA$50.00** payment. Stripe → **Subscriptions**: one active
+   subscription, renewing in a month.
+5. [ ] Event deliveries, all **200**:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `invoice.paid`
 
-- **Paid:** subscribe a test account to **Contractor - $99 CAD/month** as in section 2. Checkout reads
-  **CA$99.00 per month**. Refund it afterwards. Or
-- **Free:** give the test account a complimentary **Contractor** plan from **Admin → Users**, once that
-  screen ships. (At commit 7bc673f only the admin API, `POST /api/admin/billing/grant`, does this.)
-  This makes no charge. The grant's allowance follows the calendar month rather than a billing
-  period.
+   `customer.subscription.updated` may also arrive.
+6. [ ] Where Stripe sent you back: the address is
+   `https://blumodel.studio/?session_id=cs_live_…#/pay/showroom/tc_…`.
+   - Expected once fixed: a page saying the plan is paid and the showroom is live.
+   - At 6074f7c this was the *not found* page; since pivot-fix it says the plan is active.
 
-Then, signed in as that contractor:
+## 3. The webhook did its job: live, and 2,500 credits
 
-1. [ ] Contractors complete their company details first, including the business name and phone.
-2. [ ] The account menu shows **Make custom models**. A non-contractor account doesn't have it.
-3. [ ] Open it. The form says **3 of 3 models left this month - resets <date>**. There's no price,
-   no rush option and no checkout.
-4. [ ] Add one product: type, name, and a UPC. For a test, `036000291452` checks out; `036000291453`
-   must be refused with "That code doesn't check out". Or scan or photograph a barcode. Send it.
-5. [ ] The request opens marked **Included** (nothing to pay), and the form now says **2 of 3 left**.
-   Nothing new shows in Stripe → Payments, and no webhook is sent for it.
-6. [ ] As admin, **Admin → Studio**: the request is under *To start*, with the UPC shown.
-7. [ ] Withdraw it (as the contractor, before the studio starts it) or cancel it from the studio
-   drawer. The allowance goes back to **3 of 3**.
-8. [ ] If you subscribed with money, refund it and cancel the subscription in Stripe. Deliveries →
-   **200**.
+1. [ ] **Admin → Companies → paytest**:
+   - **Status** says **live**.
+   - **Monthly plan** reads *Stripe, active, paid*, with the renewal date a month away and
+     **$50.00 CAD**.
+   - The checkout link is marked **completed**.
+2. [ ] **Render credits** shows a balance of **$25.00**. The history has one *Monthly plan credits*
+   line of **+$25.00**, and it expires in **3 months**.
+   - If the balance is $0.00, see *Known issues*.
+   - If it is $50.00, `invoice.paid` was counted twice. That is a fault: note both event ids.
+3. [ ] In Stripe, find the `invoice.paid` delivery and press **Resend**. It answers **200** with
+   `"duplicate": true`. Reload the company: the credits are **still $25.00**, and there is still one
+   receipt.
+4. [ ] Open `https://paytest.blumodel.studio`. The showroom loads; it is no longer "temporarily
+   unavailable".
+5. [ ] Open the owner's sign-in link from step 1.1 in the private window, then go to the account
+   menu → **Staff → Plan** (`#/studio/plan`).
+   - The license reads $0.00 and *Complimentary*.
+   - The monthly plan reads **$50 a month: $25 hosting with your web address + $25 of render
+     credits**, paid.
+   - The receipts list one **$50.00 CAD** monthly payment.
+6. [ ] **Update card or see invoices** opens `billing.stripe.com` for this customer. Its
+   return link lands on `https://paytest.blumodel.studio/#/studio/plan`.
+7. [ ] **Staff → Renders** shows **$25.00** of credits and the same history line.
 
-## 4. Afterwards
+## 4. Cancel and refund
 
-- [ ] Stripe → Webhooks → the endpoint → **Event deliveries**: every event from today shows
-  **200**. Retry any that don't once the cause is fixed. Stripe retries failed deliveries for 3 days
-  on its own.
-- [ ] **Admin → Billing** (as admin) shows the payments under *Stripe*, in CAD, separate from any
-  demo numbers.
-- [ ] Delete the test accounts if you like (Account settings → **Delete my account**; cancel any plan first).
+1. [ ] **Admin → Companies → paytest → Monthly plan → Cancel plan → Yes, cancel.**
+   - The plan shows *cancels at the end of the period*, and the company stays **live** until then.
+   - Deliveries: `customer.subscription.updated` → **200**.
+   - Stripe → Subscriptions shows *Cancels <date>*.
+2. [ ] Refund the $50: Stripe → **Payments** → the payment → **Refund** → full amount.
+   - Deliveries: `charge.refunded` → **200**.
+   - Stripe emails a refund receipt.
+   - Expected: nothing changes in the app. The receipt stays and the $25 of credits stay, because a
+     dashboard refund doesn't take credits back. Remove them by hand in the next step.
+3. [ ] End it now: in Stripe → Subscriptions, cancel the subscription **immediately**.
+   - Deliveries: `customer.subscription.deleted` → **200**.
+   - The company turns **lapsed**, and `https://paytest.blumodel.studio` shows the **temporarily
+     unavailable** page. Its data is kept.
+4. [ ] **Render credits → Add or remove**: remove **$25** with the note "payment test refunded". The
+   balance is **$0.00**. The change is in the history, and in **Admin → Audit** as
+   `tenant_credit_adjust`.
+5. [ ] **Yearly license**: void the test license. Then set the company's status to **suspended** with
+   the note "payment test".
 
----
+## 5. Afterwards
 
-## Issue found while verifying (fixed in 037ff20)
+- [ ] Stripe → Webhooks → the endpoint → **Event deliveries**: every event from today shows **200**.
+  Retry any that don't, once the cause is fixed. Stripe retries failed deliveries by itself for 3
+  days.
+- [ ] **Admin → Dashboard**:
+  - Monthly revenue doesn't count the cancelled test plan.
+  - Licenses booked this year shows $0 from the test.
+  - Every amount is in CAD.
+- [ ] The test company stays suspended, which is harmless. Remove its team member if you like.
 
-Moving from **Unlimited to Contractor** and back used to be prorated, so an Unlimited subscriber
-could upgrade, send 3 custom-model requests, downgrade, and pay close to nothing for the models.
-Now an upgrade is invoiced and charged at once (a declined card changes nothing), and leaving
-Contractor after requesting models in the period gives no proration credit. Worth a glance at
-**Admin → Studio** now and then for requests from accounts that are back on Unlimited.
+## 6. Legacy customers (only if any exist)
+
+People who paid before the pivot keep what they paid for:
+
+- [ ] A legacy Unlimited or Contractor subscriber still sees **Account → Billing** with their
+  receipts, **Manage payment & invoices** (the portal), and **Cancel plan / Keep my plan**.
+- [ ] Choosing a plan or an unlock anywhere answers *BluModel Studio no longer sells plans or kitchen
+  unlocks*. No Checkout page opens.
+- [ ] A refund of an old custom-model order from **Admin → Studio** still works, and
+  `charge.refunded` → **200**.

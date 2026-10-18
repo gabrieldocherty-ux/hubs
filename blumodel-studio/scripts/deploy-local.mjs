@@ -19,7 +19,8 @@
 // blumodel-studio.service (scripts/register-tasks.mjs installs it) and this must run with sudo,
 // because it stops and starts that service. docs/HOSTING.md.
 //
-// Env: BLUMODEL_HOME (the folder), BLUMODEL_PORT (default: the port this home was installed with,
+// Env: BLUMODEL_HEAP_MB (Windows: the server's heap cap in run-server.cmd; default the home's, else 384),
+//      BLUMODEL_HOME (the folder), BLUMODEL_PORT (default: the port this home was installed with,
 //      read from its run-server.cmd on Windows or blumodel-studio.service on Linux, else 8790; so an
 //      update or a rollback checks the port the install used), BLUMODEL_HOST (127.0.0.1; Windows),
 //      BLUMODEL_ADMIN_EMAILS (ADMIN_EMAILS in a new settings template; empty otherwise).
@@ -76,7 +77,10 @@ import {
   userIds,
 } from '../server/ops/home.mjs';
 import { homePort } from '../server/ops/homePort.mjs';
+import { icoFromPng, toolScripts } from '../server/ops/winTools.mjs';
 import { EXIT, listening, readDeployed, rollbackApp, stageApp, swapInApp, unitState, waitForHealth } from './host/lib.mjs';
+import { checkSites, tunnelGaps } from '../server/ops/sites.mjs';
+import { tunnelRoutes } from './tunnel/tunnel.mjs';
 
 /** BLUMODEL_<name>, else the deprecated MISE_<name>, else `def`. */
 function setting(name, def) {
@@ -110,6 +114,18 @@ const L = homeLayout(setting('HOME', defaultHome()));
 const HOME = L.home;
 const PORT = String(setting('PORT', homePort(HOME) ?? '8790'));
 const HOST = setting('HOST', '127.0.0.1');
+/** Windows: the server's heap cap in run-server.cmd: BLUMODEL_HEAP_MB, else what this home's run-server.cmd has, else 384. */
+const HEAP_MB = Number(
+  process.env.BLUMODEL_HEAP_MB ||
+    (() => {
+      try {
+        return /--max-old-space-size=(\d+)/.exec(fs.readFileSync(L.runServer, 'utf8'))?.[1];
+      } catch {
+        return null;
+      }
+    })() ||
+    384,
+);
 const healthArg = Number(opt('--health-timeout') || 60);
 const HEALTH_MS = (Number.isFinite(healthArg) ? Math.max(5, healthArg) : 60) * 1000;
 const sep = path.sep;
@@ -291,7 +307,34 @@ async function healthy() {
   if (h.ok) console.log(`BluModel Studio ${h.body?.version ?? ''} is up at http://127.0.0.1:${PORT} (payments: ${h.payments}). Its log: ${L.serverLog}`);
   else if (h.status === 503) console.error(`The server started but reports a problem: ${JSON.stringify(h.body)}. Check ${logs}.`);
   else console.error(`The server did not answer on port ${PORT} within ${HEALTH_MS / 1000} s. Check ${logs}.`);
+  if (h.ok) await reportSites();
   return h.ok;
+}
+
+/**
+ * Which site the server answers as for each kind of host (asked on 127.0.0.1 with a Host header),
+ * and whether cloudflared.yml sends them all here. Reported only: a gap here never fails or rolls
+ * back a deploy, since the sales site works either way.
+ */
+async function reportSites() {
+  let sites;
+  try {
+    sites = await checkSites({ port: PORT });
+  } catch (err) {
+    console.warn(`Could not check the sites (${err?.message ?? err}).`);
+    return;
+  }
+  console.log('Sites (asked on 127.0.0.1 by Host):');
+  for (const l of sites.lines) console.log(`  ${l.note ? 'NOTE' : l.ok ? 'ok  ' : 'FIX '}  ${l.text}`);
+  if (!sites.baseDomain) return;
+  let text = null;
+  try {
+    text = fs.readFileSync(L.tunnelConfig, 'utf8'); // not a secret: hostnames and the credentials file's path
+  } catch {
+    return; // no tunnel set up here: said after the deploy
+  }
+  const rerun = `node scripts/tunnel/setup-tunnel.mjs${LINUX ? ` --home ${HOME}` : ''} --validate`;
+  for (const s of tunnelGaps({ file: L.tunnelConfig, baseDomain: sites.baseDomain, routes: tunnelRoutes(text, sites.baseDomain), rerun })) console.warn(`  ${s}`);
 }
 
 /** Linux: data/ and logs/ must exist (the unit's ReadWritePaths) and belong to the server's account. */
@@ -315,18 +358,18 @@ function commitOf() {
 if (ROLLBACK) {
   const failed = readDeployed(L.app);
   const back = readDeployed(L.appPrevious);
-  if (WIN) fs.writeFileSync(L.deploying, new Date().toISOString());
+  fs.writeFileSync(L.deploying, new Date().toISOString());
   let stopped = false;
   try {
     stopped = await stopServer();
     rollbackApp(L);
   } catch (err) {
     console.error(`Could not roll back (${err?.code ?? err?.message}): something may have a file in ${L.app} or ${L.appPrevious} open. Nothing was swapped.`);
-    if (WIN) fs.rmSync(L.deploying, { force: true });
+    fs.rmSync(L.deploying, { force: true });
     if (stopped) startServer();
     process.exit(EXIT.REFUSED);
   } finally {
-    if (WIN) fs.rmSync(L.deploying, { force: true });
+    fs.rmSync(L.deploying, { force: true });
   }
   console.log(`Rolled back: ${rel(L.app)}${sep} is commit ${back?.commit ?? '?'} again; commit ${failed?.commit ?? '?'} is kept in ${rel(L.appFailed)}${sep}.`);
   const last = deployBackupDirs(L.backups).at(-1);
@@ -345,7 +388,7 @@ if (ROLLBACK) {
 
 ensureDir(L.data);
 ensureDir(L.logs);
-if (WIN) fs.writeFileSync(L.deploying, new Date().toISOString());
+fs.writeFileSync(L.deploying, new Date().toISOString());
 let settingsNote = '';
 let swapped = false;
 let stoppedSomething = false;
@@ -414,7 +457,13 @@ try {
     console.error(`Could not put the new app in place (${err?.code ?? err?.message}): something has a file in ${L.app} open. The old app is unchanged.`);
     throw Object.assign(err, { refused: true });
   }
-  if (WIN) for (const [name, body] of Object.entries(serverScripts({ node: process.execPath, port: PORT, host: HOST }))) fs.writeFileSync(path.join(HOME, name), body);
+  if (WIN) {
+    for (const [name, body] of Object.entries(serverScripts({ node: process.execPath, port: PORT, host: HOST, heapMb: HEAP_MB }))) fs.writeFileSync(path.join(HOME, name), body);
+    // blumodel.cmd, update-now.cmd ("Update BluModel") and the shortcuts' icon (server/ops/winTools.mjs).
+    for (const [name, body] of Object.entries(toolScripts({ node: process.execPath }))) fs.writeFileSync(path.join(HOME, name), body);
+    const png = path.join(DIST, 'icons', 'icon-192.png');
+    if (fs.existsSync(png)) fs.writeFileSync(path.join(HOME, 'blumodel.ico'), icoFromPng(fs.readFileSync(png)));
+  }
   console.log(`Deployed commit ${commit} to ${L.app}`);
   console.log(settingsNote);
   if (!fs.existsSync(L.tunnelConfig)) console.log(`No tunnel set up in ${HOME} yet: node scripts/tunnel/setup-tunnel.mjs (docs/HOSTING.md).`);
@@ -422,7 +471,7 @@ try {
   if (!err?.refused) throw err;
   process.exitCode = EXIT.REFUSED;
 } finally {
-  if (WIN) fs.rmSync(L.deploying, { force: true });
+  fs.rmSync(L.deploying, { force: true });
 }
 if (process.exitCode === EXIT.REFUSED) {
   // Nothing changed: start the old app again if this run stopped it.

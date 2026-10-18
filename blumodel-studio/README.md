@@ -1,8 +1,27 @@
 # BluModel Studio
 
-Plan a kitchen to scale with branded cabinets, appliances and finishes, check it
-against real kitchen-planning guidelines, price it, and walk through it in 3D. Public at
-https://blumodel.studio.
+**Virtual showrooms for kitchen and bath companies.** We build, host and run a 3D design website
+for each company: its own name, logo, colours and web address (`acme.blumodel.studio`, or their own
+domain), with **their actual products**, which we model for them. Homeowners design their kitchen or
+bathroom on it for free, and every design they send arrives in the company's lead inbox with the
+plan, the product list and their contact details. The company's staff use the same showroom in their
+sales meetings and can turn a design into a photoreal AI rendering. The company never installs
+anything. It's a fast, believable rough draft that sells the job, not a CAD tool: final drawings
+still come from the company's designer.
+
+- **https://blumodel.studio** is our sales site, aimed at owners and sales managers of cabinet
+  showrooms, design-build firms, bath and plumbing showrooms and renovation companies with a
+  showroom. **https://demo.blumodel.studio** is the live demo showroom (Northline Kitchen & Bath
+  (Demo), fictional).
+- **What a company pays** (CAD, `src/data/plans.json`, the server is the only price authority): a
+  **setup and yearly license quoted per company** (there is no list price: the sign-up fee differs
+  company to company; sold by phone, the amount agreed recorded by an admin), plus **$50/month** by Stripe: **$25** hosting and
+  running the showroom *including its web address*, and **$25 of AI render credits** that roll over
+  for 3 months. **Homeowners never pay.**
+- The plan the whole product works from is [docs/SHOWROOM_PIVOT.md](docs/SHOWROOM_PIVOT.md) (it
+  overrides the older PRODUCT_SPEC.md and PLANS_AND_CONTRACTORS.md). Setting a company up after a
+  sale is [docs/ONBOARDING_A_COMPANY.md](docs/ONBOARDING_A_COMPANY.md). The server-side reference
+  (sites, tenants, isolation, every API) is [docs/handoff/tenancy.md](docs/handoff/tenancy.md).
 
 Renamed from **Mise** on 2026-10-13 (this folder was `kitchen-visualizer/`). What changed for a
 running install is under *Renamed from Mise* below.
@@ -20,29 +39,63 @@ npm run typecheck
 ```
 
 `npm run build`, `npm run api` and `npm run test:server` first bundle the export kit
-(`scripts/build-kit.mjs` → `server/generated/export-kit.mjs`, gitignored): the editor's estimate,
-shopping-list CSV and contractor price math, so the server makes paid exports and quotes with the
-exact code the editor runs.
+(`scripts/build-kit.mjs` → `server/generated/export-kit.mjs`, gitignored): the editor's estimate and
+shopping-list math, so the server makes exports with the exact code the editor runs.
 
-Payments: with `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` set, plans and unlocks go through
-Stripe Checkout (webhook: `POST /api/webhooks/stripe`). Without them every payment screen is a
-clearly labelled **DEMO** that moves no money and has no card fields; it is refused in production
+## One server, many sites
+
+The request's `Host` picks the site (`server/tenancy/hosts.mjs`); one server and one database serve
+them all:
+
+| Host | Site |
+| --- | --- |
+| `blumodel.studio`, `www.blumodel.studio` | the sales site |
+| `<slug>.blumodel.studio` | that company's showroom |
+| a company's own domain, once verified in Admin | the same showroom |
+| anything else | 404; a lapsed or suspended showroom answers "temporarily unavailable" (503) |
+
+The domain is `BASE_DOMAIN` (`blumodel.studio` in production, `localhost` in dev and QA, where
+Chromium and Edge resolve `*.localhost` to 127.0.0.1). So locally `http://localhost:8790` is the
+sales site and `http://demo.localhost:8790` the demo showroom once `npm run seed` has made it.
+`X-Forwarded-Host` is never believed. **Tenant isolation is the most important security property:**
+accounts, sessions (host-only cookies), kitchens, share links, products, files, leads, team,
+credits and plan are all scoped to the showroom the host names, and the tests prove company A can't
+read or write anything of company B's through any route.
+
+Payments: with `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` set, the companies' monthly plans go
+through Stripe Checkout (webhook: `POST /api/webhooks/stripe`). Without them every payment screen is
+a clearly labelled **DEMO** that moves no money and has no card fields; it is refused in production
 unless `DEMO_PAYMENTS=1`.
 
-Without the API running, the sign-in page offers **Design on this device**,
-which keeps the kitchen in that browser only.
+## On a showroom
+
+- **Visitors (homeowners)**, signed out or signed in on that showroom only: the company's landing
+  page (brand, welcome, featured product lines, *Design your kitchen* and, if on, *Design your
+  bathroom*), the new-kitchen wizard with the company's own lines, the editor with only that
+  company's catalog (plus BluModel Basics if the company turns on "fill the gaps", never with store
+  links), and **Send this design to <Company>**: name, email, phone, postal code, budget, timeline,
+  notes and consent, delivered to the company's inbox with a view-only link to the design.
+  Downloads (plan PNG, product list) are free.
+- **The company workspace** (`#/studio` on their showroom, for their staff): Showroom (branding,
+  contact details, web addresses, fill the gaps), Products (their catalog: products we modelled,
+  quick-add, their own prices and markup, private costs, hide; *Request more products* goes to our
+  studio queue and is quoted), Leads (new, contacted, quoted, won, lost; notes; CSV export), Renders
+  (balance, history, expiry), Team (owner and staff) and Plan (license dates, monthly plan, receipts,
+  the Stripe portal).
+- **Admin** (on blumodel.studio, for us): Companies (create, license, monthly checkout link, status,
+  web addresses, settings, credits, team, usage), Sales leads (the sales site's *Book a call*), the
+  studio modelling queue, users and the audit log.
 
 ## Accounts and day-to-day use
 
-- **Sign up / sign in / sign out**, with sessions that last 30 days and renew
-  while in use. Account settings change your name or password (changing the
-  password signs out your other devices).
-- **My kitchens:** every saved kitchen as a card with a live mini plan, client,
-  room size, piece count, estimate and when it was last edited. Rename,
-  duplicate or delete (with confirmation); search appears once you have a few.
-- **New kitchen setup:** four steps — name and client, room size (with common
-  sizes), starting layout previewed for your exact room, and a style preset —
-  then straight into the editor.
+- **Sign up / sign in / sign out** per site (an address can have one account on the sales site and
+  another on a showroom), with sessions that last 30 days and renew while in use. Account settings
+  change your name or password (changing the password signs out your other devices).
+- **My kitchens:** every saved kitchen as a card with a live mini plan, room size, piece count and
+  when it was last edited. Rename, duplicate or delete (with confirmation); search appears once you
+  have a few.
+- **New kitchen setup:** room size (with common sizes), starting layout previewed for your exact
+  room, and the product line, then straight into the editor.
 - **Autosave:** changes save about a second after you stop (never mid-drag),
   with a status chip in the top bar. `Ctrl/⌘+S` saves immediately; failed saves
   retry when you're back online, and leaving the page flushes pending work. If
@@ -51,16 +104,19 @@ which keeps the kitchen in that browser only.
 
 The server (`server/index.mjs`) has no dependencies: Node's `http`, `crypto`
 and built-in `node:sqlite`. Passwords are salted scrypt hashes; sessions are
-random tokens stored only as SHA-256 hashes and sent as httpOnly, SameSite=Lax
+random tokens stored only as SHA-256 hashes and sent as host-only httpOnly, SameSite=Lax
 cookies (Secure in production). Writes require a custom `X-BluModel` header, which
 blocks cross-site request forgery; failed logins are throttled per IP and
-email; every project query is scoped to its owner. Data lives in
+email; every query is scoped to its owner and its showroom. Data lives in
 `server/data/blumodel.db` (set `DB_PATH` and `PORT` to change). Behind HTTPS in
-production — put it behind a TLS-terminating proxy.
+production — put it behind a TLS-terminating proxy (in production, the Cloudflare tunnel).
 
-## What it does
+## The design tool
 
-- **Branded catalog (~45 products).** Cabinets with industry codes and width
+What every showroom runs. On a showroom the catalog is that company's; on the sales site it is our
+own library.
+
+- **Catalog.** Cabinets with industry codes and width
   options (`B24`, `W3030`, `SB36`…), ranges from 30″ induction to a 48″ pro
   with griddle, fridges, hoods, sinks, wine columns, pendants, stools, tables,
   windows, doors and decor. Each card is a front-elevation drawing tinted with
@@ -94,66 +150,46 @@ production — put it behind a TLS-terminating proxy.
   paint gallons and cabinet pulls. It is the **cost estimator**, a switch in Account settings >
   Preferences that is **off by default** (and always off when designing on this device): off hides
   the Est. chip, the Estimate tab and the totals on the kitchen cards. A share link with prices
-  shows them either way, and a contractor's quotes and price book work either way.
+  shows them either way.
 - **Export.** Floor plan PNG, 3D render PNG, shopping list CSV, and a
-  `.kitchen.json` project file you can re-import. Exports are paid (below).
+  `.kitchen.json` project file you can re-import. Free for the kitchen's owner on every site.
+- **Share links** (`#/s/:token`, from the Share button): view-only, turn off or expire anytime. On a
+  showroom they stay on that showroom.
+- **Photoreal renders** ("Make it photoreal", for a showroom's staff): the current 3D view and a short
+  description of the room go to the render service (`ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY`); each
+  render reserves credits first (`RENDER_CREDIT_CENTS`, 25 cents until set) and gives them back if it
+  fails. Without the service configured the button says renders are being set up and nothing is
+  charged. Tests and QA use a `demo` provider and never call a real one.
 
-## Plans and the Contractor program
+## Legacy: the homeowner and contractor plans
 
-`docs/PLANS_AND_CONTRACTORS.md` is the spec. Designing, saving and sharing are free; exports are not.
-
-- Prices are in **Canadian dollars** since 2026-10-15 (older receipts and subscriptions keep their
-  US dollars). **Kitchen unlock, $5 CAD once:** every export of that kitchen, forever, including after
-  edits; a duplicate is a new kitchen. It is **not advertised**: a free user is offered it in the
-  export dialog, next to Unlimited, and nowhere else. **Unlimited, $15 CAD/month:** every kitchen you
-  own. Cancelling keeps the plan to the end of the paid month; a failed renewal gets 7 days' grace.
-- Every export goes through the paywall. A free user gets the Unlock dialog; someone designing on
-  this device first makes a free account and their draft is saved into it. After paying, the export
-  they clicked finishes by itself. The server checks every export again and makes the CSV and the
-  project file itself.
-- **Account → Billing** (`#/account/billing`): plan, change, cancel or resume, unlocked kitchens and
-  receipts, plus demo controls for renewals. **Admin → Billing**: MRR, plans, unlocks and churn, with
-  demo kept apart from real money.
-- **Contractor, $99 CAD/month** (`#/pro`): 3 custom 3D models a month made by our studio (below); company setup; *My catalog* (quick-add a line by type, widths,
-  door style and finishes, no 3D model needed; or upload a .glb, checked against the declared size);
-  *Brands I carry*; a *price book* with cost per product or per width, % off list per brand, markup
-  by product, line, brand or company, and supplier CSV import (preview, then all-or-nothing) and
-  export; a Client view / Contractor view switch on the estimate, extra labour and service lines,
-  presentation mode, and branded printable quotes. Costs never leave the contractor's account: the
-  server tests scan every client-facing response for them. If the plan lapses, everything stays,
-  read-only, and kitchens keep their prices.
-## Start from a photo, sharing, brand pages and custom models
-
-- **Start from a photo** (`#/generate`): add 1-6 photos of the kitchen as it is now, check the space
-  (one tape-measured wall rescales everything; every field is editable), and *Build my kitchen* makes
-  that room in the editor, with the photos kept in a floating *Your photos* panel to compare against.
-  There is no text box to describe a kitchen. Reading the photos for you needs
-  `ANTHROPIC_API_KEY` and `BLUMODEL_LLM_MODEL` (a vision model that supports structured outputs, for
-  example `claude-opus-5-5`) in the server's environment; without both, `POST /api/generate/photo`
-  answers 503 and the form starts from a typical L-shape. `/api/config` reports `llm: true` once it
-  is on. No call to Anthropic has been made from this repo's tests or QA.
-- **Share links** (`#/s/:token`, from the Share button): view-only, turn off or expire anytime.
-  A contractor's link shows *Prepared by <company>*, their sell prices and a Contact menu, never a
-  cost, and offers no Export or Duplicate.
-- **Brand page** (a tab of the Contractor workspace, `#/pro/brand`): a contractor's company is the
-  brand. Publish My-catalog products to a public page (`#/b/:slug`) and the public catalog after an
-  admin approves the page and each product; homeowners can try a product in their kitchen or send
-  a lead, which only that contractor can read. `docs/BRAND_PAGE.md` is the spec.
-- **Make custom models** (`#/orders`, Contractor plan): 3 custom 3D models a month are included,
-  made by our studio. List the products (name, UPC typed, scanned or photographed, photos, size);
-  each is one model from the month's allowance, nothing is paid, and the server checks the plan and
-  the allowance. The studio delivers a GLB through Admin > Studio into the contractor's private My
-  catalog. Withdrawing (or the studio cancelling) before work starts gives the model back; admins can
-  grant extra models for the month. Orders paid for before 2026-10-15 keep their prices, receipts and
-  refunds. See `docs/PLANS_AND_CONTRACTORS.md` §8.
+Before the showroom pivot (2026-10-17) BluModel sold to homeowners and contractors: the $5 CAD
+kitchen unlock, Unlimited ($15 CAD/month), the Contractor plan ($99 CAD/month with custom models, a
+price book, brand pages and the contractor finder) and *Start from a photo*. **None of it can be bought
+any more** (checkout and plan changes answer 410 `not_for_sale`), and the finder, the photo flow and
+store links on showrooms are retired (SHOWROOM_PIVOT.md §3). What was already paid keeps working until it ends: receipts,
+cancel and resume, the Stripe portal, renewals, refunds and orders. Every contractor company became a
+company in setup, its catalog and files moved with it. The old specs, kept as history, are
+`docs/PRODUCT_SPEC.md`, `docs/PLANS_AND_CONTRACTORS.md` and `docs/BRAND_PAGE.md`; OPERATIONS.md has
+what an admin still does for those customers.
 
 ## The home server (deploy-local)
 
 **Another computer** (the Dell Wyse 5070, Ubuntu Server 24.04 recommended, or Windows):
 [docs/HOSTING.md](docs/HOSTING.md). One script installs everything from this repo
 (`scripts/host/install-linux.sh` or `install-windows.ps1`), the site starts at boot with nobody
-logged in, and one command updates it from GitHub and rolls back by itself if the new version
-doesn't come up (`scripts/host/update.mjs`). Moving the data: [docs/MOVING_DATA.md](docs/MOVING_DATA.md).
+logged in, and it updates itself from GitHub once a day at 04:00 (or at once with Admin > System >
+Update now), rolling back by itself if the new version doesn't come up (`scripts/host/update.mjs
+--auto`; docs/HOSTING.md, "Automatic updates"). Moving the data: [docs/MOVING_DATA.md](docs/MOVING_DATA.md).
+
+**Publishing a version** to it: `npm run release` (`scripts/release.mjs`). It refuses with uncommitted
+changes, runs `tsc`, `npm test` and the production build in a clean temporary worktree of HEAD
+(`--qa` adds the full QA suite), shows what goes live and asks (`--yes` doesn't), then fast-forward
+pushes a **prebuilt** release commit to the `blumodel-studio` branch: the app folder plus its `dist/`
+and `server/generated/`, which are committed there and never on a work branch, so the Wyse never
+builds anything. `--dry-run` does everything but the push. The release branch also carries
+`WYSE_SETUP.md` and `CLAUDE.md` at its top (from `release/`), the setup guide a Claude Code session on
+the Wyse follows.
 
 `npm run deploy:local` builds and copies the app to the home (`%USERPROFILE%\Projects\BluModelStudio`
 on Windows, `/srv/blumodel-studio` on Linux; set `BLUMODEL_HOME`), keeping `data/blumodel.db` (backed
@@ -161,7 +197,9 @@ up before every deploy, last 5 kept), `data/uploads/` and `logs/`, keeping the a
 `app.previous` (`node scripts/deploy-local.mjs --rollback` puts it back), and restarts it on port 8790
 (`BLUMODEL_PORT`): on Windows under `run-server.cmd`, a supervisor that restarts the server if it
 exits; on Linux as `blumodel-studio.service` (run with sudo). `node scripts/deploy-local.mjs --dist <dir>`
-deploys an existing build. The header of `server/ops/home.mjs` has the folder's layout.
+deploys an existing build. The header of `server/ops/home.mjs` has the folder's layout. After a
+healthy start it asks the server, by `Host`, which site `blumodel.studio`, `www.` and `demo.` are,
+and warns when the tunnel config doesn't route the showrooms.
 
 - **Private settings** (Stripe keys, `PUBLIC_URL=https://blumodel.studio`, `TRUST_PROXY`,
   `ADMIN_EMAILS`, which grants nothing: admins are made with `node server/scripts/make-admin.mjs <email>`…) live in `blumodel.env` in that folder, one `KEY=VALUE` per line, written by hand
@@ -172,7 +210,10 @@ deploys an existing build. The header of `server/ops/home.mjs` has the folder's 
   unless it says `DEMO_PAYMENTS=1`); a home without one allows the labelled demo.
 - **Starting with the machine:** on Windows the scheduled task `BluModelStudioServer` runs
   `start-hidden.vbs` (the supervisor) at logon, or at startup with `register-tasks --at-startup`;
-  `BluModelTunnel` runs the Cloudflare tunnel `blumodel` to `http://127.0.0.1:8790`. On Linux the
+  `BluModelTunnel` runs the Cloudflare tunnel `blumodel` to `http://127.0.0.1:8790` for
+  `blumodel.studio`, `www.`, every `*.blumodel.studio` showroom and companies' own domains
+  (`node scripts/tunnel/setup-tunnel.mjs --validate` writes and checks its config; the wildcard DNS
+  record and Cloudflare for SaaS are set up once by hand, docs/ONBOARDING_A_COMPANY.md). On Linux the
   systemd units `blumodel-studio.service` and `blumodel-tunnel.service` do the same at boot
   (`scripts/register-tasks.mjs` installs them). The deploy never creates or changes a task or a unit.
 
@@ -211,12 +252,14 @@ sizes, failing any route on a console error, an uncaught exception, a non-local 
 - **Keyboard.** `R` rotate · `Del` remove · arrows nudge 1″ (Shift 6″) ·
   `Ctrl/⌘+D` duplicate · `Ctrl/⌘+Z` undo · `1–4` plan/split/3D/walls · `F` flip hinge.
 
-Brand names and prices are invented placeholders. Swap `src/data/catalog.ts`
-and `src/data/finishes.ts` for a real, licensed product feed.
+Brand names and prices in the built-in library and the demo showroom are invented placeholders. A
+real company's products are its own, modelled by us into its showroom's catalog.
 
 ## Code map
 
-- `src/data/` — catalog, finishes/surfaces, layout templates
+- `server/tenancy/` — sites, hosts, tenants, isolation, leads, the demo showroom; `server/billing/` — licenses, the monthly plan, credits
+- `src/features/showroom/`, `src/features/workspace/`, `src/features/marketing/` — a showroom, the company workspace, the sales site
+- `src/data/` — catalog, finishes/surfaces, layout templates, `plans.json` (prices)
 - `src/lib/geometry.ts` — footprints, wall/edge snapping, overlaps, backsplash runs
 - `src/lib/checks.ts` — design checks; `estimate.ts` — pricing; `textures.ts` — procedural materials
 - `src/store/` — zustand store with undo/redo and persistence

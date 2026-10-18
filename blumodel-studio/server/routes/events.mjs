@@ -17,7 +17,7 @@ export default function routes(ctx) {
         const { productId, type } = rc.body;
         if (!EVENT_TYPES.includes(type)) throw new HttpError(400, 'Unknown event type.');
         if (typeof productId !== 'string' || productId.length > 80) throw new HttpError(400, 'Which product?');
-        events.record({ productId, type, userId: rc.user?.id ?? null });
+        events.record({ productId, type, userId: rc.user?.id ?? null, tenantId: rc.site.tenantId });
         rc.send(204);
       },
     },

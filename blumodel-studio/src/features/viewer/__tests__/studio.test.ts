@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { capSize, DEFAULT_STUDIO_PREFS, parsePrefs, renderFilename, stillOptionsFor, STUDIO_SIZES, useStudioPrefs } from '../studio';
-import { previewSize, watermarkGrid } from '../watermark';
+import { previewSize } from '../preview';
 
 test('the three studio sizes are 1080p, 1440p and 4K', () => {
   assert.deepEqual(
@@ -58,29 +58,6 @@ test('renderFilename is <kitchen>-render-<w>x<h>.png', () => {
 test('previewSize scales down by the long side and never up', () => {
   assert.deepEqual(previewSize(3840, 2160, 1600), { width: 1600, height: 900 });
   assert.deepEqual(previewSize(800, 450, 1600), { width: 800, height: 450 });
-});
-
-test('the watermark grid covers every corner of the image whatever the rotation', () => {
-  const w = 1600;
-  const h = 900;
-  const font = 38;
-  const pts = watermarkGrid(w, h, font);
-  assert.ok(pts.length > 20);
-  // Rotating the image corners into the grid's frame (by +π/7) must land inside the grid's span.
-  const a = Math.PI / 7;
-  const xs = pts.map((p) => p.x);
-  const ys = pts.map((p) => p.y);
-  for (const [cx, cy] of [
-    [-w / 2, -h / 2],
-    [w / 2, -h / 2],
-    [-w / 2, h / 2],
-    [w / 2, h / 2],
-  ]) {
-    const rx = cx * Math.cos(a) - cy * Math.sin(a);
-    const ry = cx * Math.sin(a) + cy * Math.cos(a);
-    assert.ok(rx >= Math.min(...xs) && rx <= Math.max(...xs), `corner x ${rx}`);
-    assert.ok(ry >= Math.min(...ys) && ry <= Math.max(...ys), `corner y ${ry}`);
-  }
 });
 
 test('stillFov: a landscape view keeps its FOV; a narrow pane zooms in so the kitchen fills the frame', async () => {

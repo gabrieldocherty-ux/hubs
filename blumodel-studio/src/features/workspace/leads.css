@@ -1,0 +1,491 @@
+/* The workspace's Leads tab. */
+
+.ws-count {
+  margin-left: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip.on .ws-count {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.ws-lead-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  list-style: none;
+}
+
+.ws-lead-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.ws-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  min-height: 56px;
+  padding: 12px 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.ws-lead:hover {
+  background: var(--panel);
+}
+
+.ws-lead-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.ws-lead-who b {
+  font-weight: 550;
+}
+
+.ws-lead.is-unread .ws-lead-who b {
+  font-weight: 750;
+}
+
+.ws-lead-who .muted {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.ws-dot {
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.ws-lead-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.ws-lead-when {
+  min-width: 150px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ws-more {
+  margin-top: 12px;
+}
+
+.ws-lead-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .ws-lead-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ws-lead-when {
+    min-width: 0;
+  }
+
+  .ws-lead-budget {
+    display: none;
+  }
+}
+
+/* ── the list of everyone (LeadsTab Inbox) ─────────────────────────────── */
+
+.ws-lead-filters {
+  justify-content: flex-start;
+}
+
+.ws-lead-filters .ws-search {
+  margin-left: auto;
+}
+
+.ws-lead-sent {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ws-lead-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.ws-lead-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.ws-lead-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ws-lead-table td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+  color: var(--ink);
+}
+
+.ws-lead-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.ws-lead-table tbody tr {
+  cursor: pointer;
+}
+
+.ws-lead-table tbody tr:hover td {
+  background: var(--panel);
+}
+
+.ws-lead-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-lead-table a {
+  color: inherit;
+}
+
+.ws-lt-name a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  text-decoration: none;
+}
+
+.ws-lt-name b {
+  font-weight: 550;
+}
+
+.ws-lead-table tr.is-unread .ws-lt-name b {
+  font-weight: 750;
+}
+
+.ws-lt-email {
+  overflow-wrap: anywhere;
+}
+
+.ws-lt-notes {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A phone: each lead is a card, its fields labelled. */
+@media (max-width: 860px) {
+  .ws-lead-filters .ws-search {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+  .ws-lead-table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  .ws-lead-table thead {
+    display: none;
+  }
+  .ws-lead-table,
+  .ws-lead-table tbody,
+  .ws-lead-table tr,
+  .ws-lead-table td {
+    display: block;
+  }
+  .ws-lead-table tr {
+    margin-bottom: 10px;
+    padding: 6px 14px 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--card);
+  }
+  .ws-lead-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-top: 0;
+    text-align: right;
+  }
+  .ws-lead-table td::before {
+    content: attr(data-label);
+    color: var(--ink-3);
+    font-size: 12px;
+    text-align: left;
+  }
+  .ws-lead-table td.ws-lt-name {
+    padding-top: 4px;
+    font-size: 15px;
+  }
+  .ws-lead-table td.ws-lt-name::before {
+    content: none;
+  }
+  .ws-lead-table .num {
+    text-align: right;
+  }
+  .ws-lt-notes {
+    max-width: none;
+    white-space: normal;
+  }
+  .ws-lead-table tbody tr:hover td {
+    background: transparent;
+  }
+}
+
+@media (pointer: coarse) {
+  .ws-lead-sent,
+  .ws-lead-filters .ws-search {
+    height: 44px;
+  }
+  .ws-lead-table td a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* ── one lead ──────────────────────────────────────────────────────────── */
+
+.ws-lead-detail .ws-card {
+  margin-bottom: 16px;
+}
+
+.ws-lead-grid .ws-card {
+  margin-bottom: 0;
+}
+
+.ws-lead-grid {
+  margin-bottom: 16px;
+}
+
+.ws-design-list,
+.ws-send-list,
+.ws-design-products {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-design {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ws-design:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.ws-design-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-bottom: 8px;
+}
+
+.ws-design-top > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ws-design-top .muted {
+  font-size: 13px;
+}
+
+.ws-design-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 4px 16px;
+  font-size: 13px;
+}
+
+.ws-design-products li {
+  display: flex;
+  gap: 4px;
+}
+
+.ws-qty {
+  flex: none;
+  display: inline-block;
+  min-width: 2.2em;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-send-list li {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ws-send-list li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.ws-send-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+}
+
+.ws-send-list a {
+  color: var(--accent-text);
+}
+
+.ws-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-timeline li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 8px 0 8px 22px;
+  font-size: 13.5px;
+}
+
+.ws-timeline li + li {
+  border-top: 1px dashed var(--line);
+}
+
+.ws-tl-dot {
+  position: absolute;
+  left: 4px;
+  top: 14px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-2);
+}
+
+.ws-tl-sent .ws-tl-dot,
+.ws-tl-captured .ws-tl-dot {
+  background: var(--accent);
+}
+
+.ws-tl-status .ws-tl-dot {
+  background: var(--ok);
+}
+
+.ws-tl-what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ws-timeline time {
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.ws-danger {
+  border-color: var(--bad-soft);
+}
+
+.ws-danger p {
+  color: var(--ink-2);
+}
+
+/* ── a lead's design in 3D, view-only (LeadDesignView) ──────────────────── */
+
+.ws-design-view {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--paper);
+}
+
+.ws-design-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 13.5px;
+}
+
+.ws-design-bar-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (pointer: coarse) {
+  .ws-design-bar .btn {
+    min-height: 44px;
+  }
+}
+
+/* A lead that typed an address another lead has (protect-004). */
+.ws-dup-pill {
+  display: inline-block;
+  margin-top: 4px;
+}
+.ws-dup .ws-actions {
+  flex-wrap: wrap;
+}
+.ws-dup .btn {
+  min-height: 44px;
+}
+
+/* Owners: who exported the lead list (protect, 2026-10). */
+.ws-exports ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: var(--ink-2);
+}
+.ws-exports h2 {
+  font-size: 1rem;
+  margin: 0;
+}

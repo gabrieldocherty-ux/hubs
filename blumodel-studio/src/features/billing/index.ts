@@ -10,6 +10,8 @@ type Lazy<P> = LazyExoticComponent<ComponentType<P>>;
 export const BillingPage: Lazy<{}> = lazy(() => import('./BillingPage'));
 /** BUILD_PLAN §13.2 wrote this prop as `ref`, which React reserves (it never reaches the component). */
 export const DemoPlanPay: Lazy<{ checkoutRef: string }> = lazy(() => import('./DemoPlanPay'));
+/** `#/pay/showroom/:ref`: a company's monthly-plan payment link (sales site, no sign-in). */
+export const ShowroomPay: Lazy<{ checkoutRef: string }> = lazy(() => import('./ShowroomPay'));
 export const AdminBillingTab: Lazy<{}> = lazy(() => import('./AdminBillingTab'));
 
 export { useEntitlements, loadEntitlements, peekIntent, clearIntent, type ExportFile, type ExportRunner } from './entitlements';

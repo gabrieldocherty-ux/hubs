@@ -1,5 +1,7 @@
 // Writes the Cloudflare tunnel's files into the home server's folder: cloudflared.yml (the tunnel
-// 'blumodel' -> http://127.0.0.1:8790 for blumodel.studio, everything else 404) and, on Windows,
+// 'blumodel' -> http://127.0.0.1:8790 for blumodel.studio, www.blumodel.studio, every showroom at
+// *.blumodel.studio and, unless --no-custom-domains, the companies' own domains: tunnelConfigYaml
+// in tunnel.mjs says why) and, on Windows,
 // run-tunnel.cmd, start-tunnel.vbs, start-tunnel.cmd, stop-tunnel.cmd (a supervisor that restarts
 // cloudflared and rotates logs\tunnel.log). On Linux blumodel-tunnel.service runs cloudflared
 // (scripts/register-tasks.mjs installs it), so only cloudflared.yml is written, plus an empty
@@ -10,9 +12,14 @@
 //   node scripts/tunnel/setup-tunnel.mjs --dry-run       # print what it would write
 //   node scripts/tunnel/setup-tunnel.mjs --validate      # write, then check the config with
 //                                                        # `cloudflared tunnel --config <file> ingress validate`
-//                                                        # and `ingress rule https://blumodel.studio/` (offline)
+//                                                        # and `ingress rule` for blumodel.studio, www., a
+//                                                        # showroom and a custom domain (all offline)
 //   options: --home <dir> (default: Windows %USERPROFILE%\Projects\BluModelStudio, Linux /srv/blumodel-studio)
-//            --port 8790  --hostname blumodel.studio  --tunnel-id <id>
+//            --port 8790  --hostname blumodel.studio (the base domain: www. and *. are added)  --tunnel-id <id>
+//            --no-custom-domains    a host that isn't the base domain, www. or a showroom gets a 404
+//                                   from cloudflared. Default: it goes to the server, which answers
+//                                   404 for a host it has no showroom for; companies' own domains
+//                                   (Cloudflare custom hostnames) need that (docs/ONBOARDING_A_COMPANY.md)
 //            --credentials <file>   the tunnel's <id>.json (default: Windows %USERPROFILE%\.cloudflared\<id>.json,
 //                                   Linux <home>/.cloudflared/<id>.json)
 //            --cloudflared <path>   the program (needed on Windows, and for --validate)
@@ -37,9 +44,9 @@ const opt = (flag) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 const valued = ['--home', '--port', '--hostname', '--tunnel-id', '--cloudflared', '--credentials', '--platform'];
-const bad = argv.filter((a, i) => a.startsWith('--') && !['--dry-run', '--validate', ...valued].includes(a) && !valued.includes(argv[i - 1]));
+const bad = argv.filter((a, i) => a.startsWith('--') && !['--dry-run', '--validate', '--no-custom-domains', ...valued].includes(a) && !valued.includes(argv[i - 1]));
 if (bad.length) {
-  console.error(`Unknown option ${bad.join(' ')}. Usage: node scripts/tunnel/setup-tunnel.mjs [--dry-run] [--validate] [--home <dir>] [--port 8790] [--hostname ${HOSTNAME}] [--tunnel-id <id>] [--credentials <file>] [--cloudflared <path>]`);
+  console.error(`Unknown option ${bad.join(' ')}. Usage: node scripts/tunnel/setup-tunnel.mjs [--dry-run] [--validate] [--no-custom-domains] [--home <dir>] [--port 8790] [--hostname ${HOSTNAME}] [--tunnel-id <id>] [--credentials <file>] [--cloudflared <path>]`);
   process.exit(2);
 }
 
@@ -62,7 +69,9 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   process.exit(2);
 }
 const tunnelId = opt('--tunnel-id') || TUNNEL_ID;
-const hostname = opt('--hostname') || HOSTNAME;
+const hostname = String(opt('--hostname') || HOSTNAME).toLowerCase();
+const customDomains = !argv.includes('--no-custom-domains');
+const routesNote = `${hostname}, www.${hostname}, *.${hostname}${customDomains ? ' and custom domains' : ''} -> http://127.0.0.1:${port}, tunnel ${tunnelId}`;
 const credentials = opt('--credentials') ? P.resolve(opt('--credentials')) : credentialsFor({ platform, home: L.home, id: tunnelId });
 const cloudflared = opt('--cloudflared') || findCloudflared({ platform });
 const needProgram = WIN || argv.includes('--validate');
@@ -79,7 +88,7 @@ if (needProgram && !dryRun && (!cloudflared || !fs.existsSync(cloudflared))) {
 let files;
 try {
   files = {
-    'cloudflared.yml': tunnelConfigYaml({ tunnelId, credentials, hostname, origin: `http://127.0.0.1:${port}`, platform }),
+    'cloudflared.yml': tunnelConfigYaml({ tunnelId, credentials, hostname, origin: `http://127.0.0.1:${port}`, platform, customDomains }),
     ...(WIN ? tunnelScripts({ cloudflared: cloudflared || CLOUDFLARED_FALLBACK, node: process.execPath }) : {}),
   };
 } catch (err) {
@@ -90,7 +99,7 @@ try {
 const credentialsNote = () =>
   WIN
     ? `the tunnel's credentials file ${credentials} does not exist; cloudflared won't connect without it (docs/HOSTING.md, "Move the tunnel").`
-    : `the tunnel's credentials file ${credentials} does not exist; cloudflared won't connect without it. Copy ${tunnelId}.json there yourself, then: sudo chown blumodel:blumodel ${credentials} && sudo chmod 600 ${credentials} (docs/HOSTING.md, "Move the tunnel").`;
+    : `the tunnel's credentials file ${credentials} does not exist; cloudflared won't connect without it. Copy ${tunnelId}.json there yourself, then: sudo chown blumodel-tunnel:blumodel-tunnel ${credentials} && sudo chmod 600 ${credentials} (docs/HOSTING.md, "Move the tunnel").`;
 
 if (dryRun) {
   for (const [name, body] of Object.entries(files)) {
@@ -121,7 +130,7 @@ if (WIN) {
     process.exit(1);
   }
   for (const [name, body] of Object.entries(files)) fs.writeFileSync(path.join(L.home, name), body);
-  console.log(`Wrote cloudflared.yml (${hostname} -> http://127.0.0.1:${port}, tunnel ${tunnelId}) and the tunnel scripts to ${L.home}.`);
+  console.log(`Wrote cloudflared.yml (${routesNote}) and the tunnel scripts to ${L.home}.`);
   if (running.length) console.log('The running tunnel reads cloudflared.yml only when it starts: restart it (stop-tunnel.cmd, start-tunnel.cmd) to apply a change.');
 } else {
   // Nothing secret is in cloudflared.yml: readable by the 'blumodel' account that runs the tunnel.
@@ -136,7 +145,7 @@ if (WIN) {
     }
     console.log(`Made ${L.cloudflaredDir} (mode 700) for the tunnel's credentials.`);
   }
-  console.log(`Wrote ${L.tunnelConfig} (${hostname} -> http://127.0.0.1:${port}, tunnel ${tunnelId}).`);
+  console.log(`Wrote ${L.tunnelConfig} (${routesNote}).`);
   let active = false;
   try {
     active = String(execFileSync('systemctl', ['is-active', TUNNEL_UNIT], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })).trim() === 'active';
@@ -158,10 +167,25 @@ if (argv.includes('--validate')) {
   };
   const v = run(['tunnel', '--config', L.tunnelConfig, 'ingress', 'validate']);
   console.log(`${v.ok ? 'PASS' : 'FIX '}  cloudflared ingress validate: ${v.out.trim().split(/\r?\n/).pop()}`);
-  const r = run(['tunnel', '--config', L.tunnelConfig, 'ingress', 'rule', `https://${hostname}/`]);
-  const matched = /http:\/\/127\.0\.0\.1:\d+/.exec(r.out)?.[0];
-  console.log(`${matched === `http://127.0.0.1:${port}` ? 'PASS' : 'FIX '}  https://${hostname}/ goes to ${matched ?? '(no match)'}`);
-  const other = run(['tunnel', '--config', L.tunnelConfig, 'ingress', 'rule', 'https://not-this-site.example/']);
-  console.log(`${/http_status:404/.test(other.out) ? 'PASS' : 'FIX '}  any other hostname gets a 404`);
-  if (!v.ok || matched !== `http://127.0.0.1:${port}` || !/http_status:404/.test(other.out)) process.exit(1);
+  let ok = v.ok;
+  // Each address: the rule cloudflared picks for it (its hostname line; none for the last,
+  // catch-all rule) and where that rule sends it.
+  const origin = `http://127.0.0.1:${port}`;
+  const checks = [
+    { url: `https://${hostname}/`, label: 'the sales site', rule: hostname, to: origin },
+    { url: `https://www.${hostname}/`, label: 'the sales site, www', rule: `www.${hostname}`, to: origin },
+    { url: `https://acme.${hostname}/`, label: 'a showroom', rule: `*.${hostname}`, to: origin },
+    customDomains
+      ? { url: 'https://showroom.acmekitchens.example/', label: "a company's own domain; the server decides", rule: null, to: origin }
+      : { url: 'https://showroom.acmekitchens.example/', label: 'any other hostname, --no-custom-domains', rule: null, to: 'http_status:404' },
+  ];
+  for (const c of checks) {
+    const r = run(['tunnel', '--config', L.tunnelConfig, 'ingress', 'rule', c.url]);
+    const service = /service: (\S+)/.exec(r.out)?.[1] ?? null;
+    const rule = /hostname: (\S+)/.exec(r.out)?.[1] ?? null;
+    const pass = r.ok && service === c.to && rule === c.rule;
+    ok &&= pass;
+    console.log(`${pass ? 'PASS' : 'FIX '}  ${c.url} (${c.label}) goes to ${service ?? '(no match)'} by ${rule ? `the rule for ${rule}` : 'the last rule'}`);
+  }
+  if (!ok) process.exit(1);
 }

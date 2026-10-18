@@ -2,10 +2,14 @@
  * Real retailer products (RONA, Home Depot, Home Hardware, IKEA, Best Buy…): the client side.
  *
  * The data is `src/data/retail.json`, generated from the research in `catalog/retail/*.json` by
- * `node server/catalog/retailBuild.mjs`. It loads as its own lazy chunk the first time the catalog
- * panel or a retail product page opens, so it works offline and costs nothing until then. Nothing
- * here calls a retailer: a store link is a plain navigation, and the only request is the
- * same-origin click count (and the admin's affiliate settings, `GET /api/catalog/retailers`).
+ * `node server/catalog/retailBuild.mjs`. It is our internal research library, so it is NOT in the
+ * client bundle: it comes from `GET /api/catalog/retail`, which answers only BluModel's own staff
+ * (admin, studio) signed in on the sales site, rate-limited. A showroom never asks for it, and
+ * nobody else gets it: for them the retail catalog is simply absent (status 'unavailable'). It loads
+ * the first time the catalog panel or a retail product page opens, and again when a staff member
+ * signs in. Nothing here calls a retailer: a store link is a plain navigation, and the only other
+ * requests are the same-origin click count and the admin's affiliate settings
+ * (`GET /api/catalog/retailers`).
  *
  * Each retail entry becomes an ordinary `Product` (one of the app's kinds, so it snaps, renders
  * and prices like any other) registered in the catalog with source `brand`. Its store facts stay
@@ -17,6 +21,9 @@ import { BASICS_BRAND, BUILTIN_PRODUCTS } from '../data/builtins';
 import { priceFor } from '../data/catalog';
 import { call } from '../lib/api';
 import { useCatalog } from '../store/useCatalog';
+import { useSession } from '../store/useSession';
+import { useConfig } from '../lib/config';
+import { looksLikeShowroomHost } from '../features/showroom/site';
 import { fixtureFromWire, registerFixtures, type FixtureWire } from '../lib/fixtures';
 
 export const RETAIL_PREFIX = 'r-';
@@ -92,7 +99,8 @@ export function toProduct(w: RetailWire): Product {
 }
 
 interface RetailState {
-  status: 'idle' | 'loading' | 'ready' | 'error';
+  /** 'unavailable': not for this viewer (a showroom, or not BluModel staff); nothing was asked for. */
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'unavailable';
   data: RetailData | null;
   products: Product[];
   /** Store facts by id, for products and fixtures alike. */
@@ -100,9 +108,11 @@ interface RetailState {
   /** The faucets, pulls and knobs, in catalog order. */
   fixtures: RetailFixtureWire[];
   stores: Map<string, RetailStore>;
+  /** UPC (upcKey) → retail id, for listings fetched one at a time (`retailByUpc`) without the library. */
+  upcIds: Map<string, string>;
 }
 
-export const useRetail = create<RetailState>()(() => ({ status: 'idle', data: null, products: [], byId: new Map(), fixtures: [], stores: new Map() }));
+export const useRetail = create<RetailState>()(() => ({ status: 'idle', data: null, products: [], byId: new Map(), fixtures: [], stores: new Map(), upcIds: new Map() }));
 
 let inflight: Promise<void> | null = null;
 let watching = false;
@@ -128,6 +138,7 @@ export function applyRetailData(data: RetailData): void {
     data,
     products,
     fixtures,
+    upcIds: new Map(),
     byId: new Map<string, RetailInfo>([...data.products.map((p) => [p.id, p.retail] as const), ...fixtures.map((f) => [f.id, f.retail as RetailInfo] as const)]),
     stores: new Map(data.stores.map((s) => [s.slug, s])),
   });
@@ -135,13 +146,36 @@ export function applyRetailData(data: RetailData): void {
   registerFixtures(fixtures.map(fixtureFromWire));
 }
 
-/** Loads the retail chunk once and registers its products. Never throws. */
+/** Who may have the research library: BluModel's own staff on the sales site, never a showroom. */
+export function retailAllowed(): boolean {
+  if (useConfig.getState().config?.tenant) return false;
+  if (typeof location !== 'undefined' && location.hostname && looksLikeShowroomHost(location.hostname)) return false;
+  const role = useSession.getState().user?.role;
+  return role === 'admin' || role === 'studio';
+}
+
+let followingSession = false;
+/** A staff member who signs in after the panel opened gets the library then, without a reload. */
+function followSession() {
+  if (followingSession) return;
+  followingSession = true;
+  useSession.subscribe((st, prev) => {
+    if (st.user?.role !== prev.user?.role && useRetail.getState().status === 'unavailable' && retailAllowed()) void loadRetail();
+  });
+}
+
+/** Loads the retail library once (staff only) and registers its products. Never throws. */
 export function loadRetail(): Promise<void> {
   if (useRetail.getState().status === 'ready') return Promise.resolve();
   if (inflight) return inflight;
+  followSession();
+  if (!retailAllowed()) {
+    useRetail.setState({ status: 'unavailable' });
+    return Promise.resolve();
+  }
   useRetail.setState({ status: 'loading' });
-  inflight = import('../data/retail.json')
-    .then((m) => applyRetailData(((m as { default?: unknown }).default ?? m) as RetailData))
+  inflight = call<RetailData>('GET', '/api/catalog/retail')
+    .then((data) => applyRetailData(data))
     .catch(() => useRetail.setState({ status: 'error' }))
     .finally(() => {
       inflight = null;
@@ -168,6 +202,38 @@ export function retailIdByUpc(upc: string | null | undefined, data: RetailData |
   const key = upcKey(upc);
   if (key.length < 8 || !data) return undefined;
   return [...data.products, ...(data.fixtures ?? [])].find((p) => p.retail.upc && upcKey(p.retail.upc) === key)?.id;
+}
+
+const upcAsked = new Map<string, Promise<string | undefined>>();
+
+/**
+ * The retail listing for a UPC, for a signed-in account that doesn't have the library (a delivered
+ * custom model standing for a store product): `GET /api/catalog/retail/upc/:upc` gives just that
+ * listing and its stores, which go into `byId` and `stores` so "Where to buy" can show them. With
+ * the library loaded it answers from that. Never on a showroom. Resolves the retail id, or undefined.
+ */
+export function retailByUpc(upc: string | null | undefined): Promise<string | undefined> {
+  const key = upcKey(upc);
+  const st = useRetail.getState();
+  if (key.length < 8) return Promise.resolve(undefined);
+  if (st.status === 'ready') return Promise.resolve(retailIdByUpc(key, st.data));
+  if (st.upcIds.has(key)) return Promise.resolve(st.upcIds.get(key));
+  if (useConfig.getState().config?.tenant || !useSession.getState().user) return Promise.resolve(undefined);
+  let asked = upcAsked.get(key);
+  if (!asked) {
+    asked = call<{ id: string; retail: RetailInfo; stores: RetailStore[] }>('GET', `/api/catalog/retail/upc/${encodeURIComponent(key)}`)
+      .then(({ id, retail, stores }) => {
+        useRetail.setState((s) => ({
+          byId: new Map([...s.byId, [id, retail]]),
+          stores: new Map([...s.stores, ...stores.map((x) => [x.slug, x] as const)]),
+          upcIds: new Map([...s.upcIds, [key, id]]),
+        }));
+        return id;
+      })
+      .catch(() => undefined);
+    upcAsked.set(key, asked);
+  }
+  return asked;
 }
 
 /** The store's display name for a slug. */

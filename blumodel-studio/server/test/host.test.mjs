@@ -290,7 +290,11 @@ test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as b
   const u = parseUnit(text);
   assert.deepEqual(Object.keys(u), ['Unit', 'Service', 'Install']);
   const S = u.Service;
-  assert.deepEqual(S.ExecStart, ['/usr/bin/node --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod']);
+  assert.deepEqual(S.ExecStart, ['/usr/bin/node --max-old-space-size=384 --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod']);
+  assert.deepEqual([S.MemoryHigh, S.MemoryMax], [['640M'], ['896M']], 'room above the heap, and a ceiling under the 4 GB machine');
+  assert.match(parseUnit(systemdServerUnit({ heapMb: 512 })).Service.ExecStart[0], /--max-old-space-size=512 /);
+  assert.deepEqual(parseUnit(systemdServerUnit({ heapMb: 512 })).Service.MemoryMax, ['1024M']);
+  assert.throws(() => systemdServerUnit({ heapMb: 64 }), /128-8192 MB/);
   assert.deepEqual(S.WorkingDirectory, ['/srv/blumodel-studio/app']);
   assert.deepEqual([S.User, S.Group], [['blumodel'], ['blumodel']]);
   assert.deepEqual(S.Environment, [
@@ -310,7 +314,7 @@ test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as b
   assert.deepEqual(u.Install.WantedBy, ['multi-user.target']);
   // Another home, port and node: all follow; unsafe values are refused rather than written.
   const other = parseUnit(systemdServerUnit({ home: '/opt/bms', port: 8899, node: '/usr/local/bin/node', user: 'bms' })).Service;
-  assert.deepEqual(other.ExecStart, ['/usr/local/bin/node --no-warnings /opt/bms/app/server/index.mjs --prod']);
+  assert.deepEqual(other.ExecStart, ['/usr/local/bin/node --max-old-space-size=384 --no-warnings /opt/bms/app/server/index.mjs --prod']);
   assert.ok(other.Environment.includes('PORT=8899') && other.Environment.includes('DB_PATH=/opt/bms/data/blumodel.db'));
   assert.deepEqual(other.User, ['bms']);
   assert.throws(() => systemdServerUnit({ home: '/srv/blu model' }), /absolute path/);
@@ -321,7 +325,7 @@ test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as b
   assert.throws(() => systemdServerUnit({ port: '87 90' }), /Not a port/);
 });
 
-test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumodel, after and wanting the server and the network, restarted for ever, sandboxed', async () => {
+test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as its own account (blumodel-tunnel; the data, logs, settings and deploy key inaccessible), after and wanting the server and the network, restarted for ever, sandboxed', async () => {
   const { systemdTunnelUnit } = await import('../ops/home.mjs');
   const text = systemdTunnelUnit();
   assert.ok(!text.includes('\r'));
@@ -329,7 +333,13 @@ test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumod
   assert.deepEqual(u.Service.ExecStart, ['/usr/bin/cloudflared tunnel --config /srv/blumodel-studio/cloudflared.yml --no-autoupdate run']);
   assert.deepEqual(u.Unit.After, ['network-online.target blumodel-studio.service']);
   assert.deepEqual(u.Unit.Wants, ['network-online.target blumodel-studio.service']);
-  assert.deepEqual([u.Service.User, u.Service.Restart, u.Service.RestartSec], [['blumodel'], ['always'], ['10']]);
+  assert.deepEqual([u.Service.User, u.Service.Group, u.Service.Restart, u.Service.RestartSec], [['blumodel-tunnel'], ['blumodel-tunnel'], ['always'], ['10']]);
+  assert.deepEqual(u.Service.InaccessiblePaths, ['-/srv/blumodel-studio/data -/srv/blumodel-studio/logs -/srv/blumodel-studio/blumodel.env -/srv/blumodel-studio/.ssh']);
+  const { systemdUnits, TUNNEL_USER } = await import('../ops/home.mjs');
+  assert.equal(TUNNEL_USER, 'blumodel-tunnel');
+  const all = systemdUnits({ user: 'blumodel' });
+  assert.match(all['blumodel-studio.service'], /^User=blumodel$/m);
+  assert.match(all['blumodel-tunnel.service'], /^User=blumodel-tunnel$/m, 'the server’s account never runs the tunnel');
   for (const k of ['NoNewPrivileges', 'ProtectHome', 'PrivateTmp']) assert.deepEqual(u.Service[k], ['yes'], k);
   assert.deepEqual(u.Service.ProtectSystem, ['strict']);
   assert.equal(u.Service.ReadWritePaths, undefined, 'the tunnel writes nothing');
@@ -337,17 +347,120 @@ test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumod
   assert.ok(!/\btoken\b|login|route|delete/i.test(u.Service.ExecStart[0]), 'it only ever runs the tunnel');
 });
 
-test('the Linux install plan: both unit files, daemon-reload, the server enabled; the tunnel enabled only when asked (the cutover); --only filters', async () => {
+test('the Linux install plan: every unit file, daemon-reload, the server enabled; the tunnel enabled only when asked (the cutover); the update timer and watcher enabled and started (off with --no-auto-update); --only filters', async () => {
   const { systemdInstallPlan, systemdUnits } = await import('../ops/home.mjs');
   const units = systemdUnits();
   const plan = systemdInstallPlan({ units });
-  assert.deepEqual(plan.writes.map((w) => w.file), ['/etc/systemd/system/blumodel-studio.service', '/etc/systemd/system/blumodel-tunnel.service']);
-  assert.deepEqual(plan.commands, [['systemctl', 'daemon-reload'], ['systemctl', 'enable', 'blumodel-studio.service']]);
-  assert.ok(!plan.commands.flat().includes('start') && !plan.commands.flat().includes('--now'), 'never starts anything');
-  assert.deepEqual(systemdInstallPlan({ units, enableTunnel: true }).commands.at(-1), ['systemctl', 'enable', 'blumodel-tunnel.service']);
+  assert.deepEqual(plan.writes.map((w) => w.file), ['/etc/systemd/system/blumodel-studio.service', '/etc/systemd/system/blumodel-tunnel.service', '/etc/systemd/system/blumodel-update.service', '/etc/systemd/system/blumodel-update.timer', '/etc/systemd/system/blumodel-update.path']);
+  assert.deepEqual(plan.commands, [['systemctl', 'daemon-reload'], ['systemctl', 'enable', 'blumodel-studio.service'], ['systemctl', 'enable', '--now', 'blumodel-update.timer', 'blumodel-update.path']]);
+  // --now only ever starts the schedule and the watcher: never the server, the tunnel or an update.
+  for (const c of plan.commands) if (c.includes('--now')) assert.deepEqual(c.slice(3), ['blumodel-update.timer', 'blumodel-update.path']);
+  assert.ok(!plan.commands.flat().includes('start'));
+  assert.deepEqual(systemdInstallPlan({ units, enableTunnel: true }).commands.filter((c) => c.includes('blumodel-tunnel.service')), [['systemctl', 'enable', 'blumodel-tunnel.service']]);
+  assert.deepEqual(systemdInstallPlan({ units, autoUpdate: false }).commands.at(-1), ['systemctl', 'disable', '--now', 'blumodel-update.timer', 'blumodel-update.path']);
   const t = systemdInstallPlan({ units, only: 'tunnel' });
   assert.deepEqual(t.writes.map((w) => path.posix.basename(w.file)), ['blumodel-tunnel.service']);
   assert.deepEqual(t.commands, [['systemctl', 'daemon-reload']]);
+  const u = systemdInstallPlan({ units, only: 'update' });
+  assert.deepEqual(u.writes.map((w) => path.posix.basename(w.file)), ['blumodel-update.service', 'blumodel-update.timer', 'blumodel-update.path']);
+});
+
+test('the update units: a oneshot update.mjs --auto as root at low priority; the timer daily at 04:00 (Persistent, up to 10 min late, never more often); the path unit watches only the Update now file', async () => {
+  const { systemdUpdateUnits } = await import('../ops/home.mjs');
+  const units = systemdUpdateUnits();
+  for (const text of Object.values(units)) assert.ok(!text.includes('\r'), 'LF only');
+  const svc = parseUnit(units['blumodel-update.service']);
+  assert.deepEqual(Object.keys(svc), ['Unit', 'Service']);
+  assert.deepEqual(svc.Service.Type, ['oneshot']);
+  assert.deepEqual(svc.Service.ExecStart, ['/usr/bin/node --no-warnings /srv/blumodel-studio/repo/blumodel-studio/scripts/host/update.mjs --auto --home /srv/blumodel-studio']);
+  assert.equal(svc.Service.User, undefined, 'root: the deploy restarts the server (git runs as the checkout owner)');
+  assert.deepEqual([svc.Service.Nice, svc.Service.IOSchedulingClass, svc.Service.TimeoutStartSec, svc.Service.SyslogIdentifier], [['10'], ['idle'], ['2h'], ['blumodel-update']]);
+  assert.deepEqual(svc.Unit.Wants, ['network-online.target']);
+  const timer = parseUnit(units['blumodel-update.timer']);
+  assert.deepEqual(timer.Timer, { OnCalendar: ['*-*-* 04:00:00'], Persistent: ['true'], RandomizedDelaySec: ['10min'], AccuracySec: ['1min'], Unit: ['blumodel-update.service'] });
+  assert.ok(!/OnUnitActiveSec|OnBootSec|OnActiveSec|OnStartupSec/.test(units['blumodel-update.timer']), 'one calendar event a day, nothing else');
+  assert.deepEqual(timer.Install.WantedBy, ['timers.target']);
+  const watch = parseUnit(units['blumodel-update.path']);
+  assert.deepEqual(watch.Path, { PathExists: ['/srv/blumodel-studio/logs/update-now.request'], Unit: ['blumodel-update.service'] });
+  assert.deepEqual(watch.Install.WantedBy, ['paths.target']);
+  assert.deepEqual(parseUnit(systemdUpdateUnits({ time: '05:30', home: '/opt/bms' })['blumodel-update.timer']).Timer.OnCalendar, ['*-*-* 05:30:00']);
+  for (const bad of ['4:00', '24:00', '04:00:00', 'noon', '']) assert.throws(() => systemdUpdateUnits({ time: bad }), /Not a time of day/);
+  assert.throws(() => systemdUpdateUnits({ home: '/srv/a b' }), /absolute path/);
+});
+
+test('Windows update tasks: daily at the update time and a two-minute Update now check, both hidden via update-hidden.vbs, one at a time, two hours at most; a stored password with --at-startup', async () => {
+  const { updateTasks, updateLauncherVbs, taskXml } = await import('../ops/home.mjs');
+  const [daily, now] = updateTasks('C:\\Users\\owner\\Projects\\BluModelStudio', 'WYSE\\owner', { time: '04:00', password: true });
+  assert.deepEqual([daily.name, now.name], ['BluModelStudioUpdate', 'BluModelStudioUpdateNow']);
+  assert.match(daily.xml, /<CalendarTrigger>\s*<StartBoundary>2026-01-01T04:00:00<\/StartBoundary>\s*<Enabled>true<\/Enabled>\s*<ScheduleByDay>\s*<DaysInterval>1<\/DaysInterval>/);
+  assert.match(daily.xml, /<StartWhenAvailable>true<\/StartWhenAvailable>/, 'a missed 04:00 runs when the machine is next on');
+  assert.match(now.xml, /<TimeTrigger>\s*<Repetition>\s*<Interval>PT2M<\/Interval>/);
+  assert.match(now.xml, /<StartWhenAvailable>false<\/StartWhenAvailable>/);
+  for (const t of [daily, now]) {
+    assert.match(t.xml, /<LogonType>Password<\/LogonType>/);
+    assert.match(t.xml, /<ExecutionTimeLimit>PT2H<\/ExecutionTimeLimit>/);
+    assert.match(t.xml, /<MultipleInstancesPolicy>IgnoreNew<\/MultipleInstancesPolicy>/);
+    assert.doesNotMatch(t.xml, /<Password>|<RunAsPassword/i);
+  }
+  assert.match(daily.xml, /<Command>wscript\.exe<\/Command>/);
+  // The two-minute check: cmd.exe in the stored-password (non-interactive, windowless) session, no wscript or node.
+  assert.match(now.xml, /<Command>cmd\.exe<\/Command>/);
+  assert.match(daily.xml, /<Arguments>"C:\\Users\\owner\\Projects\\BluModelStudio\\update-hidden\.vbs" --auto<\/Arguments>/);
+  assert.match(now.xml, /<Arguments>\/d \/c "C:\\Users\\owner\\Projects\\BluModelStudio\\update-check\.cmd"<\/Arguments>/);
+  // Without a stored password the task would run on the desktop, where cmd.exe flashes a console: the VBS, which quits early.
+  const interactiveNow = updateTasks('C:\\H', 'PC\\me')[1];
+  assert.match(interactiveNow.xml, /<Command>wscript\.exe<\/Command>\s*<Arguments>"C:\\H\\update-hidden\.vbs" --auto --trigger-only<\/Arguments>/);
+  assert.throws(() => taskXml({ name: 'T', description: 'd', launcher: 'a', workingDir: 'b', user: 'u', command: 'powershell.exe' }), /Not a task command/);
+  assert.match(updateTasks('C:\\H', 'PC\\me')[0].xml, /<LogonType>InteractiveToken<\/LogonType>/);
+  assert.match(updateTasks('C:\\H', 'PC\\me', { time: '23:45' })[0].xml, /T23:45:00/);
+  assert.throws(() => updateTasks('C:\\H', 'PC\\me', { time: '7am' }), /Not a time of day/);
+  const vbs = updateLauncherVbs({ node: 'C:\\Program Files\\nodejs\\node.exe' });
+  assert.ok(/^[^\n]*\r\n/.test(vbs) && !/[^\r]\n/.test(vbs), 'CRLF');
+  const q3 = '"'.repeat(3);
+  assert.ok(vbs.includes(String.raw`sh.Run(${q3}C:\Program Files\nodejs\node.exe"" --no-warnings ${q3} & dir & "\repo\blumodel-studio\scripts\host\update.mjs"" --home ${q3} & dir & ${q3}" & args, 0, True)`), vbs);
+  assert.match(vbs, /WScript\.Quit code/, 'the task’s Last Run Result is the update’s exit code');
+  assert.throws(() => updateLauncherVbs({ node: 'C:\\a"b\\node.exe' }), /no quotes/);
+  if (WIN) {
+    const dir = tempDir();
+    try {
+      for (const t of [daily, now]) {
+        const file = path.join(dir, `${t.name}.xml`);
+        fs.writeFileSync(file, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(t.xml.replace(/\r?\n/g, '\r\n'), 'utf16le')]));
+        const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+        const r = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-Command', `$x = [xml](Get-Content -Raw -Encoding Unicode -LiteralPath '${file}'); $x.Task.RegistrationInfo.URI`], { encoding: 'utf8', windowsHide: true });
+        assert.equal(r.status, 0, r.stderr);
+        assert.equal(r.stdout.trim(), `\\${t.name}`);
+      }
+    } finally {
+      rm(dir);
+    }
+  }
+});
+
+test('register-tasks --dry-run --only update (Windows): the launcher, auto-update.conf and both update tasks, nothing changed; --no-auto-update disables instead; a home with no checkout gets no update task by default', { skip: !WIN && 'Windows tasks' }, () => {
+  const home = tempDir('blumodel-uptasks-');
+  try {
+    const cli = (...a) => spawnSync(NODE, [path.join(ROOT, 'scripts', 'register-tasks.mjs'), '--dry-run', '--home', home, '--user', 'WYSE\\owner', ...a], { encoding: 'utf8', windowsHide: true, timeout: 60_000, env: cleanEnv() });
+    const r = cli('--only', 'update', '--at-startup', '--auto-update-time', '05:15');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /would write .*update-hidden\.vbs:/);
+    assert.match(r.stdout, /would write .*auto-update\.conf: AUTO_UPDATE=on, AUTO_UPDATE_TIME=05:15/);
+    assert.match(r.stdout, /BluModelStudioUpdate: daily at 05:15, as WYSE\\owner \(signed in or not\), runs wscript\.exe ".*update-hidden\.vbs" --auto/);
+    assert.match(r.stdout, /BluModelStudioUpdateNow: every 2 minutes \(a no-op unless Update now was pressed\)/);
+    assert.match(r.stdout, /would run: schtasks \/Create \/TN BluModelStudioUpdate \/XML "<the definition below>" \/RU WYSE\\owner \/RP \* \/F/);
+    assert.doesNotMatch(r.stdout, /would list .*Update/, 'update tasks are not startup tasks');
+    assert.deepEqual(fs.readdirSync(home), [], 'nothing was written');
+    const off = cli('--only', 'update', '--no-auto-update');
+    assert.match(off.stdout, /AUTO_UPDATE=off/);
+    assert.match(off.stdout, /would run: schtasks \/Change \/TN BluModelStudioUpdate \/Disable/);
+    assert.doesNotMatch(off.stdout, /schtasks \/Create/);
+    const all = cli();
+    assert.match(all.stdout, /no update task/);
+    assert.doesNotMatch(all.stdout, /BluModelStudioUpdate:/);
+    assert.equal(cli('--auto-update-time', '25:00').status, 2);
+  } finally {
+    rm(home);
+  }
 });
 
 test('Windows tasks at startup: a boot trigger (30 s delay) and a stored-password logon instead of logon + interactive token; the logon definition is unchanged', async () => {
@@ -410,7 +523,10 @@ test('register-tasks --dry-run --platform linux prints the two units and the sys
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-studio\.service$/m);
   assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-tunnel\.service$/m);
-  assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/node --no-warnings \/srv\/blumodel-studio\/app\/server\/index\.mjs --prod$/m);
+  assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/node --max-old-space-size=384 --no-warnings \/srv\/blumodel-studio\/app\/server\/index\.mjs --prod$/m);
+  assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-update\.timer$/m);
+  assert.match(r.stdout, /^would run: systemctl enable --now blumodel-update\.timer blumodel-update\.path$/m);
+  assert.match(r.stdout, /would write \/srv\/blumodel-studio\/auto-update\.conf: AUTO_UPDATE=on, AUTO_UPDATE_TIME=04:00/);
   assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/cloudflared tunnel --config \/srv\/blumodel-studio\/cloudflared\.yml --no-autoupdate run$/m);
   assert.match(r.stdout, /^would run: systemctl daemon-reload$/m);
   assert.match(r.stdout, /^would run: systemctl enable blumodel-studio\.service$/m);
@@ -422,6 +538,12 @@ test('register-tasks --dry-run --platform linux prints the two units and the sys
   assert.match(t.stdout, /^would run: systemctl enable blumodel-tunnel\.service$/m);
   assert.match(t.stdout, /Environment=PORT=8899/);
   assert.match(t.stdout, /WorkingDirectory=\/opt\/bms\/app/);
+  const o = cli('--dry-run', '--platform', 'linux', '--home', '/opt/bms', '--no-auto-update', '--auto-update-time', '03:30', '--heap-mb', '512');
+  assert.equal(o.status, 0, o.stderr);
+  assert.match(o.stdout, /OnCalendar=\*-\*-\* 03:30:00/);
+  assert.match(o.stdout, /--max-old-space-size=512 /);
+  assert.match(o.stdout, /^would run: systemctl disable --now blumodel-update\.timer blumodel-update\.path$/m);
+  assert.match(o.stdout, /AUTO_UPDATE=off, AUTO_UPDATE_TIME=03:30/);
   if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, 2, 'only a dry run may pretend to be Linux');
   assert.equal(cli('--dry-run', '--platform', 'linux', '--home', '/srv/blu model').status, 2, 'a home systemd would need quoting is refused');
   assert.equal(cli('--dry-run', '--only', 'both').status, 2);
@@ -512,11 +634,11 @@ function homeWithApp(commit) {
   return home;
 }
 
-test('runUpdate: refuses on local changes or a pull that can’t fast-forward; stops when the commit is already deployed; otherwise npm ci, build, deploy in that order', async () => {
+test('runUpdate: refuses on local changes or a pull that can’t fast-forward; stops when the commit is already deployed; otherwise deploys the prebuilt dist/ (no npm ci, no build); --build is the emergency npm ci + build', async () => {
   const { runUpdate } = await import('../../scripts/host/update.mjs');
   const home = homeWithApp('old1234');
   try {
-    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, out: () => {} };
+    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, out: () => {}, exists: () => true };
     let f = fakeExec({ dirty: ' M src/app.tsx\n' });
     assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
     assert.equal(f.calls.length, 1, 'stopped after git status');
@@ -532,35 +654,49 @@ test('runUpdate: refuses on local changes or a pull that can’t fast-forward; s
     assert.equal(runUpdate({ ...base, exec: f.exec, force: true }).deployed, 'old1234', '--force redeploys');
     assert.ok(f.calls.some((c) => /deploy-local/.test(c.line)));
 
+    // A branch without a prebuilt release (not published with npm run release): refused, with --build named.
+    f = fakeExec();
+    let out = [];
+    assert.equal(runUpdate({ ...base, exists: () => false, exec: f.exec, out: (s) => out.push(s) }).code, EXIT.REFUSED);
+    assert.match(out.join('\n'), /no prebuilt release .*--build/s);
+    assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)));
+
     f = fakeExec({ npm: 1 });
-    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.equal(runUpdate({ ...base, build: true, exec: f.exec }).code, EXIT.REFUSED);
     assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'a failed npm ci never reaches the deploy');
     f = fakeExec({ build: 1 });
-    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.equal(runUpdate({ ...base, build: true, exec: f.exec }).code, EXIT.REFUSED);
     assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'a failed build never reaches the deploy');
 
+    const kind = (c) => (/status/.test(c.line) ? 'status' : /pull/.test(c.line) ? 'pull' : /rev-parse/.test(c.line) ? 'rev-parse' : / ci /.test(` ${c.line} `) ? 'ci' : /build\.mjs/.test(c.line) ? 'build' : /deploy-local/.test(c.line) ? 'deploy' : c.line);
     f = fakeExec();
-    const out = [];
+    out = [];
     assert.deepEqual(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }), { code: EXIT.OK, deployed: 'new5678' });
-    const order = f.calls.map((c) => (/status/.test(c.line) ? 'status' : /pull/.test(c.line) ? 'pull' : /rev-parse/.test(c.line) ? 'rev-parse' : / ci /.test(` ${c.line} `) ? 'ci' : /build\.mjs/.test(c.line) ? 'build' : /deploy-local/.test(c.line) ? 'deploy' : c.line));
-    assert.deepEqual(order, ['status', 'pull', 'rev-parse', 'ci', 'build', 'deploy']);
+    assert.deepEqual(f.calls.map(kind), ['status', 'pull', 'rev-parse', 'deploy'], 'the prebuilt release: nothing installed or built');
     const deploy = f.calls.at(-1);
-    assert.match(deploy.line, /deploy-local\.mjs --dist .*dist --commit new5678$/);
+    assert.match(deploy.line, /deploy-local\.mjs --dist \S*[\\/]repo[\\/]blumodel-studio[\\/]dist --commit new5678$/);
     assert.deepEqual(deploy.env, { BLUMODEL_HOME: home }, 'deploys into the home it checked');
     assert.match(out.join('\n'), /Updated: commit new5678 is running\./);
+
+    f = fakeExec();
+    assert.equal(runUpdate({ ...base, build: true, exec: f.exec }).code, EXIT.OK);
+    assert.deepEqual(f.calls.map(kind), ['status', 'pull', 'rev-parse', 'ci', 'build', 'deploy']);
+    assert.match(f.calls.find((c) => /build\.mjs/.test(c.line)).line, /build\.mjs --out \.build[\\/]local$/, 'never over the tracked dist/');
+    assert.match(f.calls.at(-1).line, /--dist \S*[\\/]\.build[\\/]local --commit new5678$/);
   } finally {
     rm(home);
   }
 });
 
-test('runUpdate rolls back when the new app fails its health check (deploy exit 3), never when the deploy refused; a failed rollback says the site may be down', async () => {
-  const { runUpdate } = await import('../../scripts/host/update.mjs');
+test('runUpdate rolls back when the new app fails its health check (deploy exit 3; then exit 4), never when the deploy refused; a failed rollback says the site may be down', async () => {
+  const { runUpdate, ROLLED_BACK } = await import('../../scripts/host/update.mjs');
   const home = homeWithApp('old1234');
   try {
-    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform };
+    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, exists: () => true };
     let out = [];
     let f = fakeExec({ deploy: EXIT.UNHEALTHY });
-    assert.equal(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }).code, EXIT.REFUSED);
+    assert.equal(ROLLED_BACK, 4);
+    assert.equal(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }).code, ROLLED_BACK);
     assert.match(f.calls.at(-1).line, /deploy-local\.mjs --rollback$/);
     assert.deepEqual(f.calls.at(-1).env, { BLUMODEL_HOME: home });
     assert.match(out.join('\n'), /ROLLED BACK: commit old1234 is running again; new5678 did not start healthy/);
@@ -583,17 +719,22 @@ test('runUpdate rolls back when the new app fails its health check (deploy exit 
   }
 });
 
-test('runUpdate on Linux as root: git, npm and the build run as the checkout’s owner (runuser, HOME = the home); the deploy and rollback run as root', async () => {
+test('runUpdate on Linux as root: git (and with --build, npm and the build) run as the checkout’s owner (runuser, HOME = the home); the deploy and rollback run as root', async () => {
   const { runUpdate } = await import('../../scripts/host/update.mjs');
   const f = fakeExec({ deploy: EXIT.UNHEALTHY });
-  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {} });
+  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {}, exists: () => true });
+  const plain = f.calls.map((c) => c.line);
+  assert.ok(plain.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/dist --commit new5678'), 'the prebuilt dist');
+  assert.ok(!plain.some((l) => / ci |build\.mjs/.test(l)), 'nothing installed or built');
+  f.calls.length = 0;
+  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {}, build: true });
   const svc = 'runuser -u blumodel -- env HOME=/srv/blumodel-studio PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
   const lines = f.calls.map((c) => c.line);
   assert.equal(lines[0], `${svc} git -C /srv/blumodel-studio/repo/blumodel-studio status --porcelain --untracked-files=no`);
   assert.equal(lines[1], `${svc} git -C /srv/blumodel-studio/repo/blumodel-studio pull --ff-only`);
   assert.ok(lines.some((l) => l.startsWith(svc) && / ci --no-audit --no-fund$/.test(l)), 'npm ci as blumodel');
-  assert.ok(lines.includes(`${svc} /usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/host/build.mjs --out dist`));
-  assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/dist --commit new5678'));
+  assert.ok(lines.includes(`${svc} /usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/host/build.mjs --out .build/local`));
+  assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/.build/local --commit new5678'));
   assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --rollback'));
 });
 
@@ -604,14 +745,17 @@ test('update.mjs --dry-run --platform linux prints the whole plan, the rollback 
   for (const re of [
     /checkout \/srv\/blumodel-studio\/repo\/blumodel-studio, home \/srv\/blumodel-studio/,
     /\+ runuser -u blumodel -- .* git -C \/srv\/blumodel-studio\/repo\/blumodel-studio pull --ff-only/,
-    /\+ runuser -u blumodel -- .* npm ci --no-audit --no-fund/,
-    /\+ runuser -u blumodel -- .* \/usr\/bin\/node .*build\.mjs --out dist/,
+    /The prebuilt release \(nothing is built on this machine\)/,
     /\+ BLUMODEL_HOME=\/srv\/blumodel-studio \/usr\/bin\/node .*deploy-local\.mjs --dist .*dist --commit/,
     /Only if that health check fails: rolling back/,
     /\+ BLUMODEL_HOME=\/srv\/blumodel-studio \/usr\/bin\/node .*deploy-local\.mjs --rollback/,
     /Dry run: nothing was pulled, built, deployed or restarted\./,
   ])
     assert.match(r.stdout, re);
+  assert.doesNotMatch(r.stdout, /npm ci|build\.mjs/, 'a release is deployed as built');
+  const b = cli('--dry-run', '--platform', 'linux', '--build');
+  assert.match(b.stdout, /\+ runuser -u blumodel -- .* npm ci --no-audit --no-fund/);
+  assert.match(b.stdout, /\+ runuser -u blumodel -- .* \/usr\/bin\/node .*build\.mjs --out \.build\/local/);
   if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, EXIT.USAGE);
   assert.equal(cli('--bogus').status, EXIT.USAGE);
 });
@@ -645,7 +789,7 @@ test('every shell script: LF line ends only, a bash shebang, `set -euo pipefail`
   }
 });
 
-test('install-linux.sh --dry-run prints every step (apt repos, the account, the sparse clone, npm ci, the build, the units, the deploy, the tunnel config) and runs none', { skip: !BASH && 'no bash here', timeout: 120_000 }, () => {
+test('install-linux.sh --dry-run prints every step (apt repos, the account, the sparse clone, the prebuilt release, the units, the deploy, the tunnel config) and runs none; --build is the emergency npm ci and build', { skip: !BASH && 'no bash here', timeout: 120_000 }, () => {
   // A PATH without node or cloudflared on Windows, so the NodeSource and Cloudflare steps show too.
   const env = cleanEnv(WIN ? { PATH: '/usr/bin:/bin' } : {});
   const run = (...a) => spawnSync(BASH, [path.join(HOST_DIR, 'install-linux.sh'), ...a], { encoding: 'utf8', windowsHide: true, timeout: 90_000, env });
@@ -655,13 +799,22 @@ test('install-linux.sh --dry-run prints every step (apt repos, the account, the 
   for (const re of [
     /DRY RUN: every command is printed/,
     /\+ useradd --system --user-group --home-dir \/srv\/blumodel-dryrun --no-create-home --shell \/usr\/sbin\/nologin --comment BluModel\\ Studio blumodel/,
-    /\+ install -d -m 0750 -o blumodel -g blumodel \/srv\/blumodel-dryrun \/srv\/blumodel-dryrun\/data \/srv\/blumodel-dryrun\/logs/,
-    /\+ install -d -m 0700 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/\.cloudflared/,
-    /\+ runuser -u blumodel -- env -C \/srv\/blumodel-dryrun HOME=\/srv\/blumodel-dryrun PATH=\S+ git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git \/srv\/blumodel-dryrun\/repo/,
+    /\+ install -d -m 0750 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/data \/srv\/blumodel-dryrun\/logs/,
+    /\+ install -d -m 0700 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/\.ssh/,
+    /\+ runuser -u blumodel -- env -C \/srv\/blumodel-dryrun HOME=\/srv\/blumodel-dryrun PATH=\S+ git -c core\.sshCommand=ssh\\ -i\\ \/srv\/blumodel-dryrun\/\.ssh\/id_ed25519\\ -o\\ IdentitiesOnly=yes.* clone --filter=blob:none --sparse --branch blumodel-studio --single-branch git@github\.com:gabrieldocherty-ux\/hubs\.git \/srv\/blumodel-dryrun\/repo/,
+    /\+ write \/srv\/blumodel-dryrun\/\.ssh\/known_hosts \(mode 0600\): github\.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl/,
+    /\+ runuser -u blumodel -- ssh-keygen -q -t ed25519 -N '' -C \S+ -f \/srv\/blumodel-dryrun\/\.ssh\/id_ed25519/,
+    /git config core\.sshCommand ssh\\ -i\\ \/srv\/blumodel-dryrun\/\.ssh\/id_ed25519\\ -o\\ IdentitiesOnly=yes\\ -o\\ UserKnownHostsFile=\/srv\/blumodel-dryrun\/\.ssh\/known_hosts\\ -o\\ StrictHostKeyChecking=yes\\ -o\\ HostKeyAlgorithms=ssh-ed25519/,
+    /\+ useradd --system --user-group --home-dir \/nonexistent --no-create-home --shell \/usr\/sbin\/nologin --comment BluModel\\ Studio\\ tunnel blumodel-tunnel/,
+    /\+ install -d -m 0751 -o blumodel -g blumodel \/srv\/blumodel-dryrun$/m,
+    /\+ install -d -m 0700 -o blumodel-tunnel -g blumodel-tunnel \/srv\/blumodel-dryrun\/\.cloudflared/,
+    /\+ chown root:blumodel-tunnel \/srv\/blumodel-dryrun\/cloudflared\.yml/,
+    /\+ write \/usr\/local\/bin\/blumodel \(mode 0755\)/,
+    /\+ write \/usr\/share\/applications\/blumodel-server\.desktop \(mode 0644\): \[Desktop Entry\]/,
+    /Exec=xdg-open http:\/\/127\.0\.0\.1:8799\//,
     /git sparse-checkout set blumodel-studio/,
-    /env -C \/srv\/blumodel-dryrun\/repo\/blumodel-studio HOME=\/srv\/blumodel-dryrun PATH=\S+ npm ci --no-audit --no-fund/,
-    /node scripts\/host\/build\.mjs --out dist/,
-    /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/register-tasks\.mjs --home \/srv\/blumodel-dryrun --user blumodel --port 8899 --node \S+ --cloudflared \S+/,
+    /The prebuilt release \(nothing is installed or built on this machine\)/,
+    /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/register-tasks\.mjs --home \/srv\/blumodel-dryrun --user blumodel --port 8899 --node \S+ --cloudflared \S+$/m,
     /\+ env BLUMODEL_HOME=\/srv\/blumodel-dryrun BLUMODEL_PORT=8899 node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/deploy-local\.mjs --dist \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/dist --commit/,
     /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/tunnel\/setup-tunnel\.mjs --home \/srv\/blumodel-dryrun --port 8899 --validate/,
     /sudo systemctl enable --now blumodel-tunnel/,
@@ -678,6 +831,17 @@ test('install-linux.sh --dry-run prints every step (apt repos, the account, the 
     assert.match(o, /deb \[signed-by=\/usr\/share\/keyrings\/cloudflare-main\.gpg\] https:\/\/pkg\.cloudflare\.com\/cloudflared any main/);
     assert.match(o, /apt-get install -y cloudflared/);
   }
+  assert.doesNotMatch(o, /npm ci|build\.mjs/, 'nothing is installed or built');
+  assert.match(o, /Updates: automatic, daily at 04:00/);
+  const b = run('--dry-run', '--home', '/srv/blumodel-dryrun', '--build', '--no-auto-update', '--auto-update-time', '05:15', '--heap-mb', '512');
+  assert.equal(b.status, 0, b.stdout + b.stderr);
+  assert.match(b.stdout, /env -C \/srv\/blumodel-dryrun\/repo\/blumodel-studio HOME=\/srv\/blumodel-dryrun PATH=\S+ npm ci --no-audit --no-fund/);
+  assert.match(b.stdout, /node scripts\/host\/build\.mjs --out \.build\/local/);
+  assert.match(b.stdout, /register-tasks\.mjs .* --auto-update-time 05:15 --no-auto-update --heap-mb 512$/m);
+  assert.match(b.stdout, /deploy-local\.mjs --dist \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/\.build\/local --commit/);
+  assert.match(b.stdout, /automatic updates are OFF/);
+  assert.equal(run('--auto-update-time', '7pm').status, 1);
+  assert.equal(run('--heap-mb', 'lots').status, 1);
   // The tunnel is never started by the install, and no command line carries a secret.
   assert.doesNotMatch(o, /^\+ .*systemctl (start|enable).*blumodel-tunnel/m);
   assert.doesNotMatch(o, /^\+ .*(cloudflared (tunnel|service) (run|login|route|create|delete|token|install)|--token)/m);
@@ -712,11 +876,18 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
     assert.equal(r.status, 0, r.stdout + r.stderr);
     const o = r.stdout;
     for (const re of [
-      /git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git .*Home\\repo/,
+      /git -c "core\.sshCommand=ssh -i \S+\/Home\/\.ssh\/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=\S+\/Home\/\.ssh\/known_hosts -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519" clone --filter=blob:none --sparse --branch blumodel-studio --single-branch git@github\.com:gabrieldocherty-ux\/hubs\.git .*Home\\repo/,
+      /\+ write .*Home\\\.ssh\\known_hosts \(GitHub's pinned ed25519 host key\)/,
+      /\+ ssh-keygen -q -t ed25519 -N \S+ -C blumodel-deploy@\S+ -f .*Home\\\.ssh\\id_ed25519/,
+      /\+ icacls\.exe .*Home\\\.ssh \/inheritance:r \/grant:r \S+:\(OI\)\(CI\)F/,
+      /==> Desktop shortcuts/,
+      /\+ write ".*BluModel Server\.url": http:\/\/127\.0\.0\.1:8799\//,
+      /\+ shortcut ".*Update BluModel\.lnk" -> .*Home\\update-now\.cmd/,
       /sparse-checkout set blumodel-studio/,
-      /\+ npm\.cmd ci --no-audit --no-fund/,
-      /\+ node scripts\\host\\build\.mjs --out dist/,
+      /The prebuilt release \(nothing is installed or built on this machine\)/,
       /\+ node scripts\\deploy-local\.mjs --dist .*Home\\repo\\blumodel-studio\\dist --commit <commit>/,
+      /\+ node scripts\\register-tasks\.mjs --home .*Home --at-startup --only update/,
+      /Updates: automatic, daily at 04:00/,
       /\+ node scripts\\tunnel\\setup-tunnel\.mjs --home .*Home --port 8903 --validate/,
       /\+ node scripts\\register-tasks\.mjs --home .*Home --at-startup --only server/,
       /--at-startup --only tunnel/,
@@ -724,6 +895,13 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
     ])
       assert.match(o, re);
     assert.doesNotMatch(o, /^\+ .*schtasks \/Run \/TN BluModelTunnel/m, 'the tunnel is never started by the install');
+    assert.doesNotMatch(o, /npm\.cmd ci|build\.mjs/, 'nothing is installed or built');
+    const b = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file, '-DryRun', '-HomeDir', home, '-Port', '8903', '-Build', '-NoAutoUpdate'], { encoding: 'utf8', windowsHide: true, timeout: 90_000, env: cleanEnv() });
+    assert.equal(b.status, 0, b.stdout + b.stderr);
+    assert.match(b.stdout, /\+ npm\.cmd ci --no-audit --no-fund/);
+    assert.match(b.stdout, /\+ node scripts\\host\\build\.mjs --out \.build\\local/);
+    assert.match(b.stdout, /--dist .*\.build\\local --commit/);
+    assert.match(b.stdout, /--only update --no-auto-update/);
     assert.ok(!fs.existsSync(home), 'nothing was made');
   } finally {
     rm(dir);
@@ -732,7 +910,7 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
 
 // ── 4. the tunnel on another machine ─────────────────────────────────────
 
-test('the tunnel’s credentials: %USERPROFILE%\\.cloudflared\\<id>.json on Windows, <home>/.cloudflared/<id>.json on Linux (readable by blumodel)', async () => {
+test('the tunnel’s credentials: %USERPROFILE%\\.cloudflared\\<id>.json on Windows, <home>/.cloudflared/<id>.json on Linux (readable by the tunnel’s account)', async () => {
   const { TUNNEL_ID, credentialsFor } = await import('../../scripts/tunnel/tunnel.mjs');
   assert.equal(credentialsFor({ platform: 'win32', homedir: 'C:\\Users\\owner' }), `C:\\Users\\owner\\.cloudflared\\${TUNNEL_ID}.json`);
   assert.equal(credentialsFor({ platform: 'linux', home: '/srv/blumodel-studio' }), `/srv/blumodel-studio/.cloudflared/${TUNNEL_ID}.json`);
@@ -750,7 +928,8 @@ test('cloudflared.yml on Linux: the same tunnel and ingress as on Windows, the c
   assert.match(lin, /^# Run by blumodel-tunnel\.service \(systemd\)\. .*sudo systemctl restart blumodel-tunnel\.$/m);
   assert.match(win, /^# Run by run-tunnel\.cmd \(the BluModelTunnel task starts it\)\./m);
   assert.match(lin, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
-  assert.ok(lin.trimEnd().endsWith('- service: http_status:404'));
+  assert.match(lin, /^ {2}- hostname: '\*\.blumodel\.studio'\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.ok(lin.trimEnd().endsWith('- service: http://127.0.0.1:8790'));
   assert.ok(!lin.includes('\r'));
   assert.throws(() => tunnelConfigYaml({ credentials: '', platform: 'linux' }), /needs the credentials file path/);
 });
@@ -763,7 +942,7 @@ test('setup-tunnel --dry-run --platform linux: only cloudflared.yml (no .cmd scr
   assert.doesNotMatch(r.stdout, /\.cmd|\.vbs/);
   assert.match(r.stdout, /credentials-file: '\/srv\/blumodel-studio\/\.cloudflared\/064671cd-a658-4240-8626-c697b9f148ac\.json'/);
   assert.match(r.stdout, /would create \/srv\/blumodel-studio\/\.cloudflared \(mode 700, owned by blumodel\)/);
-  assert.match(r.stdout, /Copy 064671cd-a658-4240-8626-c697b9f148ac\.json there yourself, then: sudo chown blumodel:blumodel .* && sudo chmod 600 /);
+  assert.match(r.stdout, /Copy 064671cd-a658-4240-8626-c697b9f148ac\.json there yourself, then: sudo chown blumodel-tunnel:blumodel-tunnel .* && sudo chmod 600 /);
   assert.match(r.stdout, /Dry run: nothing was written\./);
   const other = cli('--dry-run', '--platform', 'linux', '--home', '/srv/blumodel-studio', '--credentials', '/etc/cloudflared/blumodel.json', '--port', '8899');
   assert.equal(other.status, 0, other.stderr);
@@ -789,8 +968,10 @@ test('setup-tunnel writes the Windows files into a temp home and cloudflared val
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.deepEqual(fs.readdirSync(home).sort(), ['cloudflared.yml', 'run-tunnel.cmd', 'start-tunnel.cmd', 'start-tunnel.vbs', 'stop-tunnel.cmd']);
     assert.match(r.stdout, /PASS {2}cloudflared ingress validate/);
-    assert.match(r.stdout, /PASS {2}https:\/\/blumodel\.studio\/ goes to http:\/\/127\.0\.0\.1:8904/);
-    assert.match(r.stdout, /PASS {2}any other hostname gets a 404/);
+    assert.match(r.stdout, /PASS {2}https:\/\/blumodel\.studio\/ \(the sales site\) goes to http:\/\/127\.0\.0\.1:8904 by the rule for blumodel\.studio/);
+    assert.match(r.stdout, /PASS {2}https:\/\/www\.blumodel\.studio\/ .* by the rule for www\.blumodel\.studio/);
+    assert.match(r.stdout, /PASS {2}https:\/\/acme\.blumodel\.studio\/ \(a showroom\) goes to http:\/\/127\.0\.0\.1:8904 by the rule for \*\.blumodel\.studio/);
+    assert.match(r.stdout, /PASS {2}https:\/\/showroom\.acmekitchens\.example\/ .* goes to http:\/\/127\.0\.0\.1:8904 by the last rule/);
     assert.match(r.stderr, /creds\.json does not exist/);
   } finally {
     rm(home);
@@ -817,7 +998,7 @@ test('cloudflared accepts the Linux config too (offline ingress validate and rul
 // ── 5. the runbook matches the scripts ───────────────────────────────────
 
 test('every script command in HOSTING.md, OPERATIONS.md, LAUNCH.md and the README names a script that exists and only options it takes', () => {
-  const docs = ['docs/HOSTING.md', 'docs/OPERATIONS.md', 'docs/LAUNCH.md', 'README.md'];
+  const docs = ['docs/HOSTING.md', 'docs/OPERATIONS.md', 'docs/LAUNCH.md', 'docs/ONBOARDING_A_COMPANY.md', 'README.md'];
   const seen = new Set();
   for (const doc of docs) {
     const text = fs.readFileSync(path.join(ROOT, doc), 'utf8');
@@ -852,7 +1033,7 @@ test('HOSTING.md covers what the runbook must: OS choice, BIOS/power, install on
     /AC Recovery\*: \*\*Power On\*\*/,
     /Wake on LAN/,
     /sudo bash install-linux\.sh --dry-run/,
-    /install-windows\.ps1" -DryRun/,
+    /install-windows\.ps1"[\s\S]*-File "\$s" -DryRun/,
     /Unified Write Filter/,
     /\*\*new\*\* key/,
     /MOVING_DATA\.md/,

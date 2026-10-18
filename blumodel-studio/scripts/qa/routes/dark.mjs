@@ -28,7 +28,6 @@
 import crypto from 'node:crypto';
 import { hashPassword } from '../../../server/auth/passwords.mjs';
 import { kitchenDoc } from './core.mjs';
-import { kitchenPhoto } from './generate.mjs';
 
 const must = (r, what) => {
   if (r.status >= 300) throw new Error(`${what} failed (${r.status}): ${r.body?.error ?? String(r.text ?? '').slice(0, 200)}`);
@@ -61,7 +60,8 @@ const isPhone = (h) => !!h.viewport?.mobile;
 /** A fresh user (the route's own) on the Contractor plan, with its company saved. */
 async function freshContractor(api, company = 'Copper Kettle Kitchens (QA)') {
   const me = api.as('fresh');
-  const c = must(await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
+  // A pre-pivot checkout (new ones answer 410 since the showroom pivot), completed as it was then.
+  const c = { ref: api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'contractor' }) };
   must(await me.post(`/api/billing/demo/${c.ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
   if (company) must(await me.put('/api/pro/profile', { company, phone: '905-555-0148', serviceArea: 'Testville', defaultMarkupPct: 30 }), 'Saving the company');
   return me;
@@ -124,7 +124,7 @@ async function listedPro(api) {
       must(await a.post('/api/auth/login', { email: DARK_PRO.email, password: PRO_PASSWORD }), 'Signing in as the dark-mode contractor');
       const me = must(await a.get('/api/auth/me'), 'Reading the contractor').user;
       if (me.plan?.id !== 'contractor') {
-        const co = must(await a.post('/api/billing/checkout', { kind: 'subscription', plan: 'contractor' }), 'Contractor demo checkout');
+        const co = { ref: api.legacyCheckout(me.id, { kind: 'subscription', plan: 'contractor' }) };
         must(await a.post(`/api/billing/demo/${co.ref}/complete`, { outcome: 'success' }), 'Completing the Contractor demo checkout');
       }
       must(await a.put('/api/pro/profile', { company: DARK_PRO.company, phone: DARK_PRO.phone, website: DARK_PRO.website, serviceArea: DARK_PRO.serviceArea, defaultMarkupPct: 30 }), 'The company profile');
@@ -608,7 +608,6 @@ const PRO_TOUR = [
   { name: 'price-book', hash: '#/pro/price-book', text: 'Cost, markup and sell price' },
   { name: 'brands', hash: '#/pro/brands', text: 'What shows while you design' },
   { name: 'quotes', hash: '#/pro/quotes', text: 'Your kitchens, priced' },
-  { name: 'modelling', hash: '#/pro/modelling', text: 'Have BluModel Studio model your products' },
   { name: 'company', hash: '#/pro/company', text: 'What your clients see' },
   { name: 'brand', hash: '#/pro/brand', wait: '.brand-stats' },
   { name: 'brand-products', hash: '#/pro/brand/products', wait: '.brand-row' },
@@ -625,7 +624,7 @@ const ADMIN_TOUR = [
   { name: 'studio', hash: '#/admin/studio', wait: '.ord-queue' },
   { name: 'revenue', hash: '#/admin/revenue', wait: '.ord-kpis' },
   { name: 'billing', hash: '#/admin/billing', text: 'Cancelling at period end' },
-  { name: 'users', hash: '#/admin/users', text: 'Create reset link' },
+  { name: 'users', hash: '#/admin/users', text: 'Search by name or email' },
 ];
 
 const crashNoise = [/deliberate crash/i, /The above error occurred/i, /React will try to recreate/i, /Consider adding an error boundary/i];
@@ -660,19 +659,6 @@ export default [
   one({ name: 'dark-reset-expired', path: `#/signin?reset=${'A'.repeat(43)}`, as: 'anon', expectText: ['This link has expired'], check: darkCheck() }),
   ...both({ name: 'dark-not-found', path: '#/no-such-page', as: 'anon', check: darkCheck() }),
   ...both({ name: 'dark-error', path: '#/pricing?qa-crash=route', as: 'anon', ignoreConsole: crashNoise, check: darkCheck() }),
-  ...both({ name: 'dark-contractors', path: '#/contractors', as: 'anon', check: darkCheck() }),
-  ...both({
-    // The directory with a listed contractor (and the "Need a contractor?" routes below): the
-    // contractor is unlisted again at the end of each route.
-    name: 'dark-contractors-listed',
-    path: '#/contractors',
-    as: 'anon',
-    setup: async ({ api }) => {
-      await listedPro(api);
-      return {};
-    },
-    check: withPro(darkCheck((h) => h.waitFor('.fd-card'))),
-  }),
   ...both({ name: 'dark-brand-page', path: '#/b/blumodel-sample-co-demo', as: 'anon', fullPage: true, phoneFullPage: false, check: darkCheck(null, { screens: true }) }),
   ...both({
     name: 'dark-contractor-page',
@@ -700,7 +686,8 @@ export default [
   ...both({
     // Where to buy, with a sponsored store first (put back afterwards).
     name: 'dark-product-retail',
-    as: 'anon',
+    // The retail library is for BluModel staff only (src/catalog/retail.ts).
+    as: 'studio',
     fullPage: true,
     phoneFullPage: false,
     setup: async ({ api }) => {
@@ -766,14 +753,14 @@ export default [
   }),
   ...both({ name: 'dark-local', path: '#/local', as: 'anon', waitFor: ['.topbar', '.plan-view canvas'], check: darkCheck() }),
   one({
-    // A device draft can't export: the Unlock dialog asks for a free account first.
+    // A device draft can't export: downloads are free, but it is saved to an account first (a toast says so).
     name: 'dark-local-export',
     path: '#/local',
     as: 'anon',
     waitFor: ['.topbar', '.plan-view canvas'],
     check: darkCheck(async (h) => {
       await exportItem(h, 'Project file');
-      await h.waitFor('.modal.unlock[role="dialog"]');
+      await h.waitForText('Downloads are free. Sign in and save this kitchen');
       await h.sleep(400);
     }),
   }),
@@ -781,8 +768,8 @@ export default [
   ...both({
     name: 'dark-pay-demo-plan',
     as: 'fresh',
-    setup: async ({ me }) => {
-      const c = must(await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' }), 'Unlimited demo checkout');
+    setup: async ({ me, api }) => {
+      const c = { ref: api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'unlimited' }) };
       return { path: `#/pay/demo-plan/${c.ref}` };
     },
     check: darkCheck(),
@@ -817,9 +804,6 @@ export default [
   ...both({ name: 'dark-wizard-room', path: '#/new', as: 'customer', check: darkCheck(wizardStep(1)) }),
   ...both({ name: 'dark-wizard-layout', path: '#/new', as: 'customer', check: darkCheck(wizardStep(2)) }),
   ...both({ name: 'dark-wizard-brands', path: '#/new', as: 'customer', check: darkCheck(wizardStep(3)) }),
-  ...both({ name: 'dark-generate', path: '#/generate', as: 'customer', check: darkCheck() }),
-  ...both({ name: 'dark-generate-photos', path: '#/generate?qaPhotos=synth:3', as: 'customer', check: darkCheck((h) => h.waitFor('.gen-thumb img')) }),
-  ...both({ name: 'dark-generate-space', path: '#/generate?qaPhotos=synth:2&qaStep=space', as: 'customer', check: darkCheck((h) => h.waitFor('.gen-form')) }),
   ...both({ name: 'dark-account', path: '#/account', as: 'customer', fullPage: true, check: darkCheck(null, { focus: 'input' }) }),
   one({
     name: 'dark-account-delete',
@@ -963,9 +947,12 @@ export default [
       await h.click('.admin-users .home-search input');
       await h.type(h.data.email);
       await press(h, '.admin-users .home-search button', 'Search');
-      await h.waitUntil(() => document.querySelectorAll('.admin-table tbody tr').length === 1, 6000, 'the search finding one user');
-      await h.evaluate(() => document.querySelector('.admin-table tbody tr button').click());
-      await h.waitFor('.admin-reset-url');
+      // The Users tab lists matches; the reset link is on the account's own page (admin panel).
+      await h.waitUntil(() => document.querySelectorAll('.admin-users button.adm-link').length === 1, 6000, 'the search finding one user');
+      await h.evaluate(() => document.querySelector('.admin-users button.adm-link').click());
+      await h.waitFor('button[aria-label^="Create a reset link"]');
+      await h.evaluate(() => document.querySelector('button[aria-label^="Create a reset link"]').click());
+      await h.waitFor('.adm-reset-url');
       await h.sleep(300);
     }),
   }),
@@ -989,15 +976,16 @@ export default [
   ...both(editor('dark-editor-walls', ui({ viewMode: 'walls' }))),
   one(editor('dark-editor-room', ui({ leftTab: 'room', viewMode: 'split' }))),
   one(editor('dark-editor-checks', ui({ rightTab: 'checks' }))),
-  one(
-    // Store chips on the catalog cards: the RONA filter.
-    editor('dark-editor-catalog-stores', async (h) => {
+  one({
+    // Store chips on the catalog cards: the RONA filter (the retail library: BluModel staff only).
+    ...editor('dark-editor-catalog-stores', async (h) => {
       await h.waitFor('.left-panel #catalog-store');
       await pick(h, '.left-panel #catalog-store', 'rona');
       await h.waitFor('.left-panel .store-chip');
       await h.sleep(400);
     }),
-  ),
+    as: 'studio',
+  }),
   ...both({
     name: 'dark-editor-estimate',
     as: 'fresh',
@@ -1078,59 +1066,6 @@ export default [
     }),
   ),
   one({
-    name: 'dark-editor-finder',
-    as: 'customer',
-    setup: async ({ api, me }) => {
-      await listedPro(api);
-      return newKitchen(me, 'Dark Finder Kitchen');
-    },
-    waitFor: ['.topbar'],
-    check: withPro(
-      darkCheck(async (h) => {
-        await h.waitFor('.finder--summary .finder-link');
-        const r = await h.rectOf('.finder--summary .finder-link', { scroll: true });
-        await h.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: r.cx, y: r.cy });
-        await h.waitFor('.finder-pop');
-        await h.sleep(400);
-      }),
-    ),
-  }),
-  one({
-    // Ask for a quote from the popover: the lead form with this kitchen attached.
-    name: 'dark-editor-lead',
-    as: 'customer',
-    setup: async ({ api, me }) => {
-      await listedPro(api);
-      return newKitchen(me, 'Dark Lead Kitchen');
-    },
-    waitFor: ['.topbar'],
-    check: withPro(
-      darkCheck(async (h) => {
-        await h.waitFor('.finder--summary .finder-link');
-        await h.click('.finder--summary .finder-link');
-        await h.waitFor('.finder-pop .finder-btn--ask');
-        await h.click('.finder-pop .finder-btn--ask');
-        await h.waitForText('Attach one of my kitchens');
-        await h.sleep(800);
-      }),
-    ),
-  }),
-  one({
-    name: 'dark-editor-photo-ref',
-    as: 'customer',
-    setup: async ({ me }) => {
-      const file = must(await me.putRaw('/api/files?kind=reference&name=dark-kitchen.png', kitchenPhoto(), 'image/png'), 'Uploading a photo').file.id;
-      const k = await newKitchen(me, 'Dark Photo Kitchen');
-      must(await me.put(`/api/generate/photos/${k.projectId}`, { fileIds: [file] }), 'Attaching the photo');
-      return k;
-    },
-    waitFor: ['.topbar'],
-    check: darkCheck(async (h) => {
-      await h.waitFor('.photo-ref, .photo-ref-pill');
-      await h.sleep(1000);
-    }),
-  }),
-  one({
     // A contractor's own kitchen: Present, the estimate's Client / Contractor view, Quote in Export.
     name: 'dark-editor-contractor',
     as: 'fresh',
@@ -1174,38 +1109,6 @@ export default [
     await h.sleep(400);
     // With a piece selected the bar's Details button is "Item".
     await openSheet(h, 'Item');
-  }),
-  one({
-    name: 'dark-editor-phone-finder',
-    as: 'customer',
-    viewport: 'phone',
-    setup: async ({ api, me }) => {
-      await listedPro(api);
-      return newKitchen(me, 'Dark Finder Phone Kitchen');
-    },
-    waitFor: ['.mbar'],
-    check: withPro(
-      darkCheck(async (h) => {
-        await openSheet(h, 'Details');
-        await h.waitFor('.right-panel--sheet .finder-link');
-        await h.evaluate(() => document.querySelector('.right-panel--sheet .finder-link').scrollIntoView({ block: 'center' }));
-        await h.sleep(300);
-        await h.tap('.right-panel--sheet .finder-link');
-        await h.waitFor('.finder-pop');
-        await h.sleep(400);
-      }),
-    ),
-  }),
-  ...both({
-    name: 'dark-unlock-dialog',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'Dark Paywall Kitchen'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: darkCheck(async (h) => {
-      await exportItem(h, 'Shopping list');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.sleep(400);
-    }),
   }),
 
   // ── Light: the same screens as before dark mode (compare with a pre-dark build, docs/handoff/dark.md) ──

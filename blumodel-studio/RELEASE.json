@@ -1,0 +1,7 @@
+{
+  "source": "e21a7e5a9a6e7ca00facc2daa1d711e0bb615b6b",
+  "subject": "blumodel(protect): QA admin-signin-2fa waits for the sign-in form before typing",
+  "builtAt": "2026-10-18T20:27:07.602Z",
+  "node": "v24.14.1",
+  "branch": "blumodel-studio"
+}

@@ -116,11 +116,13 @@ async function knownPassword(api, me) {
   return u;
 }
 
-/** A demo Unlimited plan for the route's user, through the real demo checkout. */
-async function demoUnlimited(me) {
-  const c = await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
-  if (c.status >= 300 || !c.body?.ref) throw new Error(`starting the demo checkout failed (${c.status}): ${c.body?.error ?? c.text}`);
-  const d = await me.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' });
+/**
+ * A legacy demo Unlimited plan for the route's user: a pre-pivot checkout (new ones answer 410
+ * since the showroom pivot), completed through the app's demo payment as it was then.
+ */
+async function demoUnlimited(api, me) {
+  const ref = api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'unlimited' });
+  const d = await me.post(`/api/billing/demo/${ref}/complete`, { outcome: 'success' });
   if (d.status >= 300) throw new Error(`completing the demo checkout failed (${d.status}): ${d.body?.error ?? d.text}`);
 }
 
@@ -275,7 +277,6 @@ const PASS_GROUPS = [
       ['product', `#/p/${d.productId}`],
       ['brand', '#/b/blumodel-sample-co-demo'],
       ['share', `#/s/${d.token}`],
-      ['generate', '#/generate'],
       ['terms', '#/terms'],
       ['privacy', '#/privacy'],
       ['refunds', '#/refunds'],
@@ -288,12 +289,12 @@ const PASS_GROUPS = [
     as: 'customer',
     setup: async ({ api, me }) => {
       const k = await newKitchen(me, 'QA Phone Pass');
-      const c = await me.post('/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k.projectId });
-      if (c.status >= 300 || !c.body?.ref) throw new Error(`starting a demo checkout failed (${c.status})`);
+      // A legacy (pre-pivot) unlock checkout still opens its demo page; new ones answer 410.
+      const ref = api.legacyCheckout((await me.user()).id, { kind: 'kitchen_unlock', projectId: k.projectId });
       const orderId = await newOrder(api);
       const oc = await me.post(`/api/orders/${orderId}/checkout`, {});
       if (oc.status >= 300) throw new Error(`starting an order checkout failed (${oc.status})`);
-      return { path: '#/', projectId: k.projectId, ref: c.body.ref, orderId };
+      return { path: '#/', projectId: k.projectId, ref, orderId };
     },
     screens: (d) => [
       ['home', '#/'],
@@ -369,83 +370,56 @@ const phonePassRoutes = PASS_SIZES.flatMap((size) =>
 
 export default [
   // ── Payments: not open yet ('none') ──────────────────────────────────────
-  {
-    name: 'pay-none-pricing',
-    path: '#/pricing?qa-payments=none',
-    as: 'anon',
-    waitFor: ['.mk-plans'],
-    expectText: ['Payments open soon', 'These are the prices once payments open'],
+  // (Retired with SHOWROOM_PIVOT §3, nothing left to sell to homeowners: pay-none-pricing(-phone),
+  // pay-none-billing(-phone), pay-none-pro-signup(-phone), pay-demo-billing, pay-stripe-pricing,
+  // pay-stripe-billing, pay-stripe-pro-signup, pay-return-cancel-unlock, pay-return-cancel-pro.)
+  ...['none', 'demo', 'stripe'].map((mode) => ({
+    name: `pay-${mode}-billing-nothing-for-sale`,
+    path: `#/account/billing?qa-payments=${mode}`,
+    as: 'fresh',
+    waitFor: ['.billing-current'],
     check: async (h) => {
-      const soon = await buttonsLabelled(h, 'Opens soon');
-      if (soon.length !== 2 || soon.some((b) => !b.disabled)) throw new Error(`Unlimited and Contractor should show a disabled “Opens soon”: ${JSON.stringify(soon)}`);
-      if ((await buttonsLabelled(h, 'Go Unlimited')).length) throw new Error('“Go Unlimited” is still offered while payments are not open');
-      // Custom models come with the Contractor plan: no button or price of their own.
-      if ((await buttonsLabelled(h, 'Custom models')).length) throw new Error('the pricing page still has a custom-model button of its own');
-      if (!(await buttonsLabelled(h, 'Start free')).length) throw new Error('“Start free” must stay: designing is unaffected');
+      const t = await h.evaluate(() => document.body.innerText);
+      for (const bad of ['Choose Unlimited', 'Choose Contractor', 'Switch to', 'By paying you agree', 'Opens soon']) if (t.includes(bad)) throw new Error(`Billing still offers a plan: "${bad}"`);
+      if (await h.evaluate(() => !!document.querySelector('#plans-title, .billing-plans'))) throw new Error('Billing still lists plans');
+      await noCardFields(h);
+      await noSideScroll(h);
+    },
+  })),
+  {
+    name: 'pay-stripe-pricing-companies',
+    path: '#/pricing?qa-payments=stripe',
+    as: 'anon',
+    expectText: ['a month, plus a setup quoted for your company.'],
+    check: async (h) => {
+      // ("demo showroom" is the product's own wording here, so no DEMO-payment wording check.)
+      for (const bad of ['Go Unlimited', 'Become a BluModel Studio contractor', 'Start free']) if ((await buttonsLabelled(h, bad)).length) throw new Error(`the pricing page still offers "${bad}"`);
       await noSideScroll(h);
     },
   },
   {
-    name: 'pay-none-pricing-phone',
-    path: '#/pricing?qa-payments=none',
-    as: 'anon',
-    viewport: PHONE,
-    waitFor: ['.mk-plans'],
-    expectText: ['Payments open soon'],
-    check: noSideScroll,
-  },
-  {
-    name: 'pay-none-unlock',
+    // Payments off: downloading is free anyway (the showroom pivot), so nothing asks for money.
+    name: 'pay-none-export-free',
     as: 'fresh',
     setup: async ({ me }) => newKitchen(me, 'QA Soon Kitchen', '?qa-payments=none'),
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
-      // Designing and sharing are unaffected: the editor and its Share button are all there.
       if (!(await h.evaluate(() => [...document.querySelectorAll('.topbar button')].some((b) => /share/i.test(b.textContent))))) throw new Error('no Share button in the editor');
-      await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Exports for “QA Soon Kitchen”', 'Paid exports open soon', 'Here is what they will cost']);
-      const soon = await buttonsLabelled(h, 'Opens soon');
-      if (soon.length !== 2 || soon.some((b) => !b.disabled)) throw new Error(`both plan buttons should be disabled “Opens soon”: ${JSON.stringify(soon)}`);
-      if (await h.evaluate(() => /By paying you agree/.test(document.body.innerText))) throw new Error('“By paying you agree” shows while nothing can be paid');
+      await exportItem(h, 'Shopping list');
+      await h.waitForText('Shopping list saved as CSV.');
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock'))) throw new Error('a payment dialog opened for a free download');
       await noCardFields(h);
     },
   },
   {
-    name: 'pay-none-unlock-device',
+    name: 'pay-none-export-device',
     path: '#/local?qa-payments=none',
     as: 'anon',
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
       await exportItem(h, 'Shopping list');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Exports open soon', 'Paid exports open soon', 'Keep it in a free account', 'Back to my kitchen']);
-      await h.shot('dialog');
-      await clickLabelled(h, 'Back to my kitchen');
-      await h.waitUntil(() => !document.querySelector('.modal.unlock'), 5000, 'the dialog closing');
+      await h.waitForText('Downloads are free. Sign in and save this kitchen');
     },
-  },
-  {
-    name: 'pay-none-billing',
-    path: '#/account/billing?qa-payments=none',
-    as: 'fresh',
-    waitFor: ['.billing-current'],
-    expectText: ['Plans aren’t on sale yet', 'when payments open'],
-    check: async (h) => {
-      const soon = await buttonsLabelled(h, 'Opens soon');
-      if (soon.length !== 2 || soon.some((b) => !b.disabled)) throw new Error(`both plans should be disabled “Opens soon”: ${JSON.stringify(soon)}`);
-      if (await h.evaluate(() => /By paying you agree/.test(document.body.innerText))) throw new Error('“By paying you agree” shows while nothing can be paid');
-      await noSideScroll(h);
-    },
-  },
-  {
-    name: 'pay-none-billing-phone',
-    path: '#/account/billing?qa-payments=none',
-    as: 'fresh',
-    viewport: PHONE,
-    waitFor: ['.billing-current'],
-    expectText: ['Plans aren’t on sale yet'],
-    check: noSideScroll,
   },
   {
     // Custom models need no payment (they come with the Contractor plan), so requests stay open
@@ -473,130 +447,6 @@ export default [
     },
   },
   {
-    name: 'pay-none-pro-signup',
-    path: '#/pro?qa-payments=none',
-    as: 'fresh',
-    expectText: ['The Contractor plan opens soon', 'Sign-ups open with payments'],
-    check: async (h) => {
-      if ((await buttonsLabelled(h, 'Start the Contractor plan')).length) throw new Error('“Start the Contractor plan” is offered while payments are not open');
-      await noSideScroll(h);
-    },
-  },
-  {
-    name: 'pay-none-pro-signup-phone',
-    path: '#/pro?qa-payments=none',
-    as: 'fresh',
-    viewport: PHONE,
-    expectText: ['The Contractor plan opens soon'],
-    check: noSideScroll,
-  },
-
-  // ── Payments: the labelled demo ──────────────────────────────────────────
-  {
-    name: 'pay-demo-billing',
-    path: '#/account/billing?qa-payments=demo',
-    as: 'fresh',
-    waitFor: ['.billing-current', '.pay-note--demo'],
-    expectText: ['Demo payments on this server', 'By paying you agree to the Terms and the Refund policy'],
-    check: noCardFields,
-  },
-  {
-    name: 'pay-demo-unlock',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Demo Unlock', '?qa-payments=demo'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock .pay-note--demo');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'By paying you agree']);
-      await noCardFields(h);
-    },
-  },
-  {
-    // After paying, the export the user clicked finishes by itself (here through the DEMO checkout page).
-    name: 'pay-demo-unlock-resumes-export',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Resume Export', '?qa-payments=demo'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    timeoutMs: 30_000,
-    check: async (h) => {
-      await exportItem(h, 'Shopping list');
-      await h.waitForText('Unlock this kitchen - $5 CAD once');
-      await clickLabelled(h, 'Unlock this kitchen');
-      await h.waitFor('.demo-pay-actions .btn.primary');
-      await noCardFields(h);
-      await h.click('.demo-pay-actions .btn.primary');
-      await h.waitForText('Unlocked: exports for “QA Resume Export” are yours', 20_000);
-      // The server records the export the user clicked before paying, a moment after the toast.
-      let n = 0;
-      for (let i = 0; i < 40 && !n; i++) {
-        await h.sleep(250);
-        n = h.api.sql("SELECT COUNT(*) AS n FROM export_events WHERE project_id = ? AND kind = 'csv'", h.data.projectId)[0].n;
-      }
-      if (!n) throw new Error('the paid-for CSV export was not made after returning from checkout');
-    },
-  },
-
-  // ── Payments: real (Stripe) ──────────────────────────────────────────────
-  {
-    name: 'pay-stripe-pricing',
-    path: '#/pricing?qa-payments=stripe',
-    as: 'anon',
-    waitFor: ['.mk-plans'],
-    expectText: ['Go Unlimited', 'Become a BluModel Studio contractor', 'Make custom models'],
-    check: async (h) => {
-      await h.evaluate(() => document.querySelectorAll('.mk-faq details').forEach((d) => (d.open = true)));
-      await h.waitForText('Through Stripe’s hosted checkout');
-      await noDemoWording(h, 'the pricing page');
-      await h.shot('faq-open');
-    },
-  },
-  {
-    name: 'pay-stripe-billing',
-    path: '#/account/billing?qa-payments=stripe',
-    as: 'fresh',
-    waitFor: ['.billing-current'],
-    expectText: ['Choose Unlimited', 'Choose Contractor', 'By paying you agree to the Terms and the Refund policy'],
-    check: async (h) => {
-      await noDemoWording(h, 'Billing');
-      await noCardFields(h);
-      if (await h.evaluate(() => !!document.querySelector('.pay-note'))) throw new Error('a DEMO / opens-soon note shows with real payments');
-    },
-  },
-  {
-    name: 'pay-stripe-unlock',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Stripe Unlock', '?qa-payments=stripe'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, '3D render');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month', 'By paying you agree to the Terms and the Refund policy']);
-      // The catalog panel behind it lists the QA seed's "(Demo)" brands: check the dialog and the Export menu's words.
-      await noDemoWording(h, 'the Unlock dialog', '.modal.unlock');
-      await noCardFields(h);
-      const links = await h.evaluate(() => [...document.querySelectorAll('.modal.unlock .agree a')].map((a) => `${a.getAttribute('href')} ${a.target}`));
-      if (links.join('|') !== '#/terms _blank|#/refunds _blank') throw new Error(`the agreement links are ${JSON.stringify(links)}`);
-    },
-  },
-  {
-    name: 'pay-stripe-unlock-phone',
-    as: 'fresh',
-    viewport: PHONE,
-    setup: async ({ me }) => newKitchen(me, 'QA Stripe Phone', '?qa-payments=stripe'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await exportItem(h, 'Floor plan');
-      await h.waitForText(['Unlock this kitchen - $5 CAD once', 'By paying you agree']);
-      await noDemoWording(h, 'the Unlock dialog', '.modal.unlock');
-      const r = await h.evaluate(() => {
-        const m = document.querySelector('.modal.unlock').getBoundingClientRect();
-        return { left: m.left, right: m.right, w: innerWidth };
-      });
-      if (r.left < -1 || r.right > r.w + 1) throw new Error(`the Unlock dialog is wider than the screen (${Math.round(r.left)}–${Math.round(r.right)} in ${r.w}px)`);
-    },
-  },
-  {
     name: 'pay-stripe-orders-new',
     path: '#/orders/new?qa-payments=stripe',
     as: 'contractor',
@@ -608,24 +458,14 @@ export default [
     },
   },
   {
-    name: 'pay-stripe-pro-signup',
-    path: '#/pro?qa-payments=stripe',
-    as: 'fresh',
-    expectText: ['Start the Contractor plan', 'By paying you agree to the Terms and the Refund policy'],
-    check: async (h) => {
-      await noDemoWording(h, 'the Contractor pitch');
-      await noCardFields(h);
-    },
-  },
-  {
     name: 'pay-stripe-legal',
     path: '#/refunds?qa-payments=stripe&qa-legal=ready',
     as: 'anon',
-    expectText: ['Refund policy', 'Custom 3D models'],
+    expectText: ['Refund policy', 'The monthly plan'],
     check: async (h) => {
       await noDemoWording(h, 'the Refund policy');
       await h.goto('#/terms');
-      await h.waitForText('Terms of Service');
+      await h.waitForText('Service agreement');
       await noDemoWording(h, 'the Terms');
       await h.goto('#/privacy');
       await h.waitForText('Privacy policy');
@@ -664,17 +504,6 @@ export default [
     },
   },
   {
-    name: 'pay-return-cancel-unlock',
-    as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Cancelled Unlock', '?qa-payments=stripe'),
-    waitFor: ['.topbar', '.plan-view canvas'],
-    check: async (h) => {
-      await markCheckout(h, 'kitchen_unlock', `#/k/${h.data.projectId}`);
-      await h.reload();
-      await h.waitForText('Checkout cancelled. Nothing was charged, and exports for this kitchen are still locked.');
-    },
-  },
-  {
     name: 'pay-return-cancel-order',
     as: 'customer',
     setup: async ({ api }) => {
@@ -691,28 +520,15 @@ export default [
     },
   },
   {
-    name: 'pay-return-cancel-pro',
-    path: '#/pro?qa-payments=stripe',
-    as: 'fresh',
-    expectText: ['Start the Contractor plan'],
-    check: async (h) => {
-      await markCheckout(h, 'contractor', '#/pro');
-      await h.reload();
-      await h.waitForText('Checkout cancelled. Nothing was charged.');
-    },
-  },
-
-  // ── Legal pages ──────────────────────────────────────────────────────────
-  {
     name: 'legal-terms',
     path: '#/terms?qa-legal=ready',
     as: 'anon',
     waitFor: ['.legal-doc'],
-    expectText: ['Terms of Service', 'run by Sample Kitchen Co. (QA)', 'help@example.test', 'governed by the laws of Ontario, Canada', 'Cancelling takes effect at the end of the period'],
+    expectText: ['Service agreement', 'Sample Kitchen Co. (QA)', 'help@example.test', 'governed by the laws of Ontario, Canada', 'You can cancel the monthly plan at any time'],
     check: async (h) => {
       await hasLegalLinks(h, 'the Terms page');
       await noSideScroll(h);
-      if (!(await h.evaluate(() => /Terms of Service · BluModel Studio/.test(document.title)))) throw new Error(`the tab title is “${await h.evaluate(() => document.title)}”`);
+      if (!(await h.evaluate(() => /Service agreement · BluModel Studio/.test(document.title)))) throw new Error(`the tab title is “${await h.evaluate(() => document.title)}”`);
     },
   },
   {
@@ -737,7 +553,7 @@ export default [
     path: '#/refunds?qa-legal=unset',
     as: 'customer',
     waitFor: ['.legal-doc'],
-    expectText: ['Refund policy', 'Kitchen unlock', 'Unlimited and Contractor plans', 'Custom 3D models', 'the operator of this site'],
+    expectText: ['Refund policy', 'The monthly plan', 'Rendering credits', 'Purchases made before 17 October 2026', 'the operator of this site'],
     check: async (h) => {
       await h.evaluate(() => document.querySelector('.legal-toc button:last-child, .legal-toc li:last-child button')?.click());
       await h.sleep(600);
@@ -771,13 +587,12 @@ export default [
     timeoutMs: 30_000,
     check: async (h) => {
       const pages = [
-        ['#/', 'the landing page', 'See your new kitchen before anyone picks up a hammer'],
-        ['#/pricing', 'pricing', 'Design for free. Pay when'],
+        ['#/', 'the landing page', 'Your own virtual showroom, with your products, under your name.'],
+        ['#/pricing', 'pricing', 'a month, plus a setup quoted for your company.'],
         ['#/signin', 'sign in', 'Welcome back'],
         ['#/signup', 'sign up', 'By creating an account you agree to the Terms and the Privacy policy'],
         [`#/p/${h.data.productId}`, 'a product page', 'Sample Gas Range'],
         ['#/b/blumodel-sample-co-demo', 'a brand page', 'BluModel Sample Co.'],
-        ['#/generate', 'Start from a photo', 'photos'],
         ['#/no-such-page', 'the 404', 'We can’t find that page'],
         ['#/privacy', 'the Privacy policy', 'Privacy policy'],
       ];
@@ -794,7 +609,6 @@ export default [
     path: '#/',
     as: 'customer',
     waitFor: ['.home-main'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await hasLegalLinks(h, 'My kitchens');
       await h.goto('#/account/billing');
@@ -865,7 +679,7 @@ export default [
     name: 'account-delete-active-plan',
     as: 'fresh',
     setup: async ({ api, me }) => {
-      await demoUnlimited(me);
+      await demoUnlimited(api, me);
       await knownPassword(api, me);
       return { path: '#/account' };
     },
@@ -918,7 +732,7 @@ export default [
     name: 'not-found',
     path: '#/no-such-page',
     as: 'anon',
-    expectText: ['404', 'We can’t find that page', 'Go to the home page', 'Design a kitchen'],
+    expectText: ['404', 'We can’t find that page', 'Go to the home page', 'See a live demo showroom'],
     check: async (h) => {
       await hasLegalLinks(h, 'the 404');
       if (!(await h.evaluate(() => /Page not found/.test(document.title)))) throw new Error('the tab title does not say “Page not found”');
@@ -929,7 +743,7 @@ export default [
     path: '#/kitchen/missing/parts',
     as: 'customer',
     viewport: PHONE,
-    expectText: ['We can’t find that page', 'Go to my kitchens'],
+    expectText: ['We can’t find that page', 'Go to my account'],
     check: noSideScroll,
   },
   {
@@ -938,11 +752,11 @@ export default [
     name: 'path-to-hash',
     path: '#/welcome',
     as: 'anon',
-    expectText: ['See your new kitchen before anyone picks up a hammer'],
+    expectText: ['Your own virtual showroom, with your products, under your name.'],
     check: async (h) => {
       const where = () => h.evaluate(() => `${location.pathname}${location.search}${location.hash}`);
       await h.page.goto(`${h.base}/terms?qa=1`, 20_000);
-      await h.waitForText('Terms of Service');
+      await h.waitForText('Service agreement');
       if ((await where()) !== '/?qa=1#/terms') throw new Error(`/terms became ${await where()}, not /?qa=1#/terms`);
       await h.page.goto(`${h.base}/pricing/?qa=1`, 20_000);
       await h.waitFor('.mk-pricing-hero');
@@ -962,7 +776,7 @@ export default [
       await h.shot('crashed');
       // Only the screen is replaced: moving to another screen clears it.
       await h.goto('#/welcome');
-      await h.waitForText('See your new kitchen before anyone picks up a hammer');
+      await h.waitForText('Your own virtual showroom, with your products, under your name.');
     },
   },
   {
@@ -979,7 +793,6 @@ export default [
     path: '#/',
     as: 'customer',
     waitFor: ['.home-main'],
-    expectText: ['Start from a photo'],
     check: async (h) => {
       await h.evaluate(() => window.dispatchEvent(new Event('offline')));
       await h.waitForText(['Can’t reach BluModel Studio', 'Retry']);
@@ -1008,7 +821,7 @@ export default [
     name: 'pwa-head-fonts',
     path: '#/',
     as: 'anon',
-    expectText: ['See your new kitchen before anyone picks up a hammer'],
+    expectText: ['Your own virtual showroom, with your products, under your name.'],
     check: async (h) => {
       const r = await h.evaluate(async () => {
         const meta = (sel, attr = 'content') => document.querySelector(sel)?.getAttribute(attr) ?? null;

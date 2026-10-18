@@ -56,8 +56,19 @@ export const accountApi = {
 
   resetOptions: () => call<ResetOptions>('GET', '/api/auth/forgot'),
   forgot: (email: string) => call<{ ok: true }>('POST', '/api/auth/forgot', { email }),
-  checkReset: (token: string) => call<{ valid: boolean; email?: string }>('POST', '/api/auth/reset/check', { token }),
-  reset: (token: string, password: string) => call<{ user: User }>('POST', '/api/auth/reset', { token, password }),
+  checkReset: (token: string) => call<{ valid: boolean; email?: string; mfa?: boolean }>('POST', '/api/auth/reset/check', { token }),
+  reset: (token: string, password: string, code?: string) => call<{ user: User }>('POST', '/api/auth/reset', { token, password, ...(code ? { code } : {}) }),
+  // two-factor sign-in (server/auth/mfa.mjs)
+  mfaStatus: () => call<MfaStatus>('GET', '/api/account/mfa'),
+  mfaSetup: (password: string) => call<{ secret: string; key: string; otpauthUrl: string }>('POST', '/api/account/mfa/setup', { password }),
+  mfaEnable: (code: string) => call<MfaStatus & { recoveryCodes: string[] }>('POST', '/api/account/mfa/enable', { code }),
+  mfaDisable: (password: string, code: string) => call<MfaStatus>('POST', '/api/account/mfa/disable', { password, code }),
+  mfaRecovery: (password: string, code: string) => call<MfaStatus & { recoveryCodes: string[] }>('POST', '/api/account/mfa/recovery-codes', { password, code }),
+  reauth: (password: string, code?: string) => call<{ ok: true; until: number }>('POST', '/api/auth/reauth', { password, ...(code ? { code } : {}) }),
+  adminResetMfa: (userId: string) => call<{ ok: true }>('POST', `/api/admin/users/${encodeURIComponent(userId)}/mfa/reset`),
+  /** A team invite emailed to an address that already has an account on this showroom (accepted with its own password). */
+  checkJoin: (token: string) => call<{ valid: boolean; email?: string; role?: 'owner' | 'staff'; showroom?: string }>('POST', '/api/auth/join/check', { token }),
+  join: (token: string, password: string, code?: string) => call<{ user: User }>('POST', '/api/auth/join', { token, password, ...(code ? { code } : {}) }),
   adminResetLink: (userId: string) => call<{ url: string; expiresAt: number }>('POST', `/api/admin/users/${encodeURIComponent(userId)}/reset-link`),
 };
 
@@ -65,4 +76,13 @@ export const accountApi = {
 export function deviceName(d: Pick<DeviceWire, 'browser' | 'os'>): string {
   if (d.browser && d.os) return `${d.browser} on ${d.os}`;
   return d.browser || d.os || 'Unknown browser';
+}
+
+/** `GET /api/account/mfa`: two-factor sign-in on this account. `required`: an admin's. `verified`: this session passed it. */
+export interface MfaStatus {
+  enabled: boolean;
+  enabledAt: number | null;
+  recoveryLeft: number;
+  required: boolean;
+  verified: boolean;
 }

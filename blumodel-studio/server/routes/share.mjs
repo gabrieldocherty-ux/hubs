@@ -21,6 +21,7 @@
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
+import { READ_LIMITS } from '../http/readLimits.mjs';
 import { normalizeDoc } from '../lib/doc.mjs';
 import { randomId, PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { MAX_DOC } from './projects.mjs';
@@ -64,8 +65,8 @@ export default function routes(ctx) {
   });
 
   /** The caller's kitchen, or a 404 (another user's kitchen looks exactly like a missing one). */
-  const ownedProject = (userId, id) => {
-    const row = db.prepare('SELECT id, user_id FROM projects WHERE id = ? AND user_id = ?').get(id, userId);
+  const ownedProject = (userId, id, tenantId) => {
+    const row = db.prepare('SELECT id, user_id FROM projects WHERE id = ? AND user_id = ? AND tenant_id IS ?').get(id, userId, tenantId ?? null);
     if (!row) throw new HttpError(404, 'That kitchen does not exist.');
     return row;
   };
@@ -80,10 +81,11 @@ export default function routes(ctx) {
     return { link };
   };
 
-  const liveLinkOr404 = (token) => {
+  /** A link works only on the site its kitchen was saved on (another showroom's looks missing). */
+  const liveLinkOr404 = (token, tenantId) => {
     const r = resolveToken(token);
     if (!r.link) throw new HttpError(404, GONE[r.reason], { reason: r.reason });
-    const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(r.link.project_id);
+    const project = db.prepare('SELECT * FROM projects WHERE id = ? AND tenant_id IS ?').get(r.link.project_id, tenantId ?? null);
     if (!project) throw new HttpError(404, GONE.missing, { reason: 'missing' });
     return { link: r.link, project };
   };
@@ -103,9 +105,9 @@ export default function routes(ctx) {
    * Makes a link to the user's own kitchen.
    * Throws an HttpError for bad input, someone else's kitchen, or a kitchen at the link cap.
    */
-  const createLink = (userId, projectId, body) => {
+  const createLink = (userId, projectId, body, tenantId) => {
     const b = body && typeof body === 'object' ? body : {};
-    const project = ownedProject(userId, projectId);
+    const project = ownedProject(userId, projectId, tenantId);
     const label = str(b.label, 80);
     if (b.showPrices !== undefined && typeof b.showPrices !== 'boolean') throw new HttpError(400, 'Show prices is on or off.', { field: 'showPrices' });
     const showPrices = b.showPrices !== false;
@@ -131,7 +133,7 @@ export default function routes(ctx) {
     if (!token) return false;
     const { link } = resolveToken(token);
     if (!link) return false;
-    const project = db.prepare('SELECT user_id, doc FROM projects WHERE id = ?').get(link.project_id);
+    const project = db.prepare('SELECT user_id, doc FROM projects WHERE id = ? AND tenant_id IS ?').get(link.project_id, rc?.site?.tenantId ?? null);
     if (!project) return false;
     for (const id of serverProductIds(parseDoc(project.doc))) {
       const row = products.get(id);
@@ -169,14 +171,14 @@ export default function routes(ctx) {
       path: '/api/projects/:id/shares',
       rateLimit: { name: 'share-create', max: 60, windowMs: HOUR, by: 'user' },
       handler: (rc) => {
-        rc.send(201, { share: createLink(rc.user.id, rc.params.id, rc.body) });
+        rc.send(201, { share: createLink(rc.user.id, rc.params.id, rc.body, rc.site.tenantId) });
       },
     },
     {
       method: 'GET',
       path: '/api/projects/:id/shares',
       handler: (rc) => {
-        const project = ownedProject(rc.user.id, rc.params.id);
+        const project = ownedProject(rc.user.id, rc.params.id, rc.site.tenantId);
         const rows = db.prepare('SELECT * FROM share_links WHERE project_id = ? ORDER BY created_at DESC, id').all(project.id);
         return { shares: rows.map(linkWire), now: ctx.now() };
       },
@@ -185,7 +187,7 @@ export default function routes(ctx) {
       method: 'DELETE',
       path: '/api/projects/:id/shares/:shareId',
       handler: (rc) => {
-        const project = ownedProject(rc.user.id, rc.params.id);
+        const project = ownedProject(rc.user.id, rc.params.id, rc.site.tenantId);
         const row = db.prepare('SELECT * FROM share_links WHERE id = ? AND project_id = ?').get(rc.params.shareId, project.id);
         if (!row) throw new HttpError(404, 'That link does not exist.');
         if (row.revoked_at == null) db.prepare('UPDATE share_links SET revoked_at = ? WHERE id = ?').run(ctx.now(), row.id);
@@ -197,9 +199,9 @@ export default function routes(ctx) {
       path: '/api/share/:token',
       // 'optional' only so the owner's own visits aren't counted as views; nothing else depends on it.
       auth: 'optional',
-      rateLimit: { name: 'share-read', max: 600, windowMs: HOUR, by: 'ip' },
+      rateLimit: [{ name: 'share-read', max: 600, windowMs: HOUR, by: 'ip' }, ...READ_LIMITS.share],
       handler: (rc) => {
-        const { link, project } = liveLinkOr404(rc.params.token);
+        const { link, project } = liveLinkOr404(rc.params.token, rc.site.tenantId);
         const ownerId = project.user_id;
         const showPrices = !!link.show_prices;
         const owner = db.prepare('SELECT name FROM users WHERE id = ?').get(ownerId);
@@ -211,7 +213,7 @@ export default function routes(ctx) {
         const asOwner = { id: ownerId };
         let list = serverProductIds(raw)
           .map((id) => products.get(id))
-          .filter((row) => row && products.inCatalog(row, asOwner))
+          .filter((row) => row && products.inCatalog(row, asOwner, rc.site))
           .map((row) => products.toWire(row, { which: 'live', shareToken: link.token }))
           .filter(Boolean);
         list = pricing.applyForViewer(ownerId, list, { viewer: null });
@@ -242,7 +244,7 @@ export default function routes(ctx) {
       body: 'none',
       rateLimit: { name: 'share-duplicate', max: 30, windowMs: HOUR, by: 'user' },
       handler: (rc) => {
-        const { project } = liveLinkOr404(rc.params.token);
+        const { project } = liveLinkOr404(rc.params.token, rc.site.tenantId);
         const ownerId = project.user_id;
         // A contractor's clients stay with the contractor (PLANS_AND_CONTRACTORS §4.6).
         if (ownerId !== rc.user.id && contractors.brandingFor(ownerId)) throw new HttpError(403, 'This kitchen was prepared for you by a contractor. Ask them for changes.');
@@ -255,7 +257,7 @@ export default function routes(ctx) {
         if (json.length > MAX_DOC) throw new HttpError(413, 'That design is too large to copy.');
         const id = crypto.randomUUID();
         const t = ctx.now();
-        db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)').run(id, rc.user.id, name, '', json, t, t);
+        db.prepare('INSERT INTO projects (id, user_id, name, client, doc, revision, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)').run(id, rc.user.id, name, '', json, t, t, rc.site.tenantId);
         const row = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
         rc.send(201, {
           project: { id: row.id, name: row.name, client: row.client, revision: row.revision, createdAt: row.created_at, updatedAt: row.updated_at, doc: JSON.parse(row.doc) },

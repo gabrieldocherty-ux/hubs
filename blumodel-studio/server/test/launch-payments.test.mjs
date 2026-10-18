@@ -118,20 +118,20 @@ test('GET /api/config: payments, publicUrl and legal (and nothing secret)', asyn
   }
 });
 
-test('payments none: billing, checkout and order-payment endpoints answer 503 payments_unavailable; reading still works', async () => {
+test('payments none: billing and order-payment endpoints answer 503 payments_unavailable (a new checkout: 410 not_for_sale); reading still works', async () => {
   const s = await startTestServer({ env: { NODE_ENV: 'production' } });
   try {
     const u = await s.user();
     assert.equal((await u.get('/api/config')).body.payments, 'none');
     const k = (await u.post('/api/projects', { name: 'K', doc: sampleDoc() })).body.project;
+    // Nothing new is sold (docs/SHOWROOM_PIVOT.md §3), whether or not payments are on.
+    for (const body of [{ kind: 'kitchen_unlock', projectId: k.id }, { kind: 'subscription', plan: 'unlimited' }]) assert.equal((await u.post('/api/billing/checkout', body)).body.code, 'not_for_sale');
+    assert.equal((await u.post('/api/billing/change', { plan: 'contractor' })).body.code, 'not_for_sale');
     const writes = [
-      ['/api/billing/checkout', { kind: 'kitchen_unlock', projectId: k.id }],
-      ['/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' }],
       ['/api/billing/demo/bc_nothing/complete', { outcome: 'success' }],
       ['/api/billing/demo/simulate', { event: 'renewal' }],
       ['/api/billing/sync', { sessionId: 'cs_test_1' }],
       ['/api/billing/portal', {}],
-      ['/api/billing/change', { plan: 'contractor' }],
       ['/api/billing/cancel', {}],
       ['/api/billing/resume', {}],
       ['/api/orders/ord_nothing/checkout', {}],
@@ -150,7 +150,7 @@ test('payments none: billing, checkout and order-payment endpoints answer 503 pa
     assert.equal(hook.status, 503);
     assert.equal(hook.body.code, 'payments_unavailable');
     for (const p of ['/api/billing/plans', '/api/billing/entitlements', '/api/billing/me', '/api/orders/tiers', '/api/orders']) assert.equal((await u.get(p)).status, 200, p);
-    assert.equal((await u.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 403, 'exports still answer the paywall');
+    assert.equal((await u.post(`/api/projects/${k.id}/exports`, { kind: 'csv' })).status, 200, 'exports are free and need no payments');
   } finally {
     await s.close();
   }
@@ -169,10 +169,12 @@ test('a Stripe failure never echoes the key, a header, a body or Stripe’s mess
   };
   const s = await startTestServer({ env: { STRIPE_SECRET_KEY: TEST_KEY, STRIPE_WEBHOOK_SECRET: WHSEC, PUBLIC_URL: 'https://blumodel.example' }, fetch, log });
   try {
-    const u = await s.user();
+    // A showroom's monthly checkout is the Stripe call left that a person can start (an admin does).
+    const admin = await s.user({ role: 'admin' });
+    const tenantId = s.ctx.services.tenants.create({ name: 'Leak Test Co', slug: 'leak-test' }).id;
     for (const m of ['auth', 'network', 'weird', 'html']) {
       mode = m;
-      const r = await u.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
+      const r = await admin.post(`/api/admin/tenants/${tenantId}/monthly/checkout`, {});
       assert.equal(r.status, 502, `${m}: ${r.text}`);
       assert.ok(noSecret(r.text), `${m} response leaks: ${r.text}`);
       assert.ok(!/Expired API Key|socket hang up|oops/.test(r.text), r.text);
@@ -203,9 +205,11 @@ test('checkout return URLs come from PUBLIC_URL only, never from the request’s
   };
   const s = await startTestServer({ env: { STRIPE_SECRET_KEY: TEST_KEY, STRIPE_WEBHOOK_SECRET: WHSEC, PUBLIC_URL: 'https://blumodel.example' }, fetch });
   try {
-    const u = await s.user();
-    const r = await u.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited', returnTo: '#/account/billing' }, { headers: { Host: 'evil.example', 'X-Forwarded-Host': 'evil.example', Origin: 'https://evil.example' } });
-    assert.equal(r.status, 200, r.text);
+    // The one checkout still sold: a showroom's monthly plan, which an admin starts.
+    const admin = await s.user({ role: 'admin' });
+    const tenantId = s.ctx.services.tenants.create({ name: 'Return Co', slug: 'return-co' }).id;
+    const r = await admin.post(`/api/admin/tenants/${tenantId}/monthly/checkout`, {}, { headers: { Host: 'evil.example', 'X-Forwarded-Host': 'evil.example', Origin: 'https://evil.example' } });
+    assert.equal(r.status, 201, r.text);
     for (const k of ['success_url', 'cancel_url']) assert.ok(calls[0].get(k).startsWith('https://blumodel.example/'), calls[0].get(k));
   } finally {
     await s.close();

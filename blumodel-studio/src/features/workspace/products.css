@@ -1,0 +1,502 @@
+/* The workspace's Products tab: the catalog, the product form and Request more products. */
+
+.ws-back {
+  color: var(--ink-3);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.ws-back:hover {
+  color: var(--ink);
+}
+
+.ws-markup label {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.ws-markup-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-markup-row input {
+  width: 80px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-markup > span {
+  font-size: 12px;
+}
+
+.ws-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ws-search {
+  flex: 0 1 280px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ws-line {
+  margin-bottom: 22px;
+}
+
+.ws-line h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.ws-line h2 span {
+  color: var(--ink-3);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ws-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.ws-product {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.ws-product.is-hidden {
+  opacity: 0.72;
+}
+
+.ws-product-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--art-bg);
+}
+
+.ws-product-art > img,
+.ws-product-art > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ws-product-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px 8px;
+  min-width: 0;
+}
+
+.ws-product-name {
+  color: var(--ink);
+  font-weight: 650;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.ws-product-body .muted {
+  font-size: 12.5px;
+}
+
+.ws-product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ws-product-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding: 8px 14px 14px;
+}
+
+.ws-product-actions .btn {
+  flex: 1;
+}
+
+.ws-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.ws-form-preview {
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+
+.ws-preview-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  background: var(--art-bg);
+  overflow: hidden;
+}
+
+.ws-preview-art > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ws-widths {
+  align-items: center;
+}
+
+.ws-width-input {
+  width: 74px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ws-inline {
+  max-width: 260px;
+}
+
+.ws-finishes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-finish {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 120px 40px;
+  gap: 8px;
+  align-items: center;
+}
+
+.ws-finish input,
+.ws-finish select {
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ws-finish input[type='color'] {
+  padding: 3px;
+}
+
+.ws-add-finish {
+  align-self: flex-start;
+}
+
+.ws-width-prices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-width-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 200px);
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-width-row input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+.ws-example {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink-2);
+}
+
+.ws-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ws-image {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.ws-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ws-image .icon-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: var(--card);
+}
+
+.ws-image-add {
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.ws-field-errors {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--bad-ink);
+}
+
+/* ── Request more products ─────────────────────────────────────────────── */
+
+.ws-request-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-request-list a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.ws-request-list a:hover {
+  border-color: var(--line-2);
+}
+
+.ws-request-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ws-request-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ws-request-quote {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-item {
+  position: relative;
+}
+
+.ws-item-remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.ws-upc-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ws-upc-row input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 9px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-add-item {
+  margin-bottom: 16px;
+}
+
+.ws-quote.is-open {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.ws-quote-note {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--panel);
+  white-space: pre-wrap;
+}
+
+.ws-request-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.ws-request-items li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ws-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ws-timeline li {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 14px;
+}
+
+.ws-timeline li span {
+  overflow-wrap: anywhere;
+}
+
+.ws-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 1000px) {
+  .ws-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ws-form-preview {
+    position: static;
+    order: -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .ws-preview-art {
+    width: 120px;
+  }
+}
+
+@media (max-width: 760px) {
+  .ws-finish {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+  }
+
+  .ws-finish select {
+    grid-column: 2;
+  }
+
+  .ws-timeline li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .ws-item-remove {
+    position: static;
+    align-self: flex-end;
+  }
+
+  .ws-search {
+    flex: 1 1 100%;
+  }
+}
+
+@media (pointer: coarse) {
+  .ws-search,
+  .ws-markup-row input,
+  .ws-width-input,
+  .ws-width-row input,
+  .ws-finish input,
+  .ws-finish select,
+  .ws-upc-row input,
+  .ws-request-list a {
+    min-height: 44px;
+  }
+}

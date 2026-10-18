@@ -39,7 +39,11 @@ export function finishMaterial(f: Finish): THREE.Material {
         return m;
       }
       case 'metal': {
-        const dark = luminance(f.hex) < 0.1;
+        const lum = luminance(f.hex);
+        const dark = lum < 0.1;
+        // Light metals are brushed stainless: part diffuse, so a fridge or range front reads as a
+        // light satin steel under the room's lights rather than a mirror of the grey surroundings.
+        if (lum > 0.35) return new THREE.MeshStandardMaterial({ color: f.hex, metalness: 0.62, roughness: 0.34, envMapIntensity: 1.25 });
         return new THREE.MeshStandardMaterial({ color: f.hex, metalness: 0.9, roughness: dark ? 0.38 : 0.28, envMapIntensity: 1.1 });
       }
       case 'glass':

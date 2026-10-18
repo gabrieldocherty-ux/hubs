@@ -57,10 +57,53 @@ export function sampleDoc(over = {}) {
   };
 }
 
-/** An HTTP client with a cookie jar. Non-GET requests carry `X-BluModel: 1` and JSON by default. */
+/**
+ * One request over node:http with an explicit Host header (fetch can't set Host, and Node doesn't
+ * resolve *.localhost), shaped like a fetch Response for Agent.request.
+ */
+function hostRequest(url, { method, headers, body, host }) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const buf = body === undefined ? undefined : Buffer.isBuffer(body) ? body : Buffer.from(String(body));
+    let answered = false;
+    const req = http.request(
+      { host: u.hostname, port: u.port, path: u.pathname + u.search, method, headers: { ...headers, Host: host, ...(buf ? { 'Content-Length': String(buf.length) } : {}) } },
+      (res) => {
+        answered = true;
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const h = new Headers();
+          for (const [k, v] of Object.entries(res.headers)) {
+            if (Array.isArray(v)) for (const x of v) h.append(k, x);
+            else if (v !== undefined) h.set(k, String(v));
+          }
+          const buf = Buffer.concat(chunks);
+          resolve({ status: res.statusCode, headers: h, arrayBuffer: async () => buf });
+        });
+        res.on('error', reject);
+      },
+    );
+    // The server may answer (and close) before reading a body it refuses: that's an answer, not an error.
+    req.on('error', (err) => {
+      if (!answered) reject(err);
+    });
+    if (buf) req.write(buf);
+    req.end();
+  });
+}
+
+/**
+ * An HTTP client with a cookie jar. Non-GET requests carry `X-BluModel: 1` and JSON by default.
+ * With `host` ('acme.localhost'), every request sends that Host header: the server then answers as
+ * that site (a showroom, or the sales site). Cookies are kept per Agent, like one browser profile
+ * on one host (the session cookie is host-only).
+ */
 export class Agent {
-  constructor(base) {
+  constructor(base, { host } = {}) {
     this.base = base;
+    /** The Host header to send, or null for the test server's own 127.0.0.1:<port>. */
+    this.host = host ?? null;
     /** @type {Map<string, string>} */
     this.cookies = new Map();
     /** Set by t.user(): `{ id, email, name, role, brands, password }`. */
@@ -89,6 +132,7 @@ export class Agent {
    * @param {{ body?: unknown, raw?: Buffer | string, contentType?: string, headers?: Record<string, string>, csrf?: boolean }} [o]
    */
   async request(method, p, { body, raw, contentType, headers = {}, csrf = true } = {}) {
+    this.beforeRequest?.();
     const h = { ...headers };
     const write = method !== 'GET' && method !== 'HEAD';
     if (write && csrf) h['X-BluModel'] = '1';
@@ -107,7 +151,9 @@ export class Agent {
       h['Content-Type'] = contentType ?? 'application/json';
     }
     if (this.cookies.size) h.Cookie = [...this.cookies].map(([k, v]) => `${k}=${v}`).join('; ');
-    const res = await fetch(this.base + p, { method, headers: h, body: payload, redirect: 'manual' });
+    const res = this.host
+      ? await hostRequest(this.base + p, { method, headers: h, body: payload, host: this.host })
+      : await fetch(this.base + p, { method, headers: h, body: payload, redirect: 'manual' });
     this.storeCookies(res.headers.getSetCookie?.() ?? []);
     const buffer = method === 'HEAD' ? Buffer.alloc(0) : Buffer.from(await res.arrayBuffer());
     const text = buffer.toString('utf8');
@@ -147,6 +193,50 @@ export class Agent {
 }
 
 let seq = 0;
+
+/** Every running test server by its URL, so legacyCheckout can find an Agent's database. */
+const SERVERS = new Map();
+
+/**
+ * A pending demo checkout for a legacy plan or kitchen unlock, as POST /api/billing/checkout made
+ * one before the showroom pivot (the route now answers 410 not_for_sale). Tests of what still
+ * works for existing customers (completing, renewing, cancelling, receipts, the Contractor
+ * program) start from one. Returns the old route's answer: { status: 200, body: { url, ref, provider } }.
+ * @param {Agent} agent  a signed-in Agent from t.user()
+ * @param {{ kind: 'kitchen_unlock' | 'subscription', plan?: string, projectId?: string, returnTo?: string, provider?: 'demo' | 'stripe' }} body
+ *   `provider` defaults to the server's (a Stripe-mode server makes a checkout Stripe will complete).
+ */
+export async function legacyCheckout(agent, body) {
+  const t = SERVERS.get(agent.base);
+  if (!t) throw new Error('legacyCheckout: that Agent is not on a running test server');
+  const { randomId: rid } = await import('../lib/ids.mjs');
+  const { planById } = await import('../lib/plans.mjs');
+  const userId = agent.user?.id;
+  let projectId = null;
+  let projectName = '';
+  let plan = null;
+  let amount;
+  if (body.kind === 'kitchen_unlock') {
+    const p = t.db.prepare('SELECT id, name FROM projects WHERE id = ? AND user_id = ?').get(String(body.projectId ?? ''), userId);
+    if (!p) return { status: 404, body: { error: 'That kitchen does not exist.' } };
+    projectId = p.id;
+    projectName = p.name;
+    amount = planById('kitchen_unlock').priceCents;
+  } else {
+    plan = body.plan;
+    amount = planById(plan).priceCents;
+  }
+  const ref = rid('bc_');
+  const provider = body.provider ?? (t.config.paymentsProvider === 'stripe' ? 'stripe' : 'demo');
+  const returnTo = body.returnTo ?? (projectId ? `#/k/${projectId}` : plan === 'contractor' ? '#/pro' : '#/account/billing');
+  t.db
+    .prepare(
+      `INSERT INTO billing_checkouts (ref, user_id, kind, project_id, project_name, plan, amount_cents, currency, status, provider, return_to, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'cad', 'pending', ?, ?, ?)`,
+    )
+    .run(ref, userId, body.kind, projectId, projectName, plan, amount, provider, returnTo, Date.now());
+  return { status: 200, body: { url: provider === 'demo' ? `#/pay/demo-plan/${ref}` : `https://checkout.stripe.com/c/pay/${ref}`, ref, provider }, text: '' };
+}
 
 /**
  * Starts the app on 127.0.0.1:0 with a fresh in-memory database.
@@ -189,13 +279,57 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
     server,
     services: ctx.services,
     tmp,
-    agent: () => new Agent(url),
+    /** `t.agent()`: a client on the sales site; `t.agent({ host: t.hostFor('acme') })`: on that showroom. */
+    agent: (o) => new Agent(url, o),
+
+    /** The Host a showroom answers on in tests: '<slug>.localhost:<port>' (BASE_DOMAIN localhost). */
+    hostFor(slug) {
+      return `${slug}.${config.BASE_DOMAIN}:${port}`;
+    },
+
+    /**
+     * Makes a tenant (services.tenants.create) that is live unless `status` says otherwise: a
+     * current admin-recorded license and a complimentary monthly plan, so it is fully usable.
+     * @returns {{ id: string, slug: string, name: string, host: string, tenant: any }}
+     */
+    tenant({ name = `Test Showroom ${++seq}`, slug, status = 'live', settings, branding, contact } = {}) {
+      const ts = ctx.services.tenants;
+      const tn = ts.create({ name, slug, settings, branding, contact });
+      if (status === 'live') {
+        // What an admin does for a signed deal: a license from today, and (here) a complimentary
+        // monthly plan, so no payment provider is involved.
+        const sb = ctx.services.showroomBilling;
+        sb.recordLicense(tn.id, { paidHow: 'comp', amountCents: 0, startsOn: new Date(now()).toISOString().slice(0, 10) });
+        sb.setComplimentary(tn.id, true, { note: 'test harness' });
+        ts.setStatus(tn.id, 'live');
+      } else if (status === 'lapsed') ts.setStatus(tn.id, 'live'); // launched with nothing paid: lapses at once
+      else if (status !== 'setup') ts.setStatus(tn.id, status);
+      const fresh = ts.get(tn.id);
+      return { id: fresh.id, slug: fresh.slug, name: fresh.name, host: `${fresh.slug}.${config.BASE_DOMAIN}:${port}`, tenant: fresh };
+    },
+
+    /**
+     * Signs a user up on a showroom (through the API on its host) and, with `role`, adds them to its
+     * team. Returns an Agent bound to that host.
+     * @param {{ id: string, host: string }} tn  from t.tenant()
+     */
+    async showroomUser(tn, { role = null, name, email, password } = {}) {
+      const n = ++seq;
+      const a = new Agent(url, { host: tn.host });
+      const creds = { name: name ?? `Showroom User ${n}`, email: email ?? `visitor${n}-${randomId('', 6)}@test.blumodel`, password: password ?? `correct horse ${n}` };
+      const r = await a.post('/api/auth/signup', creds);
+      if (r.status !== 201) throw new Error(`t.showroomUser: signup failed (${r.status}): ${r.text}`);
+      ctx.internal.limiter.reset('route:signup:ip:127.0.0.1');
+      if (role) ctx.services.tenants.addMember(tn.id, r.body.user.id, role);
+      a.user = { ...r.body.user, password: creds.password, tenantId: tn.id };
+      return a;
+    },
 
     /**
      * Signs a new user up through the API, then sets the role in the DB.
      * @returns {Promise<Agent>} with `.user = { id, email, name, role, brands, password }`
      */
-    async user({ role = 'customer', name, email, password } = {}) {
+    async user({ role = 'customer', name, email, password, mfa = true } = {}) {
       const n = ++seq;
       const a = new Agent(url);
       const creds = { name: name ?? `Test User ${n}`, email: email ?? `user${n}-${randomId('', 6)}@test.blumodel`, password: password ?? `correct horse ${n}` };
@@ -205,6 +339,22 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
       ctx.internal.limiter.reset('route:signup:ip:127.0.0.1');
       if (role !== 'customer') db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, r.body.user.id);
       a.user = { ...r.body.user, role, password: creds.password };
+      // An admin must have two-factor sign-in on, and its session must have passed it (server/auth/mfa.mjs):
+      // the harness enrols one with a known secret (a.user.totpSecret) and marks the session, as a
+      // real sign-in with the code would. Pass mfa: false to get an admin who hasn't enrolled yet.
+      if (role === 'admin' && mfa) t.enrolMfa(a);
+      // Tests move the clock (t.setNow) for reasons of their own: an admin Agent's session counts as
+      // just signed in (and just re-authenticated) before each request, so the 12-hour admin session
+      // and the 10-minute re-authentication don't get in their way. Tests OF those set
+      // a.keepFresh = false.
+      if (role === 'admin') {
+        a.keepFresh = true;
+        a.beforeRequest = () => {
+          if (!a.keepFresh) return;
+          const t0 = now();
+          db.prepare('UPDATE sessions SET created_at = ?, auth_at = ?, mfa_at = CASE WHEN mfa_at IS NULL THEN NULL ELSE ? END WHERE user_id = ? AND tenant_id IS NULL').run(t0, t0, t0, a.user.id);
+        };
+      }
       return a;
     },
 
@@ -243,12 +393,39 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
       return files.saveBuffer(buf, { kind, visibility, ownerUserId, brandId, originalName });
     },
 
+    /**
+     * Turns two-factor sign-in on for an Agent's account with a fixed test secret and marks its
+     * current sessions as having passed it just now. Returns the secret (also a.user.totpSecret).
+     */
+    enrolMfa(a, secret = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP') {
+      const t0 = now();
+      db.prepare('INSERT INTO user_mfa (user_id, secret, enabled_at, last_step, created_at) VALUES (?, ?, ?, -1, ?) ON CONFLICT(user_id) DO UPDATE SET secret = excluded.secret, enabled_at = excluded.enabled_at').run(a.user.id, secret, t0, t0);
+      db.prepare('UPDATE sessions SET mfa_at = ?, auth_at = ? WHERE user_id = ?').run(t0, t0, a.user.id);
+      a.user.totpSecret = secret;
+      return secret;
+    },
+
+    /**
+     * Signs an Agent in again with its password, and with a code from its test secret when the
+     * account has two-factor sign-in on (a fresh step each time, as a real app would give).
+     * Returns the final answer ({ status, body }).
+     */
+    async signIn(a) {
+      const r = await a.post('/api/auth/login', { email: a.user.email, password: a.user.password });
+      if (r.body?.mfa !== 'required') return r;
+      const { hotp, stepAt } = await import('../auth/totp.mjs');
+      const last = db.prepare('SELECT last_step FROM user_mfa WHERE user_id = ?').get(a.user.id)?.last_step ?? -1;
+      const step = Math.max(stepAt(now()) - 1, last + 1);
+      return a.post('/api/auth/login/mfa', { ticket: r.body.ticket, code: hotp(a.user.totpSecret, step) });
+    },
+
     /** Freezes the server clock at `ms` (null to resume real time). */
     setNow(ms) {
       nowOverride = ms;
     },
 
     async close() {
+      SERVERS.delete(url);
       server.closeAllConnections?.();
       await new Promise((resolve) => server.close(() => resolve()));
       try {
@@ -259,5 +436,6 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
       fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     },
   };
+  SERVERS.set(url, t);
   return t;
 }

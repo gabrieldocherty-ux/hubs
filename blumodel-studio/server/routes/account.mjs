@@ -25,6 +25,7 @@ import { createPrefsStore, readPrefsPatch } from '../account/prefs.mjs';
 import { normalizePhone } from '../account/phone.mjs';
 import { EMAIL_RE, makeUserWire } from '../auth/userWire.mjs';
 import { createMailer } from '../email/index.mjs';
+import { addressTaken } from '../tenancy/accounts.mjs';
 import { emailChangedEmail } from '../email/messages.mjs';
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -83,6 +84,11 @@ export default function routes(ctx) {
       handler: async (rc) => {
         if (!(await checkPassword(rc.user.id, rc.body.password))) {
           throw new HttpError(400, 'Your password is not right.', { code: 'wrong_password' });
+        }
+        // A sales-site account on a showroom's team (a contractor whose company became a showroom)
+        // is the whole blumodel.studio account: it is deleted there, never from a showroom.
+        if (rc.site.tenantId && db.prepare('SELECT tenant_id FROM users WHERE id = ?').get(rc.user.id)?.tenant_id == null) {
+          throw new HttpError(409, 'This account is your BluModel Studio account. Delete it on blumodel.studio, or ask an owner to remove you from this showroom’s team.', { code: 'sales_account' });
         }
         if (account.activePaidPlan(rc.user.id)) {
           throw new HttpError(409, 'Cancel your plan first (Account > Billing). You can delete your account once it is set to end.', { code: 'active_subscription' });
@@ -156,7 +162,8 @@ export default function routes(ctx) {
         const old = db.prepare('SELECT email, name FROM users WHERE id = ?').get(rc.user.id);
         if (email === old.email) throw new HttpError(400, 'That is already your email address.', { field: 'email' });
         const taken = () => new HttpError(409, 'An account with that email already exists.', { field: 'email' });
-        if (db.prepare('SELECT 1 FROM users WHERE email = ? AND id <> ?').get(email, rc.user.id)) throw taken();
+        // An address is unique per site (tenancy-002): another showroom's account with it is no clash.
+        if (addressTaken(db, email, db.prepare('SELECT tenant_id FROM users WHERE id = ?').get(rc.user.id)?.tenant_id ?? null, rc.user.id)) throw taken();
         // ADMIN_EMAILS plays no part here: it grants nothing and reserves nothing (signing up with a
         // listed address never could be stopped either). Admins come only from
         // server/scripts/make-admin.mjs, run on the server against an account that already exists.

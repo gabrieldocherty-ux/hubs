@@ -10,9 +10,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SERVER_DIR } from '../config.mjs';
 import { listDaily } from '../ops/backup.mjs';
+import { offsiteStatus } from '../ops/offsite.mjs';
 import { emailSettings } from '../email/index.mjs';
 import { redact } from './redact.mjs';
 import { recentWebhookFailures } from './webhookFailures.mjs';
+import { serverHome, updateStatus } from './updates.mjs';
 
 const TAIL_BYTES = 256 * 1024;
 const LINE_RE = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z) (ERROR|WARN) {0,2}(.*)$/;
@@ -77,9 +79,9 @@ function disk(dir) {
 
 /**
  * @param {{ db: any, config: any, now: () => number, startedAt: number, health: any,
- *   logFile?: string | null, appDir?: string }} deps
+ *   logFile?: string | null, appDir?: string, home?: string | null, sitesSwitch?: any }} deps
  */
-export function systemStatus({ db, config, now, startedAt, health, logFile = process.env.BLUMODEL_LOG_FILE || null, appDir }) {
+export function systemStatus({ db, config, now, startedAt, health, logFile = process.env.BLUMODEL_LOG_FILE || null, appDir, home = serverHome(), sitesSwitch = null }) {
   const t = now();
   const memory = config.DB_PATH === ':memory:';
   const dbFile = memory ? null : path.resolve(config.DB_PATH);
@@ -125,6 +127,10 @@ export function systemStatus({ db, config, now, startedAt, health, logFile = pro
       keep: config.BACKUP_KEEP,
       lastDay: newest?.day ?? null,
       lastAt: newestAt,
+      // Encrypted off-site copies (server/ops/offsite.mjs; docs/OPERATIONS.md, "Off-site backups"):
+      // { configured, dir, keep, passphraseSet, problem, lastSuccessAt, lastAttemptAt, lastFile,
+      //   lastBytes, copies, oldestAt, verifiedAt, lastError, stale }. Never the passphrase.
+      offsite: offsiteStatus(config, { now: () => t }),
     },
     disk: dbFile ? disk(path.dirname(dbFile)) : null,
     payments: {
@@ -153,5 +159,7 @@ export function systemStatus({ db, config, now, startedAt, health, logFile = pro
     },
     llm: { configured: !!config.llmEnabled },
     log: recentLogProblems(logFile),
+    updates: updateStatus({ home }),
+    sites: sitesSwitch ? sitesSwitch.state() : { on: true, since: null, by: null, via: null },
   };
 }

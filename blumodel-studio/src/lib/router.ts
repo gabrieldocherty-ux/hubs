@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
  * Hash routing with query strings inside the hash (`#/p/range-30?finish=black-steel`).
  * `location.search` is only read through `pageQuery()` (Stripe's `?session_id=` return).
  */
-export type AdminTab = 'overview' | 'moderation' | 'brands' | 'retailers' | 'studio' | 'revenue' | 'billing' | 'users' | 'contractors' | 'system' | 'audit';
-export const ADMIN_TABS: AdminTab[] = ['overview', 'users', 'contractors', 'moderation', 'brands', 'retailers', 'studio', 'revenue', 'billing', 'system', 'audit'];
+export type AdminTab = 'overview' | 'companies' | 'sales-leads' | 'moderation' | 'brands' | 'retailers' | 'studio' | 'revenue' | 'billing' | 'users' | 'contractors' | 'system' | 'audit';
+export const ADMIN_TABS: AdminTab[] = ['overview', 'companies', 'sales-leads', 'users', 'contractors', 'moderation', 'brands', 'retailers', 'studio', 'revenue', 'billing', 'system', 'audit'];
 
 export type Route =
   | { name: 'signin' }
@@ -16,11 +16,10 @@ export type Route =
   | { name: 'kitchen'; id: string; add?: string } // #/k/:uuid?add=
   | { name: 'welcome' }
   | { name: 'pricing' } // #/welcome, #/pricing
-  | { name: 'generate'; q?: string; from?: string } // #/generate?q=&from=
+  | { name: 'book' } // #/book (the sales site's Book a call)
   | { name: 'product'; id: string; finish?: string } // #/p/:id?finish=
   | { name: 'brandPage'; slug: string } // #/b/:slug
   | { name: 'brand'; rest: string } // #/brand, #/brand/<rest…>
-  | { name: 'contractors'; near?: string; kitchen?: string } // #/contractors?near=&kitchen= (the contractor directory)
   | { name: 'orders'; rest: string } // #/orders, #/orders/<rest…>
   | { name: 'payDemo'; orderId: string } // #/pay/demo/:orderId
   | { name: 'share'; token: string } // #/s/:token
@@ -28,8 +27,11 @@ export type Route =
   | { name: 'billing' } // #/account/billing
   | { name: 'account' } // #/account (settings: name, password, download or delete my data)
   | { name: 'pro'; rest: string } // #/pro, #/pro/<rest…> (the Contractor workspace)
+  | { name: 'studio'; rest: string } // #/studio, #/studio/<tab>/<rest…> (the company workspace on a showroom)
   | { name: 'payDemoPlan'; ref: string } // #/pay/demo-plan/:ref
+  | { name: 'payShowroom'; ref: string } // #/pay/showroom/:ref (a company's monthly plan link, sales site)
   | { name: 'legal'; doc: LegalDocId } // #/terms, #/privacy, #/refunds
+  | { name: 'showroomImages' } // #/showroom-images?ticket= (a showroom's picture generator; showrooms only)
   | { name: 'notFound' }; // anything else
 
 export type LegalDocId = 'terms' | 'privacy' | 'refunds';
@@ -55,8 +57,6 @@ export function splitHash(hash: string): { path: string; query: URLSearchParams 
   const path = (q < 0 ? h : h.slice(0, q)).replace(/\/+$/, '');
   return { path, query: new URLSearchParams(q < 0 ? '' : h.slice(q + 1)) };
 }
-
-const opt = (v: string | null) => (v ? v : undefined);
 
 /**
  * The server answers any extensionless path with the app (server/http/static.mjs), but every route
@@ -92,18 +92,18 @@ export function parseRoute(hash: string): Route {
     case 'local':
     case 'welcome':
     case 'pricing':
+    case 'book':
       return seg.length === 1 ? { name: a } : { name: 'notFound' };
     case 'terms':
     case 'privacy':
     case 'refunds':
       if (seg.length === 1) return { name: 'legal', doc: a };
       break;
-    case 'generate': {
-      if (seg.length !== 1) break;
-      const q = opt(query.get('q'));
-      const from = opt(query.get('from'));
-      return { name: 'generate', ...(q ? { q } : {}), ...(from ? { from } : {}) };
-    }
+    case 'showroom-images':
+      return seg.length === 1 ? { name: 'showroomImages' } : { name: 'notFound' };
+    // Start from a photo was removed in the showroom pivot: an old link opens the new-kitchen wizard.
+    case 'generate':
+      return seg.length === 1 ? { name: 'new' } : { name: 'notFound' };
     case 'k':
       if (seg.length === 2 && UUID.test(b)) {
         const add = query.get('add');
@@ -119,15 +119,10 @@ export function parseRoute(hash: string): Route {
     case 'b':
       if (seg.length === 2 && PARAM.test(b)) return { name: 'brandPage', slug: b };
       break;
-    case 'contractors': {
-      if (seg.length !== 1) break;
-      const near = opt((query.get('near') ?? '').trim().slice(0, 60));
-      const kitchen = query.get('kitchen');
-      return { name: 'contractors', ...(near ? { near } : {}), ...(kitchen && UUID.test(kitchen) ? { kitchen } : {}) };
-    }
     case 'brand':
     case 'orders':
-    case 'pro': {
+    case 'pro':
+    case 'studio': {
       const rest = seg.slice(1).join('/');
       if (!rest || REST.test(rest)) return { name: a, rest };
       break;
@@ -139,6 +134,7 @@ export function parseRoute(hash: string): Route {
     case 'pay':
       if (seg.length === 3 && b === 'demo' && PARAM.test(c)) return { name: 'payDemo', orderId: c };
       if (seg.length === 3 && b === 'demo-plan' && PARAM.test(c)) return { name: 'payDemoPlan', ref: c };
+      if (seg.length === 3 && b === 'showroom' && PARAM.test(c)) return { name: 'payShowroom', ref: c };
       break;
     case 's':
       if (seg.length === 2 && PARAM.test(b)) return { name: 'share', token: b };
@@ -167,17 +163,14 @@ export function hrefFor(r: Route): string {
       return '#/';
     case 'kitchen':
       return withQuery(`#/k/${r.id}`, { add: r.add });
-    case 'generate':
-      return withQuery('#/generate', { q: r.q, from: r.from });
     case 'product':
       return withQuery(`#/p/${enc(r.id)}`, { finish: r.finish });
     case 'brandPage':
       return `#/b/${enc(r.slug)}`;
-    case 'contractors':
-      return withQuery('#/contractors', { near: r.near, kitchen: r.kitchen });
     case 'brand':
     case 'orders':
     case 'pro':
+    case 'studio':
       return r.rest ? `#/${r.name}/${r.rest}` : `#/${r.name}`;
     case 'billing':
       return '#/account/billing';
@@ -191,10 +184,14 @@ export function hrefFor(r: Route): string {
       return `#/pay/demo/${enc(r.orderId)}`;
     case 'payDemoPlan':
       return `#/pay/demo-plan/${enc(r.ref)}`;
+    case 'payShowroom':
+      return `#/pay/showroom/${enc(r.ref)}`;
     case 'share':
       return `#/s/${enc(r.token)}`;
     case 'admin':
       return `#/admin/${r.tab}`;
+    case 'showroomImages':
+      return '#/showroom-images';
     default:
       return `#/${r.name}`;
   }

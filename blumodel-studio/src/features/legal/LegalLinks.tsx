@@ -1,5 +1,16 @@
-import { useLegal } from '../../lib/config';
+import { useConfig, useLegal } from '../../lib/config';
 import { useSession } from '../../store/useSession';
+
+/**
+ * The footer's © lines: on the sales site ours (LEGAL_NAME, else BluModel Studio); on a showroom the
+ * company's for its brand, and ours for the software and the showroom template.
+ */
+export function copyrightLines(tenantName: string | null, businessName: string | null, year = new Date().getFullYear()): { owner: string; software: string | null } {
+  const ours = businessName || 'BluModel Studio';
+  if (!tenantName) return { owner: `© ${year} ${ours}`, software: null };
+  const company = tenantName.replace(/\s*\((demo|sample)\)\s*$/i, '').trim() || tenantName;
+  return { owner: `© ${year} ${company}`, software: `Showroom software © ${year} ${ours}` };
+}
 
 /**
  * The legal footer every public page carries: Terms, Privacy, Refunds and, once the operator has
@@ -8,6 +19,10 @@ import { useSession } from '../../store/useSession';
  */
 export function LegalLinks({ className = '', newTab = false }: { className?: string; newTab?: boolean }) {
   const legal = useLegal();
+  // On a showroom the footer is the company's: visitors never pay (no Refunds), and the © of its
+  // brand is theirs; the software and the showroom template stay ours, so that © is said too.
+  const tenant = useConfig((s) => s.config?.tenant ?? null);
+  const lines = copyrightLines(tenant?.name ?? null, legal.businessName);
   const tab = newTab ? { target: '_blank', rel: 'noopener' } : {};
   return (
     <nav className={`legal-links ${className}`} aria-label="Legal">
@@ -17,11 +32,14 @@ export function LegalLinks({ className = '', newTab = false }: { className?: str
       <a href="#/privacy" {...tab}>
         Privacy
       </a>
-      <a href="#/refunds" {...tab}>
-        Refunds
-      </a>
-      {legal.supportEmail && <a href={`mailto:${legal.supportEmail}`}>Contact</a>}
-      <span className="legal-links-owner">© {new Date().getFullYear()} {legal.businessName ?? 'BluModel Studio'}</span>
+      {!tenant && (
+        <a href="#/refunds" {...tab}>
+          Refunds
+        </a>
+      )}
+      {!tenant && legal.supportEmail && <a href={`mailto:${legal.supportEmail}`}>Contact</a>}
+      <span className="legal-links-owner">{lines.owner}</span>
+      {lines.software && <span className="legal-links-software">{lines.software}</span>}
       <LegalUnsetBadge />
     </nav>
   );

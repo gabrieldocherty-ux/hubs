@@ -55,6 +55,13 @@ export function isBasics(p: Product): boolean {
 export const brandName = (p: Product): string => (isBasics(p) ? BASICS_BRAND : p.brand);
 
 /**
+ * The name a kitchen's brand choice matches. On a showroom every product carries the company's
+ * name as its brand, so its own products are chosen by their line ("Lakeshore Shaker"); every
+ * other product by its brand.
+ */
+export const prefName = (p: Product): string => (p.source === 'tenant' && p.line ? p.line : brandName(p));
+
+/**
  * Brand choices as stored on a kitchen: known categories only, trimmed names, no duplicates
  * (by `brandKey`), at most 20 a category, empty lists dropped. Undefined when nothing is left.
  */
@@ -90,7 +97,7 @@ function chosenKeys(prefs: BrandPrefs | undefined, category: string): Set<string
 /** True when the product is one of the kitchen's chosen brands for its category. */
 export function isPreferred(p: Product, prefs: BrandPrefs | undefined): boolean {
   const keys = chosenKeys(prefs, p.category);
-  return keys.size > 0 && keys.has(brandKey(brandName(p)));
+  return keys.size > 0 && keys.has(brandKey(prefName(p)));
 }
 
 /** "3 brands" / "Any brand" summary of a kitchen's choices, for the wizard's preview card. */
@@ -161,9 +168,10 @@ export function brandOptions(products: Product[], retail: Partial<Record<BrandCa
     }
     for (const p of products) {
       if (p.category !== c.id || !usable(p) || isBasics(p)) continue;
-      const key = brandKey(p.brand);
+      const name = prefName(p);
+      const key = brandKey(name);
       if (!key || key === BASICS_KEY) continue;
-      const o = byKey.get(key) ?? { brand: p.brand, key, category: c.id, products: 0, inCatalog: 0, stores: [] };
+      const o = byKey.get(key) ?? { brand: name, key, category: c.id, products: 0, inCatalog: 0, stores: [] };
       o.inCatalog++;
       byKey.set(key, o);
     }
@@ -225,7 +233,7 @@ export interface BrandPickOptions {
 /** A product's look within its brand: line and finish, so a kitchen's cabinets come from one line in one colour. */
 function lookOf(p: Product): string {
   const finish = Array.isArray(p.finishes) ? (p.finishes[0]?.id ?? '') : p.finishes;
-  return `${brandKey(p.brand)}|${(p.line ?? '').toLowerCase()}|${finish}`;
+  return `${brandKey(prefName(p))}|${(p.line ?? '').toLowerCase()}|${finish}`;
 }
 
 /**
@@ -246,7 +254,7 @@ export function brandPicker(prefs: BrandPrefs | undefined, opts: BrandPickOption
     if (keys.length) wanted.set(c.id, keys);
   }
   if (!wanted.size) return undefined;
-  const pool = (opts.catalog ?? useCatalog.getState().products).filter((p) => usable(p) && !isBasics(p) && wanted.get(p.category as BrandCategory)?.includes(brandKey(p.brand)));
+  const pool = (opts.catalog ?? useCatalog.getState().products).filter((p) => usable(p) && !isBasics(p) && wanted.get(p.category as BrandCategory)?.includes(brandKey(prefName(p))));
   if (!pool.length) return undefined;
   const lookSize = new Map<string, number>();
   for (const p of pool) lookSize.set(lookOf(p), (lookSize.get(lookOf(p)) ?? 0) + 1);
@@ -260,7 +268,7 @@ export function brandPicker(prefs: BrandPrefs | undefined, opts: BrandPickOption
     const list = pool.filter((c) => c.category === cat && sameType(c, base.product, asked) && fits(c, base, opts.ceilingIn));
     if (!list.length) return base;
     const rank = (c: Product): number[] => {
-      const brand = brandKey(c.brand);
+      const brand = brandKey(prefName(c));
       const look = lookOf(c);
       return [keys.indexOf(brand), used.get(brand) === look ? 0 : 1, -(lookSize.get(look) ?? 0), order.get(c.id) ?? 0];
     };
@@ -270,7 +278,7 @@ export function brandPicker(prefs: BrandPrefs | undefined, opts: BrandPickOption
       return 0;
     });
     const c = ranked[0].c;
-    if (!used.has(brandKey(c.brand))) used.set(brandKey(c.brand), lookOf(c));
+    if (!used.has(brandKey(prefName(c)))) used.set(brandKey(prefName(c)), lookOf(c));
     return { productId: c.id, product: c, widthIn: SIZE_FREE.has(c.kind) ? c.widthIn : base.widthIn };
   };
 }

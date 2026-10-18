@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { startTestServer, sampleDoc } from './helpers.mjs';
+import { startTestServer, sampleDoc, legacyCheckout } from './helpers.mjs';
 import { makePng } from './fixtures/images.mjs';
 import { randomId } from '../lib/ids.mjs';
 import { audit } from '../lib/audit.mjs';
@@ -28,7 +28,7 @@ const upload = async (agent, png, kind = 'image') => {
   return r.body.file;
 };
 async function demoBuy(agent, body) {
-  const c = await agent.post('/api/billing/checkout', body);
+  const c = await legacyCheckout(agent, body);
   assert.equal(c.status, 200, c.text);
   assert.equal((await agent.post(`/api/billing/demo/${c.body.ref}/complete`, { outcome: 'success' })).status, 200);
 }

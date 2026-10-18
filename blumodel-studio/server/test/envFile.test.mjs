@@ -81,6 +81,12 @@ test('loadEnvFile: only the settings keys are applied; other keys are ignored an
     assert.deepEqual([...ENV_FILE_KEYS].sort(), [
       'ADMIN_EMAILS',
       'ANTHROPIC_API_KEY',
+      'ARCHITECT_AI_KEY',
+      'ARCHITECT_AI_URL',
+      'BACKUP_OFFSITE_DIR',
+      'BACKUP_OFFSITE_KEEP',
+      'BACKUP_PASSPHRASE',
+      'BASE_DOMAIN',
       'BLUMODEL_LLM_MODEL',
       'DEMO_PAYMENTS',
       'EMAIL_FROM',
@@ -88,10 +94,14 @@ test('loadEnvFile: only the settings keys are applied; other keys are ignored an
       'LEGAL_NAME',
       'POSTMARK_TOKEN',
       'PUBLIC_URL',
+      'RENDER_CREDIT_CENTS',
       'RESEND_API_KEY',
+      'SERVER_FACE_PIN',
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET',
       'SUPPORT_EMAIL',
+      'TRIAL_CREDIT_CENTS',
+      'TRIAL_DAYS',
       'TRUST_PROXY',
     ]);
   } finally {

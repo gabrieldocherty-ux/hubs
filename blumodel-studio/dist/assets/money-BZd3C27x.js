@@ -1,0 +1,1 @@
+const i="cad";function r(n){const t=Number.isFinite(n)?n:0;return`$${(t/100).toLocaleString("en-US",{minimumFractionDigits:t%100?2:0,maximumFractionDigits:2})}`}function e(n,t=i){return`${r(n)} ${String(t||i).toUpperCase()}`}function o(n){return`${e(n.priceCents,n.currency)}${n.interval==="month"?"/month":""}`}export{r as a,e as m,o as p};

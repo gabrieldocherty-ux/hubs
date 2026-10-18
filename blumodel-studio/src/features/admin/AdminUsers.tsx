@@ -429,6 +429,21 @@ function ResetLinkBox({ data }: { data: UserDetail }) {
       setBusy(false);
     }
   };
+  const [mfaMsg, setMfaMsg] = useState<string | null>(null);
+  // For someone who lost both their phone and their recovery codes; it signs them out everywhere.
+  const clearMfa = async () => {
+    if (!confirm(`Turn off two-factor sign-in for ${u.email} and sign them out everywhere? Do this only after checking it is really them.`)) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await accountApi.adminResetMfa(u.id);
+      setMfaMsg(`Two-factor sign-in is off for ${u.email}. They sign in with their password and can set it up again.`);
+    } catch (e) {
+      setErr(errorText(e, 'Could not turn it off.'));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <Section title="Password reset link" id="adm-reset">
       {err && <div className="auth-error">{err}</div>}
@@ -459,12 +474,16 @@ function ResetLinkBox({ data }: { data: UserDetail }) {
         </div>
       ) : (
         <div className="adm-form">
-          <p className="adm-note">For when the person can’t get the reset email (or email isn’t set up). Any older link stops working.</p>
-          <div>
+          <p className="adm-note">For when the person can’t get the reset email (or email isn’t set up). Any older link stops working. An account with two-factor sign-in still needs its code with the link.</p>
+          <div className="adm-inline">
             <button type="button" className="btn" disabled={busy} onClick={() => void make()} aria-label={`Create a reset link for ${u.email}`}>
               {busy ? 'Making…' : 'Create reset link'}
             </button>
+            <button type="button" className="btn" disabled={busy} onClick={() => void clearMfa()} aria-label={`Turn off two-factor sign-in for ${u.email}`}>
+              Turn off their two-factor sign-in
+            </button>
           </div>
+          {mfaMsg && <p className="adm-note" role="status">{mfaMsg}</p>}
         </div>
       )}
     </Section>

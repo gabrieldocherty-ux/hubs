@@ -17,6 +17,7 @@
     "seed": "node scripts/build-kit.mjs && node --no-warnings server/seed/index.mjs",
     "qa": "node scripts/build-kit.mjs && node scripts/qa.mjs",
     "deploy:local": "npm run build && node scripts/deploy-local.mjs",
+    "release": "node scripts/release.mjs",
     "home:migrate": "node scripts/migrate-home.mjs",
     "home:tasks": "node scripts/register-tasks.mjs",
     "tunnel:setup": "node scripts/tunnel/setup-tunnel.mjs",
@@ -25,7 +26,8 @@
     "host:update": "node scripts/host/update.mjs",
     "data:export": "node --no-warnings server/scripts/export-data.mjs",
     "data:import": "node --no-warnings server/scripts/import-data.mjs",
-    "data:restore": "node --no-warnings server/scripts/restore.mjs"
+    "data:restore": "node --no-warnings server/scripts/restore.mjs",
+    "data:restore-offsite": "node --no-warnings server/scripts/restore-offsite.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",

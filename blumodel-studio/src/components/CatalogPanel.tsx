@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { create } from 'zustand';
-import { CATEGORIES, getProduct, priceFor } from '../data/catalog';
+import { CATEGORIES, getProduct, isBuiltin, priceFor } from '../data/catalog';
 import type { CategoryId, Product, Surfaces } from '../types';
 import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog } from '../store/useCatalog';
@@ -13,7 +13,8 @@ import { money } from '../lib/format';
 import { finishList } from '../lib/finish';
 import { hrefFor } from '../lib/router';
 import { useContractorCatalog, useKitchenPriceOf } from '../features/contractors';
-import { filterToPrefs, hasBrandPrefs } from '../lib/generate/brands';
+import { filterToPrefs, hasBrandPrefs, prefName } from '../lib/generate/brands';
+import { useShowroom } from '../features/showroom';
 import { BASICS_BRAND } from '../data/builtins';
 import { loadRetail, retailOf, retailPriceKnown, storesOf, useRetail } from '../catalog/retail';
 import '../catalog/retail.css';
@@ -26,13 +27,17 @@ interface Facet {
   n: number;
 }
 
-/** Brand facets with product counts: BluModel Basics first, then every other brand A–Z. */
-function brandFacets(list: Product[]): Facet[] {
+/** Brand facets with product counts: BluModel Basics first, then every other brand A–Z. On a showroom, the company's lines. */
+const byBrand = (p: Product) => p.brand;
+
+function brandFacets(list: Product[], nameOf: (p: Product) => string = byBrand, basicsLast = false): Facet[] {
   const n = new Map<string, number>();
-  for (const p of list) n.set(p.brand, (n.get(p.brand) ?? 0) + 1);
+  for (const p of list) n.set(nameOf(p), (n.get(nameOf(p)) ?? 0) + 1);
+  // On a showroom the company's lines lead and BluModel Basics (only filling the gaps) comes last.
+  const first = basicsLast ? 1 : -1;
   return [...n]
     .map(([id, count]) => ({ id, label: id, n: count }))
-    .sort((a, b) => (a.id === BASICS_BRAND ? -1 : b.id === BASICS_BRAND ? 1 : a.label.localeCompare(b.label)));
+    .sort((a, b) => (a.id === BASICS_BRAND ? first : b.id === BASICS_BRAND ? -first : a.label.localeCompare(b.label)));
 }
 
 /** Store facets: the real-retailer stores the listed products are sold at, most products first. */
@@ -265,7 +270,17 @@ export function CatalogPanel() {
   const [mine, setMine] = useState(true);
   const brandPrefs = useDesignStore((s) => s.doc.brandPrefs);
   // A contractor sees their own catalog first and only the brands they carry (§4.3).
-  const products = useContractorCatalog(useCatalog((s) => s.products));
+  const all = useContractorCatalog(useCatalog((s) => s.products));
+  // On a company's showroom: its own products only, plus BluModel Basics when it fills the gaps
+  // with them; never the retail catalog or any store (docs/SHOWROOM_PIVOT.md §3).
+  const showroom = useShowroom();
+  const fillGaps = !!showroom?.features.fillGaps;
+  // The company's own products first; Basics after them (SHOWROOM_PIVOT §5: they only fill gaps).
+  const products = useMemo(
+    () => (showroom ? [...all.filter((p) => p.source === 'tenant'), ...(fillGaps ? all.filter((p) => p.source !== 'tenant' && isBuiltin(p.id)) : [])] : all),
+    [all, showroom, fillGaps],
+  );
+  const nameOf = showroom ? prefName : byBrand;
   const priceOf = useKitchenPriceOf();
   const surfaces = useDesignStore((s) => s.doc.surfaces);
   const addItem = useDesignStore((s) => s.addItem);
@@ -289,29 +304,30 @@ export function CatalogPanel() {
   // The real-retailer products (RONA, Home Depot…) load as their own chunk the first time the
   // catalog opens, then sit in the registry with everything else. Offline they still load (bundled).
   useEffect(() => {
-    void loadRetail();
-  }, []);
+    if (!showroom) void loadRetail();
+  }, [showroom]);
   const stores = useRetail((s) => s.stores);
   const [store, setStore] = useState<string>(ALL);
 
   const inCategory = useMemo(() => products.filter((p) => cat === ALL || p.category === cat), [products, cat]);
-  const brands = useMemo(() => brandFacets(inCategory), [inCategory]);
+  const brands = useMemo(() => brandFacets(inCategory, nameOf, !!showroom), [inCategory, nameOf, showroom]);
   const activeBrand = brand !== ALL && brands.some((b) => b.id === brand) ? brand : ALL;
   const prefsOn = hasBrandPrefs(brandPrefs) && mine && activeBrand === ALL;
-  const storeList = useMemo(() => storeFacets(inCategory, stores), [inCategory, stores]);
+  // No store on a showroom: the company sells its products itself.
+  const storeList = useMemo(() => (showroom ? [] : storeFacets(inCategory, stores)), [inCategory, stores, showroom]);
   const activeStore = store !== ALL && storeList.some((s) => s.id === store) ? store : ALL;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (prefsOn ? filterToPrefs(inCategory, brandPrefs) : inCategory).filter((p) => {
-      if (activeBrand !== ALL && p.brand !== activeBrand) return false;
-      const sold = storesOf(retailOf(p.id));
+      if (activeBrand !== ALL && nameOf(p) !== activeBrand) return false;
+      const sold = showroom ? [] : storesOf(retailOf(p.id));
       if (activeStore !== ALL && !sold.includes(activeStore)) return false;
       if (!q) return true;
       const where = sold.map((s) => stores.get(s)?.name ?? s).join(' ');
       return `${p.name} ${p.brand} ${p.line ?? ''} ${p.sku ?? ''} ${p.code} ${p.kind} ${p.blurb} ${where}`.toLowerCase().includes(q);
     });
-  }, [inCategory, activeBrand, activeStore, query, prefsOn, brandPrefs, stores]);
+  }, [inCategory, activeBrand, activeStore, query, prefsOn, brandPrefs, stores, nameOf, showroom]);
 
   const grouped = useMemo(() => {
     if (cat !== ALL || query || activeBrand !== ALL || activeStore !== ALL) return [{ id: 'results', label: '', items: results }];
@@ -322,10 +338,20 @@ export function CatalogPanel() {
     const mine = [...lines].map(([line, items]) => ({ id: `line:${line}`, label: `${line === 'My catalog' ? line : `My catalog · ${line}`}: ${items.length} piece${items.length === 1 ? '' : 's'}`, items }));
     const rest = results.filter((p) => p.source !== 'contractor');
     const known = new Set<string>(CATEGORIES.map((c) => c.id));
-    const groups = CATEGORIES.map((c) => ({ id: c.id as string, label: c.label, items: rest.filter((p) => p.category === c.id) }));
+    // On a showroom each category shows the company's products, then BluModel Basics under their own heading.
+    const groups = CATEGORIES.flatMap((c) => {
+      const items = rest.filter((p) => p.category === c.id);
+      if (!showroom) return [{ id: c.id as string, label: c.label, items }];
+      const own = items.filter((p) => p.source === 'tenant');
+      const basics = items.filter((p) => p.source !== 'tenant');
+      return [
+        { id: c.id as string, label: c.label, items: own },
+        { id: `${c.id}:basics`, label: own.length ? `More basics: ${c.label.toLowerCase()}` : `${c.label}: BluModel Basics`, items: basics },
+      ];
+    });
     const other = rest.filter((p) => !known.has(p.category));
     return [...mine, ...groups, ...(other.length ? [{ id: 'other', label: 'Other', items: other }] : [])];
-  }, [results, cat, query, activeBrand, activeStore]);
+  }, [results, cat, query, activeBrand, activeStore, showroom]);
 
   const pick = (p: Product) => {
     if (performance.now() < swallowClickUntil) return;
@@ -377,9 +403,9 @@ export function CatalogPanel() {
               aria-pressed={prefsOn}
               className={prefsOn ? 'chip on' : 'chip'}
               onClick={() => (prefsOn ? setMine(false) : (setBrand(ALL), setMine(true)))}
-              title="The brands chosen when this kitchen was set up"
+              title={showroom ? 'The lines chosen when this design was set up' : 'The brands chosen when this kitchen was set up'}
             >
-              Your brands
+              {showroom ? 'Your lines' : 'Your brands'}
             </button>
           )}
           {/* The two dropdowns wrap as one row under the chip when they don't fit beside it. */}
@@ -389,14 +415,14 @@ export function CatalogPanel() {
                 <span className={activeBrand !== ALL ? 'catalog-filter on' : 'catalog-filter'}>
                   <select
                     id="catalog-brand"
-                    aria-label="Brand"
+                    aria-label={showroom ? 'Line' : 'Brand'}
                     value={activeBrand}
                     onChange={(e) => {
                       setBrand(e.target.value);
                       if (e.target.value === ALL) setMine(false);
                     }}
                   >
-                    <option value={ALL}>All brands</option>
+                    <option value={ALL}>{showroom ? 'All lines' : 'All brands'}</option>
                     {brands.map((b) => (
                       <option key={b.id} value={b.id}>
                         {b.label} ({b.n})
@@ -437,7 +463,7 @@ export function CatalogPanel() {
                   const from = p.widthOptions?.length ? Math.min(...p.widthOptions.map(at)) : at(p.widthIn);
                   const custom = p.source === 'custom';
                   const mine = p.source === 'contractor';
-                  const info = retailOf(p.id);
+                  const info = showroom ? undefined : retailOf(p.id);
                   const sold = storesOf(info);
                   // A real product with no checked store price shows none rather than a made-up one.
                   const priceText = info && !priceOf && !retailPriceKnown(info) ? 'See store' : `${money(from)}${p.widthOptions?.length ? '+' : ''}`;
@@ -465,7 +491,7 @@ export function CatalogPanel() {
                         </span>
                         <span className="product-name">{p.name}</span>
                         <span className="product-meta">
-                          <span>{p.brandKind === 'contractor' ? `by ${p.brand}` : p.brand}</span>
+                          <span>{showroom ? nameOf(p) : p.brandKind === 'contractor' ? `by ${p.brand}` : p.brand}</span>
                           <span className="mono">{p.widthOptions?.length ? `${Math.min(...p.widthOptions)}–${Math.max(...p.widthOptions)}″` : `${p.widthIn}″`}</span>
                         </span>
                         {sold.length > 0 && <StoreChips slugs={sold} names={stores} />}

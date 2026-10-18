@@ -8,6 +8,7 @@ import type { DoorStyle, Surfaces } from '../types';
 import { PLAIN_PRESET, STYLE_PRESETS } from '../data/styles';
 import { PresetStrip } from './PresetStrip';
 import { RetailFixtures } from '../catalog/RetailFixtures';
+import { useShowroom } from '../features/showroom';
 
 function TemplateGlyph({ id }: { id: TemplateId }) {
   // The runs and the room outline follow the theme (styles.css --plan-wall).
@@ -94,6 +95,8 @@ export function RoomPanel() {
   const setSurfaces = useDesignStore((s) => s.setSurfaces);
   const applyTemplate = useDesignStore((s) => s.applyTemplate);
   const set = (patch: Partial<Surfaces>) => setSurfaces(patch);
+  // The retail sinks and faucets (with their stores) never show on a company's showroom.
+  const showroom = useShowroom();
   const area = (room.widthIn * room.lengthIn) / 144;
 
   return (
@@ -154,7 +157,7 @@ export function RoomPanel() {
               />
             ))}
           </div>
-          <RetailFixtures surfaces={surfaces} set={set} />
+          {!showroom && <RetailFixtures surfaces={surfaces} set={set} />}
         </div>
       </section>
 

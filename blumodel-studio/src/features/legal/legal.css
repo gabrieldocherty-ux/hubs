@@ -244,3 +244,20 @@
     text-decoration-color: rgba(238, 138, 97, 0.4);
   }
 }
+
+/* Touch screens: the logo and the footer's legal links are 44px tap targets too. */
+@media (pointer: coarse) {
+  .legal-bar .brand,
+  .legal-foot .legal-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* On a phone the sticky bar wraps to two or three rows: a section scrolled to stays below it. */
+@media (max-width: 640px) {
+  .legal-doc section {
+    scroll-margin-top: 180px;
+  }
+}

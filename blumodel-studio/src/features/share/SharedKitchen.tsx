@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Workspace } from '../../screens/Editor';
 import { Dialog } from '../../components/Dialog';
 import { ProductArt } from '../../components/ProductArt';
-import { Logo, Wordmark } from '../../components/Icons';
 import { ApiError } from '../../lib/api';
 import { money } from '../../lib/format';
 import { navigate, navigateHash, signinHref } from '../../lib/router';
@@ -16,7 +15,7 @@ import { useEstimate } from '../../store/derived';
 import { useCatalog } from '../../store/useCatalog';
 import { useSession, timeAgo } from '../../store/useSession';
 import { setSharedPrices } from '../contractors';
-import { ContractorFinder } from '../finder';
+import { CompanyLogo, SendDesign, shortName, SiteMark, useShowroom } from '../showroom';
 import type { PreparedBy } from '../../types/platform';
 import { shareApi, type GoneReason, type SharedWire } from './api';
 import './share.css';
@@ -135,6 +134,8 @@ function ShareBar({ token, wire }: { token: string; wire: SharedWire }) {
   const items = useDesignStore((s) => s.doc.items.length);
   const { preparedBy, kitchen } = wire;
   const startedDup = useRef(false);
+  // On a company's showroom the bar carries the company's mark, and a visitor can send the design to it.
+  const showroom = useShowroom();
 
   const duplicate = async () => {
     if (status !== 'signedIn') {
@@ -176,7 +177,7 @@ function ShareBar({ token, wire }: { token: string; wire: SharedWire }) {
   return (
     <div className={`share-bar${preparedBy ? ' share-bar--pro' : ''}`} role="region" aria-label="About this shared kitchen">
       <div className="share-bar-who">
-        {preparedBy ? <CompanyMark p={preparedBy} /> : null}
+        {preparedBy ? <CompanyMark p={preparedBy} /> : showroom ? <CompanyLogo tenant={showroom} size={36} className="share-logo" /> : null}
         <div className="share-bar-text">
           <p className="share-bar-line">
             {preparedBy ? (
@@ -199,10 +200,9 @@ function ShareBar({ token, wire }: { token: string; wire: SharedWire }) {
             <a href="#/privacy" target="_blank" rel="noopener">
               Privacy
             </a>{' '}
-            {/* "Need a contractor?", in the fine print; never on a kitchen a contractor prepared. */}
-            <ContractorFinder where="share" hidden={!!preparedBy} />
             · {VISUALIZER_DISCLAIMER}
           </p>
+          {showroom && !preparedBy && <p className="share-bar-on">Designed on {shortName(showroom)}’s showroom</p>}
         </div>
       </div>
       <div className="share-bar-actions">
@@ -210,13 +210,14 @@ function ShareBar({ token, wire }: { token: string; wire: SharedWire }) {
           Products <span className="share-count">{items}</span>
         </button>
         {preparedBy && <ContactButton p={preparedBy} kitchenName={kitchen.name} />}
+        <SendDesign where="share" shareToken={token} designName={kitchen.name} />
         {!wire.hideDuplicate && (
           <button type="button" className="btn primary" onClick={duplicate} disabled={dup === 'busy'} title="Make your own copy to change">
             {dup === 'busy' ? (
               'Copying…'
             ) : (
               <>
-                <span className="share-long">{status === 'signedIn' ? 'Duplicate to my kitchens' : 'Sign in to duplicate'}</span>
+                <span className="share-long">{status === 'signedIn' ? (showroom ? 'Duplicate to my designs' : 'Duplicate to my kitchens') : 'Sign in to duplicate'}</span>
                 <span className="share-short">Duplicate</span>
               </>
             )}
@@ -299,6 +300,7 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
   const est = useEstimate();
   const doc = useDesignStore((s) => s.doc);
   const pro = wire.preparedBy;
+  const showroom = useShowroom();
   const lines = useMemo(() => est.lines.filter((l) => l.productId), [est]);
   const total = lines.reduce((n, l) => n + l.total, 0);
   const pieces = lines.reduce((n, l) => n + l.qty, 0);
@@ -313,8 +315,9 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
             const product = getProduct(l.productId!);
             const item = doc.items.find((i) => i.productId === l.productId);
             const finish = product && item ? resolveFinish(item, product, doc.surfaces) : undefined;
-            const publicPage = product && (isBuiltin(product.id) || product.source === 'brand');
-            const buy = !pro && (l.buyUrl ?? product?.buyUrl);
+            const publicPage = product && (showroom ? product.source === 'tenant' || isBuiltin(product.id) : isBuiltin(product.id) || product.source === 'brand');
+            // Never a store link on a company's showroom: it sells its own products.
+            const buy = !pro && !showroom && (l.buyUrl ?? product?.buyUrl);
             return (
               <li key={l.key}>
                 <span className="share-plist-art">{product ? <ProductArt product={product} finish={finish} surfaces={doc.surfaces} width={item?.widthIn} /> : null}</span>
@@ -377,8 +380,7 @@ function StatePage({ title, tone, children }: { title: string; tone?: 'error'; c
     <div className="share-state">
       <header className="home-bar">
         <a className="brand" href="#/">
-          <Logo />
-          <Wordmark />
+          <SiteMark />
         </a>
       </header>
       <main className="share-state-main">
@@ -393,6 +395,7 @@ function StatePage({ title, tone, children }: { title: string; tone?: 'error'; c
 
 function GonePage({ reason }: { reason: GoneReason }) {
   const signedIn = useSession((s) => s.status === 'signedIn');
+  const showroom = useShowroom();
   const copy: Record<GoneReason, { title: string; body: string }> = {
     revoked: { title: 'This link is no longer available', body: 'Whoever shared this kitchen has turned the link off. If you still need it, ask them to send a new one.' },
     expired: { title: 'This link has expired', body: 'Share links can be set to stop working after a while. Ask whoever sent it for a fresh link.' },
@@ -403,7 +406,11 @@ function GonePage({ reason }: { reason: GoneReason }) {
     <StatePage title={c.title}>
       <p>{c.body}</p>
       <div className="share-state-actions">
-        {signedIn ? (
+        {showroom ? (
+          <a className="btn primary" href="#/">
+            {signedIn ? 'Go to my designs' : `Design your own with ${shortName(showroom)}`}
+          </a>
+        ) : signedIn ? (
           <a className="btn primary" href="#/">
             Go to my kitchens
           </a>

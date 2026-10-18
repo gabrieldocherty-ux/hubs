@@ -1,15 +1,8 @@
-import { lazy, Suspense } from 'react';
-import { useUnlock } from './entitlements';
-
-const UnlockDialog = lazy(() => import('./UnlockDialog'));
-
-/** Mounted once by the app shell: shows the Unlock dialog when an export asks for it. */
-export function BillingHost() {
-  const request = useUnlock((s) => s.request);
-  if (!request) return null;
-  return (
-    <Suspense fallback={null}>
-      <UnlockDialog key={`${request.projectId ?? 'local'}:${request.kind}`} request={request} />
-    </Suspense>
-  );
+/**
+ * Mounted once by the app shell. It used to show the Unlock dialog when an export asked for a
+ * payment; downloads are free since the showroom pivot (docs/SHOWROOM_PIVOT.md §3), so there is
+ * nothing to show. Kept because the billing package's surface is frozen.
+ */
+export function BillingHost(): null {
+  return null;
 }

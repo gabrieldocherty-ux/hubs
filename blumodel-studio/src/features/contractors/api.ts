@@ -136,9 +136,6 @@ export const proApi = {
   saveQuote: (projectId: string, body: { validUntil: number | null; notes: string }) => call<Quote>('PUT', `/api/pro/quotes/${enc(projectId)}`, body),
   uploadImage: (file: File) => upload<{ file: FileWire }>('/api/files', file, { kind: 'image', name: file.name }),
   uploadModel: (file: File) => upload<{ file: FileWire }>('/api/files', file, { kind: 'model', name: file.name }),
-  // Billing, for the pitch page (package G's endpoints).
-  startContractorPlan: () => call<{ url: string }>('POST', '/api/billing/checkout', { kind: 'subscription', plan: 'contractor', returnTo: '#/pro' }),
-  switchToContractor: () => call<unknown>('POST', '/api/billing/change', { plan: 'contractor' }),
 };
 
 export const cents = (dollars: number) => Math.round(dollars * 100);

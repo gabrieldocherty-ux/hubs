@@ -1,6 +1,7 @@
 // Core QA routes (BUILD_PLAN F-T12): the device planner, landing, home, new kitchen, an opened
-// kitchen, Billing, the Contractor workspace, Admin, the export paywall and a demo plan payment,
-// at desktop and phone sizes, plus a render smoke of every other routed screen.
+// kitchen, Billing, the Contractor workspace, Admin, free exports (no paywall since the showroom
+// pivot) and a legacy demo plan payment, at desktop and phone sizes, plus a render smoke of every
+// other routed screen.
 // Run: node scripts/qa.mjs --pkg core --port 8811
 //
 // Selectors and texts here belong to foundation screens. Feature packages keep their own
@@ -198,10 +199,10 @@ export default [
     as: 'anon',
     waitFor: ['.topbar'],
     check: async (h) => {
-      // A device draft can't export: the Unlock dialog first asks for a free account.
+      // A device draft can't export: downloads are free, but it has to be saved to an account first.
       await exportItem(h, 'Project file');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText('Exports are a paid feature');
+      await h.waitForText('Downloads are free. Sign in and save this kitchen');
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock'))) throw new Error('a payment dialog opened for a free download');
     },
   },
 
@@ -226,7 +227,7 @@ export default [
     path: '#/account/billing',
     as: 'anon',
     waitFor: ['input[type="password"]'],
-    expectText: ['Sign in to open your kitchens.'],
+    expectText: ['Sign in to BluModel Studio.'],
     check: async ({ evaluate }) => {
       const hash = await evaluate(() => location.hash);
       if (!hash.startsWith('#/signin')) throw new Error(`expected a redirect to #/signin, got ${hash}`);
@@ -309,36 +310,32 @@ export default [
     },
   },
 
-  // ── The export paywall (free user) ───────────────────────────────────────
+  // ── Exports are free (since the showroom pivot: no paywall, no unlock) ───
   {
-    name: 'unlock-dialog-free-user',
+    name: 'export-free-user',
     as: 'fresh',
-    setup: async ({ me }) => newKitchen(me, 'QA Paywall Kitchen'),
+    setup: async ({ me }) => newKitchen(me, 'QA Free Export Kitchen'),
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
       await exportItem(h, 'Shopping list');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText(['Unlock “QA Paywall Kitchen”', 'Unlock this kitchen - $5 CAD once', 'Unlimited - $15 CAD/month']);
-      // The server agrees: a free user's export is refused (403, needs an unlock).
+      await h.sleep(1500);
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock[role="dialog"]'))) throw new Error('the Unlock dialog opened for a free export');
+      // The server agrees: a free user's export works.
       const r = await h.me.post(`/api/projects/${h.data.projectId}/exports`, { kind: 'csv' });
-      if (r.status !== 403) throw new Error(`a free user's CSV export returned ${r.status}, expected 403`);
+      if (r.status !== 200) throw new Error(`a free user's CSV export returned ${r.status}, expected 200`);
     },
   },
   {
-    name: 'unlock-dialog-free-user-phone',
+    name: 'export-free-user-phone',
     as: 'fresh',
     viewport: 'phone',
-    setup: async ({ me }) => newKitchen(me, 'QA Phone Paywall'),
+    setup: async ({ me }) => newKitchen(me, 'QA Phone Free Export'),
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
       await exportItem(h, 'Floor plan');
-      await h.waitFor('.modal.unlock[role="dialog"]');
-      await h.waitForText('Unlock this kitchen - $5 CAD once');
-      const r = await h.evaluate(() => {
-        const m = document.querySelector('.modal.unlock').getBoundingClientRect();
-        return { left: m.left, right: m.right, w: innerWidth };
-      });
-      if (r.left < -1 || r.right > r.w + 1) throw new Error(`the Unlock dialog is wider than the screen (${Math.round(r.left)}–${Math.round(r.right)} in ${r.w}px)`);
+      await h.sleep(1500);
+      if (await h.evaluate(() => !!document.querySelector('.modal.unlock[role="dialog"]'))) throw new Error('the Unlock dialog opened for a free export');
+      await noSideScroll(h);
     },
   },
 
@@ -409,11 +406,12 @@ export default [
   {
     name: 'pay-demo-plan-unlimited',
     as: 'fresh',
-    setup: async ({ me }) => {
+    setup: async ({ me, api }) => {
       const k = await newKitchen(me, 'QA Unlimited Kitchen');
-      const c = await me.post('/api/billing/checkout', { kind: 'subscription', plan: 'unlimited' });
-      if (c.status >= 300 || !c.body?.ref) throw new Error(`starting the Unlimited demo checkout failed (${c.status}): ${c.body?.error ?? c.text}`);
-      return { path: `#/pay/demo-plan/${c.body.ref}`, projectId: k.projectId };
+      // Nothing new is sold since the showroom pivot: this is a checkout started before it, which
+      // can still be completed (a legacy customer's open payment page).
+      const ref = api.legacyCheckout((await me.user()).id, { kind: 'subscription', plan: 'unlimited' });
+      return { path: `#/pay/demo-plan/${ref}`, projectId: k.projectId };
     },
     waitFor: ['.demo-pay-card', '.demo-pay-actions .btn.primary'],
     expectText: ['Checkout · Demo', 'BluModel Studio never sees or stores card details'],
@@ -443,7 +441,6 @@ export default [
     { name: 'screen-welcome-phone', path: '#/welcome', as: 'anon', viewport: 'phone' },
     { name: 'screen-pricing', path: '#/pricing', as: 'anon' },
     { name: 'screen-pricing-phone', path: '#/pricing', as: 'anon', viewport: 'phone' },
-    { name: 'screen-generate', path: '#/generate', as: 'customer' },
     {
       name: 'screen-product-demo',
       as: 'anon',

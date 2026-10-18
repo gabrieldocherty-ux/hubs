@@ -9,7 +9,8 @@ import { KIND_SET, CATEGORY_SET, MATERIAL_SET, VARIANTS } from './kinds.mjs';
 import { normalizeUpc } from '../payments/upc.mjs';
 
 export const STATUSES = ['draft', 'submitted', 'published', 'rejected', 'archived'];
-export const SOURCES = ['brand', 'custom', 'contractor'];
+/** 'tenant': a showroom company's own product (tenancy-003), seen only on that showroom. */
+export const SOURCES = ['brand', 'custom', 'contractor', 'tenant'];
 /** The door styles a cabinet line can declare (the kitchen-wide style still draws the doors). */
 export const DOOR_STYLES = ['shaker', 'slab', 'fluted'];
 /** Letters, digits, spaces and . _ - /, plus `{w}`, which the client fills with the width ("SSB{w}" → "SSB24"). */
@@ -240,10 +241,18 @@ const invalid = (errors) => new HttpError(400, 'Some product details need fixing
 
 /**
  * @param {{ db: any, now?: () => number, files: any, brands: any,
- *   ownerLabel?: (userId: string) => string | null }} deps
- *   `ownerLabel` names a contractor's own products (their company), via services.contractors.
+ *   ownerLabel?: (userId: string) => string | null, tenantLabel?: (tenantId: string) => string | null }} deps
+ *   `ownerLabel` names a contractor's own products (their company), via services.contractors;
+ *   `tenantLabel` names a showroom's own products (the company), via services.tenants.
+ *
+ * Sites (docs/handoff/tenancy.md): the catalog functions take the request's `site`
+ * (rc.site; omitted = the sales site). On a showroom the catalog is that tenant's products only
+ * (BluModel Basics, compiled into the client, join them when the tenant's fillGaps is on). On the
+ * sales site it is what it always was, minus every tenant's products, except a contractor's own
+ * private catalog, which stays theirs on the sales site after tenancy-003 moved it into their
+ * showroom.
  */
-export function createProductService({ db, now = Date.now, files, brands, ownerLabel = () => null }) {
+export function createProductService({ db, now = Date.now, files, brands, ownerLabel = () => null, tenantLabel = () => null }) {
   const parse = (s) => {
     if (s == null) return null;
     try {
@@ -258,6 +267,7 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
       source: r.source,
       brandId: r.brand_id ?? null,
       ownerUserId: r.owner_user_id ?? null,
+      tenantId: r.tenant_id ?? null,
       status: r.status,
       visibility: r.visibility,
       spec: parse(r.spec),
@@ -310,8 +320,11 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
      * Creates a product (draft unless `status` says otherwise). The caller has already
      * checked access and file ownership. Returns the ProductRow.
      */
-    create({ source, brandId = null, ownerUserId = null, visibility = 'public', spec, status = 'draft' }) {
-      if (!SOURCES.includes(source)) throw new Error('products.create: source must be brand, custom or contractor');
+    create({ source, brandId = null, ownerUserId = null, tenantId = null, visibility = 'public', spec, status = 'draft' }) {
+      if (!SOURCES.includes(source)) throw new Error('products.create: source must be brand, custom, contractor or tenant');
+      // A showroom's product belongs to its tenant alone: never a brand's, never anyone's private one.
+      if (source === 'tenant' && (!tenantId || brandId || visibility !== 'public')) throw new Error('products.create: a tenant product needs tenantId, no brand, and public visibility');
+      if (source !== 'tenant' && tenantId) throw new Error('products.create: only tenant products carry a tenantId');
       if (source === 'brand' && !brandId) throw new Error('products.create: a brand product needs brandId');
       // A contractor's catalog is theirs alone: never public, never another brand's.
       if (source === 'contractor' && (!ownerUserId || brandId || visibility !== 'private')) throw new Error('products.create: a contractor product is private to its owner');
@@ -321,10 +334,10 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
       const id = randomId('p_');
       const t = now();
       db.prepare(
-        `INSERT INTO products (id, source, brand_id, owner_user_id, status, visibility, spec, live_spec, kind, category, name, price_cents,
+        `INSERT INTO products (id, source, brand_id, owner_user_id, tenant_id, status, visibility, spec, live_spec, kind, category, name, price_cents,
                                revision, review_note, submitted_at, published_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, '', ?, NULL, ?, ?)`,
-      ).run(id, source, brandId, ownerUserId, status, visibility, JSON.stringify(s), s.kind, s.category, s.name, Math.round(s.price * 100), status === 'submitted' ? t : null, t, t);
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 1, '', ?, NULL, ?, ?)`,
+      ).run(id, source, brandId, ownerUserId, tenantId, status, visibility, JSON.stringify(s), s.kind, s.category, s.name, Math.round(s.price * 100), status === 'submitted' ? t : null, t, t);
       return svc.get(id);
     },
 
@@ -417,9 +430,11 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
           ? brand.name
           : row.source === 'custom'
             ? 'Your model'
-            : row.source === 'contractor'
-              ? ownerLabel(row.ownerUserId) || 'My catalog'
-              : 'Unknown brand',
+            : row.source === 'tenant'
+              ? tenantLabel(row.tenantId) || 'Showroom'
+              : row.source === 'contractor'
+                ? ownerLabel(row.ownerUserId) || 'My catalog'
+                : 'Unknown brand',
         ...(spec.line ? { line: spec.line } : {}),
         ...(spec.brand ? { productBrand: spec.brand } : {}),
         ...(spec.upc ? { upc: spec.upc } : {}),
@@ -466,10 +481,22 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
     },
 
     /**
-     * Rows the catalog serves to `user`: live, not archived, brand active (or no brand),
-     * public or owned by the caller.
+     * Rows the catalog serves to `user` on `site` (see the top of this function): live, not
+     * archived. On a showroom, that tenant's products. On the sales site: brand active (or no
+     * brand), public or owned by the caller, and no tenant's (but a contractor's own).
      */
-    catalogRows(user) {
+    catalogRows(user, site) {
+      const tenantId = site?.tenantId ?? null;
+      if (tenantId) {
+        return db
+          .prepare(
+            `SELECT p.* FROM products p
+              WHERE p.tenant_id = ? AND p.live_spec IS NOT NULL AND p.status <> 'archived'
+              ORDER BY p.category, p.name COLLATE NOCASE, p.id`,
+          )
+          .all(tenantId)
+          .map(toRow);
+      }
       runCatalogGuards();
       return db
         .prepare(
@@ -477,24 +504,28 @@ export function createProductService({ db, now = Date.now, files, brands, ownerL
             WHERE p.live_spec IS NOT NULL AND p.status <> 'archived'
               AND (p.brand_id IS NULL OR (b.status = 'active'${brands.hideDemo ? ' AND b.is_demo = 0' : ''}))
               AND (p.visibility = 'public' OR p.owner_user_id = ?)
+              AND (p.tenant_id IS NULL OR (p.source = 'contractor' AND p.owner_user_id = ?))
             ORDER BY COALESCE(b.name, '') COLLATE NOCASE, p.name COLLATE NOCASE, p.id`,
         )
-        .all(user?.id ?? null)
+        .all(user?.id ?? null, user?.id ?? null)
         .map(toRow);
     },
 
-    /** True when `row` is in the catalog for `user` (the same rule as catalogRows). */
-    inCatalog(row, user) {
-      if (row?.brandId) runCatalogGuards();
+    /** True when `row` is in the catalog for `user` on `site` (the same rule as catalogRows). */
+    inCatalog(row, user, site) {
       if (!row || !row.liveSpec || row.status === 'archived') return false;
+      const tenantId = site?.tenantId ?? null;
+      if (tenantId) return row.tenantId === tenantId;
+      if (row.tenantId && !(row.source === 'contractor' && !!user && row.ownerUserId === user.id)) return false;
+      if (row.brandId) runCatalogGuards();
       if (row.brandId && !brands.isListed(brands.get(row.brandId))) return false;
       return row.visibility === 'public' || (!!user && row.ownerUserId === user.id);
     },
 
-    /** The live catalog for `user`, as wire Products. */
-    listCatalog(user) {
+    /** The live catalog for `user` on `site`, as wire Products. */
+    listCatalog(user, site) {
       return svc
-        .catalogRows(user)
+        .catalogRows(user, site)
         .map((r) => svc.toWire(r, { which: 'live', viewer: user }))
         .filter(Boolean);
     },

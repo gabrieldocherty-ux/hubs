@@ -23,9 +23,33 @@ export const ACTION_LABEL: Record<string, string> = {
   account_delete: 'Account deleted',
   contractor_verify: 'Contractor verified',
   contractor_unverify: 'Contractor unverified',
+  tenant_create: 'Company created',
+  tenant_quick_setup: 'Showroom made with Quick setup',
+  update_now: 'Update now pressed',
+  sites_off: 'All websites turned off (maintenance)',
+  sites_on: 'All websites turned on',
+  tenant_trial_extend: 'Trial extended',
+  tenant_trial_end: 'Trial ended',
+  tenant_trial_convert: 'Trial converted to a paying customer',
+  tenant_images_ticket: 'Showroom picture generator opened',
+  tenant_update: 'Company settings changed',
+  tenant_status: 'Showroom status changed',
+  tenant_hostname_add: 'Web address added',
+  tenant_hostname_update: 'Web address changed',
+  tenant_hostname_remove: 'Web address removed',
+  tenant_member_add: 'Team member added',
+  tenant_member_remove: 'Team member removed',
+  tenant_license_record: 'License recorded',
+  tenant_license_void: 'License voided',
+  tenant_monthly_checkout: 'Monthly checkout link made',
+  tenant_monthly_comp_on: 'Monthly plan made complimentary',
+  tenant_monthly_comp_off: 'Complimentary monthly plan ended',
+  tenant_monthly_cancel: 'Monthly plan cancelled',
+  tenant_credit_adjust: 'Render credits adjusted',
+  sales_lead_update: 'Sales lead updated',
 };
 
-const SKIP = new Set(['replaced', 'grantId', 'periodStart', 'periodEnd', 'brandId', 'counts']);
+const SKIP = new Set(['replaced', 'grantId', 'periodStart', 'periodEnd', 'brandId', 'counts', 'tenantId', 'licenseId', 'leadId']);
 
 /** The detail object as a short line: "plan: contractor · ends: Oct 20, 2026 · note: Pilot". */
 function detailLine(e: AuditEntry): string {

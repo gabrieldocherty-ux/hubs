@@ -3,17 +3,19 @@ import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
 import { WallsIcon, CubeIcon, Download, Logo, Wordmark, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
+import { feetInches } from '../lib/format';
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
-import { usePayments } from '../lib/config';
 import { AccountMenu } from './AccountMenu';
 import { useShowEstimator } from '../lib/prefs';
 import { Check } from './Icons';
 import { RenderButton } from '../features/viewer';
+import { PhotorealButton } from '../features/renders';
 import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
+import { shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
@@ -71,8 +73,12 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   // The Est. chip is the cost estimator: a setting, off by default (Account settings > Preferences).
   // A shared kitchen (view) follows its link's own price setting.
   const showEstimator = useShowEstimator();
-  const signedIn = useSession((s) => s.status === 'signedIn' && !!s.projectId);
   const hasUser = useSession((s) => !!s.user);
+  // A showroom visitor who gave their details ("Before you start") has saved designs without an account.
+  const visitor = useVisitor();
+  const signedIn = useSession((s) => (s.status === 'signedIn' || !!visitor) && !!s.projectId);
+  // On a company's showroom the mark is the company's.
+  const showroom = useShowroom();
   const [menu, setMenu] = useState(false);
   const [draft, setDraft] = useState(name);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -102,35 +108,58 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
       setUI({ viewMode: 'split' });
       await new Promise((r) => setTimeout(r, 900));
     }
-    const url = await exportImage(kind);
-    if (!url) return toast('Could not capture that view. Try again in a moment.', 'warn');
+    const raw = await exportImage(kind);
+    if (!raw) return toast('Could not capture that view. Try again in a moment.', 'warn');
+    // On a showroom the PNG carries the company's logo, name and contact details (lazy: not in the main chunk).
+    const url = showroom ? await import('../features/showroom/downloads').then((m) => m.brandedPng(raw, showroom, name, location.host)).catch(() => raw) : raw;
     downloadDataUrl(url, `${slug(name)}-${kind === 'plan' ? 'floor-plan' : '3d'}.png`);
     toast(kind === 'plan' ? 'Floor plan saved as PNG.' : '3D view saved as PNG.', 'ok');
   };
 
-  // Every export goes through the paywall (requestExport): the server records it, and makes the
-  // CSV and the project file itself. After paying, the export the user picked finishes by itself.
+  // Every export goes through requestExport (free since the showroom pivot): the server records it,
+  // and makes the CSV and the project file itself.
   const saveFile = (done: string) => (file?: ExportFile) => {
     if (!file) return;
     downloadText(file.content, file.filename, file.contentType);
     toast(done, 'ok');
   };
+  // On a showroom: the product list as a printable page in the company's colours, with its contact details.
+  const productList = async () => {
+    if (!showroom) return;
+    const [{ productListHtml }, planShot] = await Promise.all([import('../features/showroom/downloads'), viewMode === 'plan' || viewMode === 'split' ? exportImage('plan') : Promise.resolve(null)]);
+    const doc = useDesignStore.getState().doc;
+    const logo = showroom.branding.logoUrl ? new URL(showroom.branding.logoUrl, location.origin).href : null;
+    const html = productListHtml({
+      tenant: showroom,
+      designName: doc.name,
+      roomText: `${feetInches(doc.room.widthIn)} × ${feetInches(doc.room.lengthIn)} · ${Math.round((doc.room.widthIn * doc.room.lengthIn) / 144)} sq ft`,
+      lines: est.lines.filter((l) => l.productId || l.fixtureId),
+      showPrices,
+      total: est.lines.filter((l) => l.productId || l.fixtureId).reduce((n, l) => n + l.total, 0),
+      logoUrl: logo,
+      planImage: planShot,
+      host: location.host,
+      at: new Date(),
+    });
+    downloadText(html, `${slug(doc.name)}-product-list.html`, 'text/html');
+    toast('Product list saved. Open it to print or save as PDF.', 'ok');
+  };
   const runners: Partial<Record<ExportKind, ExportRunner>> = {
     plan_png: () => exportPng('plan'),
     scene_png: () => exportPng('scene'),
+    ...(showroom ? { quote: productList } : {}),
     csv: saveFile('Shopping list saved as CSV.'),
     json: saveFile('Project saved. Open it later with Import.'),
   };
   const exportProject = view ? null : projectId;
   const { canExport } = useEntitlements(exportProject);
-  const payments = usePayments();
   const { isContractor } = usePriceBook();
   useResumeExport(exportProject, runners);
   const doExport = (kind: ExportKind) => {
     setMenu(false);
     void requestExport(exportProject, kind, runners[kind]!);
   };
-  const lock = canExport ? null : <Lock width={13} height={13} aria-label="Paid" />;
+  const lock = canExport ? null : <Lock width={13} height={13} aria-label="Sign in first" />;
 
   const onImport = async (file: File) => {
     try {
@@ -149,10 +178,12 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
     <header className={compact ? 'topbar topbar--compact' : 'topbar'}>
       <div className="brand">
         {signedIn ? (
-          <a className="back-link" href="#/" title="Back to my kitchens">
-            <Logo />
-            <span className="back-label">Kitchens</span>
+          <a className="back-link" href="#/" title={showroom ? 'Back to my designs' : 'Back to my kitchens'}>
+            {showroom ? <SiteMark compact /> : <Logo />}
+            <span className="back-label">{showroom ? 'Designs' : 'Kitchens'}</span>
           </a>
+        ) : showroom ? (
+          <SiteMark />
         ) : (
           <>
             <Logo />
@@ -205,7 +236,8 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
           </button>
         )}
         <RenderButton />
-        {!view && <ShareButton projectId={projectId} />}
+        <PhotorealButton />
+        {!view && hasUser && <ShareButton projectId={projectId} />}
         {!view && <PresentButton compact={compact} />}
         {!(view && hideExport) && (
           <div className="menu-wrap" ref={menuRef}>
@@ -226,6 +258,11 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
                 <button role="menuitem" onClick={() => doExport('scene_png')}>
                   <b>{lock}3D render</b><span>PNG of the current camera</span>
                 </button>
+                {showroom && (
+                  <button role="menuitem" onClick={() => doExport('quote')}>
+                    <b>{lock}Product list</b><span>Printable, with {shortName(showroom)}’s details</span>
+                  </button>
+                )}
                 {showPrices && (
                   <button role="menuitem" onClick={() => doExport('csv')}>
                     <b>{lock}Shopping list</b><span>CSV with every product and surface</span>
@@ -249,7 +286,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
                     )}
                     {!canExport && (
                       <p className="menu-note">
-                        <Lock width={12} height={12} /> {payments === 'none' ? 'Exports are a paid feature and open soon. Designing and sharing are free.' : 'Exports are a paid feature. Pick one to see the options.'}
+                        <Lock width={12} height={12} /> Downloads are free. Sign in and save this kitchen to your account to download it.
                       </p>
                     )}
                     <div className="menu-sep" />
@@ -274,7 +311,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
             />
           </div>
         )}
-        {(!view || hasUser) && <AccountMenu />}
+        {(hasUser || (!view && !visitor)) && <AccountMenu />}
       </div>
     </header>
   );

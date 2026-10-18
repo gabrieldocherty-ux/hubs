@@ -1,0 +1,355 @@
+/*
+ * The demo showroom's pitch (DemoPitch.tsx): the company's side of the story, for a prospect. A
+ * calm band between the featured lines and the gallery; the lead card matches the sales site's
+ * (src/features/marketing/marketing.css .mk-lead). Tokens only.
+ */
+
+.sr-pitch {
+  margin-top: 96px;
+  background: var(--paper-2);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.sr-pitch-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 72px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
+  gap: 56px;
+  align-items: center;
+}
+
+.sr-pitch-eyebrow {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.sr-pitch h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.sr-pitch-lede {
+  margin: 14px 0 0;
+  color: var(--ink-2);
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+.sr-pitch-points {
+  list-style: none;
+  margin: 26px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.sr-pitch-points li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.sr-pitch-points b {
+  display: block;
+  font-size: 16px;
+  margin-bottom: 3px;
+}
+
+.sr-pitch-points li > span:last-child {
+  color: var(--ink-2);
+  line-height: 1.5;
+  font-size: 15px;
+}
+
+.sr-pitch-points b {
+  color: var(--ink);
+}
+
+.sr-pitch-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--accent-text);
+}
+
+.sr-pitch-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 30px;
+  padding: 0 22px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sr-pitch-cta:hover {
+  background: var(--ink-hover);
+}
+
+.sr-pitch-cta:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ── the lead card ────────────────────────────────────────────────────── */
+
+.sr-lead {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 60px -30px rgba(var(--shadow-rgb), 0.55), var(--shadow-sm);
+}
+
+.sr-lead-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sr-lead-tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.sr-lead-when {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.sr-lead-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sr-lead-who div b {
+  display: block;
+  font-size: 15px;
+}
+
+.sr-lead-who div span {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.sr-lead-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--brand, var(--inverse));
+  color: var(--brand-ink, var(--on-inverse));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sr-lead-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.sr-lead-facts div {
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--paper);
+  min-width: 0;
+}
+
+.sr-lead-facts dt {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.sr-lead-facts dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.sr-lead-design {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--stage-2);
+}
+
+.sr-lead-design img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.sr-lead-design span {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sr-lead-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  border-top: 1px solid var(--line);
+  min-height: 120px;
+}
+
+.sr-lead-lines li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.sr-lead-lines b {
+  font-weight: 600;
+}
+
+.sr-lead-lines i {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.sr-lead-qty {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.sr-lead-wait {
+  color: var(--ink-2);
+}
+
+.sr-lead-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sr-lead-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--panel);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sr-lead-btn:hover {
+  background: var(--ink-hover);
+}
+
+.sr-lead-status {
+  display: flex;
+  gap: 4px;
+}
+
+.sr-lead-status i {
+  padding: 3px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-style: normal;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.sr-lead-status i.on {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .sr-pitch-inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 56px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .sr-pitch {
+    margin-top: 64px;
+  }
+  .sr-pitch-inner {
+    padding: 48px 16px;
+  }
+  .sr-pitch-cta {
+    width: 100%;
+  }
+  .sr-lead {
+    padding: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  .sr-lead-btn,
+  .sr-pitch-cta {
+    min-height: 44px;
+  }
+}
+
+.sr-pitch {
+  scroll-margin-top: 58px;
+}

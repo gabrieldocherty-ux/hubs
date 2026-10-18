@@ -33,7 +33,8 @@ test('platform-002 rebuilds products for the contractor source without losing a 
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   db.prepare("UPDATE products SET source = 'contractor', brand_id = NULL, owner_user_id = 'u1' WHERE id = 'p_aaaaaaaaaaaaaaaaaaaaaaaa'").run();
   const idx = db.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'products'").all().map((r) => r.name).sort();
-  assert.deepEqual(idx.filter((n) => !n.startsWith('sqlite_')), ['products_brand', 'products_owner', 'products_status']);
+  // tenancy-003 rebuilt it again (the 'tenant' source) and added products_tenant.
+  assert.deepEqual(idx.filter((n) => !n.startsWith('sqlite_')), ['products_brand', 'products_owner', 'products_status', 'products_tenant']);
   // Cascades still work after the rebuild.
   db.prepare("DELETE FROM products WHERE id = 'p_aaaaaaaaaaaaaaaaaaaaaaaa'").run();
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM product_events').get().n, 0);

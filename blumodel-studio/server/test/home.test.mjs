@@ -78,7 +78,7 @@ test('run-server.cmd: port 8790 on 127.0.0.1, settings from %~dp0blumodel.env on
   assert.deepEqual(run.match(/^set "?DEMO_PAYMENTS[^\r]*/gm), ['set "DEMO_PAYMENTS="']);
   for (const k of [...ENV_FILE_KEYS, 'PAYMENTS', 'NODE_ENV', 'NODE_OPTIONS', 'NODE_TLS_REJECT_UNAUTHORIZED', 'MISE_ENV_FILE']) assert.match(run, new RegExp(`^set "${k}="\\r$`, 'm'), k);
   assert.ok(CLEARED_ENV.includes('STRIPE_SECRET_KEY') && CLEARED_ENV.includes('ANTHROPIC_API_KEY'));
-  assert.match(run, /"C:\\Program Files\\nodejs\\node\.exe" --no-warnings "%~dp0app\\server\\index\.mjs" --prod >> logs\\console\.log 2>&1/);
+  assert.match(run, /"C:\\Program Files\\nodejs\\node\.exe" --max-old-space-size=384 --no-warnings "%~dp0app\\server\\index\.mjs" --prod >> logs\\console\.log 2>&1/);
   assert.match(run, /rotate-log\.mjs" "%~dp0logs\\console\.log"/);
   assert.match(s['start-hidden.vbs'], /sh\.Run "cmd \/c """ & dir & "\\run-server\.cmd""", 0, False/);
   assert.match(s['stop-server.cmd'], /echo\.> shutdown\.request/);
@@ -211,8 +211,11 @@ test('the blumodel.env template: every settings key once, secrets empty, the pub
   assert.equal(values.ADMIN_EMAILS, 'owner@blumodel.example');
   assert.equal(values.DEMO_PAYMENTS, '0');
   assert.equal(values.TRUST_PROXY, '1');
+  assert.equal(values.BASE_DOMAIN, '', 'empty: the production default');
   // What the production server makes of it: no Stripe, no demo, so payments are 'none'.
   const c = loadConfig({ ...values }, ['--prod']);
+  assert.equal(c.BASE_DOMAIN, 'blumodel.studio', 'showrooms at <slug>.blumodel.studio');
+  assert.equal(loadConfig({ ...values, BASE_DOMAIN: 'Showrooms.Example.CA' }, ['--prod']).BASE_DOMAIN, 'showrooms.example.ca');
   assert.equal(c.paymentsProvider, 'none');
   assert.equal(c.TRUST_PROXY, 1);
   assert.deepEqual([...c.ADMIN_EMAILS], ['owner@blumodel.example']);
@@ -575,15 +578,18 @@ test('the migrate-home CLI: --dry-run against temp folders, a refusal exits 1, a
 
 // ── the Cloudflare tunnel ────────────────────────────────────────────────
 
-test('cloudflared.yml: the blumodel tunnel, its credentials under %USERPROFILE%\\.cloudflared, blumodel.studio to 127.0.0.1:8790, everything else 404', () => {
+test('cloudflared.yml: the blumodel tunnel, its credentials under %USERPROFILE%\\.cloudflared, blumodel.studio, www and every showroom to 127.0.0.1:8790, custom domains to the server too', () => {
   const creds = credentialsFile(TUNNEL_ID, 'C:\\Users\\owner');
   assert.equal(creds, 'C:\\Users\\owner\\.cloudflared\\064671cd-a658-4240-8626-c697b9f148ac.json');
   const y = tunnelConfigYaml({ credentials: creds });
   assert.match(y, /^tunnel: 064671cd-a658-4240-8626-c697b9f148ac$/m);
   assert.match(y, /^credentials-file: 'C:\\Users\\owner\\\.cloudflared\\064671cd-a658-4240-8626-c697b9f148ac\.json'$/m);
-  assert.match(y, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n {4}originRequest:\n {6}connectTimeout: 10s\n {6}noHappyEyeballs: true\n/m);
-  assert.match(y, /^ {2}- service: http_status:404\n$/m);
-  assert.ok(y.trimEnd().endsWith('- service: http_status:404'), 'the catch-all is last');
+  assert.match(y, /^originRequest:\n {2}connectTimeout: 10s\n {2}noHappyEyeballs: true\n/m);
+  assert.match(y, /^ {2}- hostname: blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.match(y, /^ {2}- hostname: www\.blumodel\.studio\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.match(y, /^ {2}- hostname: '\*\.blumodel\.studio'\n {4}service: http:\/\/127\.0\.0\.1:8790\n/m);
+  assert.ok(y.trimEnd().endsWith('- service: http://127.0.0.1:8790'), 'the catch-all is last and goes to the server (custom domains)');
+  assert.ok(tunnelConfigYaml({ credentials: creds, customDomains: false }).trimEnd().endsWith('- service: http_status:404'), 'without custom domains: 404');
   assert.throws(() => tunnelConfigYaml({ credentials: creds, origin: 'http://0.0.0.0:8790' }), /origin must be/);
   assert.throws(() => tunnelConfigYaml({ credentials: creds, hostname: 'a b' }), /Not a hostname/);
   assert.match(tunnelConfigYaml({ credentials: "C:\\it's\\x.json" }), /credentials-file: 'C:\\it''s\\x\.json'/);
@@ -665,8 +671,10 @@ test('cloudflared itself accepts the generated config (offline: ingress validate
     assert.equal(v.status, 0, v.stdout + v.stderr);
     const rule = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://blumodel.studio/any/path'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
     assert.match(rule.stdout + rule.stderr, /service: http:\/\/127\.0\.0\.1:8790/);
+    const shop = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://acme.blumodel.studio/'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
+    assert.match(shop.stdout + shop.stderr, /hostname: \*\.blumodel\.studio\s+service: http:\/\/127\.0\.0\.1:8790/);
     const other = spawnSync(cf, ['tunnel', '--config', file, 'ingress', 'rule', 'https://www.example.com/'], { encoding: 'utf8', windowsHide: true, timeout: 30_000 });
-    assert.match(other.stdout + other.stderr, /http_status:404/);
+    assert.match(other.stdout + other.stderr, /service: http:\/\/127\.0\.0\.1:8790/, 'a custom domain reaches the server, which answers 404 for hosts it does not know');
   } finally {
     rm(dir);
   }
@@ -688,7 +696,7 @@ test('deploy-local refuses an uncommitted migration before it stops or copies an
   const repo = tempDir('blumodel-dirty-');
   const home = tempDir('blumodel-dirty-home-');
   try {
-    for (const rel of ['scripts/deploy-local.mjs', 'scripts/host/lib.mjs', 'server/ops/home.mjs', 'server/ops/homePort.mjs', 'server/lib/envFile.mjs']) {
+    for (const rel of ['scripts/deploy-local.mjs', 'scripts/host/lib.mjs', 'scripts/tunnel/tunnel.mjs', 'server/ops/home.mjs', 'server/ops/homePort.mjs', 'server/ops/winTools.mjs', 'server/ops/sites.mjs', 'server/lib/envFile.mjs']) {
       fs.mkdirSync(path.dirname(path.join(repo, rel)), { recursive: true });
       fs.copyFileSync(path.join(ROOT, rel), path.join(repo, rel));
     }

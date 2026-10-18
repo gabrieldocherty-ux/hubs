@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from 'react';
 import { navigateHash, safeNext, signinHref, splitHash, useRoute, type Route } from './lib/router';
-import { loadConfig } from './lib/config';
+import { loadConfig, useConfig } from './lib/config';
 import { useSession } from './store/useSession';
 import { useCatalog } from './store/useCatalog';
 import { AuthScreen } from './screens/AuthScreen';
@@ -12,22 +12,25 @@ import { ErrorBoundary, QaCrash } from './components/ErrorBoundary';
 import { ProductPage } from './features/viewer';
 import { BrandPage, BrandPortal } from './features/brands';
 import { DemoPay, OrdersRoot } from './features/orders';
-import { GenerateScreen, PhotoReference } from './features/generate';
 import { LandingScreen, PricingScreen, SharedKitchen } from './features/share';
-import { BillingHost, BillingPage, DemoPlanPay } from './features/billing';
+import { BillingHost, BillingPage, DemoPlanPay, ShowroomPay } from './features/billing';
 import { ContractorRoot } from './features/contractors';
-import { ContractorsPage } from './features/finder';
+import { WorkspaceRoot } from './features/workspace';
 import { LegalScreen } from './features/legal';
+import { applyShowroomBranding, NOT_ON_SHOWROOM, useSiteKind } from './features/showroom';
+import { showroomScreen } from './features/showroom/routes';
 
 const AdminScreen = lazy(() => import('./screens/AdminScreen'));
 const AccountScreen = lazy(() => import('./screens/AccountScreen'));
+// The sales site's Book a call page (docs/SHOWROOM_PIVOT.md §6).
+const BookCallScreen = lazy(() => import('./features/marketing/BookCallScreen'));
 // The editor carries the 2D plan (konva), the panels and the exports: about 60% of what used to be
 // the entry chunk, and none of it is needed by the landing page, pricing, product pages or sign-in.
 const KitchenEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.KitchenEditor })));
 const LocalEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.LocalEditor })));
 
 /** Routes that need an account; signed-out visitors are sent to sign in (and brought back after). */
-const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'account', 'pro', 'payDemoPlan']);
+const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'account', 'pro', 'payDemoPlan', 'studio']);
 
 const loading = <div className="screen-msg">Loading…</div>;
 
@@ -37,6 +40,12 @@ export default function App() {
   const userId = useSession((s) => s.user?.id ?? null);
   const init = useSession((s) => s.init);
   const lastUser = useRef<string | null | undefined>(undefined);
+  // Which site this host is (the server says, in /api/config): a company's showroom gets its
+  // own screens and branding (src/features/showroom), our sales site everything else.
+  const site = useSiteKind();
+  const configStatus = useConfig((s) => s.status);
+  const tenant = useConfig((s) => s.config?.tenant ?? null);
+  useEffect(() => applyShowroomBranding(tenant), [tenant]);
 
   useEffect(() => {
     void init();
@@ -57,7 +66,9 @@ export default function App() {
     void useCatalog.getState().load(changed);
   }, [status, userId]);
 
-  const needsAccount = NEEDS_ACCOUNT.has(route.name);
+  // On a showroom a visitor designs signed out: "Before you start" (features/showroom/LeadGate)
+  // asks for their details instead, and their designs save under them (docs/handoff/leads.md).
+  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && (NOT_ON_SHOWROOM.has(route.name) || route.name === 'new' || route.name === 'kitchen'));
   // A password-reset link (`#/signin?reset=`) opens even when this browser is signed in: setting
   // the new password signs the browser in as the account it belongs to.
   const resetPage = route.name === 'signin' && splitHash(location.hash).query.has('reset');
@@ -65,15 +76,30 @@ export default function App() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (status !== 'signedIn' && needsAccount) navigateHash(signinHref(), true);
+    // Not before the config says which site this is: a showroom's #/new opened directly needs no
+    // account (it asks "Before you start" instead), but would look like it did until then.
+    if (status !== 'signedIn' && needsAccount && site !== 'unknown') navigateHash(signinHref(), true);
     if (status === 'signedIn' && authPage) navigateHash(safeNext(splitHash(location.hash).query), true);
-  }, [status, needsAccount, authPage]);
+  }, [status, needsAccount, authPage, site, route.name]);
 
   // A crash on one screen shows "Something went wrong" in its place; moving to another screen clears it.
   const boundaryKey = splitHash(location.hash).path || 'home';
 
-  // Device-only mode works with no server at all, so it never waits on the session.
-  if (route.name === 'local')
+  // A showroom draws nothing of ours until the config has said whose it is (no flash of our brand).
+  if (site === 'unknown')
+    return configStatus === 'error' ? (
+      <div className="screen-msg">
+        <p>This showroom can’t be reached right now.</p>
+        <button className="btn" onClick={() => void loadConfig(true)}>
+          Try again
+        </button>
+      </div>
+    ) : (
+      loading
+    );
+  // Device-only mode works with no server at all, so it never waits on the session. A showroom's
+  // #/local (a signed-out visitor's design) is drawn by its own screens: it needs the session.
+  if (route.name === 'local' && site === 'sales')
     return (
       <>
         <ErrorBoundary inline key={boundaryKey}>
@@ -81,7 +107,6 @@ export default function App() {
           <Suspense fallback={loading}>
             <LocalEditor />
           </Suspense>
-          <PhotoReference />
           <BillingHost />
         </ErrorBoundary>
         <ConnectionBanner local />
@@ -119,7 +144,7 @@ export default function App() {
     <>
       <ErrorBoundary inline key={boundaryKey}>
         <QaCrash where="route" />
-        <Suspense fallback={loading}>{screenFor(route, signedIn)}</Suspense>
+        <Suspense fallback={loading}>{screenFor(route, signedIn, site === 'showroom')}</Suspense>
         <BillingHost />
       </ErrorBoundary>
       <ConnectionBanner />
@@ -127,7 +152,11 @@ export default function App() {
   );
 }
 
-function screenFor(route: Route, signedIn: boolean) {
+function screenFor(route: Route, signedIn: boolean, showroom = false) {
+  if (showroom) {
+    const screen = showroomScreen(route, signedIn);
+    if (screen) return screen;
+  }
   switch (route.name) {
     case 'home':
       return signedIn ? <HomeScreen /> : <LandingScreen />;
@@ -135,25 +164,16 @@ function screenFor(route: Route, signedIn: boolean) {
       return <LandingScreen />;
     case 'pricing':
       return <PricingScreen />;
+    case 'book':
+      return <BookCallScreen />;
     case 'new':
       return <SetupWizard />;
     case 'kitchen':
-      // The photos a kitchen was started from float over the editor. Never on a share view
-      // (`#/s/:token`): they are private to the owner.
-      return (
-        <>
-          <KitchenEditor key={route.id} id={route.id} add={route.add} />
-          <PhotoReference key={`ref-${route.id}`} projectId={route.id} />
-        </>
-      );
-    case 'generate':
-      return <GenerateScreen q={route.q} from={route.from} />;
+      return <KitchenEditor key={route.id} id={route.id} add={route.add} />;
     case 'product':
       return <ProductPage key={route.id} id={route.id} finish={route.finish} />;
     case 'brandPage':
       return <BrandPage key={route.slug} slug={route.slug} />;
-    case 'contractors':
-      return <ContractorsPage near={route.near} kitchen={route.kitchen} />;
     case 'brand':
       return <BrandPortal rest={route.rest} />;
     case 'orders':
@@ -170,11 +190,16 @@ function screenFor(route: Route, signedIn: boolean) {
       return <AccountScreen />;
     case 'pro':
       return <ContractorRoot rest={route.rest} />;
+    case 'studio':
+      return <WorkspaceRoot rest={route.rest} />;
     case 'payDemoPlan':
       return <DemoPlanPay key={route.ref} checkoutRef={route.ref} />;
+    case 'payShowroom':
+      return <ShowroomPay key={route.ref} checkoutRef={route.ref} />;
     case 'legal':
       return <LegalScreen doc={route.doc} />;
     case 'notFound':
+    case 'showroomImages': // a showroom's own page; the sales site has none
       return <NotFound />;
     default:
       return signedIn ? <HomeScreen /> : <LandingScreen />;
