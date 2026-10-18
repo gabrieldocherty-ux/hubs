@@ -191,7 +191,7 @@ function rangeWidth(lines: ShowroomLine[]): number {
 /** The editor's design checks, as plain titles of what is wrong ('bad' only). */
 export function layoutProblems(doc: DesignDoc): string[] {
   return runChecks(resolveAll(doc.items), doc.room)
-    .checks.filter((c) => c.level === 'bad')
+    .checks.filter((c) => c.level === 'bad' || c.level === 'warn')
     .map((c) => c.title);
 }
 
@@ -247,8 +247,8 @@ function heroSpec(room: Room, range = 36): LayoutSpec {
   const L = room.lengthIn;
   return {
     runs: [
-      { wall: 'north', start: 0, end: W, slots: [{ role: 'pantry' }, { role: 'fridge', variant: 'french' }, 'flex', { role: 'range', widthIn: range }, 'flex', { role: 'pantry', optional: true }], opts: { uppers: true, hood: 'auto', glassUppers: true } },
-      { wall: 'west', start: 24, end: L - 54, slots: ['flex', { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex'], opts: { window: true, uppers: false } },
+      { wall: 'north', start: 0, end: W, slots: [{ role: 'pantry' }, { role: 'fridge', variant: 'french' }, { gap: 30 }, { role: 'range', widthIn: range }, 'flex', { role: 'pantry', optional: true }], opts: { uppers: true, hood: 'auto', glassUppers: true } },
+      { wall: 'west', start: 24, end: L - 54, slots: [{ gap: 39 }, { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex'], opts: { window: true, uppers: false } },
     ],
     island: { x: W / 2 + 16, y: 24 + 48 + 21, widthIn: 96, seats: 3, seatSide: 'south', pendants: 3 },
     openings: [{ productId: 'opening', wall: 'east', along: L - 36, widthIn: 42 }],
@@ -379,7 +379,7 @@ function galleryScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     room: { widthIn: 192, lengthIn: 180, ceilingIn: 108 },
     spec: (r) => ({
       runs: [{ wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'pantry' }, { role: 'fridge', variant: 'french' }, 'flex', { role: 'sink', variant: 'undermount' }, { role: 'dishwasher' }, 'flex', { role: 'pantry', optional: true }], opts: { window: true, uppers: true } }],
-      island: { x: r.widthIn / 2, y: 24 + 46 + 21, widthIn: 96, seats: 3, seatSide: 'south', pendants: 2 },
+      island: { x: r.widthIn / 2, y: 30 + 44 + 21, widthIn: 96, seats: 3, seatSide: 'south', pendants: 2 },
       openings: [{ productId: 'door-french', wall: 'west', along: r.lengthIn - 54, widthIn: 60 }],
     }),
     view: (d) => ({ pos: [ft(d.room.widthIn) - 1.4, 5.3, ft(d.room.lengthIn) - 0.8], target: [ft(d.room.widthIn) * 0.42, 3.3, 1.8], fov: 52 }),
@@ -389,7 +389,7 @@ function galleryScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     line: b,
     finish: whiteFinish(b),
     mood: 'classic',
-    room: { widthIn: 168, lengthIn: 156, ceilingIn: 108 },
+    room: { widthIn: 144, lengthIn: 156, ceilingIn: 108 },
     spec: (r) => ({
       runs: [
         { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'corner' }, 'flex', { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex', { role: 'corner' }], opts: { window: true, uppers: true, glassUppers: true } },
@@ -412,11 +412,10 @@ function galleryScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     room: { widthIn: 216, lengthIn: 180, ceilingIn: 108 },
     spec: (r) => ({
       runs: [
-        { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'corner' }, 'flex', { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex', { role: 'pantry', optional: true }], opts: { window: true, uppers: true } },
-        { wall: 'west', start: 36, end: r.lengthIn - 30, slots: [{ role: 'fridge', variant: 'french' }, 'flex', { role: 'range', widthIn: rw }, 'flex'], opts: { uppers: true, hood: 'auto' } },
+        { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'corner' }, { gap: 24 }, { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex', { role: 'pantry', optional: true }], opts: { window: true, uppers: true } },
+        { wall: 'west', start: 36, end: r.lengthIn - 30, slots: [{ role: 'fridge', variant: 'french' }, { gap: 12 }, { role: 'range', widthIn: rw }, 'flex'], opts: { uppers: true, hood: 'auto' } },
       ],
       island: { x: r.widthIn / 2 + 18, y: 24 + 46 + 21, widthIn: 84, seats: 3, seatSide: 'south', pendants: 2 },
-      decor: [{ productId: 'fig', x: r.widthIn - 18, y: r.lengthIn - 18, rotation: 0 }],
     }),
     view: (d) => ({ pos: [ft(d.room.widthIn) - 1.0, 5.2, ft(d.room.lengthIn) - 0.8], target: [ft(d.room.widthIn) * 0.3, 3.2, ft(d.room.lengthIn) * 0.32], fov: 54 }),
   });
