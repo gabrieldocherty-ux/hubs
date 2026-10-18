@@ -179,6 +179,7 @@ function Inbox() {
                       {!l.read && <span className="ws-dot" aria-label="New" />}
                       <b>{l.name}</b>
                     </a>
+                    {l.duplicateOf && <span className="ws-pill warn ws-dup-pill">Possible duplicate of {l.duplicateOf.name}</span>}
                   </td>
                   <td data-label="Email" className="ws-lt-email">
                     {l.email ? <a href={`mailto:${l.email}`}>{l.email}</a> : <span className="muted">—</span>}
@@ -223,6 +224,7 @@ const EVENT_LABEL: Record<LeadEvent['kind'], string> = {
   sent: 'Sent a design to you',
   status: 'Status changed',
   account: 'Made an account on your showroom',
+  merged: 'A possible duplicate was merged in',
 };
 
 function eventText(e: LeadEvent): string {
@@ -260,6 +262,20 @@ function LeadDetail({ id }: { id: string }) {
       toast(ok, 'ok');
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'That didn’t save.', 'warn');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const merge = async (keep: boolean) => {
+    setBusy(true);
+    try {
+      const r = keep ? await wsApi.keepLeadSeparate(id) : await wsApi.mergeLead(id);
+      toast(keep ? 'Kept as a separate person.' : `Merged into ${r.lead.name}.`, 'ok');
+      if (keep) setLead(r.lead);
+      else navigate({ name: 'studio', rest: `leads/${r.lead.id}` }, true);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : 'That didn’t work.', 'warn');
     } finally {
       setBusy(false);
     }
@@ -317,6 +333,21 @@ function LeadDetail({ id }: { id: string }) {
           )}
         </div>
       </div>
+      {lead.duplicateOf && (
+        <section className="ws-card ws-note ws-dup" aria-label="Possible duplicate">
+          <p>
+            <b>Possible duplicate of <a href={href(`leads/${lead.duplicateOf.id}`)}>{lead.duplicateOf.name}</a>.</b> This person typed an email or phone that lead already has. Typing an address doesn’t prove it’s theirs, so the two are kept apart until you decide.
+          </p>
+          <div className="ws-actions">
+            <button type="button" className="btn" disabled={busy} onClick={() => void merge(false)}>
+              Same person: merge into {lead.duplicateOf.name}
+            </button>
+            <button type="button" className="btn" disabled={busy} onClick={() => void merge(true)}>
+              Someone else: keep separate
+            </button>
+          </div>
+        </section>
+      )}
       <div className="ws-lead-grid">
         <section className="ws-card" aria-label="Contact">
           <h2>Contact</h2>

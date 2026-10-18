@@ -23,10 +23,15 @@ privacy-showroom; `workspace`: leads, lead, lead-design-3d; `admin`: admin-compa
   Rate limit 10 / 10 min and 60 / day per address; honeypot `website`; CSRF header. 409
   `team_member` for staff, 403 `showroom_not_open` in setup. `GET /api/visitor` →
   `{ visitor: { name, email, phone, consentText, since } | null, required }`; `DELETE` forgets the browser.
-- **Dedupe**: same email, else same phone (digits, `phone_key`), within the tenant. An existing lead
-  keeps its details; a form only fills its blanks (when no other lead has that email/phone). Each
-  browser is its own **visitor**: a second browser that types someone's email joins that lead but
-  only ever sees its own designs and the details it typed (the Send form prefills from those).
+- **Duplicates, not dedupe** (protect-004, audit 2026-10): typed details prove nothing, so a form
+  whose email (else phone, `phone_key`) matches an existing lead in the tenant does **not** join it.
+  It makes its own lead with `duplicate_of` = that lead; the existing lead is not touched (no blank
+  filled, no activity, no timeline entry). Only the same showroom account behind both (`user_id`)
+  joins. The team sees "Possible duplicate of <name>" (`Lead.duplicateOf = { id, name }`) and
+  decides: `POST /api/workspace/leads/:id/merge` moves its browsers, designs, sends and timeline into
+  the other lead (a `merged` timeline entry), `POST /:id/keep-separate` drops the label. Each browser
+  is its own **visitor** either way and only ever sees its own designs and what it typed. Deleting a
+  lead makes its oldest duplicate the lead for the address.
 - **Designs**: `projects.visitor_id` (leads-001 rebuilt projects: `user_id` nullable, `visitor_id`,
   `lead_id`, CHECK one owner). `/api/projects*` and the export route accept the visitor as owner, on
   showrooms only. Each new design gets `lead_id` (the visitor's lead, else the account's).

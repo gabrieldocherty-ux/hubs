@@ -464,3 +464,15 @@
     min-height: 44px;
   }
 }
+
+/* A lead that typed an address another lead has (protect-004). */
+.ws-dup-pill {
+  display: inline-block;
+  margin-top: 4px;
+}
+.ws-dup .ws-actions {
+  flex-wrap: wrap;
+}
+.ws-dup .btn {
+  min-height: 44px;
+}

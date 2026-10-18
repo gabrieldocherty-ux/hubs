@@ -140,7 +140,7 @@ test('a visitor designs and saves without an account; the team sees the lead, it
   }
 });
 
-test('the same email or phone in a showroom is the same lead, but each browser keeps its own designs and its own details', async () => {
+test('typing an email or phone another lead has makes a separate lead marked as a possible duplicate (audit: anyone who types a customer’s email joined their lead); staff merge or keep separate', async () => {
   const t = await startTestServer();
   try {
     const A = t.tenant({ slug: 'dup-a' });
@@ -150,23 +150,69 @@ test('the same email or phone in a showroom is the same lead, but each browser k
     const three = new Agent(t.url, { host: A.host });
     await one.post('/api/visitor', me({ phone: '' }));
     const k = (await one.post('/api/projects', { name: 'First', doc: sampleDoc() })).body.project;
-    // Same email, another browser, a different name: the same lead; the lead keeps its details.
+    const real = (await owner.get('/api/workspace/leads')).body.leads[0];
+    // Same email, another browser, a different name: NOT joined. Its own lead, flagged for the team.
     const r2 = await two.post('/api/visitor', me({ name: 'Somebody Else', email: 'RILEY@example.com', phone: '(519) 555-0142' }));
     assert.equal(r2.status, 201);
     assert.equal(r2.body.visitor.name, 'Somebody Else', 'this browser sees what it typed');
-    assert.equal((await two.get(`/api/projects/${k.id}`)).status, 404, 'but never the first browser’s designs');
+    assert.equal((await two.get(`/api/projects/${k.id}`)).status, 404, 'never the first browser’s designs');
     assert.deepEqual((await two.get('/api/projects')).body.projects, []);
-    // Same phone, written another way: still the same lead.
+    const k2 = (await two.post('/api/projects', { name: 'Second', doc: sampleDoc() })).body.project;
+    // Same phone only: the only lead with that phone is itself a possible duplicate, so this is a new person.
     await three.post('/api/visitor', me({ name: 'R', email: '', phone: '+1 519-555-0142' }));
-    const leads = (await owner.get('/api/workspace/leads')).body.leads;
-    assert.equal(leads.length, 1);
-    assert.equal(leads[0].name, 'Riley Okafor');
-    assert.equal(leads[0].phone, '(519) 555-0142', 'a blank was filled');
-    assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM tenant_lead_visitors').get().n, 3);
-    // A different phone and email is a different person.
+    // And the same email once more, from yet another browser.
+    const four = new Agent(t.url, { host: A.host });
+    await four.post('/api/visitor', me({ name: 'Not Riley', phone: '' }));
+    let leads = (await owner.get('/api/workspace/leads')).body.leads;
+    assert.equal(leads.length, 4);
+    const original = leads.find((x) => x.id === real.id);
+    assert.equal(original.name, 'Riley Okafor');
+    assert.equal(original.phone, '', 'the existing lead is untouched: no blank filled from an unproven form');
+    assert.equal(original.designs, 1);
+    assert.equal(original.duplicateOf, null);
+    assert.equal(leads.find((x) => x.name === 'R').duplicateOf, null);
+    const dups = leads.filter((x) => x.duplicateOf);
+    assert.deepEqual(dups.map((x) => x.name).sort(), ['Not Riley', 'Somebody Else']);
+    for (const d of dups) assert.deepEqual(d.duplicateOf, { id: real.id, name: 'Riley Okafor' });
+    const dupTwo = dups.find((x) => x.name === 'Somebody Else');
+    assert.equal(dupTwo.designs, 1);
+    // The first browser still sees only itself.
+    assert.equal((await one.get('/api/visitor')).body.visitor.name, 'Riley Okafor');
+    assert.deepEqual((await one.get('/api/projects')).body.projects.map((p) => p.name), ['First']);
+
+    // Staff: 'Not Riley' is someone else; 'Somebody Else' is the same person (merged).
+    const dupThree = dups.find((x) => x.name === 'Not Riley');
+    const kept = await owner.post(`/api/workspace/leads/${dupThree.id}/keep-separate`);
+    assert.equal(kept.status, 200, kept.text);
+    assert.equal(kept.body.lead.duplicateOf, null);
+    const merged = await owner.post(`/api/workspace/leads/${dupTwo.id}/merge`);
+    assert.equal(merged.status, 200, merged.text);
+    assert.equal(merged.body.lead.id, real.id);
+    assert.deepEqual(merged.body.lead.designs.map((d) => d.name).sort(), ['First', 'Second']);
+    assert.ok(merged.body.lead.timeline.some((e) => e.kind === 'merged'));
+    assert.equal((await owner.get(`/api/workspace/leads/${dupTwo.id}`)).status, 404);
+    // Merged: still each browser sees only its own designs.
+    assert.deepEqual((await two.get('/api/projects')).body.projects.map((p) => p.name), ['Second']);
+    assert.equal((await two.get(`/api/projects/${k.id}`)).status, 404);
+    assert.equal((await owner.post(`/api/workspace/leads/${real.id}/merge`)).body.code, 'not_duplicate');
+    // Another showroom's staff can't merge anything here.
+    const B = t.tenant({ slug: 'dup-b' });
+    const bOwner = await t.showroomUser(B, { role: 'owner' });
+    assert.equal((await bOwner.post(`/api/workspace/leads/${dupThree.id}/merge`)).status, 404);
+
+    // A different phone and email is a different person, not flagged.
     await new Agent(t.url, { host: A.host }).post('/api/visitor', me({ name: 'Morgan', email: 'morgan@example.com', phone: '226-555-0107' }));
-    assert.equal((await owner.get('/api/workspace/leads')).body.leads.length, 2);
+    leads = (await owner.get('/api/workspace/leads')).body.leads;
+    assert.equal(leads.find((x) => x.name === 'Morgan').duplicateOf, null);
     assert.deepEqual((await owner.get('/api/workspace/leads?q=226555')).body.leads.map((x) => x.name), ['Morgan']);
+    // Deleting the original makes its remaining duplicate the lead for the address.
+    const dupFour = await new Agent(t.url, { host: A.host }).post('/api/visitor', me({ name: 'Riley again', email: 'riley@example.com', phone: '' }));
+    assert.equal(dupFour.status, 201);
+    await owner.delete(`/api/workspace/leads/${real.id}`);
+    const after = (await owner.get('/api/workspace/leads')).body.leads;
+    const promoted = after.find((x) => x.name === 'Not Riley');
+    assert.equal(promoted.duplicateOf, null, 'the oldest duplicate is now the lead for the address');
+    assert.deepEqual(after.find((x) => x.name === 'Riley again').duplicateOf, { id: promoted.id, name: 'Not Riley' });
   } finally {
     await t.close();
   }
@@ -243,6 +289,10 @@ test('staff delete a lead with its designs (audited without the person’s detai
     const acct = await t.showroomUser(A, { email: 'acct@example.com' });
     const ak = (await acct.post('/api/projects', { name: 'Account design', doc: sampleDoc() })).body.project;
     await acct.post('/api/visitor', me({ email: 'riley@example.com' }));
+    // The same address from an account: a possible duplicate until the team merges it.
+    const dup = (await owner.get('/api/workspace/leads')).body.leads.find((x) => x.duplicateOf);
+    assert.ok(dup);
+    assert.equal((await owner.post(`/api/workspace/leads/${dup.id}/merge`)).status, 200);
     const lead = (await owner.get('/api/workspace/leads')).body.leads[0];
     assert.equal(lead.designs, 2);
     const del = await owner.delete(`/api/workspace/leads/${lead.id}`);

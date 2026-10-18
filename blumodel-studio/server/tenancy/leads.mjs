@@ -8,8 +8,10 @@
 //   a visitor   tenant_lead_visitors: a browser that answered "Before you start". It carries an
 //               httpOnly, host-only cookie (VISITOR_COOKIE, stored hashed) that owns the designs
 //               made there (projects.visitor_id), so a visitor designs and saves without an
-//               account. A second browser typing the same email joins the same lead, but it gets
-//               its own visitor: it sees only its own designs and what it typed itself.
+//               account. A second browser typing an email or phone an existing lead has does NOT
+//               join it (nothing proves the address, audit 2026-10): it gets its own lead marked
+//               duplicate_of that one ("possible duplicate of <name>"), which the team can merge or
+//               keep separate (protect-004). Neither browser ever sees the other's designs or details.
 //   a send      showroom_leads: one "Send this design to <Company>" (budget, timeline, notes and a
 //               view-only link), now attached to its lead.
 //   the timeline tenant_lead_events: started a design, saved, sent, came back.
@@ -86,20 +88,37 @@ export function createLeadService({ db, now = Date.now }) {
     db.prepare('INSERT INTO tenant_lead_events (tenant_id, lead_id, kind, project_id, detail, at) VALUES (?, ?, ?, ?, ?, ?)').run(tenantId, leadId, kind, projectId, JSON.stringify(detail), at);
   const touchLead = (leadId, t = now()) => db.prepare('UPDATE tenant_leads SET last_active_at = MAX(last_active_at, ?) WHERE id = ?').run(t, leadId);
 
-  /** The person behind an email or a phone in this showroom (email first). */
+  /** The person behind an email or a phone in this showroom (email first); never a duplicate. */
   const findLead = (tenantId, email, phoneKey) =>
-    (email && db.prepare("SELECT * FROM tenant_leads WHERE tenant_id = ? AND email = ? AND email <> ''").get(tenantId, email)) ||
-    (phoneKey && db.prepare("SELECT * FROM tenant_leads WHERE tenant_id = ? AND phone_key = ? AND phone_key <> ''").get(tenantId, phoneKey)) ||
+    (email && db.prepare("SELECT * FROM tenant_leads WHERE tenant_id = ? AND email = ? AND email <> '' AND duplicate_of IS NULL").get(tenantId, email)) ||
+    (phoneKey && db.prepare("SELECT * FROM tenant_leads WHERE tenant_id = ? AND phone_key = ? AND phone_key <> '' AND duplicate_of IS NULL").get(tenantId, phoneKey)) ||
     null;
 
+  const insertLead = (tenant, c, { consent, source, userId, duplicateOf = null, t = now() }) => {
+    const id = `ld_${crypto.randomBytes(12).toString('base64url')}`;
+    db.prepare(
+      `INSERT INTO tenant_leads (id, tenant_id, user_id, name, email, phone, phone_key, consent_text, consent_at, source, status, staff_notes, read_at,
+                                 first_seen_at, last_active_at, created_at, updated_at, duplicate_of)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', '', NULL, ?, ?, ?, ?, ?)`,
+    ).run(id, tenant.id, userId, c.name, c.email, c.phone, c.phoneKey, consent, consent ? t : null, source, t, t, t, t, duplicateOf);
+    return leadRow(tenant.id, id);
+  };
+
   /**
-   * Finds or makes the lead for these details. An existing lead keeps the details it has (an
-   * unverified form never overwrites them); its blanks are filled when nobody else in the showroom
-   * has that email or phone. Returns { lead, created }.
+   * Finds or makes the lead for these details. Typed details prove nothing, so an email or phone
+   * that an existing lead already has joins it only when the same showroom account is behind both
+   * (`userId` is that lead's account). Otherwise the form gets its own lead marked as a possible
+   * duplicate of the existing one; the existing lead is not touched at all. A joined lead keeps the
+   * details it has; its blanks are filled when nobody else in the showroom has that email or phone.
+   * Returns { lead, created, duplicateOf }.
    */
   const upsert = (tenant, c, { consent = '', source = 'form', userId = null } = {}) => {
     const t = now();
     const found = findLead(tenant.id, c.email, c.phoneKey);
+    if (found && !(userId && found.user_id === userId)) {
+      const lead = insertLead(tenant, c, { consent, source, userId: userId && !db.prepare('SELECT 1 FROM tenant_leads WHERE tenant_id = ? AND user_id = ?').get(tenant.id, userId) ? userId : null, duplicateOf: found.id, t });
+      return { lead, created: true, duplicateOf: found.id };
+    }
     if (found) {
       const emailFree = c.email && !found.email && !findLead(tenant.id, c.email, '');
       const phoneFree = c.phoneKey && !found.phone_key && !findLead(tenant.id, '', c.phoneKey);
@@ -109,15 +128,9 @@ export function createLeadService({ db, now = Date.now }) {
                 user_id = CASE WHEN ? THEN ? ELSE user_id END, consent_text = CASE WHEN ? <> '' THEN ? ELSE consent_text END,
                 consent_at = CASE WHEN ? <> '' THEN ? ELSE consent_at END, last_active_at = ?, updated_at = ? WHERE id = ?`,
       ).run(emailFree ? 1 : 0, c.email, phoneFree ? 1 : 0, c.phone, phoneFree ? 1 : 0, c.phoneKey, userFree ? 1 : 0, userId, consent, consent, consent, t, t, t, found.id);
-      return { lead: leadRow(tenant.id, found.id), created: false };
+      return { lead: leadRow(tenant.id, found.id), created: false, duplicateOf: null };
     }
-    const id = `ld_${crypto.randomBytes(12).toString('base64url')}`;
-    db.prepare(
-      `INSERT INTO tenant_leads (id, tenant_id, user_id, name, email, phone, phone_key, consent_text, consent_at, source, status, staff_notes, read_at,
-                                 first_seen_at, last_active_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', '', NULL, ?, ?, ?, ?)`,
-    ).run(id, tenant.id, userId, c.name, c.email, c.phone, c.phoneKey, consent, consent ? t : null, source, t, t, t, t);
-    return { lead: leadRow(tenant.id, id), created: true };
+    return { lead: insertLead(tenant, c, { consent, source, userId, t }), created: true, duplicateOf: null };
   };
 
   /** A signed-in account's designs on this showroom join its lead. */
@@ -159,7 +172,8 @@ export function createLeadService({ db, now = Date.now }) {
     (SELECT COUNT(*) FROM projects p WHERE p.lead_id = l.id AND p.tenant_id = l.tenant_id) AS designs,
     (SELECT COUNT(*) FROM showroom_leads s WHERE s.lead_id = l.id) AS sends,
     (SELECT MAX(s.created_at) FROM showroom_leads s WHERE s.lead_id = l.id) AS last_sent_at,
-    (SELECT s.design_name || char(31) || COALESCE(s.share_token, '') FROM showroom_leads s WHERE s.lead_id = l.id AND (s.share_token IS NOT NULL OR s.project_id IS NOT NULL) ORDER BY s.created_at DESC LIMIT 1) AS last_design`;
+    (SELECT s.design_name || char(31) || COALESCE(s.share_token, '') FROM showroom_leads s WHERE s.lead_id = l.id AND (s.share_token IS NOT NULL OR s.project_id IS NOT NULL) ORDER BY s.created_at DESC LIMIT 1) AS last_design,
+    (SELECT d.name FROM tenant_leads d WHERE d.id = l.duplicate_of AND d.tenant_id = l.tenant_id) AS duplicate_name`;
 
   const listWire = (r, designUrlOf) =>
     r && {
@@ -185,6 +199,8 @@ export function createLeadService({ db, now = Date.now }) {
         return { name, shareToken: token || null, url: token && designUrlOf ? designUrlOf(token) : null };
       })(),
       read: !!r.read_at,
+      // "Possible duplicate of <name>": a form typed an address this other lead has (protect-004).
+      duplicateOf: r.duplicate_of && r.duplicate_name != null && !r.duplicate_dismissed_at ? { id: r.duplicate_of, name: r.duplicate_name } : null,
       firstSeenAt: r.first_seen_at,
       lastActiveAt: r.last_active_at,
       createdAt: r.created_at,
@@ -258,6 +274,8 @@ export function createLeadService({ db, now = Date.now }) {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(id, tenant.id, lead.id, sha256(token), userId, c.name, c.email, c.phone, consent, t, t);
       event(tenant.id, lead.id, created ? 'captured' : 'returned', { detail: { form: true, name: c.name, email: c.email, phone: c.phone, consent }, at: t });
+      // Typed details aren't proof: a new lead that has an address another lead has is only
+      // "possibly" that person (the other lead learns nothing, and this browser sees only its own).
       if (userId) linkUser(tenant.id, lead.id, userId);
       return { token, visitor: visitorWire(db.prepare('SELECT * FROM tenant_lead_visitors WHERE id = ?').get(id)), leadId: lead.id, created };
     },
@@ -446,9 +464,44 @@ export function createLeadService({ db, now = Date.now }) {
     },
 
     /**
+     * Staff decide a possible duplicate is the same person: everything of `leadId` (its browsers,
+     * designs, sends and timeline) moves to the lead it duplicates, which keeps its own details,
+     * and `leadId` is gone. Returns the merged lead's wire.
+     */
+    merge(tenantId, leadId, { designUrlOf, by = '' } = {}) {
+      const cur = leadRow(tenantId, leadId);
+      if (!cur) throw new HttpError(404, 'That lead does not exist.');
+      const into = cur.duplicate_of ? leadRow(tenantId, cur.duplicate_of) : null;
+      if (!into) throw new HttpError(409, 'That lead isn’t marked as a possible duplicate.', { code: 'not_duplicate' });
+      const t = now();
+      db.prepare('UPDATE tenant_lead_visitors SET lead_id = ? WHERE lead_id = ? AND tenant_id = ?').run(into.id, cur.id, tenantId);
+      db.prepare('UPDATE projects SET lead_id = ? WHERE lead_id = ? AND tenant_id = ?').run(into.id, cur.id, tenantId);
+      db.prepare('UPDATE showroom_leads SET lead_id = ? WHERE lead_id = ? AND tenant_id = ?').run(into.id, cur.id, tenantId);
+      db.prepare('UPDATE tenant_lead_events SET lead_id = ? WHERE lead_id = ? AND tenant_id = ?').run(into.id, cur.id, tenantId);
+      db.prepare('UPDATE tenant_leads SET duplicate_of = ? WHERE duplicate_of = ? AND tenant_id = ?').run(into.id, cur.id, tenantId);
+      const userId = !into.user_id && cur.user_id ? cur.user_id : null;
+      db.prepare('DELETE FROM tenant_leads WHERE id = ? AND tenant_id = ?').run(cur.id, tenantId);
+      db.prepare(
+        'UPDATE tenant_leads SET first_seen_at = MIN(first_seen_at, ?), last_active_at = MAX(last_active_at, ?), user_id = COALESCE(user_id, ?), read_at = NULL, updated_at = ? WHERE id = ?',
+      ).run(cur.first_seen_at, cur.last_active_at, userId, t, into.id);
+      event(tenantId, into.id, 'merged', { detail: { name: cur.name, by }, at: t });
+      return svc.get(tenantId, into.id, { designUrlOf });
+    },
+
+    /** Staff decide a possible duplicate is someone else: the label goes; the two stay separate. */
+    keepSeparate(tenantId, leadId, { designUrlOf } = {}) {
+      const cur = leadRow(tenantId, leadId);
+      if (!cur) throw new HttpError(404, 'That lead does not exist.');
+      if (!cur.duplicate_of) throw new HttpError(409, 'That lead isn’t marked as a possible duplicate.', { code: 'not_duplicate' });
+      db.prepare('UPDATE tenant_leads SET duplicate_dismissed_at = ?, updated_at = ? WHERE id = ?').run(now(), now(), cur.id);
+      return svc.get(tenantId, cur.id, { designUrlOf });
+    },
+
+    /**
      * Deletes the lead, its visitors (their cookies stop working), its timeline, its sends and
      * every design made under it (with their view-only links). A design of a showroom account is
-     * the account's: it is unlinked, not deleted. Returns what was removed.
+     * the account's: it is unlinked, not deleted. A lead marked as its possible duplicate becomes
+     * the lead for that address. Returns what was removed.
      */
     remove(tenantId, leadId) {
       const cur = leadRow(tenantId, leadId);
@@ -462,7 +515,12 @@ export function createLeadService({ db, now = Date.now }) {
       const sends = db.prepare('DELETE FROM showroom_leads WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId).changes;
       db.prepare('DELETE FROM tenant_lead_visitors WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId);
       db.prepare('DELETE FROM tenant_lead_events WHERE lead_id = ? AND tenant_id = ?').run(leadId, tenantId);
+      // Its possible duplicates: the oldest becomes the lead for the address (once this one is gone,
+      // so the unique address index never sees two), the others point at it.
+      const dups = db.prepare('SELECT id FROM tenant_leads WHERE duplicate_of = ? AND tenant_id = ? ORDER BY created_at, id').all(leadId, tenantId);
+      if (dups.length) db.prepare('UPDATE tenant_leads SET duplicate_of = ? WHERE duplicate_of = ? AND tenant_id = ? AND id <> ?').run(dups[0].id, leadId, tenantId, dups[0].id);
       db.prepare('DELETE FROM tenant_leads WHERE id = ? AND tenant_id = ?').run(leadId, tenantId);
+      if (dups.length) db.prepare('UPDATE tenant_leads SET duplicate_of = NULL, duplicate_dismissed_at = NULL WHERE id = ?').run(dups[0].id);
       return { designs, unlinked, sends };
     },
 

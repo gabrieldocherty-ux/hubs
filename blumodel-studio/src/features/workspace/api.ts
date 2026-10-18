@@ -116,6 +116,11 @@ export interface Lead {
   /** The newest design they sent, with the team's view-only link. */
   design: { name: string; shareToken: string | null; url: string | null } | null;
   read: boolean;
+  /**
+   * Another lead already had the email or phone this person typed, and typing it proves nothing:
+   * "possible duplicate of <name>" until the team merges the two or keeps them separate.
+   */
+  duplicateOf?: { id: string; name: string } | null;
   firstSeenAt: number;
   lastActiveAt: number;
   createdAt: number;
@@ -150,7 +155,7 @@ export interface LeadSend {
   phone: string;
 }
 
-export type LeadEventKind = 'captured' | 'returned' | 'started' | 'saved' | 'sent' | 'status' | 'account';
+export type LeadEventKind = 'captured' | 'returned' | 'started' | 'saved' | 'sent' | 'status' | 'account' | 'merged';
 export interface LeadEvent {
   kind: LeadEventKind;
   at: number;
@@ -336,6 +341,8 @@ export const wsApi = {
   leadsSummary: () => call<{ counts: LeadCounts }>('GET', '/api/workspace/leads/summary'),
   lead: (id: string) => call<{ lead: LeadDetail }>('GET', `/api/workspace/leads/${enc(id)}`),
   saveLead: (id: string, patch: { status?: LeadStatus; staffNotes?: string }) => call<{ lead: LeadDetail }>('PATCH', `/api/workspace/leads/${enc(id)}`, patch),
+  mergeLead: (id: string) => call<{ lead: LeadDetail }>('POST', `/api/workspace/leads/${enc(id)}/merge`),
+  keepLeadSeparate: (id: string) => call<{ lead: LeadDetail }>('POST', `/api/workspace/leads/${enc(id)}/keep-separate`),
   deleteLead: (id: string) => call<{ ok: true; removed: { designs: number; unlinked: number; sends: number } }>('DELETE', `/api/workspace/leads/${enc(id)}`),
   leadDesign: (id: string, designId: string) =>
     call<{ design: { id: string; name: string; doc: DesignDoc; createdAt: number; updatedAt: number } }>('GET', `/api/workspace/leads/${enc(id)}/designs/${enc(designId)}`),

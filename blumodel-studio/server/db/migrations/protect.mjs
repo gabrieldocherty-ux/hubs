@@ -14,6 +14,13 @@
 //                charge.refunded / charge.dispute.created event), and what happened to it (status,
 //                refunded_cents, reversed_at); tenants gain review_reason / review_at, a flag for
 //                Admin > Companies ("needs review") until an admin clears it.
+//   protect-004  a form that types an email or phone an existing lead already has no longer joins that
+//                lead (nothing proves the address): it makes its own lead with duplicate_of = that lead,
+//                shown to the team as "possible duplicate of <name>" until they merge it or keep it
+//                separate (duplicate_dismissed_at). The unique email / phone indexes now cover only
+//                leads that aren't duplicates, so a duplicate can hold the same address.
+
+import { rebuildTable } from './tenancy.mjs';
 
 /** @type {{ id: string, foreignKeys?: 'off', up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
@@ -70,6 +77,23 @@ export const steps = [
         CREATE INDEX tenant_payments_charge ON tenant_payments(charge_ref) WHERE charge_ref IS NOT NULL;
         ALTER TABLE tenants ADD COLUMN review_reason TEXT;
         ALTER TABLE tenants ADD COLUMN review_at INTEGER;
+      `);
+    },
+  },
+  {
+    id: 'protect-004-lead-duplicates',
+    foreignKeys: 'off',
+    up(db) {
+      // The timeline can say a duplicate was merged in.
+      rebuildTable(db, 'tenant_lead_events', (sql) => sql.replace("'status','account')", "'status','account','merged')"));
+      db.exec(`
+        ALTER TABLE tenant_leads ADD COLUMN duplicate_of TEXT REFERENCES tenant_leads(id) ON DELETE SET NULL;
+        ALTER TABLE tenant_leads ADD COLUMN duplicate_dismissed_at INTEGER;
+        DROP INDEX tenant_leads_email;
+        DROP INDEX tenant_leads_phone;
+        CREATE UNIQUE INDEX tenant_leads_email ON tenant_leads(tenant_id, email) WHERE email <> '' AND duplicate_of IS NULL;
+        CREATE UNIQUE INDEX tenant_leads_phone ON tenant_leads(tenant_id, phone_key) WHERE phone_key <> '' AND duplicate_of IS NULL;
+        CREATE INDEX tenant_leads_duplicate ON tenant_leads(duplicate_of) WHERE duplicate_of IS NOT NULL;
       `);
     },
   },

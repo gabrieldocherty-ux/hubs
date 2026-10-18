@@ -18,6 +18,8 @@
 //   GET    /api/workspace/leads/:id         -> { lead } (with designs, sends and timeline; marks it read)
 //   PATCH  /api/workspace/leads/:id         { status?, staffNotes? } -> { lead }
 //   DELETE /api/workspace/leads/:id         -> { ok, removed: { designs, unlinked, sends } } (audited)
+//   POST   /api/workspace/leads/:id/merge   -> { lead }: a possible duplicate (lead.duplicateOf) joins that lead
+//   POST   /api/workspace/leads/:id/keep-separate -> { lead }: not the same person; the label goes
 //   GET    /api/workspace/leads/:id/designs/:designId -> { design: { id, name, doc, createdAt, updatedAt } } (view-only)
 // Sales site, public:
 //   POST   /api/sales-leads                 { company, name, phone?, email, city?, message?, website: '' (honeypot) }
@@ -223,6 +225,22 @@ export default function routes(ctx) {
         });
         return { ok: true, removed };
       },
+    },
+    {
+      method: 'POST',
+      path: '/api/workspace/leads/:id/merge',
+      auth: 'staff',
+      body: 'none',
+      params: { id: LEAD_PARAM },
+      handler: (rc) => ({ lead: ctx.tx(() => leads.merge(rc.tenant.id, rc.params.id, { designUrlOf: designUrlOf(rc), by: rc.user.email })) }),
+    },
+    {
+      method: 'POST',
+      path: '/api/workspace/leads/:id/keep-separate',
+      auth: 'staff',
+      body: 'none',
+      params: { id: LEAD_PARAM },
+      handler: (rc) => ({ lead: ctx.tx(() => leads.keepSeparate(rc.tenant.id, rc.params.id, { designUrlOf: designUrlOf(rc) })) }),
     },
     {
       method: 'GET',
