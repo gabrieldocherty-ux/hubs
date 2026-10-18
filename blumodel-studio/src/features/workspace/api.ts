@@ -9,7 +9,7 @@ import type { ShowroomImages } from '../showroom/site';
  * product requests). Package-local: the shared client tenant types belong to the foundation.
  */
 
-export type TenantStatus = 'setup' | 'live' | 'lapsed' | 'suspended';
+export type TenantStatus = 'setup' | 'trial' | 'live' | 'lapsed' | 'suspended';
 export type MemberRole = 'owner' | 'staff';
 
 export interface Branding {
@@ -52,6 +52,8 @@ export interface StaffTenant {
   name: string;
   status: TenantStatus;
   statusNote?: string | null;
+  /** When a prospect trial (Admin > Quick setup) lapses; null otherwise. */
+  trialEndsAt?: number | null;
   isDemo: boolean;
   url: string;
   branding: Branding;

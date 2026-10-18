@@ -143,16 +143,19 @@ export default function WorkspaceRoot({ rest }: { rest: string }) {
 
 /** What visitors see while the showroom isn't live, so the team isn't surprised by it. */
 function StatusBanner({ tenant }: { tenant: StaffTenant }) {
+  const info = tenant.status === 'setup' || tenant.status === 'trial';
   const text =
     tenant.status === 'setup'
       ? 'Your showroom is being set up. Visitors can already open it; we’ll switch it live with you once your products are in.'
-      : tenant.status === 'lapsed'
-        ? 'Your showroom is paused: visitors see a “temporarily unavailable” page. Everything is kept. See the Plan tab.'
-        : 'Your showroom is suspended: visitors see a “temporarily unavailable” page. Everything is kept. Contact BluModel Studio.';
+      : tenant.status === 'trial'
+        ? `Your showroom is live on a trial${tenant.trialEndsAt ? ` until ${new Date(tenant.trialEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}` : ''}. Nothing is charged; it pauses after that unless the plan is set up, and everything is kept.`
+        : tenant.status === 'lapsed'
+          ? 'Your showroom is paused: visitors see a “temporarily unavailable” page. Everything is kept. See the Plan tab.'
+          : 'Your showroom is suspended: visitors see a “temporarily unavailable” page. Everything is kept. Contact BluModel Studio.';
   return (
-    <div className={`ws-status ${tenant.status === 'setup' ? 'info' : 'warn'}`} role="status">
+    <div className={`ws-status ${info ? 'info' : 'warn'}`} role="status">
       {text}
-      {tenant.status !== 'setup' && (
+      {!info && (
         <a className="btn" href={hrefFor({ name: 'studio', rest: 'plan' })}>
           See the plan
         </a>

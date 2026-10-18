@@ -35,7 +35,7 @@ function ShowroomStats({ o }: { o: ShowroomOverview }) {
       <Stat title="Companies live" tone={c.lapsed ? 'warn' : undefined}>
         <b className="adm-big mono">{c.live}</b>
         <span className="adm-sub">
-          {c.lapsed} lapsed · {c.setup} setting up{c.suspended ? ` · ${c.suspended} suspended` : ''}
+          {c.trial ? `${c.trial} on trial · ` : ''}{c.lapsed} lapsed · {c.setup} setting up{c.suspended ? ` · ${c.suspended} suspended` : ''}
         </span>
         <span className="adm-sub">
           <a className="adm-link" href="#/admin/companies">

@@ -5,13 +5,16 @@
 import { call } from '../../lib/api';
 import type {
   AdminTenant,
+  ImagesRun,
   InviteLink,
   PaidHow,
   QueueGroup,
+  QuickSetupBody,
   SalesLead,
   SalesLeadCounts,
   SalesLeadStatus,
   ShowroomOverview,
+  SlugCheck,
   TenantCheckout,
   TenantCredits,
   TenantLicense,
@@ -46,8 +49,16 @@ export const showroomApi = {
   monthlyDemo: (id: string, event: 'renewal' | 'renewal_failed' | 'grace_end' | 'cancel') => call<One>('POST', `${tn(id)}/monthly/demo`, { event }),
   credits: (id: string) => call<TenantCredits>('GET', `${tn(id)}/credits`),
   adjustCredits: (id: string, cents: number, note: string) => call<TenantCredits>('POST', `${tn(id)}/credits`, { cents, note }),
-  /** A 2-hour link to the showroom's picture generator, opened in this browser (server/tenancy/images.mjs). */
-  imagesLink: (id: string) => call<{ url: string; expiresAt: number }>('POST', `${tn(id)}/showroom-images`),
+  /** A 2-hour link to the showroom's picture generator, opened in this browser (server/tenancy/images.mjs); `auto` starts it at once. */
+  imagesLink: (id: string, auto = false) => call<{ url: string; expiresAt: number; run: string }>('POST', `${tn(id)}/showroom-images${auto ? '?auto=1' : ''}`),
+  /** How the generator opened with that link is getting on. */
+  imagesRun: (id: string, run: string) => call<ImagesRun>('GET', `${tn(id)}/showroom-images/${enc(run)}`),
+  /** Quick setup (server/routes/quickSetup.mjs): the whole showroom in one call. */
+  quickSetup: (b: QuickSetupBody) => call<One & { products: number; trialEndsAt: number | null }>('POST', '/api/admin/quick-setup', b),
+  slugCheck: (slug: string, name: string) => call<SlugCheck>('GET', `/api/admin/quick-setup/slug?${new URLSearchParams({ slug, name }).toString()}`),
+  trialExtend: (id: string, days = 7) => call<One>('POST', `${tn(id)}/trial/extend`, { days }),
+  trialEnd: (id: string) => call<One>('POST', `${tn(id)}/trial/end`),
+  trialConvert: (id: string) => call<One>('POST', `${tn(id)}/trial/convert`),
   usage: (id: string) => call<TenantUsage>('GET', `${tn(id)}/usage`),
   salesLeads: (status?: SalesLeadStatus) => call<{ leads: SalesLead[]; counts: SalesLeadCounts }>('GET', `/api/admin/sales-leads${status ? `?status=${enc(status)}` : ''}`),
   updateSalesLead: (id: string, b: { status?: SalesLeadStatus; adminNotes?: string }) => call<{ lead: SalesLead }>('PATCH', `/api/admin/sales-leads/${enc(id)}`, b),

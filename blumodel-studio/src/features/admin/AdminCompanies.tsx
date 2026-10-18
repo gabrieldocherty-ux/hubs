@@ -17,9 +17,12 @@ import { takePendingCompany } from './selection';
 import type { AdminTenant, InviteLink, PaidHow, TenantHostname, TenantMember, TenantSettings, TenantStatus, TenantUsage } from './showroomTypes';
 import { leadSummary } from './showroomTypes';
 import { DataTable, Notice, Pill, Section, dateTime, day, errorText, useLoad, type PillTone } from './ui';
+import QuickSetup from './QuickSetup';
+import { TrialPill, TrialRowActions, TrialSection } from './TrialControls';
 
 export const STATUS_PILL: Record<TenantStatus, [string, PillTone]> = {
   live: ['Live', 'ok'],
+  trial: ['Trial', 'info'],
   lapsed: ['Lapsed', 'warn'],
   setup: ['Setting up', 'info'],
   suspended: ['Suspended', 'bad'],
@@ -173,6 +176,7 @@ type Filter = 'all' | TenantStatus;
 const FILTERS: [Filter, string][] = [
   ['all', 'All'],
   ['live', 'Live'],
+  ['trial', 'Trials'],
   ['lapsed', 'Lapsed'],
   ['setup', 'Setting up'],
   ['suspended', 'Suspended'],
@@ -184,6 +188,7 @@ export default function AdminCompanies() {
   const list = useLoad(() => showroomApi.list());
   const [filter, setFilter] = useState<Filter>('all');
   const [creating, setCreating] = useState(false);
+  const cfg = useAppConfig();
 
   if (open)
     return (
@@ -200,8 +205,9 @@ export default function AdminCompanies() {
     );
 
   const all = list.data?.tenants ?? null;
-  const rows = (all ?? []).filter((t) => filter === 'all' || t.status === filter);
-  const count = (f: Filter) => (all ?? []).filter((t) => f === 'all' || t.status === f).length;
+  const inFilter = (t: AdminTenant, f: Filter) => f === 'all' || t.status === f || (f === 'trial' && !!t.trial);
+  const rows = (all ?? []).filter((t) => inFilter(t, filter));
+  const count = (f: Filter) => (all ?? []).filter((t) => inFilter(t, f)).length;
 
   return (
     <div className="adm admin-companies">
@@ -216,6 +222,7 @@ export default function AdminCompanies() {
           </button>
         </div>
       </div>
+      <QuickSetup base={baseDomainOf(cfg, all ?? [])} onOpen={(id) => setOpen(id)} onCreated={() => void list.reload()} />
       {creating && (
         <CreateCompany
           tenants={all ?? []}
@@ -264,7 +271,18 @@ export default function AdminCompanies() {
                   </span>
                 ),
               },
-              { label: 'Status', cell: (t) => <StatusPill status={t.status} /> },
+              {
+                label: 'Status',
+                cell: (t) =>
+                  t.trial ? (
+                    <span className="adm-who">
+                      <TrialPill t={t} />
+                      <TrialRowActions t={t} onChange={(n) => list.setData({ tenants: (all ?? []).map((x) => (x.id === n.id ? n : x)) })} />
+                    </span>
+                  ) : (
+                    <StatusPill status={t.status} />
+                  ),
+              },
               {
                 label: 'License',
                 cell: (t) => {
@@ -437,9 +455,15 @@ function CompanyView({ id, onBack, invite, clearInvite }: { id: string; onBack: 
       </div>
       {invite && <InviteNotice invite={invite.invite} email={invite.email} onDone={clearInvite} />}
       {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
-      {t.status === 'lapsed' && <Notice tone="warn">Visitors see “temporarily unavailable” because {problems.join(' and ') || 'it isn’t paid up'}. Nothing is deleted; it goes live by itself once both are in place.</Notice>}
+      {t.status === 'lapsed' &&
+        (t.trial ? (
+          <Notice tone="warn">The trial ended on {day(t.trial.endsAt)}: visitors see “temporarily unavailable”. Nothing is deleted; extend it or convert it below.</Notice>
+        ) : (
+          <Notice tone="warn">Visitors see “temporarily unavailable” because {problems.join(' and ') || 'it isn’t paid up'}. Nothing is deleted; it goes live by itself once both are in place.</Notice>
+        ))}
       {t.status === 'suspended' && <Notice tone="bad">Suspended{t.statusNote ? `: ${t.statusNote}` : ''}. Visitors see “temporarily unavailable”; all data is kept.</Notice>}
 
+      {t.trial && <TrialSection t={t} onChange={(n) => setData({ tenant: n })} onMessage={setMsg} />}
       <div className="adm-cols">
         <StatusSection t={t} act={act} busy={busy} />
         <UsageSection t={t} data={usage.data} error={usage.error} />
@@ -541,6 +565,7 @@ function StatusSection({ t, act, busy }: SectionProps) {
         )}
       </dl>
       <div className="adm-form">
+        {t.status === 'trial' && <p className="adm-note">On a prospect trial: live for visitors until {day(t.trial?.endsAt)}. Convert, extend or end it in Trial above.</p>}
         {t.status === 'setup' && (
           <>
             <p className="adm-note">{problems.length ? `Launching now leaves it lapsed (${problems.join(' and ')}). Record the license and start the monthly plan first.` : 'License and monthly plan are in place: launching makes it live for visitors.'}</p>

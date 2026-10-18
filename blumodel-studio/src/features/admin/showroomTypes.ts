@@ -5,7 +5,7 @@
  */
 import type { ByCurrency, CountMoney } from './types';
 
-export type TenantStatus = 'setup' | 'live' | 'lapsed' | 'suspended';
+export type TenantStatus = 'setup' | 'trial' | 'live' | 'lapsed' | 'suspended';
 export type PaidHow = 'invoice' | 'etransfer' | 'cheque' | 'card' | 'cash' | 'comp' | 'other';
 
 export interface TenantHostname {
@@ -87,6 +87,9 @@ export interface AdminTenant {
   createdAt: number;
   updatedAt: number;
   members: TenantMember[];
+  /** A prospect trial (Quick setup): null when the company isn't (or is no longer) one. */
+  trial?: TenantTrial | null;
+  branding?: { logoUrl: string | null; primaryColor: string | null; accentColor: string | null; featuredLines: string[] };
   standing?: { licenseCurrent: boolean; monthlyPaid: boolean; live: boolean };
   license?: TenantLicense | null;
   licenses?: TenantLicense[];
@@ -96,6 +99,45 @@ export interface AdminTenant {
   /** Counts only (no names or contact details): people who used the showroom, new to the team, first seen this month, sent a design. */
   leads?: LeadCountsAdmin;
   usage?: { rendersUsed: number; renderCents: number; products: number; includedProducts: number; queueOpen: number };
+}
+
+export interface TenantTrial {
+  endsAt: number;
+  daysLeft: number;
+  /** Visitors can use it now (false once it has lapsed). */
+  active: boolean;
+}
+
+/** GET /api/admin/quick-setup/slug */
+export interface SlugCheck {
+  slug: string;
+  available: boolean;
+  problem: 'invalid' | 'reserved' | 'taken' | null;
+  suggestion: string;
+}
+
+export type StarterCatalog = 'demo' | 'empty';
+export type SetupPurpose = 'trial' | 'customer';
+
+export interface QuickSetupBody {
+  name: string;
+  slug?: string;
+  /** Base64 (a data: URL is fine): PNG, JPEG or WebP, 2 MB at most. */
+  logo?: string;
+  branding?: { primaryColor?: string; accentColor?: string };
+  contact?: { website?: string; serviceArea?: string; phone?: string; email?: string };
+  catalog: StarterCatalog;
+  purpose: SetupPurpose;
+}
+
+/** GET /api/admin/tenants/:id/showroom-images/:run */
+export interface ImagesRun {
+  state: 'waiting' | 'running' | 'done';
+  uploads: number;
+  made: number;
+  failed: number;
+  finishedAt: number | null;
+  expiresAt: number;
 }
 
 export interface InviteLink {

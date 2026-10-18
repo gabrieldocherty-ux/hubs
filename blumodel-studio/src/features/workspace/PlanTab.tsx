@@ -70,7 +70,7 @@ export default function PlanTab() {
           <h1>Your plan</h1>
           <p>Your showroom is live while the yearly license is current and the monthly plan is paid. If either lapses, visitors see a polite “temporarily unavailable” page and nothing is deleted.</p>
         </div>
-        <span className={`ws-pill ${live ? 'ok' : 'warn'}`}>{live ? 'Showroom live' : plan.standing.status === 'setup' ? 'Being set up' : 'Showroom paused'}</span>
+        <span className={`ws-pill ${live ? 'ok' : plan.standing.status === 'trial' ? 'info' : 'warn'}`}>{live ? 'Showroom live' : plan.standing.status === 'setup' ? 'Being set up' : plan.standing.status === 'trial' ? 'Live on a trial' : 'Showroom paused'}</span>
       </div>
 
       <div className="ws-plan-grid">

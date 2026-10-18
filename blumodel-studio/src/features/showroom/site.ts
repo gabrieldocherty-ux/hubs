@@ -8,7 +8,7 @@ import { cleanHex } from './palette';
  */
 
 export type SiteKind = 'sales' | 'showroom';
-export type TenantStatus = 'setup' | 'live' | 'lapsed' | 'suspended';
+export type TenantStatus = 'setup' | 'trial' | 'live' | 'lapsed' | 'suspended';
 
 export interface TenantBranding {
   logoUrl: string | null;
@@ -99,7 +99,7 @@ export interface PublicTenant {
   images: ShowroomImages;
 }
 
-const STATUSES: readonly TenantStatus[] = ['setup', 'live', 'lapsed', 'suspended'];
+const STATUSES: readonly TenantStatus[] = ['setup', 'trial', 'live', 'lapsed', 'suspended'];
 const EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[A-Za-z]{2,}$/;
 
 const str = (v: unknown, max: number): string => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
