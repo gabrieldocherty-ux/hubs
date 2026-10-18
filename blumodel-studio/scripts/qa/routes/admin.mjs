@@ -144,6 +144,11 @@ function faceRoutes() {
           const c = await contrastAudit(h);
           h.note(`contrast (${scheme}): ${c.checked} checked, ${c.fails.length} under AA`);
           if (c.fails.length) throw new Error(`under WCAG AA: ${c.fails.slice(0, 5).map((f) => `"${f.text}" ${f.fg} on ${f.bg} = ${f.ratio}:1`).join('; ')}`);
+          // Start from ON whatever an earlier route left (a failure there must not cascade).
+          if ((await h.evaluate(() => document.getElementById('state').textContent)) === 'OFF') {
+            await h.click('#toggle');
+            await h.waitForText(['Turn all sites OFF']);
+          }
           await h.click('#toggle');
           await h.waitForText(['Turn every website off?', 'Yes, turn them off']);
           await h.shot('confirm');
@@ -525,12 +530,13 @@ export default [
       await press(h, 'Yes, turn every site off');
       await h.waitForText(['OFF (maintenance)', 'Turn all sites on']);
       const health = await h.evaluate(() => fetch('/api/health').then((r) => r.json()));
-      if (health.maintenance !== true) throw new Error(`/api/health did not say maintenance: ${JSON.stringify(health)}`);
       const page = await h.evaluate(() => fetch('/api/catalog/brands', { credentials: 'omit' }).then((r) => r.status));
-      if (page !== 503) throw new Error(`signed out, the API answered ${page}, not 503`);
       await h.shot('off');
+      // Back ON before judging, so a failure here never leaves the rest of the run in maintenance.
       await press(h, 'Turn all sites on');
       await h.waitForText(['Turn all sites off']);
+      if (health.maintenance !== true) throw new Error(`/api/health did not say maintenance: ${JSON.stringify(health)}`);
+      if (page !== 503) throw new Error(`signed out, the API answered ${page}, not 503`);
       const after = await h.evaluate(() => fetch('/api/health').then((r) => r.json()));
       if (after.maintenance) throw new Error('still in maintenance after turning the sites on');
     },
