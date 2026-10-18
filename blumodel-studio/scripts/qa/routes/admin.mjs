@@ -1,9 +1,16 @@
 // The owner's admin panel (src/features/admin, server/routes/adminPanel.mjs): every new tab at 1440
 // and 390, light and dark, with a contrast audit (WCAG AA from computed colours) and no sideways
 // scroll; the entry point in the account menu; non-admins kept out (screen and API); and the user
-// actions driven through the UI (comp plan, disable / enable, delete with the typed email).
+// actions driven through the UI (comp plan, disable / enable, delete with the typed email); and
+// Companies > Quick setup end to end (the form, the picture maker it opens, the live link, the
+// owner's invite, the new showroom on <slug>.localhost) and a trial's Extend / End / Convert.
 // Run: node scripts/qa.mjs --pkg admin --port 8950 --dist .build/admin --strict-external
 
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import { makePng } from '../../../server/lib/synth.mjs';
 import { contrastAudit } from './dark.mjs';
 
 const must = (r, what) => {
@@ -135,6 +142,239 @@ async function openCompany(h, name) {
   await h.click(`button[aria-label="Open ${name}"]`);
   await h.waitForText(['Yearly license', 'Monthly plan', 'Web addresses', 'Render credits', 'Team', 'Studio queue']);
   await h.sleep(300);
+}
+
+// ── Quick setup (src/features/admin/QuickSetup.tsx, server/routes/quickSetup.mjs) ──────────────
+
+/** The page's own `window.open` replaced by a stand-in that records where it was sent (no real tab). */
+async function stubWindowOpen(h) {
+  await h.evaluate(() => {
+    window.__qaOpened = [];
+    window.open = () => {
+      const w = {
+        closed: false,
+        opener: {},
+        close() {
+          w.closed = true;
+        },
+        location: {
+          get href() {
+            return 'about:blank';
+          },
+          set href(v) {
+            window.__qaOpened.push(v);
+          },
+        },
+      };
+      return w;
+    };
+  });
+}
+
+/** On a phone: every control inside `scope` is at least 44px tall (radios and checkboxes sit in 44px labels). */
+async function touchTargets(h, scope) {
+  if (h.viewport.w > 500) return;
+  const small = await h.evaluate((sc) =>
+    [...document.querySelectorAll(`${sc} a[href], ${sc} button, ${sc} input, ${sc} select, ${sc} textarea, ${sc} label.btn`)]
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && !(el instanceof HTMLInputElement && ['checkbox', 'radio', 'file'].includes(el.type));
+      })
+      .filter((el) => el.getBoundingClientRect().height < 43.5)
+      .map((el) => `${el.tagName.toLowerCase()} "${(el.textContent || el.getAttribute('aria-label') || el.getAttribute('placeholder') || '').trim().slice(0, 30)}" ${Math.round(el.getBoundingClientRect().height)}px`),
+  scope);
+  if (small.length) throw new Error(`touch targets under 44px: ${small.slice(0, 8).join('; ')}`);
+}
+
+/** Clicks the radio (or checkbox) whose label includes `text`. */
+async function choose(h, text) {
+  const ok = await h.evaluate((t) => {
+    const l = [...document.querySelectorAll('label')].find((e) => e.offsetParent && e.textContent.replace(/\s+/g, ' ').includes(t));
+    const i = l?.querySelector('input');
+    if (i) i.setAttribute('data-qa-choose', '1');
+    return !!i;
+  }, text);
+  if (!ok) throw new Error(`no choice "${text}"`);
+  await h.click('[data-qa-choose="1"]');
+  await h.evaluate(() => document.querySelector('[data-qa-choose]')?.removeAttribute('data-qa-choose'));
+}
+
+/** Clicks the filter chip whose text starts with `label` ("Trials 2"). */
+async function chip(h, label) {
+  const ok = await h.evaluate((t) => {
+    const b = [...document.querySelectorAll('.adm-filters button')].find((e) => e.textContent.trim().startsWith(t));
+    if (b) b.setAttribute('data-qa-chip', '1');
+    return !!b;
+  }, label);
+  if (!ok) throw new Error(`no filter "${label}"`);
+  await h.click('[data-qa-chip="1"]');
+  await h.evaluate(() => document.querySelector('[data-qa-chip]')?.removeAttribute('data-qa-chip'));
+}
+
+/** Sets a React-controlled input's value (select-all and type). */
+async function fill(h, selector, text) {
+  await h.click(selector);
+  await h.key('a', { modifiers: ['ctrl'] });
+  await h.key('Backspace');
+  if (text) await h.type(text);
+}
+
+/** A request to a showroom host from Node (fetch can't set Host): { status, body }. */
+function hostRequest(base, host, method, p, { headers = {}, body } = {}) {
+  const u = new URL(base);
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      { hostname: '127.0.0.1', port: u.port, path: p, method, headers: { Host: `${host}:${u.port}`, ...(method !== 'GET' ? { 'X-BluModel': '1' } : {}), ...headers } },
+      (res) => {
+        const chunks = [];
+        res.on('data', (c) => chunks.push(c));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          let parsed = null;
+          try {
+            parsed = JSON.parse(text);
+          } catch {
+            parsed = null;
+          }
+          resolve({ status: res.statusCode, body: parsed, text });
+        });
+      },
+    );
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+/**
+ * What the picture generator does in the admin's browser, done from Node so QA doesn't render
+ * 10 scenes four times: opens with the ticket, uploads a main picture, says it has finished.
+ */
+async function playGenerator(h, url) {
+  const u = new URL(url.replace('/#/', '/'));
+  const ticket = u.searchParams.get('ticket');
+  const host = u.hostname;
+  const hdr = { 'X-Showroom-Ticket': ticket };
+  const access = await hostRequest(h.base, host, 'GET', '/api/showroom-images/access', { headers: hdr });
+  if (access.status !== 200) throw new Error(`the generator's ticket was refused (${access.status})`);
+  const png = makePng({ w: 1200, h: 675, rgba: (x, y) => [70 + Math.round((x / 1200) * 120), 90 + Math.round((y / 675) * 60), 120, 255] });
+  const up = await hostRequest(h.base, host, 'PUT', '/api/showroom-images?slot=hero&source=render', { headers: { ...hdr, 'Content-Type': 'image/png' }, body: png });
+  if (up.status !== 200) throw new Error(`uploading the main picture failed (${up.status}): ${up.text.slice(0, 200)}`);
+  const done = await hostRequest(h.base, host, 'POST', '/api/showroom-images/done', { headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ made: 1, failed: 0 }) });
+  if (done.status !== 200) throw new Error(`"done" failed (${done.status})`);
+}
+
+/** A 96 px logo in two clear colours (navy and amber), for "pick from logo". */
+function logoFile(tag) {
+  const file = path.join(os.tmpdir(), `qa-quick-setup-logo-${tag}.png`);
+  fs.writeFileSync(file, makePng({ w: 96, h: 96, rgba: (x, y) => ((x - 48) ** 2 + (y - 48) ** 2 > 2100 ? [255, 255, 255, 0] : y < 52 ? [27, 58, 107, 255] : [224, 150, 32, 255]) }));
+  return file;
+}
+
+async function setFile(h, selector, file) {
+  const { root } = await h.send('DOM.getDocument', { depth: 1 });
+  const { nodeId } = await h.send('DOM.querySelector', { nodeId: root.nodeId, selector });
+  if (!nodeId) throw new Error(`no ${selector}`);
+  await h.send('DOM.setFileInputFiles', { files: [file], nodeId });
+}
+
+/** The whole quick setup through the screen, ending on the new showroom at <slug>.localhost. */
+const quickSetupFlow = (scheme) => async (h) => {
+  await settle(h);
+  await h.waitForText(['Quick setup', 'Set up the showroom', 'Starter catalog', 'Prospect trial']);
+  await stubWindowOpen(h);
+  const tag = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
+  const name = `Lakeview ${tag} Kitchens`;
+  const slug = `lakeview-${tag}-kitchens`;
+  await fill(h, 'input[placeholder="Acme Kitchens & Bath"]', name);
+  // The address is suggested from the name and checked live.
+  await h.waitUntil(new Function(`return document.querySelector('input[placeholder="acme"]')?.value === ${JSON.stringify(slug)}`), 8000, 'the address suggested from the name');
+  await h.waitForText(`${slug}.localhost`);
+  await h.waitForText('is free');
+  await fill(h, 'input[placeholder="acme"]', 'admin');
+  await h.waitForText('That name is reserved.');
+  const disabled = await h.evaluate(() => document.querySelector('.qs-go')?.disabled);
+  if (disabled !== true) throw new Error('Set up the showroom is enabled with a reserved address');
+  await fill(h, 'input[placeholder="acme"]', slug);
+  await h.waitForText('is free');
+  // Logo, and its colours picked for the brand.
+  await setFile(h, '.qs-file input', logoFile(tag));
+  await h.waitForText(['From the logo:', 'Change logo']);
+  const colours = await h.evaluate(() => [...document.querySelectorAll('.qs-colour input:not([type="color"])')].map((i) => i.value));
+  h.note(`colours from the logo: ${colours.join(', ')}`);
+  if (colours[0] === '#1f4f8a' || colours[1] === '#e8a838') throw new Error('the colours weren’t taken from the logo');
+  await h.waitForText(['White text on the main colour', 'As text on the page']);
+  await fill(h, 'input[placeholder="acmekitchens.ca"]', `lakeview-${tag}.example`);
+  await fill(h, 'input[placeholder="Guelph and Wellington County"]', 'Kingston and the Thousand Islands');
+  await fill(h, 'input[placeholder="(519) 555-0142"]', '(613) 555-0199');
+  await fill(h, 'input[placeholder="hello@acmekitchens.ca"]', `hello@lakeview-${tag}.example`);
+  await h.waitForText(`Lakeview ${tag} Shaker`);
+  await touchTargets(h, '.qs-form');
+  await h.shot('form');
+  await press(h, 'Set up the showroom');
+  await h.waitForText([`${name} is set up.`, 'Skip: show me the link'], 15_000);
+  const opened = await h.evaluate(() => window.__qaOpened ?? []);
+  if (opened.length !== 1) throw new Error(`the picture maker was opened ${opened.length} times`);
+  if (!opened[0].startsWith(`http://${slug}.localhost:`) || !/#\/showroom-images\?ticket=[^&]+&auto=1$/.test(opened[0])) throw new Error(`the picture maker opened at ${opened[0]}`);
+  await h.shot('pictures');
+  await playGenerator(h, opened[0]);
+  // The panel notices the run is done and shows the live link.
+  await h.waitForText([`${name}’s showroom is live`, 'Trial · 14 days left', '1 picture made', 'Invite the owner', 'Record the license', 'Send the $50 monthly link', 'Convert to a paying customer'], 15_000);
+  const link = await h.evaluate(() => document.querySelector('input[aria-label="The showroom’s live link"]')?.value);
+  if (!new RegExp(`^http://${slug}\\.localhost:\\d+$`).test(link ?? '')) throw new Error(`the live link is ${link}`);
+  const open = await h.evaluate(() => [...document.querySelectorAll('a')].find((a) => a.textContent.trim() === 'Open the showroom')?.getAttribute('href'));
+  if (open !== link) throw new Error(`Open the showroom goes to ${open}`);
+  // Invite the owner (the pending-invite flow).
+  await fill(h, '.qs-done input[placeholder="owner@acmekitchens.ca"]', `owner-${tag}@lakeview.example`);
+  await press(h, 'Invite the owner');
+  await h.waitForText(`Sign-in link for owner-${tag}@lakeview.example`);
+  await touchTargets(h, '.qs-panel');
+  // The panel itself: theme, no sideways scroll, nothing secret-looking (the invite link aside), contrast.
+  await theme(h, scheme);
+  await noSideScroll(h);
+  await contrast(h, scheme);
+  await h.shot('done');
+  // The audit trail.
+  const audit = await h.evaluate(async () => (await fetch('/api/admin/audit?action=tenant_quick_setup', { credentials: 'same-origin' })).json());
+  if (!audit.entries?.some((e) => e.detail?.slug === slug && e.detail?.purpose === 'trial' && e.detail?.products > 30)) throw new Error('the quick setup is not in the audit log');
+
+  // Then the new showroom itself, as a visitor, on <slug>.localhost.
+  await h.evaluate((u) => {
+    location.href = `${u}/?qa=1#/`;
+  }, link);
+  await h.waitUntil(new Function(`return location.hostname === ${JSON.stringify(`${slug}.localhost`)} && !!document.querySelector('#root *') && document.body.innerText.includes(${JSON.stringify(`Lakeview ${tag}`)})`), 20_000, 'the new showroom loading');
+  await h.waitForText([`Design your new kitchen with Lakeview ${tag}`, `Lakeview ${tag} Shaker`, 'Kingston and the Thousand Islands'], 15_000);
+  const page = await h.evaluate(async () => {
+    const cfg = await (await fetch('/api/config', { credentials: 'same-origin' })).json();
+    const cat = await (await fetch('/api/catalog', { credentials: 'same-origin' })).json();
+    return { site: cfg.site, status: cfg.tenant?.status, logo: cfg.tenant?.branding?.logoUrl, hero: cfg.tenant?.images?.hero?.url ?? null, products: cat.products?.length ?? 0, text: document.body.innerText };
+  });
+  if (page.site !== 'showroom' || page.status !== 'live') throw new Error(`the showroom says site ${page.site}, status ${page.status}`);
+  if (!page.logo) throw new Error('the showroom has no logo');
+  if (!page.hero) throw new Error('the uploaded main picture is not on the showroom');
+  if (page.products < 30) throw new Error(`the showroom has ${page.products} products`);
+  if (/northline|\(demo\)/i.test(page.text)) throw new Error('the new showroom mentions Northline or Demo');
+  await noSideScroll(h);
+  await h.shot('showroom');
+};
+
+/** Quick setup at 1440 and 390, light and dark. */
+function quickSetupViews() {
+  const out = [];
+  for (const scheme of ['light', 'dark']) {
+    for (const vp of ['desktop', 'phone']) {
+      out.push({
+        name: `admin-quick-setup${vp === 'phone' ? '-phone' : ''}${scheme === 'dark' ? '-dark' : ''}`,
+        path: '#/admin/companies',
+        as: 'admin',
+        viewport: vp,
+        colorScheme: scheme,
+        timeoutMs: 30_000,
+        check: quickSetupFlow(scheme),
+      });
+    }
+  }
+  return out;
 }
 
 export default [
@@ -361,6 +601,72 @@ export default [
       await h.waitForText('Saved.');
       const res = await h.evaluate(async () => (await fetch('/api/admin/audit?action=sales_lead_update', { credentials: 'same-origin' })).json());
       if (!res.entries?.length) throw new Error('the sales lead change is not in the audit log');
+    },
+  },
+  // ── Quick setup: the whole flow, 1440 / 390, light / dark, ending on the new showroom ──────
+  ...quickSetupViews(),
+  {
+    // A paying customer with an empty catalog: no picture maker, straight to the link; it starts in setup.
+    name: 'admin-quick-setup-customer',
+    path: '#/admin/companies',
+    as: 'admin',
+    check: async (h) => {
+      await settle(h);
+      await stubWindowOpen(h);
+      const tag = `${Date.now().toString(36)}c`;
+      await fill(h, 'input[placeholder="Acme Kitchens & Bath"]', `Spruce ${tag} Renovations`);
+      await h.waitForText(`spruce-${tag}-renovations.localhost`);
+      await choose(h, 'Empty, we’ll model theirs');
+      await choose(h, 'Paying customer');
+      await press(h, 'Set up the showroom');
+      await h.waitForText([`Spruce ${tag} Renovations’s showroom is set up.`, 'Setting up', 'No catalog yet', 'Launch the showroom']);
+      if ((await h.evaluate(() => window.__qaOpened?.length ?? 0)) !== 0) throw new Error('the picture maker opened for an empty catalog');
+      await noSideScroll(h);
+    },
+  },
+  {
+    // Trials in the list and on a company's page: days left, Extend 7 days, End trial, and Convert
+    // (only once a license is recorded and the monthly plan is paid or complimentary).
+    name: 'admin-trial-actions',
+    path: '#/admin/companies',
+    as: 'admin',
+    setup: async ({ api }) => {
+      const admin = api.as('admin');
+      const tag = Date.now().toString(36);
+      const a = must(await admin.post('/api/admin/quick-setup', { name: `Willow ${tag} Kitchens`, catalog: 'empty', purpose: 'trial' }), 'A quick setup');
+      const b = must(await admin.post('/api/admin/quick-setup', { name: `Aspen ${tag} Kitchens`, catalog: 'empty', purpose: 'trial' }), 'A second quick setup');
+      return { name: a.tenant.name, other: b.tenant.name };
+    },
+    check: async (h) => {
+      await settle(h);
+      await chip(h, 'Trials');
+      await h.waitForText([h.data.name, h.data.other, 'Trial · 14 days left']);
+      await h.click(`button[aria-label="Extend ${h.data.name}’s trial by 7 days"]`);
+      await h.waitForText('Trial · 21 days left');
+      // Ending one: it stays in the Trials list, marked ended, and visitors get "temporarily unavailable".
+      await h.click(`button[aria-label="End ${h.data.other}’s trial"]`);
+      await press(h, 'Yes, end it');
+      await h.waitForText(['Trial ended', h.data.other]);
+      await h.click(`button[aria-label="Open ${h.data.name}"]`);
+      await h.waitForText(['Trial', 'Convert to paying customer', 'To convert, first record the license']);
+      const blocked = await h.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Convert to paying customer')?.disabled);
+      if (blocked !== true) throw new Error('Convert is enabled with no license or monthly plan');
+      // Record the license and make the plan complimentary, through the company's own sections.
+      await h.click('input[placeholder="The amount agreed"]');
+      await h.type('1250');
+      await press(h, 'Record license');
+      await h.waitForText('License recorded');
+      await h.click('input[aria-label="Why the plan is complimentary"]');
+      await h.type('Pilot (QA)');
+      await press(h, 'Make it complimentary');
+      await h.waitForText(['Complimentary monthly plan on.', 'License and monthly plan are in place']);
+      await press(h, 'Convert to paying customer');
+      await h.waitForText(`${h.data.name} is a paying customer now, and live.`);
+      await noSideScroll(h);
+      for (const a of ['tenant_trial_extend', 'tenant_trial_end', 'tenant_trial_convert']) {
+        const r = await h.evaluate(async (x) => (await fetch(`/api/admin/audit?action=${x}`, { credentials: 'same-origin' })).json(), a);
+        if (!r.entries?.length) throw new Error(`${a} is not in the audit log`);
+      }
     },
   },
 ];
