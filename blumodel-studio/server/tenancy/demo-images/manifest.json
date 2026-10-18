@@ -1,0 +1,1168 @@
+{
+ "madeAt": 1792288798003,
+ "by": "scripts/make-showroom-images.mjs",
+ "images": [
+  {
+   "slot": "hero",
+   "source": "render",
+   "design": "hero",
+   "file": "hero.webp",
+   "w": 2400,
+   "h": 1350,
+   "bytes": 143844
+  },
+  {
+   "slot": "heroTall",
+   "source": "render",
+   "file": "hero-tall.webp",
+   "w": 1080,
+   "h": 1440,
+   "bytes": 76044
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Lakeshore Shaker",
+   "file": "line-lakeshore-shaker.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 38318
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Harbourfront Slab",
+   "file": "line-harbourfront-slab.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 50002
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Northline Sinks",
+   "file": "line-northline-sinks.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 33478
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Chef’s Appliance Suite",
+   "file": "line-chef-s-appliance-suite.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 34960
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Bay Lighting",
+   "file": "line-bay-lighting.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 41856
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Bayview Bath",
+   "file": "line-bayview-bath.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 52360
+  },
+  {
+   "slot": "line",
+   "source": "render",
+   "line": "Counter Seating",
+   "file": "line-counter-seating.webp",
+   "w": 1200,
+   "h": 900,
+   "bytes": 50228
+  },
+  {
+   "slot": "gallery",
+   "source": "render",
+   "index": 1,
+   "title": "Smoked Walnut galley with an island",
+   "design": "gallery-1",
+   "file": "gallery-1.webp",
+   "w": 1600,
+   "h": 1000,
+   "bytes": 74870
+  },
+  {
+   "slot": "gallery",
+   "source": "render",
+   "index": 2,
+   "title": "Chalk White U-shaped kitchen",
+   "design": "gallery-2",
+   "file": "gallery-2.webp",
+   "w": 1600,
+   "h": 1000,
+   "bytes": 61422
+  },
+  {
+   "slot": "gallery",
+   "source": "render",
+   "index": 3,
+   "title": "Harbour Navy L-shaped kitchen with an island",
+   "design": "gallery-3",
+   "file": "gallery-3.webp",
+   "w": 1600,
+   "h": 1000,
+   "bytes": 81200
+  }
+ ],
+ "designs": [
+  {
+   "key": "hero",
+   "title": "Northline showroom kitchen",
+   "doc": {
+    "name": "Showroom kitchen",
+    "room": {
+     "widthIn": 228,
+     "lengthIn": 192,
+     "ceilingIn": 108
+    },
+    "surfaces": {
+     "cabinetFinishId": "sage",
+     "doorStyle": "shaker",
+     "hardwareId": "brass",
+     "countertopId": "calacatta",
+     "backsplashId": "zellige-white",
+     "flooringId": "herringbone",
+     "paintId": "chalk"
+    },
+    "items": [
+     {
+      "id": "it-mvd6gwvm-t-eo",
+      "productId": "sku:NL-LS-P{w}84",
+      "x": 12,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-u-hu",
+      "productId": "sku:NL-AP-F36",
+      "x": 42,
+      "y": 15,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvm-v-9d",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 69,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 18,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-w-w9",
+      "productId": "sku:NL-LS-DB{w}",
+      "x": 96,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 36,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-x-ik",
+      "productId": "sku:NL-AP-R36",
+      "x": 132,
+      "y": 14,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvm-y-19",
+      "productId": "sku:NL-LS-DB{w}",
+      "x": 168,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 36,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-z-h7",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 195,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 18,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-10-ji",
+      "productId": "sku:NL-LS-P{w}84",
+      "x": 216,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-11-tx",
+      "productId": "sku:NL-LS-WB{w}15",
+      "x": 42,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-12-ns",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 69,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 18,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-13-z5",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 96,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 36,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-14-ae",
+      "productId": "sku:NL-AP-H{w}",
+      "x": 132,
+      "y": 10,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvm-15-ar",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 168,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 36,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-16-53",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 195,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 18,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-17-qj",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 12,
+      "y": 37.5,
+      "rotation": 270,
+      "finishIndex": 1,
+      "widthIn": 27,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-18-ql",
+      "productId": "sku:NL-SK-FS{w}",
+      "x": 12,
+      "y": 69,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "fireclay"
+     },
+     {
+      "id": "it-mvd6gwvm-19-tk",
+      "productId": "sku:NL-AP-DW24",
+      "x": 12,
+      "y": 99,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvm-1a-sk",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 12,
+      "y": 124.5,
+      "rotation": 270,
+      "finishIndex": 1,
+      "widthIn": 27,
+      "finishId": "sage"
+     },
+     {
+      "id": "it-mvd6gwvm-1b-ke",
+      "productId": "window",
+      "x": 0,
+      "y": 69,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "white"
+     },
+     {
+      "id": "it-mvd6gwvm-1c-q9",
+      "productId": "sku:NL-LS-I{w}",
+      "x": 130,
+      "y": 93,
+      "rotation": 0,
+      "finishIndex": 3,
+      "widthIn": 96,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvm-1d-7p",
+      "productId": "sku:NL-ST-26B",
+      "x": 98,
+      "y": 116,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "cognac"
+     },
+     {
+      "id": "it-mvd6gwvm-1e-sh",
+      "productId": "sku:NL-ST-26B",
+      "x": 130,
+      "y": 116,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "cognac"
+     },
+     {
+      "id": "it-mvd6gwvm-1f-m9",
+      "productId": "sku:NL-ST-26B",
+      "x": 162,
+      "y": 116,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "cognac"
+     },
+     {
+      "id": "it-mvd6gwvm-1g-oa",
+      "productId": "sku:NL-LT-D14",
+      "x": 98,
+      "y": 93,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvm-1h-m",
+      "productId": "sku:NL-LT-D14",
+      "x": 130,
+      "y": 93,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvm-1i-ih",
+      "productId": "sku:NL-LT-D14",
+      "x": 162,
+      "y": 93,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvm-1j-jz",
+      "productId": "opening",
+      "x": 228,
+      "y": 156,
+      "rotation": 90,
+      "finishIndex": 0,
+      "widthIn": 42,
+      "finishId": "white"
+     }
+    ],
+    "brandPrefs": {
+     "cabinets": [
+      "Lakeshore Shaker"
+     ],
+     "appliances": [
+      "Chef’s Appliance Suite"
+     ],
+     "sinks": [
+      "Northline Sinks"
+     ],
+     "lighting": [
+      "Bay Lighting"
+     ]
+    },
+    "version": 2
+   }
+  },
+  {
+   "key": "gallery-1",
+   "title": "Smoked Walnut galley with an island",
+   "doc": {
+    "name": "Smoked Walnut galley with an island",
+    "room": {
+     "widthIn": 192,
+     "lengthIn": 180,
+     "ceilingIn": 108
+    },
+    "surfaces": {
+     "cabinetFinishId": "walnut",
+     "doorStyle": "slab",
+     "hardwareId": "black",
+     "countertopId": "concrete",
+     "backsplashId": "zellige-white",
+     "flooringId": "oak-natural",
+     "paintId": "bone"
+    },
+    "items": [
+     {
+      "id": "it-mvd6gwvv-77-ln",
+      "productId": "sku:NL-HS-P{w}84",
+      "x": 12,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "walnut"
+     },
+     {
+      "id": "it-mvd6gwvv-78-3r",
+      "productId": "sku:NL-AP-F36",
+      "x": 42,
+      "y": 15,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvv-79-n3",
+      "productId": "sku:NL-HS-B{w}",
+      "x": 72,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "walnut"
+     },
+     {
+      "id": "it-mvd6gwvv-7a-s8",
+      "productId": "sku:NL-SK-UM{w}",
+      "x": 100.5,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvv-7b-zw",
+      "productId": "sku:NL-AP-DW24",
+      "x": 129,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvv-7c-vj",
+      "productId": "sku:NL-HS-B{w}",
+      "x": 154.5,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 27,
+      "finishId": "walnut"
+     },
+     {
+      "id": "it-mvd6gwvv-7d-gs",
+      "productId": "sku:NL-HS-P{w}84",
+      "x": 180,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "walnut"
+     },
+     {
+      "id": "it-mvd6gwvv-7e-mb",
+      "productId": "window",
+      "x": 100.5,
+      "y": 0,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "white"
+     },
+     {
+      "id": "it-mvd6gwvv-7f-wt",
+      "productId": "sku:NL-HS-WB{w}",
+      "x": 42,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 1,
+      "finishId": "walnut"
+     },
+     {
+      "id": "it-mvd6gwvv-7g-rg",
+      "productId": "sku:NL-HS-W{w}",
+      "x": 154.5,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 1,
+      "widthIn": 27,
+      "finishId": "walnut"
+     },
+     {
+      "id": "it-mvd6gwvv-7h-bx",
+      "productId": "sku:NL-HS-I{w}",
+      "x": 96,
+      "y": 91,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "rift-oak"
+     },
+     {
+      "id": "it-mvd6gwvv-7i-xh",
+      "productId": "sku:NL-ST-26",
+      "x": 64,
+      "y": 114,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvv-7j-5v",
+      "productId": "sku:NL-ST-26",
+      "x": 96,
+      "y": 114,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvv-7k-d8",
+      "productId": "sku:NL-ST-26",
+      "x": 128,
+      "y": 114,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvv-7l-lz",
+      "productId": "sku:NL-LT-D14",
+      "x": 72,
+      "y": 91,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvv-7m-xa",
+      "productId": "sku:NL-LT-D14",
+      "x": 120,
+      "y": 91,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvv-7n-i8",
+      "productId": "door-french",
+      "x": 0,
+      "y": 126,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "white"
+     }
+    ],
+    "brandPrefs": {
+     "cabinets": [
+      "Harbourfront Slab"
+     ],
+     "appliances": [
+      "Chef’s Appliance Suite"
+     ],
+     "sinks": [
+      "Northline Sinks"
+     ],
+     "lighting": [
+      "Bay Lighting"
+     ]
+    },
+    "version": 2
+   }
+  },
+  {
+   "key": "gallery-2",
+   "title": "Chalk White U-shaped kitchen",
+   "doc": {
+    "name": "Chalk White U-shaped kitchen",
+    "room": {
+     "widthIn": 168,
+     "lengthIn": 156,
+     "ceilingIn": 108
+    },
+    "surfaces": {
+     "cabinetFinishId": "warm-white",
+     "doorStyle": "shaker",
+     "hardwareId": "brass",
+     "countertopId": "calacatta",
+     "backsplashId": "subway-white",
+     "flooringId": "oak-natural",
+     "paintId": "chalk"
+    },
+    "items": [
+     {
+      "id": "it-mvd6gwvw-85-fh",
+      "productId": "sku:NL-LS-CB36",
+      "x": 18,
+      "y": 18,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-86-xp",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 45,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "widthIn": 18,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-87-hk",
+      "productId": "sku:NL-SK-FS{w}",
+      "x": 72,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "fireclay"
+     },
+     {
+      "id": "it-mvd6gwvw-88-p8",
+      "productId": "sku:NL-AP-DW24",
+      "x": 102,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvw-89-8l",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 123,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "widthIn": 18,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8a-bm",
+      "productId": "sku:NL-LS-CB36",
+      "x": 150,
+      "y": 18,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8b-si",
+      "productId": "window",
+      "x": 72,
+      "y": 0,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "white"
+     },
+     {
+      "id": "it-mvd6gwvw-8c-jc",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 45,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 0,
+      "widthIn": 18,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8d-35",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 102,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 0,
+      "widthIn": 24,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8e-71",
+      "productId": "sku:NL-LS-WG{w}30",
+      "x": 123,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 0,
+      "widthIn": 18,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8f-rs",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 12,
+      "y": 49.5,
+      "rotation": 270,
+      "finishIndex": 0,
+      "widthIn": 27,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8g-r4",
+      "productId": "sku:NL-AP-R36",
+      "x": 14,
+      "y": 81,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvw-8h-u",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 12,
+      "y": 112.5,
+      "rotation": 270,
+      "finishIndex": 0,
+      "widthIn": 27,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8i-5u",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 6,
+      "y": 49.5,
+      "rotation": 270,
+      "finishIndex": 0,
+      "widthIn": 27,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8j-ip",
+      "productId": "sku:NL-AP-H{w}",
+      "x": 10,
+      "y": 81,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvw-8k-61",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 6,
+      "y": 112.5,
+      "rotation": 270,
+      "finishIndex": 0,
+      "widthIn": 27,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8l-7a",
+      "productId": "sku:NL-AP-F36",
+      "x": 153,
+      "y": 54,
+      "rotation": 90,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvw-8m-l1",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 156,
+      "y": 90,
+      "rotation": 90,
+      "finishIndex": 0,
+      "widthIn": 36,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8n-u9",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 156,
+      "y": 117,
+      "rotation": 90,
+      "finishIndex": 0,
+      "widthIn": 18,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8o-9a",
+      "productId": "sku:NL-LS-WB{w}15",
+      "x": 156,
+      "y": 54,
+      "rotation": 90,
+      "finishIndex": 0,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8p-al",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 162,
+      "y": 90,
+      "rotation": 90,
+      "finishIndex": 0,
+      "widthIn": 36,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvw-8q-wg",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 162,
+      "y": 117,
+      "rotation": 90,
+      "finishIndex": 0,
+      "widthIn": 18,
+      "finishId": "chalk"
+     }
+    ],
+    "brandPrefs": {
+     "cabinets": [
+      "Lakeshore Shaker"
+     ],
+     "appliances": [
+      "Chef’s Appliance Suite"
+     ],
+     "sinks": [
+      "Northline Sinks"
+     ],
+     "lighting": [
+      "Bay Lighting"
+     ]
+    },
+    "version": 2
+   }
+  },
+  {
+   "key": "gallery-3",
+   "title": "Harbour Navy L-shaped kitchen with an island",
+   "doc": {
+    "name": "Harbour Navy L-shaped kitchen with an island",
+    "room": {
+     "widthIn": 216,
+     "lengthIn": 180,
+     "ceilingIn": 108
+    },
+    "surfaces": {
+     "cabinetFinishId": "navy",
+     "doorStyle": "shaker",
+     "hardwareId": "brass",
+     "countertopId": "calacatta",
+     "backsplashId": "zellige-white",
+     "flooringId": "herringbone",
+     "paintId": "chalk"
+    },
+    "items": [
+     {
+      "id": "it-mvd6gwvx-9d-s",
+      "productId": "sku:NL-LS-CB36",
+      "x": 18,
+      "y": 18,
+      "rotation": 0,
+      "finishIndex": 2,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9e-c7",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 52.5,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 33,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9f-4j",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 76.5,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 15,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9g-8c",
+      "productId": "sku:NL-SK-FS{w}",
+      "x": 102,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "fireclay"
+     },
+     {
+      "id": "it-mvd6gwvx-9h-vp",
+      "productId": "sku:NL-AP-DW24",
+      "x": 132,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvx-9i-e8",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 160.5,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 33,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9j-or",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 184.5,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 15,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9k-t4",
+      "productId": "sku:NL-LS-P{w}84",
+      "x": 204,
+      "y": 12,
+      "rotation": 0,
+      "finishIndex": 2,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9l-76",
+      "productId": "window",
+      "x": 102,
+      "y": 0,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "white"
+     },
+     {
+      "id": "it-mvd6gwvx-9m-1c",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 52.5,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 33,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9n-94",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 76.5,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 15,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9o-vt",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 132,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 24,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9p-31",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 160.5,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 33,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9q-je",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 184.5,
+      "y": 6,
+      "rotation": 0,
+      "finishIndex": 2,
+      "widthIn": 15,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9r-e5",
+      "productId": "sku:NL-AP-F36",
+      "x": 15,
+      "y": 54,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvx-9s-7h",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 12,
+      "y": 82.5,
+      "rotation": 270,
+      "finishIndex": 2,
+      "widthIn": 21,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9t-6",
+      "productId": "sku:NL-AP-R36",
+      "x": 14,
+      "y": 111,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvx-9u-o",
+      "productId": "sku:NL-LS-B{w}",
+      "x": 12,
+      "y": 139.5,
+      "rotation": 270,
+      "finishIndex": 2,
+      "widthIn": 21,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9v-yz",
+      "productId": "sku:NL-LS-WB{w}15",
+      "x": 12,
+      "y": 54,
+      "rotation": 270,
+      "finishIndex": 2,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9w-qy",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 6,
+      "y": 82.5,
+      "rotation": 270,
+      "finishIndex": 2,
+      "widthIn": 21,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9x-yr",
+      "productId": "sku:NL-AP-H{w}",
+      "x": 10,
+      "y": 111,
+      "rotation": 270,
+      "finishIndex": 0,
+      "finishId": "steel"
+     },
+     {
+      "id": "it-mvd6gwvx-9y-75",
+      "productId": "sku:NL-LS-W{w}30",
+      "x": 6,
+      "y": 139.5,
+      "rotation": 270,
+      "finishIndex": 2,
+      "widthIn": 21,
+      "finishId": "harbour"
+     },
+     {
+      "id": "it-mvd6gwvx-9z-qe",
+      "productId": "sku:NL-LS-I{w}",
+      "x": 126,
+      "y": 91,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "chalk"
+     },
+     {
+      "id": "it-mvd6gwvx-a0-4z",
+      "productId": "sku:NL-ST-26",
+      "x": 98,
+      "y": 114,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvx-a1-gg",
+      "productId": "sku:NL-ST-26",
+      "x": 126,
+      "y": 114,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvx-a2-5j",
+      "productId": "sku:NL-ST-26",
+      "x": 154,
+      "y": 114,
+      "rotation": 180,
+      "finishIndex": 0,
+      "finishId": "oak"
+     },
+     {
+      "id": "it-mvd6gwvx-a3-t1",
+      "productId": "sku:NL-LT-D14",
+      "x": 105,
+      "y": 91,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvx-a4-ds",
+      "productId": "sku:NL-LT-D14",
+      "x": 147,
+      "y": 91,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "brass"
+     },
+     {
+      "id": "it-mvd6gwvx-a5-z1",
+      "productId": "fig",
+      "x": 198,
+      "y": 162,
+      "rotation": 0,
+      "finishIndex": 0,
+      "finishId": "white"
+     }
+    ],
+    "brandPrefs": {
+     "cabinets": [
+      "Lakeshore Shaker"
+     ],
+     "appliances": [
+      "Chef’s Appliance Suite"
+     ],
+     "sinks": [
+      "Northline Sinks"
+     ],
+     "lighting": [
+      "Bay Lighting"
+     ]
+    },
+    "version": 2
+   }
+  }
+ ]
+}

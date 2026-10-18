@@ -39,7 +39,15 @@ test('the demo showroom: live, its own catalog (no store links), branding, peopl
     assert.equal(cfg.tenant.status, 'live');
     assert.equal(cfg.tenant.isDemo, true);
     assert.deepEqual(cfg.tenant.features, { fillGaps: true, bathrooms: true, visitorRenders: false });
-    assert.deepEqual(cfg.tenant.branding.featuredLines, ['Lakeshore Shaker', 'Harbourfront Slab', 'Northline Sinks']);
+    assert.deepEqual(cfg.tenant.branding.featuredLines, ['Lakeshore Shaker', 'Harbourfront Slab', 'Northline Sinks', 'Chef’s Appliance Suite', 'Bay Lighting', 'Bayview Bath']);
+    // Its pictures, from the committed demo-images: a hero, a tall hero, every featured line, a gallery
+    // whose kitchens open in 3D.
+    const im = cfg.tenant.images;
+    assert.ok(im.hero && im.heroTall, 'hero pictures');
+    assert.equal((await visitor.get(im.hero.url)).status, 200);
+    for (const l of cfg.tenant.branding.featuredLines) assert.ok(Object.values(im.lines).some((x) => x.line === l), `a picture of ${l}`);
+    assert.ok(im.gallery.length >= 3);
+    for (const g of im.gallery) assert.equal((await visitor.get(`/api/share/${g.design}`)).status, 200, `${g.title} opens`);
     assert.equal((await visitor.get(cfg.tenant.branding.logoUrl)).status, 200);
 
     const cat = (await visitor.get('/api/catalog')).body;
@@ -122,9 +130,11 @@ test('node server/scripts/seed-demo-tenant.mjs: makes it on a real database, no 
     assert.match(out, /Address: https:\/\/demo\.blumodel\.studio/);
     assert.ok(!out.includes('should never print'));
     assert.ok(!/reset=|token|password/i.test(out), out);
-    assert.match(run(), /already there, status live, \d+ products \(0 new\)/);
+    assert.match(out, /, [1-9]\d* new showroom pictures\./);
+    assert.match(run(), /already there, status live, \d+ products \(0 new, 0 updated\), 0 new showroom pictures\./);
     const check = openDb(file);
-    assert.equal(check.prepare('SELECT COUNT(*) AS n FROM users').get().n, 0, 'no accounts');
+    assert.deepEqual(check.prepare('SELECT email FROM users').all().map((r) => r.email), ['demo-gallery@blumodel.test'], 'only the account that owns the gallery kitchens');
+    assert.equal(check.prepare('SELECT COUNT(*) AS n FROM tenant_members').get().n, 0, 'on no team');
     assert.equal(check.prepare("SELECT status FROM tenants WHERE slug = 'demo'").get().status, 'live');
     check.close();
   } finally {

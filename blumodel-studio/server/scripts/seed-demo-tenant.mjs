@@ -1,7 +1,11 @@
 // Makes (or brings up to date) the demo showroom on a real server: "Northline Kitchen & Bath
 // (Demo)" at demo.<BASE_DOMAIN>, live on a complimentary license and monthly plan, with its
-// products, branding and $25 of credits (docs/SHOWROOM_PIVOT.md §9). It makes no accounts: add
-// yourself to its team from Admin > Tenants > Northline > Team, which gives you a sign-in link.
+// products, branding and $25 of credits (docs/SHOWROOM_PIVOT.md §9), its showroom pictures and the
+// gallery's sample kitchens (server/tenancy/demo-images/, made by scripts/make-showroom-images.mjs).
+// Run again after an update to bring an existing demo up to date (new products and lines, changed
+// ones, new pictures). The only account it makes is "Northline design team", which owns the gallery
+// kitchens and can't sign in (nobody knows its password). To use the workspace, add yourself to its
+// team from Admin > Companies > Northline > Team, which gives you a sign-in link.
 //
 //   node server/scripts/seed-demo-tenant.mjs
 //   node server/scripts/seed-demo-tenant.mjs --db <file>
@@ -48,7 +52,7 @@ try {
   const { ctx } = createApp({ config, db, log: quiet });
   const out = await seedDemoTenant({ db, services: ctx.services, config, now: Date.now }, { people: false });
   const t = ctx.services.tenants.get(out.tenantId);
-  console.log(`${DEMO_NAME}: ${out.created ? 'created' : 'already there'}, status ${t.status}, ${out.products.total} products (${out.products.made} new).`);
+  console.log(`${DEMO_NAME}: ${out.created ? 'created' : 'already there'}, status ${t.status}, ${out.products.total} products (${out.products.made} new, ${out.products.updated} updated), ${out.pictures} new showroom pictures.`);
   console.log(`Address: ${ctx.services.tenants.originOf(t)}`);
   console.log('To use its workspace, add yourself to its team in Admin > Tenants.');
 } finally {
