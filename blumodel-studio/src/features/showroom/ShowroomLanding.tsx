@@ -11,7 +11,7 @@ import { DEFAULT_SURFACES } from '../../data/defaults';
 import { BRAND_CATEGORIES } from '../../lib/generate/brands';
 import { finishList } from '../../lib/finish';
 import { useShowroom } from './useShowroom';
-import { useConfig } from '../../lib/config';
+import { useConfig, useLegal } from '../../lib/config';
 import { CompanyLogo, SiteMark } from './SiteMark';
 import { featuredLines, showroomLines, showroomPrefs, type ShowroomLine } from './lines';
 import { designHref, salesOrigin } from './links';
@@ -59,6 +59,7 @@ const jump = (id: string) => (e: React.MouseEvent) => {
  * Without pictures yet, the hero shows a plan made of the company's products instead.
  */
 export default function ShowroomLanding() {
+  const legal = useLegal();
   const t = useShowroom();
   const signedIn = useSession((s) => s.status === 'signedIn');
   const products = useCatalog((s) => s.products);
@@ -220,7 +221,9 @@ export default function ShowroomLanding() {
           <a href="#/terms">Terms</a>
           <a href="#/privacy">Privacy</a>
         </nav>
-        <span className="sr-foot-by">Virtual showroom by BluModel Studio</span>
+        <span className="sr-foot-by">
+          Virtual showroom by BluModel Studio · software © {new Date().getFullYear()} {legal.businessName ?? 'BluModel Studio'}
+        </span>
       </footer>
       <Toasts />
     </div>

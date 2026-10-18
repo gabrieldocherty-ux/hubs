@@ -7,7 +7,10 @@
  * are NOT legal advice and have not been reviewed by a lawyer. Have a lawyer in the operator's
  * jurisdiction review all three before relying on them, in particular: the license refund terms,
  * the liability cap, taxes, the processor terms (PIPEDA, Quebec's Law 25, CASL for the leads), the
- * governing-law clause, and what happens to data after a company leaves.
+ * governing-law clause, and what happens to data after a company leaves. The anti-copying clauses
+ * added on 2026-10-18 (ownership, licence not sale, no reverse engineering, scraping, automated
+ * access, competing products or AI training, trademarks, confidentiality, and the same rules for
+ * visitors in section 15) need that review too: docs/handoff/protect.md.
  *
  * Who runs the site comes from `/api/config` → `legal` (LEGAL_NAME, SUPPORT_EMAIL, LEGAL_JURISDICTION
  * on the server). When a value isn't set, the text uses neutral wording ("the operator of this
@@ -38,7 +41,7 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-export const LAST_UPDATED = '17 October 2026';
+export const LAST_UPDATED = '18 October 2026';
 /** The day the showroom pivot took effect: purchases before it keep their own terms. */
 const PIVOT_DATE = '17 October 2026';
 
@@ -249,16 +252,23 @@ export function termsDoc(w: LegalWords): LegalDoc {
       },
       {
         id: 'content',
-        heading: '7. Your brand, products and content',
+        heading: '7. Who owns what, and your licence',
         body: (
           <>
             <p>
-              Your name, logo, product information, photos, prices and anything else you give us stay yours. You let us use them only to build and run your showroom, and you
-              confirm you have the right to give them to us. Product details, prices and availability shown on your showroom are yours to keep accurate.
+              <b>Yours:</b> your company name, logo and brand, your product information, photos and prices, your leads, and anything else you give us. You let us use them only to
+              build and run your showroom, and you confirm you have the right to give them to us. Product details, prices and availability shown on your showroom are yours to keep
+              accurate.
             </p>
             <p>
-              The 3D models we make of your products are made for your showroom and shown only there. We don’t offer models made from your material to another company without
-              your permission. We keep the rights in our software, our product library and the models we make; if you leave and want the model files, ask us.
+              <b>Ours:</b> the BluModel Studio software and its code, its designs and layouts, the showroom template your showroom is built on, our product library, and the 3D models,
+              textures and renderings we make, including the models we make of your products. The 3D models we make of your products are made for your showroom and shown only
+              there; we don’t offer models made from your material to another company without your permission. If you leave and want the model files, ask us.
+            </p>
+            <p>
+              <b>A licence, not a sale.</b> While your license and monthly plan are current, we give you a limited, non-exclusive, non-transferable right to use the service and your
+              showroom for your own business. Nothing in this agreement sells or transfers our software, designs or models to you, and every right we don’t expressly give you stays
+              with us.
             </p>
           </>
         ),
@@ -292,14 +302,27 @@ export function termsDoc(w: LegalWords): LegalDoc {
       },
       {
         id: 'rules',
-        heading: '10. Fair use',
+        heading: '10. Fair use, and no copying',
         body: (
-          <ul>
-            <li>Don’t upload anything illegal, or anything you don’t have the right to use.</li>
-            <li>Don’t try to get into another company’s showroom, accounts or data, or parts of the service that aren’t yours.</li>
-            <li>Don’t copy our software or product library out of the service, scrape it, resell it or overload it.</li>
-            <li>Don’t use the lead form or your showroom to send spam, or to collect people’s details for anything else.</li>
-          </ul>
+          <>
+            <ul>
+              <li>Don’t upload anything illegal, or anything you don’t have the right to use.</li>
+              <li>Don’t try to get into another company’s showroom, accounts or data, or parts of the service that aren’t yours.</li>
+              <li>
+                Don’t copy, download in bulk, resell or republish our software, the showroom template, our product library or the 3D models and images we make, except as part of
+                using your showroom.
+              </li>
+              <li>Don’t reverse engineer, decompile, disassemble or take apart the service, its code or its 3D files, or try to find their source, except where the law allows it.</li>
+              <li>
+                Don’t scrape the service or reach it with bots, crawlers or other automated tools, except the downloads and exports the service itself offers. Don’t overload it or
+                get around its limits.
+              </li>
+              <li>Don’t use the service, or anything you learn or take from it, to build or help build a competing product.</li>
+              <li>Don’t use any part of the service or its content (the software, the models, the images, the catalog) to train, test or improve an AI or machine-learning model.</li>
+              <li>Don’t use the lead form or your showroom to send spam, or to collect people’s details for anything else.</li>
+            </ul>
+            <p>These apply to your whole team. If someone breaks them, we may block that access and, if it is serious, suspend the showroom as section 13 describes.</p>
+          </>
         ),
       },
       {
@@ -366,6 +389,12 @@ export function termsDoc(w: LegalWords): LegalDoc {
               Designs are for planning conversations: have the space measured and the plan checked by a professional before you order or build anything. If you send a design to the
               company, it receives your details and the design because you asked it to; the <a href="#/privacy">Privacy policy</a> explains what happens to them.
             </p>
+            <p>
+              <b>Using this site.</b> Anyone using this site, a showroom or blumodel.studio, may use it for their own planning. The software, the showroom’s design, and the 3D
+              models and images on it belong to us or to the company. You may not copy them in bulk, scrape the site or reach it with bots, crawlers or other automated tools,
+              reverse engineer or decompile it or its 3D files, use it to build a competing product, or use any of it to train or improve an AI or machine-learning model.
+              “BluModel Studio” and its logo are our trademarks; the company’s name and logo are its own. Using the site means you agree to this section.
+            </p>
           </>
         ),
       },
@@ -397,7 +426,36 @@ export function termsDoc(w: LegalWords): LegalDoc {
           </>
         ),
       },
-      { id: 'contact', heading: '18. Contact', body: <ContactBlock w={w} /> },
+      {
+        id: 'confidential',
+        heading: '18. Confidentiality',
+        body: (
+          <>
+            <p>
+              Each of us will see things about the other that aren’t public. For you that includes your product data before it is published, your prices and costs, your leads and
+              your customers. For us it includes our prices and quotes, how the service works inside, and features that aren’t released yet.
+            </p>
+            <p>
+              Each of us keeps the other’s non-public information confidential, uses it only for this agreement, and shares it only with the people who need it to do their part
+              (our team, your team, and the services the <a href="#/privacy">Privacy policy</a> lists), who must keep it confidential too. This doesn’t cover information that is
+              public through no fault of the one who received it, that the law requires to be shared, or that you ask us to share. It lasts while we work together and for 3 years
+              after; for leads and personal data, as long as we hold them.
+            </p>
+          </>
+        ),
+      },
+      {
+        id: 'trademarks',
+        heading: '19. Trademarks and copyright',
+        body: (
+          <p>
+            “BluModel Studio”, its logo and our product names are our trademarks. This agreement doesn’t give you the right to use them, except to say truthfully that your showroom
+            runs on BluModel Studio. Your name and logo stay yours; you let us show them on your showroom and, if you agree, name you as a customer. The software, the showroom
+            template and the models and images we make are protected by copyright: © {new Date().getFullYear()} {w.who === 'the operator of this site' ? 'BluModel Studio' : w.who}.
+          </p>
+        ),
+      },
+      { id: 'contact', heading: '20. Contact', body: <ContactBlock w={w} /> },
     ],
   };
 }
@@ -449,6 +507,10 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
             </p>
             <ul>
               <li>Staff accounts: name, email address and role. Passwords are stored only as salted hashes; nobody can read them back.</li>
+              <li>
+                Two-factor sign-in, for accounts that turn it on (required for BluModel admins): the authenticator secret, on our server, and the one-time recovery codes, stored
+                only as hashes.
+              </li>
               <li>The company’s details: name, logo, colours, contact details shown to visitors, web addresses and products.</li>
               <li>
                 Billing: licenses, invoices and receipts, and Stripe’s references for the monthly plan. Never a card number: Stripe holds that.
@@ -472,7 +534,12 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
               </li>
             </ul>
             <p>
-              <b>About how the service is used:</b> counts of product views, and IP addresses while signing in or sending a form, to slow down password guessing and spam.
+              <b>About how the service is used:</b> counts of product views, and IP addresses while signing in, sending a form or loading the catalog and its files, to slow down
+              password guessing, spam and bulk copying. Each time a company’s team exports its lead list we record who did it, when and how many rows.
+            </p>
+            <p>
+              <b>An audit log</b> of administrative actions (who did what, and when). When an account, a lead or a company is deleted, the email addresses and phone numbers in its
+              entries are replaced with a pseudonym, so the log still shows what happened without saying to whom.
             </p>
           </>
         ),
@@ -495,12 +562,12 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
         body: (
           <>
             <p>
-              We set a cookie, <code>blumodel_session</code>, when someone signs in. It keeps them signed in for 30 days, renews while they use the site, and is removed when they
+              We set a cookie, <code>blumodel_session</code>, when someone signs in. It keeps them signed in for 30 days (a BluModel admin for 12 hours), renews while they use the site, and is removed when they
               sign out. It belongs to the one site that set it, so a sign-in on one showroom means nothing on another, and it can’t be read by scripts.
             </p>
             <p>
               On a showroom, a visitor who gives their details before designing gets a second cookie, <code>blumodel_visitor</code>, so their designs are saved and they aren’t asked
-              again. It lasts up to 400 days, belongs to that one showroom, can’t be read by scripts, and is removed by clearing the browser’s cookies.
+              again. It lasts 180 days, belongs to that one showroom, can’t be read by scripts, and is removed by clearing the browser’s cookies.
             </p>
             <p>
               There are no advertising or analytics cookies, no tracking pixels and no third-party scripts. Fonts and every other file are served by us, so loading a page tells no one
@@ -549,14 +616,26 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
             </p>
             <ul>
               <li>
-                <b>Visitor data</b> is kept for as long as the company keeps its showroom with us, unless the company or the visitor deletes it sooner. When a company leaves and asks
-                us to, we delete its showroom’s data.
+                <b>A visitor who never sent a design</b>, and whose details the company’s team never acted on, is deleted 24 months after their last visit, or sooner if the company
+                chooses 6, 12 or 18 months. Deleting a visitor’s details also deletes the designs only they had, their history and the links to them.
               </li>
               <li>
-                <b>Company and staff data</b> is kept while the company is a customer, and Book a call requests for as long as we are talking with the company.
+                <b>A visitor who sent a design</b> stays in the company’s leads while the company is a customer, unless the company or the visitor asks for it to be deleted sooner.
+                Someone else typing the same email or phone never joins it: that starts a separate lead, which the company can merge if it is the same person.
               </li>
               <li>
-                <b>Invoices and payment records</b> are kept as long as accounting law requires.
+                <b>The visitor cookie</b> lasts 180 days; the sign-in cookie 30 days from the last visit.
+              </li>
+              <li>
+                <b>Company and staff data</b> is kept while the company is a customer. <b>Book a call requests</b> are deleted 24 months after they were last updated.
+              </li>
+              <li>
+                <b>When a company leaves</b>, it can have all of its data exported, and when it asks, we delete its showroom: its settings, team, accounts, products, designs, leads,
+                renderings, credits and files. Nothing is deleted just because a showroom lapses or a trial ends.
+              </li>
+              <li>
+                <b>Invoices and payment records</b> are kept as long as tax and accounting law requires (6 years in Canada); after a company is deleted they keep the amounts, dates
+                and the payment provider’s reference, but no names, emails or phone numbers.
               </li>
             </ul>
           </>
@@ -597,7 +676,8 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
         body: (
           <p>
             Pages and data travel over HTTPS. Every showroom’s data is kept apart from every other’s, and each request is checked against the site it came from. Passwords are hashed;
-            sign-in sessions are random tokens stored only in hashed form; repeated failed sign-ins and form sends are slowed down. If we learn of a breach that affects personal data
+            sign-in sessions are random tokens stored only in hashed form; repeated failed sign-ins and form sends are slowed down. Two-factor sign-in is available to every account
+            and required for BluModel admins. Backups that leave our server are encrypted. If we learn of a breach that affects personal data
             we hold for a company, we tell that company without delay so it can tell the people affected, and we tell the people affected where we are the controller.
           </p>
         ),
