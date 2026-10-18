@@ -136,20 +136,24 @@ sudo bash install-linux.sh --dry-run      # prints every command it would run; r
 sudo bash install-linux.sh
 ```
 
-It takes 5-15 minutes on a Wyse (most of it `npm ci` and the build). What it does, in order (the
-script's header says the same): checks the machine; installs `ca-certificates curl gnupg git`,
+It takes a few minutes on a Wyse: **nothing is built there**. The branch carries each release
+prebuilt (section 10, *Publishing a version*), so there is no `npm ci`, no vite and no
+devDependencies on the machine. What it does, in order (the script's header says the same): checks
+the machine; installs `ca-certificates curl gnupg git`,
 **Node.js 24 from NodeSource's apt repository** (unless Node 24+ is there) and **cloudflared from
 Cloudflare's apt repository**; creates the **`blumodel` system account** and the home
 `/srv/blumodel-studio` (with `data/`, `logs/`, `.cloudflared/`, all owned by `blumodel`); makes a
 **sparse clone of `blumodel-studio/`** on the `blumodel-studio` branch in `/srv/blumodel-studio/repo`
-(git also checks out the handful of files at the top of the repo; nothing uses them); runs `npm ci`
-and the build (`scripts/host/build.mjs`) as
-`blumodel`; installs the systemd units (the server **enabled**, the tunnel installed but **not
-enabled**); deploys (starts the server and checks `http://127.0.0.1:8790/api/health`); writes
+(plus `WYSE_SETUP.md` and `CLAUDE.md` at the top of a release: the setup guide for a Claude Code
+session on the Wyse); checks the prebuilt release is there; installs the systemd units (the server
+**enabled**, its Node heap capped; the tunnel installed but **not enabled**; the daily automatic
+update **on**, see section 10); deploys (starts the server and checks `http://127.0.0.1:8790/api/health`); writes
 `cloudflared.yml` and checks it offline; and prints what is left.
 
 Run it again any time: each step checks first, so a second run only repairs or updates. Options:
-`--home <dir>`, `--branch <name>`, `--repo <url>`, `--port <n>`, `--dry-run`. A home installed with
+`--home <dir>`, `--branch <name>`, `--repo <url>`, `--port <n>`, `--dry-run`, `--auto-update-time HH:MM`
+(04:00), `--no-auto-update`, `--heap-mb <n>` (384), and `--build` (an emergency only: `npm ci` and the
+build on the Wyse, which needs about 2 GB of RAM + swap). A home installed with
 `--port` (Windows: `-Port`) keeps that port: later deploys, updates, rollbacks and the data scripts read
 it back from the home (`blumodel-studio.service`, or `run-server.cmd` on Windows) unless told otherwise.
 
@@ -170,12 +174,16 @@ The home it makes:
 | `/srv/blumodel-studio/blumodel.env` | the private settings, mode 600, owned by `blumodel` |
 | `/srv/blumodel-studio/cloudflared.yml` | the tunnel's config |
 | `/srv/blumodel-studio/.cloudflared/` | the tunnel's credentials JSON, which you copy in (mode 700) |
-| `/etc/systemd/system/blumodel-studio.service`, `blumodel-tunnel.service` | the units |
+| `/srv/blumodel-studio/auto-update.conf` | `AUTO_UPDATE=on\|off`, `AUTO_UPDATE_TIME=04:00` (not secret; section 10) |
+| `/etc/systemd/system/blumodel-studio.service`, `blumodel-tunnel.service` | the server and the tunnel |
+| `/etc/systemd/system/blumodel-update.service`, `.timer`, `.path` | the automatic update (section 10) |
 
 The server unit runs `node --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod` as
 `blumodel` with `NODE_ENV=production`, restarts it 5 seconds after any exit, and sandboxes it
 (`ProtectSystem=strict` with only `data/` and `logs/` writable, `ProtectHome`, `PrivateTmp`,
-`NoNewPrivileges`, no capabilities). Read them with `systemctl cat blumodel-studio blumodel-tunnel`.
+`NoNewPrivileges`, no capabilities). On a small machine it also caps Node's heap
+(`--max-old-space-size=384`, `--heap-mb`) with `MemoryHigh=640M` and `MemoryMax=896M` above it.
+Read them with `systemctl cat blumodel-studio blumodel-tunnel`.
 
 ### On Windows 10/11
 
@@ -202,13 +210,15 @@ The server unit runs `node --no-warnings /srv/blumodel-studio/app/server/index.m
 
 It checks Node 24+/git/cloudflared (when one is missing it prints the `winget` command and stops: it
 never installs software itself), clones just `blumodel-studio\` into
-`%USERPROFILE%\Projects\BluModelStudio\repo`, runs `npm ci` and the build, deploys into
+`%USERPROFILE%\Projects\BluModelStudio\repo` (nothing is built: the release is prebuilt; `-Build` is
+the emergency exception), deploys into
 `%USERPROFILE%\Projects\BluModelStudio`, writes the tunnel's files and checks them offline, and
 registers **`BluModelStudioServer` to run when Windows starts** (`register-tasks.mjs --at-startup
 --only server`). `schtasks` then asks for **your Windows password**: Windows needs it to start the
 task when nobody is signed in. Nothing passes the password on a command line. Last, it restarts the
 server through that task, so it keeps running after you sign out. Options: `-HomeDir`, `-Branch`,
-`-Repo`, `-Port`, `-SkipTasks`, `-DryRun`.
+`-Repo`, `-Port`, `-SkipTasks`, `-DryRun`, `-AutoUpdateTime 04:00`, `-NoAutoUpdate`, `-Build`. Last, it
+registers the automatic update's two tasks (section 10), asking for the password once for each.
 
 The tunnel's task, `BluModelTunnel`, is registered at the cutover, not before.
 
@@ -470,8 +480,9 @@ can't read, it prints the `restore.mjs --from data/backups/<time>/blumodel.db` c
 the deploy made just before.
 
 A rollback (by hand or by the update) changes only `app/`: the checkout in `repo/` stays on the newer
-commit, so the **next update deploys that commit again**. Fix it (or revert it) on the
-`blumodel-studio` branch first (section 10, *Publishing a version*), then update.
+commit. The automatic update remembers the failed commit and doesn't retry it, but an update **by
+hand** deploys it again. Fix it (or revert it) and publish a new release first (section 10,
+*Publishing a version*).
 
 **The database** (a bad import, a corrupt file): OPERATIONS.md, *Backups and restore*, and
 MOVING_DATA.md, *Roll back*. On Linux:
@@ -509,6 +520,41 @@ Add `--dry-run` to see the plan first; `--force` redeploys the commit already ru
 
 Only one update runs at a time (`logs/update.lock`); the automatic one below uses the same steps.
 
+### Automatic updates
+
+Publishing is all it takes: the Wyse picks a new release up by itself.
+
+- **When.** Once a day at **04:00** local time (`AUTO_UPDATE_TIME`), the quietest hour. On Linux
+  `blumodel-update.timer` (`OnCalendar=*-*-* 04:00:00`, `Persistent=true` so a run missed while the
+  machine was off happens at boot, up to 10 minutes of random delay) starts `blumodel-update.service`,
+  which runs `update.mjs --auto`. On Windows the task `BluModelStudioUpdate` runs daily at that time.
+  Never more often: nothing else runs on a schedule.
+- **Update now.** Admin > System > Updates > *Update now* (admins only, audited) applies a release at
+  once: the server leaves `logs/update-now.request`, which `blumodel-update.path` acts on immediately
+  (inotify, so it costs nothing while idle); on Windows `BluModelStudioUpdateNow` looks for it every two
+  minutes and otherwise does nothing at all. The update deletes the file.
+- **What a run does.** It fetches the branch and compares `app/DEPLOYED.txt` with
+  `origin/blumodel-studio`. Equal: one `current` line, nothing else. A newer commit: `git merge
+  --ff-only`, then the steps above (database backup, deploy, health check, rollback if unhealthy), run
+  by the new copy of the script. It **never resets the checkout**: a force-pushed branch is refused
+  with a log line. Only one run at a time (`logs/update.lock`; a lock left by a run that died is
+  cleared after 2 hours), and never while a deploy is in progress.
+- **When it fails.** The previous version keeps running (or is rolled back to), the commit is
+  remembered in `logs/update-state.json` and **not retried** until a newer one is published (or Update
+  now is pressed), and Admin > System shows a red *Rolled back* notice. Fix forward: publish a commit
+  that fixes or reverts it.
+- **Logs.** Every run is one JSON line in `logs/update.log` (time, from, to, outcome, duration, error;
+  rotated at 1 MB, 3 kept): `sudo tail -n 20 /srv/blumodel-studio/logs/update.log`. On Linux also
+  `journalctl -u blumodel-update` (one line per run, plus the deploy's output when it updates). The
+  latest result is in `logs/update-status.json`, which Admin > System > Updates shows.
+- **Change the time / turn it off.** Run the installer again with `--auto-update-time 05:30` or
+  `--no-auto-update` (Windows: `-AutoUpdateTime 05:30`, `-NoAutoUpdate`), or directly
+  `sudo node /srv/blumodel-studio/repo/blumodel-studio/scripts/register-tasks.mjs --only update --no-auto-update`
+  (Windows, as administrator: `node scripts\register-tasks.mjs --at-startup --only update
+  --auto-update-time 05:30`). The choice is recorded in `<home>/auto-update.conf`, which is not the
+  settings file: the installer never reads `blumodel.env`. With it off, *Update now* is off too; update
+  by hand with the command at the top of this section.
+
 The site is down for a few seconds during step 5 (Cloudflare shows its 502 page); the tunnel keeps
 running. Keep the system current too: `sudo apt update && sudo apt upgrade` now and then (Node.js and
 cloudflared come from their own apt repositories, which `unattended-upgrades` leaves alone), then
@@ -517,20 +563,33 @@ cloudflared come from their own apt repositories, which `unattended-upgrades` le
 ### Publishing a version
 
 The Wyse installs and updates from the **`blumodel-studio` branch** of `gabrieldocherty-ux/hubs` and
-nothing else: development happens on other branches, and a version reaches the Wyse only when you
-move that branch to it. From any checkout of the repo, once the commit has passed `npm test` and
-`npm run build` and you have tried it:
+nothing else. Each commit there is a **prebuilt release**: development happens on other branches, and
+a version reaches the Wyse only when you publish it, from your development checkout, with:
 
 ```
-git push origin <commit>:refs/heads/blumodel-studio
+npm run release              # checks, builds, shows what goes live, asks, publishes
+npm run release -- --qa      # also the full QA suite on the build first
+npm run release -- --dry-run # everything but the push
+npm run release -- --yes     # no question
 ```
 
-The first push creates the branch. **Until it exists on GitHub, the install commands in section 3
-fail** (`curl` gets a 404 for the script; `git clone` says the remote branch was not found). Move
-the branch only forward: git refuses a push that isn't a fast-forward unless you force it, and a
-forced one would make the Wyse's update (`git pull --ff-only`) refuse in turn. To undo a version,
-push a commit that reverts it. `--branch` (`-Branch` on Windows) installs from another branch instead, and the
-update then follows that branch.
+`scripts/release.mjs`, in order: refuses when tracked files have uncommitted changes; makes a **clean
+temporary worktree of HEAD** (with `node_modules` linked in) and runs `tsc --noEmit`, `npm test` and
+the production build there (and with `--qa` the QA suite); builds the release tree with git plumbing
+in a throwaway index, so your checkout and branch are never touched: HEAD's `blumodel-studio/`, plus
+its `dist/` and `server/generated/` (gitignored on every work branch and committed **only** on the
+release branch), `RELEASE.json` (the source commit), and `WYSE_SETUP.md` and `CLAUDE.md` at the top
+(from `release/`; nothing else from the repo's top level); refuses when HEAD doesn't contain the live
+release's source (it would drop published work); makes the release commit **on top of the branch's
+tip**, prints what goes live (the commits since the last release, the build's size) and asks; then
+`git push origin <release>:refs/heads/blumodel-studio`, never forced, so if someone published in
+between git refuses and you run it again. The Wyse deploys it at 04:00, or at once with Update now.
+
+The first release goes on top of the branch as it is. **Until the branch exists on GitHub, the install
+commands in section 3 fail.** Move it only forward: a forced push would make the Wyse's update refuse
+in turn (it never resets). To undo a version, revert the change on your branch and release again.
+`--branch` (`-Branch` on Windows) installs from another branch instead, and the update then follows
+that branch; a branch without a prebuilt release is refused unless `--build`.
 
 ## 11. Backups
 
@@ -562,6 +621,8 @@ Linux:
 | The tunnel (`Registered tunnel connection` = connected) | `journalctl -u blumodel-tunnel -f` |
 | Both at once, since the last boot | `journalctl -b -u blumodel-studio -u blumodel-tunnel` |
 | Status | `systemctl status blumodel-studio blumodel-tunnel` |
+| Automatic updates (one line per run) | `journalctl -u blumodel-update -n 20`, `sudo tail /srv/blumodel-studio/logs/update.log` |
+| When the next update check is | `systemctl list-timers blumodel-update.timer` |
 | Restart after a settings change | `sudo systemctl restart blumodel-studio` |
 | Stop / start | `sudo systemctl stop blumodel-studio` / `sudo systemctl start blumodel-studio` |
 
@@ -575,18 +636,28 @@ opened), `logs\tunnel.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status w
 
 ## 13. Disk and memory
 
-- **Disk.** The code, its `node_modules` and the build take 250-500 MB under
-  `/srv/blumodel-studio/repo` (230 MB in the rehearsal), plus npm's download cache in
-  `/srv/blumodel-studio/.npm` (safe to delete; the next update fills it again); each copy of the app
+- **Disk.** The checkout with its prebuilt release takes about 20 MB under
+  `/srv/blumodel-studio/repo` (plus git's history, which grows by about 5 MB a release; there is no
+  `node_modules`, unless an emergency `--build` made one: 250-500 MB, and npm's cache in
+  `/srv/blumodel-studio/.npm`, both safe to delete afterwards); each copy of the app
   (`app`, `app.previous`, `app.failed`) about 6 MB. What grows is the
   data: the database plus 14 daily copies of it, the uploads twice (they are mirrored) and 5 pre-deploy
   copies of the database. A 16 GB eMMC holds Ubuntu Server and a young site, but watch it; 32 GB or more
   (or an M.2 SATA drive, if your unit has the slot) is comfortable. Check with `df -h /` and
   `sudo du -sh /srv/blumodel-studio/data/*`. On a small disk, cap the journal: `SystemMaxUse=200M` in
   `/etc/systemd/journald.conf`, then `sudo systemctl restart systemd-journald`.
-- **Memory.** Serving needs little (a Node process of 100-200 MB). The **build** is the heavy part:
-  `scripts/host/build.mjs` gives it half the RAM (1-2 GB of heap) and refuses, with this fix, when RAM
-  plus swap is under 2 GB. A 4 GB Wyse builds without swap. With 2 GB of RAM add swap first:
+- **Memory.** Serving needs little, and nothing is built on the Wyse. Measured (Node 24, the seeded
+  demo data): the server idles at **about 80 MB RSS**, stays under **90 MB** through a burst of 1,000
+  requests across the sales site and the demo showroom, and under **about 150 MB** through the whole
+  admin QA run (it settles back to about 75 MB). The systemd unit caps V8's heap at 384 MB
+  (`--heap-mb`), throttles the service above `MemoryHigh=640M` and restarts it above
+  `MemoryMax=896M`, so even a leak can't take a 4 GB machine. Nothing polls: the only timers are the
+  server's own 10-minute housekeeping and hourly backup check, the daily 04:00 update check, and
+  `blumodel-update.path`, which is an inotify watch (no process at all while idle). Desktop
+  environments and other services are what to avoid on a 4 GB Wyse.
+  The emergency `--build` (section 10) is the one heavy job: `scripts/host/build.mjs` gives it half the
+  RAM (1-2 GB of heap) and refuses, with this fix, when RAM plus swap is under 2 GB. With 2 GB of RAM
+  add swap first:
 
   ```
   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
@@ -628,10 +699,12 @@ All in the repo's `blumodel-studio/` folder. Each has the full details in its he
 | `scripts/host/install-linux.sh` | install or repair on Ubuntu 24.04 / Debian 12 (`--dry-run`, `--home`, `--branch`, `--repo`, `--port`) |
 | `scripts/host/install-windows.ps1` | install or repair on Windows 10/11 (`-DryRun`, `-HomeDir`, `-Branch`, `-Repo`, `-Port`, `-SkipTasks`) |
 | `scripts/host/update-linux.sh` | the update on Linux, with sudo (runs `update.mjs`) |
-| `scripts/host/update.mjs` | the update (`npm run host:update`; `--dry-run`, `--force`, `--no-pull`, `--home`) |
+| `scripts/host/update.mjs` | the update (`npm run host:update`; `--dry-run`, `--force`, `--no-pull`, `--home`, `--build`), and the unattended `--auto` (`--trigger-only`) |
+| `scripts/host/autoupdate.mjs` | what `--auto` decides and records (the lock, the failed commit, `logs/update.log`, `logs/update-status.json`) |
+| `scripts/release.mjs` | `npm run release`: publish a prebuilt release to the branch (`--yes`, `--qa`, `--dry-run`, `--branch`, `--remote`) |
 | `scripts/host/build.mjs` | the build with the memory guard (`npm run host:build`; `--out`, `--dry-run`) |
 | `scripts/deploy-local.mjs` | deploy a build into the home (`--dist`, `--commit`), or `--rollback`; on Linux with sudo |
-| `scripts/register-tasks.mjs` | Linux: install the systemd units (`--enable-tunnel` at the cutover); Windows: the tasks (`--at-startup`); `--dry-run` |
+| `scripts/register-tasks.mjs` | Linux: install the systemd units (`--enable-tunnel` at the cutover, `--heap-mb`); Windows: the tasks (`--at-startup`); both: the update schedule (`--only update`, `--auto-update-time`, `--no-auto-update`); `--dry-run` |
 | `scripts/tunnel/setup-tunnel.mjs` | write `cloudflared.yml` (the sales site, `www.`, `*.` showrooms and custom domains; and the Windows supervisor) and check it offline (`--validate`, `--credentials`, `--hostname`, `--no-custom-domains`) |
 | `server/scripts/seed-demo-tenant.mjs` | make or refresh the demo showroom `demo.blumodel.studio` (`--db`) |
 | `server/scripts/export-data.mjs`, `import-data.mjs` | the data bundle (MOVING_DATA.md) |

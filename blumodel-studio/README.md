@@ -178,8 +178,18 @@ what an admin still does for those customers.
 **Another computer** (the Dell Wyse 5070, Ubuntu Server 24.04 recommended, or Windows):
 [docs/HOSTING.md](docs/HOSTING.md). One script installs everything from this repo
 (`scripts/host/install-linux.sh` or `install-windows.ps1`), the site starts at boot with nobody
-logged in, and one command updates it from GitHub and rolls back by itself if the new version
-doesn't come up (`scripts/host/update.mjs`). Moving the data: [docs/MOVING_DATA.md](docs/MOVING_DATA.md).
+logged in, and it updates itself from GitHub once a day at 04:00 (or at once with Admin > System >
+Update now), rolling back by itself if the new version doesn't come up (`scripts/host/update.mjs
+--auto`; docs/HOSTING.md, "Automatic updates"). Moving the data: [docs/MOVING_DATA.md](docs/MOVING_DATA.md).
+
+**Publishing a version** to it: `npm run release` (`scripts/release.mjs`). It refuses with uncommitted
+changes, runs `tsc`, `npm test` and the production build in a clean temporary worktree of HEAD
+(`--qa` adds the full QA suite), shows what goes live and asks (`--yes` doesn't), then fast-forward
+pushes a **prebuilt** release commit to the `blumodel-studio` branch: the app folder plus its `dist/`
+and `server/generated/`, which are committed there and never on a work branch, so the Wyse never
+builds anything. `--dry-run` does everything but the push. The release branch also carries
+`WYSE_SETUP.md` and `CLAUDE.md` at its top (from `release/`), the setup guide a Claude Code session on
+the Wyse follows.
 
 `npm run deploy:local` builds and copies the app to the home (`%USERPROFILE%\Projects\BluModelStudio`
 on Windows, `/srv/blumodel-studio` on Linux; set `BLUMODEL_HOME`), keeping `data/blumodel.db` (backed
