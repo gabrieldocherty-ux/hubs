@@ -1,7 +1,10 @@
 // Puts a data bundle made by export-data.mjs in place on this machine (docs/MOVING_DATA.md), on
-// Windows or Linux.
+// Windows or Linux. An encrypted bundle (.tar.enc) is decrypted to a private temp file first
+// (deleted afterwards); its passphrase comes from --passphrase-file <file>, BACKUP_PASSPHRASE, the
+// home's blumodel.env, or a prompt in a terminal. An off-site backup (blumodel-offsite-*.tar.enc)
+// is the same kind of bundle.
 //
-//   node server/scripts/import-data.mjs <bundle.tar | folder> --check              verify only, change nothing
+//   node server/scripts/import-data.mjs <bundle.tar.enc | .tar | folder> --check   verify only, change nothing
 //   node server/scripts/import-data.mjs <bundle.tar | folder> --home <home>        import into an empty home
 //   node server/scripts/import-data.mjs <bundle.tar | folder> --home <home> --replace
 //                                                     keep the current data as *.before-import-<time>
@@ -21,20 +24,28 @@
 // it puts in place to the account that owns the home.
 
 import { importData } from '../ops/dataBundle.mjs';
-import { assertServerStopped, scriptConfig, SERVICE_HINTS } from '../ops/backup.mjs';
+import { assertServerStopped, scriptConfig, scriptPassphrase, SERVICE_HINTS } from '../ops/backup.mjs';
+import { isEncryptedFile } from '../ops/crypt.mjs';
 
 const argv = process.argv.slice(2);
-const FLAGS_WITH_VALUE = new Set(['--home', '--db', '--uploads', '--port']);
+const FLAGS_WITH_VALUE = new Set(['--home', '--db', '--uploads', '--port', '--passphrase-file']);
 const bundle = argv.find((a, i) => !a.startsWith('--') && !FLAGS_WITH_VALUE.has(argv[i - 1]));
 if (!bundle || argv.includes('--help') || argv.includes('-h')) {
-  console.log('Usage: node server/scripts/import-data.mjs <bundle.tar|folder> [--check] [--replace] [--home <dir> | --db <file> [--uploads <dir>]] [--port <n>]');
+  console.log('Usage: node server/scripts/import-data.mjs <bundle.tar.enc|bundle.tar|folder> [--check] [--replace] [--home <dir> | --db <file> [--uploads <dir>]] [--port <n>] [--passphrase-file <file>]');
   process.exit(bundle ? 0 : 2);
 }
 const checkOnly = argv.includes('--check');
 
 let config;
+let passphrase = null;
 try {
-  ({ config } = scriptConfig({ argv, env: process.env }));
+  let home;
+  ({ config, home } = scriptConfig({ argv, env: process.env }));
+  if (isEncryptedFile(bundle)) {
+    const got = await scriptPassphrase({ argv, env: process.env, home });
+    if (!got) throw new Error(`${bundle} is encrypted: set BACKUP_PASSPHRASE, or pass --passphrase-file <file>.`);
+    passphrase = got.passphrase;
+  }
 } catch (err) {
   console.error(`Not imported: ${err.message}`);
   process.exit(2);
@@ -44,9 +55,9 @@ const mb = (n) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 try {
   if (!checkOnly) await assertServerStopped(config);
   console.log(checkOnly ? `Checking ${bundle} …` : `Importing ${bundle} into ${config.DB_PATH} and ${config.UPLOAD_DIR} …`);
-  const r = importData({ config, bundle, replace: argv.includes('--replace'), checkOnly });
+  const r = importData({ config, bundle, passphrase, replace: argv.includes('--replace'), checkOnly });
   const m = r.manifest;
-  console.log(`Bundle ${r.top} (${r.kind}): made ${m.createdAt} by ${m.app.name} ${m.app.version} (${m.app.commit}) on ${m.source?.os ?? '?'}.`);
+  console.log(`Bundle ${r.top} (${r.encrypted ? 'encrypted ' : ''}${r.kind}): made ${m.createdAt} by ${m.app.name} ${m.app.version} (${m.app.commit}) on ${m.source?.os ?? '?'}.`);
   console.log(`  every file matches its sha256 (${m.files.length} files); the database passed PRAGMA integrity_check; the row counts match the manifest.`);
   if (r.kept.db) console.log(`  the database that was here is kept as ${r.kept.db}`);
   if (r.kept.uploads) console.log(`  the uploads that were here are kept as ${r.kept.uploads}`);
@@ -58,7 +69,8 @@ try {
   if (r.owner) console.log(`  gave the imported files to uid ${r.owner.uid} (the owner of the home).`);
   if (r.secrets.length) {
     console.warn(`  This bundle carries secrets (${r.secrets.join(', ')}). They were NOT installed: copy them by hand (docs/MOVING_DATA.md),`);
-    console.warn(`  e.g. tar -xf "${r.bundle}" "${r.top}/secrets", then delete the bundle and that copy.`);
+    if (r.encrypted) console.warn(`  e.g. node server/scripts/restore-offsite.mjs "${r.bundle}" --decrypt-to <private folder>/bundle.tar, then tar -xf that "${r.top}/secrets", then delete both.`);
+    else console.warn(`  e.g. tar -xf "${r.bundle}" "${r.top}/secrets", then delete the bundle and that copy.`);
   }
   console.log(checkOnly ? 'Nothing was changed (--check).' : `Done. Start the server (${SERVICE_HINTS.start}) and sign in to check.`);
 } catch (err) {

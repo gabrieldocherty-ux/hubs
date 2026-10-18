@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SERVER_DIR } from '../config.mjs';
 import { listDaily } from '../ops/backup.mjs';
+import { offsiteStatus } from '../ops/offsite.mjs';
 import { emailSettings } from '../email/index.mjs';
 import { redact } from './redact.mjs';
 import { recentWebhookFailures } from './webhookFailures.mjs';
@@ -126,6 +127,10 @@ export function systemStatus({ db, config, now, startedAt, health, logFile = pro
       keep: config.BACKUP_KEEP,
       lastDay: newest?.day ?? null,
       lastAt: newestAt,
+      // Encrypted off-site copies (server/ops/offsite.mjs; docs/OPERATIONS.md, "Off-site backups"):
+      // { configured, dir, keep, passphraseSet, problem, lastSuccessAt, lastAttemptAt, lastFile,
+      //   lastBytes, copies, oldestAt, verifiedAt, lastError, stale }. Never the passphrase.
+      offsite: offsiteStatus(config, { now: () => t }),
     },
     disk: dbFile ? disk(path.dirname(dbFile)) : null,
     payments: {

@@ -12,14 +12,29 @@
 // beside these as <BACKUP_DIR>/<timestamp>/ (scripts/deploy-local.mjs). Days are UTC days, on any
 // machine in any time zone.
 //
+// Every copy ages out on a schedule (the privacy policy promises deleted data leaves every backup
+// within 35 days; docs/OPERATIONS.md, "How long each copy is kept"):
+//
+//   daily/                          the newest BACKUP_KEEP (14, at most 30)
+//   uploads-mirror/                 a file deleted from uploads leaves the mirror the same day
+//   <BACKUP_DIR>/<timestamp>/       pre-deploy copies: the last 5 deploys, none older than 30 days
+//   <db>.before-restore-<time>      30 days after it was made (also -wal, -shm)
+//   <db>.before-import-<time>,      30 days after it was made (import-data --replace keeps these)
+//   <uploads>.before-import-<time>, and the .failed-import-<time> copies
+//   exports/                        export bundles: 7 days
+//   off-site copies                 the newest BACKUP_OFFSITE_KEEP (30), none older than 35 days
+//                                   (server/ops/offsite.mjs)
+//
+// pruneAged() does the age rules; the daily job runs it every hour.
+//
 // On Linux the folders this makes are 0700 and the database copies 0600: they hold every account's
 // data, and on a shared machine the default umask would let any local account read them. Windows
 // keeps the ACLs the folder inherits from the home (your account's profile).
 //
 // restoreBackup() puts a backup back (the server must be stopped: server/scripts/restore.mjs
 // refuses while something listens on the port, or, on Linux, while any process has the database
-// open). The database being replaced is kept beside it as <name>.before-restore-<time>, never
-// deleted.
+// open). The database being replaced is kept beside it as <name>.before-restore-<time>, for 30
+// days.
 //
 // The data scripts (restore, export-data, import-data) share scriptConfig() and
 // assertServerStopped() below, so all three find the same files the same way on either OS.
@@ -29,7 +44,7 @@ import net from 'node:net';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { SERVER_DIR, loadConfig } from '../config.mjs';
-import { deployedHome } from '../lib/envFile.mjs';
+import { deployedHome, parseEnvFile, resolveEnvFile } from '../lib/envFile.mjs';
 import { homePort } from './homePort.mjs';
 
 const POSIX = process.platform !== 'win32';
@@ -52,6 +67,14 @@ export function privateFile(file) {
 
 const DAILY_RE = /^blumodel-(\d{4}-\d{2}-\d{2})\.db$/;
 const DAY = 86_400_000;
+/** Pre-deploy copies and the before-restore / before-import copies: deleted this long after they were made. */
+export const AGED_KEEP_DAYS = 30;
+/** Export bundles in <BACKUP_DIR>/exports. */
+export const EXPORT_KEEP_DAYS = 7;
+const DEPLOY_DIR_RE = /^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-\d{3}Z$/;
+const KEPT_COPY_RE = /\.(?:before-restore|before-import|failed-import)-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})(?:-\d{3})?Z(?:-wal|-shm)?$/;
+const EXPORT_NAME_RE = /^\.?blumodel-data-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})Z/;
+const stampMs = (m) => Date.parse(`${m[1]}T${m[2]}:${m[3]}:${m[4]}Z`);
 
 /** `PRAGMA integrity_check` → `{ ok, problems }` (at most 5 problem lines). */
 export function integrityCheck(db) {
@@ -90,6 +113,62 @@ export function pruneDaily(backupDir, keep) {
     fs.rmSync(b.file, { force: true });
     removed.push(b.file);
   }
+  return removed;
+}
+
+/** Deletes the entries of `dir` matching `re` whose time (from the name) is more than `days` ago. */
+function pruneByName(dir, re, days, now, { only = () => true, keep = null } = {}) {
+  const removed = [];
+  let names = [];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return removed;
+  }
+  for (const n of names) {
+    if (!only(n)) continue;
+    const m = re.exec(n);
+    if (!m) continue;
+    const at = stampMs(m);
+    const p = path.join(dir, n);
+    if (!Number.isFinite(at) || now - at <= days * DAY || (keep && path.resolve(p) === path.resolve(keep))) continue;
+    fs.rmSync(p, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+    removed.push(p);
+  }
+  return removed;
+}
+
+/**
+ * Deletes the export bundles in `dir` (<BACKUP_DIR>/exports) made more than `days` ago, by the
+ * time in their name (blumodel-data-<time>[.tar[.enc]], and the .part files and work folders an
+ * export that crashed left behind). Never `keep`. Returns the paths removed.
+ */
+export function pruneExports(dir, { now = Date.now, days = EXPORT_KEEP_DAYS, keep = null } = {}) {
+  return pruneByName(dir, EXPORT_NAME_RE, days, now(), { keep });
+}
+
+/**
+ * The age rules (see the top of this file): pre-deploy copies, before-restore / before-import /
+ * failed-import copies of the database and the uploads, export bundles, and leftovers of an
+ * interrupted export. Returns the paths removed.
+ * @param {{ config: { DB_PATH: string, UPLOAD_DIR: string, BACKUP_DIR: string }, now?: () => number }} o
+ */
+export function pruneAged({ config, now = Date.now }) {
+  const t = now();
+  const removed = [];
+  removed.push(...pruneByName(config.BACKUP_DIR, DEPLOY_DIR_RE, AGED_KEEP_DAYS, t));
+  if (config.DB_PATH && config.DB_PATH !== ':memory:') {
+    const db = path.resolve(config.DB_PATH);
+    const base = `${path.basename(db)}.`;
+    removed.push(...pruneByName(path.dirname(db), KEPT_COPY_RE, AGED_KEEP_DAYS, t, { only: (n) => n.startsWith(base) }));
+  }
+  if (config.UPLOAD_DIR) {
+    const up = path.resolve(config.UPLOAD_DIR);
+    const base = `${path.basename(up)}.`;
+    removed.push(...pruneByName(path.dirname(up), KEPT_COPY_RE, AGED_KEEP_DAYS, t, { only: (n) => n.startsWith(base) }));
+  }
+  removed.push(...pruneExports(path.join(config.BACKUP_DIR, 'exports'), { now: () => t }));
+  removed.push(...pruneByName(path.join(config.BACKUP_DIR, '.work'), EXPORT_NAME_RE, 1, t));
   return removed;
 }
 
@@ -212,26 +291,49 @@ export function restoreBackup({ backupFile, dbPath, now = Date.now }) {
   return { restored: dbPath, keptAs };
 }
 
+/** Starts the encrypted off-site copy (server/ops/offsite.mjs), loaded only when it is set up. */
+function defaultOffsite({ config, log }) {
+  if (!config.BACKUP_OFFSITE_DIR) return;
+  import('./offsite.mjs')
+    .then((m) => m.startOffsiteBackup({ config, log }))
+    .catch((err) => log.warn?.(`Off-site backup not made: ${err?.message ?? err}`));
+}
+
 /**
- * The daily job: today's backup (when there isn't one yet) and the uploads mirror. Logs one line;
- * never throws (a failed backup must not take the server down). `paused()` skips it, e.g. while
- * the database failed its startup integrity check, so good backups aren't rotated out by bad ones.
+ * The daily job: today's backup (when there isn't one yet), the uploads mirror, the age rules
+ * (pruneAged), then the encrypted off-site copy when BACKUP_OFFSITE_DIR is set (in a worker; it
+ * does nothing once today's is made). Logs one line; never throws (a failed backup must not take
+ * the server down). `paused()` skips it, e.g. while the database failed its startup integrity
+ * check, so good backups (local and off-site) aren't rotated out by bad ones.
  */
-export function runDailyBackup({ db, config, now = Date.now, log = console, paused = () => false }) {
+export function runDailyBackup({ db, config, now = Date.now, log = console, paused = () => false, offsite = defaultOffsite }) {
   if (config.BACKUPS === 'off') return null;
   if (paused()) {
     log.warn?.('Backup skipped: the database failed its integrity check at startup (see above).');
     return null;
   }
+  let result;
   try {
     const out = backupNow({ db, backupDir: config.BACKUP_DIR, now, keep: config.BACKUP_KEEP });
     const m = mirrorUploads({ uploadDir: config.UPLOAD_DIR, mirrorDir: path.join(config.BACKUP_DIR, 'uploads-mirror') });
     if (out.made || m.copied || m.removed) log.info?.(`Backup: ${out.made ? `wrote ${out.file}` : 'today’s database copy already exists'}; uploads mirror +${m.copied} -${m.removed}.`);
-    return { ...out, mirror: m };
+    result = { ...out, mirror: m, aged: [] };
   } catch (err) {
     log.error?.(`Backup failed: ${err?.message ?? err}`);
     return null;
   }
+  try {
+    result.aged = pruneAged({ config, now });
+    if (result.aged.length) log.info?.(`Backup: removed ${result.aged.length} copy(ies) past their keep period: ${result.aged.map((p) => path.basename(p)).join(', ')}.`);
+  } catch (err) {
+    log.warn?.(`Backup: removing old copies failed: ${err?.message ?? err}`);
+  }
+  try {
+    offsite?.({ config, log });
+  } catch (err) {
+    log.warn?.(`Off-site backup not made: ${err?.message ?? err}`);
+  }
+  return result;
 }
 
 /** Runs the daily job now and then every hour (it does nothing until the day changes). */
@@ -288,6 +390,73 @@ export function scriptConfig({ argv = [], env = process.env, serverDir = SERVER_
     if (p) e.PORT = String(p);
   }
   return { config: loadConfig(e, []), home };
+}
+
+/** Reads a line from the terminal without echoing it (the passphrase prompt). */
+function askHidden(question, { input = process.stdin, output = process.stderr } = {}) {
+  return new Promise((resolve) => {
+    output.write(question);
+    let s = '';
+    const done = (v) => {
+      input.removeListener('data', onData);
+      try {
+        input.setRawMode?.(false);
+      } catch {
+        /* not a terminal */
+      }
+      input.pause();
+      output.write('\n');
+      resolve(v);
+    };
+    const onData = (buf) => {
+      for (const ch of buf.toString('utf8')) {
+        if (ch === '\r' || ch === '\n') return done(s);
+        if (ch === '\u0003' || ch === '\u0004') return done(null);
+        if (ch === '\u007f' || ch === '\b') s = s.slice(0, -1);
+        else s += ch;
+      }
+    };
+    input.setRawMode?.(true);
+    input.resume();
+    input.on('data', onData);
+  });
+}
+
+/**
+ * BACKUP_PASSPHRASE for a data script (export-data, import-data, restore-offsite), from the first
+ * of: --passphrase-file <file> (its first line), BACKUP_PASSPHRASE in the environment, the
+ * settings file this home uses (blumodel.env: only that one key is read), or a prompt when run in
+ * a terminal. Returns `{ passphrase, source }` or null. The value is never printed.
+ * @param {{ argv?: string[], env?: Record<string, string | undefined>, home?: string | null, serverDir?: string, prompt?: boolean }} [o]
+ */
+export async function scriptPassphrase({ argv = [], env = process.env, home = null, serverDir = SERVER_DIR, prompt = true } = {}) {
+  const i = argv.indexOf('--passphrase-file');
+  if (i >= 0) {
+    const file = argv[i + 1];
+    if (!file || file.startsWith('--')) throw new Error('--passphrase-file needs a file name.');
+    let text;
+    try {
+      text = fs.readFileSync(path.resolve(file), 'utf8');
+    } catch (err) {
+      throw new Error(`Can't read the passphrase file ${path.resolve(file)} (${err?.code || 'error'}).`);
+    }
+    return { passphrase: text.replace(/^﻿/, '').split(/\r?\n/)[0], source: '--passphrase-file' };
+  }
+  if (env.BACKUP_PASSPHRASE) return { passphrase: String(env.BACKUP_PASSPHRASE), source: 'BACKUP_PASSPHRASE' };
+  const settings = resolveEnvFile(env, { serverDir })?.file ?? (home && fs.existsSync(path.join(home, 'blumodel.env')) ? path.join(home, 'blumodel.env') : null);
+  if (settings) {
+    try {
+      const v = parseEnvFile(fs.readFileSync(settings, 'utf8')).values.BACKUP_PASSPHRASE;
+      if (v) return { passphrase: v, source: settings };
+    } catch {
+      /* unreadable (run as another account): fall through to the prompt */
+    }
+  }
+  if (prompt && process.stdin.isTTY) {
+    const v = await askHidden('BACKUP_PASSPHRASE (not shown): ');
+    if (v) return { passphrase: v, source: 'prompt' };
+  }
+  return null;
 }
 
 /** Is something accepting connections on host:port? Resolves true / false, never rejects. */

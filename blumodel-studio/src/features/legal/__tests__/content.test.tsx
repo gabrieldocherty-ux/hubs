@@ -74,6 +74,9 @@ test('the pages cover the showroom service: a B2B agreement, the company as cont
   assert.match(privacy, /blumodel_session/);
   assert.match(privacy, /no advertising or analytics cookies/i);
   assert.match(privacy, /backup made every day/);
+  // Every backup location ages out (server/ops/backup.mjs pruneAged, offsite.mjs); the page says how long.
+  assert.match(privacy, /leaves every backup within 35 days/);
+  assert.doesNotMatch(privacy, /drops out of the (daily )?backups as they are replaced/);
   assert.match(privacy, /Download my data/);
   assert.match(privacy, /Delete my account/);
   assert.match(privacy, /A lead goes to the one company/);

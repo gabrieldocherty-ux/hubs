@@ -540,7 +540,12 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
         body: (
           <>
             <p>
-              BluModel Studio’s database and files live on the operator’s own server, with a backup made every day. Deleted data drops out of the backups as they are replaced.
+              BluModel Studio’s database and files live on the operator’s own server, with a backup made every day. Any copy kept off that server is encrypted, and only we hold
+              the key.
+            </p>
+            <p>
+              <b>Deleted data leaves every backup within 35 days.</b> The daily copies on the server are kept 14 days; the encrypted off-site copies 30 days; the copies made
+              before an update, a restore or a data move 30 days; data exports 7 days. Each copy is deleted on that schedule automatically.
             </p>
             <ul>
               <li>
@@ -572,7 +577,7 @@ export function privacyDoc(w: LegalWords, company: string | null = null): LegalD
               </li>
               <li>
                 <b>Have a company forget you:</b> ask the company whose showroom you used. Its team can delete your details, your designs and their history from its leads in one
-                step; deleted data drops out of the daily backups as they are replaced.
+                step; deleted data then leaves every backup within 35 days.
               </li>
               <li>
                 <b>Correct your details:</b> change your name and password in Account settings.

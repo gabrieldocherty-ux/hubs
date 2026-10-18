@@ -595,20 +595,59 @@ that branch; a branch without a prebuilt release is refused unless `--build`.
 
 Automatic, on the Wyse's own disk (OPERATIONS.md, *Backups and restore*): a daily copy of the database
 in `data/backups/daily/` (14 kept), a mirror of the uploads in `data/backups/uploads-mirror/`, and the
-deploy's copy before every deploy in `data/backups/<time>/` (5 kept).
+deploy's copy before every deploy in `data/backups/<time>/` (the last 5, none older than 30 days).
+Every copy ages out on a schedule (OPERATIONS.md, *How long each copy is kept*).
 
-**A Wyse's eMMC can fail like any disk, and takes those with it.** Take a data bundle off the machine
-regularly (monthly, and before anything risky). It is safe while the server runs:
+**A Wyse's eMMC can fail like any disk, and takes those with it.** So turn on the off-site backups.
 
-```
-sudo mkdir -p /mnt/usb && sudo mount /dev/sdb1 /mnt/usb        # the stick, as lsblk shows it
-sudo node /srv/blumodel-studio/app/server/scripts/export-data.mjs --home /srv/blumodel-studio --out /mnt/usb
-sudo umount /mnt/usb
-```
+### Off-site backups
 
-Keep the stick somewhere else. The settings file and the tunnel's credentials aren't in the bundle
-(they can be recreated from Stripe and Cloudflare; MOVING_DATA.md has `--include-secrets` if you want
-them, with its warning).
+Once a day the server writes an **encrypted** copy of the database and every upload
+(`blumodel-offsite-<time>.tar.enc`, AES-256-GCM, the key made by scrypt from `BACKUP_PASSPHRASE`)
+into `BACKUP_OFFSITE_DIR`, keeps the newest 30 (none older than 35 days), verifies each, and shows
+the result on Admin > System. Nothing unencrypted is ever written there. The full story, the status
+fields and the restore are in OPERATIONS.md, *Off-site backups*. On the Wyse:
+
+1. **A place off the disk.** The simplest is a USB drive that stays plugged in (an exFAT or ext4
+   stick or disk; better, two you swap weekly and keep one elsewhere):
+
+   ```
+   lsblk -f                                        # find it, say sdb1, and its UUID
+   sudo mkdir -p /media/usb
+   echo 'UUID=<its UUID> /media/usb auto nofail,x-systemd.device-timeout=10s 0 2' | sudo tee -a /etc/fstab
+   sudo mount -a
+   sudo install -d -o blumodel -g blumodel -m 700 /media/usb/blumodel-backups
+   ```
+
+   `nofail` keeps the Wyse booting without it; with the drive missing, the server just reports
+   *the folder doesn't exist* until it is back. A cloud folder works too: a Windows home uses its
+   OneDrive / Google Drive / Dropbox folder directly; on Linux, any folder a sync client (rclone
+   `mount`, the Dropbox client) keeps in step, writable by `blumodel`.
+2. **The passphrase.** A long random one from your password manager; keep it there and on paper.
+   Without it the copies can never be opened.
+3. **The settings:** `sudo nano /srv/blumodel-studio/blumodel.env`, then
+   `sudo systemctl restart blumodel-studio`:
+
+   ```
+   BACKUP_OFFSITE_DIR=/media/usb/blumodel-backups
+   BACKUP_PASSPHRASE=<the passphrase>
+   ```
+
+4. **Check it** within the hour on Admin > System, or
+   `sudo -u blumodel node /srv/blumodel-studio/app/server/scripts/restore-offsite.mjs --list /media/usb/blumodel-backups`.
+5. **Restore** (the server stopped):
+
+   ```
+   sudo systemctl stop blumodel-studio
+   sudo -u blumodel node /srv/blumodel-studio/app/server/scripts/restore-offsite.mjs /media/usb/blumodel-backups/<file>.tar.enc --uploads --home /srv/blumodel-studio
+   sudo systemctl start blumodel-studio
+   ```
+
+   Onto a new machine: `import-data.mjs <file>.tar.enc --home <home>` (MOVING_DATA.md).
+
+The settings file and the tunnel's credentials aren't in these copies (they can be recreated from
+Stripe and Cloudflare); keep the settings' values in your password manager. An export bundle you
+take by hand is encrypted the same way (MOVING_DATA.md).
 
 ## 12. Logs and status
 

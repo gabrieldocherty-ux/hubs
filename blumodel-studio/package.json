@@ -26,7 +26,8 @@
     "host:update": "node scripts/host/update.mjs",
     "data:export": "node --no-warnings server/scripts/export-data.mjs",
     "data:import": "node --no-warnings server/scripts/import-data.mjs",
-    "data:restore": "node --no-warnings server/scripts/restore.mjs"
+    "data:restore": "node --no-warnings server/scripts/restore.mjs",
+    "data:restore-offsite": "node --no-warnings server/scripts/restore-offsite.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.114.0",

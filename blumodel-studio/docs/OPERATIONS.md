@@ -161,6 +161,9 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional, legacy | the retired *Start from a photo* read photos with Claude when both were set |
 | `ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY` | optional: the render service's address and key | "Make it photoreal" on the showrooms. Without both, the button says renders are being set up and nothing is charged |
 | `RENDER_CREDIT_CENTS` | empty (= 25) | the credits one render costs a company, in cents |
+| `BACKUP_OFFSITE_DIR` | a folder your cloud drive syncs, or a USB drive (it must exist) | where the encrypted off-site copy goes once a day (*Off-site backups*). Empty: none |
+| `BACKUP_PASSPHRASE` | a long random passphrase, also kept in your password manager and on paper | makes the off-site copies' and export bundles' key (12+ characters). Lose it and they can never be opened |
+| `BACKUP_OFFSITE_KEEP` | empty (= 30) | how many daily off-site copies are kept (at most 30; none older than 35 days either way) |
 | `TRIAL_DAYS`, `TRIAL_CREDIT_CENTS` | empty (= 14, 0) | how long a prospect trial made with Admin > Companies > Quick setup stays live, and the render credits (cents) it gets once; a trial never charges anything |
 | `RESEND_API_KEY` **or** `POSTMARK_TOKEN` | optional: a Resend API key (`re_…`) or a Postmark server API token | emails password-reset links and account notices (see *Password resets*). Set one; with both, Resend is used |
 | `EMAIL_FROM` | `"BluModel Studio <hello@blumodel.studio>"` (quoted, since it has spaces) | the sender; the provider must have verified that address or domain. Without it no email is sent even with a key |
@@ -179,7 +182,7 @@ says so, naming the path only) rather than run without its keys.
 
 Other variables the server reads (set by `run-server.cmd` or left at their defaults): `PORT` (8790),
 `HOST` (127.0.0.1), `DB_PATH` (`data\blumodel.db`), `UPLOAD_DIR`, `DIST_DIR`, `BACKUP_DIR`
-(`data\backups`), `BACKUPS` (`off` disables them), `BACKUP_KEEP` (14), `MAX_GLB_MB` (25),
+(`data\backups`), `BACKUPS` (`off` disables them), `BACKUP_KEEP` (14, at most 30), `MAX_GLB_MB` (25),
 `MAX_IMAGE_MB` (8), `BRAND_PRODUCT_LIMIT` (50), `BLUMODEL_LOG_FILE`, `BLUMODEL_SHUTDOWN_FILE`.
 
 Check the Stripe side any time with `npm run stripe:check` (read-only; prints PASS / FIX lines, never a key).
@@ -297,13 +300,14 @@ Automatic, while the server runs:
 - **Daily:** at start and then hourly it makes today's copy if there isn't one: `VACUUM INTO`
   `data\backups\daily\blumodel-YYYY-MM-DD.db`, integrity-checked before it's kept; the newest 14 are
   kept. Then `data\backups\uploads-mirror\` is brought up to date with `data\uploads\`.
-- **Before every deploy:** `data\backups\<timestamp>\blumodel.db` (5 kept).
+- **Before every deploy:** `data\backups\<timestamp>\blumodel.db` (the last 5, none older than 30 days).
 - **At start:** `PRAGMA integrity_check`. If it fails, the server still starts, the log says
   `DATABASE INTEGRITY CHECK FAILED`, `/api/health` answers 503 and daily backups pause so the good ones
   aren't rotated out.
 
-All of these are on the same disk as the database. **Copy `data\backups\` somewhere else regularly**
-(OneDrive, a USB drive): a dead disk takes the backups with it.
+All of these are on the same disk as the database, and unencrypted. **Turn on the encrypted
+off-site backups** (below): a dead disk takes the local backups with it. Don't copy `data\backups\`
+itself to a cloud drive or a stick: it is every account's data in the clear.
 
 Restore (the server must be stopped; the restore refuses while anything listens on 8790):
 
@@ -318,8 +322,116 @@ start-server.cmd
 ```
 
 The backup is integrity-checked before anything changes. The database it replaces is kept as
-`data\blumodel.db.before-restore-<time>` (with its `-wal`/`-shm`), never deleted. `--uploads` only adds
-files that are missing; it never overwrites one.
+`data\blumodel.db.before-restore-<time>` (with its `-wal`/`-shm`) for 30 days, then the daily job
+deletes it. `--uploads` only adds files that are missing; it never overwrites one.
+
+## Off-site backups (encrypted)
+
+Everything above is on the same disk as the database: a dead disk, a theft, a fire or ransomware
+takes the backups with it. So once a day, after the local backup, the server also writes an
+**encrypted** copy of the whole site somewhere else:
+
+```
+<BACKUP_OFFSITE_DIR>\blumodel-offsite-2026-10-18T03-00-00Z.tar.enc
+```
+
+It is a data bundle (the database and every upload, with a manifest and a sha256 for each file;
+MOVING_DATA.md), encrypted **as it is written** with AES-256-GCM under a key made by scrypt from
+`BACKUP_PASSPHRASE` (`server/ops/crypt.mjs`). No unencrypted copy ever lands in that folder, so it
+can be a folder a cloud drive syncs. The work runs in a background thread; the site keeps answering.
+
+**Set it up (once, Gabe):**
+
+1. Make the folder. Either a synced cloud folder: OneDrive
+   (`%USERPROFILE%\OneDrive\BluModel-backups`), Google Drive for desktop (`G:\My Drive\BluModel-backups`)
+   or Dropbox (`%USERPROFILE%\Dropbox\BluModel-backups`), signed in with your own account; or a USB
+   drive that stays plugged in (`E:\BluModel-backups`; on the Wyse `/media/usb/blumodel-backups`,
+   mounted at boot through `/etc/fstab`). The server never creates the folder (an unplugged drive's
+   mount point would fill this machine's own disk instead).
+2. Make a passphrase: a long random one from your password manager (20+ characters; at least 12).
+   **Store it in the password manager and on paper somewhere safe.** Without it the copies can
+   never be opened, by you or anyone; nobody can recover it.
+3. Add to `blumodel.env` and restart the server:
+
+   ```
+   BACKUP_OFFSITE_DIR="C:\Users\you\OneDrive\BluModel-backups"
+   BACKUP_PASSPHRASE=<the passphrase>
+   # BACKUP_OFFSITE_KEEP=30
+   ```
+
+   On the Wyse the folder must be writable by the `blumodel` account
+   (`sudo install -d -o blumodel -g blumodel -m 700 /media/usb/blumodel-backups`).
+4. Within the hour, Admin > System shows the first copy; the log says `Off-site backup: wrote …`.
+
+**What it keeps:** the newest `BACKUP_OFFSITE_KEEP` copies (30, at most 30), and none older than 35
+days. After each new copy has been read back in full, the sealed header of **every** copy kept is
+decrypted with the current passphrase; a copy that no longer opens (changed passphrase, damage) is
+named in the status. It never deletes a file it didn't make, and nothing in the folder is plain.
+
+**When it can't run** (the folder is missing because the drive is unplugged or the cloud client is
+signed out, no passphrase or one under 12 characters, a full disk), the server logs
+`Off-site backup not made: …` or `Off-site backup failed: …`, records it, keeps serving, and tries
+again the next hour. It never writes an unencrypted copy instead.
+
+**Status** (`GET /api/admin/system` → `backups.offsite`, shown on Admin > System):
+
+| Field | |
+| --- | --- |
+| `configured` | `BACKUP_OFFSITE_DIR` is set |
+| `dir` | the folder |
+| `keep` | `BACKUP_OFFSITE_KEEP` |
+| `passphraseSet` | yes/no only: the passphrase is never shown or logged |
+| `problem` | why it can't run right now (missing folder, missing or short passphrase), or null |
+| `lastSuccessAt`, `lastFile`, `lastBytes` | the last copy made: when (ms), its name and size |
+| `lastAttemptAt` | the last try, successful or not |
+| `copies`, `oldestAt`, `verifiedAt` | how many copies are kept, the oldest one's time, when they were last verified |
+| `lastError` | the last failure, or copies that no longer open with the passphrase; null when fine |
+| `stale` | true when there has been no successful copy for 48 hours: look at it |
+
+The status comes from `data\backups\offsite-status.json`, written by the job.
+
+**Restore from one** (the server stopped, as for `restore.mjs`):
+
+```
+node app\server\scripts\restore-offsite.mjs --list "C:\Users\you\OneDrive\BluModel-backups"
+node app\server\scripts\restore-offsite.mjs <file.tar.enc> --check       decrypt and verify only
+stop-server.cmd
+node app\server\scripts\restore-offsite.mjs <file.tar.enc> --uploads     the database, and any missing uploads
+start-server.cmd
+```
+
+It asks for the passphrase (or reads `BACKUP_PASSPHRASE`, `--passphrase-file <file>`, or this home's
+`blumodel.env`), checks it on the file's header, decrypts to a private temp file beside the data,
+verifies every file against the manifest and the database with `PRAGMA integrity_check`, then
+restores it exactly as `restore.mjs` does (the database it replaces is kept as
+`*.before-restore-<time>`). A wrong passphrase changes nothing. Onto a **new** machine (the old one
+is gone): `import-data.mjs <file.tar.enc> --home <home>` takes the file as it is (MOVING_DATA.md).
+
+**Drill it.** Once a month, on any machine with the repo: copy the newest `.tar.enc` from the cloud
+folder and run `restore-offsite.mjs <file> --check`. A backup nobody has ever restored is a hope, not
+a backup.
+
+The settings file (`blumodel.env`, with the Stripe and email keys) is **not** in these copies: keep
+its values in your password manager. They can be recreated from Stripe and the email provider.
+
+## How long each copy is kept
+
+Deleted data leaves every copy within 35 days (the privacy policy says so). The daily job enforces
+every rule below, every hour (`server/ops/backup.mjs` `pruneAged`, `server/ops/offsite.mjs`):
+
+| Copy | Where | Kept |
+| --- | --- | --- |
+| Daily database copy | `data\backups\daily\` | the newest `BACKUP_KEEP` (14; at most 30) |
+| Uploads mirror | `data\backups\uploads-mirror\` | a file deleted from uploads leaves the mirror the same day |
+| Pre-deploy copy | `data\backups\<time>\` | the last 5 deploys, none older than 30 days |
+| Database replaced by a restore | `data\blumodel.db.before-restore-<time>` | 30 days |
+| Data replaced by an import | `data\blumodel.db.before-import-<time>`, `data\uploads.before-import-<time>\` (and `*.failed-import-*`) | 30 days |
+| Export bundles | `data\backups\exports\` | 7 days |
+| Off-site copies (encrypted) | `BACKUP_OFFSITE_DIR` | the newest 30, none older than 35 days |
+
+A copy you make yourself somewhere else (an export to a stick, a bundle you downloaded) is yours to
+delete; only an encrypted one should ever leave the machine.
+
 
 ## Logs
 

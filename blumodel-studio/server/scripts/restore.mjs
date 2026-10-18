@@ -11,7 +11,7 @@
 // Paths come from the same settings as the server (server/ops/backup.mjs scriptConfig): --home,
 // --db <file>, --uploads <dir>, --port <n>, else DB_PATH, UPLOAD_DIR, BACKUP_DIR and PORT, else the
 // home this script runs from (<home>/app/server/scripts/restore.mjs → <home>/data/blumodel.db). The
-// database being replaced is kept as <db>.before-restore-<time>, never deleted. On Linux, run it as
+// database being replaced is kept as <db>.before-restore-<time> for 30 days. On Linux, run it as
 // the server's account (sudo -u blumodel node ...) or with sudo: as root, what it restores is given
 // to the account that owns the data folder, so the server can still write it.
 //

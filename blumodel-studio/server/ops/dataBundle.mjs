@@ -9,8 +9,16 @@
 //   importData()  checks a bundle (manifest, every size and sha256, PRAGMA integrity_check, the row
 //                 counts, that this app knows every migration in it), then puts it where the server
 //                 looks: into an empty data folder, or, with replace, over the current data, which is
-//                 kept beside it as *.before-import-<time> (never deleted). Then the app's
-//                 migrations run and the counts are printed. It never installs a secret.
+//                 kept beside it as *.before-import-<time> (deleted by the daily backup job 30 days
+//                 later: server/ops/backup.mjs pruneAged). Then the app's migrations run and the
+//                 counts are printed. It never installs a secret.
+//
+// Encrypted bundles (`passphrase`, server/ops/crypt.mjs: AES-256-GCM, key from scrypt): the tar is
+// encrypted as it is written, as <top>.tar.enc, so no plain copy is ever on the disk it goes to;
+// the plain database copy it reads from stays in <BACKUP_DIR>/.work. A bundle with secrets in it
+// must be encrypted. importData() takes an encrypted bundle as well (it decrypts to a private
+// temp file first, deleted afterwards). Bundles in <BACKUP_DIR>/exports older than
+// EXPORT_KEEP_DAYS (7) are deleted by each export there and by the daily backup job.
 //
 // A bundle is a .tar (POSIX ustar, written and read here with no other tool; `tar -tf` / `tar -xf`
 // open it on Windows 10+ and on Linux) or the same tree as a plain folder:
@@ -31,13 +39,13 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { SERVER_DIR } from '../config.mjs';
 import { openDb, checkpoint } from '../db/index.mjs';
 import { listSteps, migrate } from '../db/migrate.mjs';
 import { resolveEnvFile } from '../lib/envFile.mjs';
-import { integrityCheck, privateDir, privateFile } from './backup.mjs';
+import { integrityCheck, privateDir, privateFile, pruneExports } from './backup.mjs';
+import { decryptFile, decryptToFile, ENC_EXT, EncryptWriter, isEncryptedFile } from './crypt.mjs';
 
 export const BUNDLE_FORMAT = 'blumodel-data';
 export const BUNDLE_VERSION = 1;
@@ -113,7 +121,51 @@ export const isInside = (child, parent) => {
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 };
 
-/** The deployed app's commit (app/DEPLOYED.txt), else the checkout's (git rev-parse), else 'unknown'. */
+/**
+ * The commit HEAD points at in the git checkout at or above `dir`, read from the files (no git
+ * process: the server, which runs the off-site backup, never starts one). Handles a worktree's
+ * .git file, a branch ref, packed-refs and a detached HEAD. Null when it can't tell.
+ */
+function gitHead(dir) {
+  const root = gitCheckoutAt(dir);
+  if (!root) return null;
+  try {
+    let gitDir = path.join(root, '.git');
+    if (fs.statSync(gitDir).isFile()) {
+      const m = /^gitdir:\s*(.+)$/m.exec(fs.readFileSync(gitDir, 'utf8'));
+      if (!m) return null;
+      gitDir = path.resolve(root, m[1].trim());
+    }
+    let common = gitDir;
+    try {
+      common = path.resolve(gitDir, fs.readFileSync(path.join(gitDir, 'commondir'), 'utf8').trim());
+    } catch {
+      /* not a linked worktree */
+    }
+    const head = fs.readFileSync(path.join(gitDir, 'HEAD'), 'utf8').trim();
+    if (/^[0-9a-f]{40}$/.test(head)) return head;
+    const ref = /^ref:\s*(\S+)$/.exec(head)?.[1];
+    if (!ref || !/^refs\/[\w./-]+$/.test(ref)) return null;
+    for (const d of [gitDir, common]) {
+      try {
+        const v = fs.readFileSync(path.join(d, ...ref.split('/')), 'utf8').trim();
+        if (/^[0-9a-f]{40}$/.test(v)) return v;
+      } catch {
+        /* not a loose ref here */
+      }
+    }
+    const packed = fs.readFileSync(path.join(common, 'packed-refs'), 'utf8');
+    for (const line of packed.split(/\r?\n/)) {
+      const [sha, name] = line.split(' ');
+      if (name === ref && /^[0-9a-f]{40}$/.test(sha)) return sha;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/** The deployed app's commit (app/DEPLOYED.txt), else the checkout's (its HEAD), else 'unknown'. */
 export function appCommit(serverDir = SERVER_DIR) {
   const appDir = path.resolve(serverDir, '..');
   try {
@@ -122,11 +174,7 @@ export function appCommit(serverDir = SERVER_DIR) {
   } catch {
     /* not a deployed app */
   }
-  try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: appDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true }).trim() || 'unknown';
-  } catch {
-    return 'unknown';
-  }
+  return gitHead(appDir) ?? 'unknown';
 }
 
 function appVersion(serverDir = SERVER_DIR) {
@@ -199,17 +247,22 @@ export function tarHeader({ name, size = 0, type = '0', mode = 0o600, mtime = Da
   return h;
 }
 
-/** Writes a bundle as a .tar. Paths given are bundle-relative; `top/` is put in front. */
+/**
+ * Writes a bundle as a .tar. Paths given are bundle-relative; `top/` is put in front. With `sink`
+ * (an EncryptWriter) the tar goes through it instead of straight to `file`.
+ */
 class TarWriter {
-  constructor(file, top, mtime) {
-    this.fd = fs.openSync(file, 'wx', 0o600);
+  constructor(file, top, mtime, sink = null) {
+    this.sink = sink;
+    this.fd = sink ? null : fs.openSync(file, 'wx', 0o600);
     this.top = top;
     this.mtime = mtime;
     this.dirs = new Set();
     this.dir('');
   }
   put(buf) {
-    fs.writeSync(this.fd, buf);
+    if (this.sink) this.sink.write(buf);
+    else fs.writeSync(this.fd, buf);
   }
   dir(rel) {
     const name = rel ? `${this.top}/${rel}/` : `${this.top}/`;
@@ -256,8 +309,18 @@ class TarWriter {
   }
   close() {
     this.put(Buffer.alloc(BLOCK * 2, 0));
+    if (this.sink) return this.sink.close();
     fs.fsyncSync(this.fd);
     fs.closeSync(this.fd);
+    return null;
+  }
+  abort() {
+    if (this.sink) return this.sink.abort();
+    try {
+      fs.closeSync(this.fd);
+    } catch {
+      /* closed */
+    }
   }
 }
 
@@ -553,42 +616,55 @@ export function checkDatabase(file, { tables = null, known = listSteps().map((s)
  * Writes a data bundle. Safe while the server runs.
  * @param {{
  *   config: { DB_PATH: string, UPLOAD_DIR: string, BACKUP_DIR: string },
- *   out?: string,              a folder (the bundle goes inside it) or a .tar path; default <BACKUP_DIR>/exports
+ *   out?: string,              a folder (the bundle goes inside it) or a .tar / .tar.enc path; default <BACKUP_DIR>/exports
  *   folder?: boolean,          a plain folder instead of a .tar
- *   includeSecrets?: boolean,  also the settings file and the tunnel credentials
+ *   passphrase?: string,       encrypt it (BACKUP_PASSPHRASE): <top>.tar.enc, never a plain copy where it goes
+ *   kind?: string,             what the bundle is for, kept in its sealed header ('export', 'offsite')
+ *   includeSecrets?: boolean,  also the settings file and the tunnel credentials (only encrypted)
  *   settingsFile?: string, tunnelDir?: string, home?: string | null,
  *   env?: Record<string, string | undefined>, now?: () => number, serverDir?: string,
  * }} o
  * @returns {{ bundle: string, manifest: any, warnings: string[] }}
  */
-export function exportData({ config, out, folder = false, includeSecrets = false, settingsFile, tunnelDir, home = null, env = process.env, now = Date.now, serverDir = SERVER_DIR }) {
+export function exportData({ config, out, folder = false, passphrase = null, kind = 'export', includeSecrets = false, settingsFile, tunnelDir, home = null, env = process.env, now = Date.now, serverDir = SERVER_DIR }) {
   if (!config.DB_PATH || config.DB_PATH === ':memory:' || !fs.existsSync(config.DB_PATH)) throw new Error(`No database at ${config.DB_PATH}. Name it with --home <dir> or --db <file>.`);
+  const encrypt = !!passphrase;
+  if (encrypt && folder) throw new Error('An encrypted bundle is one file: leave out --folder.');
+  if (includeSecrets && !encrypt) throw new Error('A bundle with secrets in it (the live payment keys) must be encrypted: set BACKUP_PASSPHRASE (or pass --passphrase-file <file>).');
   const t0 = now();
   const top = `blumodel-data-${stampOf(t0)}`;
-  const target = path.resolve(out ?? path.join(config.BACKUP_DIR, 'exports'));
+  const defaultOut = path.resolve(path.join(config.BACKUP_DIR, 'exports'));
+  const target = path.resolve(out ?? defaultOut);
   const asTar = !folder;
+  const ext = encrypt ? `.tar${ENC_EXT}` : '.tar';
   let outDir;
   let finalPath;
-  if (asTar && /\.tar$/i.test(target)) {
+  if (asTar && /\.tar(\.enc)?$/i.test(target)) {
+    if (!encrypt && /\.enc$/i.test(target)) throw new Error(`${target} names an encrypted bundle: set BACKUP_PASSPHRASE, or name a .tar.`);
     outDir = path.dirname(target);
-    finalPath = target;
+    finalPath = encrypt && !/\.enc$/i.test(target) ? `${target}${ENC_EXT}` : target;
   } else {
     outDir = target;
-    finalPath = path.join(outDir, asTar ? `${top}.tar` : top);
+    finalPath = path.join(outDir, asTar ? `${top}${ext}` : top);
   }
-  const repo = gitCheckoutAt(outDir);
+  const repo = encrypt ? null : gitCheckoutAt(outDir);
   if (repo) throw new Error(`Not writing the bundle inside the git checkout ${repo}: it holds every account's data, and the repo is public. Pass --out <a folder outside it> (a USB stick, your home folder).`);
   if (isInside(outDir, config.UPLOAD_DIR)) throw new Error(`Not writing the bundle inside the uploads folder ${config.UPLOAD_DIR}. Pass --out <another folder>.`);
   if (fs.existsSync(finalPath)) throw new Error(`${finalPath} already exists.`);
   privateDir(outDir);
 
   const warnings = [];
-  const work = fs.mkdtempSync(path.join(outDir, `.${top}.work-`));
+  // The plain database copy is made where the bundle goes when that is plain anyway; for an
+  // encrypted bundle (a synced cloud folder, a stick) it stays on this machine, beside the backups.
+  const workRoot = encrypt ? privateDir(path.join(config.BACKUP_DIR, '.work')) : outDir;
+  const work = fs.mkdtempSync(path.join(workRoot, `.${top}.work-`));
   const partial = `${finalPath}.part`;
   fs.rmSync(partial, { recursive: true, force: true });
   let writer = null;
   try {
-    writer = asTar ? new TarWriter(partial, top, t0) : new FolderWriter(path.dirname(partial), path.basename(partial));
+    writer = asTar
+      ? new TarWriter(partial, top, t0, encrypt ? new EncryptWriter(partial, { passphrase, header: { format: BUNDLE_FORMAT, kind, top, createdAt: new Date(t0).toISOString() } }) : null)
+      : new FolderWriter(path.dirname(partial), path.basename(partial));
     const files = [];
     const add = (rel, src) => files.push({ path: rel, ...writer.file(rel, src) });
 
@@ -666,29 +742,33 @@ export function exportData({ config, out, folder = false, includeSecrets = false
       files: files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0)),
     };
     writer.buffer(MANIFEST, Buffer.from(`${JSON.stringify(manifest, null, 1)}\n`));
-    writer.close();
+    const sealed = writer.close();
     writer = null;
 
     // 5. Read back what was written before calling it done (a full disk or a bad stick shows here).
-    const check = verifyBundle(openBundle(asTar ? partial : path.join(partial)));
-    if (check.problems.length) throw new Error(`The bundle didn't read back correctly: ${check.problems.slice(0, 5).join('; ')}`);
+    //    Encrypted: every record must decrypt, and the plain tar must be byte for byte the one
+    //    written (whose files were hashed from their sources as they went in).
+    if (encrypt) {
+      const back = decryptFile(partial, passphrase);
+      if (back.plainSha256 !== sealed.plainSha256 || back.plainBytes !== sealed.plainBytes) throw new Error("The encrypted bundle didn't read back correctly (a full disk, or a bad stick?).");
+    } else {
+      const check = verifyBundle(openBundle(asTar ? partial : path.join(partial)));
+      if (check.problems.length) throw new Error(`The bundle didn't read back correctly: ${check.problems.slice(0, 5).join('; ')}`);
+    }
     fs.renameSync(partial, finalPath);
     privateFile(finalPath);
-    return { bundle: finalPath, manifest, warnings };
+    const pruned = outDir === defaultOut ? pruneExports(outDir, { now, keep: finalPath }) : [];
+    return { bundle: finalPath, manifest, warnings, encrypted: encrypt, bytes: fs.statSync(finalPath).size, pruned };
   } catch (err) {
-    if (writer && asTar) {
-      try {
-        fs.closeSync(writer.fd);
-      } catch {
-        /* closed */
-      }
-    }
+    if (writer && asTar) writer.abort();
     fs.rmSync(partial, { recursive: true, force: true });
     throw err;
   } finally {
     fs.rmSync(work, { recursive: true, force: true });
   }
 }
+
+export { EXPORT_KEEP_DAYS, pruneExports } from './backup.mjs';
 
 /**
  * Runs `fn(db)` on a read-only connection to `file`. Such a connection to a WAL database leaves an
@@ -800,11 +880,29 @@ const blobOf = (uploadDir, r) => toOs(uploadDir, `${r.sha256.slice(0, 2)}/${r.sh
  * @param {{
  *   config: { DB_PATH: string, UPLOAD_DIR: string },
  *   bundle: string, replace?: boolean, checkOnly?: boolean, now?: () => number,
- *   known?: string[],
+ *   known?: string[], passphrase?: string | null,
  * }} o
  */
-export function importData({ config, bundle, replace = false, checkOnly = false, now = Date.now, known }) {
+export function importData(o) {
+  const { config, bundle, passphrase = null, checkOnly = false } = o;
   if (!config.DB_PATH || config.DB_PATH === ':memory:') throw new Error('Name the database to import into (--home <dir> or --db <file>).');
+  if (!isEncryptedFile(bundle)) return importPlain(o);
+  if (!passphrase) throw new Error(`${path.resolve(bundle)} is encrypted: set BACKUP_PASSPHRASE (or pass --passphrase-file <file>) to import it.`);
+  // Decrypted to a private temp file (beside the data for an import, so the moves are renames),
+  // deleted afterwards whatever happens.
+  const tmp = fs.mkdtempSync(path.join(checkOnly ? os.tmpdir() : privateDir(path.dirname(config.DB_PATH)), '.decrypt-'));
+  try {
+    const plain = path.join(tmp, 'bundle.tar');
+    decryptToFile(bundle, plain, passphrase);
+    const summary = importPlain({ ...o, bundle: plain });
+    return { ...summary, bundle: path.resolve(bundle), encrypted: true };
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 });
+  }
+}
+
+/** importData() for a plain bundle (a .tar or a folder). */
+function importPlain({ config, bundle, replace = false, checkOnly = false, now = Date.now, known }) {
   const opened = openBundle(bundle);
   const dataDir = path.dirname(config.DB_PATH);
   const there = checkOnly ? null : existingData(config);

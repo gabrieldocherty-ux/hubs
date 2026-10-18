@@ -362,6 +362,19 @@ RENDER_CREDIT_CENTS=
 # TRIAL_CREDIT_CENTS is the render credits it gets once (0 when empty). A trial never charges.
 TRIAL_DAYS=
 TRIAL_CREDIT_CENTS=
+
+# Encrypted off-site backups (docs/OPERATIONS.md, "Off-site backups"). Once a day the server
+# writes an AES-256-GCM encrypted copy of the database and every upload into BACKUP_OFFSITE_DIR:
+# point it at a folder your cloud drive syncs (OneDrive, Google Drive, Dropbox) or a mounted USB
+# drive, e.g. BACKUP_OFFSITE_DIR="C:\\Users\\you\\OneDrive\\BluModel-backups" or
+# /media/usb/blumodel-backups. Empty: no off-site copy. The folder must already exist.
+# BACKUP_PASSPHRASE makes the key (12 characters or more; a long random one from your password
+# manager). Keep it in the password manager and on paper too: without it the copies can NEVER
+# be opened, by you or anyone. BACKUP_OFFSITE_KEEP: how many daily copies to keep (30, at most 30).
+# Restore one: node app/server/scripts/restore-offsite.mjs <file>.
+BACKUP_OFFSITE_DIR=
+BACKUP_PASSPHRASE=
+BACKUP_OFFSITE_KEEP=
 `;
   return eol(t, platform);
 }

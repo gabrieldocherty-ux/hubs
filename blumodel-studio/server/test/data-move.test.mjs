@@ -21,6 +21,7 @@ import { makePng } from './fixtures/images.mjs';
 import { openDb } from '../db/index.mjs';
 import { migrate } from '../db/migrate.mjs';
 import { exportData, importData, openBundle, safeRelPath, tarEntries, tarHeader, existingData, listFiles, BUNDLE_FORMAT } from '../ops/dataBundle.mjs';
+import { decryptToFile } from '../ops/crypt.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SERVER = path.resolve(HERE, '..');
@@ -29,6 +30,7 @@ const NODE = process.execPath;
 const SEED_PASSWORD = 'FAKE-seed-password-for-tests-1';
 const FAKE_SETTINGS = 'STRIPE_SECRET_KEY=sk_test_FAKE_FOR_TESTS\nSTRIPE_WEBHOOK_SECRET=whsec_FAKE_FOR_TESTS\nRESEND_API_KEY=re_FAKE_FOR_TESTS\n';
 const TUNNEL_ID = '00000000-0000-4000-8000-000000000000';
+const FAKE_PASSPHRASE = 'FAKE-passphrase-for-tests';
 
 const tempDir = (p = 'blumodel-move-') => fs.mkdtempSync(path.join(os.tmpdir(), p));
 const rm = (d) => fs.rmSync(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
@@ -148,7 +150,9 @@ test('round trip: export from a running Windows-style home, import into a Linux-
     assert.equal(up.body.file.sha256, sha(photo));
 
     // The bundle, made while the server runs. Then a change after it: not in the bundle.
-    const ex = runScript('export-data.mjs', ['--home', srcHome, '--out', carry]);
+    // --plain: this test is about the tar itself (portable, relative paths); encrypted bundles have
+    // their own tests (protect-offsite.test.mjs).
+    const ex = runScript('export-data.mjs', ['--home', srcHome, '--out', carry, '--plain']);
     assert.equal(ex.status, 0, ex.stdout + ex.stderr);
     assert.match(ex.stdout, /every file was read back and matches its sha256/);
     assert.doesNotMatch(ex.stdout + ex.stderr, /THIS BUNDLE WILL HOLD SECRETS/);
@@ -283,7 +287,7 @@ test('export refuses to write inside a git checkout (the repo is public) or insi
   }
 });
 
-test('secrets: left out unless asked for; with --include-secrets the settings file and the tunnel JSON go in (never cert.pem) and the warning is loud', () => {
+test('secrets: left out unless asked for; with --include-secrets (encrypted only) the settings file and the tunnel JSON go in (never cert.pem) and the warning is loud', () => {
   const dir = tempDir();
   try {
     const config = smallHome(dir);
@@ -299,20 +303,24 @@ test('secrets: left out unless asked for; with --include-secrets the settings fi
     assert.deepEqual(plain.manifest.secrets, []);
     assert.equal(fs.readFileSync(plain.bundle).includes(Buffer.from('sk_test_FAKE_FOR_TESTS')), false, 'no key without --include-secrets');
 
-    const cli = runScript('export-data.mjs', ['--db', config.DB_PATH, '--out', path.join(dir, 'b'), '--include-secrets', '--settings', settings, '--tunnel-dir', tunnel]);
+    const cli = runScript('export-data.mjs', ['--db', config.DB_PATH, '--out', path.join(dir, 'b'), '--include-secrets', '--settings', settings, '--tunnel-dir', tunnel], { BACKUP_PASSPHRASE: FAKE_PASSPHRASE });
     assert.equal(cli.status, 0, cli.stdout + cli.stderr);
     assert.match(cli.stderr, /THIS BUNDLE WILL HOLD SECRETS/);
     assert.match(cli.stderr, /only over a private channel/);
     assert.match(cli.stderr, /Delete it from every place it was copied to/);
     assert.doesNotMatch(cli.stdout + cli.stderr, /FAKE_FOR_TESTS/, 'no secret is printed');
     const [tar] = fs.readdirSync(path.join(dir, 'b'));
-    const m = JSON.parse(openBundle(path.join(dir, 'b', tar)).manifestText);
+    assert.match(tar, /\.tar\.enc$/);
+    assert.equal(fs.readFileSync(path.join(dir, 'b', tar)).includes(Buffer.from('sk_test_FAKE_FOR_TESTS')), false, 'the keys are encrypted in it');
+    const opened = path.join(dir, 'opened.tar');
+    decryptToFile(path.join(dir, 'b', tar), opened, FAKE_PASSPHRASE);
+    const m = JSON.parse(openBundle(opened).manifestText);
     assert.deepEqual(m.secrets, ['secrets/blumodel.env', `secrets/cloudflared/${TUNNEL_ID}.json`]);
     assert.ok(!m.files.some((f) => /cert\.pem|config\.yml/.test(f.path)));
 
     // Importing such a bundle never installs them: it says how to copy them by hand.
     const home = path.join(dir, 'wyse');
-    const imp = runScript('import-data.mjs', [path.join(dir, 'b', tar), '--home', home, '--port', '1']);
+    const imp = runScript('import-data.mjs', [path.join(dir, 'b', tar), '--home', home, '--port', '1'], { BACKUP_PASSPHRASE: FAKE_PASSPHRASE });
     assert.equal(imp.status, 0, imp.stdout + imp.stderr);
     assert.match(imp.stderr, /carries secrets .*NOT installed/s);
     assert.equal(fs.existsSync(path.join(home, 'blumodel.env')), false);

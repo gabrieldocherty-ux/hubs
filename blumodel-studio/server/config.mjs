@@ -63,7 +63,13 @@ export function loadConfig(env = process.env, argv = process.argv) {
   // Daily database backups (VACUUM INTO) and an uploads mirror, next to the database by default.
   const BACKUPS = (env.BACKUPS || 'on').trim().toLowerCase() === 'off' || DB_PATH === ':memory:' ? 'off' : 'on';
   const BACKUP_DIR = path.resolve(env.BACKUP_DIR || path.join(DB_PATH === ':memory:' ? path.join(SERVER_DIR, 'data') : path.dirname(path.resolve(DB_PATH)), 'backups'));
-  const BACKUP_KEEP = int(env.BACKUP_KEEP, 14, 1, 365);
+  // At most 30 daily copies: the privacy policy promises deleted data leaves every backup within 35 days.
+  const BACKUP_KEEP = int(env.BACKUP_KEEP, 14, 1, 30);
+  // Encrypted off-site backups (server/ops/offsite.mjs): BACKUP_OFFSITE_DIR is a folder Gabe points
+  // at a synced cloud drive or a mounted USB drive; BACKUP_PASSPHRASE (12+ characters) makes the key.
+  const BACKUP_OFFSITE_DIR = String(env.BACKUP_OFFSITE_DIR || '').trim() ? path.resolve(String(env.BACKUP_OFFSITE_DIR).trim()) : '';
+  const BACKUP_OFFSITE_KEEP = int(env.BACKUP_OFFSITE_KEEP, 30, 1, 30);
+  const BACKUP_PASSPHRASE = String(env.BACKUP_PASSPHRASE ?? '');
   // A file whose appearance asks the server to shut down gracefully (stop-server.cmd and the
   // deploy create it; Windows can't send a console-less process a catchable signal).
   const SHUTDOWN_FILE = String(env.BLUMODEL_SHUTDOWN_FILE || '').trim() || null;
@@ -193,6 +199,10 @@ export function loadConfig(env = process.env, argv = process.argv) {
     BACKUP_DIR,
     BACKUPS,
     BACKUP_KEEP,
+    BACKUP_OFFSITE_DIR,
+    BACKUP_OFFSITE_KEEP,
+    /** Secret: never logged or returned (Admin > System says only whether it is set). */
+    BACKUP_PASSPHRASE,
     SHUTDOWN_FILE,
     BASE_DOMAIN,
     RENDER_CREDIT_CENTS,

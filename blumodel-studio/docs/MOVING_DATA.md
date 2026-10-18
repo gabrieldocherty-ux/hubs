@@ -15,13 +15,13 @@ how to check the result, and how to go back.
 | Uploads (models, photos, images) | `…\data\uploads\` | the data bundle |
 | Private settings (Stripe keys etc.) | `…\blumodel.env` | **by hand**, or retyped (below) |
 | Tunnel credentials | `%USERPROFILE%\.cloudflared\064671cd-a658-4240-8626-c697b9f148ac.json` | **by hand** (below) |
-| Daily backups, logs | `…\data\backups\`, `…\logs\` | not needed: the new machine starts its own. Keep the old ones on the old PC (or copy `data\backups\` to a USB drive) |
+| Daily backups, logs | `…\data\backups\`, `…\logs\` | not needed: the new machine starts its own. Leave the old ones on the old PC (they are unencrypted: never copy them to a stick or a cloud drive) |
 | The code | | not moved: the new machine gets it from GitHub (HOSTING.md) |
 | `cloudflared.yml`, supervisor scripts, systemd units | | not moved: the installer writes the new machine's own |
 
 ## The data bundle
 
-`server/scripts/export-data.mjs` makes one file, `blumodel-data-<time>.tar`, holding:
+`server/scripts/export-data.mjs` makes one **encrypted** file, `blumodel-data-<time>.tar.enc`, holding:
 
 ```
 blumodel-data-2026-10-16T04-20-54Z/manifest.json       what is inside: see "Reference" below
@@ -29,9 +29,16 @@ blumodel-data-2026-10-16T04-20-54Z/db/blumodel.db      a consistent copy of the 
 blumodel-data-2026-10-16T04-20-54Z/uploads/ab/ab…ef.glb every upload, by its sha256
 ```
 
-- It is a plain `.tar` (POSIX ustar). Nothing needs installing to open it: Windows 10 and 11 ship
-  `tar.exe`, Linux ships `tar`. The scripts read and write it themselves; `tar -tf <bundle>` only
-  lists it for you. `--folder` makes the same tree as a plain folder instead.
+- It is a `.tar` (POSIX ustar) encrypted with AES-256-GCM as it is written, under a key made by
+  scrypt from `BACKUP_PASSPHRASE` (the same scheme as the off-site backups, OPERATIONS.md). No
+  unencrypted copy is written where the bundle goes. The passphrase comes from `--passphrase-file
+  <file>`, else `BACKUP_PASSPHRASE` in the environment, else the home's `blumodel.env`, else the
+  script asks for it. **Without it the bundle can never be opened**: keep it in your password
+  manager. `import-data` decrypts the bundle itself (to a private temp file it deletes).
+- `--plain` makes an unencrypted `.tar` (or with `--folder` a plain folder) instead, for a copy
+  that never leaves the machine; never with `--include-secrets`. Windows 10/11 `tar.exe` and Linux
+  `tar` open a plain one; `restore-offsite.mjs <bundle.tar.enc> --decrypt-to <file.tar>` turns an
+  encrypted one into a plain one when you need to look inside (delete it afterwards).
 - The database copy is made with SQLite's `VACUUM INTO` from a read-only connection: **safe while
   the server runs**, and it is the database exactly as it was at that moment.
 - `manifest.json` lists the size and sha256 of every file, the row count of every table, the
@@ -40,10 +47,12 @@ blumodel-data-2026-10-16T04-20-54Z/uploads/ab/ab…ef.glb every upload, by its s
 - Nothing in a bundle names the machine it came from: every path inside is relative with `/`, and
   the database stores no file paths (uploads are found by sha256 under the uploads folder). A
   bundle made on Windows imports on Linux, and the other way round.
-- **It holds every customer's data.** Treat it like the database: your own USB stick or your own
-  machines only, never email, chat, a shared drive or git. `export-data` refuses to write inside a
-  git checkout (the repo is public). Delete the copies once the new machine runs (keep one on a
-  stick in a drawer if you like, as a backup).
+- **It holds every customer's data.** Even encrypted, carry it on your own USB stick or between
+  your own machines only, never email, chat, a shared drive or git. **Only an encrypted bundle
+  leaves the machine.** A plain bundle is never written inside a git checkout (the repo is public).
+  Delete the copies once the new machine runs; don't keep one on a stick as a backup (that is what
+  the encrypted off-site backups are for, with their own retention: OPERATIONS.md). Bundles in the
+  default folder (`data/backups/exports/`) are deleted after 7 days.
 - The settings file and the tunnel credentials are **not** in it, unless you ask
   (`--include-secrets`, below).
 
@@ -76,42 +85,45 @@ In a terminal (cmd), in the repo's `blumodel-studio` folder, with the stick as `
 node server\scripts\export-data.mjs --home %USERPROFILE%\Projects\BluModelStudio --out E:\
 ```
 
-(PowerShell: `--home "$env:USERPROFILE\Projects\BluModelStudio"`.) It prints the file it wrote,
-the row counts of the main tables, the number and size of the uploads, and *every file was read
-back and matches its sha256*. Keep that output: you compare it with the import's.
+(PowerShell: `--home "$env:USERPROFILE\Projects\BluModelStudio"`.) It reads the passphrase from the
+home's `blumodel.env` (`BACKUP_PASSPHRASE`) or asks for it. It prints the file it wrote, the row
+counts of the main tables, the number and size of the uploads, and that the whole bundle was
+decrypted back and matches. Keep that output: you compare it with the import's.
 
-Without `--out` the bundle goes to `<home>\data\backups\exports\`. `--folder` writes a folder
-instead of a `.tar`.
+Without `--out` the bundle goes to `<home>\data\backups\exports\` (kept 7 days). `--plain` writes an
+unencrypted `.tar` (only for a copy that stays on this machine).
 
 ### 2. Carry it
 
 - **USB stick:** eject it properly (*Safely Remove*), plug it into the Wyse.
   - Wyse on Linux: `lsblk` shows it (say `sdb1`); `sudo mkdir -p /mnt/usb && sudo mount /dev/sdb1 /mnt/usb`.
-    The bundle is then `/mnt/usb/blumodel-data-<time>.tar`.
+    The bundle is then `/mnt/usb/blumodel-data-<time>.tar.enc`.
   - Wyse on Windows: it appears as a drive, say `D:`.
 - **Over the network (scp):** Windows 10/11 has an SSH client built in. To a Wyse on Linux (SSH
   server on, which the Ubuntu Server installer offers):
 
   ```
-  scp E:\blumodel-data-<time>.tar you@wyse:~/
+  scp E:\blumodel-data-<time>.tar.enc you@wyse:~/
   ```
 
-  The bundle is then `~/blumodel-data-<time>.tar` on the Wyse (`/home/you/…`).
+  The bundle is then `~/blumodel-data-<time>.tar.enc` on the Wyse (`/home/you/…`).
 
 ### 3. Check it (on the Wyse)
 
-Nothing changes in a check; run it as often as you like.
+Nothing changes in a check; run it as often as you like. It asks for the passphrase (or set
+`BACKUP_PASSPHRASE` for the one command, or pass `--passphrase-file <file>`); a wrong one changes
+nothing.
 
 Linux:
 
 ```
-sudo node /srv/blumodel-studio/app/server/scripts/import-data.mjs /mnt/usb/blumodel-data-<time>.tar --check
+sudo node /srv/blumodel-studio/app/server/scripts/import-data.mjs /mnt/usb/blumodel-data-<time>.tar.enc --check
 ```
 
 Windows (cmd):
 
 ```
-node %USERPROFILE%\Projects\BluModelStudio\app\server\scripts\import-data.mjs D:\blumodel-data-<time>.tar --check
+node %USERPROFILE%\Projects\BluModelStudio\app\server\scripts\import-data.mjs D:\blumodel-data-<time>.tar.enc --check
 ```
 
 It must say *every file matches its sha256; the database passed PRAGMA integrity_check; the row
@@ -127,7 +139,7 @@ Linux:
 
 ```
 sudo systemctl stop blumodel-studio
-sudo node /srv/blumodel-studio/app/server/scripts/import-data.mjs /mnt/usb/blumodel-data-<time>.tar --home /srv/blumodel-studio
+sudo node /srv/blumodel-studio/app/server/scripts/import-data.mjs /mnt/usb/blumodel-data-<time>.tar.enc --home /srv/blumodel-studio
 sudo systemctl start blumodel-studio
 ```
 
@@ -139,7 +151,7 @@ Windows (cmd):
 ```
 cd /d %USERPROFILE%\Projects\BluModelStudio
 stop-server.cmd
-node app\server\scripts\import-data.mjs D:\blumodel-data-<time>.tar --home %USERPROFILE%\Projects\BluModelStudio
+node app\server\scripts\import-data.mjs D:\blumodel-data-<time>.tar.enc --home %USERPROFILE%\Projects\BluModelStudio
 start-server.cmd
 ```
 
@@ -151,8 +163,8 @@ newer schema here, printed as *applied migrations: …*); prints every table's r
   aside as `data/blumodel.db.before-import-<time>` and the import goes ahead.
 - If the Wyse already has **real** data (the rehearsal's import, say), the import refuses and
   changes nothing. Add `--replace`: what is there is kept as `data/blumodel.db.before-import-<time>`
-  (with its `-wal`/`-shm`) and `data/uploads.before-import-<time>/`, never deleted, and the bundle
-  goes in its place. Delete those once you're happy.
+  (with its `-wal`/`-shm`) and `data/uploads.before-import-<time>/`, and the bundle goes in its
+  place. The server's daily job deletes those 30 days later; delete them sooner once you're happy.
 - If anything fails after the swap (a migration, a full disk), the import puts back what was there
   and keeps what it imported as `*.failed-import-<time>`.
 - If the bundle was made by a **newer** version of the app than the Wyse runs, it is refused:
@@ -222,7 +234,8 @@ bring them back: `schtasks /Change /TN BluModelTunnel /Disable` and
 
 `--include-secrets` also puts the settings file and the tunnel credentials JSON in the bundle
 (never `cert.pem`), and prints a loud warning: move that bundle only over a private channel and
-delete it everywhere afterwards.
+delete it everywhere afterwards. Such a bundle is always encrypted (`--plain --include-secrets` is
+refused).
 
 ```
 node server\scripts\export-data.mjs --home %USERPROFILE%\Projects\BluModelStudio --out E:\ --include-secrets
@@ -231,8 +244,8 @@ node server\scripts\export-data.mjs --home %USERPROFILE%\Projects\BluModelStudio
 It finds the settings file in the home and the credentials in `%USERPROFILE%\.cloudflared\`
 (or `<home>/.cloudflared/` on Linux); `--settings <file>` and `--tunnel-dir <folder>` name them.
 The import still never installs them: it verifies them with everything else and tells you to take
-them out by hand, e.g. `tar -xf blumodel-data-<time>.tar blumodel-data-<time>/secrets`, then place
-them as in steps 5 and 6.
+them out by hand: `restore-offsite.mjs <bundle>.tar.enc --decrypt-to <private folder>/b.tar`, then
+`tar -xf b.tar blumodel-data-<time>/secrets`, then place them as in steps 5 and 6 and delete both.
 
 ## Verify
 
@@ -291,9 +304,9 @@ on the same disk. `restore.mjs` puts one back on either OS (OPERATIONS.md, "Back
 sudo -u blumodel node /srv/blumodel-studio/app/server/scripts/restore.mjs --home /srv/blumodel-studio --list
 ```
 
-A data bundle is also the best off-machine backup: run the export now and then to a stick you keep
-elsewhere (`--out /mnt/usb` on Linux; it is safe while the server runs). A Wyse's eMMC can fail like
-any disk.
+A Wyse's eMMC can fail like any disk. The off-machine backup is the server's own **encrypted
+off-site copy**, made daily into `BACKUP_OFFSITE_DIR` (a synced cloud folder or a USB drive) and kept
+30 days (OPERATIONS.md and HOSTING.md, *Off-site backups*). Turn it on before the old PC goes.
 
 ## Reference
 
@@ -302,21 +315,25 @@ any disk.
 | Option | |
 | --- | --- |
 | `--home <dir>` | the home whose `data/` to export (else `--db <file>` [`--uploads <dir>`], else `DB_PATH` / `UPLOAD_DIR`, else the home the script runs from) |
-| `--out <folder or file.tar>` | where to write; default `<data>/backups/exports/`. Refused inside a git checkout or the uploads folder |
-| `--folder` | a plain folder instead of a `.tar` |
-| `--include-secrets` | also `blumodel.env` and the tunnel's `<id>.json` (`--settings <file>`, `--tunnel-dir <folder>`) |
+| `--out <folder or file.tar.enc>` | where to write; default `<data>/backups/exports/` (bundles there are deleted after 7 days). Refused inside the uploads folder; a plain bundle also inside a git checkout |
+| `--passphrase-file <file>` | the passphrase (its first line); else `BACKUP_PASSPHRASE`, the home's `blumodel.env`, or a prompt |
+| `--plain` | NOT encrypted: a `.tar`, for a copy that stays on this machine (never with `--include-secrets`) |
+| `--plain --folder` | NOT encrypted: a plain folder instead of a `.tar` |
+| `--include-secrets` | also `blumodel.env` and the tunnel's `<id>.json` (`--settings <file>`, `--tunnel-dir <folder>`); encrypted only |
 
-`node server/scripts/import-data.mjs <bundle.tar or folder> [options]`
+`node server/scripts/import-data.mjs <bundle.tar.enc, bundle.tar or folder> [options]` (an off-site copy, `blumodel-offsite-<time>.tar.enc`, too)
 
 | Option | |
 | --- | --- |
 | `--check` | verify only, change nothing |
 | `--home <dir>` | the home to import into (else `--db` / `--uploads`, `DB_PATH` / `UPLOAD_DIR`, the home the script runs from) |
-| `--replace` | import over existing data, keeping it as `*.before-import-<time>` |
+| `--replace` | import over existing data, keeping it as `*.before-import-<time>` (30 days) |
+| `--passphrase-file <file>` | for an encrypted bundle; else `BACKUP_PASSPHRASE`, the home's `blumodel.env`, or a prompt |
 | `--port <n>` | the server's port, for the "is it stopped?" check (default: the port the home was installed with, read from its `run-server.cmd` or `blumodel-studio.service`, else 8790) |
 
-The same from the repo: `npm run data:export -- …`, `npm run data:import -- …`, and
-`npm run data:restore -- …` for `restore.mjs`. Exit codes: 0 done, 1 refused or failed (nothing
+The same from the repo: `npm run data:export -- …`, `npm run data:import -- …`,
+`npm run data:restore -- …` for `restore.mjs` and `npm run data:restore-offsite -- …` for
+`restore-offsite.mjs`. Exit codes: 0 done, 1 refused or failed (nothing
 changed, or put back as it was), 2 wrong options.
 
 `manifest.json`:
