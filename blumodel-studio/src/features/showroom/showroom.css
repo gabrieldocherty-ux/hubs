@@ -279,6 +279,8 @@
   max-width: 1240px;
   margin: 0 auto;
   padding: 88px 24px 0;
+  /* The sticky header (58px) never covers a section the header links scroll to. */
+  scroll-margin-top: 58px;
 }
 
 .sr-eyebrow {
@@ -800,7 +802,7 @@
   }
 
   .sr-hero--photo .sr-hero-inner {
-    margin-top: -64px;
+    margin-top: -6px;
     padding: 0 16px 40px;
   }
 

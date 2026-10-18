@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import type { BrandCategory, DesignDoc } from '../../types';
 import { useSession } from '../../store/useSession';
 import { useCatalog } from '../../store/useCatalog';
@@ -17,6 +17,9 @@ import { featuredLines, showroomLines, showroomPrefs, type ShowroomLine } from '
 import { designHref, salesOrigin } from './links';
 import { shortName, telHref, type PublicTenant, type ShowroomImages, type ShowroomPic } from './site';
 import './showroom.css';
+
+// The demo showroom's pitch to prospects (never on a real showroom), in its own chunk.
+const DemoPitch = lazy(() => import('./DemoPitch'));
 
 const SAMPLE_ROOM = { widthIn: 192, lengthIn: 168, ceilingIn: 108 };
 
@@ -167,6 +170,12 @@ export default function ShowroomLanding() {
               ))}
             </div>
           </section>
+        )}
+
+        {t.isDemo && (
+          <Suspense fallback={null}>
+            <DemoPitch tenant={t} />
+          </Suspense>
         )}
 
         {im.gallery.length > 0 && (
