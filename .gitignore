@@ -49,3 +49,12 @@ venv/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# ---------------------------------------------------------------------------
+# BluModel Studio secrets and lists that must never land anywhere in this repo
+# (blumodel-studio/.gitignore has the full set for that folder).
+# ---------------------------------------------------------------------------
+blumodel.env
+mise.env
+*BluModel-Prospects*
+seed-credentials.txt
