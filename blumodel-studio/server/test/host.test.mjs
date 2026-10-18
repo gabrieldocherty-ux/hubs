@@ -290,7 +290,11 @@ test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as b
   const u = parseUnit(text);
   assert.deepEqual(Object.keys(u), ['Unit', 'Service', 'Install']);
   const S = u.Service;
-  assert.deepEqual(S.ExecStart, ['/usr/bin/node --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod']);
+  assert.deepEqual(S.ExecStart, ['/usr/bin/node --max-old-space-size=384 --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod']);
+  assert.deepEqual([S.MemoryHigh, S.MemoryMax], [['640M'], ['896M']], 'room above the heap, and a ceiling under the 4 GB machine');
+  assert.match(parseUnit(systemdServerUnit({ heapMb: 512 })).Service.ExecStart[0], /--max-old-space-size=512 /);
+  assert.deepEqual(parseUnit(systemdServerUnit({ heapMb: 512 })).Service.MemoryMax, ['1024M']);
+  assert.throws(() => systemdServerUnit({ heapMb: 64 }), /128-8192 MB/);
   assert.deepEqual(S.WorkingDirectory, ['/srv/blumodel-studio/app']);
   assert.deepEqual([S.User, S.Group], [['blumodel'], ['blumodel']]);
   assert.deepEqual(S.Environment, [
@@ -337,17 +341,114 @@ test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumod
   assert.ok(!/\btoken\b|login|route|delete/i.test(u.Service.ExecStart[0]), 'it only ever runs the tunnel');
 });
 
-test('the Linux install plan: both unit files, daemon-reload, the server enabled; the tunnel enabled only when asked (the cutover); --only filters', async () => {
+test('the Linux install plan: every unit file, daemon-reload, the server enabled; the tunnel enabled only when asked (the cutover); the update timer and watcher enabled and started (off with --no-auto-update); --only filters', async () => {
   const { systemdInstallPlan, systemdUnits } = await import('../ops/home.mjs');
   const units = systemdUnits();
   const plan = systemdInstallPlan({ units });
-  assert.deepEqual(plan.writes.map((w) => w.file), ['/etc/systemd/system/blumodel-studio.service', '/etc/systemd/system/blumodel-tunnel.service']);
-  assert.deepEqual(plan.commands, [['systemctl', 'daemon-reload'], ['systemctl', 'enable', 'blumodel-studio.service']]);
-  assert.ok(!plan.commands.flat().includes('start') && !plan.commands.flat().includes('--now'), 'never starts anything');
-  assert.deepEqual(systemdInstallPlan({ units, enableTunnel: true }).commands.at(-1), ['systemctl', 'enable', 'blumodel-tunnel.service']);
+  assert.deepEqual(plan.writes.map((w) => w.file), ['/etc/systemd/system/blumodel-studio.service', '/etc/systemd/system/blumodel-tunnel.service', '/etc/systemd/system/blumodel-update.service', '/etc/systemd/system/blumodel-update.timer', '/etc/systemd/system/blumodel-update.path']);
+  assert.deepEqual(plan.commands, [['systemctl', 'daemon-reload'], ['systemctl', 'enable', 'blumodel-studio.service'], ['systemctl', 'enable', '--now', 'blumodel-update.timer', 'blumodel-update.path']]);
+  // --now only ever starts the schedule and the watcher: never the server, the tunnel or an update.
+  for (const c of plan.commands) if (c.includes('--now')) assert.deepEqual(c.slice(3), ['blumodel-update.timer', 'blumodel-update.path']);
+  assert.ok(!plan.commands.flat().includes('start'));
+  assert.deepEqual(systemdInstallPlan({ units, enableTunnel: true }).commands.filter((c) => c.includes('blumodel-tunnel.service')), [['systemctl', 'enable', 'blumodel-tunnel.service']]);
+  assert.deepEqual(systemdInstallPlan({ units, autoUpdate: false }).commands.at(-1), ['systemctl', 'disable', '--now', 'blumodel-update.timer', 'blumodel-update.path']);
   const t = systemdInstallPlan({ units, only: 'tunnel' });
   assert.deepEqual(t.writes.map((w) => path.posix.basename(w.file)), ['blumodel-tunnel.service']);
   assert.deepEqual(t.commands, [['systemctl', 'daemon-reload']]);
+  const u = systemdInstallPlan({ units, only: 'update' });
+  assert.deepEqual(u.writes.map((w) => path.posix.basename(w.file)), ['blumodel-update.service', 'blumodel-update.timer', 'blumodel-update.path']);
+});
+
+test('the update units: a oneshot update.mjs --auto as root at low priority; the timer daily at 04:00 (Persistent, up to 10 min late, never more often); the path unit watches only the Update now file', async () => {
+  const { systemdUpdateUnits } = await import('../ops/home.mjs');
+  const units = systemdUpdateUnits();
+  for (const text of Object.values(units)) assert.ok(!text.includes('\r'), 'LF only');
+  const svc = parseUnit(units['blumodel-update.service']);
+  assert.deepEqual(Object.keys(svc), ['Unit', 'Service']);
+  assert.deepEqual(svc.Service.Type, ['oneshot']);
+  assert.deepEqual(svc.Service.ExecStart, ['/usr/bin/node --no-warnings /srv/blumodel-studio/repo/blumodel-studio/scripts/host/update.mjs --auto --home /srv/blumodel-studio']);
+  assert.equal(svc.Service.User, undefined, 'root: the deploy restarts the server (git runs as the checkout owner)');
+  assert.deepEqual([svc.Service.Nice, svc.Service.IOSchedulingClass, svc.Service.TimeoutStartSec, svc.Service.SyslogIdentifier], [['10'], ['idle'], ['2h'], ['blumodel-update']]);
+  assert.deepEqual(svc.Unit.Wants, ['network-online.target']);
+  const timer = parseUnit(units['blumodel-update.timer']);
+  assert.deepEqual(timer.Timer, { OnCalendar: ['*-*-* 04:00:00'], Persistent: ['true'], RandomizedDelaySec: ['10min'], AccuracySec: ['1min'], Unit: ['blumodel-update.service'] });
+  assert.ok(!/OnUnitActiveSec|OnBootSec|OnActiveSec|OnStartupSec/.test(units['blumodel-update.timer']), 'one calendar event a day, nothing else');
+  assert.deepEqual(timer.Install.WantedBy, ['timers.target']);
+  const watch = parseUnit(units['blumodel-update.path']);
+  assert.deepEqual(watch.Path, { PathExists: ['/srv/blumodel-studio/logs/update-now.request'], Unit: ['blumodel-update.service'] });
+  assert.deepEqual(watch.Install.WantedBy, ['paths.target']);
+  assert.deepEqual(parseUnit(systemdUpdateUnits({ time: '05:30', home: '/opt/bms' })['blumodel-update.timer']).Timer.OnCalendar, ['*-*-* 05:30:00']);
+  for (const bad of ['4:00', '24:00', '04:00:00', 'noon', '']) assert.throws(() => systemdUpdateUnits({ time: bad }), /Not a time of day/);
+  assert.throws(() => systemdUpdateUnits({ home: '/srv/a b' }), /absolute path/);
+});
+
+test('Windows update tasks: daily at the update time and a two-minute Update now check, both hidden via update-hidden.vbs, one at a time, two hours at most; a stored password with --at-startup', async () => {
+  const { updateTasks, updateLauncherVbs } = await import('../ops/home.mjs');
+  const [daily, now] = updateTasks('C:\\Users\\owner\\Projects\\BluModelStudio', 'WYSE\\owner', { time: '04:00', password: true });
+  assert.deepEqual([daily.name, now.name], ['BluModelStudioUpdate', 'BluModelStudioUpdateNow']);
+  assert.match(daily.xml, /<CalendarTrigger>\s*<StartBoundary>2026-01-01T04:00:00<\/StartBoundary>\s*<Enabled>true<\/Enabled>\s*<ScheduleByDay>\s*<DaysInterval>1<\/DaysInterval>/);
+  assert.match(daily.xml, /<StartWhenAvailable>true<\/StartWhenAvailable>/, 'a missed 04:00 runs when the machine is next on');
+  assert.match(now.xml, /<TimeTrigger>\s*<Repetition>\s*<Interval>PT2M<\/Interval>/);
+  assert.match(now.xml, /<StartWhenAvailable>false<\/StartWhenAvailable>/);
+  for (const t of [daily, now]) {
+    assert.match(t.xml, /<LogonType>Password<\/LogonType>/);
+    assert.match(t.xml, /<ExecutionTimeLimit>PT2H<\/ExecutionTimeLimit>/);
+    assert.match(t.xml, /<MultipleInstancesPolicy>IgnoreNew<\/MultipleInstancesPolicy>/);
+    assert.match(t.xml, /<Command>wscript\.exe<\/Command>/);
+    assert.doesNotMatch(t.xml, /<Password>|<RunAsPassword/i);
+  }
+  assert.match(daily.xml, /<Arguments>"C:\\Users\\owner\\Projects\\BluModelStudio\\update-hidden\.vbs" --auto<\/Arguments>/);
+  assert.match(now.xml, /<Arguments>"C:\\Users\\owner\\Projects\\BluModelStudio\\update-hidden\.vbs" --auto --trigger-only<\/Arguments>/);
+  assert.match(updateTasks('C:\\H', 'PC\\me')[0].xml, /<LogonType>InteractiveToken<\/LogonType>/);
+  assert.match(updateTasks('C:\\H', 'PC\\me', { time: '23:45' })[0].xml, /T23:45:00/);
+  assert.throws(() => updateTasks('C:\\H', 'PC\\me', { time: '7am' }), /Not a time of day/);
+  const vbs = updateLauncherVbs({ node: 'C:\\Program Files\\nodejs\\node.exe' });
+  assert.ok(/^[^\n]*\r\n/.test(vbs) && !/[^\r]\n/.test(vbs), 'CRLF');
+  const q3 = '"'.repeat(3);
+  assert.ok(vbs.includes(`sh.Run(${q3}C:\Program Files\nodejs\node.exe"" --no-warnings ${q3} & dir & "\repo\blumodel-studio\scripts\host\update.mjs"" --home ${q3} & dir & ${q3}" & args, 0, True)`), vbs);
+  assert.match(vbs, /WScript\.Quit code/, 'the task’s Last Run Result is the update’s exit code');
+  assert.throws(() => updateLauncherVbs({ node: 'C:\\a"b\\node.exe' }), /no quotes/);
+  if (WIN) {
+    const dir = tempDir();
+    try {
+      for (const t of [daily, now]) {
+        const file = path.join(dir, `${t.name}.xml`);
+        fs.writeFileSync(file, Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(t.xml.replace(/\r?\n/g, '\r\n'), 'utf16le')]));
+        const ps = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+        const r = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-Command', `$x = [xml](Get-Content -Raw -Encoding Unicode -LiteralPath '${file}'); $x.Task.RegistrationInfo.URI`], { encoding: 'utf8', windowsHide: true });
+        assert.equal(r.status, 0, r.stderr);
+        assert.equal(r.stdout.trim(), `\\${t.name}`);
+      }
+    } finally {
+      rm(dir);
+    }
+  }
+});
+
+test('register-tasks --dry-run --only update (Windows): the launcher, auto-update.conf and both update tasks, nothing changed; --no-auto-update disables instead; a home with no checkout gets no update task by default', { skip: !WIN && 'Windows tasks' }, () => {
+  const home = tempDir('blumodel-uptasks-');
+  try {
+    const cli = (...a) => spawnSync(NODE, [path.join(ROOT, 'scripts', 'register-tasks.mjs'), '--dry-run', '--home', home, '--user', 'WYSE\\owner', ...a], { encoding: 'utf8', windowsHide: true, timeout: 60_000, env: cleanEnv() });
+    const r = cli('--only', 'update', '--at-startup', '--auto-update-time', '05:15');
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /would write .*update-hidden\.vbs:/);
+    assert.match(r.stdout, /would write .*auto-update\.conf: AUTO_UPDATE=on, AUTO_UPDATE_TIME=05:15/);
+    assert.match(r.stdout, /BluModelStudioUpdate: daily at 05:15, as WYSE\\owner \(signed in or not\), runs wscript\.exe ".*update-hidden\.vbs" --auto/);
+    assert.match(r.stdout, /BluModelStudioUpdateNow: every 2 minutes \(a no-op unless Update now was pressed\)/);
+    assert.match(r.stdout, /would run: schtasks \/Create \/TN BluModelStudioUpdate \/XML "<the definition below>" \/RU WYSE\\owner \/RP \* \/F/);
+    assert.doesNotMatch(r.stdout, /would list .*Update/, 'update tasks are not startup tasks');
+    assert.deepEqual(fs.readdirSync(home), [], 'nothing was written');
+    const off = cli('--only', 'update', '--no-auto-update');
+    assert.match(off.stdout, /AUTO_UPDATE=off/);
+    assert.match(off.stdout, /would run: schtasks \/Change \/TN BluModelStudioUpdate \/Disable/);
+    assert.doesNotMatch(off.stdout, /schtasks \/Create/);
+    const all = cli();
+    assert.match(all.stdout, /no update task/);
+    assert.doesNotMatch(all.stdout, /BluModelStudioUpdate:/);
+    assert.equal(cli('--auto-update-time', '25:00').status, 2);
+  } finally {
+    rm(home);
+  }
 });
 
 test('Windows tasks at startup: a boot trigger (30 s delay) and a stored-password logon instead of logon + interactive token; the logon definition is unchanged', async () => {
@@ -410,7 +511,10 @@ test('register-tasks --dry-run --platform linux prints the two units and the sys
   assert.equal(r.status, 0, r.stdout + r.stderr);
   assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-studio\.service$/m);
   assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-tunnel\.service$/m);
-  assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/node --no-warnings \/srv\/blumodel-studio\/app\/server\/index\.mjs --prod$/m);
+  assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/node --max-old-space-size=384 --no-warnings \/srv\/blumodel-studio\/app\/server\/index\.mjs --prod$/m);
+  assert.match(r.stdout, /^would write \/etc\/systemd\/system\/blumodel-update\.timer$/m);
+  assert.match(r.stdout, /^would run: systemctl enable --now blumodel-update\.timer blumodel-update\.path$/m);
+  assert.match(r.stdout, /would write \/srv\/blumodel-studio\/auto-update\.conf: AUTO_UPDATE=on, AUTO_UPDATE_TIME=04:00/);
   assert.match(r.stdout, /^ {4}ExecStart=\/usr\/bin\/cloudflared tunnel --config \/srv\/blumodel-studio\/cloudflared\.yml --no-autoupdate run$/m);
   assert.match(r.stdout, /^would run: systemctl daemon-reload$/m);
   assert.match(r.stdout, /^would run: systemctl enable blumodel-studio\.service$/m);
@@ -422,6 +526,12 @@ test('register-tasks --dry-run --platform linux prints the two units and the sys
   assert.match(t.stdout, /^would run: systemctl enable blumodel-tunnel\.service$/m);
   assert.match(t.stdout, /Environment=PORT=8899/);
   assert.match(t.stdout, /WorkingDirectory=\/opt\/bms\/app/);
+  const o = cli('--dry-run', '--platform', 'linux', '--home', '/opt/bms', '--no-auto-update', '--auto-update-time', '03:30', '--heap-mb', '512');
+  assert.equal(o.status, 0, o.stderr);
+  assert.match(o.stdout, /OnCalendar=\*-\*-\* 03:30:00/);
+  assert.match(o.stdout, /--max-old-space-size=512 /);
+  assert.match(o.stdout, /^would run: systemctl disable --now blumodel-update\.timer blumodel-update\.path$/m);
+  assert.match(o.stdout, /AUTO_UPDATE=off, AUTO_UPDATE_TIME=03:30/);
   if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, 2, 'only a dry run may pretend to be Linux');
   assert.equal(cli('--dry-run', '--platform', 'linux', '--home', '/srv/blu model').status, 2, 'a home systemd would need quoting is refused');
   assert.equal(cli('--dry-run', '--only', 'both').status, 2);
@@ -667,7 +777,7 @@ test('every shell script: LF line ends only, a bash shebang, `set -euo pipefail`
   }
 });
 
-test('install-linux.sh --dry-run prints every step (apt repos, the account, the sparse clone, npm ci, the build, the units, the deploy, the tunnel config) and runs none', { skip: !BASH && 'no bash here', timeout: 120_000 }, () => {
+test('install-linux.sh --dry-run prints every step (apt repos, the account, the sparse clone, the prebuilt release, the units, the deploy, the tunnel config) and runs none; --build is the emergency npm ci and build', { skip: !BASH && 'no bash here', timeout: 120_000 }, () => {
   // A PATH without node or cloudflared on Windows, so the NodeSource and Cloudflare steps show too.
   const env = cleanEnv(WIN ? { PATH: '/usr/bin:/bin' } : {});
   const run = (...a) => spawnSync(BASH, [path.join(HOST_DIR, 'install-linux.sh'), ...a], { encoding: 'utf8', windowsHide: true, timeout: 90_000, env });
@@ -681,9 +791,8 @@ test('install-linux.sh --dry-run prints every step (apt repos, the account, the 
     /\+ install -d -m 0700 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/\.cloudflared/,
     /\+ runuser -u blumodel -- env -C \/srv\/blumodel-dryrun HOME=\/srv\/blumodel-dryrun PATH=\S+ git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git \/srv\/blumodel-dryrun\/repo/,
     /git sparse-checkout set blumodel-studio/,
-    /env -C \/srv\/blumodel-dryrun\/repo\/blumodel-studio HOME=\/srv\/blumodel-dryrun PATH=\S+ npm ci --no-audit --no-fund/,
-    /node scripts\/host\/build\.mjs --out dist/,
-    /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/register-tasks\.mjs --home \/srv\/blumodel-dryrun --user blumodel --port 8899 --node \S+ --cloudflared \S+/,
+    /The prebuilt release \(nothing is installed or built on this machine\)/,
+    /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/register-tasks\.mjs --home \/srv\/blumodel-dryrun --user blumodel --port 8899 --node \S+ --cloudflared \S+$/m,
     /\+ env BLUMODEL_HOME=\/srv\/blumodel-dryrun BLUMODEL_PORT=8899 node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/deploy-local\.mjs --dist \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/dist --commit/,
     /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/tunnel\/setup-tunnel\.mjs --home \/srv\/blumodel-dryrun --port 8899 --validate/,
     /sudo systemctl enable --now blumodel-tunnel/,
@@ -700,6 +809,17 @@ test('install-linux.sh --dry-run prints every step (apt repos, the account, the 
     assert.match(o, /deb \[signed-by=\/usr\/share\/keyrings\/cloudflare-main\.gpg\] https:\/\/pkg\.cloudflare\.com\/cloudflared any main/);
     assert.match(o, /apt-get install -y cloudflared/);
   }
+  assert.doesNotMatch(o, /npm ci|build\.mjs/, 'nothing is installed or built');
+  assert.match(o, /Updates: automatic, daily at 04:00/);
+  const b = run('--dry-run', '--home', '/srv/blumodel-dryrun', '--build', '--no-auto-update', '--auto-update-time', '05:15', '--heap-mb', '512');
+  assert.equal(b.status, 0, b.stdout + b.stderr);
+  assert.match(b.stdout, /env -C \/srv\/blumodel-dryrun\/repo\/blumodel-studio HOME=\/srv\/blumodel-dryrun PATH=\S+ npm ci --no-audit --no-fund/);
+  assert.match(b.stdout, /node scripts\/host\/build\.mjs --out \.build\/local/);
+  assert.match(b.stdout, /register-tasks\.mjs .* --auto-update-time 05:15 --no-auto-update --heap-mb 512$/m);
+  assert.match(b.stdout, /deploy-local\.mjs --dist \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/\.build\/local --commit/);
+  assert.match(b.stdout, /automatic updates are OFF/);
+  assert.equal(run('--auto-update-time', '7pm').status, 1);
+  assert.equal(run('--heap-mb', 'lots').status, 1);
   // The tunnel is never started by the install, and no command line carries a secret.
   assert.doesNotMatch(o, /^\+ .*systemctl (start|enable).*blumodel-tunnel/m);
   assert.doesNotMatch(o, /^\+ .*(cloudflared (tunnel|service) (run|login|route|create|delete|token|install)|--token)/m);
@@ -736,9 +856,10 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
     for (const re of [
       /git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git .*Home\\repo/,
       /sparse-checkout set blumodel-studio/,
-      /\+ npm\.cmd ci --no-audit --no-fund/,
-      /\+ node scripts\\host\\build\.mjs --out dist/,
+      /The prebuilt release \(nothing is installed or built on this machine\)/,
       /\+ node scripts\\deploy-local\.mjs --dist .*Home\\repo\\blumodel-studio\\dist --commit <commit>/,
+      /\+ node scripts\\register-tasks\.mjs --home .*Home --at-startup --only update/,
+      /Updates: automatic, daily at 04:00/,
       /\+ node scripts\\tunnel\\setup-tunnel\.mjs --home .*Home --port 8903 --validate/,
       /\+ node scripts\\register-tasks\.mjs --home .*Home --at-startup --only server/,
       /--at-startup --only tunnel/,
@@ -746,6 +867,13 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
     ])
       assert.match(o, re);
     assert.doesNotMatch(o, /^\+ .*schtasks \/Run \/TN BluModelTunnel/m, 'the tunnel is never started by the install');
+    assert.doesNotMatch(o, /npm\.cmd ci|build\.mjs/, 'nothing is installed or built');
+    const b = spawnSync(ps, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', file, '-DryRun', '-HomeDir', home, '-Port', '8903', '-Build', '-NoAutoUpdate'], { encoding: 'utf8', windowsHide: true, timeout: 90_000, env: cleanEnv() });
+    assert.equal(b.status, 0, b.stdout + b.stderr);
+    assert.match(b.stdout, /\+ npm\.cmd ci --no-audit --no-fund/);
+    assert.match(b.stdout, /\+ node scripts\\host\\build\.mjs --out \.build\\local/);
+    assert.match(b.stdout, /--dist .*\.build\\local --commit/);
+    assert.match(b.stdout, /--only update --no-auto-update/);
     assert.ok(!fs.existsSync(home), 'nothing was made');
   } finally {
     rm(dir);

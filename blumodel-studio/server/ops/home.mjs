@@ -76,6 +76,22 @@ export const SERVICE_USER = 'blumodel';
 export const SERVER_UNIT = 'blumodel-studio.service';
 export const TUNNEL_UNIT = 'blumodel-tunnel.service';
 export const SYSTEMD_DIR = '/etc/systemd/system';
+/** Automatic updates (scripts/host/autoupdate.mjs): the oneshot service, its daily timer and the Update now watcher. */
+export const UPDATE_UNIT = 'blumodel-update.service';
+export const UPDATE_TIMER = 'blumodel-update.timer';
+export const UPDATE_PATH_UNIT = 'blumodel-update.path';
+/** Windows: the daily update and the two-minute check for Update now (a no-op without its trigger file). */
+export const UPDATE_TASK = 'BluModelStudioUpdate';
+export const UPDATE_NOW_TASK = 'BluModelStudioUpdateNow';
+/** When the daily update runs unless AUTO_UPDATE_TIME / --auto-update-time says otherwise (the quietest hour). */
+export const DEFAULT_UPDATE_TIME = '04:00';
+/**
+ * The server's V8 heap cap on Linux (node --max-old-space-size), in MB. The server idles at about
+ * 60-80 MB RSS and stays near 100-150 MB under the full QA run (docs/HOSTING.md, "Disk and memory"),
+ * so 384 MB is generous; MemoryHigh / MemoryMax in the unit leave room above it for native memory
+ * (SQLite's cache, buffers) and stop a leak from taking the whole 4 GB machine.
+ */
+export const DEFAULT_HEAP_MB = 384;
 /** Where a new machine gets the code (public), and the branch it deploys. */
 export const REPO_URL = 'https://github.com/gabrieldocherty-ux/hubs.git';
 export const DEPLOY_BRANCH = 'blumodel-studio';
@@ -126,6 +142,12 @@ export function homeLayout(home, platform = process.platform) {
     runTunnel: p.join(h, 'run-tunnel.cmd'),
     startTunnel: p.join(h, 'start-tunnel.vbs'),
     tunnelStopped: p.join(h, 'tunnel.stopped'),
+    // Automatic updates (scripts/host/autoupdate.mjs has the rest of its files, all in logs/).
+    autoUpdateConf: p.join(h, 'auto-update.conf'),
+    updateTrigger: p.join(h, 'logs', 'update-now.request'),
+    updateStatus: p.join(h, 'logs', 'update-status.json'),
+    updateLauncher: p.join(h, 'update-hidden.vbs'),
+    updateScript: p.join(h, 'repo', 'blumodel-studio', 'scripts', 'host', 'update.mjs'),
   };
 }
 
@@ -450,27 +472,57 @@ export function createSettingsTemplate(file, { text, restrict = (f) => restrictS
 const xml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
 /**
- * A Task Scheduler definition (schtasks /Create /XML) that runs `wscript.exe "<launcher>"`: no time
- * limit, runs on battery, starts late if missed, one instance. The launcher (a .vbs) starts a
- * supervisor that restarts what it runs, so the task itself never needs to restart anything.
+ * A Task Scheduler definition (schtasks /Create /XML) that runs `wscript.exe "<launcher>" <args>`:
+ * runs on battery, one instance at a time (a run still going makes the next one a no-op).
  *   trigger 'logon'   (default) at `user`'s logon with their interactive token, like
  *                     MiseKitchenServer did: the original PC, where someone signs in.
  *   trigger 'startup' when Windows starts (30 s after boot), as `user` whether or not anyone is
  *                     signed in: a machine nobody logs on to (a Dell Wyse). Windows has to store
  *                     the account's password for that, so schtasks asks for it when the task is
  *                     registered (register-tasks passes /RP *, never a password).
- * @param {{ name: string, description: string, launcher: string, workingDir: string, user: string, trigger?: 'logon' | 'startup' }} o
+ *   trigger 'daily'   every day at `at` (HH:MM, local time); a missed run starts when the machine is
+ *                     next on (StartWhenAvailable).
+ *   trigger 'every'   every `every` (an ISO duration such as PT2M), for ever.
+ * `password` (the startup trigger implies it) runs it whether or not anyone is signed in; otherwise
+ * only while `user` is. No time limit unless `timeLimit` (an ISO duration) says one.
+ * @param {{ name: string, description: string, launcher: string, workingDir: string, user: string,
+ *   trigger?: 'logon' | 'startup' | 'daily' | 'every', at?: string, every?: string, args?: string,
+ *   password?: boolean, timeLimit?: string, startWhenAvailable?: boolean }} o
  */
-export function taskXml({ name, description, launcher, workingDir, user, trigger = 'logon' }) {
-  if (trigger !== 'logon' && trigger !== 'startup') throw new Error(`Not a trigger: ${trigger}`);
-  const atStartup = trigger === 'startup';
-  const triggerXml = atStartup
-    ? `    <BootTrigger>
+export function taskXml({ name, description, launcher, workingDir, user, trigger = 'logon', at = DEFAULT_UPDATE_TIME, every = 'PT2M', args = '', password, timeLimit = 'PT0S', startWhenAvailable = true }) {
+  if (!['logon', 'startup', 'daily', 'every'].includes(trigger)) throw new Error(`Not a trigger: ${trigger}`);
+  if (!/^P(T?\d+[HMS])+$|^PT0S$/.test(timeLimit)) throw new Error(`Not a duration: ${timeLimit}`);
+  const stored = password ?? trigger === 'startup';
+  let triggerXml;
+  if (trigger === 'startup')
+    triggerXml = `    <BootTrigger>
       <Delay>PT30S</Delay>
-    </BootTrigger>`
-    : `    <LogonTrigger>
+    </BootTrigger>`;
+  else if (trigger === 'logon')
+    triggerXml = `    <LogonTrigger>
       <UserId>${xml(user)}</UserId>
     </LogonTrigger>`;
+  else if (trigger === 'daily') {
+    const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(at));
+    if (!m) throw new Error(`Not a time of day (HH:MM): ${at}`);
+    triggerXml = `    <CalendarTrigger>
+      <StartBoundary>2026-01-01T${m[1]}:${m[2]}:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>`;
+  } else {
+    if (!/^PT\d+[MH]$/.test(String(every))) throw new Error(`Not an interval: ${every}`);
+    triggerXml = `    <TimeTrigger>
+      <Repetition>
+        <Interval>${every}</Interval>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+      <StartBoundary>2026-01-01T00:00:00</StartBoundary>
+      <Enabled>true</Enabled>
+    </TimeTrigger>`;
+  }
   return `<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.3" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
@@ -480,16 +532,16 @@ export function taskXml({ name, description, launcher, workingDir, user, trigger
   <Principals>
     <Principal id="Author">
       <UserId>${xml(user)}</UserId>
-      <LogonType>${atStartup ? 'Password' : 'InteractiveToken'}</LogonType>
+      <LogonType>${stored ? 'Password' : 'InteractiveToken'}</LogonType>
       <RunLevel>LeastPrivilege</RunLevel>
     </Principal>
   </Principals>
   <Settings>
     <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
     <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <ExecutionTimeLimit>${timeLimit}</ExecutionTimeLimit>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <StartWhenAvailable>true</StartWhenAvailable>
+    <StartWhenAvailable>${startWhenAvailable ? 'true' : 'false'}</StartWhenAvailable>
     <Enabled>true</Enabled>
     <IdleSettings>
       <StopOnIdleEnd>false</StopOnIdleEnd>
@@ -503,7 +555,7 @@ ${triggerXml}
   <Actions Context="Author">
     <Exec>
       <Command>wscript.exe</Command>
-      <Arguments>"${xml(launcher)}"</Arguments>
+      <Arguments>"${xml(launcher)}"${args ? ` ${xml(args)}` : ''}</Arguments>
       <WorkingDirectory>${xml(workingDir)}</WorkingDirectory>
     </Exec>
   </Actions>
@@ -550,6 +602,82 @@ export function homeTasks(home, user, { atStartup = false, port = DEFAULT_PORT }
   ];
 }
 
+/**
+ * <home>\update-hidden.vbs: runs `node <home>\repo\blumodel-studio\scripts\host\update.mjs --home
+ * <home> <its own arguments>` with no window and waits for it, so the update tasks show nothing on
+ * screen and Task Scheduler's "Last Run Result" is the update's exit code. register-tasks writes it.
+ * @param {{ node: string }} o
+ */
+export function updateLauncherVbs({ node }) {
+  if (!node || /"/.test(node)) throw new Error('updateLauncherVbs needs the node.exe path (no quotes)');
+  return crlf(`' Runs the BluModel Studio update (repo\\blumodel-studio\\scripts\\host\\update.mjs) with no window
+' and waits for it. The ${UPDATE_TASK} task runs it with --auto at AUTO_UPDATE_TIME, and the
+' ${UPDATE_NOW_TASK} task every two minutes with --auto --trigger-only (nothing happens unless
+' Admin > System > Update now left logs\\update-now.request). Its log: logs\\update.log.
+' Generated by blumodel-studio/scripts/register-tasks.mjs (server/ops/home.mjs): edits are overwritten.
+Set fso = CreateObject("Scripting.FileSystemObject")
+dir = fso.GetParentFolderName(WScript.ScriptFullName)
+Set sh = CreateObject("WScript.Shell")
+sh.CurrentDirectory = dir
+args = ""
+For Each a In WScript.Arguments
+  args = args & " " & a
+Next
+code = sh.Run("""${node}"" --no-warnings """ & dir & "\\repo\\blumodel-studio\\scripts\\host\\update.mjs"" --home """ & dir & """" & args, 0, True)
+WScript.Quit code
+`);
+}
+
+/**
+ * The two update tasks of a Windows home: BluModelStudioUpdate daily at `time`, and
+ * BluModelStudioUpdateNow every two minutes, which does nothing unless Admin > System > Update now
+ * left its trigger file (so there is never more than one scheduled update a day). Both run
+ * update-hidden.vbs, with no window, one at a time, for at most two hours. With `password`
+ * (register-tasks --at-startup) they run whether or not anyone is signed in.
+ * @param {string} home
+ * @param {string} user
+ * @param {{ time?: string, password?: boolean }} [o]
+ */
+export function updateTasks(home, user, { time = DEFAULT_UPDATE_TIME, password = false } = {}) {
+  const L = homeLayout(home, 'win32');
+  const who = password ? 'whether or not anyone is signed in' : `while ${user} is signed in`;
+  return [
+    {
+      name: UPDATE_TASK,
+      launcher: L.updateLauncher,
+      xml: taskXml({
+        name: UPDATE_TASK,
+        user,
+        trigger: 'daily',
+        at: time,
+        password,
+        args: '--auto',
+        timeLimit: 'PT2H',
+        launcher: L.updateLauncher,
+        workingDir: L.home,
+        description: `Checks GitHub daily at ${time} for a new BluModel Studio release on its branch and, when there is one, deploys it (database backed up first, rolled back if unhealthy), ${who}. Log: ${L.logs}\\update.log. docs/HOSTING.md, "Automatic updates".`,
+      }),
+    },
+    {
+      name: UPDATE_NOW_TASK,
+      launcher: L.updateLauncher,
+      xml: taskXml({
+        name: UPDATE_NOW_TASK,
+        user,
+        trigger: 'every',
+        every: 'PT2M',
+        password,
+        args: '--auto --trigger-only',
+        timeLimit: 'PT2H',
+        startWhenAvailable: false,
+        launcher: L.updateLauncher,
+        workingDir: L.home,
+        description: `Applies Admin > System > Update now: every two minutes it looks for ${L.logs}\\update-now.request and does nothing at all without it, ${who}.`,
+      }),
+    },
+  ];
+}
+
 // ── Linux: systemd units ─────────────────────────────────────────────────────
 
 /** systemd unit values here are written unquoted, so they must be plain absolute paths. */
@@ -591,15 +719,19 @@ SystemCallArchitectures=native`;
  * readable by other accounts (UMask 0027; the log, the backups and an imported database are 600).
  * Stopping sends SIGTERM:
  * the server finishes open requests for up to 10 s, checkpoints the database and exits 0.
- * @param {{ home?: string, node?: string, user?: string, port?: number | string, host?: string }} [o]
+ * Memory: node --max-old-space-size=<heapMb> (DEFAULT_HEAP_MB), MemoryHigh heap + 256 MB and
+ * MemoryMax heap + 512 MB.
+ * @param {{ home?: string, node?: string, user?: string, port?: number | string, host?: string, heapMb?: number }} [o]
  */
-export function systemdServerUnit({ home = LINUX_HOME, node = '/usr/bin/node', user = SERVICE_USER, port = DEFAULT_PORT, host = DEFAULT_HOST } = {}) {
+export function systemdServerUnit({ home = LINUX_HOME, node = '/usr/bin/node', user = SERVICE_USER, port = DEFAULT_PORT, host = DEFAULT_HOST, heapMb = DEFAULT_HEAP_MB } = {}) {
   const L = homeLayout(unixPath(home, 'The home'), 'linux');
   unixPath(node, 'The node path');
   unixName(user, 'user name');
   const P = String(port);
   if (!/^\d{1,5}$/.test(P) || Number(P) < 1 || Number(P) > 65535) throw new Error(`Not a port: ${P}`);
   if (!/^[\w.:[\]-]+$/.test(host)) throw new Error(`Not a host: ${host}`);
+  const heap = Number(heapMb);
+  if (!Number.isInteger(heap) || heap < 128 || heap > 8192) throw new Error(`The heap must be 128-8192 MB (got ${heapMb})`);
   return `# BluModel Studio: the web server on http://${host}:${P} (public at ${PUBLIC_URL} through ${TUNNEL_UNIT}).
 # Generated by blumodel-studio/scripts/register-tasks.mjs (server/ops/home.mjs): edits are overwritten.
 # docs/HOSTING.md. Its log: ${L.serverLog} (rotated by the server); starts, stops and crashes:
@@ -621,7 +753,11 @@ Environment=HOST=${host}
 Environment=DB_PATH=${L.db}
 Environment=BLUMODEL_ENV_FILE=${L.settings}
 Environment=BLUMODEL_LOG_FILE=${L.serverLog}
-ExecStart=${node} --no-warnings ${L.serverEntry} --prod
+# A small machine (a 4 GB Wyse): V8's heap is capped, and the whole service (heap, SQLite, buffers)
+# is throttled above MemoryHigh and killed and restarted above MemoryMax rather than taking the box.
+ExecStart=${node} --max-old-space-size=${heap} --no-warnings ${L.serverEntry} --prod
+MemoryHigh=${heap + 256}M
+MemoryMax=${heap + 512}M
 KillSignal=SIGTERM
 TimeoutStopSec=30
 Restart=always
@@ -679,26 +815,104 @@ WantedBy=multi-user.target
 }
 
 /**
- * Both units by file name.
- * @param {{ home?: string, node?: string, cloudflared?: string, user?: string, port?: number | string, host?: string }} [o]
+ * The automatic update on Linux, three units (docs/HOSTING.md, "Automatic updates"):
+ *   blumodel-update.service  oneshot: node <home>/repo/blumodel-studio/scripts/host/update.mjs --auto,
+ *                            as root (the deploy restarts blumodel-studio.service; update.mjs runs git
+ *                            as the checkout's owner through runuser), at low CPU and I/O priority
+ *   blumodel-update.timer    starts it daily at `time` (local) with up to 10 minutes of random delay;
+ *                            Persistent, so a run missed while the machine was off happens at boot
+ *   blumodel-update.path     starts it when <home>/logs/update-now.request appears (Admin > System >
+ *                            Update now): inotify, so it costs nothing while idle. The run deletes
+ *                            the file.
+ * Never more than one scheduled run a day; the path unit only acts on the trigger file.
+ * @param {{ home?: string, node?: string, time?: string }} [o]
+ */
+export function systemdUpdateUnits({ home = LINUX_HOME, node = '/usr/bin/node', time = DEFAULT_UPDATE_TIME } = {}) {
+  const L = homeLayout(unixPath(home, 'The home'), 'linux');
+  unixPath(node, 'The node path');
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(time));
+  if (!m) throw new Error(`Not a time of day (HH:MM, 24 hour): ${JSON.stringify(time)}`);
+  const service = `# BluModel Studio: one automatic update (scripts/host/update.mjs --auto). Started by ${UPDATE_TIMER}
+# (daily at ${time}) and by ${UPDATE_PATH_UNIT} (Admin > System > Update now); nothing else.
+# Generated by blumodel-studio/scripts/register-tasks.mjs (server/ops/home.mjs): edits are overwritten.
+# docs/HOSTING.md, "Automatic updates". Its log: journalctl -u ${UPDATE_UNIT}, and ${L.logs}/update.log
+[Unit]
+Description=BluModel Studio automatic update (fetch, and deploy a new release)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Root: the deploy stops and starts ${SERVER_UNIT}. update.mjs runs git as the checkout's owner.
+ExecStart=${node} --no-warnings ${L.updateScript} --auto --home ${L.home}
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+SyslogIdentifier=blumodel-update
+TimeoutStartSec=2h
+Nice=10
+IOSchedulingClass=idle
+UMask=0022
+`;
+  const timer = `# BluModel Studio: check GitHub for a new release once a day, at ${time} local time (the quietest
+# hour), up to 10 minutes late. A run missed while the machine was off happens when it is next on.
+# Generated by blumodel-studio/scripts/register-tasks.mjs: run it again with --auto-update-time HH:MM
+# to change the time, or --no-auto-update to turn this off.
+[Unit]
+Description=BluModel Studio daily update check (${time})
+
+[Timer]
+OnCalendar=*-*-* ${m[1]}:${m[2]}:00
+Persistent=true
+RandomizedDelaySec=10min
+AccuracySec=1min
+Unit=${UPDATE_UNIT}
+
+[Install]
+WantedBy=timers.target
+`;
+  const watcher = `# BluModel Studio: Admin > System > Update now. The server writes ${L.updateTrigger}; this
+# starts ${UPDATE_UNIT} when it appears (inotify: no polling, nothing runs while idle) and the
+# update deletes it. Generated by blumodel-studio/scripts/register-tasks.mjs.
+[Unit]
+Description=BluModel Studio Update now watcher
+
+[Path]
+PathExists=${L.updateTrigger}
+Unit=${UPDATE_UNIT}
+
+[Install]
+WantedBy=paths.target
+`;
+  return { [UPDATE_UNIT]: service, [UPDATE_TIMER]: timer, [UPDATE_PATH_UNIT]: watcher };
+}
+
+/**
+ * Every unit by file name: the server, the tunnel and the three update units.
+ * @param {{ home?: string, node?: string, cloudflared?: string, user?: string, port?: number | string, host?: string, heapMb?: number, time?: string }} [o]
  */
 export function systemdUnits(o = {}) {
-  return { [SERVER_UNIT]: systemdServerUnit(o), [TUNNEL_UNIT]: systemdTunnelUnit(o) };
+  return { [SERVER_UNIT]: systemdServerUnit(o), [TUNNEL_UNIT]: systemdTunnelUnit(o), ...systemdUpdateUnits(o) };
 }
+
+const UPDATE_UNITS = [UPDATE_UNIT, UPDATE_TIMER, UPDATE_PATH_UNIT];
 
 /**
  * What register-tasks does on Linux: the unit files it writes (mode 644) and the systemctl
  * commands after. The server unit is enabled (it starts at boot; the next deploy starts it now).
  * The tunnel unit is enabled only with `enableTunnel` (the cutover); it is never started here.
- * @param {{ units: Record<string, string>, only?: 'server' | 'tunnel', enableTunnel?: boolean, dir?: string }} o
+ * The update's timer and path watcher are enabled and started (a schedule and an inotify watch:
+ * neither starts the server or an update by itself), or with `autoUpdate: false` disabled and
+ * stopped; the update service itself is never enabled (only they start it).
+ * @param {{ units: Record<string, string>, only?: 'server' | 'tunnel' | 'update', enableTunnel?: boolean, autoUpdate?: boolean, dir?: string }} o
  * @returns {{ writes: { file: string, text: string }[], commands: string[][] }}
  */
-export function systemdInstallPlan({ units, only, enableTunnel = false, dir = SYSTEMD_DIR }) {
-  const names = Object.keys(units).filter((n) => !only || (only === 'server' ? n === SERVER_UNIT : n === TUNNEL_UNIT));
+export function systemdInstallPlan({ units, only, enableTunnel = false, autoUpdate = true, dir = SYSTEMD_DIR }) {
+  const pick = { server: (n) => n === SERVER_UNIT, tunnel: (n) => n === TUNNEL_UNIT, update: (n) => UPDATE_UNITS.includes(n) };
+  const names = Object.keys(units).filter((n) => !only || pick[only]?.(n));
   const writes = names.map((n) => ({ file: path.posix.join(dir, n), text: units[n] }));
   const commands = [['systemctl', 'daemon-reload']];
   if (names.includes(SERVER_UNIT)) commands.push(['systemctl', 'enable', SERVER_UNIT]);
   if (names.includes(TUNNEL_UNIT) && enableTunnel) commands.push(['systemctl', 'enable', TUNNEL_UNIT]);
+  if (names.includes(UPDATE_TIMER)) commands.push(autoUpdate ? ['systemctl', 'enable', '--now', UPDATE_TIMER, UPDATE_PATH_UNIT] : ['systemctl', 'disable', '--now', UPDATE_TIMER, UPDATE_PATH_UNIT]);
   return { writes, commands };
 }
 

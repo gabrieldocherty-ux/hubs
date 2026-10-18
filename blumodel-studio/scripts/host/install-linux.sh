@@ -5,9 +5,10 @@
 #
 #   sudo bash install-linux.sh [--dry-run] [--home /srv/blumodel-studio] [--branch blumodel-studio]
 #                              [--repo https://github.com/gabrieldocherty-ux/hubs.git] [--port 8790]
+#                              [--auto-update-time 04:00] [--no-auto-update] [--heap-mb 384] [--build]
 #
 # What it does, in order:
-#   1. checks the machine: root, Ubuntu or Debian with systemd, the CPU, RAM + swap for the build
+#   1. checks the machine: root, Ubuntu or Debian with systemd, the CPU, the RAM, the disk
 #   2. apt: ca-certificates curl gnupg git; Node.js 24 from NodeSource's apt repository (unless
 #      node 24 or newer is there); cloudflared from Cloudflare's apt repository (unless it is there)
 #   3. the 'blumodel' system account (no login shell, home = the BluModel home) and the home:
@@ -15,10 +16,15 @@
 #      log and database files are mode 600 (blumodel's only): an admin reads them with sudo
 #   4. the code: a sparse, partial clone of just blumodel-studio/ on the branch into <home>/repo,
 #      or a fast-forward of the one already there (both as blumodel)
-#   5. npm ci and the build (scripts/host/build.mjs, which refuses with the fix when RAM + swap is
-#      too small for it), as blumodel
-#   6. the systemd units (scripts/register-tasks.mjs): blumodel-studio.service enabled,
-#      blumodel-tunnel.service installed but NOT enabled (enabling it is the cutover)
+#   5. nothing is built: the branch carries the release prebuilt (dist/ and server/generated/, made
+#      by npm run release on a developer's machine), so there is no npm ci, no vite and no
+#      devDependencies here. --build (an emergency only) runs npm ci and scripts/host/build.mjs into
+#      .build/local as blumodel instead, which needs about 2 GB of RAM + swap
+#   6. the systemd units (scripts/register-tasks.mjs): blumodel-studio.service enabled (node's heap
+#      capped at --heap-mb, 384 MB by default, with MemoryHigh/MemoryMax above it),
+#      blumodel-tunnel.service installed but NOT enabled (enabling it is the cutover), and the
+#      automatic update: blumodel-update.timer daily at --auto-update-time (04:00) and
+#      blumodel-update.path for Admin > System > Update now, both enabled unless --no-auto-update
 #   7. the deploy (scripts/deploy-local.mjs): backs up an existing database first, puts the app in
 #      <home>/app (keeping the old one as app.previous), writes the settings template only if there
 #      is no blumodel.env, starts the server and checks http://127.0.0.1:<port>/api/health
@@ -45,10 +51,17 @@ UNIT_FILE="${BLUMODEL_SERVER_UNIT_FILE:-/etc/systemd/system/blumodel-studio.serv
 SVC_USER=blumodel
 NODE_MAJOR=24
 DRY_RUN=0
+BUILD=0
+AUTO_UPDATE=1
+# Empty: what this home already has (auto-update.conf), else AUTO_UPDATE_TIME, else 04:00 (register-tasks decides).
+UPDATE_TIME="${AUTO_UPDATE_TIME:-}"
+# Empty: what this home's unit already has, else 384 (register-tasks decides).
+HEAP_MB=
 ARGS="$*"
 
 usage() {
   echo "Usage: sudo bash install-linux.sh [--dry-run] [--home /srv/blumodel-studio] [--branch blumodel-studio] [--repo <git url>] [--port 8790]"
+  echo "                                  [--auto-update-time HH:MM] [--no-auto-update] [--heap-mb 384] [--build]"
 }
 
 while [ $# -gt 0 ]; do
@@ -58,6 +71,10 @@ while [ $# -gt 0 ]; do
     --branch) BRANCH="${2:?--branch needs a branch name}"; shift ;;
     --repo) REPO="${2:?--repo needs a git URL}"; shift ;;
     --port) PORT="${2:?--port needs a number}"; shift ;;
+    --auto-update-time) UPDATE_TIME="${2:?--auto-update-time needs HH:MM}"; shift ;;
+    --no-auto-update) AUTO_UPDATE=0 ;;
+    --heap-mb) HEAP_MB="${2:?--heap-mb needs a number of MB}"; shift ;;
+    --build) BUILD=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -131,6 +148,8 @@ if [ -z "$PORT" ]; then
 fi
 [[ "$PORT" =~ ^[0-9]{1,5}$ ]] || die "--port must be a number (got $PORT)."
 [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || die "Not a branch name: $BRANCH"
+if [ -n "$UPDATE_TIME" ] && ! [[ "$UPDATE_TIME" =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then die "--auto-update-time takes HH:MM, 24 hour (got $UPDATE_TIME)."; fi
+if [ -n "$HEAP_MB" ] && ! [[ "$HEAP_MB" =~ ^[0-9]{3,4}$ ]]; then die "--heap-mb takes a number of MB, 128-8192 (got $HEAP_MB)."; fi
 REPO_DIR="$HOME_DIR/repo"
 APP_SRC="$REPO_DIR/blumodel-studio"
 
@@ -170,9 +189,9 @@ if [ -r /proc/meminfo ]; then
   MEM_KB="$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)"
   SWAP_KB="$(awk '/^SwapTotal:/ {print $2}' /proc/meminfo)"
   TOTAL_MB=$(( (${MEM_KB:-0} + ${SWAP_KB:-0}) / 1024 ))
-  note "RAM + swap: ${TOTAL_MB} MB"
-  if [ "$TOTAL_MB" -lt 2048 ]; then
-    echo "    The build needs about 2048 MB of RAM + swap. Add a 2 GB swap file, then run this again:"
+  note "RAM + swap: ${TOTAL_MB} MB (the server needs about 150 MB; nothing is built here)"
+  if [ "$BUILD" = 1 ] && [ "$TOTAL_MB" -lt 2048 ]; then
+    echo "    --build needs about 2048 MB of RAM + swap. Add a 2 GB swap file, then run this again:"
     echo "      sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile"
     echo "      echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab"
     [ "$DRY_RUN" = 1 ] || exit 1
@@ -262,20 +281,34 @@ fi
 if [ "$DRY_RUN" = 1 ]; then COMMIT="<commit>"; else COMMIT="$(svc_q git -C "$REPO_DIR" rev-parse --short HEAD)"; fi
 note "commit $COMMIT"
 
-# -- 5. dependencies and the build -------------------------------------------
-say "Dependencies (npm ci) and the build"
-as_svc_in "$APP_SRC" npm ci --no-audit --no-fund
-as_svc_in "$APP_SRC" node scripts/host/build.mjs --out dist
+# -- 5. the build: prebuilt (or, --build, made here) ----------------------------
+if [ "$BUILD" = 1 ]; then
+  say "Emergency build on this machine (--build): npm ci and the build into .build/local"
+  as_svc_in "$APP_SRC" npm ci --no-audit --no-fund
+  as_svc_in "$APP_SRC" node scripts/host/build.mjs --out .build/local
+  DIST="$APP_SRC/.build/local"
+else
+  say "The prebuilt release (nothing is installed or built on this machine)"
+  DIST="$APP_SRC/dist"
+  if [ "$DRY_RUN" = 0 ] && { [ ! -f "$DIST/index.html" ] || [ ! -f "$APP_SRC/server/generated/export-kit.mjs" ]; }; then
+    die "Branch $BRANCH has no prebuilt release (no $DIST/index.html or server/generated/export-kit.mjs). Publish one with npm run release on a developer's machine, or build here anyway with --build (about 2 GB of RAM + swap)."
+  fi
+  note "deploying $DIST, built by npm run release"
+fi
 
 # -- 6. the systemd units ----------------------------------------------------
 say "The systemd units"
 NODE_BIN="$(command -v node || echo /usr/bin/node)"
 CF_BIN="$(command -v cloudflared || echo /usr/bin/cloudflared)"
-run node "$APP_SRC/scripts/register-tasks.mjs" --home "$HOME_DIR" --user "$SVC_USER" --port "$PORT" --node "$NODE_BIN" --cloudflared "$CF_BIN"
+TASK_OPTS=()
+if [ -n "$UPDATE_TIME" ]; then TASK_OPTS+=(--auto-update-time "$UPDATE_TIME"); fi
+if [ "$AUTO_UPDATE" = 0 ]; then TASK_OPTS+=(--no-auto-update); fi
+if [ -n "$HEAP_MB" ]; then TASK_OPTS+=(--heap-mb "$HEAP_MB"); fi
+run node "$APP_SRC/scripts/register-tasks.mjs" --home "$HOME_DIR" --user "$SVC_USER" --port "$PORT" --node "$NODE_BIN" --cloudflared "$CF_BIN" "${TASK_OPTS[@]}"
 
 # -- 7. the deploy -----------------------------------------------------------
 say "The deploy (backs up an existing database first, starts the server, checks its health)"
-if ! run env BLUMODEL_HOME="$HOME_DIR" BLUMODEL_PORT="$PORT" node "$APP_SRC/scripts/deploy-local.mjs" --dist "$APP_SRC/dist" --commit "$COMMIT"; then
+if ! run env BLUMODEL_HOME="$HOME_DIR" BLUMODEL_PORT="$PORT" node "$APP_SRC/scripts/deploy-local.mjs" --dist "$DIST" --commit "$COMMIT"; then
   die "The deploy did not finish healthy. Look at: journalctl -u blumodel-studio -n 50, and $HOME_DIR/logs/server.log. If an older app was there: sudo node $APP_SRC/scripts/deploy-local.mjs --rollback"
 fi
 
@@ -287,6 +320,7 @@ fi
 
 # -- 9. what is left ---------------------------------------------------------
 TUNNEL_ID="064671cd-a658-4240-8626-c697b9f148ac"
+if [ "$AUTO_UPDATE" = 0 ]; then UPDATE_SHOWN="automatic updates are OFF (--no-auto-update), and so is Admin > System > Update now"; else UPDATE_SHOWN="automatic, daily at ${UPDATE_TIME:-04:00}, and Admin > System > Update now applies a release at once"; fi
 say "Installed. What is left (docs/HOSTING.md has each step):"
 cat <<EOF
   The site runs on this machine at http://127.0.0.1:$PORT (curl -s http://127.0.0.1:$PORT/api/health).
@@ -303,7 +337,8 @@ cat <<EOF
   5. Showrooms (once, in Cloudflare): the wildcard DNS record *.blumodel.studio for the tunnel, and
      the demo showroom: sudo -u $SVC_USER node $HOME_DIR/app/server/scripts/seed-demo-tenant.mjs
      (docs/ONBOARDING_A_COMPANY.md, "Once: Cloudflare")
-  Updates later: sudo bash $APP_SRC/scripts/host/update-linux.sh
+  Updates: $UPDATE_SHOWN.
+    By hand: sudo bash $APP_SRC/scripts/host/update-linux.sh   Log: journalctl -u blumodel-update; $HOME_DIR/logs/update.log
   Logs: sudo tail -f $HOME_DIR/logs/server.log   sudo journalctl -u blumodel-studio -u blumodel-tunnel -f
 EOF
 if [ "$DRY_RUN" = 1 ]; then echo; echo "Dry run: nothing was installed, written, started or changed."; fi

@@ -5,14 +5,16 @@
 
     powershell -NoProfile -ExecutionPolicy Bypass -File install-windows.ps1 [-DryRun]
         [-HomeDir <folder>] [-Branch blumodel-studio] [-Repo https://github.com/gabrieldocherty-ux/hubs.git]
-        [-Port 8790] [-SkipTasks]
+        [-Port 8790] [-SkipTasks] [-AutoUpdateTime 04:00] [-NoAutoUpdate] [-Build]
 
   What it does, in order:
     1. checks for Node.js 24 or newer, git and cloudflared. If one is missing it prints the winget
        command that installs it and stops: it never installs software itself.
     2. the code: a sparse, partial clone of just blumodel-studio\ on the branch into <home>\repo,
        or a fast-forward of the one already there
-    3. npm ci and the build (scripts\host\build.mjs, with its memory guard)
+    3. nothing is built: the branch carries the release prebuilt (dist\ and server\generated\, made
+       by npm run release on a developer's machine). -Build (an emergency only) runs npm ci and
+       scripts\host\build.mjs into .build\local instead.
     4. the deploy (scripts\deploy-local.mjs): backs up an existing database first, keeps the old app
        as app.previous, writes the settings template only if there is no blumodel.env, starts the
        server and checks http://127.0.0.1:<port>/api/health
@@ -23,6 +25,10 @@
        password, and this step needs PowerShell run as administrator; without that it prints the
        command to run there. -SkipTasks leaves the tasks alone. The BluModelTunnel task is
        registered at the cutover.
+    7. the automatic update (register-tasks.mjs --at-startup --only update): BluModelStudioUpdate
+       daily at -AutoUpdateTime (04:00), and BluModelStudioUpdateNow, which every two minutes looks
+       for Admin > System > Update now's trigger file and otherwise does nothing. schtasks asks for
+       the password once for each. -NoAutoUpdate registers neither (and disables them if they exist).
   It never opens blumodel.env or the tunnel's credentials and never copies anything from another
   machine. -DryRun prints every command (the lines starting with +) and runs none of them.
 #>
@@ -33,7 +39,10 @@ param(
   [string]$Branch = 'blumodel-studio',
   [string]$Repo = 'https://github.com/gabrieldocherty-ux/hubs.git',
   [int]$Port = 8790,
-  [switch]$SkipTasks
+  [switch]$SkipTasks,
+  [string]$AutoUpdateTime = '',
+  [switch]$NoAutoUpdate,
+  [switch]$Build
 )
 $ErrorActionPreference = 'Stop'
 $NodeMajor = 24
@@ -64,6 +73,7 @@ function Must([string]$what, [string]$exe, [string[]]$argList, [string]$cwd) {
 
 if ($HomeDir -notmatch '^[A-Za-z]:\\' -and $HomeDir -notmatch '^\\\\') { throw "-HomeDir must be a full path (got $HomeDir)." }
 if ($Branch -notmatch '^[A-Za-z0-9._/-]+$') { throw "Not a branch name: $Branch" }
+if ($AutoUpdateTime -and $AutoUpdateTime -notmatch '^([01][0-9]|2[0-3]):[0-5][0-9]$') { throw "-AutoUpdateTime takes HH:MM, 24 hour (got $AutoUpdateTime)." }
 $HomeDir = $HomeDir.TrimEnd('\')
 $RepoDir = Join-Path $HomeDir 'repo'
 $AppSrc = Join-Path $RepoDir 'blumodel-studio'
@@ -128,16 +138,26 @@ $commit = '<commit>'
 if (-not $DryRun) { $commit = ((& git -C $RepoDir rev-parse --short HEAD) | Select-Object -First 1).Trim() }
 Note "commit $commit"
 
-# 3. dependencies and the build
-Say 'Dependencies (npm ci) and the build'
-Must 'npm ci' 'npm.cmd' @('ci', '--no-audit', '--no-fund') $AppSrc
-Must 'The build' node @('scripts\host\build.mjs', '--out', 'dist') $AppSrc
+# 3. the build: prebuilt (or, -Build, made here)
+$Dist = Join-Path $AppSrc 'dist'
+if ($Build) {
+  Say 'Emergency build on this machine (-Build): npm ci and the build into .build\local'
+  Must 'npm ci' 'npm.cmd' @('ci', '--no-audit', '--no-fund') $AppSrc
+  Must 'The build' node @('scripts\host\build.mjs', '--out', '.build\local') $AppSrc
+  $Dist = Join-Path $AppSrc '.build\local'
+} else {
+  Say 'The prebuilt release (nothing is installed or built on this machine)'
+  if (-not $DryRun -and (-not (Test-Path -LiteralPath (Join-Path $Dist 'index.html')) -or -not (Test-Path -LiteralPath (Join-Path $AppSrc 'server\generated\export-kit.mjs')))) {
+    throw "Branch $Branch has no prebuilt release (no $Dist\index.html or server\generated\export-kit.mjs). Publish one with npm run release on a developer's machine, or build here anyway with -Build."
+  }
+  Note "deploying $Dist, built by npm run release"
+}
 
 # 4. the deploy
 Say 'The deploy (backs up an existing database first, starts the server, checks its health)'
 Write-Host "+ `$env:BLUMODEL_HOME = $(Quote $HomeDir); `$env:BLUMODEL_PORT = $Port"
 if (-not $DryRun) { $env:BLUMODEL_HOME = $HomeDir; $env:BLUMODEL_PORT = "$Port" }
-$code = Run node @('scripts\deploy-local.mjs', '--dist', (Join-Path $AppSrc 'dist'), '--commit', $commit) $AppSrc
+$code = Run node @('scripts\deploy-local.mjs', '--dist', $Dist, '--commit', $commit) $AppSrc
 if ($code -ne 0) {
   throw "The deploy did not finish healthy (exit $code). Look at $HomeDir\logs\server.log and $HomeDir\logs\console.log. If an older app was there: node scripts\deploy-local.mjs --rollback"
 }
@@ -169,7 +189,20 @@ if ($SkipTasks) {
   }
 }
 
-# 7. what is left
+# 7. automatic updates
+Say 'Automatic updates'
+$updArgs = @('scripts\register-tasks.mjs', '--home', $HomeDir, '--at-startup', '--only', 'update')
+if ($NoAutoUpdate) { $updArgs += '--no-auto-update' } elseif ($AutoUpdateTime) { $updArgs += @('--auto-update-time', $AutoUpdateTime) }
+if ($SkipTasks) {
+  Note "Skipped (-SkipTasks). Later, from PowerShell run as administrator: node `"$AppSrc\scripts\register-tasks.mjs`" $(($updArgs | Select-Object -Skip 1) -join ' ')"
+} elseif (-not $isAdmin -and -not $DryRun) {
+  Note 'This PowerShell is not elevated, so the update tasks were not registered. From PowerShell run as administrator:'
+  Note "  node `"$AppSrc\scripts\register-tasks.mjs`" $(($updArgs | Select-Object -Skip 1) -join ' ')"
+} elseif ((Run node $updArgs $AppSrc) -ne 0) {
+  Note 'The update tasks were not registered; run the command above again from PowerShell run as administrator.'
+}
+
+# 8. what is left
 $tunnelId = '064671cd-a658-4240-8626-c697b9f148ac'
 Say 'Installed. What is left (docs/HOSTING.md has each step):'
 Write-Host "  The site runs on this machine at http://127.0.0.1:$Port (open http://127.0.0.1:$Port/api/health)."
@@ -187,5 +220,7 @@ Write-Host '       schtasks /Run /TN BluModelTunnel'
 Write-Host '  5. Showrooms (once, in Cloudflare): the wildcard DNS record *.blumodel.studio for the tunnel, and the demo showroom:'
 Write-Host "       cd `"$HomeDir\app`"; node server\scripts\seed-demo-tenant.mjs   (docs/ONBOARDING_A_COMPANY.md, `"Once: Cloudflare`")"
 Write-Host '  Power: never sleep on mains power: powercfg /change standby-timeout-ac 0'
-Write-Host "  Updates later: node `"$AppSrc\scripts\host\update.mjs`""
+if ($NoAutoUpdate) { Write-Host '  Updates: automatic updates are OFF (-NoAutoUpdate), and so is Admin > System > Update now.' }
+else { Write-Host "  Updates: automatic, daily at $(if ($AutoUpdateTime) { $AutoUpdateTime } else { '04:00' }), and Admin > System > Update now applies a release at once." }
+Write-Host "    By hand: node `"$AppSrc\scripts\host\update.mjs`"   Log: $HomeDir\logs\update.log"
 if ($DryRun) { Write-Host ''; Write-Host 'Dry run: nothing was installed, written, started or changed.' }
