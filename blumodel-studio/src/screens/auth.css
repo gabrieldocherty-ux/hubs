@@ -58,3 +58,14 @@
 .auth-form > .btn.primary + .auth-switch {
   margin-top: 18px;
 }
+
+/* A finger needs 44px: the text buttons under the sign-in forms (Lost your phone?, Start again)
+   keep their look but get a full-height tap area on touch screens. */
+@media (pointer: coarse) {
+  .auth-linkbtn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 4px;
+  }
+}

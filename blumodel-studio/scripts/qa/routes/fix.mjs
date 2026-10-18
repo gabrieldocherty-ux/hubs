@@ -174,7 +174,8 @@ export default [
   // ── Add products filters at desktop width ────────────────────────────────
   {
     name: 'fix-catalog-filters-desktop',
-    as: 'customer',
+    // The store filter needs the retail library: BluModel staff only since 9808dba.
+    as: 'studio',
     viewport: DESKTOP,
     setup: async ({ me }) => atStoreKitchen(me),
     waitFor: ['.plan-view canvas', '.left-panel .catalog-filters button[aria-pressed]', '#catalog-store'],
