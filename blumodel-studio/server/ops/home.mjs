@@ -334,6 +334,12 @@ EMAIL_FROM=
 ARCHITECT_AI_URL=
 ARCHITECT_AI_KEY=
 RENDER_CREDIT_CENTS=
+
+# Optional: a prospect trial made with Admin > Companies > Quick setup is live for TRIAL_DAYS
+# (14 when empty), then shows "temporarily unavailable" until it is converted; nothing is deleted.
+# TRIAL_CREDIT_CENTS is the render credits it gets once (0 when empty). A trial never charges.
+TRIAL_DAYS=
+TRIAL_CREDIT_CENTS=
 `;
   return eol(t, platform);
 }

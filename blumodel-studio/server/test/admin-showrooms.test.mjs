@@ -91,7 +91,7 @@ test('overview: companies by status, MRR from monthly plans, licenses booked thi
     r = await admin.get('/api/admin/showrooms/overview');
     assert.equal(r.status, 200, r.text);
     const o = r.body;
-    assert.deepEqual(o.companies, { setup: 1, live: 3, lapsed: 1, suspended: 1, total: 6, demo: 1 });
+    assert.deepEqual(o.companies, { setup: 1, trial: 0, live: 3, lapsed: 1, suspended: 1, total: 6, demo: 1 });
     assert.equal(o.monthly.stripe.count, 2);
     assert.deepEqual(o.monthly.stripe.byCurrency, { cad: 10000 });
     assert.equal(o.monthly.pastDue, 1);

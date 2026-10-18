@@ -66,7 +66,7 @@ export function createSiteResolver({ tenants, config }) {
   const sales = (hostname) => ({ kind: 'sales', hostname, tenant: null, tenantId: null, available: true });
   const unknown = (hostname) => ({ kind: 'unknown', hostname, tenant: null, tenantId: null, available: false });
   const showroom = (hostname, t) => {
-    const fresh = t.status === 'live' || t.status === 'lapsed' ? (tenants.refresh(t.id) ?? t) : t;
+    const fresh = t.status === 'live' || t.status === 'lapsed' || t.status === 'trial' ? (tenants.refresh(t.id) ?? t) : t;
     return { kind: 'showroom', hostname, tenant: fresh, tenantId: fresh.id, available: tenants.isAvailable(fresh) };
   };
 

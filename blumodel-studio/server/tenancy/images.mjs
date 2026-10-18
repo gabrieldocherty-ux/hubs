@@ -146,6 +146,10 @@ export function publicImages(images, files) {
  * The generator's tickets: an admin opens a showroom's generator page from Admin > Companies
  * without being on its team. A ticket is 32 random bytes, kept hashed in memory for two hours,
  * good for one showroom and only for uploading renders. A restart forgets them (make another).
+ *
+ * Each ticket is also a run the admin's page can follow (Quick setup waits for the pictures): a
+ * `run` id that is not secret and grants nothing, the pictures uploaded with the ticket so far, and
+ * what the generator said when it finished.
  */
 export function createImageTickets({ now = Date.now } = {}) {
   const tickets = new Map();
@@ -154,20 +158,53 @@ export function createImageTickets({ now = Date.now } = {}) {
     const t = now();
     for (const [k, v] of tickets) if (v.expiresAt <= t) tickets.delete(k);
   };
+  const entry = (ticket) => {
+    if (typeof ticket !== 'string' || ticket.length < 20 || ticket.length > 100) return null;
+    const v = tickets.get(hash(ticket));
+    return v && v.expiresAt > now() ? v : null;
+  };
   return {
     issue(tenantId) {
       sweep();
       const ticket = crypto.randomBytes(32).toString('base64url');
       const expiresAt = now() + TICKET_TTL_MS;
-      tickets.set(hash(ticket), { tenantId, expiresAt });
-      return { ticket, expiresAt };
+      const run = `ir_${crypto.randomBytes(12).toString('base64url')}`;
+      tickets.set(hash(ticket), { tenantId, expiresAt, run, uploads: 0, started: false, done: null });
+      return { ticket, expiresAt, run };
     },
     /** The tenant a ticket is good for, or null. */
     tenantOf(ticket) {
-      if (typeof ticket !== 'string' || ticket.length < 20 || ticket.length > 100) return null;
-      const v = tickets.get(hash(ticket));
-      if (!v || v.expiresAt <= now()) return null;
-      return v.tenantId;
+      return entry(ticket)?.tenantId ?? null;
+    },
+    /** The generator opened with this ticket (GET /api/showroom-images/access). */
+    noteOpened(ticket) {
+      const v = entry(ticket);
+      if (v) v.started = true;
+    },
+    /** A picture went up with this ticket. */
+    noteUpload(ticket) {
+      const v = entry(ticket);
+      if (v) v.uploads++;
+    },
+    /** The generator finished: how many pictures it made and how many scenes failed. */
+    finish(ticket, { made, failed }) {
+      const v = entry(ticket);
+      if (!v) return false;
+      const n = (x) => (Number.isInteger(x) && x >= 0 && x <= 1000 ? x : 0);
+      v.done = { made: n(made), failed: n(failed), at: now() };
+      return true;
+    },
+    /**
+     * A run's progress for the admin who started it, by tenant and run id:
+     * { state: 'waiting' | 'running' | 'done', uploads, made, failed, finishedAt, expiresAt } or null.
+     */
+    runStatus(tenantId, run) {
+      for (const v of tickets.values()) {
+        if (v.run !== run || v.tenantId !== tenantId || v.expiresAt <= now()) continue;
+        const state = v.done ? 'done' : v.started || v.uploads ? 'running' : 'waiting';
+        return { state, uploads: v.uploads, made: v.done?.made ?? v.uploads, failed: v.done?.failed ?? 0, finishedAt: v.done?.at ?? null, expiresAt: v.expiresAt };
+      }
+      return null;
     },
   };
 }

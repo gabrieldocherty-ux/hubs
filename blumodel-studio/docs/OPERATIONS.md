@@ -161,6 +161,7 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional, legacy | the retired *Start from a photo* read photos with Claude when both were set |
 | `ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY` | optional: the render service's address and key | "Make it photoreal" on the showrooms. Without both, the button says renders are being set up and nothing is charged |
 | `RENDER_CREDIT_CENTS` | empty (= 25) | the credits one render costs a company, in cents |
+| `TRIAL_DAYS`, `TRIAL_CREDIT_CENTS` | empty (= 14, 0) | how long a prospect trial made with Admin > Companies > Quick setup stays live, and the render credits (cents) it gets once; a trial never charges anything |
 | `RESEND_API_KEY` **or** `POSTMARK_TOKEN` | optional: a Resend API key (`re_…`) or a Postmark server API token | emails password-reset links and account notices (see *Password resets*). Set one; with both, Resend is used |
 | `EMAIL_FROM` | `"BluModel Studio <hello@blumodel.studio>"` (quoted, since it has spaces) | the sender; the provider must have verified that address or domain. Without it no email is sent even with a key |
 

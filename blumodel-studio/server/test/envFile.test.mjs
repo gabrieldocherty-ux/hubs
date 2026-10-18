@@ -96,6 +96,8 @@ test('loadEnvFile: only the settings keys are applied; other keys are ignored an
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET',
       'SUPPORT_EMAIL',
+      'TRIAL_CREDIT_CENTS',
+      'TRIAL_DAYS',
       'TRUST_PROXY',
     ]);
   } finally {

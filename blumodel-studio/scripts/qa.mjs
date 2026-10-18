@@ -499,6 +499,8 @@ function serverEnv(extra) {
     'RENDER_PROVIDER',
     'DEMO_RENDERS',
     'RENDER_CREDIT_CENTS',
+    'TRIAL_DAYS',
+    'TRIAL_CREDIT_CENTS',
   ])
     delete env[k];
   return { ...env, ...extra };

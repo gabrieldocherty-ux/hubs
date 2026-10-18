@@ -112,6 +112,11 @@ export function loadConfig(env = process.env, argv = process.argv) {
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(BASE_DOMAIN)) throw new Error(`BASE_DOMAIN must be a domain name like blumodel.studio (got "${BASE_DOMAIN}").`);
   // Credits one AI render costs (docs/SHOWROOM_PIVOT.md §7), in cents. 25 until Gabe sets it.
   const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 25, 1, 100_000);
+  // A prospect trial (Admin > Companies > Quick setup): live for TRIAL_DAYS, then it lapses to the
+  // "temporarily unavailable" page and keeps every row. It never charges anything; TRIAL_CREDIT_CENTS
+  // of render credits are given once when it starts (0: none).
+  const TRIAL_DAYS = int(env.TRIAL_DAYS, 14, 1, 90);
+  const TRIAL_CREDIT_CENTS = int(env.TRIAL_CREDIT_CENTS, 0, 0, 10_000);
   // Who makes the photoreal renders (server/renders, docs/handoff/renders.md): Gabe's architecture
   // AI over HTTP when ARCHITECT_AI_URL and ARCHITECT_AI_KEY are set; else the stamped demo provider
   // outside production (or with DEMO_RENDERS=1); else none ("Photoreal renders are being set up",
@@ -181,6 +186,8 @@ export function loadConfig(env = process.env, argv = process.argv) {
     SHUTDOWN_FILE,
     BASE_DOMAIN,
     RENDER_CREDIT_CENTS,
+    TRIAL_DAYS,
+    TRIAL_CREDIT_CENTS,
     ARCHITECT_AI_URL,
     ARCHITECT_AI_KEY,
     RENDER_PROVIDER,

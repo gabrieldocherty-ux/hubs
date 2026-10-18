@@ -49,6 +49,8 @@ export const ENV_FILE_KEYS = Object.freeze([
   'ARCHITECT_AI_URL',
   'ARCHITECT_AI_KEY',
   'RENDER_CREDIT_CENTS',
+  'TRIAL_DAYS',
+  'TRIAL_CREDIT_CENTS',
 ]);
 const ALLOWED = new Set(ENV_FILE_KEYS);
 

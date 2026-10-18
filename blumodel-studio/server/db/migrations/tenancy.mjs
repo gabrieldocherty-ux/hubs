@@ -20,6 +20,10 @@
 //   tenancy-006  showroom_leads: "Send this design to <Company>" (a new table: the old brand-page
 //                leads table needs a brand and has no 'quoted' status; it stays as it is) and
 //                sales_leads: "Book a call" on the sales site, for us
+//   tenancy-007  tenant_invites: a team invite held until its link is used
+//   tenancy-008  the prospect trial (Admin > Companies > Quick setup): tenants.status may be
+//                'trial' (live for visitors until trial_ends_at, then it lapses like any unpaid
+//                showroom; nothing is deleted), and tenants.trial_ends_at (NULL: not a trial)
 
 /**
  * Rebuilds `table` with SQLite's procedure (create new, copy, drop old, rename), for the changes
@@ -367,6 +371,17 @@ export const steps = [
           PRIMARY KEY (tenant_id, user_id));
         CREATE INDEX tenant_invites_user ON tenant_invites(user_id);
       `);
+    },
+  },
+  {
+    // A showroom stood up on a sales call is live at once as a trial: 'trial' joins the statuses,
+    // and trial_ends_at says when it lapses (server/tenancy/service.mjs computeStatus). The CHECK
+    // list can only change by rebuilding the table.
+    id: 'tenancy-008-trial-status',
+    foreignKeys: 'off',
+    up(db) {
+      rebuildTable(db, 'tenants', (sql) => sql.replace(/CHECK\s*\(\s*status\s+IN\s*\('setup','live','lapsed','suspended'\)\s*\)/i, "CHECK (status IN ('setup','trial','live','lapsed','suspended'))"));
+      db.exec('ALTER TABLE tenants ADD COLUMN trial_ends_at INTEGER');
     },
   },
 ];

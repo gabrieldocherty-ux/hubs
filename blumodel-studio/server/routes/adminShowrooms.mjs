@@ -142,7 +142,7 @@ export default function routes(ctx) {
   function overview() {
     const t = ctx.now();
     tenants.refreshAll();
-    const companies = { setup: 0, live: 0, lapsed: 0, suspended: 0, total: 0, demo: 0 };
+    const companies = { setup: 0, trial: 0, live: 0, lapsed: 0, suspended: 0, total: 0, demo: 0 };
     for (const r of db.prepare('SELECT status, is_demo, COUNT(*) AS n FROM tenants GROUP BY status, is_demo').all()) {
       if (r.is_demo) {
         companies.demo += Number(r.n);

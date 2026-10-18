@@ -30,6 +30,16 @@ async function send<T>(method: string, path: string, { body, ticket }: { body?: 
   return data as T;
 }
 
+async function sendJson(path: string, body: unknown, ticket: string): Promise<void> {
+  const res = await fetch(path, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'X-BluModel': '1', 'Content-Type': 'application/json', 'X-Showroom-Ticket': ticket },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new ApiError(res.status, 'Something went wrong.', null);
+}
+
 const query = (t: ImageTarget) => {
   const q = new URLSearchParams({ slot: t.slot, source: t.source });
   if (t.line) q.set('line', t.line);
@@ -42,6 +52,8 @@ export const imagesApi = {
   access: (ticket?: string) => send<{ ok: true; via: 'staff' | 'ticket' }>('GET', '/api/showroom-images/access', { ticket }),
   upload: <T = unknown>(blob: Blob, target: ImageTarget, ticket?: string) => send<T>('PUT', `/api/showroom-images?${query(target)}`, { body: blob, ticket }),
   remove: <T = unknown>(target: ImageTarget) => send<T>('DELETE', `/api/showroom-images?${query(target)}`),
+  /** Tells the server the run is over, so an admin's Quick setup waiting on this ticket can move on. */
+  done: (ticket: string, made: number, failed: number) => sendJson('/api/showroom-images/done', { made, failed }, ticket),
 };
 
 /**

@@ -119,6 +119,8 @@ export default function ShowroomImagesPage() {
     }
     setCurrent(null);
     setPhase('done');
+    // An admin's Quick setup follows this run by its ticket: tell it the pictures are made.
+    if (ticket) void imagesApi.done(ticket, made, failed).catch(() => undefined);
     (window as unknown as { __showroomImages?: Record<string, unknown> }).__showroomImages = { ...((window as unknown as { __showroomImages?: object }).__showroomImages ?? {}), done: true, made, failed };
   }, [scenes, ticket, renderShot]);
 

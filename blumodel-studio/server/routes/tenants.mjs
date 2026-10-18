@@ -29,6 +29,8 @@
 //                                              -> { images, imageSources }. A ticket uploads renders only;
 //                                              photos (hero, line) are the team's.
 //   DELETE /api/showroom-images                staff; the same query -> { images, imageSources }
+//   POST   /api/showroom-images/done           staff or ticket: { made, failed } -> { ok: true }; the
+//                                              generator finished (an admin's Quick setup waits for it)
 
 import { HttpError } from '../http/respond.mjs';
 import { EMAIL_RE } from '../auth/userWire.mjs';
@@ -66,11 +68,14 @@ export default function routes(ctx) {
   };
   const working = (row, rc) => products.toWire(row, { which: 'working', viewer: rc.user }) ?? null;
 
+  const ticketOf = (rc) => {
+    const ticket = rc.req.headers['x-showroom-ticket'];
+    return Array.isArray(ticket) ? ticket[0] : ticket;
+  };
   /** 'staff' for the team, 'ticket' for a valid generator ticket for this showroom, else a 403. */
   const imageAccess = (rc) => {
     if (rc.memberRole) return 'staff';
-    const ticket = rc.req.headers['x-showroom-ticket'];
-    if (rc.tenant && ctx.services.imageTickets.tenantOf(Array.isArray(ticket) ? ticket[0] : ticket) === rc.tenant.id) return 'ticket';
+    if (rc.tenant && ctx.services.imageTickets.tenantOf(ticketOf(rc)) === rc.tenant.id) return 'ticket';
     throw new HttpError(403, 'Only the showroom’s team can change its pictures. Ask an admin for a new link if yours has expired.', { code: 'not_staff' });
   };
   const targetOf = (rc) => cleanTarget(Object.fromEntries(['slot', 'line', 'index', 'title', 'source'].map((k) => [k, rc.query.get(k) ?? undefined])));
@@ -114,7 +119,23 @@ export default function routes(ctx) {
       path: '/api/showroom-images/access',
       auth: 'optional',
       hosts: 'showroom',
-      handler: (rc) => ({ ok: true, via: imageAccess(rc) }),
+      handler: (rc) => {
+        const via = imageAccess(rc);
+        if (via === 'ticket') ctx.services.imageTickets.noteOpened(ticketOf(rc));
+        return { ok: true, via };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/showroom-images/done',
+      auth: 'optional',
+      hosts: 'showroom',
+      maxBytes: 1_024,
+      handler: (rc) => {
+        const via = imageAccess(rc);
+        if (via === 'ticket') ctx.services.imageTickets.finish(ticketOf(rc), { made: rc.body?.made, failed: rc.body?.failed });
+        return { ok: true };
+      },
     },
     {
       method: 'PUT',
@@ -135,6 +156,7 @@ export default function routes(ctx) {
           const cur = tenants.get(rc.tenant.id);
           return tenants.setImages(rc.tenant.id, withImage(cur.branding.images, target, { fileId: file.id, w: info.width, h: info.height, at: ctx.now() }));
         });
+        if (via === 'ticket') ctx.services.imageTickets.noteUpload(ticketOf(rc));
         return imagesWire(next, rc);
       },
     },

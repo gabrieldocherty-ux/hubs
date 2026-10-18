@@ -8,17 +8,19 @@
 //                     showroom (users.tenant_id = the tenant) or a sales-site account (tenant_id
 //                     NULL) given access, such as a contractor whose company became a tenant.
 //
-// Status: 'setup' (being built; reachable so staff can set it up), 'live' / 'lapsed' (launched; which
-// one is recomputed from the license and the monthly plan, see registerStanding), 'suspended' (an
-// admin switched it off). A lapsed or suspended showroom answers "temporarily unavailable" and
-// keeps every row.
+// Status: 'setup' (being built; reachable so staff can set it up), 'trial' (a prospect's showroom
+// made on a sales call: live for visitors until trial_ends_at, then recomputed like a launched one),
+// 'live' / 'lapsed' (launched; which one is recomputed from the license and the monthly plan, see
+// registerStanding), 'suspended' (an admin switched it off). A lapsed or suspended showroom answers
+// "temporarily unavailable" and keeps every row.
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { FILE_ID_RE } from '../lib/ids.mjs';
 import { publicImages } from './images.mjs';
 
-export const STATUSES = ['setup', 'live', 'lapsed', 'suspended'];
+export const STATUSES = ['setup', 'trial', 'live', 'lapsed', 'suspended'];
+const DAY_MS = 86_400_000;
 export const MEMBER_ROLES = ['owner', 'staff'];
 
 /** Labels never given to a company: they are ours, or would confuse visitors. */
@@ -188,6 +190,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
       contact: parse(r.contact),
       settings: { ...DEFAULT_SETTINGS, ...parse(r.settings) },
       isDemo: !!r.is_demo,
+      trialEndsAt: r.trial_ends_at ?? null,
       sourceUserId: r.source_user_id ?? null,
       createdBy: r.created_by ?? null,
       createdAt: r.created_at,
@@ -266,7 +269,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
      * Creates a tenant and its subdomain. `slug` must be free and not reserved (a 409 / 400 when
      * it isn't); without one, a free slug is made from the name.
      */
-    create({ name, slug, status = 'setup', branding = {}, contact = {}, settings = {}, isDemo = false, createdBy = null, sourceUserId = null, id }) {
+    create({ name, slug, status = 'setup', trialEndsAt = null, branding = {}, contact = {}, settings = {}, isDemo = false, createdBy = null, sourceUserId = null, id }) {
       const n = str(name, 100);
       if (!n) throw invalid([{ field: 'name', message: 'Give the company a name.' }]);
       let s;
@@ -277,6 +280,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
         if (svc.slugInUse(s)) throw new HttpError(409, `${s}.${config.BASE_DOMAIN} is taken.`, { field: 'slug', code: 'slug_taken' });
       } else s = svc.uniqueSlug(n);
       if (!STATUSES.includes(status)) throw new Error(`tenants.create: bad status ${status}`);
+      if (status === 'trial' && !(Number.isInteger(trialEndsAt) && trialEndsAt > now())) throw new Error('tenants.create: a trial needs trialEndsAt in the future');
       const b = cleanBranding(branding);
       const c = cleanContact(contact);
       const st = cleanSettings(settings);
@@ -285,9 +289,9 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
       const tid = id ?? `t_${crypto.randomBytes(9).toString('base64url')}`;
       const t = now();
       db.prepare(
-        `INSERT INTO tenants (id, slug, name, status, branding, contact, settings, is_demo, source_user_id, created_by, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).run(tid, s, n, status, JSON.stringify(b.value), JSON.stringify(c.value), JSON.stringify(st.value), isDemo ? 1 : 0, sourceUserId, createdBy, t, t);
+        `INSERT INTO tenants (id, slug, name, status, trial_ends_at, branding, contact, settings, is_demo, source_user_id, created_by, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(tid, s, n, status, status === 'trial' ? trialEndsAt : null, JSON.stringify(b.value), JSON.stringify(c.value), JSON.stringify(st.value), isDemo ? 1 : 0, sourceUserId, createdBy, t, t);
       // A plain INSERT: if the address were somehow taken, creating the tenant fails (in the caller's
       // transaction) rather than leaving its own subdomain pointing at another showroom.
       db.prepare("INSERT INTO tenant_hostnames (hostname, tenant_id, kind, verified, is_primary, created_by, created_at) VALUES (?, ?, 'subdomain', 1, 1, ?, ?)").run(
@@ -342,40 +346,110 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
       if (!cur) throw new HttpError(404, 'That showroom does not exist.');
       if (!['setup', 'live', 'suspended'].includes(status)) throw invalid([{ field: 'status', message: 'Choose setup, live or suspended.' }]);
       db.prepare('UPDATE tenants SET status = ?, status_note = COALESCE(?, status_note), updated_at = ? WHERE id = ?').run(status, typeof note === 'string' ? note.slice(0, 500) : null, now(), id);
-      return svc.refresh(id);
+      const out = svc.refresh(id);
+      // Launched and paid up: a former trial is a paying customer now.
+      if (out.status === 'live' && out.trialEndsAt !== null) {
+        db.prepare('UPDATE tenants SET trial_ends_at = NULL WHERE id = ?').run(id);
+        return svc.get(id);
+      }
+      return out;
     },
 
-    /** What standing says about a launched tenant, as an effective status. */
+    /**
+     * What standing says about a launched tenant, as an effective status. A trial stays 'trial'
+     * until trial_ends_at, then is a launched showroom like any other: live when its license and
+     * monthly plan are in place (it was converted without the button), else lapsed.
+     */
     computeStatus(t) {
       if (!t) return null;
       if (t.status === 'setup' || t.status === 'suspended') return t.status;
+      if (t.status === 'trial' && t.trialEndsAt && now() < t.trialEndsAt) return 'trial';
       const s = standing(t.id) || {};
       return s.licenseCurrent && s.monthlyPaid ? 'live' : 'lapsed';
     },
 
-    /** Recomputes live / lapsed and stores it when it changed. Returns the tenant. */
+    /**
+     * Recomputes trial / live / lapsed and stores it when it changed. Returns the tenant. A former
+     * trial that comes out live is a paying customer now, so its trial end is cleared.
+     */
     refresh(id) {
       const t = svc.get(id);
       if (!t) return null;
       const next = svc.computeStatus(t);
       if (next !== t.status) {
-        db.prepare('UPDATE tenants SET status = ?, updated_at = ? WHERE id = ?').run(next, now(), id);
+        const clearTrial = next === 'live' && t.trialEndsAt !== null;
+        db.prepare(`UPDATE tenants SET status = ?, ${clearTrial ? 'trial_ends_at = NULL, ' : ''}updated_at = ? WHERE id = ?`).run(next, now(), id);
         log.info?.(`tenant ${t.slug}: ${t.status} -> ${next}`);
         return svc.get(id);
       }
       return t;
     },
 
-    /** Every launched tenant, recomputed (index.mjs's maintenance runs this). Returns how many changed. */
+    /** Every launched tenant and trial, recomputed (index.mjs's maintenance runs this). Returns how many changed. */
     refreshAll() {
       let n = 0;
-      for (const r of db.prepare("SELECT id, status FROM tenants WHERE status IN ('live','lapsed')").all()) if (svc.refresh(r.id)?.status !== r.status) n++;
+      for (const r of db.prepare("SELECT id, status FROM tenants WHERE status IN ('trial','live','lapsed')").all()) if (svc.refresh(r.id)?.status !== r.status) n++;
       return n;
     },
 
-    /** True when visitors can use the showroom (setup counts: staff build it there). */
+    /** True when visitors can use the showroom (setup counts: staff build it there; a trial is live). */
     isAvailable(t) {
-      return !!t && (t.status === 'live' || t.status === 'setup');
+      return !!t && (t.status === 'live' || t.status === 'trial' || t.status === 'setup');
+    },
+
+    // ── trials ────────────────────────────────────────────────────────────
+    /**
+     * A trial's state for Admin, or null when the tenant isn't (or is no longer) a trial:
+     * { endsAt, daysLeft, active } (active: visitors can use it now; false once it has lapsed).
+     */
+    trialOf(t) {
+      if (!t || t.trialEndsAt === null || t.trialEndsAt === undefined) return null;
+      if (!['trial', 'lapsed', 'suspended', 'setup'].includes(t.status)) return null;
+      const left = t.trialEndsAt - now();
+      return { endsAt: t.trialEndsAt, daysLeft: Math.max(0, Math.ceil(left / DAY_MS)), active: t.status === 'trial' };
+    },
+
+    /**
+     * Gives a trial `days` more (from its end, or from now once it has ended) and makes it live
+     * again. Only a running trial or a lapsed former trial. At most 90 days ahead of now.
+     */
+    extendTrial(id, days) {
+      const t = svc.get(id);
+      if (!t) throw new HttpError(404, 'That showroom does not exist.');
+      if (!Number.isInteger(days) || days < 1 || days > 30) throw invalid([{ field: 'days', message: 'Extend by 1 to 30 days.' }]);
+      if (t.trialEndsAt === null || !['trial', 'lapsed'].includes(t.status)) throw new HttpError(409, 'Only a trial can be extended.', { code: 'not_trial' });
+      const from = Math.max(now(), t.trialEndsAt);
+      const ends = Math.min(from + days * DAY_MS, now() + 90 * DAY_MS);
+      db.prepare("UPDATE tenants SET status = 'trial', trial_ends_at = ?, updated_at = ? WHERE id = ?").run(ends, now(), id);
+      return svc.refresh(id);
+    },
+
+    /** Ends a running trial now: it lapses (or is live, when its license and monthly plan are in place). */
+    endTrial(id) {
+      const t = svc.get(id);
+      if (!t) throw new HttpError(404, 'That showroom does not exist.');
+      if (t.status !== 'trial') throw new HttpError(409, 'That showroom isn’t on a running trial.', { code: 'not_trial' });
+      db.prepare('UPDATE tenants SET trial_ends_at = ?, updated_at = ? WHERE id = ?').run(now(), now(), id);
+      return svc.refresh(id);
+    },
+
+    /**
+     * Converts a trial (running or lapsed) to a paying customer: everything is kept and the status
+     * becomes live. Needs a current license and a paid (or complimentary) monthly plan: else a 409
+     * `not_paid_up` with `missing: ['license' | 'monthly']`.
+     */
+    convertTrial(id) {
+      const t = svc.get(id);
+      if (!t) throw new HttpError(404, 'That showroom does not exist.');
+      if (t.trialEndsAt === null || !['trial', 'lapsed'].includes(t.status)) throw new HttpError(409, 'That showroom isn’t a trial.', { code: 'not_trial' });
+      const s = standing(t.id) || {};
+      const missing = [...(s.licenseCurrent ? [] : ['license']), ...(s.monthlyPaid ? [] : ['monthly'])];
+      if (missing.length) {
+        const words = missing.map((m) => (m === 'license' ? 'record the license' : 'get the monthly plan paid (or make it complimentary)'));
+        throw new HttpError(409, `First ${words.join(' and ')}.`, { code: 'not_paid_up', missing });
+      }
+      db.prepare("UPDATE tenants SET status = 'live', trial_ends_at = NULL, updated_at = ? WHERE id = ?").run(now(), id);
+      return svc.refresh(id);
     },
 
     // ── hostnames ─────────────────────────────────────────────────────────
@@ -602,7 +676,8 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
         id: t.id,
         slug: t.slug,
         name: t.name,
-        status: t.status,
+        // Visitors aren't told a showroom is on trial: to them it is simply live.
+        status: t.status === 'trial' ? 'live' : t.status,
         isDemo: t.isDemo,
         url: svc.originOf(t, from),
         branding: {
@@ -626,7 +701,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
 
     /** Admin > Tenants: the staff wire, the team, and every registered extra. */
     adminWire(t, from) {
-      const out = { ...svc.staffWire(t, from), members: svc.members(t.id) };
+      const out = { ...svc.staffWire(t, from), trial: svc.trialOf(t), members: svc.members(t.id) };
       for (const fn of adminExtras) {
         try {
           Object.assign(out, fn(t) ?? {});
@@ -643,6 +718,8 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
       const pub = svc.publicWire(t, from);
       return {
         ...pub,
+        status: t.status,
+        trialEndsAt: t.status === 'trial' ? t.trialEndsAt : null,
         statusNote: t.statusNote,
         branding: { ...pub.branding, logoFileId: t.branding.logoFileId ?? null },
         // Each source on its own, so the workspace shows what was uploaded and what was rendered.

@@ -106,7 +106,7 @@ export const DEMO_PRODUCTS = Object.freeze([
 ]);
 
 /** A 96 px product picture: a soft background and the product's front, to scale. */
-function thumb({ widthIn, heightIn, color, shape }) {
+export function thumb({ widthIn, heightIn, color, shape }) {
   const S = 96;
   const w = Math.max(widthIn, 6);
   const h = Math.max(heightIn, 6);
@@ -219,7 +219,7 @@ export function demoManifest(dir = DEMO_IMAGES_DIR) {
 }
 
 /** A product's spec as the seed makes it (the thumbnail apart). */
-function specOf(p) {
+export function specOf(p) {
   return {
     kind: p.kind,
     ...(p.variant ? { variant: p.variant } : {}),
