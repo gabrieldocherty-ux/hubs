@@ -60,7 +60,16 @@ export const DEFAULT_SETTINGS = Object.freeze({
   visitorRenders: false,
   /** Visitor renders a day across the showroom, when visitorRenders is on. */
   dailyRenderCap: 0,
+  /**
+   * Months a lead that never sent a design (and whose status the team never changed) is kept after
+   * its last activity: 0 is the server's LEAD_RETENTION_MONTHS (24); a company may choose fewer
+   * (LEAD_RETENTION_CHOICES). Never more than the server's.
+   */
+  leadRetentionMonths: 0,
 });
+
+/** What a company may choose for leadRetentionMonths (0: the default). */
+export const LEAD_RETENTION_CHOICES = [0, 6, 12, 18];
 
 const parse = (s, fallback = {}) => {
   try {
@@ -159,6 +168,10 @@ export function cleanSettings(input, current = {}) {
     const n = input.dailyRenderCap;
     if (!Number.isInteger(n) || n < 0 || n > 1000) errors.push({ field: 'settings.dailyRenderCap', message: 'The daily cap is a whole number from 0 to 1000.' });
     else out.dailyRenderCap = n;
+  }
+  if (input.leadRetentionMonths !== undefined) {
+    if (!LEAD_RETENTION_CHOICES.includes(input.leadRetentionMonths)) errors.push({ field: 'settings.leadRetentionMonths', message: 'Keep leads for 6, 12 or 18 months, or the default.' });
+    else out.leadRetentionMonths = input.leadRetentionMonths;
   }
   return errors.length ? { ok: false, errors } : { ok: true, value: out };
 }

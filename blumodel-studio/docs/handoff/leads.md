@@ -70,5 +70,9 @@ that row's id, so old `#/studio/leads/<id>` links open the person.
 
 - The old "Book a call"-style lead notice email is still sent only on **Send**, not when someone
   merely gives their details. Should the company be emailed for every new lead?
-- Privacy text says visitor data is kept while the company is a customer. A retention limit for
-  leads who never send a design (e.g. delete after 24 months inactive) is not implemented.
+- ~~Retention for leads who never send a design~~: done (protect, 2026-10). The daily sweep
+  (`ctx.retentionSweep`, from maintenance) deletes, as a staff delete does, every lead that never
+  sent a design, is still `new` with no status change on its timeline, and was last active more
+  than `LEAD_RETENTION_MONTHS` (24) ago, or the company's shorter `settings.leadRetentionMonths`
+  (6, 12 or 18; Workspace > Showroom, owners). One `retention_sweep` audit row per sweep, counts
+  only. See docs/handoff/data-lifecycle.md.

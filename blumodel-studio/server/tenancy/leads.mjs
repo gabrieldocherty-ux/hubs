@@ -27,7 +27,8 @@ import { phoneKeyOf } from '../db/migrations/leads.mjs';
 
 export const LEAD_STATUSES = ['new', 'contacted', 'quoted', 'won', 'lost'];
 export const VISITOR_COOKIE = 'blumodel_visitor';
-export const VISITOR_DAYS = 400;
+/** The visitor cookie's life (audit 2026-10: it was 400 days). */
+export const VISITOR_DAYS = 180;
 const SHARE_TOKEN_RE = /^[A-Za-z0-9_-]{32}$/;
 const TOKEN_RE = /^[A-Za-z0-9_-]{32,64}$/;
 /** How often a visitor's last-seen time (and the lead's last active) is written, so reads stay reads. */
@@ -522,6 +523,26 @@ export function createLeadService({ db, now = Date.now }) {
       db.prepare('DELETE FROM tenant_leads WHERE id = ? AND tenant_id = ?').run(leadId, tenantId);
       if (dups.length) db.prepare('UPDATE tenant_leads SET duplicate_of = NULL, duplicate_dismissed_at = NULL WHERE id = ?').run(dups[0].id);
       return { designs, unlinked, sends };
+    },
+
+    /**
+     * The retention rule (docs/handoff/data-lifecycle.md): every lead of `tenantId` that never sent
+     * a design, whose status the team never changed (still 'new', no status entry on the timeline),
+     * and whose last activity is before `cutoff` is deleted the same way a staff delete does it
+     * (remove). Returns { leads, designs }.
+     */
+    purgeStale(tenantId, cutoff) {
+      const ids = db
+        .prepare(
+          `SELECT l.id FROM tenant_leads l WHERE l.tenant_id = ? AND l.last_active_at < ? AND l.status = 'new'
+              AND NOT EXISTS (SELECT 1 FROM showroom_leads s WHERE s.lead_id = l.id)
+              AND NOT EXISTS (SELECT 1 FROM tenant_lead_events e WHERE e.lead_id = l.id AND e.kind = 'status')`,
+        )
+        .all(tenantId, cutoff)
+        .map((r) => r.id);
+      let designs = 0;
+      for (const id of ids) designs += svc.remove(tenantId, id).designs;
+      return { leads: ids.length, designs, ids };
     },
 
     /** Every lead as CSV (spreadsheet-safe cells), most recently active first. */

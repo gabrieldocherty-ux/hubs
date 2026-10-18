@@ -36,6 +36,8 @@ export interface ShowroomSettings {
   bathrooms: boolean;
   visitorRenders: boolean;
   dailyRenderCap: number;
+  /** Months a lead that never sent a design is kept after its last activity: 0 is the default (24). */
+  leadRetentionMonths?: number;
 }
 
 export interface Hostname {

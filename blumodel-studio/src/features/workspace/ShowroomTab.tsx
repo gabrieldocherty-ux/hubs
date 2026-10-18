@@ -379,6 +379,19 @@ function SwitchesCard({ settings, owner, onChange, errors }: { settings: Showroo
           {errors['settings.dailyRenderCap'] && <em className="ws-field-error">{errors['settings.dailyRenderCap']}</em>}
         </label>
       )}
+      <label className="field ws-cap">
+        <span>Keep leads who never sent you a design</span>
+        <select value={settings.leadRetentionMonths ?? 0} onChange={(e) => onChange({ leadRetentionMonths: Number(e.target.value) })} aria-invalid={!!errors['settings.leadRetentionMonths']}>
+          <option value={0}>24 months after they were last active (default)</option>
+          <option value={18}>18 months</option>
+          <option value={12}>12 months</option>
+          <option value={6}>6 months</option>
+        </select>
+        <em className="fine">
+          Someone who gave their details but never sent a design, and whose status you never changed, is deleted with their designs this long after their last visit. Leads you’ve worked with are kept until you delete them.
+        </em>
+        {errors['settings.leadRetentionMonths'] && <em className="ws-field-error">{errors['settings.leadRetentionMonths']}</em>}
+      </label>
     </fieldset>
   );
 }

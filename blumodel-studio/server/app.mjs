@@ -13,6 +13,7 @@ import { createRateLimiter } from './auth/rateLimit.mjs';
 import { createSessionStore, isHttps, isLoopback } from './auth/sessions.mjs';
 import { createAuthService } from './auth/guards.mjs';
 import { createMfaStore } from './auth/mfa.mjs';
+import { audit } from './lib/audit.mjs';
 import { createFileService } from './files/store.mjs';
 import { createBrandService } from './catalog/brands.mjs';
 import { createProductService } from './catalog/products.mjs';
@@ -106,6 +107,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     return peer;
   };
 
+  /** When the retention sweep last ran (it runs on the first maintenance, then daily). */
+  let lastRetention = 0;
   const ctx = {
     config,
     db,
@@ -121,8 +124,38 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */
     startedAt: now(),
     health: { integrity: /** @type {null | { ok: boolean, problems: string[] }} */ (null), shuttingDown: false },
+    /**
+     * The retention rules (docs/handoff/data-lifecycle.md), once a day from maintenance(): showroom
+     * leads that never sent a design and whose status was never changed, LEAD_RETENTION_MONTHS (or
+     * the company's shorter choice) after their last activity. One audit row per sweep, counts only.
+     * Returns what it deleted.
+     */
+    retentionSweep() {
+      const MONTH = 30 * 86_400_000;
+      const out = { leads: 0, designs: 0, tenants: 0 };
+      for (const { id } of db.prepare('SELECT id FROM tenants').all()) {
+        const chosen = Number(tenants.get(id)?.settings?.leadRetentionMonths) || 0;
+        const months = chosen > 0 ? Math.min(chosen, config.LEAD_RETENTION_MONTHS) : config.LEAD_RETENTION_MONTHS;
+        const r = tx(db, () => leads.purgeStale(id, now() - months * MONTH));
+        if (r.leads) {
+          out.leads += r.leads;
+          out.designs += r.designs;
+          out.tenants++;
+        }
+      }
+      if (out.leads) audit(db, { admin: null, action: 'retention_sweep', detail: out, at: now() });
+      return out;
+    },
     /** Periodic housekeeping; index.mjs runs it every 10 minutes. */
     maintenance() {
+      if (now() - lastRetention >= 86_400_000) {
+        lastRetention = now();
+        try {
+          ctx.retentionSweep();
+        } catch (err) {
+          log.warn?.(`retention: the sweep failed: ${err?.message ?? err}`);
+        }
+      }
       sessions.purgeExpired();
       mfa.purgeExpired();
       try {
