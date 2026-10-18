@@ -12,11 +12,11 @@ import zlib from 'node:zlib';
 
 const MAX = 0xffff_fffe;
 
-/** MS-DOS date and time for a moment (the format ZIP stores). */
+/** MS-DOS date and time for a moment (the format ZIP stores), in UTC: the server never reads local time. */
 function dosTime(ms) {
   const d = new Date(ms);
-  const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
-  const date = ((Math.max(1980, d.getFullYear()) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const time = (d.getUTCHours() << 11) | (d.getUTCMinutes() << 5) | (d.getUTCSeconds() >> 1);
+  const date = ((Math.max(1980, d.getUTCFullYear()) - 1980) << 9) | ((d.getUTCMonth() + 1) << 5) | d.getUTCDate();
   return { time, date };
 }
 
