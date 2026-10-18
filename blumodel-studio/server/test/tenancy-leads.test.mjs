@@ -29,7 +29,7 @@ test('a visitor sends a design: a view-only link for the staff, the details, con
     // Signed out, with a link they already have.
     const share = (await visitor.post(`/api/projects/${k.id}/shares`, {})).body.share.token;
     const anon = new Agent(t.url, { host: A.host });
-    assert.equal((await anon.post('/api/leads', lead({ name: 'Sam', email: 'sam@example.com', shareToken: share, projectId: undefined }))).status, 201);
+    assert.equal((await anon.post('/api/leads', lead({ name: 'Sam', email: 'sam@example.com', phone: '', shareToken: share, projectId: undefined }))).status, 201);
     assert.equal((await anon.post('/api/leads', lead({ shareToken: 'x'.repeat(32) }))).status, 404);
     // No CSRF header: refused.
     assert.equal((await anon.request('POST', '/api/leads', { body: lead(), csrf: false })).status, 403);
@@ -38,10 +38,9 @@ test('a visitor sends a design: a view-only link for the staff, the details, con
     assert.equal((await visitor.get('/api/workspace/leads')).status, 403);
     const inbox = (await owner.get('/api/workspace/leads')).body;
     assert.equal(inbox.leads.length, 2);
-    assert.deepEqual(inbox.counts, { new: 2, contacted: 0, quoted: 0, won: 0, lost: 0, total: 2, unread: 2 });
+    assert.deepEqual(inbox.counts, { new: 2, contacted: 0, quoted: 0, won: 0, lost: 0, total: 2, unread: 2, sent: 2 });
     const l = inbox.leads.find((x) => x.name === 'Riley Homeowner');
     assert.equal(l.email, 'riley@example.com');
-    assert.equal(l.postalCode, 'N1H 3A1');
     assert.equal(l.consent, true);
     assert.match(l.consentText, /^I agree that Alpha Kitchens may contact me/);
     assert.equal(l.signedIn, true);
@@ -52,6 +51,10 @@ test('a visitor sends a design: a view-only link for the staff, the details, con
 
     const opened = await owner.get(`/api/workspace/leads/${l.id}`);
     assert.equal(opened.body.lead.read, true);
+    assert.equal(opened.body.lead.phone, '(519) 555-0142');
+    assert.equal(opened.body.lead.sendsList[0].postalCode, 'N1H 3A1');
+    assert.equal(opened.body.lead.sendsList[0].budget, '$25k-$40k');
+    assert.deepEqual(opened.body.lead.designs.map((d) => [d.name, !!d.sentAt]), [['Our new kitchen', true]]);
     const upd = await owner.patch(`/api/workspace/leads/${l.id}`, { status: 'quoted', staffNotes: 'Sent quote #1042' });
     assert.equal(upd.body.lead.status, 'quoted');
     assert.equal(upd.body.lead.staffNotes, 'Sent quote #1042');
@@ -64,12 +67,12 @@ test('a visitor sends a design: a view-only link for the staff, the details, con
     assert.equal(csv.contentType, 'text/csv');
     assert.match(csv.filename, /^lead-a-leads-\d{4}-\d{2}-\d{2}\.csv$/);
     const lines = csv.content.split('\n');
-    assert.equal(lines[0], 'Received,Status,Name,Email,Phone,Postal code,Budget,Timeline,Notes,Design,Design link,Staff notes');
+    assert.equal(lines[0], 'First seen,Last active,Status,Name,Email,Phone,Designs,Sent,Postal code,Budget,Timeline,Their notes,Staff notes,Consent');
     assert.equal(lines.length, 3);
     assert.ok(lines.some((x) => x.includes('quoted') && x.includes('Sent quote #1042')));
 
     // A formula in a field never becomes a formula in the CSV.
-    await anon.post('/api/leads', lead({ name: '=HYPERLINK("http://evil")', email: 'x@example.com' }));
+    await anon.post('/api/leads', lead({ name: '=HYPERLINK("http://evil")', email: 'x@example.com', phone: '' }));
     assert.ok((await owner.get('/api/workspace/leads/export')).body.content.includes(`"'=HYPERLINK(""http://evil"")"`));
   } finally {
     await t.close();

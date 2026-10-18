@@ -5,6 +5,7 @@ import { ApiError, call } from '../../lib/api';
 import { flushAutosave } from '../../hooks/useAutosave';
 import { useSession } from '../../store/useSession';
 import { CompanyLogo } from './SiteMark';
+import { useVisitor } from './visitor';
 import { shortName, telHref, type PublicTenant } from './site';
 import { BUDGETS, checkLead, consentText, EMPTY_LEAD, leadBody, rememberSent, serverErrors, TIMELINES, type LeadDraft, type LeadErrors, type LeadField } from './send';
 
@@ -28,7 +29,9 @@ interface Props {
 export default function SendDialog({ tenant, design, designName, sentKey, onSent, onClose }: Props) {
   const user = useSession((s) => s.user);
   const name = shortName(tenant);
-  const [d, setD] = useState<LeadDraft>(() => ({ ...EMPTY_LEAD, name: user?.name ?? '', email: user?.email ?? '' }));
+  // Prefilled from what this browser gave in "Before you start" (else the account).
+  const visitor = useVisitor();
+  const [d, setD] = useState<LeadDraft>(() => ({ ...EMPTY_LEAD, name: visitor?.name || user?.name || '', email: visitor?.email || user?.email || '', phone: visitor?.phone ?? '' }));
   const [errors, setErrors] = useState<LeadErrors>({});
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState('');
@@ -85,7 +88,7 @@ export default function SendDialog({ tenant, design, designName, sentKey, onSent
           <p className="sr-send-done-lead">
             <b>“{designName}”</b> is on its way to {name}, with a view-only link to your design.
           </p>
-          <p>They’ll get back to you at {d.email.trim()}{d.phone.trim() ? ` or ${d.phone.trim()}` : ''}. Keep designing: the changes you make show up on their link too.</p>
+          <p>They’ll get back to you at {[d.email.trim(), d.phone.trim()].filter(Boolean).join(' or ')}. Keep designing: the changes you make show up on their link too.</p>
           <Contact tenant={tenant} />
           <div className="modal-actions">
             <button type="button" className="btn primary" onClick={onClose} data-autofocus>
@@ -130,7 +133,7 @@ export default function SendDialog({ tenant, design, designName, sentKey, onSent
           </label>
           <label className="field">
             <span>
-              Phone <em>· optional</em>
+              Phone <em>· or email, one is enough</em>
             </span>
             <input {...field('phone')} type="tel" value={d.phone} onChange={(e) => set('phone', e.target.value)} autoComplete="tel" inputMode="tel" maxLength={40} />
             {err('phone')}

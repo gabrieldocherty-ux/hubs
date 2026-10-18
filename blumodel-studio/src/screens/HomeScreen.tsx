@@ -13,10 +13,12 @@ import { Toasts } from '../components/Toasts';
 import { usePriceBook } from '../features/contractors';
 import { useShowEstimator } from '../lib/prefs';
 import { LegalLinks } from '../features/legal/LegalLinks';
-import { newDesignHash, shortName, SiteMark, useShowroom } from '../features/showroom';
+import { newDesignHash, shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
 
 export function HomeScreen() {
-  const user = useSession((s) => s.user)!;
+  const user = useSession((s) => s.user);
+  // On a showroom, a visitor who gave their details sees their designs here without an account.
+  const visitor = useVisitor();
   const toast = useDesignStore((s) => s.toast);
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -116,14 +118,14 @@ export function HomeScreen() {
               Showroom
             </a>
           )}
-          <AccountMenu />
+          {user ? <AccountMenu /> : null}
         </span>
       </header>
 
       <main className="home-main">
         <div className="home-head">
           <div>
-            <h1>{greeting(user.name)}.</h1>
+            <h1>{greeting(user?.name ?? visitor?.name ?? '')}.</h1>
             <p>
               {projects === null
                 ? showroom

@@ -16,7 +16,7 @@ import { useSession } from '../store/useSession';
 import { saveLocalDraft } from '../store/useDesignStore';
 import { brandsForCategory } from '../catalog/retail';
 import { BRAND_CATEGORIES, brandKey, brandOptions, brandPrefsLabel, brandShare, cleanBrandPrefs, hasBrandPrefs, type BrandCount, type BrandOption } from '../lib/generate/brands';
-import { keepShowroomItems, lineFromQuery, linesIn, roomFromQuery, shortName, showroomLines, showroomPrefs, SiteMark, useShowroom, type PublicTenant, type ShowroomLine } from '../features/showroom';
+import { keepShowroomItems, useVisitor, lineFromQuery, linesIn, roomFromQuery, shortName, showroomLines, showroomPrefs, SiteMark, useShowroom, type PublicTenant, type ShowroomLine } from '../features/showroom';
 import './setupWizard.css';
 
 const STEPS = ['Basics', 'Room', 'Layout', 'Brands'] as const;
@@ -100,11 +100,13 @@ export function SetupWizard() {
   const share = useMemo(() => brandShare(preview, brandPrefs), [preview, brandPrefs]);
 
   const signedIn = useSession((st) => st.status === 'signedIn');
+  // A showroom visitor who gave their details ("Before you start") saves to the server like an account.
+  const visitor = useVisitor();
   const create = async () => {
     setBusy(true);
     setError(null);
-    // A signed-out visitor on a showroom designs on this device; the account comes when they send it.
-    if (showroom && !signedIn) {
+    // Signed out and not known on a showroom (only possible offline): the design stays on this device.
+    if (showroom && !signedIn && !visitor) {
       saveLocalDraft(prepareDocForSave(preview));
       navigate({ name: 'local' }, true);
       return;

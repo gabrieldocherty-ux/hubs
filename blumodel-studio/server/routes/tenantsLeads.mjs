@@ -1,22 +1,30 @@
-// Leads (docs/SHOWROOM_PIVOT.md §5, §6; services.leads is server/tenancy/leads.mjs).
+// Leads (docs/handoff/leads.md; services.leads is server/tenancy/leads.mjs).
 //
 // Showroom, public:
-//   POST  /api/leads                        { name, email, phone?, postalCode?, budget?, timeline?, notes?,
+//   GET    /api/visitor                     -> { visitor: { name, email, phone, consentText, since } | null, required }
+//                                           The browser's "Before you start" answer (its visitor cookie, or the
+//                                           signed-in account's). `required`: false for the showroom's team.
+//   POST   /api/visitor                     { name, email?, phone?, consent: true, website: '' (honeypot) }
+//                                           -> 201 { visitor } and the visitor cookie (httpOnly, host-only, 400 days).
+//                                           Email or phone, at least one. Rate-limited; CSRF header.
+//   DELETE /api/visitor                     -> { ok } "Not you?": this browser forgets the visitor (the lead stays).
+//   POST   /api/leads                       { name, email, phone?, postalCode?, budget?, timeline?, notes?,
 //                                             consent: true, projectId? | shareToken?, website: '' (honeypot) }
-//                                           -> 201 { ok: true, id }. Rate-limited per address; CSRF header.
-//                                           projectId: the signed-in visitor's own kitchen here (a view-only
-//                                           link is made for the staff); shareToken: a link they already have.
+//                                           -> 201 { ok: true, id }. "Send this design": joins the visitor's lead.
 // Showroom, the team (auth 'staff'):
-//   GET   /api/workspace/leads              ?status=&q=&before=<createdAt>&limit= -> { leads, counts }
-//   GET   /api/workspace/leads/export       -> { filename, contentType: 'text/csv', content }
-//   GET   /api/workspace/leads/:id          -> { lead } (marks it read)
-//   PATCH /api/workspace/leads/:id          { status?, staffNotes? } -> { lead }
+//   GET    /api/workspace/leads             ?status=&q=&sent=yes|no&before=<lastActiveAt>&limit= -> { leads, counts }
+//   GET    /api/workspace/leads/summary     -> { counts }
+//   GET    /api/workspace/leads/export      -> { filename, contentType: 'text/csv', content }
+//   GET    /api/workspace/leads/:id         -> { lead } (with designs, sends and timeline; marks it read)
+//   PATCH  /api/workspace/leads/:id         { status?, staffNotes? } -> { lead }
+//   DELETE /api/workspace/leads/:id         -> { ok, removed: { designs, unlinked, sends } } (audited)
+//   GET    /api/workspace/leads/:id/designs/:designId -> { design: { id, name, doc, createdAt, updatedAt } } (view-only)
 // Sales site, public:
-//   POST  /api/sales-leads                  { company, name, phone?, email, city?, message?, website: '' (honeypot) }
+//   POST   /api/sales-leads                 { company, name, phone?, email, city?, message?, website: '' (honeypot) }
 //                                           -> 201 { ok: true }. Rate-limited; emailed to SUPPORT_EMAIL when email is on.
 // Sales site, admin:
-//   GET   /api/admin/sales-leads            ?status= -> { leads, counts }
-//   PATCH /api/admin/sales-leads/:id        { status?, adminNotes? } -> { lead } (audited)
+//   GET    /api/admin/sales-leads           ?status= -> { leads, counts }
+//   PATCH  /api/admin/sales-leads/:id       { status?, adminNotes? } -> { lead } (audited)
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -25,12 +33,20 @@ import { EMAIL_RE } from '../auth/userWire.mjs';
 import { createMailer } from '../email/index.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
 import { leadNoticeEmail, salesLeadEmail } from '../tenancy/emails.mjs';
+import { clearedVisitorCookie, requestVisitor, visitorCookie } from '../tenancy/leads.mjs';
 
 const LEAD_PARAM = /^ld_[A-Za-z0-9_-]{8,40}$/;
+const DESIGN_PARAM = /^[0-9a-f-]{36}$/;
 const SALES_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
 const HOUR = 3_600_000;
 const SALES_STATUSES = ['new', 'contacted', 'demo', 'won', 'lost'];
 const one = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
+
+/** Adds a cookie without dropping one the session layer already set on this response. */
+const addCookie = (res, cookie) => {
+  const prev = res.getHeader('Set-Cookie');
+  res.setHeader('Set-Cookie', prev ? [...[].concat(prev), cookie] : cookie);
+};
 
 /** A bot filled the hidden field: answer as if it worked, store nothing. */
 const honeypot = (b) => typeof b?.website === 'string' && b.website.trim() !== '';
@@ -61,6 +77,60 @@ export default function routes(ctx) {
   const salesWire = (r) => r && { id: r.id, company: r.company, name: r.name, phone: r.phone, email: r.email, city: r.city, message: r.message, status: r.status, adminNotes: r.admin_notes, emailed: !!r.emailed, createdAt: r.created_at, updatedAt: r.updated_at };
 
   return [
+    // ── showroom: "Before you start" ────────────────────────────────────────
+    {
+      method: 'GET',
+      path: '/api/visitor',
+      auth: 'optional',
+      hosts: 'showroom',
+      handler: (rc) => {
+        const team = !!rc.memberRole;
+        let v = requestVisitor(rc);
+        // Signed in to a showroom account on this browser (the older path): it joins the lead.
+        if (v && rc.user && !team && !v.userId) ctx.tx(() => leads.linkVisitorToUser(rc.tenant.id, v, rc.user.id));
+        if (!v && rc.user && !team) v = leads.visitorForUser(rc.tenant.id, rc.user.id);
+        // An account that is already a lead (it sent a design before this form existed) isn't asked
+        // again: it answers with the account's own name and email.
+        if (!v && rc.user && !team) {
+          const leadId = leads.leadIdFor(rc.tenant.id, { userId: rc.user.id });
+          const lead = leadId ? db.prepare('SELECT consent_text, created_at FROM tenant_leads WHERE id = ?').get(leadId) : null;
+          if (lead) return { visitor: { name: rc.user.name, email: rc.user.email, phone: '', consentText: lead.consent_text, since: lead.created_at }, required: true };
+        }
+        return { visitor: leads.visitorWire(v), required: !team };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/visitor',
+      auth: 'optional',
+      hosts: 'showroom',
+      maxBytes: 4_096,
+      rateLimit: [
+        { name: 'showroom-visitor', max: 10, windowMs: 10 * 60_000, by: 'ip' },
+        { name: 'showroom-visitor-day', max: 60, windowMs: 24 * HOUR, by: 'ip' },
+      ],
+      handler: (rc) => {
+        if (rc.tenant.status === 'setup') throw new HttpError(403, 'This showroom isn’t open yet.', { code: 'showroom_not_open' });
+        if (rc.memberRole) throw new HttpError(409, 'You’re on this showroom’s team, so you can design without this form.', { code: 'team_member' });
+        const b = rc.body ?? {};
+        // A bot filled the hidden field: answer as if it worked, store nothing, set no cookie.
+        if (honeypot(b)) return rc.send(201, { visitor: { name: one(b.name, 100), email: one(b.email, 254).toLowerCase(), phone: one(b.phone, 40), consentText: '', since: ctx.now() } });
+        const out = ctx.tx(() => leads.capture(rc.tenant, b, { userId: rc.user?.id ?? null }));
+        addCookie(rc.res, visitorCookie(rc.req, config, out.token));
+        rc.send(201, { visitor: out.visitor });
+      },
+    },
+    {
+      method: 'DELETE',
+      path: '/api/visitor',
+      auth: 'none',
+      hosts: 'showroom',
+      handler: (rc) => {
+        addCookie(rc.res, clearedVisitorCookie(rc.req, config));
+        return { ok: true };
+      },
+    },
+
     // ── showroom: a visitor sends a design ──────────────────────────────────
     {
       method: 'POST',
@@ -75,16 +145,17 @@ export default function routes(ctx) {
       handler: (rc) => {
         if (rc.tenant.status === 'setup') throw new HttpError(403, 'This showroom isn’t open yet.', { code: 'showroom_not_open' });
         if (honeypot(rc.body)) return rc.send(201, { ok: true, id: `ld_${crypto.randomBytes(12).toString('base64url')}` });
-        const lead = ctx.tx(() => leads.create(rc.tenant, rc.body, { userId: rc.user?.id ?? null, designUrlOf: designUrlOf(rc) }));
+        const visitor = requestVisitor(rc);
+        const lead = ctx.tx(() => leads.create(rc.tenant, rc.body, { userId: rc.user?.id ?? null, visitor, designUrlOf: designUrlOf(rc) }));
         if (mailer.enabled) {
-          const msg = leadNoticeEmail({ showroom: rc.tenant.name, inboxUrl: `${originOf(rc)}/#/studio/leads` });
+          const msg = leadNoticeEmail({ showroom: rc.tenant.name, inboxUrl: `${originOf(rc)}/#/studio/leads/${lead.id}` });
           for (const to of noticeTo(rc.tenant)) void mailer.send({ to, ...msg });
         }
         rc.send(201, { ok: true, id: lead.id });
       },
     },
 
-    // ── showroom: the team's inbox ──────────────────────────────────────────
+    // ── showroom: the team's leads ──────────────────────────────────────────
     {
       method: 'GET',
       path: '/api/workspace/leads',
@@ -94,6 +165,7 @@ export default function routes(ctx) {
         return leads.list(rc.tenant.id, {
           status: rc.query.get('status') || undefined,
           q: rc.query.get('q') || undefined,
+          sent: rc.query.get('sent') || undefined,
           before: Number.isInteger(before) ? before : undefined,
           limit: Number(rc.query.get('limit')) || undefined,
           designUrlOf: designUrlOf(rc),
@@ -102,12 +174,18 @@ export default function routes(ctx) {
     },
     {
       method: 'GET',
+      path: '/api/workspace/leads/summary',
+      auth: 'staff',
+      handler: (rc) => ({ counts: leads.counts(rc.tenant.id) }),
+    },
+    {
+      method: 'GET',
       path: '/api/workspace/leads/export',
       auth: 'staff',
       handler: (rc) => ({
         filename: `${rc.tenant.slug}-leads-${new Date(ctx.now()).toISOString().slice(0, 10)}.csv`,
         contentType: 'text/csv',
-        content: leads.csv(rc.tenant.id, { designUrlOf: designUrlOf(rc) }),
+        content: leads.csv(rc.tenant.id),
       }),
     },
     {
@@ -128,7 +206,34 @@ export default function routes(ctx) {
       auth: 'staff',
       params: { id: LEAD_PARAM },
       maxBytes: 8_192,
-      handler: (rc) => ({ lead: leads.update(rc.tenant.id, rc.params.id, rc.body ?? {}, { designUrlOf: designUrlOf(rc) }) }),
+      handler: (rc) => ({ lead: ctx.tx(() => leads.update(rc.tenant.id, rc.params.id, rc.body ?? {}, { designUrlOf: designUrlOf(rc), by: rc.user.email })) }),
+    },
+    {
+      method: 'DELETE',
+      path: '/api/workspace/leads/:id',
+      auth: 'staff',
+      params: { id: LEAD_PARAM },
+      rateLimit: { name: 'lead-delete', max: 60, windowMs: HOUR, by: 'user' },
+      handler: (rc) => {
+        const removed = ctx.tx(() => {
+          const out = leads.remove(rc.tenant.id, rc.params.id);
+          // Who deleted which lead, never the person's name or details (they were asked to be forgotten).
+          audit(db, { admin: rc.user, action: 'showroom_lead_delete', detail: { tenantId: rc.tenant.id, leadId: rc.params.id, role: rc.memberRole, ...out }, at: ctx.now() });
+          return out;
+        });
+        return { ok: true, removed };
+      },
+    },
+    {
+      method: 'GET',
+      path: '/api/workspace/leads/:id/designs/:designId',
+      auth: 'staff',
+      params: { id: LEAD_PARAM, designId: DESIGN_PARAM },
+      handler: (rc) => {
+        const design = leads.design(rc.tenant.id, rc.params.id, rc.params.designId);
+        if (!design) throw new HttpError(404, 'That design does not exist.');
+        return { design };
+      },
     },
 
     // ── sales site: Book a call ─────────────────────────────────────────────

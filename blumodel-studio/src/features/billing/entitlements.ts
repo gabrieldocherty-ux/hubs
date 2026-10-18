@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { call } from '../../lib/api';
 import { loadConfig, useConfig } from '../../lib/config';
 import { useSession } from '../../store/useSession';
+import { useVisitorStore } from '../showroom/visitor';
 import type { AccountPlanId, Entitlements, ExportKind, PlanId } from '../../types/platform';
 
 /**
@@ -54,7 +55,8 @@ export function loadEntitlements(force = false): Promise<void> {
  * and the server still checks that the kitchen is the account's own.
  */
 export function isEntitled(projectId: string | null): boolean {
-  return !!projectId && !!useSession.getState().user;
+  // A showroom visitor who gave their details owns their saved designs too (docs/handoff/leads.md).
+  return !!projectId && (!!useSession.getState().user || !!useVisitorStore.getState().visitor);
 }
 
 /** What the editor shows on its Export menu. `watermark` is always false: nothing is watermarked any more. */
@@ -65,7 +67,8 @@ export function useEntitlements(projectId: string | null): { loading: boolean; c
     void loadEntitlements();
   }, [userId]);
   const mine = st.userId === userId;
-  return { loading: false, canExport: !!projectId && !!userId, watermark: false, plan: userId && mine ? st.plan : 'free' };
+  const visitor = useVisitorStore((s) => !!s.visitor);
+  return { loading: false, canExport: !!projectId && (!!userId || visitor), watermark: false, plan: userId && mine ? st.plan : 'free' };
 }
 
 /** A file the server made for a paid export (the CSV and the project file). */

@@ -1,0 +1,162 @@
+/*
+ * "Before you start" (LeadGate): a calm page in the company's colours (palette.ts turns them into
+ * the accent tokens), one card, the form. Colours are tokens only, so light, dark and contrast
+ * follow the theme. The fields, the consent box and the button share the Send form's styles.
+ */
+
+.sr-gate {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.sr-gate-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  border-top: 3px solid var(--brand, var(--accent));
+  background: var(--panel);
+}
+
+.sr-gate-bar .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sr-gate-main {
+  flex: 1;
+  display: grid;
+  place-items: start center;
+  padding: clamp(20px, 6vh, 64px) 16px 40px;
+}
+
+.sr-gate-card {
+  width: min(520px, 100%);
+  padding: 28px 28px 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.sr-gate-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.sr-gate-head .site-logo {
+  flex: none;
+  border-radius: 12px;
+}
+
+.sr-gate-head h1 {
+  margin: 0 0 6px;
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.sr-gate-head p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.sr-gate-card .field input {
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.sr-gate-card .field input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
+.sr-gate-either {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.sr-gate-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 14px;
+}
+
+.sr-gate-contact-err {
+  display: block;
+  margin: -6px 0 12px;
+}
+
+.sr-gate-go {
+  width: 100%;
+  min-height: 46px;
+  margin-top: 16px;
+  font-size: 15px;
+}
+
+.sr-gate-team {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.sr-gate-card a {
+  color: var(--accent-text);
+}
+
+@media (max-width: 560px) {
+  .sr-gate-bar {
+    padding: 8px 16px;
+  }
+  .sr-gate-main {
+    padding: 16px 16px 32px;
+  }
+  .sr-gate-card {
+    padding: 20px 16px 16px;
+    border-radius: 14px;
+  }
+  .sr-gate-head h1 {
+    font-size: 22px;
+  }
+  .sr-gate-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Touch screens: every control at least 44px tall. */
+@media (pointer: coarse) {
+  .sr-gate-card .field input {
+    height: 46px;
+    font-size: 16px;
+  }
+  .sr-gate-card .sr-send-consent {
+    min-height: 44px;
+    align-items: center;
+  }
+  .sr-gate-card .sr-send-consent input {
+    width: 24px;
+    height: 24px;
+  }
+  .sr-gate-team a,
+  .sr-send-fine a {
+    display: inline-block;
+    min-height: 44px;
+    line-height: 44px;
+  }
+}

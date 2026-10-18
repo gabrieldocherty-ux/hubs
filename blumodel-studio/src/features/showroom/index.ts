@@ -19,6 +19,7 @@ export { shortName, looksLikeShowroomHost, type PublicTenant, type SiteKind } fr
 export { showroomLines, showroomPrefs, linesIn, lineFromQuery, isOwnProduct, keepShowroomItems, type ShowroomLine } from './lines';
 export { designHref, newDesignHash, roomFromQuery, type RoomKind } from './links';
 export { SendDesign, type SendPlace } from './SendDesign';
+export { useVisitor, currentVisitor, loadVisitor, forgetVisitor, type Visitor } from './visitor';
 
 /**
  * Routes a showroom never has: our sales pages, legacy paid flows, brand and contractor pages, the

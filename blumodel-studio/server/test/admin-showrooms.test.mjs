@@ -144,7 +144,7 @@ test('usage and the studio queue: each company sees only its own orders; the lis
     assert.equal(r.body.products.live, 1);
     assert.equal(r.body.products.hidden, 1);
     assert.equal(r.body.products.included, 50);
-    assert.deepEqual(r.body.leads, { total: 0, new: 0 });
+    assert.deepEqual(r.body.leads, { total: 0, new: 0, thisMonth: 0, sent: 0 });
     assert.deepEqual(r.body.queue.orders.map((o) => o.id).sort(), [o1, o2].sort());
     assert.equal(r.body.queue.overdue, 1);
     assert.ok(r.body.queue.orders.every((o) => typeof o.brief === 'string' && o.brief.length <= 160));

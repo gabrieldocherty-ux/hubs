@@ -4,6 +4,7 @@ import { useRoute } from '../../lib/router';
 import { useDesignStore } from '../../store/useDesignStore';
 import { useSession } from '../../store/useSession';
 import { useShowroom } from './useShowroom';
+import { useVisitor } from './visitor';
 import { shortName } from './site';
 import { isDownloadToast, sentAt } from './send';
 import { CLAIM_DRAFT_HREF } from './links';
@@ -50,14 +51,17 @@ export function SendDesign({ where, hidden = false, shareToken, designName }: Se
   const team = useTeamRole();
   const projectId = useSession((s) => (where === 'share' ? null : s.projectId));
   const signedIn = useSession((s) => s.status === 'signedIn');
+  // A visitor who gave their details ("Before you start") sends their saved design without an account.
+  const visitor = useVisitor();
+  const known = signedIn || !!visitor;
   const [open, setOpen] = useState(false);
   const docName = useDesignStore((s) => s.doc.name);
   const key = shareToken ? `s:${shareToken}` : projectId ? `k:${projectId}` : null;
   const [sent, setSent] = useState<number | null>(() => (key ? sentAt(key) : null));
   useEffect(() => setSent(key ? sentAt(key) : null), [key]);
 
-  // A signed-out visitor's device design: sending it needs an account, which keeps the design.
-  if (showroom && !team && !hidden && where === 'summary' && !signedIn && !projectId) {
+  // A design kept on this device by a browser the showroom doesn't know yet: making an account keeps it.
+  if (showroom && !team && !hidden && where === 'summary' && !known && !projectId) {
     const n = shortName(showroom);
     return (
       <section className="sr-send-card" aria-labelledby="sr-send-title" data-testid="send-design">
@@ -70,8 +74,8 @@ export function SendDesign({ where, hidden = false, shareToken, designName }: Se
     );
   }
   if (!showroom || team || hidden || !key) return null;
-  // In the editor the design must be one's own saved kitchen; the share page needs no account.
-  if (where !== 'share' && !signedIn) return null;
+  // In the editor the design must be one's own saved design; the share page needs no account.
+  if (where !== 'share' && !known) return null;
   if (where === 'export') return <AfterDownload onOpen={() => setOpen(true)} name={shortName(showroom)} open={open} dialog={dialog()} />;
 
   function dialog() {

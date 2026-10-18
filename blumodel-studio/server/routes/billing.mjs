@@ -14,6 +14,7 @@
 // reused for it (Stripe refuses mixed currencies), so the checkout starts a fresh customer.
 
 import { HttpError } from '../http/respond.mjs';
+import { requestVisitor } from '../tenancy/leads.mjs';
 import { randomId, PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { CURRENCY, planById, PLANS, SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
 import { loadKit } from '../lib/kit.mjs';
@@ -449,22 +450,30 @@ export default function routes(ctx) {
       path: '/api/projects/:id/exports',
       // Free for everyone, on every site; a showroom visitor exports their own kitchen there.
       hosts: 'any',
+      // A showroom visitor without an account (server/tenancy/leads.mjs) exports their own designs too.
+      auth: 'optional',
       rateLimit: { name: 'exports', max: 300, windowMs: 3_600_000, by: 'user' },
       handler: async (rc) => {
         const kind = rc.body.kind;
         if (!EXPORT_KINDS.includes(kind)) throw new HttpError(400, 'Choose what to export.');
-        const project = ownedProject(rc.user.id, rc.params.id, rc.site.tenantId);
+        const visitor = rc.user ? null : requestVisitor(rc);
+        if (!rc.user && !visitor) throw new HttpError(401, 'Please sign in.');
+        const project = rc.user
+          ? ownedProject(rc.user.id, rc.params.id, rc.site.tenantId)
+          : db.prepare('SELECT * FROM projects WHERE id = ? AND visitor_id = ? AND tenant_id IS ?').get(rc.params.id, visitor.id, rc.site.tenantId);
+        if (!project) throw new HttpError(404, 'That kitchen does not exist.');
+        const ownerId = rc.user?.id ?? null;
         const doc = { ...JSON.parse(project.doc), name: project.name };
         let file = null;
         if (kind === 'csv') {
           const kit = await loadKit();
-          const out = kit.csvFor(doc, { products: liveProducts(doc, rc.user, rc.site), priceBook: services.pricing.priceBookFor(rc.user.id) });
+          const out = kit.csvFor(doc, { products: liveProducts(doc, rc.user, rc.site), priceBook: services.pricing.priceBookFor(ownerId) });
           file = { filename: out.filename, contentType: 'text/csv', content: out.content };
         } else if (kind === 'json') {
-          const clean = services.pricing.stripDoc(doc, { viewer: null, ownerUserId: rc.user.id });
+          const clean = services.pricing.stripDoc(doc, { viewer: null, ownerUserId: ownerId });
           file = { filename: `${slug(project.name)}.kitchen.json`, contentType: 'application/json', content: JSON.stringify({ app: 'blumodel-studio', version: 2, doc: clean }, null, 2) };
         }
-        db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, rc.user.id, kind, ctx.now());
+        db.prepare('INSERT INTO export_events (project_id, user_id, kind, created_at) VALUES (?, ?, ?, ?)').run(project.id, ownerId ?? `visitor:${visitor.id}`, kind, ctx.now());
         return { ok: true, ...(file ? { file } : {}) };
       },
     },

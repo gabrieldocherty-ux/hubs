@@ -66,8 +66,9 @@ export default function App() {
     void useCatalog.getState().load(changed);
   }, [status, userId]);
 
-  // On a showroom a visitor starts a design signed out (it stays on the device until they send it).
-  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && (NOT_ON_SHOWROOM.has(route.name) || route.name === 'new'));
+  // On a showroom a visitor designs signed out: "Before you start" (features/showroom/LeadGate)
+  // asks for their details instead, and their designs save under them (docs/handoff/leads.md).
+  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && (NOT_ON_SHOWROOM.has(route.name) || route.name === 'new' || route.name === 'kitchen'));
   // A password-reset link (`#/signin?reset=`) opens even when this browser is signed in: setting
   // the new password signs the browser in as the account it belongs to.
   const resetPage = route.name === 'signin' && splitHash(location.hash).query.has('reset');

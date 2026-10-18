@@ -15,7 +15,7 @@ import { PhotorealButton } from '../features/renders';
 import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
-import { shortName, SiteMark, useShowroom } from '../features/showroom';
+import { shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
@@ -73,8 +73,10 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   // The Est. chip is the cost estimator: a setting, off by default (Account settings > Preferences).
   // A shared kitchen (view) follows its link's own price setting.
   const showEstimator = useShowEstimator();
-  const signedIn = useSession((s) => s.status === 'signedIn' && !!s.projectId);
   const hasUser = useSession((s) => !!s.user);
+  // A showroom visitor who gave their details ("Before you start") has saved designs without an account.
+  const visitor = useVisitor();
+  const signedIn = useSession((s) => (s.status === 'signedIn' || !!visitor) && !!s.projectId);
   // On a company's showroom the mark is the company's.
   const showroom = useShowroom();
   const [menu, setMenu] = useState(false);
@@ -235,7 +237,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
         )}
         <RenderButton />
         <PhotorealButton />
-        {!view && <ShareButton projectId={projectId} />}
+        {!view && hasUser && <ShareButton projectId={projectId} />}
         {!view && <PresentButton compact={compact} />}
         {!(view && hideExport) && (
           <div className="menu-wrap" ref={menuRef}>
@@ -309,7 +311,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
             />
           </div>
         )}
-        {(!view || hasUser) && <AccountMenu />}
+        {(hasUser || (!view && !visitor)) && <AccountMenu />}
       </div>
     </header>
   );

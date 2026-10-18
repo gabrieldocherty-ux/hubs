@@ -4,6 +4,8 @@
  * the field before anything is sent. Pure, so it is tested without a page.
  */
 
+import { normalizePhone } from '../../lib/phone';
+
 export interface LeadDraft {
   name: string;
   email: string;
@@ -26,7 +28,6 @@ export const TIMELINES = ['As soon as possible', '1-3 months', '3-6 months', '6-
 
 /** The same address check as the server's EMAIL_RE (server/auth/userWire.mjs), plus its no-separators rule. */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE = /^[0-9+().\-\s x]{7,40}$/i;
 const POSTAL = /^[A-Z0-9][A-Z0-9 -]{2,10}$/;
 
 const one = (v: string, max: number) => v.replace(/\s+/g, ' ').trim().slice(0, max);
@@ -41,11 +42,13 @@ export const consentText = (company: string) => `I agree that ${company} may con
 export function checkLead(d: LeadDraft, company: string): LeadErrors {
   const e: LeadErrors = {};
   const email = one(d.email, 254).toLowerCase();
-  const phone = one(d.phone, 40);
+  const phone = normalizePhone(d.phone);
   const postal = one(d.postalCode, 12).toUpperCase();
   if (!one(d.name, 100)) e.name = 'Tell us your name.';
-  if (!EMAIL.test(email) || /[\r\n,;<>]/.test(email)) e.email = 'That email address doesn’t look right.';
-  if (phone && !PHONE.test(phone)) e.phone = 'That phone number doesn’t look right.';
+  if (email && (!EMAIL.test(email) || /[\r\n,;<>]/.test(email))) e.email = 'That email address doesn’t look right.';
+  if (!phone.ok) e.phone = phone.reason;
+  // Email or phone, at least one (the same rule as "Before you start").
+  if (!email && phone.ok && !phone.value) e.email = `Give an email or a phone number so ${company} can reach you.`;
   if (postal && !POSTAL.test(postal)) e.postalCode = 'That postal code doesn’t look right.';
   if (!d.consent) e.consent = `Tick the box so ${company} can contact you.`;
   return e;
