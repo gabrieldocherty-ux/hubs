@@ -371,3 +371,30 @@ test('update.mjs: --auto takes no plan options; --trigger-only needs --auto; the
   assert.match(bad.stderr, /--build/);
   assert.match(bad.stderr, /--auto \[--trigger-only\]/);
 });
+
+test('the progress file the face follows: checking, downloading, deploying, then finished with the outcome; a busy run leaves it alone', () => {
+  const h = home();
+  try {
+    const F = updateFiles(h);
+    const seen = [];
+    const g = fakeGit();
+    const update = () => {
+      seen.push(JSON.parse(fs.readFileSync(F.progress, 'utf8')).stage);
+      fs.writeFileSync(path.join(h, 'app', 'DEPLOYED.txt'), `commit ${NEW.slice(0, 7)}\n`);
+      return 0;
+    };
+    const git = (args) => {
+      if (args[0] === 'merge') seen.push(JSON.parse(fs.readFileSync(F.progress, 'utf8')).stage);
+      return g.git(args);
+    };
+    auto(h, git, update);
+    assert.deepEqual(seen, ['downloading', 'deploying']);
+    const done = JSON.parse(fs.readFileSync(F.progress, 'utf8'));
+    assert.deepEqual([done.stage, done.outcome, done.to], ['finished', 'updated', NEW]);
+    acquireLock(F);
+    auto(h, fakeGit().git, fakeUpdate(h).update);
+    assert.equal(JSON.parse(fs.readFileSync(F.progress, 'utf8')).outcome, 'updated', 'busy: untouched');
+  } finally {
+    rm(h);
+  }
+});

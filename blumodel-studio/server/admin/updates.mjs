@@ -29,6 +29,7 @@ const files = (home) => ({
   conf: path.join(home, 'auto-update.conf'),
   status: path.join(home, 'logs', 'update-status.json'),
   trigger: path.join(home, 'logs', 'update-now.request'),
+  progress: path.join(home, 'logs', 'update-progress.json'),
   logs: path.join(home, 'logs'),
 });
 
@@ -97,8 +98,16 @@ export function updateStatus({ home = serverHome() } = {}) {
     failed: s.failed && commit(s.failed.commit) ? { commit: s.failed.commit, at: ms(s.failed.at) } : null,
     rolledBack: !!last && ['rolled-back', 'down', 'failed'].includes(last.outcome),
     pending: fs.existsSync(F.trigger),
+    progress: progressOf(readJson(F.progress)),
   };
 }
+
+const STAGES = new Set(['checking', 'downloading', 'deploying', 'finished']);
+/** The running (or last) update's stage, as the face shows it live. */
+const progressOf = (p) =>
+  p && STAGES.has(p.stage)
+    ? { stage: p.stage, at: ms(p.at), startedAt: ms(p.startedAt), outcome: p.stage === 'finished' && OUTCOMES.has(p.outcome) ? p.outcome : null, to: commit(p.to), error: p.error ? redact(String(p.error), 300) : null }
+    : null;
 
 /**
  * Leaves the Update now trigger. Throws `{ code }` when the home has no automatic update installed

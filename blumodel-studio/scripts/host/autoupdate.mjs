@@ -28,7 +28,9 @@
 //   update-status.json    { checkedAt, branch, deployed, head, source, result, failed, schedule }
 //   update-state.json     { failedCommit, failedAt } the commit not to retry
 //   update.lock           { pid, at } while a run is going
-//   update-now.request    the trigger, written by the server (Admin > System > Update now)
+//   update-now.request    the trigger, written by the server (Admin > System > Update now, the face)
+//   update-progress.json  { stage, at, startedAt, outcome?, to?, error? } while a run goes: checking,
+//                         downloading, deploying, then finished (the face shows it live)
 // and <home>/auto-update.conf (AUTO_UPDATE=on|off, AUTO_UPDATE_TIME=HH:MM), written by
 // register-tasks when it installs the schedule. Nothing here reads blumodel.env.
 //
@@ -58,6 +60,7 @@ export function updateFiles(home, platform = process.platform) {
     state: p.join(logs, 'update-state.json'),
     lock: p.join(logs, 'update.lock'),
     trigger: p.join(logs, 'update-now.request'),
+    progress: p.join(logs, 'update-progress.json'),
     conf: p.join(h, 'auto-update.conf'),
     deploying: p.join(h, 'deploying'),
     deployed: p.join(h, 'app', 'DEPLOYED.txt'),
@@ -101,6 +104,15 @@ const writeJson = (file, value) => {
 };
 
 export const readStatus = (F) => readJson(F.status);
+export const readProgress = (F) => readJson(F.progress);
+/** The run's current stage, for the face's live progress. Never fails the run. */
+export function writeProgress(F, stage, extra = {}) {
+  try {
+    writeJson(F.progress, { stage, at: new Date().toISOString(), ...extra });
+  } catch {
+    /* progress is a nicety */
+  }
+}
 export const readState = (F) => readJson(F.state) ?? { failedCommit: null, failedAt: null };
 export const writeState = (F, s) => writeJson(F.state, s);
 export const writeStatus = (F, s) => writeJson(F.status, s);
@@ -248,6 +260,7 @@ export function runAuto({ home, root, branch, platform = process.platform, trigg
     } catch (err) {
       out(`blumodel-update: could not write ${F.status}: ${err?.message ?? err}`);
     }
+    if (full.outcome !== 'busy') writeProgress(F, 'finished', { startedAt: full.at, outcome: full.outcome, from: full.from, to: full.to, error: full.error, by });
     out(`blumodel-update: ${full.outcome}${full.to ? ` ${String(full.to).slice(0, 7)}` : ''}${full.error ? `: ${full.error}` : ''} (${Math.round(full.durationMs / 100) / 10} s, ${by})`);
     return full;
   };
@@ -265,6 +278,8 @@ export function runAuto({ home, root, branch, platform = process.platform, trigg
       return { outcome: 'busy', code: 0, entry };
     }
     if (requested) fs.rmSync(F.trigger, { force: true });
+    const startedAt = new Date(started).toISOString();
+    writeProgress(F, 'checking', { startedAt, by });
 
     const dirty = git(['status', '--porcelain', '--untracked-files=no']);
     if (dirty.status !== 0) return { outcome: 'error', code: 1, entry: finish({ outcome: 'error', error: `git status failed (exit ${dirty.status})` }) };
@@ -288,9 +303,12 @@ export function runAuto({ home, root, branch, platform = process.platform, trigg
     }
     out(`blumodel-update: ${d.reason}: updating`);
     if (local !== head) {
+      writeProgress(F, 'downloading', { startedAt, by, to: head });
       const m = git(['merge', '--ff-only', '--quiet', head]);
       if (m.status !== 0) return { outcome: 'refused', code: 1, entry: finish({ ...base, outcome: 'refused', error: `git merge --ff-only failed (exit ${m.status}); nothing was changed` }, { status: { head } }) };
     }
+    // The deploy stops and restarts the server: the face shows "restarting" until it answers again.
+    writeProgress(F, 'deploying', { startedAt, by, to: head });
     const code = update();
     const outcome = outcomeOfExit(code);
     const nowDeployed = deployedCommit(F);
