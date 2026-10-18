@@ -37,9 +37,12 @@ by the daily job. An admin can delete one at any time (Admin > Sales leads > Del
 - **Delete company** (typed confirmation of the company's web address): removes the showroom's
   settings, hostnames, team, showroom accounts and their sessions, products, designs, share links,
   leads, renders, credits and uploads (files no longer used by anything else). **Billing records
-  are kept, anonymised**: license and payment rows keep amount, currency, dates and the payment
-  provider's reference, because tax law requires them (6 years in Canada), but no names, emails or
-  phone numbers. Audited with counts only.
+  are kept, anonymised**: license and payment rows are copied to `deleted_tenant_billing` with
+  amount, currency, dates, the payment provider's reference and the showroom's slug, because tax
+  law requires them (6 years in Canada), but no names, notes, emails or phone numbers. Nothing
+  deletes those rows automatically yet: removing them after 6 years is a manual step. The company's
+  people are pseudonymised in the audit log. Audited with counts only (`tenant_delete`). The demo
+  showroom can't be deleted this way.
 - Nothing is deleted automatically when a showroom lapses or a trial ends: the data stays until the
   company or an admin asks for deletion.
 
@@ -63,3 +66,16 @@ by the daily job. An admin can delete one at any time (Admin > Sales leads > Del
 - A showroom monthly payment that is **refunded** or **disputed** (charged back): the month's render
   credits that weren't spent yet are taken back, the company is flagged for admin review, and a
   dispute starts the 14-day grace period as a failed payment does.
+
+## Where each rule lives (for whoever changes one)
+
+| Rule | Code | Test |
+|---|---|---|
+| lead retention, sales-lead retention | `ctx.retentionSweep` (server/app.mjs), `leads.purgeStale`, `purgeSalesLeads` | protect-retention |
+| visitor cookie 180 days | `VISITOR_DAYS` (server/tenancy/leads.mjs) | protect-retention |
+| possible duplicates | `upsert` / `merge` / `keepSeparate` (server/tenancy/leads.mjs) | showroom-leads |
+| lead export owner-only, audited | `GET /api/workspace/leads/export` (server/routes/tenantsLeads.mjs) | protect-lead-export |
+| company export and delete | server/tenancy/companyData.mjs | protect-company-data |
+| audit pseudonyms | `pseudonymiseAudit` (server/lib/audit.mjs) | protect-audit-pseudonyms |
+| two-factor sign-in | server/auth/mfa.mjs, server/auth/totp.mjs | protect-mfa |
+| refunds and disputes | `paymentReversed` (server/billing/showroom.mjs) | protect-refunds |
