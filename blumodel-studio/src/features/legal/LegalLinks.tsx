@@ -3,7 +3,9 @@ import { useSession } from '../../store/useSession';
 
 /**
  * The footer's © lines: on the sales site ours (LEGAL_NAME, else BluModel Studio); on a showroom the
- * company's for its brand, and ours for the software and the showroom template.
+ * company's for its brand. A showroom is white-label, so its legal footer names only the company;
+ * our © for the software and the template is on the showroom landing's footer ("Virtual showroom by
+ * BluModel Studio · software ©") and in the terms (section 19). `software` is that line, for it.
  */
 export function copyrightLines(tenantName: string | null, businessName: string | null, year = new Date().getFullYear()): { owner: string; software: string | null } {
   const ours = businessName || 'BluModel Studio';
@@ -39,7 +41,6 @@ export function LegalLinks({ className = '', newTab = false }: { className?: str
       )}
       {!tenant && legal.supportEmail && <a href={`mailto:${legal.supportEmail}`}>Contact</a>}
       <span className="legal-links-owner">{lines.owner}</span>
-      {lines.software && <span className="legal-links-software">{lines.software}</span>}
       <LegalUnsetBadge />
     </nav>
   );

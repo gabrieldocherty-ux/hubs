@@ -74,7 +74,7 @@ test('the privacy page states the retention the server enforces (docs/handoff/da
   assert.doesNotMatch(p, /400 days/);
 });
 
-test('every site’s footer carries the © line: ours on the sales site, the company’s and ours (the software) on a showroom', () => {
+test('every site’s footer carries the © line: ours on the sales site, the company’s on a (white-label) showroom, ours for the software on its landing', () => {
   const year = new Date().getFullYear();
   assert.deepEqual(copyrightLines(null, null, 2026), { owner: '© 2026 BluModel Studio', software: null });
   assert.deepEqual(copyrightLines(null, 'Sample Kitchen Co.', 2026), { owner: '© 2026 Sample Kitchen Co.', software: null });
