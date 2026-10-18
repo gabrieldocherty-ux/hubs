@@ -58,7 +58,7 @@ export const tokenOf = (html) => /<meta name="face-token" content="([A-Za-z0-9_-
 
 /** Status as text lines. */
 export function statusLines(s) {
-  const out = [`All sites are ${s.sitesOn ? 'ON' : 'OFF (maintenance: visitors see "We\'ll be right back")'}${s.since ? ` since ${new Date(s.since).toLocaleString()}${s.by ? ` (${s.by})` : ''}` : ''}.`];
+  const out = [`All sites are ${s.sitesOn ? 'ON' : 'OFF (maintenance: visitors see "We\'ll be right back")'}${s.since ? ` since ${new Date(s.since).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' })}${s.by ? ` (${s.by})` : ''}` : ''}.`];
   for (const x of s.sites ?? []) out.push(`  ${x.up ? '[up]  ' : '[DOWN]'} ${x.address.padEnd(36)} ${x.name} (${s.sitesOn ? x.label : 'off'})`);
   out.push(`Memory ${s.memoryMb} MB; deployed ${s.commit ?? 'n/a'}; up ${Math.floor((s.uptimeSec ?? 0) / 60)} min.`);
   return out;

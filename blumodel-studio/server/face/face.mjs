@@ -294,7 +294,7 @@ dt { color: var(--muted); } dd { margin: 0; }
   let s = ${JSON.stringify(s).replace(/</g, '\\u003c')};
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  const when = (ms) => (ms ? new Date(ms).toLocaleString() : 'never');
+  const when = (ms) => (ms ? new Date(ms).toLocaleString('en-CA', { dateStyle: 'medium', timeStyle: 'short' }) : 'never');
   const dur = (sec) => { const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600), m = Math.floor((sec % 3600) / 60); return d ? d + ' d ' + h + ' h' : h ? h + ' h ' + m + ' min' : m + ' min'; };
   const OUT = { current: 'up to date', updated: 'updated', skipped: 'skipped a failed release', refused: 'refused', busy: 'busy', 'rolled-back': 'rolled back', failed: 'failed', down: 'failed, rollback failed', error: 'could not check' };
   function render() {
