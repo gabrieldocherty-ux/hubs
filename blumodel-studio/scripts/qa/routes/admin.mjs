@@ -519,6 +519,7 @@ export default [
   }),
   // Admin > System > All websites: OFF (through its confirm) puts every site in maintenance - the
   // health check says so - while this admin keeps the page; then ON again (the run goes on after).
+  // (What a visitor gets while it's off is server/test/sites-switch.test.mjs: a 503 here would fail QA.)
   ...four({
     name: 'admin-sites-switch',
     path: '#/admin/system',
@@ -530,13 +531,11 @@ export default [
       await press(h, 'Yes, turn every site off');
       await h.waitForText(['OFF (maintenance)', 'Turn all sites on']);
       const health = await h.evaluate(() => fetch('/api/health').then((r) => r.json()));
-      const page = await h.evaluate(() => fetch('/api/catalog/brands', { credentials: 'omit' }).then((r) => r.status));
       await h.shot('off');
       // Back ON before judging, so a failure here never leaves the rest of the run in maintenance.
       await press(h, 'Turn all sites on');
       await h.waitForText(['Turn all sites off']);
       if (health.maintenance !== true) throw new Error(`/api/health did not say maintenance: ${JSON.stringify(health)}`);
-      if (page !== 503) throw new Error(`signed out, the API answered ${page}, not 503`);
       const after = await h.evaluate(() => fetch('/api/health').then((r) => r.json()));
       if (after.maintenance) throw new Error('still in maintenance after turning the sites on');
     },
