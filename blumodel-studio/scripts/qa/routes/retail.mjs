@@ -3,6 +3,11 @@
 // product page's "Where to buy" (sponsored first, the affiliate parameter, rel, the disclaimer, an
 // anonymous click count), Admin > Retailers (admin only, audited), the wizard's brand list API, and
 // the store faucets, pulls and knobs in Room & finishes (every drawn style, up close in 3D).
+//
+// The retail data is BluModel's internal research library (docs/handoff/protect.md): it isn't in
+// the client bundle and only our staff get it (GET /api/catalog/retail), so the catalog and
+// product-page routes run as the studio account; retail-library-not-public checks that a visitor
+// to the sales site and a showroom never receive it.
 // Run: node scripts/qa.mjs --pkg retail --port 8875 --dist .build/retail --strict-external
 //
 // Nothing here follows a store link: the runner fails a route on any request to a non-local host,
@@ -184,7 +189,7 @@ const fixtureRoutes = [
   {
     name: 'retail-fixtures-desktop',
     path: '#/local',
-    as: 'anon',
+    as: 'studio',
     waitFor: ['.topbar', '.left-panel'],
     timeoutMs: 90_000,
     check: async (h) => {
@@ -243,7 +248,7 @@ const fixtureRoutes = [
   {
     name: 'retail-fixtures-phone',
     path: '#/local',
-    as: 'anon',
+    as: 'studio',
     viewport: 'phone',
     waitFor: ['.plan-view canvas', '.mbar-actions'],
     timeoutMs: 60_000,
@@ -330,7 +335,7 @@ export default [
   {
     name: 'retail-catalog-desktop',
     path: '#/local',
-    as: 'anon',
+    as: 'studio',
     waitFor: ['.topbar', '.left-panel .product-card', '#catalog-store'],
     timeoutMs: 40_000,
     check: async (h) => {
@@ -390,7 +395,7 @@ export default [
   {
     name: 'retail-catalog-phone',
     path: '#/local',
-    as: 'anon',
+    as: 'studio',
     viewport: 'phone',
     waitFor: ['.plan-view canvas', '.mbar-actions'],
     timeoutMs: 40_000,
@@ -431,7 +436,7 @@ export default [
   // ── Product page: Where to buy ──────────────────────────────────────────
   {
     name: 'retail-product-where-to-buy',
-    as: 'anon',
+    as: 'studio',
     // The rows show once the store settings (sponsored first) have loaded: read them then.
     waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Prices in CAD', 'Prices and availability change', 'confirm with the store'],
@@ -484,7 +489,7 @@ export default [
   },
   {
     name: 'retail-product-phone',
-    as: 'anon',
+    as: 'studio',
     viewport: 'phone',
     waitFor: ['.pp-buy-list:not([aria-busy]) .pp-buy-row'],
     expectText: ['Where to buy', 'Prices and availability change'],
@@ -585,6 +590,51 @@ export default [
       }
       const anon = await h.api.get('/api/admin/retailers');
       if (anon.status !== 401) throw new Error(`signed out: ${anon.status}`);
+    },
+  },
+
+  // ── The library is not public ───────────────────────────────────────────
+  ...['anon', 'customer'].map((as) => ({
+    name: `retail-library-not-public-${as}`,
+    path: '#/local',
+    as,
+    waitFor: ['.topbar', '.left-panel .product-card'],
+    timeoutMs: 40_000,
+    check: async (h) => {
+      await emptyKitchen(h);
+      await h.sleep(800);
+      const seen = await h.evaluate(() => ({
+        retailCards: [...document.querySelectorAll('.left-panel .product-card')].filter((c) => c.dataset.product?.startsWith('r-')).length,
+        chips: document.querySelectorAll('.store-chip').length,
+        asked: performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\/api\/catalog\/retail(\?|$)|\/assets\/retail-[^/]*\.js/.test(n)),
+      }));
+      if (seen.retailCards || seen.chips) throw new Error(`a ${as} sees the retail library: ${JSON.stringify(seen)}`);
+      if (seen.asked.length) throw new Error(`the page asked for the retail library: ${seen.asked.join(', ')}`);
+      // The API refuses it too, and no script the site serves carries it.
+      const anon = await h.api.get('/api/catalog/retail');
+      const customer = await h.api.as('customer').get('/api/catalog/retail');
+      if (anon.status !== 401 || customer.status !== 403) throw new Error(`GET /api/catalog/retail: signed out ${anon.status}, customer ${customer.status} (want 401, 403)`);
+      const scripts = await h.evaluate(async () => {
+        const urls = [...new Set(performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\/assets\/.*\.js$/.test(n)))];
+        const bodies = await Promise.all(urls.map((u) => fetch(u).then((r) => r.text())));
+        return bodies.filter((b) => /homedepot\.ca|rona\.ca\/|r-samsung-ne63a6511ss/.test(b)).length;
+      });
+      if (scripts) throw new Error(`${scripts} script(s) the page loaded carry retail listings`);
+      await noSideScroll(h);
+    },
+  })),
+  {
+    name: 'retail-library-not-on-showroom',
+    host: 'demo',
+    as: 'showroom-visitor',
+    setup: async ({ api }) => ({ path: `#/k/${api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = 'demo-visitor@blumodel.test' ORDER BY p.name LIMIT 1")[0].id}` }),
+    waitFor: ['.topbar .site-logo', '.plan-view canvas'],
+    check: async (h) => {
+      await h.sleep(800);
+      const asked = await h.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\/api\/catalog\/retail|\/assets\/retail-[^/]*\.js/.test(n)));
+      if (asked.length) throw new Error(`the showroom asked for the retail library: ${asked.join(', ')}`);
+      const r = await h.evaluate(() => fetch('/api/catalog/retail').then((x) => x.status));
+      if (r !== 404) throw new Error(`a showroom answers GET /api/catalog/retail with ${r} (want 404)`);
     },
   },
 

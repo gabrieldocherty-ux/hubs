@@ -15,8 +15,10 @@ const PARAM_RE = /^[A-Za-z0-9_-]{1,80}$/;
 const BY = new Set(['ip', 'user', 'ip+user']);
 
 /**
- * @typedef {{ name: string, max: number, windowMs: number, by?: string }} RateLimitDef
- *   A route may carry several (e.g. per user AND per real IP); every one must pass.
+ * @typedef {{ name: string, max?: number, windowMs?: number, burst?: number, refill?: number, everyMs?: number, by?: string }} RateLimitDef
+ *   Either a fixed window (`max` requests per `windowMs`) or a token bucket (`burst` at once, then
+ *   `refill` more every `everyMs`: server/auth/rateLimit.mjs take). A route may carry several (e.g.
+ *   per user AND per real IP, or a per-minute and a per-day bucket); every one must pass.
  *   `hosts` says which sites the route answers on ('sales' | 'showroom' | 'any'); elsewhere it is a
  *   404, as if it didn't exist. Default: the module's (routes/index.mjs). 'studio' and 'admin'
  *   routes are always 'sales'; 'staff' and 'owner' routes always 'showroom'.
@@ -46,7 +48,9 @@ function compileRoute(def, moduleName, moduleHosts = 'any') {
   const csrf = def.csrf ?? method !== 'GET';
   const limits = def.rateLimit ? (Array.isArray(def.rateLimit) ? def.rateLimit : [def.rateLimit]) : [];
   for (const rl of limits) {
-    if (!rl || !rl.name || !(rl.max > 0) || !(rl.windowMs > 0)) throw new Error(`${where}: rateLimit needs name, max and windowMs.`);
+    const bucket = rl && rl.burst !== undefined;
+    if (!rl || !rl.name || (bucket ? !(rl.burst >= 1) || !(rl.refill > 0) || !(rl.everyMs > 0) : !(rl.max > 0) || !(rl.windowMs > 0)))
+      throw new Error(`${where}: rateLimit needs name and max and windowMs (a window), or burst, refill and everyMs (a token bucket).`);
     if (rl.by && !BY.has(rl.by)) throw new Error(`${where}: rateLimit.by must be ip, user or ip+user.`);
   }
   const segments = def.path.split('/').slice(1).map((s) => (s.startsWith(':') ? { param: s.slice(1) } : { lit: s }));
@@ -202,9 +206,9 @@ export async function runRoute({ req, res, url, route, params, ctx, deps }) {
   // 3. Rate limits (every one counts the request; the first one over its budget refuses it).
   if (route.rateLimits.length && deps.limiter) {
     let refused = null;
-    for (const { name, max, windowMs, by } of route.rateLimits) {
+    for (const { name, max, windowMs, burst, refill, everyMs, by } of route.rateLimits) {
       const who = by === 'user' ? (rc.user ? `u:${rc.user.id}` : `ip:${rc.ip}`) : by === 'ip+user' ? `ip:${rc.ip}|u:${rc.user?.id ?? '-'}` : `ip:${rc.ip}`;
-      const hit = deps.limiter.hit(`route:${name}:${who}`, max, windowMs);
+      const hit = burst !== undefined ? deps.limiter.take(`bucket:${name}:${who}`, burst, refill, everyMs) : deps.limiter.hit(`route:${name}:${who}`, max, windowMs);
       if (!hit.ok && !refused) refused = hit;
     }
     if (refused) {

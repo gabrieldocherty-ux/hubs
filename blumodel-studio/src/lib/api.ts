@@ -126,6 +126,29 @@ export async function upload<T>(path: string, file: Blob, query?: Record<string,
 
 const enc = encodeURIComponent;
 
+/**
+ * Every page of `GET /api/catalog` (the server sends at most 100 products a page and `next`, the
+ * next offset). A catalog that changes while it is being read is read again from the start, once.
+ */
+async function catalogPages(opts?: CallOptions): Promise<CatalogWire> {
+  for (let attempt = 0; ; attempt++) {
+    const first = await call<CatalogWire>('GET', '/api/catalog', undefined, opts);
+    const products = Array.isArray(first.products) ? [...first.products] : [];
+    let next = first.next ?? null;
+    let changed = false;
+    for (let pages = 1; next !== null && pages < 200; pages++) {
+      const page = await call<CatalogWire>('GET', `/api/catalog?offset=${encodeURIComponent(String(next))}`, undefined, opts);
+      if (page.version !== first.version) {
+        changed = true;
+        break;
+      }
+      if (Array.isArray(page.products)) products.push(...page.products);
+      next = page.next ?? null;
+    }
+    if (!changed || attempt >= 1) return { ...first, products, next: null };
+  }
+}
+
 export const api = {
   // auth
   me: () => call<{ user: User | null }>('GET', '/api/auth/me'),
@@ -152,7 +175,7 @@ export const api = {
   config: () => call<AppConfig>('GET', '/api/config'),
 
   // catalog
-  catalog: (opts?: CallOptions) => call<CatalogWire>('GET', '/api/catalog', undefined, opts),
+  catalog: (opts?: CallOptions) => catalogPages(opts),
   catalogProduct: (id: string, working = false) =>
     call<{ product: Product }>('GET', `/api/catalog/products/${enc(id)}${working ? '?working=1' : ''}`),
   catalogBrands: () => call<{ brands: BrandSummary[] }>('GET', '/api/catalog/brands'),

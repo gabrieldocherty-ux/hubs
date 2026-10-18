@@ -282,11 +282,18 @@ export interface ProductSpecInput {
   doorStyle?: 'shaker' | 'slab' | 'fluted';
 }
 
-/** `GET /api/catalog` → products (wire `Product`), brands and a version string. */
+/**
+ * `GET /api/catalog` → products (wire `Product`), brands and a version string. One page of at most
+ * 100 products; `next` is the offset of the next page (`?offset=`), null on the last. The brands
+ * come with the first page; `version` covers the whole catalog. `api.catalog()` reads every page.
+ */
 export interface CatalogWire {
   products: Product[];
   brands: BrandSummary[];
   version: string;
+  total?: number;
+  offset?: number;
+  next?: number | null;
 }
 
 // ─── Config ──────────────────────────────────────────────────────────────

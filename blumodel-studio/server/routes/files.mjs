@@ -3,10 +3,15 @@
 //
 // Sites (docs/handoff/tenancy.md): on a showroom only its team uploads (files belong to the
 // showroom), and a file is readable only by files.canReadOnSite: never another showroom's.
+//
+// Copy protection (docs/handoff/protect.md): public files are named by their sha256 (nothing to
+// guess or count up), every read is limited per address (server/http/readLimits.mjs), and every
+// model, image and file answer says X-Robots-Tag: noindex, noimageindex, noai, noimageai.
 
 import { HttpError } from '../http/respond.mjs';
 import { serveFile } from '../http/static.mjs';
 import { mimeFor } from '../files/meta.mjs';
+import { NO_INDEX, READ_LIMITS } from '../http/readLimits.mjs';
 
 const SANDBOX = "default-src 'none'; sandbox";
 
@@ -40,6 +45,7 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/files/:id',
       auth: 'optional',
+      rateLimit: READ_LIMITS.product,
       handler: (rc) => {
         const file = files.get(rc.params.id);
         if (!file || !files.canReadOnSite(rc, file)) throw new HttpError(404, 'Not found.');
@@ -50,6 +56,7 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/files/:id/content',
       auth: 'optional',
+      rateLimit: READ_LIMITS.files,
       handler: (rc) => {
         const file = files.get(rc.params.id);
         if (!file || !files.canReadOnSite(rc, file)) throw new HttpError(404, 'Not found.');
@@ -59,6 +66,7 @@ export default function routes(ctx) {
           'Cache-Control': 'private, no-store',
           'Content-Security-Policy': SANDBOX,
           'Cross-Origin-Resource-Policy': 'same-origin',
+          ...NO_INDEX,
         });
       },
     },
@@ -68,6 +76,7 @@ export default function routes(ctx) {
       // optional: an admin or the studio on the sales site may see a showroom's files.
       auth: 'optional',
       params: { name: /^[0-9a-f]{64}\.(glb|png|jpg|webp)$/ },
+      rateLimit: READ_LIMITS.files,
       handler: (rc) => {
         const [sha, ext] = rc.params.name.split('.');
         const file = files.publicBlob(sha, ext, rc.site, rc.user ?? null);
@@ -78,6 +87,7 @@ export default function routes(ctx) {
           'Cache-Control': 'public, max-age=31536000, immutable',
           'Content-Security-Policy': SANDBOX,
           'Cross-Origin-Resource-Policy': 'same-origin',
+          ...NO_INDEX,
         });
       },
     },

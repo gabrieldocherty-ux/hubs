@@ -21,6 +21,7 @@
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
+import { READ_LIMITS } from '../http/readLimits.mjs';
 import { normalizeDoc } from '../lib/doc.mjs';
 import { randomId, PRODUCT_ID_RE } from '../lib/ids.mjs';
 import { MAX_DOC } from './projects.mjs';
@@ -198,7 +199,7 @@ export default function routes(ctx) {
       path: '/api/share/:token',
       // 'optional' only so the owner's own visits aren't counted as views; nothing else depends on it.
       auth: 'optional',
-      rateLimit: { name: 'share-read', max: 600, windowMs: HOUR, by: 'ip' },
+      rateLimit: [{ name: 'share-read', max: 600, windowMs: HOUR, by: 'ip' }, ...READ_LIMITS.share],
       handler: (rc) => {
         const { link, project } = liveLinkOr404(rc.params.token, rc.site.tenantId);
         const ownerId = project.user_id;

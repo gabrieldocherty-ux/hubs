@@ -76,6 +76,8 @@ export function RetailFixtures({ surfaces, set }: { surfaces: Surfaces; set: (pa
   // A kitchen saved with a fixture the catalog no longer lists still shows it chosen.
   const orphan = (id: string) => id && !fixtures.some((f) => f.id === id) ? <option value={id}>{getFixture(id)?.name ?? id}</option> : null;
 
+  // The store library is BluModel's internal research: only our staff have it (retail.ts).
+  if (status === 'unavailable' && !hwRetail && !faucet) return null;
   if (status !== 'ready' && !hwRetail && !faucet) {
     return <p className="fixture-note">{status === 'error' ? 'Store hardware and faucets didn’t load.' : 'Loading store hardware and faucets…'}</p>;
   }

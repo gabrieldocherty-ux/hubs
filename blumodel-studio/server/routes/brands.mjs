@@ -10,6 +10,7 @@
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
+import { READ_LIMITS } from '../http/readLimits.mjs';
 import { PRODUCT_ID_RE, randomId } from '../lib/ids.mjs';
 import { loadKit } from '../lib/kit.mjs';
 import { createBrandPageService, LEAD_STATUSES, PRICE_DISPLAYS, SLUG_RE, pageStatusOf, specDiff } from '../brands/service.mjs';
@@ -551,6 +552,7 @@ export default function routes(ctx) {
       method: 'GET',
       path: '/api/brands/by-slug/:slug',
       auth: 'none',
+      rateLimit: READ_LIMITS.brand,
       handler: (rc) => {
         const brand = livePage(rc.params.slug);
         return { brand: pages.publicWire(brand), products: pages.liveProducts(brand, null) };

@@ -91,7 +91,8 @@ export default [
   {
     name: 'wizard-steps',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: DESK,
     waitFor: ['.wizard'],
     // (Start from a photo is gone since the showroom pivot, SHOWROOM_PIVOT §3.)
@@ -141,7 +142,8 @@ export default [
   {
     name: 'wizard-brands-create',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: DESK,
     waitFor: '.wizard',
     check: async (h) => {
@@ -245,7 +247,8 @@ export default [
     // a layout applied from the blank room's own buttons in the editor uses those brands too.
     name: 'wizard-custom-blank',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: DESK,
     waitFor: '.wizard',
     check: async (h) => {
@@ -313,7 +316,8 @@ export default [
   {
     name: 'wizard-brands-phone',
     path: '#/new',
-    as: 'fresh',
+    // The retail brands are BluModel's internal library: only our staff get them (src/catalog/retail.ts).
+    as: 'studio',
     viewport: PHONE,
     waitFor: '.wizard',
     check: async (h) => {

@@ -35,6 +35,7 @@
 //                                              generator finished (an admin's Quick setup waits for it)
 
 import { HttpError } from '../http/respond.mjs';
+import { READ_LIMITS } from '../http/readLimits.mjs';
 import { EMAIL_RE } from '../auth/userWire.mjs';
 import { inviteToTeam } from '../tenancy/accounts.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
@@ -92,6 +93,7 @@ export default function routes(ctx) {
       path: '/api/showroom',
       auth: 'none',
       hosts: 'any',
+      rateLimit: READ_LIMITS.showroom,
       handler: (rc) => ({ site: rc.site.kind, tenant: rc.tenant ? tenants.publicWire(rc.tenant, requestOrigin(rc.req, config)) : null }),
     },
 

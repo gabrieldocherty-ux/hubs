@@ -39,11 +39,13 @@ import {
   isRetailId,
   loadRetail,
   loadRetailers,
+  retailByUpc,
   retailIdByUpc,
   retailOf,
   sortListings,
   storeLink,
   storeName,
+  upcKey,
   useRetail,
   useRetailers,
   type RetailInfo,
@@ -382,10 +384,11 @@ function ProductView({ product, finishParam, widthParam }: { product: Product; f
   const retail = useRetail((s) => (showroom ? undefined : s.byId.get(product.id)));
   // Not a retail product but carrying a UPC (a delivered custom model): the retail listing with that UPC.
   const linkedUpc = !retail && !showroom && product.upc ? product.upc : undefined;
-  const linkedId = useRetail((s) => (linkedUpc && s.status === 'ready' ? retailIdByUpc(linkedUpc, s.data) : undefined));
+  const linkedId = useRetail((s) => (!linkedUpc ? undefined : s.status === 'ready' ? retailIdByUpc(linkedUpc, s.data) : s.upcIds.get(upcKey(linkedUpc))));
   const linked = useRetail((s) => (linkedId ? s.byId.get(linkedId) : undefined));
   useEffect(() => {
-    if (linkedUpc) void loadRetail();
+    // Staff have the whole library; anyone else signed in gets just this listing.
+    if (linkedUpc) void loadRetail().then(() => (useRetail.getState().status === 'ready' ? undefined : retailByUpc(linkedUpc)));
   }, [linkedUpc]);
 
   useEffect(() => {

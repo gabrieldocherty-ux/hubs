@@ -51,6 +51,8 @@ export default function routes(ctx) {
       'Cache-Control': 'private, no-store',
       'Content-Security-Policy': "default-src 'none'; sandbox",
       'X-Content-Type-Options': 'nosniff',
+      // Not for image search or AI training (server/http/readLimits.mjs NO_INDEX).
+      'X-Robots-Tag': 'noindex, noimageindex, noai, noimageai',
     });
   };
 

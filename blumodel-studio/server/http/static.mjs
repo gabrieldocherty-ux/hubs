@@ -12,6 +12,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import { HttpError, send } from './respond.mjs';
+import { NO_INDEX } from './readLimits.mjs';
 
 const brotli = promisify(zlib.brotliCompress);
 const gzip = promisify(zlib.gzip);
@@ -91,6 +92,7 @@ export function serveFile(req, res, file, headers = {}) {
 }
 
 /** Text types worth compressing. Images, models and fonts are already compressed. */
+const MEDIA_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif', '.glb', '.gltf', '.ktx2', '.hdr', '.mp4', '.webm']);
 const COMPRESSIBLE = new Set(['.html', '.js', '.mjs', '.css', '.json', '.map', '.svg', '.txt', '.wasm', '.webmanifest']);
 const MIN_COMPRESS = 1024;
 const CACHE_BUDGET = 64 * 1024 * 1024;
@@ -198,6 +200,8 @@ export async function serveDist(req, res, url, distDir, { indexHtml = null } = {
     'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
     ETag: etag,
     ...(COMPRESSIBLE.has(ext) ? { Vary: 'Accept-Encoding' } : {}),
+    // The showroom pictures, models and textures the app ships: not for image search or AI training.
+    ...(MEDIA_EXT.has(ext) ? NO_INDEX : {}),
   };
   if (etagMatches(req.headers['if-none-match'], etag)) {
     res.writeHead(304, headers);

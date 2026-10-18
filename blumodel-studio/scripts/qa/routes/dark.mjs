@@ -686,7 +686,8 @@ export default [
   ...both({
     // Where to buy, with a sponsored store first (put back afterwards).
     name: 'dark-product-retail',
-    as: 'anon',
+    // The retail library is for BluModel staff only (src/catalog/retail.ts).
+    as: 'studio',
     fullPage: true,
     phoneFullPage: false,
     setup: async ({ api }) => {
@@ -975,15 +976,16 @@ export default [
   ...both(editor('dark-editor-walls', ui({ viewMode: 'walls' }))),
   one(editor('dark-editor-room', ui({ leftTab: 'room', viewMode: 'split' }))),
   one(editor('dark-editor-checks', ui({ rightTab: 'checks' }))),
-  one(
-    // Store chips on the catalog cards: the RONA filter.
-    editor('dark-editor-catalog-stores', async (h) => {
+  one({
+    // Store chips on the catalog cards: the RONA filter (the retail library: BluModel staff only).
+    ...editor('dark-editor-catalog-stores', async (h) => {
       await h.waitFor('.left-panel #catalog-store');
       await pick(h, '.left-panel #catalog-store', 'rona');
       await h.waitFor('.left-panel .store-chip');
       await h.sleep(400);
     }),
-  ),
+    as: 'studio',
+  }),
   ...both({
     name: 'dark-editor-estimate',
     as: 'fresh',
