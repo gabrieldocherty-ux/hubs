@@ -99,6 +99,8 @@ export interface AdminTenant {
   /** Counts only (no names or contact details): people who used the showroom, new to the team, first seen this month, sent a design. */
   leads?: LeadCountsAdmin;
   usage?: { rendersUsed: number; renderCents: number; products: number; includedProducts: number; queueOpen: number };
+  /** A monthly payment was refunded or disputed (charged back): look into it, then clear it. */
+  review?: { reason: string; at: number } | null;
 }
 
 export interface TenantTrial {

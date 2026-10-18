@@ -65,7 +65,7 @@ test('a ready live setup: every check passes, only GETs to api.stripe.com, and t
   assert.match(out, /PASS {2}Stripe account business name: BluModel Studio/);
   assert.match(out, /PASS {2}Charges are enabled/);
   assert.match(out, /PASS {2}Statement descriptor .*BLUMODEL STUDIO/);
-  assert.match(out, /PASS {2}Webhook endpoint https:\/\/blumodel\.studio\/api\/webhooks\/stripe is enabled and sends all 10 events/);
+  assert.match(out, /PASS {2}Webhook endpoint https:\/\/blumodel\.studio\/api\/webhooks\/stripe is enabled and sends all 11 events/);
   assert.match(out, /PASS {2}The Customer portal is set up/);
   assert.match(out, /PASS {2}The server will take payments through Stripe \(live mode\)/);
   assert.match(out, /NOTE {2}A restricted key also needs.*Checkout Sessions: Write.*Subscriptions: Write.*Refunds: Write/);
@@ -93,7 +93,7 @@ test('the webhook endpoint: missing, disabled, or missing events are each a FIX 
     fetch: stripe({ '/v1/webhook_endpoints': () => json({ data: [{ id: 'we_2', url: 'https://blumodel.studio/api/webhooks/stripe', status: 'enabled', enabled_events: ['checkout.session.completed', 'invoice.paid'] }] }) }).fetch,
   });
   const p = text(partial);
-  assert.match(p, /FIX {3}The webhook endpoint for .* doesn’t send: checkout\.session\.async_payment_succeeded, .*charge\.refunded\. Add them/);
+  assert.match(p, /FIX {3}The webhook endpoint for .* doesn’t send: checkout\.session\.async_payment_succeeded, .*charge\.refunded, charge\.dispute\.created\. Add them/);
   assert.ok(!/doesn’t send:[^\n]*invoice\.paid/.test(p), 'invoice.paid is sent');
   assert.equal(partial.fixes, 1);
 });

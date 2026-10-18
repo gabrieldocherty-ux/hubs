@@ -18,6 +18,8 @@ export const STRIPE_WEBHOOK_EVENTS = Object.freeze([
   'invoice.paid',
   'invoice.payment_failed',
   'charge.refunded',
+  // A showroom monthly payment charged back (server/billing/showroom.mjs paymentReversed).
+  'charge.dispute.created',
 ]);
 
 /** The path Stripe posts to, under PUBLIC_URL. */

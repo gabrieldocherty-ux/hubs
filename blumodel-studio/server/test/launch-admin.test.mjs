@@ -174,7 +174,7 @@ test('the webhook event list is exactly the events the server handles (from the 
     assert.deepEqual(registered.filter((k) => !k.includes('.')).sort(), ['kitchen_unlock', 'order', 'showroom_monthly', 'subscription']);
 
     // The checkout events the kind handlers switch on, straight from the route source.
-    const src = ['billing.mjs', 'orders.mjs'].map((f) => fs.readFileSync(path.join(HERE, '..', 'routes', f), 'utf8')).join('\n');
+    const src = ['billing.mjs', 'orders.mjs', 'tenantsBilling.mjs'].map((f) => fs.readFileSync(path.join(HERE, '..', 'routes', f), 'utf8')).join('\n');
     const named = new Set([...src.matchAll(/'((?:checkout\.session|customer\.subscription|invoice|charge)\.[a-z_.]+)'/g)].map((m) => m[1]));
     assert.deepEqual([...named].sort(), [...STRIPE_WEBHOOK_EVENTS].sort());
     assert.equal(new Set(STRIPE_WEBHOOK_EVENTS).size, STRIPE_WEBHOOK_EVENTS.length);

@@ -95,6 +95,19 @@ export function createCredits({ db, now = Date.now }) {
       return svc.lot(lotId);
     },
 
+    /**
+     * Takes up to `cents` back from one lot (a refunded or disputed month: showroom.mjs
+     * paymentReversed), never more than it has left. An 'adjust' entry says why. Returns the cents taken.
+     */
+    revokeLot(tenantId, lotId, cents, { note = '' } = {}) {
+      const lot = db.prepare('SELECT * FROM tenant_credit_lots WHERE id = ? AND tenant_id = ?').get(lotId, tenantId);
+      const n = lot ? Math.min(lot.remaining, Math.max(0, Math.floor(cents))) : 0;
+      if (!n) return 0;
+      db.prepare('UPDATE tenant_credit_lots SET remaining = remaining - ? WHERE id = ?').run(n, lotId);
+      entry(tenantId, { kind: 'adjust', cents: -n, lotId, ref: lot.ref, note });
+      return n;
+    },
+
     lot(lotId) {
       const r = db.prepare('SELECT * FROM tenant_credit_lots WHERE id = ?').get(lotId);
       return r ? { id: r.id, source: r.source, cents: r.cents, remaining: r.remaining, expiresAt: r.expires_at, createdAt: r.created_at } : null;

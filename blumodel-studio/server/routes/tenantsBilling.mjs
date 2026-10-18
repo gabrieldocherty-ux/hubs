@@ -51,6 +51,23 @@ export default function routes(ctx) {
   for (const type of ['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted']) webhooks.on(type, (e) => sb.applyStripeSubscription(e.data?.object ?? {}));
   webhooks.on('invoice.paid', (e) => sb.invoicePaid(e.data?.object ?? {}));
   webhooks.on('invoice.payment_failed', (e) => sb.invoiceFailed(e.data?.object ?? {}));
+  // A monthly payment refunded or charged back: its unspent credits go, the company is flagged for
+  // review, and the plan goes past due (grace). orders.mjs handles the same events for orders.
+  const reversal = (kind, e) => {
+    const o = e.data?.object ?? {};
+    const out = sb.paymentReversed({
+      kind,
+      invoiceRef: idOf(o.invoice),
+      paymentIntent: idOf(o.payment_intent),
+      chargeRef: kind === 'dispute' ? idOf(o.charge) : (idOf(o.id) ?? null),
+      amountRefunded: kind === 'refund' ? o.amount_refunded : null,
+    });
+    if (out?.changed) {
+      audit(db, { admin: null, action: kind === 'dispute' ? 'showroom_payment_disputed' : 'showroom_payment_refunded', detail: { tenantId: out.tenantId, status: out.status, creditsRevoked: out.creditsRevoked, event: String(e.id ?? '') }, at: ctx.now() });
+    }
+  };
+  webhooks.on('charge.refunded', (e) => reversal('refund', e));
+  webhooks.on('charge.dispute.created', (e) => reversal('dispute', e));
 
   // The admin's tenant view carries the money.
   tenants.addAdminExtra((t) => ({
@@ -58,6 +75,7 @@ export default function routes(ctx) {
     license: sb.currentLicense(t.id),
     licenses: sb.licenses(t.id),
     monthly: sb.monthlyWire(t.id),
+    review: sb.review(t.id),
     checkouts: sb.checkouts(t.id),
     credits: { balanceCents: credits.balance(t.id) },
   }));
@@ -247,6 +265,26 @@ export default function routes(ctx) {
     },
 
     // ── admin: credits ──────────────────────────────────────────────────────
+    {
+      // A refunded or disputed monthly payment flagged the company (sb.paymentReversed): an admin
+      // looked at it. restore: the plan the reversal put past due is active again.
+      method: 'POST',
+      path: '/api/admin/tenants/:id/review/clear',
+      auth: 'admin',
+      reauth: true,
+      params: { id: ID_PARAM },
+      maxBytes: 512,
+      handler: (rc) => {
+        const t = tenants.get(rc.params.id);
+        if (!t) throw new HttpError(404, 'That showroom does not exist.');
+        const was = sb.review(t.id);
+        ctx.tx(() => {
+          sb.clearReview(t.id, { restore: rc.body?.restore === true });
+          audit(db, { admin: rc.user, action: 'tenant_review_clear', detail: { tenantId: t.id, slug: t.slug, reason: was?.reason ?? null, restore: rc.body?.restore === true }, at: ctx.now() });
+        });
+        return { tenant: tenants.adminWire(tenants.get(t.id), requestOrigin(rc.req, config)) };
+      },
+    },
     {
       method: 'GET',
       path: '/api/admin/tenants/:id/credits',

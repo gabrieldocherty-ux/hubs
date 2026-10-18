@@ -226,7 +226,7 @@ homeowner/contractor plans are `forSale: false`). Server constants: `server/lib/
   `{ kind: 'showroom_monthly', checkout_ref, tenant_id }` on the session and the subscription. The
   webhook handles `checkout.session.completed` (by `metadata.kind`), `customer.subscription.*`,
   `invoice.paid` (a receipt and the month's credits, once per invoice) and
-  `invoice.payment_failed` (past due, 14-day grace). No new webhook event types are needed.
+  `invoice.payment_failed` (past due, 14-day grace). **Refunds and disputes** (protect-003): `charge.refunded` and `charge.dispute.created` for a monthly payment (found by its invoice, payment intent or charge, which invoice.paid now records) mark the receipt refunded / partially_refunded / disputed, take back that month's credits not yet spent (a partial refund, the same share), flag the company (`AdminTenant.review = { reason, at }`, "Needs review" in Admin > Companies; `POST /api/admin/tenants/:id/review/clear { restore? }`, reauth, audited) and, for a dispute or a full refund of the plan in use, start the 14-day grace (past due). Audited as `showroom_payment_refunded` / `showroom_payment_disputed`. The Stripe endpoint must send `charge.dispute.created`.
 
 ### Credits (`services.credits`, `server/billing/credits.mjs`), for the renders package
 

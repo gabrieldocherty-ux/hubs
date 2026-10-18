@@ -61,6 +61,13 @@ export function yearEnd(startsOn) {
 export function createShowroomBilling({ db, now = Date.now, log = console }) {
   /** (tenantId, { invoiceRef, at }) => void: credits.mjs grants a month's credits. */
   const monthPaidHooks = [];
+  /** (tenantId, { lotId, cents, note }) => void: credits.mjs takes a reversed month's unspent credits back. */
+  const reversalHooks = [];
+  /** The payment intent and charge an invoice was paid with (older and newer Stripe API shapes). */
+  const paidWith = (inv) => ({
+    paymentIntent: idOf(inv?.payment_intent) ?? idOf(inv?.payments?.data?.[0]?.payment?.payment_intent) ?? null,
+    chargeRef: idOf(inv?.charge) ?? idOf(inv?.payments?.data?.[0]?.payment?.charge) ?? null,
+  });
   /** (tenantId) => void: services.tenants.refresh, so status follows every change. */
   let onChange = () => {};
 
@@ -331,10 +338,12 @@ export function createShowroomBilling({ db, now = Date.now, log = console }) {
      * One paid month: a receipt and the month's credits, once per `invoiceRef` (Stripe resends,
      * and the demo renewals call this too). Returns false when that invoice was already counted.
      */
-    monthPaid(tenantId, { invoiceRef, amountCents, currency = CURRENCY, provider = 'stripe', periodEnd = null }) {
+    monthPaid(tenantId, { invoiceRef, amountCents, currency = CURRENCY, provider = 'stripe', periodEnd = null, paymentIntent = null, chargeRef = null }) {
       const res = db
-        .prepare("INSERT OR IGNORE INTO tenant_payments (id, tenant_id, kind, amount_cents, currency, provider, ref, period_end, created_at) VALUES (?, ?, 'monthly', ?, ?, ?, ?, ?, ?)")
-        .run(`pay_${crypto.randomBytes(9).toString('base64url')}`, tenantId, amountCents, currency, provider, invoiceRef, periodEnd, now());
+        .prepare(
+          "INSERT OR IGNORE INTO tenant_payments (id, tenant_id, kind, amount_cents, currency, provider, ref, period_end, created_at, payment_intent, charge_ref) VALUES (?, ?, 'monthly', ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(`pay_${crypto.randomBytes(9).toString('base64url')}`, tenantId, amountCents, currency, provider, invoiceRef, periodEnd, now(), paymentIntent, chargeRef);
       if (!res.changes) return false;
       for (const fn of monthPaidHooks) fn(tenantId, { invoiceRef, at: now() });
       return true;
@@ -415,7 +424,7 @@ export function createShowroomBilling({ db, now = Date.now, log = console }) {
         if (current && current.status === 'active' && current.subscription_ref !== subId) {
           // Another plan is in use (a newer link, or complimentary): record the money, change nothing.
           log.warn?.(`showroom billing: invoice for ${subId} recorded; tenant ${tenantId} is on ${current.subscription_ref ?? current.provider}`);
-          if (Number(inv.amount_paid) > 0) svc.monthPaid(tenantId, { invoiceRef: idOf(inv), amountCents: inv.amount_paid, currency: inv.currency || CURRENCY, provider: 'stripe', periodEnd: end });
+          if (Number(inv.amount_paid) > 0) svc.monthPaid(tenantId, { invoiceRef: idOf(inv), amountCents: inv.amount_paid, currency: inv.currency || CURRENCY, provider: 'stripe', periodEnd: end, ...paidWith(inv) });
           onChange(tenantId);
           return true;
         }
@@ -426,9 +435,73 @@ export function createShowroomBilling({ db, now = Date.now, log = console }) {
           "UPDATE tenant_subscriptions SET status = 'active', grace_until = NULL, canceled_at = NULL, current_period_end = MAX(COALESCE(current_period_end, 0), ?), updated_at = ? WHERE tenant_id = ?",
         ).run(end ?? 0, now(), r.tenant_id);
       } else log.warn?.(`showroom billing: invoice paid on canceled ${subId}; recorded, plan left canceled`);
-      if (Number(inv.amount_paid) > 0) svc.monthPaid(r.tenant_id, { invoiceRef: idOf(inv), amountCents: inv.amount_paid, currency: inv.currency || r.currency, provider: 'stripe', periodEnd: end });
+      if (Number(inv.amount_paid) > 0) svc.monthPaid(r.tenant_id, { invoiceRef: idOf(inv), amountCents: inv.amount_paid, currency: inv.currency || r.currency, provider: 'stripe', periodEnd: end, ...paidWith(inv) });
       onChange(r.tenant_id);
       return true;
+    },
+
+    /**
+     * A monthly payment taken back (audit 2026-10): `charge.refunded` (`kind: 'refund'`, the charge's
+     * amount_refunded so far) or `charge.dispute.created` (`kind: 'dispute'`). The payment is found by
+     * its invoice, payment intent or charge. Then, once per payment and kind:
+     *   - the payment is marked refunded, partially_refunded or disputed (the receipt keeps it);
+     *   - the credits that month granted and that aren't spent yet are taken back (a partial refund
+     *     takes back the same share of the month's credits, at most what is left);
+     *   - the company is flagged for admin review (Admin > Companies);
+     *   - a dispute or a full refund of the plan in use starts the 14-day grace (past due), as a
+     *     failed payment does, so a charged-back month doesn't keep the showroom paid.
+     * Returns { tenantId, status, creditsRevoked, changed } or null when the charge isn't a showroom payment.
+     */
+    paymentReversed({ kind, invoiceRef = null, paymentIntent = null, chargeRef = null, amountRefunded = null }) {
+      const p =
+        (invoiceRef && db.prepare("SELECT * FROM tenant_payments WHERE ref = ? AND kind = 'monthly'").get(invoiceRef)) ||
+        (paymentIntent && db.prepare("SELECT * FROM tenant_payments WHERE payment_intent = ? AND kind = 'monthly'").get(paymentIntent)) ||
+        (chargeRef && db.prepare("SELECT * FROM tenant_payments WHERE charge_ref = ? AND kind = 'monthly'").get(chargeRef)) ||
+        null;
+      if (!p) return null;
+      const full = kind === 'dispute' || !(Number(amountRefunded) > 0) || Number(amountRefunded) >= p.amount_cents;
+      const refunded = kind === 'refund' ? Math.min(p.amount_cents, Number(amountRefunded) > 0 ? Number(amountRefunded) : p.amount_cents) : p.refunded_cents;
+      const status = kind === 'dispute' ? 'disputed' : full ? 'refunded' : 'partially_refunded';
+      // Stripe resends: a dispute is handled once, a refund once per new amount.
+      if (kind === 'dispute' && p.status === 'disputed') return { tenantId: p.tenant_id, status, creditsRevoked: 0, changed: false };
+      if (kind === 'refund' && refunded <= p.refunded_cents) return { tenantId: p.tenant_id, status: p.status, creditsRevoked: 0, changed: false };
+      const t = now();
+      db.prepare('UPDATE tenant_payments SET status = ?, refunded_cents = ?, reversed_at = ? WHERE id = ?').run(status, refunded, t, p.id);
+      // The month's credits not yet spent (the lot that invoice granted).
+      let creditsRevoked = 0;
+      const lot = db.prepare("SELECT * FROM tenant_credit_lots WHERE tenant_id = ? AND source = 'monthly' AND ref = ?").get(p.tenant_id, p.ref);
+      if (lot && lot.remaining > 0) {
+        const share = kind === 'dispute' || full ? lot.cents : Math.ceil((lot.cents * (refunded - p.refunded_cents)) / p.amount_cents);
+        creditsRevoked = Math.min(lot.remaining, share);
+        if (creditsRevoked > 0) for (const fn of reversalHooks) fn(p.tenant_id, { lotId: lot.id, cents: creditsRevoked, note: `${kind === 'dispute' ? 'Payment disputed' : full ? 'Payment refunded' : 'Payment partly refunded'} (${p.ref}): unspent credits from that month taken back` });
+      }
+      db.prepare('UPDATE tenants SET review_reason = ?, review_at = ? WHERE id = ?').run(
+        kind === 'dispute' ? `A monthly payment (${p.ref}) was disputed (charged back).` : `A monthly payment (${p.ref}) was ${full ? 'refunded' : 'partly refunded'}.`,
+        t,
+        p.tenant_id,
+      );
+      const sub = subRow(p.tenant_id);
+      if ((kind === 'dispute' || full) && sub && sub.provider === 'stripe' && sub.status === 'active') svc.markPastDue(p.tenant_id);
+      else onChange(p.tenant_id);
+      return { tenantId: p.tenant_id, status, creditsRevoked, changed: true };
+    },
+
+    /** Registers `fn(tenantId, { lotId, cents, note })`: credits.mjs takes back a reversed month's unspent credits. */
+    onReversal(fn) {
+      reversalHooks.push(fn);
+    },
+
+    /** Admin > Companies: the company's review flag, `{ reason, at } | null`. */
+    review(tenantId) {
+      const r = db.prepare('SELECT review_reason, review_at FROM tenants WHERE id = ?').get(tenantId);
+      return r?.review_reason ? { reason: r.review_reason, at: r.review_at } : null;
+    },
+
+    /** An admin looked at it: the flag goes. With `restore`, a plan put past due by the reversal is active again. */
+    clearReview(tenantId, { restore = false } = {}) {
+      db.prepare('UPDATE tenants SET review_reason = NULL, review_at = NULL WHERE id = ?').run(tenantId);
+      if (restore) db.prepare("UPDATE tenant_subscriptions SET status = 'active', grace_until = NULL, updated_at = ? WHERE tenant_id = ? AND status = 'past_due'").run(now(), tenantId);
+      onChange(tenantId);
     },
 
     /** invoice.payment_failed: past due, with GRACE_DAYS from the first failure. */

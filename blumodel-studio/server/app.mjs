@@ -83,6 +83,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const credits = createCredits({ db, now });
   showroomBilling.onMonthPaid((tenantId, { invoiceRef, at }) => credits.grantMonth(tenantId, invoiceRef, { at }));
   const leads = createLeadService({ db, now });
+  // ...and a refunded or disputed month takes back what is left of them.
+  showroomBilling.onReversal((tenantId, { lotId, cents, note }) => credits.revokeLot(tenantId, lotId, cents, { note }));
 
   /**
    * The client's real address. With TRUST_PROXY=1 AND a loopback peer (cloudflared on this

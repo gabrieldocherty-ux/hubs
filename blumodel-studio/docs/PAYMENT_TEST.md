@@ -100,6 +100,7 @@ These came out of the verification. Until they are fixed, expect the following:
   - `invoice.paid`
   - `invoice.payment_failed`
   - `charge.refunded`
+  - `charge.dispute.created` (a showroom monthly payment charged back: its unspent credits go, the company is flagged for review, grace starts)
 - [ ] Keep that endpoint's **Event deliveries** tab open in a second tab. You check it after each step.
 - [ ] Set these once in the Stripe Dashboard, for real companies later:
   - **Settings → Billing → Customer portal** is activated. It lets the company update its card and

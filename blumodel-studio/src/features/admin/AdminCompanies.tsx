@@ -279,6 +279,11 @@ export default function AdminCompanies() {
                       <TrialPill t={t} />
                       <TrialRowActions t={t} onChange={(n) => list.setData({ tenants: (all ?? []).map((x) => (x.id === n.id ? n : x)) })} />
                     </span>
+                  ) : t.review ? (
+                    <span className="adm-who">
+                      <StatusPill status={t.status} />
+                      <Pill tone="bad">Needs review</Pill>
+                    </span>
                   ) : (
                     <StatusPill status={t.status} />
                   ),
@@ -462,6 +467,24 @@ function CompanyView({ id, onBack, invite, clearInvite }: { id: string; onBack: 
           <Notice tone="warn">Visitors see “temporarily unavailable” because {problems.join(' and ') || 'it isn’t paid up'}. Nothing is deleted; it goes live by itself once both are in place.</Notice>
         ))}
       {t.status === 'suspended' && <Notice tone="bad">Suspended{t.statusNote ? `: ${t.statusNote}` : ''}. Visitors see “temporarily unavailable”; all data is kept.</Notice>}
+      {t.review && (
+        <div className="adm-callout" role="status">
+          <b>Needs review</b>
+          <p className="adm-note">
+            {t.review.reason} ({day(t.review.at)}). That month’s unspent render credits were taken back{t.monthly?.status === 'past_due' ? ' and the monthly plan is in its grace period' : ''}. Check it in Stripe, then:
+          </p>
+          <div className="adm-inline">
+            <button type="button" className="btn" disabled={busy !== null} onClick={() => void act('review', () => showroomApi.clearReview(t.id, false), 'Marked as reviewed.')}>
+              Mark reviewed
+            </button>
+            {t.monthly?.status === 'past_due' && (
+              <button type="button" className="btn" disabled={busy !== null} onClick={() => void act('review', () => showroomApi.clearReview(t.id, true), 'Reviewed; the monthly plan is active again.')}>
+                Reviewed, keep the plan active
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {t.trial && <TrialSection t={t} onChange={(n) => setData({ tenant: n })} onMessage={setMsg} />}
       <div className="adm-cols">

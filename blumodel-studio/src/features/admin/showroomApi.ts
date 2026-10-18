@@ -59,6 +59,7 @@ export const showroomApi = {
   trialExtend: (id: string, days = 7) => call<One>('POST', `${tn(id)}/trial/extend`, { days }),
   trialEnd: (id: string) => call<One>('POST', `${tn(id)}/trial/end`),
   trialConvert: (id: string) => call<One>('POST', `${tn(id)}/trial/convert`),
+  clearReview: (id: string, restore: boolean) => call<One>('POST', `${tn(id)}/review/clear`, { restore }),
   usage: (id: string) => call<TenantUsage>('GET', `${tn(id)}/usage`),
   salesLeads: (status?: SalesLeadStatus) => call<{ leads: SalesLead[]; counts: SalesLeadCounts }>('GET', `/api/admin/sales-leads${status ? `?status=${enc(status)}` : ''}`),
   updateSalesLead: (id: string, b: { status?: SalesLeadStatus; adminNotes?: string }) => call<{ lead: SalesLead }>('PATCH', `/api/admin/sales-leads/${enc(id)}`, b),

@@ -125,6 +125,7 @@ Developers → **Webhooks** (in Workbench: *Webhooks → Add destination*) → *
   - `invoice.paid`
   - `invoice.payment_failed`
   - `charge.refunded`
+  - `charge.dispute.created` (a showroom monthly payment charged back: its unspent credits go, the company is flagged for review, grace starts)
 - API version: your account's default is fine (the server reads both the old and the 2025+ shapes of
   subscriptions and invoices).
 
