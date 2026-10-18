@@ -46,6 +46,8 @@ export const showroomApi = {
   monthlyDemo: (id: string, event: 'renewal' | 'renewal_failed' | 'grace_end' | 'cancel') => call<One>('POST', `${tn(id)}/monthly/demo`, { event }),
   credits: (id: string) => call<TenantCredits>('GET', `${tn(id)}/credits`),
   adjustCredits: (id: string, cents: number, note: string) => call<TenantCredits>('POST', `${tn(id)}/credits`, { cents, note }),
+  /** A 2-hour link to the showroom's picture generator, opened in this browser (server/tenancy/images.mjs). */
+  imagesLink: (id: string) => call<{ url: string; expiresAt: number }>('POST', `${tn(id)}/showroom-images`),
   usage: (id: string) => call<TenantUsage>('GET', `${tn(id)}/usage`),
   salesLeads: (status?: SalesLeadStatus) => call<{ leads: SalesLead[]; counts: SalesLeadCounts }>('GET', `/api/admin/sales-leads${status ? `?status=${enc(status)}` : ''}`),
   updateSalesLead: (id: string, b: { status?: SalesLeadStatus; adminNotes?: string }) => call<{ lead: SalesLead }>('PATCH', `/api/admin/sales-leads/${enc(id)}`, b),

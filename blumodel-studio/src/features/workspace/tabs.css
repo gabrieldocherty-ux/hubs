@@ -170,3 +170,62 @@
     min-height: 44px;
   }
 }
+
+/* Showroom pictures (ShowroomPictures.tsx) */
+.ws-pics-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 12px 0;
+}
+.ws-pics-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ws-pic {
+  display: grid;
+  grid-template-columns: 112px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.ws-pic-img {
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--paper-2);
+  display: grid;
+  place-items: center;
+}
+.ws-pic-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ws-pic-img i {
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 4px;
+}
+.ws-pic-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .ws-pic {
+    grid-template-columns: 88px 1fr;
+  }
+  .ws-pic .ws-actions {
+    grid-column: 1 / -1;
+  }
+}

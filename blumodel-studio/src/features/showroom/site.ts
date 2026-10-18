@@ -28,6 +28,64 @@ export interface TenantContact {
   hours: string;
 }
 
+/** One of the showroom's pictures, made at its final size (width and height so nothing shifts). */
+export interface ShowroomPic {
+  url: string;
+  w: number;
+  h: number;
+  /** A render from the app's own 3D renderer, or the company's own photo (a photo wins). */
+  source: 'render' | 'photo';
+}
+
+/** The showroom's pictures (server/tenancy/images.mjs `publicImages`). Every part may be missing. */
+export interface ShowroomImages {
+  hero: ShowroomPic | null;
+  /** A portrait render for phones; null when the hero is a photo (the photo is cropped instead). */
+  heroTall: ShowroomPic | null;
+  /** By line key (brandKey of the line's name). */
+  lines: Record<string, ShowroomPic & { line: string }>;
+  /** `design`: a view-only link token to open that kitchen in 3D (#/s/token), when there is one. */
+  gallery: (ShowroomPic & { title: string; design: string | null })[];
+  /** When the renders were last made (ms), or null. */
+  renderedAt?: number | null;
+}
+
+export const NO_IMAGES: ShowroomImages = Object.freeze({ hero: null, heroTall: null, lines: {}, gallery: [] }) as ShowroomImages;
+
+function pic(v: unknown): ShowroomPic | null {
+  const o = (v ?? null) as Record<string, unknown> | null;
+  if (!o || typeof o !== 'object') return null;
+  const url = safeImageUrl(o.url);
+  const w = Number(o.w);
+  const h = Number(o.h);
+  if (!url || !(w > 0 && w <= 8192 && h > 0 && h <= 8192)) return null;
+  return { url, w: Math.round(w), h: Math.round(h), source: o.source === 'photo' ? 'photo' : 'render' };
+}
+
+/** The server's images, checked: an unusable picture is left out. */
+export function normalizeImages(raw: unknown): ShowroomImages {
+  const o = (raw ?? null) as Record<string, unknown> | null;
+  if (!o || typeof o !== 'object') return NO_IMAGES;
+  const lines: ShowroomImages['lines'] = {};
+  if (o.lines && typeof o.lines === 'object') {
+    for (const [k, v] of Object.entries(o.lines as Record<string, unknown>).slice(0, 40)) {
+      const p = pic(v);
+      if (p) lines[k] = { ...p, line: str((v as Record<string, unknown>).line, 80) || k };
+    }
+  }
+  const gallery = Array.isArray(o.gallery)
+    ? o.gallery
+        .slice(0, 6)
+        .map((g) => {
+          const p = pic(g);
+          const d = (g as Record<string, unknown>).design;
+          return p ? { ...p, title: str((g as Record<string, unknown>).title, 100), design: typeof d === 'string' && /^[A-Za-z0-9_-]{16,80}$/.test(d) ? d : null } : null;
+        })
+        .filter((g): g is ShowroomPic & { title: string; design: string | null } => !!g)
+    : [];
+  return { hero: pic(o.hero), heroTall: pic(o.heroTall), lines, gallery, renderedAt: typeof o.renderedAt === 'number' ? o.renderedAt : null };
+}
+
 export interface PublicTenant {
   id: string;
   slug: string;
@@ -38,6 +96,7 @@ export interface PublicTenant {
   branding: TenantBranding;
   contact: TenantContact;
   features: { fillGaps: boolean; bathrooms: boolean; visitorRenders: boolean };
+  images: ShowroomImages;
 }
 
 const STATUSES: readonly TenantStatus[] = ['setup', 'live', 'lapsed', 'suspended'];
@@ -97,6 +156,7 @@ export function normalizeTenant(raw: unknown): PublicTenant | null {
       hours: str(c.hours, 120),
     },
     features: { fillGaps: f.fillGaps === true, bathrooms: f.bathrooms === true, visitorRenders: f.visitorRenders === true },
+    images: normalizeImages(t.images),
   };
 }
 

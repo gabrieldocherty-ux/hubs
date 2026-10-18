@@ -196,6 +196,7 @@ function screenFor(route: Route, signedIn: boolean, showroom = false) {
     case 'legal':
       return <LegalScreen doc={route.doc} />;
     case 'notFound':
+    case 'showroomImages': // a showroom's own page; the sales site has none
       return <NotFound />;
     default:
       return signedIn ? <HomeScreen /> : <LandingScreen />;

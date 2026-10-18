@@ -20,6 +20,11 @@ export interface StillOptions {
   camera: StudioCamera;
   quality: StudioQuality;
   toneMap: ToneMap;
+  /**
+   * An exact camera (feet, the room's 3D coordinates: x east, y up, z south), which wins over
+   * `camera`. The showroom picture generator frames its shots with it; the view on screen is restored.
+   */
+  view?: { pos: [number, number, number]; target: [number, number, number]; fov?: number };
 }
 
 /** Renders the kitchen offscreen; resolves to a canvas of exactly width × height. */

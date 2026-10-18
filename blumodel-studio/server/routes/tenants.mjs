@@ -20,6 +20,15 @@
 //   POST  /api/workspace/products/:id/show    -> { product } (published again)
 //   A product's files (images, model, swatches) must be this showroom's uploads (PUT /api/files on
 //   the showroom). Products the studio models for the company arrive here the same way.
+//
+// Showroom pictures (server/tenancy/images.mjs, docs/handoff/showroom-images.md; showroom hosts):
+//   GET    /api/showroom-images/access         staff, or X-Showroom-Ticket from Admin > Companies
+//                                              -> { ok: true, via: 'staff'|'ticket' } (else 403)
+//   PUT    /api/showroom-images                raw PNG/JPEG/WebP body; query slot=hero|heroTall|line|gallery,
+//                                              line=<name>, index=1..3, title=, source=render|photo
+//                                              -> { images, imageSources }. A ticket uploads renders only;
+//                                              photos (hero, line) are the team's.
+//   DELETE /api/showroom-images                staff; the same query -> { images, imageSources }
 
 import { HttpError } from '../http/respond.mjs';
 import { EMAIL_RE } from '../auth/userWire.mjs';
@@ -28,6 +37,7 @@ import { requestOrigin } from '../tenancy/hosts.mjs';
 import { MEMBER_ROLES } from '../tenancy/service.mjs';
 import { createMailer } from '../email/index.mjs';
 import { inviteEmail } from '../tenancy/emails.mjs';
+import { checkImage, cleanTarget, withImage, withoutImage } from '../tenancy/images.mjs';
 
 const ID_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
 const PRODUCT_PARAM = /^p_[A-Za-z0-9_-]{1,60}$/;
@@ -56,6 +66,19 @@ export default function routes(ctx) {
   };
   const working = (row, rc) => products.toWire(row, { which: 'working', viewer: rc.user }) ?? null;
 
+  /** 'staff' for the team, 'ticket' for a valid generator ticket for this showroom, else a 403. */
+  const imageAccess = (rc) => {
+    if (rc.memberRole) return 'staff';
+    const ticket = rc.req.headers['x-showroom-ticket'];
+    if (rc.tenant && ctx.services.imageTickets.tenantOf(Array.isArray(ticket) ? ticket[0] : ticket) === rc.tenant.id) return 'ticket';
+    throw new HttpError(403, 'Only the showroom’s team can change its pictures. Ask an admin for a new link if yours has expired.', { code: 'not_staff' });
+  };
+  const targetOf = (rc) => cleanTarget(Object.fromEntries(['slot', 'line', 'index', 'title', 'source'].map((k) => [k, rc.query.get(k) ?? undefined])));
+  const imagesWire = (t, rc) => {
+    const w = tenants.staffWire(t, requestOrigin(rc.req, config));
+    return { images: w.images, imageSources: w.imageSources };
+  };
+
   return [
     {
       method: 'GET',
@@ -82,6 +105,48 @@ export default function routes(ctx) {
         if (b.settings !== undefined && rc.memberRole !== 'owner') throw new HttpError(403, 'Only an owner of this showroom can change its settings.', { code: 'owner_only' });
         const next = ctx.tx(() => tenants.update(rc.tenant.id, { name: b.name, branding: b.branding, contact: b.contact, settings: b.settings }));
         return { tenant: tenants.staffWire(next, requestOrigin(rc.req, config)) };
+      },
+    },
+
+    // ── the showroom's pictures ─────────────────────────────────────────────
+    {
+      method: 'GET',
+      path: '/api/showroom-images/access',
+      auth: 'optional',
+      hosts: 'showroom',
+      handler: (rc) => ({ ok: true, via: imageAccess(rc) }),
+    },
+    {
+      method: 'PUT',
+      path: '/api/showroom-images',
+      auth: 'optional',
+      hosts: 'showroom',
+      body: 'raw',
+      maxBytes: config.MAX_IMAGE_MB * 1_048_576,
+      rateLimit: { name: 'showroom-images', max: 120, windowMs: 3_600_000, by: 'ip' },
+      handler: (rc) => {
+        const via = imageAccess(rc);
+        const target = targetOf(rc);
+        if (via === 'ticket' && target.source !== 'render') throw new HttpError(403, 'Photos are uploaded by the showroom’s team.', { code: 'not_staff' });
+        const info = checkImage(rc.body, { maxBytes: config.MAX_IMAGE_MB * 1_048_576 });
+        const name = `${target.source}-${target.slot}${target.line ? `-${target.line}` : ''}${target.index ? `-${target.index}` : ''}.${info.ext}`.replace(/[^A-Za-z0-9._-]+/g, '-');
+        const next = ctx.tx(() => {
+          const file = files.saveBuffer(rc.body, { kind: 'image', visibility: 'public', tenantId: rc.tenant.id, ownerUserId: rc.user?.id ?? null, originalName: name });
+          const cur = tenants.get(rc.tenant.id);
+          return tenants.setImages(rc.tenant.id, withImage(cur.branding.images, target, { fileId: file.id, w: info.width, h: info.height, at: ctx.now() }));
+        });
+        return imagesWire(next, rc);
+      },
+    },
+    {
+      method: 'DELETE',
+      path: '/api/showroom-images',
+      auth: 'staff',
+      body: 'none',
+      handler: (rc) => {
+        const target = targetOf(rc);
+        const next = ctx.tx(() => tenants.setImages(rc.tenant.id, withoutImage(tenants.get(rc.tenant.id).branding.images, target)));
+        return imagesWire(next, rc);
       },
     },
 

@@ -12,6 +12,9 @@
 //   DELETE /api/admin/tenants/:id/hostnames/:hostname
 //   POST   /api/admin/tenants/:id/members              { email, name?, role } -> { member, invite? }
 //   DELETE /api/admin/tenants/:id/members/:userId
+//   POST   /api/admin/tenants/:id/showroom-images     -> { url, expiresAt }: the showroom's picture
+//                                                      generator, opened in the admin's own browser with a
+//                                                      2-hour ticket (server/tenancy/images.mjs)
 //
 // Item 3+ (licenses, the monthly plan, credits, leads) add their own admin routes next to these.
 
@@ -96,6 +99,21 @@ export default function routes(ctx) {
           return u;
         });
         return { tenant: tenants.adminWire(next, from(rc)) };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/tenants/:id/showroom-images',
+      auth: 'admin',
+      params: { id: ID_PARAM },
+      body: 'none',
+      rateLimit: { name: 'admin-showroom-images', max: 30, windowMs: 3_600_000, by: 'user' },
+      handler: (rc) => {
+        const t = mustGet(rc.params.id);
+        const { ticket, expiresAt } = ctx.services.imageTickets.issue(t.id);
+        log(rc, 'tenant_images_ticket', t, { expiresAt });
+        // The ticket rides in the hash: never sent to the server in a request line or a Referer.
+        return { url: `${tenants.originOf(t, from(rc))}/#/showroom-images?ticket=${encodeURIComponent(ticket)}`, expiresAt };
       },
     },
     {

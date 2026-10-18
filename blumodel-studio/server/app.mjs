@@ -22,6 +22,7 @@ import { createTenantService } from './tenancy/service.mjs';
 import { createShowroomBilling } from './billing/showroom.mjs';
 import { createCredits } from './billing/credits.mjs';
 import { createLeadService } from './tenancy/leads.mjs';
+import { createImageTickets } from './tenancy/images.mjs';
 import { createSiteResolver } from './tenancy/hosts.mjs';
 import { showroomIndexHtml, unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
 import { requestOrigin } from './tenancy/hosts.mjs';
@@ -104,7 +105,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     fetch,
     log,
     tx: (fn) => tx(db, fn),
-    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits, leads },
+    services: { auth, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits, leads, imageTickets: createImageTickets({ now }) },
     /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp, sites },
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */

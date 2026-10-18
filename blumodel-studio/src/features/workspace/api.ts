@@ -1,6 +1,7 @@
 import { call, upload } from '../../lib/api';
 import type { Product } from '../../types';
 import type { FileWire, ProductSpecInput } from '../../types/platform';
+import type { ShowroomImages } from '../showroom/site';
 
 /**
  * The company workspace's calls (`#/studio` on a showroom, docs/SHOWROOM_PIVOT.md §5). The shapes
@@ -60,6 +61,9 @@ export interface StaffTenant {
   hostnames: Hostname[];
   createdAt: number;
   updatedAt: number;
+  /** What visitors see (a photo wins), and each source on its own. */
+  images?: ShowroomImages;
+  imageSources?: { render: ShowroomImages; photo: ShowroomImages };
 }
 
 export interface ShowroomPatch {

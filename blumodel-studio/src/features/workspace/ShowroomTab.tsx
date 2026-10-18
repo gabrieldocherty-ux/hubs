@@ -4,6 +4,7 @@ import { useDesignStore } from '../../store/useDesignStore';
 import { wsApi, type Branding, type Contact, type Hostname, type ShowroomPatch, type ShowroomSettings, type StaffTenant } from './api';
 import { checkAccent, checkPrimary, normalizeHex, textOn } from './colour';
 import { useWorkspace } from './context';
+import { ShowroomPictures } from './ShowroomPictures';
 
 interface Draft {
   name: string;
@@ -148,6 +149,8 @@ export default function ShowroomTab() {
             </label>
             <FeaturedLines value={draft.branding.featuredLines} suggestions={lines} onChange={(v) => setB({ featuredLines: v })} error={fields['branding.featuredLines']} />
           </fieldset>
+
+          <ShowroomPictures tenant={tenant} featured={base.branding.featuredLines} onChange={setTenant} />
 
           <fieldset className="ws-card">
             <legend>Contact details shown to visitors</legend>

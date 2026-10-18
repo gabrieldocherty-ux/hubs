@@ -31,6 +31,7 @@ export type Route =
   | { name: 'payDemoPlan'; ref: string } // #/pay/demo-plan/:ref
   | { name: 'payShowroom'; ref: string } // #/pay/showroom/:ref (a company's monthly plan link, sales site)
   | { name: 'legal'; doc: LegalDocId } // #/terms, #/privacy, #/refunds
+  | { name: 'showroomImages' } // #/showroom-images?ticket= (a showroom's picture generator; showrooms only)
   | { name: 'notFound' }; // anything else
 
 export type LegalDocId = 'terms' | 'privacy' | 'refunds';
@@ -98,6 +99,8 @@ export function parseRoute(hash: string): Route {
     case 'refunds':
       if (seg.length === 1) return { name: 'legal', doc: a };
       break;
+    case 'showroom-images':
+      return seg.length === 1 ? { name: 'showroomImages' } : { name: 'notFound' };
     // Start from a photo was removed in the showroom pivot: an old link opens the new-kitchen wizard.
     case 'generate':
       return seg.length === 1 ? { name: 'new' } : { name: 'notFound' };
@@ -187,6 +190,8 @@ export function hrefFor(r: Route): string {
       return `#/s/${enc(r.token)}`;
     case 'admin':
       return `#/admin/${r.tab}`;
+    case 'showroomImages':
+      return '#/showroom-images';
     default:
       return `#/${r.name}`;
   }

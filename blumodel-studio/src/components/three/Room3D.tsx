@@ -145,6 +145,11 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   );
 
   const groups = useRef<Record<Wall, THREE.Group | null>>({ north: null, east: null, south: null, west: null });
+  // A ceiling for a camera standing in the room (eye level, the showroom's pictures): without it
+  // the tops of the walls end in the sky. Seen from above it never shows (it faces down, and it is
+  // hidden whenever the camera is outside the room or above it).
+  const ceiling = useRef<THREE.Mesh | null>(null);
+  const ceilingMat = cached(`ceiling:${trimHex}`, () => new THREE.MeshStandardMaterial({ color: trimHex, roughness: 0.92 }));
   const gl = useThree((s) => s.gl);
   // The cut-away: walls between the camera and the room hide. Run every frame (cheap) and by the
   // studio render for its own camera. Hiding a wall changes what casts shadows, and the shadow
@@ -165,6 +170,8 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
       set(g.south, camLocal.z < L);
       set(g.west, camLocal.x > 0);
       set(g.east, camLocal.x < W);
+      const inside = camLocal.x > 0 && camLocal.x < W && camLocal.z > 0 && camLocal.z < L && camLocal.y < H;
+      if (ceiling.current && ceiling.current.visible !== inside) ceiling.current.visible = inside;
       if (changed) gl.shadowMap.needsUpdate = true;
       return changed;
     };
@@ -183,6 +190,9 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
     <group>
       <mesh geometry={boxGeo(W + T * 2 + 36, 6, L + T * 2 + 36)} position={[W / 2, -3.5, L / 2]} material={M.plinth()} receiveShadow dispose={null} />
       <mesh geometry={floorGeo} material={floorMat.mat} receiveShadow />
+      <mesh ref={ceiling} position={[W / 2, H, L / 2]} rotation={[Math.PI / 2, 0, 0]} material={ceilingMat} visible={false}>
+        <planeGeometry args={[W, L]} />
+      </mesh>
       {WALLS.map((wall) => (
         <group key={wall} ref={(el) => (groups.current[wall] = el)}>
           {wallGeos[wall].walls.map((g, i) => (

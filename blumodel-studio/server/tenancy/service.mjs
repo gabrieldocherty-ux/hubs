@@ -16,6 +16,7 @@
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { FILE_ID_RE } from '../lib/ids.mjs';
+import { publicImages } from './images.mjs';
 
 export const STATUSES = ['setup', 'live', 'lapsed', 'suspended'];
 export const MEMBER_ROLES = ['owner', 'staff'];
@@ -568,6 +569,20 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
     },
 
     // ── wire shapes ───────────────────────────────────────────────────────
+    /** Replaces the showroom's pictures (server/tenancy/images.mjs shapes them). */
+    setImages(id, images) {
+      const cur = svc.get(id);
+      if (!cur) throw new HttpError(404, 'That showroom does not exist.');
+      db.prepare('UPDATE tenants SET branding = ?, updated_at = ? WHERE id = ?').run(JSON.stringify({ ...cur.branding, images }), now(), id);
+      return svc.get(id);
+    },
+
+    /** A public tenant file's URL by id, or null (another showroom's or a private file never). */
+    imageUrl(t, fileId) {
+      const f = files?.get(fileId);
+      return f && f.visibility === 'public' && (!f.tenantId || f.tenantId === t.id) ? files.url(f) : null;
+    },
+
     logoUrl(t) {
       const f = t?.branding?.logoFileId && files ? files.get(t.branding.logoFileId) : null;
       return f ? files.url(f) : null;
@@ -600,6 +615,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
         },
         contact: { phone: c.phone ?? '', email: c.email ?? '', website: c.website ?? '', address: c.address ?? '', serviceArea: c.serviceArea ?? '', hours: c.hours ?? '' },
         features: { fillGaps: !!t.settings.fillGaps, bathrooms: !!t.settings.bathrooms, visitorRenders: !!t.settings.visitorRenders },
+        images: publicImages(b.images, { url: (id) => svc.imageUrl(t, id) }),
       };
     },
 
@@ -629,6 +645,11 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
         ...pub,
         statusNote: t.statusNote,
         branding: { ...pub.branding, logoFileId: t.branding.logoFileId ?? null },
+        // Each source on its own, so the workspace shows what was uploaded and what was rendered.
+        imageSources: {
+          render: publicImages({ render: t.branding.images?.render }, { url: (id) => svc.imageUrl(t, id) }),
+          photo: publicImages({ photo: t.branding.images?.photo }, { url: (id) => svc.imageUrl(t, id) }),
+        },
         settings: { ...t.settings },
         hostnames: svc.hostnames(t.id),
         createdAt: t.createdAt,

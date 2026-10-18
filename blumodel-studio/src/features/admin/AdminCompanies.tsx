@@ -434,6 +434,7 @@ function CompanyView({ id, onBack, invite, clearInvite }: { id: string; onBack: 
             {hostOf(t.url)}
           </a>
           <span className="adm-sub">Added {day(t.createdAt)}</span>
+          <ImagesButton id={t.id} />
         </div>
       </div>
       {invite && <InviteNotice invite={invite.invite} email={invite.email} onDone={clearInvite} />}
@@ -459,6 +460,38 @@ function CompanyView({ id, onBack, invite, clearInvite }: { id: string; onBack: 
       </div>
       <QueueSection data={usage.data} error={usage.error} />
     </div>
+  );
+}
+
+/**
+ * Admin > Companies > Generate showroom images: opens the showroom's picture generator in a new
+ * tab, in this browser (the renders are made here, never on the server), with a 2-hour ticket.
+ */
+function ImagesButton({ id }: { id: string }) {
+  const [state, setState] = useState<{ busy: boolean; error: string | null }>({ busy: false, error: null });
+  const go = async () => {
+    // Opened now, while the click still counts, so no pop-up blocker stops it; pointed at the link below.
+    const win = window.open('about:blank', '_blank');
+    setState({ busy: true, error: null });
+    try {
+      const { url } = await showroomApi.imagesLink(id);
+      if (win) {
+        win.opener = null;
+        win.location.href = url;
+      } else location.href = url;
+      setState({ busy: false, error: null });
+    } catch (e) {
+      win?.close();
+      setState({ busy: false, error: e instanceof Error ? e.message : 'Couldn’t open the generator.' });
+    }
+  };
+  return (
+    <>
+      <button type="button" className="btn small" onClick={() => void go()} disabled={state.busy}>
+        {state.busy ? 'Opening…' : 'Generate showroom images'}
+      </button>
+      {state.error && <span className="adm-sub" role="alert">{state.error}</span>}
+    </>
   );
 }
 
