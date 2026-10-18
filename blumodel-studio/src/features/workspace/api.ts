@@ -1,5 +1,5 @@
 import { call, upload } from '../../lib/api';
-import type { Product } from '../../types';
+import type { DesignDoc, Product } from '../../types';
 import type { FileWire, ProductSpecInput } from '../../types/platform';
 import type { ShowroomImages } from '../showroom/site';
 
@@ -87,27 +87,82 @@ export interface Member {
 export type LeadStatus = 'new' | 'contacted' | 'quoted' | 'won' | 'lost';
 export const LEAD_STATUSES: LeadStatus[] = ['new', 'contacted', 'quoted', 'won', 'lost'];
 
+/**
+ * A lead: one person who used the showroom (docs/handoff/leads.md). They gave their details in
+ * "Before you start" (source 'form'), sent a design without that ('send'), or came from a design
+ * sent before leads were people ('migrated').
+ */
 export interface Lead {
   id: string;
   status: LeadStatus;
   name: string;
   email: string;
   phone: string;
-  postalCode: string;
-  budget: string;
-  timeline: string;
-  notes: string;
+  staffNotes: string;
   consent: boolean;
   consentText: string;
-  staffNotes: string;
-  design: { name: string; shareToken: string; url: string } | null;
+  consentAt: number | null;
+  source: 'form' | 'send' | 'migrated';
+  /** They also have an account on the showroom. */
   signedIn: boolean;
+  /** How many designs they have on the showroom. */
+  designs: number;
+  /** They sent at least one design ("Send this design to <Company>"). */
+  sent: boolean;
+  sends: number;
+  lastSentAt: number | null;
+  /** The newest design they sent, with the team's view-only link. */
+  design: { name: string; shareToken: string | null; url: string | null } | null;
   read: boolean;
+  firstSeenAt: number;
+  lastActiveAt: number;
   createdAt: number;
   updatedAt: number;
 }
 
-export type LeadCounts = Record<LeadStatus | 'total' | 'unread', number>;
+export interface LeadDesign {
+  id: string;
+  name: string;
+  items: number;
+  room: { widthIn: number; lengthIn: number } | null;
+  createdAt: number;
+  updatedAt: number;
+  sentAt: number | null;
+  sentUrl: string | null;
+}
+
+/** One "Send this design" with what they wrote on it. */
+export interface LeadSend {
+  id: string;
+  at: number;
+  designName: string;
+  projectId: string | null;
+  url: string | null;
+  postalCode: string;
+  budget: string;
+  timeline: string;
+  notes: string;
+  consentText: string;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export type LeadEventKind = 'captured' | 'returned' | 'started' | 'saved' | 'sent' | 'status' | 'account';
+export interface LeadEvent {
+  kind: LeadEventKind;
+  at: number;
+  projectId: string | null;
+  design: string;
+  from?: LeadStatus;
+  to?: LeadStatus;
+  by?: string;
+  form?: boolean;
+}
+
+export type LeadDetail = Omit<Lead, 'designs'> & { designs: LeadDesign[]; sendsList: LeadSend[]; timeline: LeadEvent[] };
+
+export type LeadCounts = Record<LeadStatus | 'total' | 'unread' | 'sent', number>;
 
 export interface License {
   id: string;
@@ -266,17 +321,22 @@ export const wsApi = {
   setDefaultMarkup: (defaultMarkupPct: number) => call<PricingWire>('PUT', '/api/workspace/pricing', { defaultMarkupPct }),
   setPrice: (productId: string, row: PriceRow) => call<{ productId: string; row: PriceRow }>('PUT', `/api/workspace/pricing/${enc(productId)}`, row),
 
-  leads: (q: { status?: LeadStatus | ''; q?: string; before?: number; limit?: number } = {}) => {
+  leads: (q: { status?: LeadStatus | ''; q?: string; sent?: 'yes' | 'no' | ''; before?: number; limit?: number } = {}) => {
     const p = new URLSearchParams();
     if (q.status) p.set('status', q.status);
     if (q.q) p.set('q', q.q);
+    if (q.sent) p.set('sent', q.sent);
     if (q.before) p.set('before', String(q.before));
     if (q.limit) p.set('limit', String(q.limit));
     const s = p.toString();
     return call<{ leads: Lead[]; counts: LeadCounts }>('GET', `/api/workspace/leads${s ? `?${s}` : ''}`);
   },
-  lead: (id: string) => call<{ lead: Lead }>('GET', `/api/workspace/leads/${enc(id)}`),
-  saveLead: (id: string, patch: { status?: LeadStatus; staffNotes?: string }) => call<{ lead: Lead }>('PATCH', `/api/workspace/leads/${enc(id)}`, patch),
+  leadsSummary: () => call<{ counts: LeadCounts }>('GET', '/api/workspace/leads/summary'),
+  lead: (id: string) => call<{ lead: LeadDetail }>('GET', `/api/workspace/leads/${enc(id)}`),
+  saveLead: (id: string, patch: { status?: LeadStatus; staffNotes?: string }) => call<{ lead: LeadDetail }>('PATCH', `/api/workspace/leads/${enc(id)}`, patch),
+  deleteLead: (id: string) => call<{ ok: true; removed: { designs: number; unlinked: number; sends: number } }>('DELETE', `/api/workspace/leads/${enc(id)}`),
+  leadDesign: (id: string, designId: string) =>
+    call<{ design: { id: string; name: string; doc: DesignDoc; createdAt: number; updatedAt: number } }>('GET', `/api/workspace/leads/${enc(id)}/designs/${enc(designId)}`),
   exportLeads: () => call<{ filename: string; contentType: string; content: string }>('GET', '/api/workspace/leads/export'),
 
   plan: () => call<PlanWire>('GET', '/api/workspace/plan'),

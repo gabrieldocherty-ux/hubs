@@ -58,8 +58,9 @@ export default function WorkspaceRoot({ rest }: { rest: string }) {
   }, []);
 
   const refreshBadge = useCallback(() => {
+    // New leads: people the team hasn't opened yet (a lead that sends a design is new again).
     wsApi
-      .leads({ limit: 1 })
+      .leadsSummary()
       .then((r) => setUnread(r.counts.unread ?? 0))
       .catch(() => {});
   }, []);
@@ -123,7 +124,7 @@ export default function WorkspaceRoot({ rest }: { rest: string }) {
             <a key={k} href={hrefFor({ name: 'studio', rest: k === 'showroom' ? '' : k })} className={tab === k ? 'chip on' : 'chip'} aria-current={tab === k ? 'page' : undefined}>
               {label}
               {k === 'leads' && unread > 0 && (
-                <span className="badge bad" aria-label={`${unread} unread lead${unread === 1 ? '' : 's'}`}>
+                <span className="badge bad" aria-label={`${unread} new lead${unread === 1 ? '' : 's'}`} data-testid="leads-badge">
                   {unread}
                 </span>
               )}

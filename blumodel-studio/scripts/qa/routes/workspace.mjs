@@ -149,35 +149,80 @@ export default [
   }),
 
   // ── Leads ────────────────────────────────────────────────────────────────
+  // Everyone who used the showroom (docs/handoff/leads.md): the list with its columns, a lead with
+  // tap-to-call/mailto, consent, the activity, each design's products and Open in 3D (view-only).
   ...each({
     name: 'leads',
     host: 'demo',
     path: '#/studio/leads',
     as: 'showroom-owner',
-    waitFor: ['.ws-lead-list', '.ws-filters'],
-    expectText: ['Your inbox', 'Riley Okafor', 'Morgan Lee', 'Sam Patel', 'CSV'],
-    check: page,
+    waitFor: ['.ws-lead-table tbody tr', '.ws-filters'],
+    expectText: ['Everyone who used your showroom', 'Riley Okafor', 'Morgan Lee', 'Sam Patel', 'Export CSV'],
+    check: async (h) => {
+      const t = await h.evaluate(() => ({
+        head: [...document.querySelectorAll('.ws-lead-table th')].map((th) => th.textContent.trim()),
+        labels: [...document.querySelectorAll('.ws-lead-table tbody tr:first-child td')].map((td) => td.dataset.label),
+        rows: document.querySelectorAll('.ws-lead-table tbody tr').length,
+        mail: !!document.querySelector('.ws-lead-table a[href^="mailto:"]'),
+        tel: !!document.querySelector('.ws-lead-table a[href^="tel:"]'),
+        sent: !!document.querySelector('.ws-lead-sent'),
+      }));
+      const want = ['Name', 'Email', 'Phone', 'First seen', 'Last active', 'Designs', 'Sent', 'Status', 'Notes'];
+      if (t.labels.join() !== want.join()) throw new Error(`the columns are ${t.labels.join(', ')}`);
+      if (t.rows < 3) throw new Error(`${t.rows} leads listed`);
+      if (!t.mail || !t.tel) throw new Error('the list’s email and phone are not mailto/tel links');
+      if (!t.sent) throw new Error('no Sent filter');
+      await page(h);
+    },
   }),
   ...each({
     name: 'lead',
     host: 'demo',
     as: 'showroom-owner',
     setup: ({ api }) => {
-      const id = api.sql('SELECT id FROM showroom_leads WHERE tenant_id = ? AND project_id IS NOT NULL ORDER BY created_at LIMIT 1', demoId(api))[0]?.id;
-      if (!id) throw new Error('the demo showroom has no lead with a design');
+      const id = api.sql("SELECT id FROM tenant_leads WHERE tenant_id = ? AND name = 'Riley Okafor' LIMIT 1", demoId(api))[0]?.id;
+      if (!id) throw new Error('the demo showroom has no lead for Riley');
       return { path: `#/studio/leads/${id}` };
     },
-    waitFor: ['.ws-lead-detail', '.ws-kv'],
-    expectText: ['Riley Okafor', 'Contact', 'Your follow-up', 'Open the design', 'Contacted'],
+    waitFor: ['.ws-lead-detail', '.ws-kv', '.ws-design-products li', '.ws-timeline li'],
+    expectText: ['Riley Okafor', 'Contact', 'Consent', 'Your follow-up', 'Designs', 'Open in 3D', 'Activity', 'Sent a design to you', 'Contacted', 'Delete lead and designs'],
+    timeoutMs: 30_000,
     check: async (h) => {
-      const links = await h.evaluate(() => ({ mail: !!document.querySelector('a[href^="mailto:"]'), tel: !!document.querySelector('a[href^="tel:"]'), design: [...document.querySelectorAll('a[href]')].some((a) => /#\/s\//.test(a.getAttribute('href') ?? '') || /share/.test(a.getAttribute('href') ?? '')) }));
+      const links = await h.evaluate(() => ({ mail: !!document.querySelector('.ws-lead-detail a[href^="mailto:"]'), tel: !!document.querySelector('.ws-lead-detail a[href^="tel:"]'), open: [...document.querySelectorAll('a[href]')].some((a) => /#\/studio\/leads\/[^/]+\/design\//.test(a.getAttribute('href') ?? '')) }));
       const notes = await h.evaluate(() => document.querySelector('.ws-lead-detail textarea')?.value ?? '');
+      const consent = await h.evaluate(() => document.querySelector('[data-testid="lead-consent"]')?.textContent ?? '');
       if (!/site measure booked/.test(notes)) throw new Error(`the team's notes read "${notes}"`);
       if (!links.mail || !links.tel) throw new Error('the lead’s email and phone are not mailto/tel links');
-      if (!links.design) throw new Error('Open the design doesn’t link to the design');
+      if (!links.open) throw new Error('no Open in 3D for the lead’s designs');
+      if (!/may contact me/.test(consent) || !/Agreed/.test(consent)) throw new Error(`the consent reads "${consent}"`);
       await page(h);
     },
   }),
+  ...[
+    { suffix: '', viewport: 'desktop', colorScheme: 'light' },
+    { suffix: '-phone-dark', viewport: 'phone', colorScheme: 'dark' },
+  ].map((v) => ({
+    name: `lead-design-3d${v.suffix}`,
+    host: 'demo',
+    as: 'showroom-staff',
+    viewport: v.viewport,
+    colorScheme: v.colorScheme,
+    setup: ({ api }) => {
+      const r = api.sql("SELECT l.id, p.id AS design FROM tenant_leads l JOIN projects p ON p.lead_id = l.id WHERE l.tenant_id = ? AND l.name = 'Riley Okafor' ORDER BY p.updated_at DESC LIMIT 1", demoId(api))[0];
+      if (!r) throw new Error('Riley has no design');
+      return { path: `#/studio/leads/${r.id}/design/${r.design}` };
+    },
+    waitFor: ['[data-testid="lead-design-view"]', '.plan-view canvas'],
+    expectText: ['Back to the lead', 'view only'],
+    timeoutMs: 40_000,
+    check: async (h) => {
+      const r = await h.evaluate(() => ({ ro: window.__blumodel?.store?.getState?.().readOnly, send: !!document.querySelector('[data-testid="send-design"]'), save: !!document.querySelector('.save-chip.saved, .save-chip.unsaved') }));
+      if (r.ro === false) throw new Error('the lead’s design opened editable');
+      if (r.send) throw new Error('the team is offered to send the design to themselves');
+      if (r.save) throw new Error('the view shows a save status');
+      await noSideScroll(h);
+    },
+  })),
 
   // ── Renders ──────────────────────────────────────────────────────────────
   ...each({

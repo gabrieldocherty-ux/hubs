@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dialog } from '../../components/Dialog';
 import { ApiError } from '../../lib/api';
-import { hrefFor } from '../../lib/router';
+import { buildEstimate } from '../../lib/estimate';
+import { feetInches } from '../../lib/format';
+import { hrefFor, navigate } from '../../lib/router';
+import { useCatalog } from '../../store/useCatalog';
 import { useDesignStore } from '../../store/useDesignStore';
-import { LEAD_STATUSES, saveText, when, wsApi, type Lead, type LeadCounts, type LeadStatus } from './api';
+import type { DesignDoc } from '../../types';
+import { LEAD_STATUSES, saveText, when, wsApi, type Lead, type LeadCounts, type LeadDesign, type LeadDetail as LeadDetailWire, type LeadEvent, type LeadStatus } from './api';
 import { useWorkspace } from './context';
 import './leads.css';
+
+const LeadDesignView = lazy(() => import('./LeadDesignView'));
 
 const PAGE = 50;
 const href = (rest: string) => hrefFor({ name: 'studio', rest });
@@ -12,19 +19,43 @@ const href = (rest: string) => hrefFor({ name: 'studio', rest });
 export const LEAD_LABEL: Record<LeadStatus, string> = { new: 'New', contacted: 'Contacted', quoted: 'Quoted', won: 'Won', lost: 'Lost' };
 const TONE: Record<LeadStatus, string> = { new: 'accent', contacted: 'info', quoted: 'warn', won: 'ok', lost: '' };
 
+/** A phone link, without the extension (which a dialler can't take). */
+export function telOf(phone: string): string | null {
+  const main = phone.replace(/\s*ext\.?\s*\d+$/i, '');
+  const d = main.replace(/[^\d+]/g, '');
+  return d.replace(/\D/g, '').length >= 7 ? `tel:${d}` : null;
+}
+
+/** "Oct 17" this year, "Oct 17, 2025" before. */
+function shortDay(ms: number | null): string {
+  if (!ms) return '—';
+  const d = new Date(ms);
+  const same = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', ...(same ? {} : { year: 'numeric' }) });
+}
+
 /**
- * The Leads tab: every "Send this design to <Company>" from the showroom, newest first, with its
- * status (new, contacted, quoted, won, lost), the team's notes, the customer's design and a CSV
- * export. `#/studio/leads/<id>` opens one (and marks it read).
+ * The Leads tab (docs/handoff/leads.md): everyone who used the showroom, most recently active
+ * first: who they are, when they first came and were last active, how many designs they made,
+ * whether they sent one, the team's status and notes. `#/studio/leads/<id>` opens a lead (and
+ * marks it read); `#/studio/leads/<id>/design/<designId>` opens one of their designs in 3D, view-only.
  */
 export default function LeadsTab({ sub }: { sub: string }) {
-  return sub ? <LeadDetail key={sub} id={sub} /> : <Inbox />;
+  const [id, part, designId] = sub.split('/');
+  if (id && part === 'design' && designId)
+    return (
+      <Suspense fallback={<div className="screen-msg">Opening the design…</div>}>
+        <LeadDesignView key={designId} leadId={id} designId={designId} />
+      </Suspense>
+    );
+  return id ? <LeadDetail key={id} id={id} /> : <Inbox />;
 }
 
 function Inbox() {
   const { refreshBadge } = useWorkspace();
   const toast = useDesignStore((s) => s.toast);
   const [status, setStatus] = useState<LeadStatus | ''>('');
+  const [sent, setSent] = useState<'' | 'yes' | 'no'>('');
   const [q, setQ] = useState('');
   const [query, setQuery] = useState('');
   const [leads, setLeads] = useState<Lead[] | null>(null);
@@ -44,7 +75,7 @@ function Inbox() {
   const load = useCallback(
     async (append = false, before?: number) => {
       try {
-        const r = await wsApi.leads({ status, q: query, before, limit: PAGE });
+        const r = await wsApi.leads({ status, sent, q: query, before, limit: PAGE });
         setLeads((cur) => (append && cur ? [...cur, ...r.leads] : r.leads));
         setCounts(r.counts);
         setMore(r.leads.length === PAGE);
@@ -53,7 +84,7 @@ function Inbox() {
         setError(e instanceof ApiError ? e.message : 'Could not load your leads.');
       }
     },
-    [status, query],
+    [status, sent, query],
   );
   useEffect(() => {
     void load();
@@ -73,14 +104,18 @@ function Inbox() {
   };
 
   const filters: [LeadStatus | '', string][] = [['', 'All'], ...LEAD_STATUSES.map((s) => [s, LEAD_LABEL[s]] as [LeadStatus, string])];
+  const filtered = !!(status || sent || query);
 
   return (
     <div className="ws-leads">
       <div className="ws-head">
         <div>
           <span className="eyebrow">Leads</span>
-          <h1>Your inbox</h1>
-          <p>Every design a customer sends you from the showroom, with their details and a link to the design. Only your team sees these.</p>
+          <h1>Everyone who used your showroom</h1>
+          <p>
+            Each person who started a design, with how to reach them, their designs and whether they sent you one. Only your team sees these.
+            {counts ? ` ${counts.total} ${counts.total === 1 ? 'person' : 'people'}, ${counts.sent} sent a design.` : ''}
+          </p>
         </div>
         <div className="ws-actions">
           <button type="button" className="btn" onClick={() => void exportCsv()} disabled={busy || !counts?.total}>
@@ -88,7 +123,7 @@ function Inbox() {
           </button>
         </div>
       </div>
-      <div className="ws-filters">
+      <div className="ws-filters ws-lead-filters">
         <div className="chips" role="group" aria-label="Status">
           {filters.map(([k, label]) => (
             <button key={k || 'all'} type="button" className={status === k ? 'chip on' : 'chip'} aria-pressed={status === k} onClick={() => setStatus(k)}>
@@ -97,58 +132,113 @@ function Inbox() {
             </button>
           ))}
         </div>
-        <input className="ws-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or postal code" aria-label="Search leads" />
+        <select className="ws-lead-sent" value={sent} onChange={(e) => setSent(e.target.value as '' | 'yes' | 'no')} aria-label="Sent a design">
+          <option value="">Sent or not</option>
+          <option value="yes">Sent a design</option>
+          <option value="no">Hasn’t sent one</option>
+        </select>
+        <input className="ws-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or notes" aria-label="Search leads" />
       </div>
       {error && <div className="ws-error">{error}</div>}
       {!leads && !error && <div className="screen-msg">Loading your leads…</div>}
       {leads && leads.length === 0 && (
         <div className="ws-empty">
-          {counts?.total ? (
+          {counts?.total || filtered ? (
             <p>No leads match.</p>
           ) : (
             <>
               <b>No leads yet</b>
-              <p>When a customer finishes a design on your showroom and taps “Send this design to you”, it lands here, and the people on your team get an email.</p>
+              <p>When someone starts a design on your showroom, they give their name and an email or phone first, and they show up here. You hear about it by email when they send you a design.</p>
             </>
           )}
         </div>
       )}
       {leads && leads.length > 0 && (
-        <ul className="ws-lead-list">
-          {leads.map((l) => (
-            <li key={l.id}>
-              <a className={l.read ? 'ws-lead' : 'ws-lead is-unread'} href={href(`leads/${l.id}`)}>
-                <span className="ws-lead-who">
-                  {!l.read && <span className="ws-dot" aria-label="Unread" />}
-                  <b>{l.name}</b>
-                  <span className="muted">{[l.postalCode, l.design?.name].filter(Boolean).join(' · ') || l.email}</span>
-                </span>
-                <span className="ws-lead-meta">
-                  {l.budget && <span className="muted ws-lead-budget">{l.budget}</span>}
-                  <span className={`ws-pill ${TONE[l.status]}`}>{LEAD_LABEL[l.status]}</span>
-                  <span className="muted ws-lead-when">{when(l.createdAt)}</span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
+        <div className="ws-lead-table-wrap">
+          <table className="ws-lead-table">
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Phone</th>
+                <th scope="col">First seen</th>
+                <th scope="col">Last active</th>
+                <th scope="col" className="num">
+                  Designs
+                </th>
+                <th scope="col">Sent</th>
+                <th scope="col">Status</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leads.map((l) => (
+                <tr key={l.id} className={l.read ? '' : 'is-unread'} onClick={(e) => !(e.target as HTMLElement).closest('a') && navigate({ name: 'studio', rest: `leads/${l.id}` })}>
+                  <td data-label="Name" className="ws-lt-name">
+                    <a href={href(`leads/${l.id}`)}>
+                      {!l.read && <span className="ws-dot" aria-label="New" />}
+                      <b>{l.name}</b>
+                    </a>
+                  </td>
+                  <td data-label="Email" className="ws-lt-email">
+                    {l.email ? <a href={`mailto:${l.email}`}>{l.email}</a> : <span className="muted">—</span>}
+                  </td>
+                  <td data-label="Phone">{l.phone ? <a href={telOf(l.phone) ?? undefined}>{l.phone}</a> : <span className="muted">—</span>}</td>
+                  <td data-label="First seen" className="muted">
+                    {shortDay(l.firstSeenAt)}
+                  </td>
+                  <td data-label="Last active" className="muted">
+                    {shortDay(l.lastActiveAt)}
+                  </td>
+                  <td data-label="Designs" className="num">
+                    {l.designs}
+                  </td>
+                  <td data-label="Sent">{l.sent ? <span className="ws-pill ok">Sent</span> : <span className="muted">No</span>}</td>
+                  <td data-label="Status">
+                    <span className={`ws-pill ${TONE[l.status]}`}>{LEAD_LABEL[l.status]}</span>
+                  </td>
+                  <td data-label="Notes" className="ws-lt-notes muted">
+                    {l.staffNotes || '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {more && leads && (
-        <button type="button" className="btn ws-more" onClick={() => void load(true, leads[leads.length - 1]?.createdAt)}>
-          Show older leads
+        <button type="button" className="btn ws-more" onClick={() => void load(true, leads[leads.length - 1]?.lastActiveAt)}>
+          Show more
         </button>
       )}
     </div>
   );
 }
 
+const EVENT_LABEL: Record<LeadEvent['kind'], string> = {
+  captured: 'Gave their details and started',
+  returned: 'Came back',
+  started: 'Started a design',
+  saved: 'Saved a design',
+  sent: 'Sent a design to you',
+  status: 'Status changed',
+  account: 'Made an account on your showroom',
+};
+
+function eventText(e: LeadEvent): string {
+  if (e.kind === 'status') return `${LEAD_LABEL[e.to ?? 'new']}${e.by ? ` · by ${e.by}` : ''}`;
+  if (e.kind === 'returned' && e.form) return 'Came back on another browser and gave their details again';
+  return e.design ? `“${e.design}”` : '';
+}
+
 function LeadDetail({ id }: { id: string }) {
   const { refreshBadge } = useWorkspace();
   const toast = useDesignStore((s) => s.toast);
-  const [lead, setLead] = useState<Lead | null>(null);
+  const [lead, setLead] = useState<LeadDetailWire | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
 
   useEffect(() => {
     wsApi
@@ -175,6 +265,20 @@ function LeadDetail({ id }: { id: string }) {
     }
   };
 
+  const remove = async () => {
+    setBusy(true);
+    try {
+      const r = await wsApi.deleteLead(id);
+      toast(`Deleted ${lead?.name ?? 'the lead'}${r.removed.designs ? ` and ${r.removed.designs} design${r.removed.designs === 1 ? '' : 's'}` : ''}.`, 'ok');
+      refreshBadge();
+      navigate({ name: 'studio', rest: 'leads' }, true);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : 'That didn’t delete.', 'warn');
+      setBusy(false);
+      setConfirm(false);
+    }
+  };
+
   if (error)
     return (
       <div className="ws-empty">
@@ -185,6 +289,7 @@ function LeadDetail({ id }: { id: string }) {
       </div>
     );
   if (!lead) return <div className="screen-msg">Opening the lead…</div>;
+  const tel = lead.phone ? telOf(lead.phone) : null;
 
   return (
     <div className="ws-lead-detail">
@@ -195,70 +300,47 @@ function LeadDetail({ id }: { id: string }) {
           </a>
           <h1>{lead.name}</h1>
           <p>
-            Sent {when(lead.createdAt)}
-            {lead.signedIn ? ' · signed in on your showroom' : ''}
+            First seen {when(lead.firstSeenAt)} · last active {when(lead.lastActiveAt)}
+            {lead.signedIn ? ' · has an account on your showroom' : ''}
           </p>
         </div>
-        {lead.design && (
-          <div className="ws-actions">
-            <a className="btn primary" href={lead.design.url} target="_blank" rel="noopener">
-              Open the design
+        <div className="ws-actions">
+          {tel && (
+            <a className="btn primary" href={tel}>
+              Call {lead.phone}
             </a>
-          </div>
-        )}
+          )}
+          {lead.email && (
+            <a className={tel ? 'btn' : 'btn primary'} href={`mailto:${lead.email}`}>
+              Email
+            </a>
+          )}
+        </div>
       </div>
       <div className="ws-lead-grid">
         <section className="ws-card" aria-label="Contact">
           <h2>Contact</h2>
           <dl className="ws-kv">
             <dt>Email</dt>
+            <dd>{lead.email ? <a href={`mailto:${lead.email}`}>{lead.email}</a> : '—'}</dd>
+            <dt>Phone</dt>
+            <dd>{lead.phone ? tel ? <a href={tel}>{lead.phone}</a> : lead.phone : '—'}</dd>
+            <dt>Designs</dt>
             <dd>
-              <a href={`mailto:${lead.email}`}>{lead.email}</a>
+              {lead.designs.length}
+              {lead.sent ? ` · sent ${lead.sends} time${lead.sends === 1 ? '' : 's'}` : ' · none sent yet'}
             </dd>
-            {lead.phone && (
-              <>
-                <dt>Phone</dt>
-                <dd>
-                  <a href={`tel:${lead.phone.replace(/[^0-9+]/g, '')}`}>{lead.phone}</a>
-                </dd>
-              </>
-            )}
-            {lead.postalCode && (
-              <>
-                <dt>Postal code</dt>
-                <dd>{lead.postalCode}</dd>
-              </>
-            )}
-            {lead.budget && (
-              <>
-                <dt>Budget</dt>
-                <dd>{lead.budget}</dd>
-              </>
-            )}
-            {lead.timeline && (
-              <>
-                <dt>Timeline</dt>
-                <dd>{lead.timeline}</dd>
-              </>
-            )}
-            {lead.design && (
-              <>
-                <dt>Design</dt>
-                <dd>
-                  <a href={lead.design.url} target="_blank" rel="noopener">
-                    {lead.design.name || 'Their design'}
-                  </a>
-                </dd>
-              </>
-            )}
           </dl>
-          {lead.notes && (
-            <>
-              <span className="mini-label">Their message</span>
-              <p className="ws-quote-note">{lead.notes}</p>
-            </>
-          )}
-          <p className="fine">{lead.consent ? `They agreed: “${lead.consentText}”` : 'No consent was recorded with this lead.'}</p>
+          <span className="mini-label">Consent</span>
+          <p className="fine" data-testid="lead-consent">
+            {lead.consent ? (
+              <>
+                “{lead.consentText}”{lead.consentAt ? ` Agreed ${when(lead.consentAt)}.` : ''}
+              </>
+            ) : (
+              'No consent was recorded with this lead.'
+            )}
+          </p>
         </section>
 
         <section className="ws-card" aria-label="Your follow-up">
@@ -274,7 +356,7 @@ function LeadDetail({ id }: { id: string }) {
             <span>
               Team notes <em>· only your team sees these</em>
             </span>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={4000} rows={6} placeholder="Called Tuesday, booking a showroom visit…" />
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={4000} rows={5} placeholder="Called Tuesday, booking a showroom visit…" />
           </label>
           <div className="ws-actions">
             <button type="button" className="btn primary" disabled={busy || notes === lead.staffNotes} onClick={() => void save({ staffNotes: notes }, 'Notes saved.')}>
@@ -283,6 +365,168 @@ function LeadDetail({ id }: { id: string }) {
           </div>
         </section>
       </div>
+
+      <section className="ws-card ws-lead-designs" aria-label="Designs">
+        <h2>Designs</h2>
+        {lead.designs.length === 0 ? (
+          <p className="muted">No designs yet. They gave their details but haven’t saved a design.</p>
+        ) : (
+          <ul className="ws-design-list">
+            {lead.designs.map((d) => (
+              <DesignRow key={d.id} leadId={lead.id} design={d} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {lead.sendsList.length > 0 && (
+        <section className="ws-card" aria-label="What they sent">
+          <h2>What they sent</h2>
+          <ul className="ws-send-list">
+            {lead.sendsList.map((s) => (
+              <li key={s.id}>
+                <div className="ws-send-top">
+                  <b>{s.designName ? `“${s.designName}”` : 'A design'}</b>
+                  <span className="muted">{when(s.at)}</span>
+                </div>
+                <dl className="ws-kv">
+                  {s.budget && (
+                    <>
+                      <dt>Budget</dt>
+                      <dd>{s.budget}</dd>
+                    </>
+                  )}
+                  {s.timeline && (
+                    <>
+                      <dt>When</dt>
+                      <dd>{s.timeline}</dd>
+                    </>
+                  )}
+                  {s.postalCode && (
+                    <>
+                      <dt>Postal code</dt>
+                      <dd>{s.postalCode}</dd>
+                    </>
+                  )}
+                  {(s.email !== lead.email || s.phone !== lead.phone) && (
+                    <>
+                      <dt>Gave</dt>
+                      <dd>{[s.email, s.phone].filter(Boolean).join(' · ')}</dd>
+                    </>
+                  )}
+                </dl>
+                {s.notes && <p className="ws-quote-note">{s.notes}</p>}
+                {s.url && (
+                  <a href={s.url} target="_blank" rel="noopener">
+                    Their view-only link
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="ws-card" aria-label="Activity">
+        <h2>Activity</h2>
+        <ol className="ws-timeline">
+          {lead.timeline.map((e, i) => (
+            <li key={`${e.at}-${i}`} className={`ws-tl-${e.kind}`}>
+              <span className="ws-tl-dot" aria-hidden="true" />
+              <span className="ws-tl-what">
+                <b>{EVENT_LABEL[e.kind]}</b> {eventText(e)}
+              </span>
+              <time className="muted" dateTime={new Date(e.at).toISOString()}>
+                {when(e.at)}
+              </time>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="ws-card ws-danger" aria-label="Delete this lead">
+        <h2>Delete this lead</h2>
+        <p>If {lead.name} asks you to forget them, delete their details, their designs and this history. It can’t be undone.</p>
+        <button type="button" className="btn danger" onClick={() => setConfirm(true)} disabled={busy}>
+          Delete lead and designs
+        </button>
+      </section>
+      {confirm && (
+        <Dialog title={`Delete ${lead.name}?`} onClose={() => !busy && setConfirm(false)}>
+          <p>
+            This deletes their contact details, consent, {lead.designs.length} design{lead.designs.length === 1 ? '' : 's'} and this activity. A design they keep in an account of their own stays in that account.
+          </p>
+          <div className="modal-actions">
+            <button type="button" className="btn" onClick={() => setConfirm(false)} disabled={busy} data-autofocus>
+              Keep
+            </button>
+            <button type="button" className="btn danger" onClick={() => void remove()} disabled={busy}>
+              {busy ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
+        </Dialog>
+      )}
     </div>
+  );
+}
+
+/** One of the lead's designs: its size, when it changed, whether it was sent, its products, and Open in 3D. */
+function DesignRow({ leadId, design }: { leadId: string; design: LeadDesign }) {
+  // The company's own products carry its name as their brand: the list leaves it out.
+  const company = useWorkspace().tenant.name;
+  const [doc, setDoc] = useState<DesignDoc | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    wsApi
+      .leadDesign(leadId, design.id)
+      .then((r) => {
+        if (!live) return;
+        if (r.design.doc.products) useCatalog.getState().registerSnapshots(r.design.doc.products);
+        setDoc(r.design.doc);
+      })
+      .catch(() => live && setFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [leadId, design.id]);
+  const lines = useMemo(() => (doc ? buildEstimate(doc).lines.filter((l) => l.productId) : []), [doc]);
+  return (
+    <li className="ws-design">
+      <div className="ws-design-top">
+        <div>
+          <b>{design.name}</b>
+          <span className="muted">
+            {design.room ? `${feetInches(design.room.widthIn)} × ${feetInches(design.room.lengthIn)} · ` : ''}
+            {design.items} piece{design.items === 1 ? '' : 's'} · changed {when(design.updatedAt)}
+          </span>
+        </div>
+        <div className="ws-actions">
+          {design.sentAt && <span className="ws-pill ok">Sent {shortDay(design.sentAt)}</span>}
+          <a className="btn primary" href={href(`leads/${leadId}/design/${design.id}`)}>
+            Open in 3D
+          </a>
+        </div>
+      </div>
+      {failed ? (
+        <p className="muted">The product list couldn’t be read.</p>
+      ) : !doc ? (
+        <p className="muted">Reading the products…</p>
+      ) : lines.length === 0 ? (
+        <p className="muted">No products placed yet.</p>
+      ) : (
+        <ul className="ws-design-products" aria-label={`Products in ${design.name}`}>
+          {lines.map((l) => (
+            <li key={l.key}>
+              <span className="ws-qty">{l.qty}×</span>
+              <span>
+                {l.label.startsWith(`${company} `) ? l.label.slice(company.length + 1) : l.label}
+                {l.sub ? <span className="muted"> · {l.sub}</span> : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }
