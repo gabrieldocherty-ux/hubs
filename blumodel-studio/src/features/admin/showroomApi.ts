@@ -63,4 +63,5 @@ export const showroomApi = {
   usage: (id: string) => call<TenantUsage>('GET', `${tn(id)}/usage`),
   salesLeads: (status?: SalesLeadStatus) => call<{ leads: SalesLead[]; counts: SalesLeadCounts }>('GET', `/api/admin/sales-leads${status ? `?status=${enc(status)}` : ''}`),
   updateSalesLead: (id: string, b: { status?: SalesLeadStatus; adminNotes?: string }) => call<{ lead: SalesLead }>('PATCH', `/api/admin/sales-leads/${enc(id)}`, b),
+  deleteSalesLead: (id: string) => call<{ ok: true }>('DELETE', `/api/admin/sales-leads/${enc(id)}`),
 };

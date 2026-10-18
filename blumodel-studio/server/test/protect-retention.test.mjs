@@ -47,11 +47,11 @@ test('the daily sweep deletes leads that never sent a design and were never work
     // 23 months on: nothing is old enough.
     await jump(t0 + 23 * MONTH);
     const recent = await visit(A, me({ name: 'Recent', email: 'recent@example.com' }));
-    assert.deepEqual(t.ctx.retentionSweep(), { leads: 0, designs: 0, tenants: 0 });
+    assert.deepEqual(t.ctx.retentionSweep(), { leads: 0, designs: 0, tenants: 0, salesLeads: 0 });
     // 25 months on: the idle lead and its design go, in both showrooms; worked-on and sent leads stay.
     await jump(t0 + 25 * MONTH);
     const out = t.ctx.retentionSweep();
-    assert.deepEqual(out, { leads: 2, designs: 1, tenants: 2 });
+    assert.deepEqual(out, { leads: 2, designs: 1, tenants: 2, salesLeads: 0 });
     const names = (await owner.get('/api/workspace/leads')).body.leads.map((l) => l.name).sort();
     assert.deepEqual(names, ['Recent', 'Sender', 'Worked']);
     assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM projects WHERE id = ?').get(k.id).n, 0);
@@ -60,7 +60,7 @@ test('the daily sweep deletes leads that never sent a design and were never work
     // One audit row per sweep, counts only.
     const rows = t.db.prepare("SELECT * FROM admin_audit WHERE action = 'retention_sweep'").all();
     assert.equal(rows.length, 1);
-    assert.deepEqual(JSON.parse(rows[0].detail), { leads: 2, designs: 1, tenants: 2 });
+    assert.deepEqual(JSON.parse(rows[0].detail), { leads: 2, designs: 1, tenants: 2, salesLeads: 0 });
     assert.ok(!rows[0].detail.includes('@'));
 
     // A shorter choice in Workspace (owners only): 6 months.
@@ -103,6 +103,42 @@ test('maintenance runs the sweep at most once a day; the visitor cookie lasts 18
     t.setNow(t0 + DAY + 1);
     t.ctx.maintenance();
     assert.equal(runs, 2);
+  } finally {
+    t.setNow(null);
+    await t.close();
+  }
+});
+
+test('"Book a call" sales leads: an admin can delete one (re-authenticated, audited without the person), and they go 24 months after the last update', async () => {
+  const t = await startTestServer();
+  try {
+    const admin = await t.user({ role: 'admin' });
+    const post = (company, email) => t.agent().post('/api/sales-leads', { company, name: 'Robin', email, phone: '519-555-0177', website: '' });
+    assert.equal((await post('Gone Co', 'robin@gone.test')).status, 201);
+    assert.equal((await post('Old Co', 'old@old.test')).status, 201);
+    const leads = (await admin.get('/api/admin/sales-leads')).body.leads;
+    const gone = leads.find((l) => l.company === 'Gone Co');
+    // An earlier audit row that names the person (a status change carries the company only; this one is made up).
+    t.db.prepare("INSERT INTO admin_audit (at, admin_user_id, admin_email, action, target_user_id, target_email, detail) VALUES (1, NULL, '', 'note', NULL, 'robin@gone.test', '{}')").run();
+    // The reproduced finding: there was no delete. Now there is, behind re-authentication.
+    admin.keepFresh = false;
+    t.db.prepare('UPDATE sessions SET auth_at = 0 WHERE user_id = ?').run(admin.id);
+    assert.equal((await admin.delete(`/api/admin/sales-leads/${gone.id}`)).body.code, 'reauth_required');
+    admin.keepFresh = true;
+    const del = await admin.delete(`/api/admin/sales-leads/${gone.id}`);
+    assert.equal(del.status, 200, del.text);
+    assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM sales_leads WHERE id = ?').get(gone.id).n, 0);
+    const a = t.db.prepare("SELECT detail FROM admin_audit WHERE action = 'sales_lead_delete'").get();
+    assert.deepEqual(JSON.parse(a.detail), { leadId: gone.id, company: 'Gone Co' });
+    assert.ok(!JSON.stringify(t.db.prepare('SELECT * FROM admin_audit').all()).includes('robin@gone.test'));
+    assert.equal((await t.agent().delete(`/api/admin/sales-leads/${gone.id}`)).status, 401);
+    // Retention: 23 months untouched stays, 25 months goes.
+    const t0 = Date.now();
+    t.setNow(t0 + 23 * MONTH);
+    assert.equal(t.ctx.retentionSweep().salesLeads, 0);
+    t.setNow(t0 + 25 * MONTH);
+    assert.equal(t.ctx.retentionSweep().salesLeads, 1);
+    assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM sales_leads').get().n, 0);
   } finally {
     t.setNow(null);
     await t.close();

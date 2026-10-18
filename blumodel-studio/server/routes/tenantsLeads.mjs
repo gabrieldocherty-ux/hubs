@@ -30,10 +30,13 @@
 // Sales site, admin:
 //   GET    /api/admin/sales-leads           ?status= -> { leads, counts }
 //   PATCH  /api/admin/sales-leads/:id       { status?, adminNotes? } -> { lead } (audited)
+//   DELETE /api/admin/sales-leads/:id       -> { ok } (re-authenticated; audited with the id and company only;
+//                                           its email and phone leave the audit log). A lead not updated for
+//                                           SALES_LEAD_RETENTION_MONTHS (24) is deleted by the daily sweep.
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
-import { audit } from '../lib/audit.mjs';
+import { audit, pseudonymiseAudit } from '../lib/audit.mjs';
 import { EMAIL_RE } from '../auth/userWire.mjs';
 import { createMailer } from '../email/index.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
@@ -365,5 +368,34 @@ export default function routes(ctx) {
         return { lead: salesWire(db.prepare('SELECT * FROM sales_leads WHERE id = ?').get(cur.id)) };
       },
     },
+    {
+      method: 'DELETE',
+      path: '/api/admin/sales-leads/:id',
+      auth: 'admin',
+      reauth: true,
+      params: { id: SALES_PARAM },
+      handler: (rc) => {
+        const cur = db.prepare('SELECT * FROM sales_leads WHERE id = ?').get(rc.params.id);
+        if (!cur) throw new HttpError(404, 'That lead does not exist.');
+        ctx.tx(() => {
+          deleteSalesLead(db, cur);
+          audit(db, { admin: rc.user, action: 'sales_lead_delete', detail: { leadId: cur.id, company: cur.company }, at: ctx.now() });
+        });
+        return { ok: true };
+      },
+    },
   ];
+}
+
+/** Deletes one "Book a call" lead; its email and phone leave the audit log (pseudonymised). */
+export function deleteSalesLead(db, row) {
+  db.prepare('DELETE FROM sales_leads WHERE id = ?').run(row.id);
+  pseudonymiseAudit(db, { emails: [row.email], phones: [row.phone] });
+}
+
+/** The retention rule: sales leads not updated for `months` (SALES_LEAD_RETENTION_MONTHS). Returns how many went. */
+export function purgeSalesLeads(db, cutoff) {
+  const rows = db.prepare('SELECT * FROM sales_leads WHERE updated_at < ?').all(cutoff);
+  for (const r of rows) deleteSalesLead(db, r);
+  return rows.length;
 }

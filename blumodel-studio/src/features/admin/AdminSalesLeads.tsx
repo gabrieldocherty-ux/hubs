@@ -41,7 +41,7 @@ export default function AdminSalesLeads() {
       <div className="adm-head">
         <div>
           <h1>Sales leads</h1>
-          <p>Companies that asked for a call on blumodel.studio. Call them, then move them along.</p>
+          <p>Companies that asked for a call on blumodel.studio. Call them, then move them along. A lead not updated for 24 months is deleted automatically.</p>
         </div>
         <div className="adm-head-actions">
           <button type="button" className="btn small" onClick={() => void reload()} disabled={loading}>
@@ -66,7 +66,12 @@ export default function AdminSalesLeads() {
       ) : (
         <div className="adm-leads">
           {data.leads.map((l) => (
-            <LeadCard key={l.id} lead={l} onSaved={replace} />
+            <LeadCard
+              key={l.id}
+              lead={l}
+              onSaved={replace}
+              onDeleted={(id) => setData((d) => (d ? { leads: d.leads.filter((x) => x.id !== id), counts: { ...d.counts, [l.status]: Math.max(0, (d.counts[l.status] ?? 1) - 1), total: Math.max(0, d.counts.total - 1) } } : d))}
+            />
           ))}
         </div>
       )}
@@ -74,7 +79,8 @@ export default function AdminSalesLeads() {
   );
 }
 
-function LeadCard({ lead, onSaved }: { lead: SalesLead; onSaved: (l: SalesLead) => void }) {
+function LeadCard({ lead, onSaved, onDeleted }: { lead: SalesLead; onSaved: (l: SalesLead) => void; onDeleted: (id: string) => void }) {
+  const [confirming, setConfirming] = useState(false);
   const [notes, setNotes] = useState(lead.adminNotes);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -156,6 +162,38 @@ function LeadCard({ lead, onSaved }: { lead: SalesLead; onSaved: (l: SalesLead) 
             Save notes
           </button>
           {saved && <span className="adm-note">Saved.</span>}
+          {!confirming ? (
+            <button type="button" className="btn small" disabled={busy} onClick={() => setConfirming(true)}>
+              Delete…
+            </button>
+          ) : (
+            <>
+              <span className="adm-note">Delete {lead.company}’s request for good (asked to be forgotten, or not a fit)?</span>
+              <button
+                type="button"
+                className="btn small danger"
+                disabled={busy}
+                onClick={() =>
+                  void (async () => {
+                    setBusy(true);
+                    setErr(null);
+                    try {
+                      await showroomApi.deleteSalesLead(lead.id);
+                      onDeleted(lead.id);
+                    } catch (x) {
+                      setErr(errorText(x, 'Could not delete it.'));
+                      setBusy(false);
+                    }
+                  })()
+                }
+              >
+                Delete it
+              </button>
+              <button type="button" className="btn small" disabled={busy} onClick={() => setConfirming(false)}>
+                Keep
+              </button>
+            </>
+          )}
         </div>
       </div>
     </section>

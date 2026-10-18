@@ -14,6 +14,7 @@ import { createSessionStore, isHttps, isLoopback } from './auth/sessions.mjs';
 import { createAuthService } from './auth/guards.mjs';
 import { createMfaStore } from './auth/mfa.mjs';
 import { audit } from './lib/audit.mjs';
+import { purgeSalesLeads } from './routes/tenantsLeads.mjs';
 import { createFileService } from './files/store.mjs';
 import { createBrandService } from './catalog/brands.mjs';
 import { createProductService } from './catalog/products.mjs';
@@ -132,7 +133,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
      */
     retentionSweep() {
       const MONTH = 30 * 86_400_000;
-      const out = { leads: 0, designs: 0, tenants: 0 };
+      const out = { leads: 0, designs: 0, tenants: 0, salesLeads: 0 };
       for (const { id } of db.prepare('SELECT id FROM tenants').all()) {
         const chosen = Number(tenants.get(id)?.settings?.leadRetentionMonths) || 0;
         const months = chosen > 0 ? Math.min(chosen, config.LEAD_RETENTION_MONTHS) : config.LEAD_RETENTION_MONTHS;
@@ -143,7 +144,9 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
           out.tenants++;
         }
       }
-      if (out.leads) audit(db, { admin: null, action: 'retention_sweep', detail: out, at: now() });
+      // "Book a call" leads on the sales site: SALES_LEAD_RETENTION_MONTHS after they were last updated.
+      out.salesLeads = tx(db, () => purgeSalesLeads(db, now() - config.SALES_LEAD_RETENTION_MONTHS * MONTH));
+      if (out.leads || out.salesLeads) audit(db, { admin: null, action: 'retention_sweep', detail: out, at: now() });
       return out;
     },
     /** Periodic housekeeping; index.mjs runs it every 10 minutes. */
