@@ -174,7 +174,38 @@ export interface SystemStatus {
   legal: { supportEmailSet: boolean; legalNameSet: boolean; jurisdictionSet: boolean; ready: boolean };
   llm: { configured: boolean };
   log: { available: boolean; entries: { at: number | null; level: 'error' | 'warn'; text: string }[] };
+  updates: UpdatesStatus;
 }
+
+export type UpdateOutcome = 'current' | 'updated' | 'skipped' | 'refused' | 'busy' | 'rolled-back' | 'failed' | 'down' | 'error';
+export interface UpdateResult {
+  outcome: UpdateOutcome;
+  at: number | null;
+  from: string | null;
+  to: string | null;
+  durationMs: number | null;
+  error: string | null;
+  by: 'schedule' | 'update-now';
+}
+/** Admin > System > Updates (server/admin/updates.mjs). `available` is false on a development server. */
+export type UpdatesStatus =
+  | { available: false; reason: string }
+  | {
+      available: true;
+      installed: boolean;
+      enabled: boolean;
+      time: string;
+      branch: string | null;
+      deployed: string | null;
+      head: string | null;
+      source: string | null;
+      lastCheckAt: number | null;
+      last: UpdateResult | null;
+      lastUpdate: UpdateResult | null;
+      failed: { commit: string; at: number | null } | null;
+      rolledBack: boolean;
+      pending: boolean;
+    };
 
 export interface AuditPage {
   entries: AuditEntry[];

@@ -31,7 +31,7 @@
 //   { name, path: '#/local', as: 'anon'|'customer'|'contractor'|'brand'|'studio'|'admin'|'fresh',
 //     viewport: 'desktop'|'phone'|'tablet'|'phone-landscape'|{ w, h, dpr?, mobile? },
 //     waitFor: '.plan-view canvas' | [...], waitMs, expectText: 'Text' | [...] (visible text, any case), timeoutMs, fullPage,
-//     setup: async ({ api, as, me, user, base, sleep }) => ({ path?, ...data }),
+//     setup: async ({ api, as, me, user, base, sleep, home }) => ({ path?, ...data }),   home: a temp BLUMODEL_HOME
 //     check: async ({ evaluate, send, api, sleep, mouseDrag, touchDrag, pinch, tap, click, rectOf,
 //                     key, type, waitFor, waitForText, reload, goto, shot, note, data, me, viewport }) => {},
 //     ignoreConsole: [/known message/], knownIssue: 'why this route is expected to fail',
@@ -753,7 +753,7 @@ async function runRoute(env, pkg, route, outDir) {
     const pageBase = route.host ? base.replace('//127.0.0.1', `//${route.host}.localhost`) : base;
     let data = {};
     if (route.setup) {
-      const out = await route.setup({ api, as, me, user: agent?.user ?? null, base, sleep });
+      const out = await route.setup({ api, as, me, user: agent?.user ?? null, base, sleep, home: env.home });
       if (out && typeof out === 'object') data = out;
     }
     const hashPath = String(data.path ?? route.path ?? '').replace(/^#/, '');
@@ -792,6 +792,7 @@ async function runRoute(env, pkg, route, outDir) {
       if (route.waitMs) await sleep(Number(route.waitMs));
       if (route.check) {
         const helpers = {
+          home: env.home,
           ...inputHelpers(page),
           page,
           send: page.send,
@@ -943,8 +944,12 @@ export async function main(argv = process.argv.slice(2)) {
     DEMO_RENDERS: '1',
     ADMIN_EMAILS: DEMO_EMAIL.admin,
     SEED_PASSWORD: password,
+    // A temp home for Admin > System > Updates (server/admin/updates.mjs): routes write its
+    // auto-update.conf and logs/update-status.json in setup ({ home }). Never a real home.
+    BLUMODEL_HOME: path.join(tmp, 'home'),
     ...(opts.dist ? { DIST_DIR: dist } : {}),
   });
+  fs.mkdirSync(path.join(tmp, 'home', 'logs'), { recursive: true });
 
   let server = null;
   let browser = null;
@@ -979,6 +984,7 @@ export async function main(argv = process.argv.slice(2)) {
       cdp: browser.cdp,
       users,
       base: server.base,
+      home: path.join(tmp, 'home'),
       timeout: opts.timeout,
       serverErr,
       renderer: null,

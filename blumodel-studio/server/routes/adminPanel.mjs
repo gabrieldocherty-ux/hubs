@@ -12,6 +12,7 @@
 //   GET  /api/admin/contractors?q=                 contractors with plan, page and models
 //   POST /api/admin/contractors/:id/verify {verified}   the Verified badge on their brand page
 //   GET  /api/admin/system                         health and setup, secrets as yes/no only
+//   POST /api/admin/system/update-now              leave the Update now trigger for the automatic update
 //   GET  /api/admin/audit?actor=&action=&from=&to=&page=
 //
 // Every route is admin-only (the router answers 401 / 403 before the handler runs), every write
@@ -29,6 +30,7 @@ import { createAccountService } from '../account/service.mjs';
 import { createDashboard } from '../admin/dashboard.mjs';
 import { auditPage, createPeople } from '../admin/people.mjs';
 import { systemStatus } from '../admin/system.mjs';
+import { requestUpdate, serverHome } from '../admin/updates.mjs';
 import { disableAccount, enableAccount, isDisabled } from '../admin/status.mjs';
 
 const HOUR = 3_600_000;
@@ -296,7 +298,30 @@ export default function routes(ctx) {
       rateLimit: READ,
       handler: (rc) => {
         rc.res.setHeader('Cache-Control', 'no-store');
-        return systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health });
+        return systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home: ctx.home === undefined ? serverHome() : ctx.home });
+      },
+    },
+    {
+      // Admin > System > Updates > Update now: leaves logs/update-now.request in the home, which the
+      // automatic update picks up (Linux: blumodel-update.path at once; Windows: within two minutes).
+      // Nothing is run from here. Audited.
+      method: 'POST',
+      path: '/api/admin/system/update-now',
+      auth: 'admin',
+      rateLimit: { name: 'admin-update-now', max: 10, windowMs: HOUR, by: 'user' },
+      maxBytes: 256,
+      handler: (rc) => {
+        const home = ctx.home === undefined ? serverHome() : ctx.home;
+        let r;
+        try {
+          r = requestUpdate({ home, now: ctx.now, by: rc.user.email });
+        } catch (err) {
+          if (err?.code) throw new HttpError(409, err.message, { code: err.code });
+          throw err;
+        }
+        audit(db, { admin: rc.user, action: 'update_now', detail: { alreadyPending: r.already }, at: ctx.now() });
+        log.info?.(`admin: ${rc.user.email} asked for an update now`);
+        return { requested: true, alreadyPending: r.already, updates: systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home }).updates };
       },
     },
     {

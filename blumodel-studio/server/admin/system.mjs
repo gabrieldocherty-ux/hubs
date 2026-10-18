@@ -13,6 +13,7 @@ import { listDaily } from '../ops/backup.mjs';
 import { emailSettings } from '../email/index.mjs';
 import { redact } from './redact.mjs';
 import { recentWebhookFailures } from './webhookFailures.mjs';
+import { serverHome, updateStatus } from './updates.mjs';
 
 const TAIL_BYTES = 256 * 1024;
 const LINE_RE = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z) (ERROR|WARN) {0,2}(.*)$/;
@@ -77,9 +78,9 @@ function disk(dir) {
 
 /**
  * @param {{ db: any, config: any, now: () => number, startedAt: number, health: any,
- *   logFile?: string | null, appDir?: string }} deps
+ *   logFile?: string | null, appDir?: string, home?: string | null }} deps
  */
-export function systemStatus({ db, config, now, startedAt, health, logFile = process.env.BLUMODEL_LOG_FILE || null, appDir }) {
+export function systemStatus({ db, config, now, startedAt, health, logFile = process.env.BLUMODEL_LOG_FILE || null, appDir, home = serverHome() }) {
   const t = now();
   const memory = config.DB_PATH === ':memory:';
   const dbFile = memory ? null : path.resolve(config.DB_PATH);
@@ -153,5 +154,6 @@ export function systemStatus({ db, config, now, startedAt, health, logFile = pro
     },
     llm: { configured: !!config.llmEnabled },
     log: recentLogProblems(logFile),
+    updates: updateStatus({ home }),
   };
 }

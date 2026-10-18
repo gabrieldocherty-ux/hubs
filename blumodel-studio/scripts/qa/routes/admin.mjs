@@ -120,6 +120,29 @@ async function press(h, text) {
   await h.evaluate(() => document.querySelector('[data-qa-press]')?.removeAttribute('data-qa-press'));
 }
 
+/** The automatic update's files in QA's temp home: on at 04:00, the last release rolled back. */
+function seedUpdates(home) {
+  if (!home) throw new Error('QA gave no temp home');
+  fs.mkdirSync(path.join(home, 'logs'), { recursive: true });
+  fs.rmSync(path.join(home, 'logs', 'update-now.request'), { force: true });
+  fs.writeFileSync(path.join(home, 'auto-update.conf'), 'AUTO_UPDATE=on\nAUTO_UPDATE_TIME=04:00\n');
+  const at = (h) => new Date(Date.now() - h * 3_600_000).toISOString();
+  fs.writeFileSync(
+    path.join(home, 'logs', 'update-status.json'),
+    JSON.stringify({
+      checkedAt: at(2),
+      branch: 'blumodel-studio',
+      deployed: '4786039',
+      head: '9c1e2d3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d',
+      source: 'a61a1a3ce122606b311850555e4093ed3466b0c0',
+      result: { at: at(2), from: '4786039', to: '9c1e2d3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d', outcome: 'rolled-back', durationMs: 41_000, error: 'the new version failed its health check and the previous one is running again', by: 'schedule' },
+      lastUpdate: { at: at(50), from: '102425b', to: '4786039', outcome: 'updated', durationMs: 38_000, error: null, by: 'schedule' },
+      failed: { commit: '9c1e2d3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d', at: at(2) },
+    }),
+  );
+  return {};
+}
+
 /** A company with a license, a demo monthly checkout link, a custom domain, credits and a sales lead (once per run). */
 async function seedCompany(api) {
   const admin = api.as('admin');
@@ -421,6 +444,26 @@ export default [
   }),
   ...four({ name: 'admin-sales-leads', path: '#/admin/sales-leads', as: 'admin', setup: async ({ api }) => (await seedCompany(api), {}), expectText: ['Sales leads', 'Ridgeline Cabinets (QA)', 'Can we talk Thursday?', 'Our notes'] }),
   ...four({ name: 'admin-system', path: '#/admin/system', as: 'admin', expectText: ['System', 'Payments', 'Webhook signing secret', 'Database and backups', 'blumodel.env'] }),
+  // Admin > System > Updates: the files the automatic update writes, in QA's temp home (never a real
+  // one), showing a rolled-back release; then Update now through its confirm leaves the trigger file.
+  ...four({
+    name: 'admin-system-updates',
+    path: '#/admin/system',
+    as: 'admin',
+    setup: async ({ home }) => seedUpdates(home),
+    expectText: ['Updates', 'Checks GitHub daily at 4:00 am', 'Rolled back', 'blumodel-studio', 'did not go live', 'Update now'],
+    extra: async (h) => {
+      await h.evaluate(() => document.getElementById('adm-updates')?.scrollIntoView({ block: 'start' }));
+      await press(h, 'Update now');
+      await h.waitForText(['Yes, update now', 'the site restarts for a few seconds']);
+      await press(h, 'Yes, update now');
+      await h.waitForText(['Requested.', 'Update requested']);
+      const trigger = path.join(h.home, 'logs', 'update-now.request');
+      if (!fs.existsSync(trigger)) throw new Error(`Update now did not leave ${trigger}`);
+      h.note('Update now left logs/update-now.request in the temp home');
+      await h.evaluate(() => document.getElementById('adm-updates')?.scrollIntoView({ block: 'start' }));
+    },
+  }),
   ...four({ name: 'admin-audit', path: '#/admin/audit', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Audit log', 'Complimentary plan given'] }),
 
   // ── entry point and access ───────────────────────────────────────────────

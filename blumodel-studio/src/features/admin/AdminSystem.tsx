@@ -7,6 +7,7 @@ import { timeAgo } from '../../store/useSession';
 import { adminApi } from './api';
 import type { SystemStatus } from './types';
 import { Notice, Pill, Section, bytes, dateTime, duration, useLoad, yesNo } from './ui';
+import UpdatesCard from './UpdatesCard';
 
 const FAILURE_LABEL: Record<string, string> = {
   not_enabled: 'Stripe not on here (503)',
@@ -22,7 +23,7 @@ function PaymentsState({ p }: { p: SystemStatus['payments'] }) {
 }
 
 export default function AdminSystem() {
-  const { data: s, error, loading, reload } = useLoad(() => adminApi.system());
+  const { data: s, setData, error, loading, reload } = useLoad(() => adminApi.system());
   if (error && !s) return <div className="auth-error">{error}</div>;
   if (!s) return <div className="screen-msg">Loading system status…</div>;
 
@@ -91,6 +92,8 @@ export default function AdminSystem() {
           </dl>
         </Section>
       </div>
+
+      <UpdatesCard updates={s.updates} onChange={(updates) => setData({ ...s, updates })} />
 
       <Section title="Payments" id="adm-pay">
         <div className="adm-cols">
