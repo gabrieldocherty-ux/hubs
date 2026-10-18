@@ -151,7 +151,7 @@ export function SetupWizard() {
             </li>
           ))}
         </ol>
-        <AccountMenu />
+        {signedIn || !visitor ? <AccountMenu /> : null}
       </header>
 
       <main className="wizard-main">

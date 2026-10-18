@@ -86,6 +86,11 @@
   border-color: var(--bad);
 }
 
+.sr-gate-card .field > .sr-send-err {
+  font-weight: 500;
+  color: var(--bad-ink);
+}
+
 .sr-gate-either {
   margin: 4px 0 8px;
   font-size: 13px;
@@ -152,11 +157,5 @@
   .sr-gate-card .sr-send-consent input {
     width: 24px;
     height: 24px;
-  }
-  .sr-gate-team a,
-  .sr-send-fine a {
-    display: inline-block;
-    min-height: 44px;
-    line-height: 44px;
   }
 }

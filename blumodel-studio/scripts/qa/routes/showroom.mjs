@@ -3,7 +3,9 @@
 // 390, light and dark: the branded landing, sign-up, the wizard with the company's lines, the
 // editor with the company's catalog only (no store links, no prices or plans of ours), the free
 // branded downloads, "Send this design to Northline" from the editor and the share page, and a
-// whole visitor journey (signed out from the landing to a device design, then an account to send it) ending in a lead in the company's inbox.
+// whole visitor journey (signed out from the landing through "Before you start" to a design saved under
+// the lead, a download and a send) ending in a lead in the company's inbox; the form itself (errors,
+// branding, the team skipping it) and the showroom's privacy policy.
 // The landing page with its pictures (the hero first and the right one for the screen, every line
 // card and gallery kitchen with its picture, lazy below the fold, sizes reserved, nothing shifting),
 // the demo-only pitch (never on another showroom), the picture generator and the workspace's pictures.
@@ -376,6 +378,52 @@ export default [
     },
   },
 
+  // ── "Before you start" (docs/handoff/leads.md): the form before designing ─
+  ...each({
+    name: 'before-you-start',
+    host: 'demo',
+    path: '#/new',
+    as: 'anon',
+    waitFor: ['[data-testid="lead-gate"] input[autocomplete="name"]', '.sr-gate .site-logo'],
+    expectText: ['Before you start', 'Your name', 'Email', 'Phone', 'One is enough', 'Northline Kitchen & Bath (Demo) may contact me about my design.', 'Start designing', 'privacy policy'],
+    check: async (h) => {
+      await noSideScroll(h);
+      await noUpsell(h);
+      await touchTargets(h);
+      // Nothing gets past it empty: name, an email or a phone, and the box.
+      await clickText(h, '[data-testid="lead-gate"] button[type="submit"]', 'Start designing');
+      await h.waitForText(['Tell us your name.', 'Give an email or a phone number so Northline Kitchen & Bath (Demo) can reach you.', 'Tick the box so Northline Kitchen & Bath (Demo) can contact you.']);
+      await fill(h, '[data-testid="lead-gate"] input[autocomplete="tel"]', '12');
+      await clickText(h, '[data-testid="lead-gate"] button[type="submit"]', 'Start designing');
+      await h.waitForText('Include the area code');
+      await h.shot('errors');
+      const brand = await h.evaluate(() => getComputedStyle(document.querySelector('.sr-gate-bar')).borderTopColor);
+      if (!brand || brand === 'rgba(0, 0, 0, 0)') throw new Error('the form doesn’t carry the company’s colour');
+      if (h.api.sql("SELECT COUNT(*) AS n FROM tenant_leads WHERE tenant_id = 't_demo' AND source = 'form'")[0].n !== 0) throw new Error('a lead was made from an invalid form');
+    },
+  }),
+  {
+    name: 'team-skips-the-form',
+    host: 'demo',
+    path: '#/new',
+    as: 'showroom-staff',
+    waitFor: ['.wizard'],
+    check: async (h) => {
+      if (await h.evaluate(() => !!document.querySelector('[data-testid="lead-gate"]'))) throw new Error('the company’s own staff are asked for their details');
+    },
+  },
+  ...each({
+    name: 'privacy-showroom',
+    host: 'demo',
+    path: '#/privacy',
+    as: 'anon',
+    waitFor: ['#legal-showroom'],
+    expectText: ['On Northline Kitchen & Bath (Demo)’s showroom', 'What is collected.', 'Why.', 'is the controller', 'Deleting your details.', 'blumodel_visitor'],
+    check: async (h) => {
+      await noSideScroll(h);
+    },
+  }),
+
   // ── the whole visitor journey: landing to a lead in the inbox ───────────
   ...[
     { suffix: '', viewport: 'desktop', colorScheme: 'light' },
@@ -391,36 +439,34 @@ export default [
     timeoutMs: 45_000,
     check: async (h) => {
       const email = `qa-journey-${v.viewport}-${Date.now()}@example.test`;
-      // Signed out, straight to the wizard (SHOWROOM_PIVOT §5): the design starts on this device.
+      // Each run its own phone too: the same phone is the same person (it would join another lead).
+      const phone = v.viewport === 'phone' ? '226 555 0123' : '519 555 0133';
+      // Signed out: "Design your kitchen" asks who they are first, in the company's branding.
       await clickText(h, 'a', 'Design your kitchen');
+      await h.waitFor('[data-testid="lead-gate"] input[autocomplete="name"]', 20_000);
+      await fill(h, '[data-testid="lead-gate"] input[autocomplete="name"]', 'Casey Journey');
+      await fill(h, '[data-testid="lead-gate"] input[autocomplete="email"]', email);
+      await fill(h, '[data-testid="lead-gate"] input[autocomplete="tel"]', phone);
+      if (isPhone(h)) await h.tap('.sr-gate .sr-send-consent input');
+      else await h.click('.sr-gate .sr-send-consent input');
+      await h.shot('before-you-start');
+      await clickText(h, '[data-testid="lead-gate"] button[type="submit"]', 'Start designing');
       await h.waitForText('Let’s design your kitchen.', 20_000);
+      const lead = h.api.sql("SELECT * FROM tenant_leads WHERE tenant_id = 't_demo' AND email = ?", email)[0];
+      if (!lead) throw new Error('no lead was made from the form');
+      if (lead.phone !== (v.viewport === 'phone' ? '(226) 555-0123' : '(519) 555-0133') || lead.name !== 'Casey Journey') throw new Error(`the lead is ${JSON.stringify({ name: lead.name, phone: lead.phone })}`);
+      if (lead.consent_text !== 'Northline Kitchen & Bath (Demo) may contact me about my design.' || !lead.consent_at) throw new Error('the consent was not stored with the lead');
       await fill(h, '.wizard input', 'Casey’s kitchen (QA)');
       for (let i = 0; i < 3; i++) await clickText(h, '.wizard .btn.primary', 'Continue');
       await h.waitForText('Choose from our lines.');
       await h.shot('wizard');
       await clickText(h, '.wizard .btn.primary', 'Create kitchen');
-      await h.waitUntil(() => location.hash === '#/local', 20_000, 'the device design opening');
+      // Saved on the server under the lead, without an account.
+      await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'the saved design opening');
       await h.waitFor('.plan-view canvas');
-      await h.shot('device-design');
-      // Sending needs an account: the card signs up, and the design comes along.
-      // On a phone the card is in Details.
-      if (isPhone(h)) {
-        await clickText(h, 'button', 'Details');
-        await h.waitFor('[data-testid="send-design"] a[href^="#/signup"]', 8000);
-        await h.shot('device-send-card');
-      }
-      const claim = await h.evaluate(() => document.querySelector('[data-testid="send-design"] a[href^="#/signup"]')?.getAttribute('href'));
-      if (!claim) throw new Error('the device design offers no way to send it to the company');
-      await h.goto(claim);
-      await h.waitFor('.auth-form input[type="email"]');
-      await fill(h, '.auth-form input[autocomplete="name"]', 'Casey Journey');
-      await fill(h, '.auth-form input[type="email"]', email);
-      await fill(h, '.auth-form input[autocomplete="new-password"]', `qa-${Math.random().toString(36).slice(2)}-pw`);
-      await clickText(h, '.auth-form button[type="submit"]', 'Create account');
-      await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'the new design opening');
-      await h.waitFor('.plan-view canvas');
-      const made = h.api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = ? AND p.tenant_id = 't_demo'", email)[0];
-      if (!made) throw new Error('the design was not saved on the showroom');
+      const made = h.api.sql("SELECT id, user_id, visitor_id FROM projects WHERE lead_id = ? AND tenant_id = 't_demo'", lead.id)[0];
+      if (!made || made.user_id || !made.visitor_id) throw new Error('the design was not saved under the visitor');
+      await h.shot('saved-design');
       await catchDownloads(h);
       await h.sleep(1200);
       await exportItem(h, 'Floor plan');
@@ -428,10 +474,21 @@ export default [
       await h.waitFor('[data-testid="send-after-download"]');
       await h.shot('after-download');
       await clickText(h, '[data-testid="send-after-download"] .btn', 'Send this design to Northline');
+      // Prefilled from "Before you start".
+      await h.waitFor('.sr-send-form input[autocomplete="name"]');
+      const pre = await h.evaluate(() => ({ name: document.querySelector('.sr-send-form input[autocomplete="name"]').value, email: document.querySelector('.sr-send-form input[autocomplete="email"]').value }));
+      if (pre.name !== 'Casey Journey' || pre.email !== email) throw new Error(`the Send form was prefilled with ${JSON.stringify(pre)}`);
       await sendForm(h, {});
       await h.shot('sent');
-      const lead = leadFor(h, email, { signedIn: true });
-      if (lead.design_name !== 'Casey’s kitchen (QA)') throw new Error(`the lead's design is "${lead.design_name}"`);
+      const sent = leadFor(h, email, { signedIn: false });
+      if (sent.design_name !== 'Casey’s kitchen (QA)') throw new Error(`the lead's design is "${sent.design_name}"`);
+      if (sent.lead_id !== lead.id) throw new Error('the send made a second lead');
+      // Coming back: not asked again; home is their designs.
+      await h.goto('#/new');
+      await h.waitForText('Let’s design your kitchen.', 20_000);
+      if (await h.evaluate(() => !!document.querySelector('[data-testid="lead-gate"]'))) throw new Error('a returning visitor is asked again');
+      await h.goto('#/');
+      await h.waitForText('Casey’s kitchen (QA)', 20_000);
       await noSideScroll(h);
     },
   })),

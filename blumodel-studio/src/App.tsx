@@ -76,7 +76,9 @@ export default function App() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    if (status !== 'signedIn' && needsAccount) navigateHash(signinHref(), true);
+    // Not before the config says which site this is: a showroom's #/new opened directly needs no
+    // account (it asks "Before you start" instead), but would look like it did until then.
+    if (status !== 'signedIn' && needsAccount && site !== 'unknown') navigateHash(signinHref(), true);
     if (status === 'signedIn' && authPage) navigateHash(safeNext(splitHash(location.hash).query), true);
   }, [status, needsAccount, authPage, site, route.name]);
 
