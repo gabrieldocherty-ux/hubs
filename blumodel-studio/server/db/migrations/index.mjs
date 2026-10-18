@@ -20,6 +20,7 @@ import * as tenancy from './tenancy.mjs';
 import * as renders from './renders.mjs';
 import * as workspace from './workspace.mjs';
 import * as leads from './leads.mjs';
+import * as protect from './protect.mjs';
 
-export const MIGRATION_MODULES = [core, platform, viewer, brands, orders, generate, share, billing, contractors, account, ops, pricing, retail, admin, tenancy, workspace, renders, leads];
-export const MIGRATION_KEYS = ['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'account', 'ops', 'pricing', 'retail', 'admin', 'tenancy', 'workspace', 'renders', 'leads'];
+export const MIGRATION_MODULES = [core, platform, viewer, brands, orders, generate, share, billing, contractors, account, ops, pricing, retail, admin, tenancy, workspace, renders, leads, protect];
+export const MIGRATION_KEYS = ['core', 'platform', 'viewer', 'brands', 'orders', 'generate', 'share', 'billing', 'contractors', 'account', 'ops', 'pricing', 'retail', 'admin', 'tenancy', 'workspace', 'renders', 'leads', 'protect'];

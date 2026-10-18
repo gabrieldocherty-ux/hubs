@@ -1144,7 +1144,14 @@ function TeamSection({ t, onChange }: { t: AdminTenant; onChange: () => void }) 
       const out = await showroomApi.addMember(t.id, { email: email.trim(), role, name: name.trim() || undefined });
       setMembers((ms) => [...ms.filter((m) => m.userId !== out.member.userId), out.member]);
       if (out.invite) setInvite({ invite: out.invite, email: out.member.email });
-      setMsg({ tone: 'ok', text: out.invite ? `${out.member.email} added as ${out.member.role}.` : `${out.member.email} already had an account on the showroom and is now ${out.member.role}.` });
+      setMsg({
+        tone: 'ok',
+        text: out.invite
+          ? `${out.member.email} added as ${out.member.role}.`
+          : out.pending
+            ? `${out.member.email} already has an account on the showroom. We emailed them an invitation; they join once they accept it with their own password.`
+            : `${out.member.email} is now ${out.member.role}.`,
+      });
       setEmail('');
       setName('');
       onChange();
@@ -1190,7 +1197,7 @@ function TeamSection({ t, onChange }: { t: AdminTenant; onChange: () => void }) 
             ),
           },
           { label: 'Role', cell: (m) => <Pill tone={m.role === 'owner' ? 'info' : 'plain'}>{m.role}</Pill> },
-          { label: 'Last seen', cell: (m) => (m.pending ? 'Invited (link not used yet)' : m.lastSeenAt ? timeAgo(m.lastSeenAt) : 'Never') },
+          { label: 'Last seen', cell: (m) => (m.pending ? 'Invited (not accepted yet)' : m.lastSeenAt ? timeAgo(m.lastSeenAt) : 'Never') },
           {
             label: 'Actions',
             cell: (m) =>

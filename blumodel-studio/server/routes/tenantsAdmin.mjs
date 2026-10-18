@@ -27,6 +27,8 @@ import { EMAIL_RE } from '../auth/userWire.mjs';
 import { inviteToTeam } from '../tenancy/accounts.mjs';
 import { MEMBER_ROLES } from '../tenancy/service.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
+import { createMailer } from '../email/index.mjs';
+import { inviteAcceptEmail } from '../tenancy/emails.mjs';
 
 const HOSTNAME_PARAM = /^[A-Za-z0-9._-]{1,253}$/;
 const ID_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
@@ -36,6 +38,7 @@ const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 export default function routes(ctx) {
   const { db, services } = ctx;
   const { tenants } = services;
+  const mailer = createMailer({ config: ctx.config, fetch: (...a) => ctx.fetch(...a), log: ctx.log });
 
   /** Links for a tenant use this request's scheme and port (tenants.originOf). */
   const from = (rc) => requestOrigin(rc.req, ctx.config);
@@ -51,7 +54,10 @@ export default function routes(ctx) {
     const e = str(email, 254).toLowerCase();
     if (!EMAIL_RE.test(e) || /[\r\n,;<>]/.test(e)) throw new HttpError(400, 'Enter the person’s email address.', { errors: [{ field: 'email', message: 'Enter the person’s email address.' }] });
     if (!MEMBER_ROLES.includes(role)) throw new HttpError(400, 'Role is owner or staff.', { errors: [{ field: 'role', message: 'Role is owner or staff.' }] });
-    return inviteToTeam(db, tenants, { tenant: t, email: e, name, role, by: rc.user.id, origin: tenants.originOf(t, from(rc)), now: ctx.now });
+    const out = await inviteToTeam(db, tenants, { tenant: t, email: e, name, role, by: rc.user.id, origin: tenants.originOf(t, from(rc)), canEmail: mailer.enabled, now: ctx.now });
+    // An existing account's accept link goes to its address only, never to us either.
+    if (out.pending) void mailer.send({ to: e, ...inviteAcceptEmail({ showroom: t.name, url: out.acceptUrl, role }) });
+    return out;
   }
 
   return [

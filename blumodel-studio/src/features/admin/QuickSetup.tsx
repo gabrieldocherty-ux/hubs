@@ -562,6 +562,7 @@ function SetupDone({ stage, base, onOpen, onAnother }: { stage: Extract<Stage, {
     try {
       const out = await showroomApi.addMember(t.id, { email: email.trim(), name: ownerName.trim() || undefined, role: 'owner' });
       if (out.invite) setInvite({ link: out.invite, email: email.trim(), pending: !!out.pending });
+      else if (out.pending) setMsg({ tone: 'ok', text: `${email.trim()} already has an account on the showroom. We emailed them an invitation; they become an owner once they accept it with their own password.` });
       else setMsg({ tone: 'ok', text: `${email.trim()} is an owner of the showroom.` });
       setEmail('');
       setOwnerName('');
@@ -609,7 +610,6 @@ function SetupDone({ stage, base, onOpen, onAnother }: { stage: Extract<Stage, {
             <div className="adm-callout">
               <b>Sign-in link for {invite.email}</b>
               <p className="adm-note">
-                {invite.pending ? 'They already had an account here: they join the team once they use this link. ' : ''}
                 {invite.link.emailed ? 'It was emailed to them. ' : 'Email isn’t set up here, so send it yourself. '}
                 It sets their password on the showroom and works until {dateTime(invite.link.expiresAt)}. It won’t be shown again.
               </p>

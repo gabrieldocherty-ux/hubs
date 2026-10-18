@@ -594,6 +594,43 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
       return rows.length;
     },
 
+    /**
+     * A fresh 7-day accept token for the invite held for `userId` on `tenantId` (protect-001). Only
+     * its SHA-256 is stored; the token goes into the email to the address and nowhere else.
+     */
+    issueInviteToken(tenantId, userId, { minutes = 7 * 24 * 60 } = {}) {
+      const token = crypto.randomBytes(32).toString('base64url');
+      const expiresAt = now() + minutes * 60_000;
+      const hash = crypto.createHash('sha256').update(token).digest('hex');
+      db.prepare('UPDATE tenant_invites SET token_hash = ?, expires_at = ? WHERE tenant_id = ? AND user_id = ?').run(hash, expiresAt, tenantId, userId);
+      return { token, expiresAt };
+    },
+
+    /** The live invite an accept token belongs to on `tenantId`: { tenantId, userId, role, email } or null. */
+    findInviteToken(tenantId, token) {
+      if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
+      const hash = crypto.createHash('sha256').update(token).digest('hex');
+      const r = db
+        .prepare('SELECT i.tenant_id, i.user_id, i.role, u.email FROM tenant_invites i JOIN users u ON u.id = i.user_id WHERE i.token_hash = ? AND i.tenant_id = ? AND i.expires_at > ?')
+        .get(hash, tenantId, now());
+      return r ? { tenantId: r.tenant_id, userId: r.user_id, role: r.role, email: r.email } : null;
+    },
+
+    /** The invite held for `userId` on `tenantId` becomes a membership (its accept link was used). */
+    acceptInvite(tenantId, userId) {
+      const r = db.prepare('SELECT role, invited_by FROM tenant_invites WHERE tenant_id = ? AND user_id = ?').get(tenantId, userId);
+      if (!r) return null;
+      db.prepare('INSERT INTO tenant_members (tenant_id, user_id, role, invited_by, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(tenant_id, user_id) DO UPDATE SET role = excluded.role').run(
+        tenantId,
+        userId,
+        r.role,
+        r.invited_by,
+        now(),
+      );
+      db.prepare('DELETE FROM tenant_invites WHERE tenant_id = ? AND user_id = ?').run(tenantId, userId);
+      return r.role;
+    },
+
     /** Adds (or changes the role of) a member. */
     addMember(tenantId, userId, role = 'staff', { by = null } = {}) {
       if (!MEMBER_ROLES.includes(role)) throw invalid([{ field: 'role', message: 'Role is owner or staff.' }]);

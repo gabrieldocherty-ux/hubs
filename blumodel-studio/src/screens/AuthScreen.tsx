@@ -23,7 +23,8 @@ const message = (err: unknown) => (err instanceof ApiError ? err.message : 'Some
 export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
   const query = useHashQuery();
   const resetToken = mode === 'signin' ? query.get('reset') : null;
-  const forgot = mode === 'signin' && !resetToken && query.get('forgot') === '1';
+  const joinToken = mode === 'signin' && !resetToken ? query.get('join') : null;
+  const forgot = mode === 'signin' && !resetToken && !joinToken && query.get('forgot') === '1';
   const next = query.get('next');
   const keepNext = next ? `?next=${encodeURIComponent(next)}` : '';
 
@@ -56,7 +57,7 @@ export function AuthScreen({ mode }: { mode: 'signin' | 'signup' }) {
       </section>
 
       <section className="auth-panel">
-        {resetToken ? <ResetForm key={resetToken} token={resetToken} keepNext={keepNext} /> : forgot ? <ForgotForm keepNext={keepNext} /> : <SignInForm mode={mode} keepNext={keepNext} />}
+        {resetToken ? <ResetForm key={resetToken} token={resetToken} keepNext={keepNext} /> : joinToken ? <JoinForm key={joinToken} token={joinToken} /> : forgot ? <ForgotForm keepNext={keepNext} /> : <SignInForm mode={mode} keepNext={keepNext} />}
         <LegalLinks className="auth-legal" />
       </section>
     </div>
@@ -395,6 +396,103 @@ function ResetForm({ token, keepNext }: { token: string; keepNext: string }) {
       <button className="btn primary wide big" type="submit" disabled={busy}>
         {busy ? 'One moment…' : 'Save and sign in'}
       </button>
+    </form>
+  );
+}
+
+/**
+ * `#/signin?join=<token>`: a team invite emailed to an address that already has an account on this
+ * showroom. The person accepts it with that account's own password; nothing about the account
+ * changes except that it joins the team (the person who invited never sees this link).
+ */
+function JoinForm({ token }: { token: string }) {
+  const setUser = useSession((s) => s.setUser);
+  const [check, setCheck] = useState<'checking' | 'invalid' | { email: string; role: string; showroom: string }>('checking');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [needCode, setNeedCode] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    accountApi
+      .checkJoin(token)
+      .then((r) => live && setCheck(r.valid && r.email ? { email: r.email, role: r.role ?? 'staff', showroom: r.showroom ?? '' } : 'invalid'))
+      .catch(() => live && setCheck('invalid'));
+    return () => {
+      live = false;
+    };
+  }, [token]);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const { user } = await accountApi.join(token, password, needCode ? code.trim() : undefined);
+      setUser(user);
+      navigateHash('#/studio', true);
+    } catch (err) {
+      const c = err instanceof ApiError ? (err.body as { code?: string } | undefined)?.code : undefined;
+      if (c === 'invite_invalid') setCheck('invalid');
+      else if (c === 'mfa_required') setNeedCode(true);
+      else setError(message(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (check === 'checking')
+    return (
+      <div className="auth-form" aria-busy="true">
+        <h2>Join the team</h2>
+        <p className="auth-sub">Checking your invitation…</p>
+      </div>
+    );
+  if (check === 'invalid')
+    return (
+      <div className="auth-form">
+        <h2>This invitation has expired</h2>
+        <p className="auth-sub">An invitation works once, for 7 days, until it is withdrawn. Ask the showroom’s owner to invite you again.</p>
+        <a className="btn primary wide big" href="#/signin">
+          Sign in
+        </a>
+      </div>
+    );
+  return (
+    <form className="auth-form" onSubmit={submit} noValidate>
+      <h2>Join {check.showroom || 'the'} team</h2>
+      <p className="auth-sub">
+        You’re invited as {check.role === 'owner' ? 'an owner' : 'staff'}. Sign in to <strong>{check.email}</strong> with your own password to accept. Your password doesn’t change.
+      </p>
+      <label className="field">
+        <span>Your password</span>
+        <div className="pw">
+          <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required autoFocus />
+          <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? 'Hide password' : 'Show password'}>
+            {showPw ? 'Hide' : 'Show'}
+          </button>
+        </div>
+      </label>
+      {needCode && (
+        <label className="field">
+          <span>Code from your authenticator app</span>
+          <input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={20} required />
+        </label>
+      )}
+      {error && (
+        <div className="auth-error" role="alert">
+          {error}
+        </div>
+      )}
+      <button className="btn primary wide big" type="submit" disabled={busy || !password}>
+        {busy ? 'One moment…' : 'Accept and sign in'}
+      </button>
+      <p className="auth-forgot">
+        <a href="#/signin?forgot=1">Forgot password?</a> The invitation keeps working after you reset it.
+      </p>
     </form>
   );
 }

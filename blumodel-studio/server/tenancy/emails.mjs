@@ -22,6 +22,26 @@ BluModel Studio`,
   };
 }
 
+/**
+ * To an address that already has an account on the showroom and was invited to its team. The link
+ * only works together with that account's own password (POST /api/auth/join); it never sets one.
+ */
+export function inviteAcceptEmail({ showroom, url, role }) {
+  const name = oneLine(showroom);
+  return {
+    subject: `You’re invited to join ${name}’s showroom team`,
+    text: `Hello,
+
+You’ve been invited to join the team for ${name}’s online showroom on BluModel Studio as ${role === 'owner' ? 'an owner' : 'staff'}. You already have an account there with this address. To accept, open this link and sign in with your own password:
+
+${url}
+
+The link works for 7 days. If you weren’t expecting this, ignore this email: nothing changes until you accept.
+
+BluModel Studio`,
+  };
+}
+
 /** To a showroom's contact address when a visitor sends a design. */
 export function leadNoticeEmail({ showroom, inboxUrl }) {
   const name = oneLine(showroom);

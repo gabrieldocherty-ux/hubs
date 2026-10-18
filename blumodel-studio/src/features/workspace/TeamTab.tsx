@@ -89,7 +89,7 @@ export default function TeamTab() {
                     <span className="muted">{m.email}</span>
                     <span className="fine">
                       Added {day(m.addedAt)}
-                      {m.pending ? ' · invited, joins once they use the invite link' : m.lastSeenAt ? ` · last seen ${day(m.lastSeenAt)}` : ' · hasn’t signed in yet'}
+                      {m.pending ? ' · invited, joins once they accept the emailed invitation' : m.lastSeenAt ? ` · last seen ${day(m.lastSeenAt)}` : ' · hasn’t signed in yet'}
                     </span>
                   </span>
                   <span className="ws-member-actions">
@@ -154,9 +154,7 @@ function InviteForm({ onAdded }: { onAdded: (m: Member) => void }) {
       const who = email.trim();
       toast(
         r.pending
-          ? r.invite?.emailed
-            ? `${who} already had an account here. They join once they use the invitation we emailed.`
-            : `${who} already had an account here. They join once they use the link below.`
+          ? `${who} already has an account here. We emailed them an invitation; they join once they accept it with their own password.`
           : r.invite
             ? r.invite.emailed
               ? `Invitation emailed to ${who}.`

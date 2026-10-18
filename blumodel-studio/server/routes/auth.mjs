@@ -10,6 +10,10 @@
 //                                            this browser in
 //   POST /api/admin/users/:id/reset-link     admin only, audited: { url, expiresAt }, shown once
 //                                            (how resets work with no email provider)
+//   POST /api/auth/join/check {token}        showroom: { valid, email?, role?, showroom? } for a team
+//                                            invite held for an existing account (emailed link)
+//   POST /api/auth/join {token, password}    showroom: the account's own password accepts it; joins
+//                                            the team and signs this browser in. Never sets a password
 //
 // Tokens are stored hashed and expire after an hour (server/auth/resets.mjs).
 
@@ -299,6 +303,51 @@ export default function routes(ctx) {
         sessions.start(rc.req, rc.res, userId);
         if (mailer.enabled) void mailer.send({ to: user.email, ...passwordChangedEmail({ supportEmail: config.legal?.supportEmail, viaReset: true }) });
         log?.info?.(`Account ${userId} reset its password with a link; every other session was signed out.`);
+        return { user: userWire(user, rc) };
+      },
+    },
+    // ── accepting a team invite held for an existing account (protect-001) ──
+    {
+      method: 'POST',
+      path: '/api/auth/join/check',
+      auth: 'none',
+      hosts: 'showroom',
+      maxBytes: 1_024,
+      rateLimit: { name: 'join-check', max: 60, windowMs: 15 * 60_000, by: 'ip' },
+      handler: (rc) => {
+        const inv = services.tenants.findInviteToken(rc.site.tenantId, rc.body.token);
+        return inv ? { valid: true, email: maskEmail(inv.email), role: inv.role, showroom: rc.site.tenant?.name ?? '' } : { valid: false };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/auth/join',
+      auth: 'none',
+      hosts: 'showroom',
+      maxBytes: 4_096,
+      rateLimit: { name: 'join', max: 20, windowMs: 15 * 60_000, by: 'ip' },
+      handler: async (rc) => {
+        // The link was emailed to the address, and the password is the account's own: together
+        // they prove both. Nothing about the account changes except that it joins the team.
+        const inv = services.tenants.findInviteToken(rc.site.tenantId, rc.body.token);
+        const password = typeof rc.body.password === 'string' ? rc.body.password : '';
+        if (!inv) throw new HttpError(400, 'This invitation has expired or was withdrawn. Ask the showroom for a new one.', { code: 'invite_invalid' });
+        const row = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(inv.userId);
+        const keyEmail = `login-email:${rc.site.tenantId}|${inv.email}`;
+        if (limiter.blocked(keyEmail, LOGIN_MAX_PER_EMAIL, LOGIN_WINDOW)) {
+          const err = new HttpError(429, 'Too many attempts. Wait a few minutes and try again.');
+          err.retryAfter = 60;
+          throw err;
+        }
+        if (!row || !(await verifyPassword(password.slice(0, MAX_PASSWORD), row.password_hash))) {
+          limiter.hit(keyEmail, Infinity, LOGIN_WINDOW);
+          throw new HttpError(401, 'That password isn’t right for this account.', { field: 'password' });
+        }
+        if (isDisabled(db, inv.userId)) throw new HttpError(403, DISABLED_MESSAGE, { code: 'account_disabled' });
+        ctx.tx(() => services.tenants.acceptInvite(inv.tenantId, inv.userId));
+        sessions.end(rc.req, rc.res);
+        sessions.start(rc.req, rc.res, inv.userId);
+        const user = db.prepare('SELECT id, email, name, role FROM users WHERE id = ?').get(inv.userId);
         return { user: userWire(user, rc) };
       },
     },

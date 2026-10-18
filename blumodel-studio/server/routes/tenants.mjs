@@ -10,7 +10,9 @@
 //                                             settings are owner-only
 //   GET   /api/workspace/team                 { members: [Member], role }
 //   POST  /api/workspace/team                 owner: { email, name?, role } -> { member, pending, invite? }
-//                                             pending: an existing account joins once it uses the link
+//                                             pending: an existing account joins once it accepts the
+//                                             link emailed to it, with its own password (no link back;
+//                                             409 email_required without an email provider)
 //   PATCH /api/workspace/team/:userId         owner: { role } -> { member }
 //   DELETE /api/workspace/team/:userId        owner -> { members }
 //   GET   /api/workspace/products             { products: [Product (working copy, any status)] }
@@ -38,7 +40,7 @@ import { inviteToTeam } from '../tenancy/accounts.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
 import { MEMBER_ROLES } from '../tenancy/service.mjs';
 import { createMailer } from '../email/index.mjs';
-import { inviteEmail } from '../tenancy/emails.mjs';
+import { inviteAcceptEmail, inviteEmail } from '../tenancy/emails.mjs';
 import { checkImage, cleanTarget, withImage, withoutImage } from '../tenancy/images.mjs';
 
 const ID_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
@@ -192,12 +194,14 @@ export default function routes(ctx) {
         if (!EMAIL_RE.test(email) || /[\r\n,;<>]/.test(email)) throw new HttpError(400, 'Enter the person’s email address.', { errors: [{ field: 'email', message: 'Enter the person’s email address.' }] });
         if (!MEMBER_ROLES.includes(role)) throw new HttpError(400, 'Role is owner or staff.', { errors: [{ field: 'role', message: 'Role is owner or staff.' }] });
         const origin = tenants.originOf(rc.tenant, requestOrigin(rc.req, config));
-        const added = await inviteToTeam(db, tenants, { tenant: rc.tenant, email, name: b.name, role, by: rc.user.id, origin, now: ctx.now });
+        const added = await inviteToTeam(db, tenants, { tenant: rc.tenant, email, name: b.name, role, by: rc.user.id, origin, canEmail: mailer.enabled, now: ctx.now });
         const { member, invite } = added;
         if (invite && mailer.enabled) void mailer.send({ to: email, ...inviteEmail({ showroom: rc.tenant.name, url: invite.url }) });
-        // The link is shown once to the owner (no email provider) and never logged. `pending`: the
-        // address already had an account here, so it joins only once the link is used.
-        rc.send(added.created ? 201 : 200, { member, pending: added.pending, ...(invite ? { invite: { ...invite, emailed: mailer.enabled } } : {}) });
+        // `pending`: the address already had an account here. Its accept link goes to the address
+        // only, never back to the owner, and it needs that account's own password.
+        if (added.pending) void mailer.send({ to: email, ...inviteAcceptEmail({ showroom: rc.tenant.name, url: added.acceptUrl, role }) });
+        // A new account's set-your-password link is shown once to the owner (no email provider) and never logged.
+        rc.send(added.created ? 201 : 200, { member, pending: added.pending, ...(added.pending ? { emailed: true } : {}), ...(invite ? { invite: { ...invite, emailed: mailer.enabled } } : {}) });
       },
     },
     {

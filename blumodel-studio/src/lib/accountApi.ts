@@ -58,6 +58,9 @@ export const accountApi = {
   forgot: (email: string) => call<{ ok: true }>('POST', '/api/auth/forgot', { email }),
   checkReset: (token: string) => call<{ valid: boolean; email?: string }>('POST', '/api/auth/reset/check', { token }),
   reset: (token: string, password: string) => call<{ user: User }>('POST', '/api/auth/reset', { token, password }),
+  /** A team invite emailed to an address that already has an account on this showroom (accepted with its own password). */
+  checkJoin: (token: string) => call<{ valid: boolean; email?: string; role?: 'owner' | 'staff'; showroom?: string }>('POST', '/api/auth/join/check', { token }),
+  join: (token: string, password: string, code?: string) => call<{ user: User }>('POST', '/api/auth/join', { token, password, ...(code ? { code } : {}) }),
   adminResetLink: (userId: string) => call<{ url: string; expiresAt: number }>('POST', `/api/admin/users/${encodeURIComponent(userId)}/reset-link`),
 };
 

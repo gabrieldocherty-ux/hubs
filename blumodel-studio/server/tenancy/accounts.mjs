@@ -10,6 +10,7 @@
 import crypto from 'node:crypto';
 import { hashPassword } from '../auth/passwords.mjs';
 import { createResetStore, INVITE_MINUTES } from '../auth/resets.mjs';
+import { HttpError } from '../http/respond.mjs';
 
 /**
  * True when `userId` may hold a session on the site whose tenant id is `tenantId` (null = sales).
@@ -87,17 +88,26 @@ export function inviteLink(db, { userId, origin, createdBy = null, now = Date.no
  * Adds `email` to showroom `tenant`'s team as `role` (the workspace's Team tab and the admin's
  * Companies screen). There is no email verification, so an account that already has the address
  * proves nothing about who holds it: anyone could have signed up (or changed their email) with it
- * before the invite. So:
+ * before the invite. And the person inviting must never get a way into somebody else's account. So:
  *   - no account yet: one is made with an unusable password and joins the team; the invite link
- *     sets its password (only the person holding the address, or the owner who passes it on, has it);
+ *     sets its password (the account is new and empty, so passing the link on gives nobody
+ *     anything that was someone else's);
  *   - already on the team (or a sales-site team member): their role is set, nothing else;
- *   - an existing account NOT on the team: nothing is granted yet. The invite is held
- *     (tenancy-007) and an invite link is made; using it (POST /api/auth/reset) proves the address,
- *     signs every other device out and only then makes the account a member.
- * Returns { member, invite: { url, expiresAt } | null, created, pending }.
+ *   - an existing account NOT on the team: nothing is granted, and NO link comes back to whoever
+ *     invited. The invite is held (tenancy-007) with a 7-day accept token (protect-001) that is
+ *     only ever EMAILED to the address (`acceptUrl`, for the caller's mailer; never sent back in a
+ *     response). Accepting needs that link AND the account's own password (POST /api/auth/join), so
+ *     it proves the address and the account at once, and it never changes the password. Without
+ *     an email provider there is no way to prove the address, so this is a 409 `email_required`.
+ * Returns { member, invite: { url, expiresAt } | null, created, pending, acceptUrl? }.
  */
-export async function inviteToTeam(db, tenants, { tenant, email, name, role, by = null, origin, now = Date.now }) {
-  const user = await ensureSiteUser(db, { tenantId: tenant.id, email, name, now });
+export async function inviteToTeam(db, tenants, { tenant, email, name, role, by = null, origin, canEmail = false, now = Date.now }) {
+  const e = String(email).trim().toLowerCase();
+  const existing = findSiteUser(db, e, tenant.id, 'id');
+  if (existing && !tenants.roleOf(tenant.id, existing.id) && !canEmail) {
+    throw new HttpError(409, 'That address already has an account on this showroom. Email isn’t set up here, so we can’t send them an invitation to accept: ask them to contact BluModel support.', { code: 'email_required' });
+  }
+  const user = await ensureSiteUser(db, { tenantId: tenant.id, email: e, name, now });
   const onTeam = !!tenants.roleOf(tenant.id, user.id);
   if (user.created || onTeam) {
     const member = tenants.addMember(tenant.id, user.id, role, { by });
@@ -105,6 +115,6 @@ export async function inviteToTeam(db, tenants, { tenant, email, name, role, by 
     return { member, invite, created: user.created, pending: false };
   }
   const member = tenants.addPendingInvite(tenant.id, user.id, role, { by });
-  const invite = inviteLink(db, { userId: user.id, origin, createdBy: by, now });
-  return { member, invite, created: false, pending: true };
+  const { token, expiresAt } = tenants.issueInviteToken(tenant.id, user.id, { minutes: INVITE_MINUTES });
+  return { member, invite: null, created: false, pending: true, acceptUrl: `${origin}/#/signin?join=${token}`, acceptExpiresAt: expiresAt };
 }

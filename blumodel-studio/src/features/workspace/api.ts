@@ -82,7 +82,7 @@ export interface Member {
   role: MemberRole;
   addedAt: number;
   lastSeenAt: number | null;
-  /** Invited, but the address already had an account here: joins once the invite link is used. */
+  /** Invited, but the address already had an account here: joins once they accept the emailed invitation with their own password. */
   pending?: boolean;
 }
 

@@ -319,7 +319,7 @@ test('leads-001: every sent design becomes a lead (same email or phone in a show
   send.run('ld_dddddddddddd', 't2', null, null, '', null, 'Riley', 'r@x.test', '', 'new', '', null, t + 30, t + 30);
 
   const ran = migrate(db);
-  assert.deepEqual(ran, ['leads-001-people-visitors-events']);
+  assert.deepEqual(ran.filter((id) => id.startsWith('leads-')), ['leads-001-people-visitors-events']);
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), []);
   const leads = db.prepare('SELECT * FROM tenant_leads ORDER BY tenant_id, created_at').all();
   assert.deepEqual(
