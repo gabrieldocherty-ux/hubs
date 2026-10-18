@@ -904,7 +904,7 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
 
 // ── 4. the tunnel on another machine ─────────────────────────────────────
 
-test('the tunnel’s credentials: %USERPROFILE%\\.cloudflared\\<id>.json on Windows, <home>/.cloudflared/<id>.json on Linux (readable by blumodel)', async () => {
+test('the tunnel’s credentials: %USERPROFILE%\\.cloudflared\\<id>.json on Windows, <home>/.cloudflared/<id>.json on Linux (readable by the tunnel’s account)', async () => {
   const { TUNNEL_ID, credentialsFor } = await import('../../scripts/tunnel/tunnel.mjs');
   assert.equal(credentialsFor({ platform: 'win32', homedir: 'C:\\Users\\owner' }), `C:\\Users\\owner\\.cloudflared\\${TUNNEL_ID}.json`);
   assert.equal(credentialsFor({ platform: 'linux', home: '/srv/blumodel-studio' }), `/srv/blumodel-studio/.cloudflared/${TUNNEL_ID}.json`);
@@ -936,7 +936,7 @@ test('setup-tunnel --dry-run --platform linux: only cloudflared.yml (no .cmd scr
   assert.doesNotMatch(r.stdout, /\.cmd|\.vbs/);
   assert.match(r.stdout, /credentials-file: '\/srv\/blumodel-studio\/\.cloudflared\/064671cd-a658-4240-8626-c697b9f148ac\.json'/);
   assert.match(r.stdout, /would create \/srv\/blumodel-studio\/\.cloudflared \(mode 700, owned by blumodel\)/);
-  assert.match(r.stdout, /Copy 064671cd-a658-4240-8626-c697b9f148ac\.json there yourself, then: sudo chown blumodel:blumodel .* && sudo chmod 600 /);
+  assert.match(r.stdout, /Copy 064671cd-a658-4240-8626-c697b9f148ac\.json there yourself, then: sudo chown blumodel-tunnel:blumodel-tunnel .* && sudo chmod 600 /);
   assert.match(r.stdout, /Dry run: nothing was written\./);
   const other = cli('--dry-run', '--platform', 'linux', '--home', '/srv/blumodel-studio', '--credentials', '/etc/cloudflared/blumodel.json', '--port', '8899');
   assert.equal(other.status, 0, other.stderr);

@@ -99,7 +99,7 @@ try {
 const credentialsNote = () =>
   WIN
     ? `the tunnel's credentials file ${credentials} does not exist; cloudflared won't connect without it (docs/HOSTING.md, "Move the tunnel").`
-    : `the tunnel's credentials file ${credentials} does not exist; cloudflared won't connect without it. Copy ${tunnelId}.json there yourself, then: sudo chown blumodel:blumodel ${credentials} && sudo chmod 600 ${credentials} (docs/HOSTING.md, "Move the tunnel").`;
+    : `the tunnel's credentials file ${credentials} does not exist; cloudflared won't connect without it. Copy ${tunnelId}.json there yourself, then: sudo chown blumodel-tunnel:blumodel-tunnel ${credentials} && sudo chmod 600 ${credentials} (docs/HOSTING.md, "Move the tunnel").`;
 
 if (dryRun) {
   for (const [name, body] of Object.entries(files)) {

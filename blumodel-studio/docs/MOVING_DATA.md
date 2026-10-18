@@ -216,7 +216,7 @@ leave it on the PC).
 - Linux:
 
   ```
-  sudo install -m 600 -o blumodel -g blumodel /mnt/usb/064671cd-a658-4240-8626-c697b9f148ac.json /srv/blumodel-studio/.cloudflared/
+  sudo install -m 600 -o blumodel-tunnel -g blumodel-tunnel /mnt/usb/064671cd-a658-4240-8626-c697b9f148ac.json /srv/blumodel-studio/.cloudflared/
   ```
 
 - Windows: copy it into `%USERPROFILE%\.cloudflared\` of the account that runs the tunnel.

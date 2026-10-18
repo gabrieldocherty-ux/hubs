@@ -158,7 +158,7 @@ devDependencies on the machine. What it does, in order (the script's header says
 the machine; installs `ca-certificates curl gnupg git`,
 **Node.js 24 from NodeSource's apt repository** (unless Node 24+ is there) and **cloudflared from
 Cloudflare's apt repository**; creates the **`blumodel` system account** and the home
-`/srv/blumodel-studio` (with `data/`, `logs/`, `.cloudflared/`, all owned by `blumodel`); makes a
+`/srv/blumodel-studio` (with `data/` and `logs/` owned by `blumodel`, and `.cloudflared/` by the tunnel's own account, `blumodel-tunnel`); makes a
 **sparse clone of `blumodel-studio/`** on the `blumodel-studio` branch in `/srv/blumodel-studio/repo`
 (plus `WYSE_SETUP.md` and `CLAUDE.md` at the top of a release: the setup guide for a Claude Code
 session on the Wyse); checks the prebuilt release is there; installs the systemd units (the server
