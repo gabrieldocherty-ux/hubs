@@ -156,7 +156,18 @@ export default [
     },
   }),
   ...four({ name: 'admin-contractors', path: '#/admin/contractors', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Contractors', 'Brand page', 'Models'] }),
-  ...four({ name: 'admin-companies', path: '#/admin/companies', as: 'admin', setup: async ({ api }) => (await seedCompany(api), {}), expectText: ['Companies', 'New company', 'Ridgeline Cabinets (QA)', 'Northline Kitchen'] }),
+  ...four({
+    name: 'admin-companies',
+    path: '#/admin/companies',
+    as: 'admin',
+    setup: async ({ api }) => (await seedCompany(api), {}),
+    // Each company's lead counts (total, this month, sent), never the people (docs/handoff/leads.md).
+    expectText: ['Companies', 'New company', 'Ridgeline Cabinets (QA)', 'Northline Kitchen', 'this month', 'sent'],
+    extra: async (h) => {
+      const text = await h.evaluate(() => document.body.innerText);
+      if (/morgan\.lee@example\.test|Riley Okafor|Sam Patel/.test(text)) throw new Error('Admin > Companies shows a showroom’s lead by name or address');
+    },
+  }),
   ...four({
     name: 'admin-company-detail',
     path: '#/admin/companies',

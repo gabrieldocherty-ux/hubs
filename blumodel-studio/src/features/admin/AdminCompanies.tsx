@@ -15,6 +15,7 @@ import { timeAgo } from '../../store/useSession';
 import { showroomApi } from './showroomApi';
 import { takePendingCompany } from './selection';
 import type { AdminTenant, InviteLink, PaidHow, TenantHostname, TenantMember, TenantSettings, TenantStatus, TenantUsage } from './showroomTypes';
+import { leadSummary } from './showroomTypes';
 import { DataTable, Notice, Pill, Section, dateTime, day, errorText, useLoad, type PillTone } from './ui';
 
 export const STATUS_PILL: Record<TenantStatus, [string, PillTone]> = {
@@ -282,10 +283,7 @@ export default function AdminCompanies() {
               {
                 label: 'Leads',
                 cell: (t) => (
-                  <span className="mono">
-                    {t.leads?.total ?? 0}
-                    {t.leads?.new ? ` (${t.leads.new} new)` : ''}
-                  </span>
+                  <span className="mono">{leadSummary(t.leads)}</span>
                 ),
               },
               { label: 'Renders', cell: (t) => <span className="mono">{t.usage?.rendersUsed ?? 0}</span> },
@@ -1216,10 +1214,7 @@ function UsageSection({ t, data, error }: { t: AdminTenant; data: TenantUsage | 
       {error && <div className="auth-error">{error}</div>}
       <dl className="adm-kv">
         <dt>Leads</dt>
-        <dd className="mono">
-          {(data?.leads ?? t.leads)?.total ?? 0}
-          {(data?.leads ?? t.leads)?.new ? ` (${(data?.leads ?? t.leads)?.new} new)` : ''}
-        </dd>
+        <dd className="mono">{leadSummary(data?.leads ?? t.leads)}</dd>
         <dt>Renders used</dt>
         <dd className="mono">{data ? `${data.renders.total.count} (${money(data.renders.total.cents)}) · ${data.renders.month.count} this month` : t.usage?.rendersUsed ?? 0}</dd>
         <dt>Products live</dt>

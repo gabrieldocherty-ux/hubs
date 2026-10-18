@@ -93,7 +93,8 @@ export interface AdminTenant {
   monthly?: TenantMonthly | null;
   checkouts?: TenantCheckout[];
   credits?: { balanceCents: number };
-  leads?: { total: number; new: number };
+  /** Counts only (no names or contact details): people who used the showroom, new to the team, first seen this month, sent a design. */
+  leads?: LeadCountsAdmin;
   usage?: { rendersUsed: number; renderCents: number; products: number; includedProducts: number; queueOpen: number };
 }
 
@@ -154,7 +155,7 @@ export interface CountCents {
 export interface TenantUsage {
   renders: { total: CountCents; d30: CountCents; month: CountCents };
   products: { live: number; hidden: number; total: number; included: number };
-  leads: { total: number; new: number } | null;
+  leads: LeadCountsAdmin | null;
   queue: { open: number; overdue: number; orders: QueueOrder[] };
 }
 
@@ -193,3 +194,17 @@ export interface SalesLead {
 }
 
 export type SalesLeadCounts = Record<SalesLeadStatus, number> & { total: number };
+
+/** A showroom's leads for Admin > Companies (docs/handoff/leads.md): counts, never people. */
+export interface LeadCountsAdmin {
+  total: number;
+  new: number;
+  thisMonth?: number;
+  sent?: number;
+}
+
+/** "12 · 3 this month · 5 sent". */
+export function leadSummary(l: LeadCountsAdmin | null | undefined): string {
+  if (!l) return '0';
+  return [String(l.total), l.thisMonth !== undefined ? `${l.thisMonth} this month` : '', l.sent !== undefined ? `${l.sent} sent` : '', l.new ? `${l.new} new` : ''].filter(Boolean).join(' · ');
+}
