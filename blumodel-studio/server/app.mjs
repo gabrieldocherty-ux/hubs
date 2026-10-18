@@ -208,7 +208,7 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
       if (req.method === 'GET' || req.method === 'HEAD') {
         // A showroom's document carries the company's title and link-preview tags, not ours.
         const t = site.kind === 'showroom' ? site.tenant : null;
-        const indexHtml = t ? (html) => showroomIndexHtml(html, t, { origin: tenants.originOf(t, requestOrigin(req, config)), logoUrl: tenants.logoUrl(t) }) : null;
+        const indexHtml = t ? (html) => showroomIndexHtml(html, t, { origin: tenants.originOf(t, requestOrigin(req, config)), logoUrl: tenants.logoUrl(t), images: tenants.publicWire(t).images }) : null;
         await serveDist(req, res, url, config.DIST_DIR, { indexHtml });
         return;
       }

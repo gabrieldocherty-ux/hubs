@@ -14,8 +14,8 @@ import { useShowroom } from './useShowroom';
 import { useConfig } from '../../lib/config';
 import { CompanyLogo, SiteMark } from './SiteMark';
 import { featuredLines, showroomLines, showroomPrefs, type ShowroomLine } from './lines';
-import { designHref } from './links';
-import { shortName, telHref, type PublicTenant } from './site';
+import { designHref, salesOrigin } from './links';
+import { shortName, telHref, type PublicTenant, type ShowroomImages, type ShowroomPic } from './site';
 import './showroom.css';
 
 const SAMPLE_ROOM = { widthIn: 192, lengthIn: 168, ceilingIn: 108 };
@@ -27,14 +27,13 @@ const SAMPLE_ROOM = { widthIn: 192, lengthIn: 168, ceilingIn: 108 };
  */
 function DemoBanner() {
   const base = useConfig((s) => s.config?.baseDomain ?? 'blumodel.studio');
-  const sales = base === 'localhost' ? `${location.protocol}//localhost${location.port ? `:${location.port}` : ''}` : `https://${base}`;
   return (
     <aside className="sr-demo-band" aria-label="About this demo">
       <p>
         <b>This is a demo showroom built by BluModel Studio.</b> Your company gets one like it, with your products, your
         brand and your own web address.
       </p>
-      <a className="sr-demo-cta" href={`${sales}/#/book`}>
+      <a className="sr-demo-cta" href={`${salesOrigin(base)}/#/book`}>
         Get one for your company
       </a>
     </aside>
@@ -43,10 +42,18 @@ function DemoBanner() {
 
 const categoryLabel = (c: BrandCategory) => BRAND_CATEGORIES.find((x) => x.id === c)?.label ?? c;
 
+/** Scrolls to an in-page section (the header's links), under the header. */
+const jump = (id: string) => (e: React.MouseEvent) => {
+  e.preventDefault();
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 /**
  * A showroom's front page (`#/` on <slug>.blumodel.studio, signed out; `#/welcome` for anyone):
- * the company's welcome, its featured product lines, Design your kitchen (and bathroom, when the
- * company offers it) and how to reach it. No prices, plans or anything of ours to buy.
+ * a full-bleed picture of a finished kitchen made with the company's own products (its own photo
+ * when it uploaded one), its featured lines as large pictures, a gallery of kitchens designed in the
+ * showroom, how it works, and how to reach the company. No prices, plans or anything of ours to buy.
+ * Without pictures yet, the hero shows a plan made of the company's products instead.
  */
 export default function ShowroomLanding() {
   const t = useShowroom();
@@ -57,13 +64,14 @@ export default function ShowroomLanding() {
   }, []);
   const lines = useMemo(() => showroomLines(products), [products]);
   const shown = useMemo(() => (t ? featuredLines(lines, t.branding.featuredLines) : []), [lines, t]);
-  // A sample layout made of the company's own products, drawn as a plan for the hero.
+  // A sample layout made of the company's own products, drawn as a plan (the hero without pictures, step 1).
   const sample = useMemo<DesignDoc | null>(() => (lines.length ? composeNewKitchen('Sample', SAMPLE_ROOM, 'l-island', showroomPrefs(undefined, lines)) : null), [lines]);
 
   if (!t) return <div className="screen-msg">Loading…</div>;
   const name = shortName(t);
   const title = t.branding.welcomeTitle || `Design your new kitchen with ${name}`;
   const comingSoon = t.status === 'setup';
+  const im = t.images;
 
   return (
     <div className="sr-page">
@@ -74,11 +82,16 @@ export default function ShowroomLanding() {
         </a>
         <nav className="sr-bar-nav" aria-label="Showroom">
           {lines.length > 0 && (
-            <a className="sr-bar-link" href="#/welcome" onClick={(e) => (e.preventDefault(), document.getElementById('sr-lines')?.scrollIntoView({ behavior: 'smooth' }))}>
+            <a className="sr-bar-link" href="#/welcome" onClick={jump('sr-lines')}>
               Our products
             </a>
           )}
-          <a className="sr-bar-link" href="#/welcome" onClick={(e) => (e.preventDefault(), document.getElementById('sr-contact')?.scrollIntoView({ behavior: 'smooth' }))}>
+          {im.gallery.length > 0 && (
+            <a className="sr-bar-link" href="#/welcome" onClick={jump('sr-gallery')}>
+              Kitchens
+            </a>
+          )}
+          <a className="sr-bar-link" href="#/welcome" onClick={jump('sr-contact')}>
             Contact
           </a>
           {signedIn ? (
@@ -97,7 +110,8 @@ export default function ShowroomLanding() {
       </header>
 
       <main>
-        <section className="sr-hero" aria-labelledby="sr-title">
+        <section className={`sr-hero${im.hero ? ' sr-hero--photo' : ''}`} aria-labelledby="sr-title">
+          {im.hero && <HeroPicture images={im} name={name} />}
           <div className="sr-hero-inner">
             <div className="sr-hero-copy">
               <p className="sr-kicker">{t.isDemo ? `${name} · a demo showroom` : `${name} · virtual showroom`}</p>
@@ -123,59 +137,68 @@ export default function ShowroomLanding() {
                 </>
               )}
             </div>
-            {!(comingSoon && !sample) && (
+            {!im.hero && sample && (
               <figure className="sr-hero-plan" aria-hidden>
-                <div className="sr-plan-card">{sample ? <MiniPlan doc={sample} /> : <span className="sr-plan-empty" />}</div>
+                <div className="sr-plan-card">
+                  <span className="sr-plan-tag">Sample layout</span>
+                  <MiniPlan doc={sample} />
+                </div>
                 <figcaption>A sample layout made with our products</figcaption>
               </figure>
             )}
           </div>
-        </section>
-
-        <section className="sr-steps" aria-labelledby="sr-how">
-          <h2 id="sr-how" className="sr-h2">
-            How it works
-          </h2>
-          <ol>
-            <li>
-              <span className="sr-step-n" aria-hidden>
-                1
-              </span>
-              <b>Your room</b>
-              <span>Enter the room’s size and pick a starting layout. It takes about a minute.</span>
-            </li>
-            <li>
-              <span className="sr-step-n" aria-hidden>
-                2
-              </span>
-              <b>Our products</b>
-              <span>Choose cabinets, sinks, appliances and lighting from {name}’s range, and walk through it in 3D.</span>
-            </li>
-            <li>
-              <span className="sr-step-n" aria-hidden>
-                3
-              </span>
-              <b>Send it to us</b>
-              <span>Send your design to {name}. A designer follows up to measure, refine and quote.</span>
-            </li>
-          </ol>
+          {im.hero?.source === 'render' && <p className="sr-hero-note">Rendered in 3D with {name}’s own products</p>}
         </section>
 
         {shown.length > 0 && (
-          <section className="sr-lines" id="sr-lines" aria-labelledby="sr-lines-title">
+          <section className="sr-lines sr-section" id="sr-lines" aria-labelledby="sr-lines-title">
             <div className="sr-section-head">
-              <h2 id="sr-lines-title" className="sr-h2">
-                Our featured lines
-              </h2>
+              <div>
+                <p className="sr-eyebrow">Our products</p>
+                <h2 id="sr-lines-title" className="sr-h2">
+                  Our featured lines
+                </h2>
+              </div>
               <p>Every product in the designer is one we sell and install.</p>
             </div>
             <div className="sr-line-grid">
-              {shown.map((l) => (
-                <LineCard key={l.key} line={l} signedIn={signedIn} disabled={comingSoon} />
+              {shown.map((l, i) => (
+                <LineCard key={l.key} line={l} pic={im.lines[l.key] ?? null} signedIn={signedIn} disabled={comingSoon} wide={i === 0 && shown.length % 3 === 1} />
               ))}
             </div>
           </section>
         )}
+
+        {im.gallery.length > 0 && (
+          <section className="sr-gallery sr-section" id="sr-gallery" aria-labelledby="sr-gallery-title">
+            <div className="sr-section-head">
+              <div>
+                <p className="sr-eyebrow">Inspiration</p>
+                <h2 id="sr-gallery-title" className="sr-h2">
+                  Kitchens designed in our showroom
+                </h2>
+              </div>
+              <p>Every one is made with our own products. Open one in 3D and make it yours.</p>
+            </div>
+            <div className={`sr-gallery-grid sr-gallery-grid--${Math.min(3, im.gallery.length)}`}>
+              {im.gallery.map((g, i) => (
+                <figure key={g.url} className="sr-shot">
+                  <Pic pic={g} alt={g.title} sizes={i === 0 ? '(max-width: 1240px) 100vw, 1200px' : '(max-width: 560px) 100vw, 600px'} />
+                  <figcaption>
+                    <span>{g.title}</span>
+                    {g.design && !comingSoon && (
+                      <a className="sr-shot-go" href={`#/s/${g.design}`}>
+                        Open in 3D <span aria-hidden>→</span>
+                      </a>
+                    )}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <Steps t={t} name={name} sample={sample} lines={shown} />
 
         <Contact t={t} />
       </main>
@@ -195,35 +218,63 @@ export default function ShowroomLanding() {
   );
 }
 
-function LineCard({ line, signedIn, disabled }: { line: ShowroomLine; signedIn: boolean; disabled: boolean }) {
-  const pics = line.products.slice(0, 3);
+/** The hero's picture: the portrait render on a phone, the wide one elsewhere; fetched first. */
+function HeroPicture({ images, name }: { images: ShowroomImages; name: string }) {
+  const hero = images.hero!;
+  const tall = images.heroTall;
+  return (
+    <picture className="sr-hero-pic">
+      {tall && <source media="(max-width: 700px)" srcSet={tall.url} width={tall.w} height={tall.h} />}
+      <img src={hero.url} width={hero.w} height={hero.h} alt={hero.source === 'photo' ? `A kitchen by ${name}` : `A finished kitchen made with ${name}’s products`} fetchPriority="high" decoding="async" />
+    </picture>
+  );
+}
+
+/** A picture below the fold: lazy, with its size reserved so nothing shifts. */
+function Pic({ pic, alt, sizes }: { pic: ShowroomPic; alt: string; sizes?: string }) {
+  return <img src={pic.url} width={pic.w} height={pic.h} alt={alt} loading="lazy" decoding="async" sizes={sizes} />;
+}
+
+function LineCard({ line, pic, signedIn, disabled, wide }: { line: ShowroomLine; pic: ShowroomPic | null; signedIn: boolean; disabled: boolean; wide: boolean }) {
   const finishes = useMemo(() => {
     const seen = new Map<string, { id: string; name: string; hex: string }>();
     for (const p of line.products) for (const f of finishList(p)) if (!seen.has(f.name) && f.hex) seen.set(f.name, { id: f.id, name: f.name, hex: f.hex });
     return [...seen.values()].slice(0, 6);
   }, [line]);
   const n = line.products.length;
+  const pics = line.products.slice(0, 3);
+  const cats = line.categories.map(categoryLabel).join(', ');
   return (
-    <article className="sr-line">
-      <div className="sr-line-art" style={{ gridTemplateColumns: `repeat(${Math.max(1, pics.length)}, 1fr)` }} aria-hidden>
-        {pics.map((p) => (
-          <span key={p.id} className="sr-line-pic">
-            <ProductArt product={p} surfaces={DEFAULT_SURFACES} />
-          </span>
-        ))}
+    <article className={`sr-line${wide ? ' sr-line--wide' : ''}`}>
+      <div className="sr-line-media">
+        {pic ? (
+          <Pic pic={pic} alt={`${line.name}, installed`} sizes="(max-width: 760px) 100vw, 400px" />
+        ) : (
+          <div className="sr-line-art" style={{ gridTemplateColumns: `repeat(${Math.max(1, pics.length)}, 1fr)` }} aria-hidden>
+            {pics.map((p) => (
+              <span key={p.id} className="sr-line-pic">
+                <ProductArt product={p} surfaces={DEFAULT_SURFACES} />
+              </span>
+            ))}
+          </div>
+        )}
+        {cats && <span className="sr-line-chip">{cats}</span>}
       </div>
       <div className="sr-line-body">
         <h3>{line.name}</h3>
         <p className="sr-line-meta">
           {n} product{n === 1 ? '' : 's'}
-          {line.categories.length ? ` · ${line.categories.map(categoryLabel).join(', ')}` : ''}
+          {finishes.length > 1 ? ` · ${finishes.length} finishes` : ''}
         </p>
         {finishes.length > 0 && (
-          <p className="sr-swatches" aria-label={`Finishes: ${finishes.map((f) => f.name).join(', ')}`}>
+          <ul className="sr-swatches" aria-label={`Finishes: ${finishes.map((f) => f.name).join(', ')}`}>
             {finishes.map((f) => (
-              <i key={f.name} style={{ background: f.hex }} title={f.name} />
+              <li key={f.name} title={f.name}>
+                <i style={{ background: f.hex }} />
+                <span>{f.name}</span>
+              </li>
             ))}
-          </p>
+          </ul>
         )}
         {!disabled && (
           <a className="sr-line-go" href={designHref('kitchen', signedIn, line.name)}>
@@ -235,13 +286,69 @@ function LineCard({ line, signedIn, disabled }: { line: ShowroomLine; signedIn: 
   );
 }
 
+/** How it works, each step with a picture: the plan, the company's products in 3D, the send. */
+function Steps({ t, name, sample, lines }: { t: PublicTenant; name: string; sample: DesignDoc | null; lines: ShowroomLine[] }) {
+  const im = t.images;
+  const productPic = (lines.length ? im.lines[lines[0].key] : undefined) ?? im.gallery[0] ?? null;
+  return (
+    <section className="sr-steps sr-section" aria-labelledby="sr-how">
+      <div className="sr-section-head">
+        <div>
+          <p className="sr-eyebrow">How it works</p>
+          <h2 id="sr-how" className="sr-h2">
+            From an empty room to a quote
+          </h2>
+        </div>
+      </div>
+      <ol>
+        <li>
+          <div className="sr-step-art sr-step-art--plan" aria-hidden>
+            {sample ? <MiniPlan doc={sample} /> : null}
+          </div>
+          <span className="sr-step-n" aria-hidden>
+            1
+          </span>
+          <b>Your room</b>
+          <span>Enter the room’s size and pick a starting layout. It takes about a minute.</span>
+        </li>
+        <li>
+          <div className="sr-step-art" aria-hidden>
+            {productPic ? <img src={productPic.url} width={productPic.w} height={productPic.h} alt="" loading="lazy" decoding="async" /> : null}
+          </div>
+          <span className="sr-step-n" aria-hidden>
+            2
+          </span>
+          <b>Our products</b>
+          <span>Choose cabinets, sinks, appliances and lighting from {name}’s range, and walk through it in 3D.</span>
+        </li>
+        <li>
+          <div className="sr-step-art sr-step-art--send" aria-hidden>
+            <div className="sr-mock">
+              <CompanyLogo tenant={t} size={30} />
+              <b>Send this design to {name}</b>
+              <i />
+              <i />
+              <span className="sr-mock-btn">Send my design</span>
+            </div>
+          </div>
+          <span className="sr-step-n" aria-hidden>
+            3
+          </span>
+          <b>Send it to us</b>
+          <span>Send your design to {name}. A designer follows up to measure, refine and quote.</span>
+        </li>
+      </ol>
+    </section>
+  );
+}
+
 function Contact({ t }: { t: PublicTenant }) {
   const c = t.contact;
   const tel = c.phone ? telHref(c.phone) : null;
   const rows = [c.address, c.hours, c.serviceArea ? `Serving ${c.serviceArea}` : ''].filter(Boolean);
   if (!c.phone && !c.email && !c.website && !rows.length) return null;
   return (
-    <section className="sr-contact" id="sr-contact" aria-labelledby="sr-contact-title">
+    <section className="sr-contact sr-section" id="sr-contact" aria-labelledby="sr-contact-title">
       <div className="sr-contact-card">
         <CompanyLogo tenant={t} size={52} />
         <div className="sr-contact-text">

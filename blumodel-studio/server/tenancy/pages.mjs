@@ -67,7 +67,7 @@ export function unavailablePage(tenant) {
  * @param {{ name: string, settings?: any, contact?: any }} t  the tenant
  * @param {{ origin: string, logoUrl?: string | null }} o
  */
-export function showroomIndexHtml(html, t, { origin, logoUrl = null }) {
+export function showroomIndexHtml(html, t, { origin, logoUrl = null, images = null }) {
   const name = String(t.name).replace(/\s*\((demo|sample)\)\s*$/i, '').trim() || String(t.name);
   const bath = !!t.settings?.bathrooms;
   const title = `${name} · Design your ${bath ? 'kitchen or bathroom' : 'kitchen'} in 3D`;
@@ -93,7 +93,21 @@ export function showroomIndexHtml(html, t, { origin, logoUrl = null }) {
     (h) => h.replace(/<meta name="twitter:card" content="summary_large_image" \/>/, '<meta name="twitter:card" content="summary" />'),
   ];
   let out = steps.reduce((h, f) => f(h), html);
-  if (logoUrl) {
+  // The landing page's hero picture (server/tenancy/images.mjs): fetched with the document, at the
+  // size the screen will use (the portrait one on a phone), and the link preview's picture.
+  const hero = typeof images?.hero?.url === 'string' && images.hero.url.startsWith('/') ? images.hero : null;
+  if (hero) {
+    const tall = typeof images.heroTall?.url === 'string' && images.heroTall.url.startsWith('/') ? images.heroTall : null;
+    const links = tall
+      ? `<link rel="preload" as="image" href="${esc(tall.url)}" media="(max-width: 700px)" fetchpriority="high" />\n    <link rel="preload" as="image" href="${esc(hero.url)}" media="(min-width: 701px)" fetchpriority="high" />`
+      : `<link rel="preload" as="image" href="${esc(hero.url)}" fetchpriority="high" />`;
+    out = out.replace('</head>', `  ${links}\n  </head>`);
+    out = out.replace(
+      /(<meta property="og:url" content="[^"]*" \/>)/,
+      `$1\n    <meta property="og:image" content="${esc(origin + hero.url)}" />\n    <meta property="og:image:width" content="${Number(hero.w) || 0}" />\n    <meta property="og:image:height" content="${Number(hero.h) || 0}" />`,
+    );
+    out = out.replace('<meta name="twitter:card" content="summary" />', '<meta name="twitter:card" content="summary_large_image" />');
+  } else if (logoUrl) {
     const abs = /^https:\/\//.test(logoUrl) ? logoUrl : logoUrl.startsWith('/') ? `${origin}${logoUrl}` : null;
     if (abs) out = out.replace(/(<meta property="og:url" content="[^"]*" \/>)/, `$1
     <meta property="og:image" content="${esc(abs)}" />`);

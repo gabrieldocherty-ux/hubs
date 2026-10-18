@@ -25,3 +25,8 @@ export const CLAIM_DRAFT_HREF = `#/signup?next=${encodeURIComponent('#/local')}`
 
 /** `?room=bathroom` in the wizard's own query. */
 export const roomFromQuery = (q: URLSearchParams): RoomKind => (q.get('room') === 'bathroom' ? 'bathroom' : 'kitchen');
+
+/** Our sales site's origin, from a showroom (the demo's band and pitch link back to its Book a call). */
+export function salesOrigin(base: string): string {
+  return base === 'localhost' ? `${location.protocol}//localhost${location.port ? `:${location.port}` : ''}` : `https://${base}`;
+}
