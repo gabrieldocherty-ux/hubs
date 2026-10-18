@@ -404,8 +404,13 @@ export function termsDoc(w: LegalWords): LegalDoc {
 
 // ─── Privacy ─────────────────────────────────────────────────────────────────
 
-export function privacyDoc(w: LegalWords): LegalDoc {
-  return {
+/**
+ * `company`: on a company's showroom, its name. The policy then opens with what that showroom
+ * keeps about the people who design on it (docs/handoff/leads.md), who is responsible for it, and
+ * how to have it deleted, before the general policy.
+ */
+export function privacyDoc(w: LegalWords, company: string | null = null): LegalDoc {
+  const base: LegalDoc = {
     id: 'privacy',
     title: 'Privacy policy',
     short: 'Privacy',
@@ -455,8 +460,12 @@ export function privacyDoc(w: LegalWords): LegalDoc {
               <b>About visitors to a showroom, for the company</b>
             </p>
             <ul>
+              <li>
+                Before designing: the visitor’s name, an email address or phone number (at least one), the consent they gave with its wording and time, and when they first came
+                and were last active.
+              </li>
               <li>An account, if the visitor makes one: name and email address, kept for that showroom only.</li>
-              <li>Designs the visitor saves, and share links they make.</li>
+              <li>Designs the visitor saves, share links they make, and when each design was started, saved and sent.</li>
               <li>
                 Leads: when a visitor sends a design to the company, their name, email, phone, postal code, budget, timeline and notes, the consent they gave with its wording and
                 time, and a view-only link to the design.
@@ -486,8 +495,12 @@ export function privacyDoc(w: LegalWords): LegalDoc {
         body: (
           <>
             <p>
-              We set a single cookie, <code>blumodel_session</code>, when someone signs in. It keeps them signed in for 30 days, renews while they use the site, and is removed when they
+              We set a cookie, <code>blumodel_session</code>, when someone signs in. It keeps them signed in for 30 days, renews while they use the site, and is removed when they
               sign out. It belongs to the one site that set it, so a sign-in on one showroom means nothing on another, and it can’t be read by scripts.
+            </p>
+            <p>
+              On a showroom, a visitor who gives their details before designing gets a second cookie, <code>blumodel_visitor</code>, so their designs are saved and they aren’t asked
+              again. It lasts up to 400 days, belongs to that one showroom, can’t be read by scripts, and is removed by clearing the browser’s cookies.
             </p>
             <p>
               There are no advertising or analytics cookies, no tracking pixels and no third-party scripts. Fonts and every other file are served by us, so loading a page tells no one
@@ -554,8 +567,12 @@ export function privacyDoc(w: LegalWords): LegalDoc {
                 <b>Download your data:</b> <a href="#/account">Account settings</a> → <b>Download my data</b> gives you a file with your account and designs.
               </li>
               <li>
-                <b>Delete your account:</b> <a href="#/account">Account settings</a> → <b>Delete my account</b>. A lead you already sent stays with the company you sent it to:
-                ask the company to delete it.
+                <b>Delete your account:</b> <a href="#/account">Account settings</a> → <b>Delete my account</b>. Your details as a lead stay with the company whose showroom you
+                used: ask the company to delete them.
+              </li>
+              <li>
+                <b>Have a company forget you:</b> ask the company whose showroom you used. Its team can delete your details, your designs and their history from its leads in one
+                step; deleted data drops out of the daily backups as they are replaced.
               </li>
               <li>
                 <b>Correct your details:</b> change your name and password in Account settings.
@@ -591,6 +608,44 @@ export function privacyDoc(w: LegalWords): LegalDoc {
         body: <p>We will post any new version here with a new date, and tell companies before a change that affects how their visitors’ data is handled.</p>,
       },
       { id: 'contact', heading: '11. Contact', body: <ContactBlock w={w} /> },
+    ],
+  };
+  if (!company) return base;
+  return {
+    ...base,
+    lede: (
+      <>
+        This showroom is run for <b>{company}</b> by BluModel Studio. When you design here, <b>{company} is responsible for your details</b> and {w.who} keeps them for{' '}
+        {company}. The first section says what that means for you; the rest is BluModel Studio’s general policy.
+      </>
+    ),
+    sections: [
+      {
+        id: 'showroom',
+        heading: `On ${company}’s showroom`,
+        body: (
+          <>
+            <p>
+              <b>What is collected.</b> Before you start a design you give your name and an email address or phone number, and tick a box agreeing that {company} may contact you
+              about your design; the words you agreed to and the time are kept. Then your designs, when you started, saved and came back to them, and anything you write when you
+              send a design to {company} (postal code, budget, timeline, notes).
+            </p>
+            <p>
+              <b>Why.</b> So your designs are saved and you can come back to them, and so {company} can contact you about your project. Nothing else: your details aren’t sold,
+              shared with other companies or used for advertising.
+            </p>
+            <p>
+              <b>Who is responsible.</b> {company} is the controller of your details and decides how it follows up with you. {w.Who}, which runs BluModel Studio, is its processor:
+              it stores your details only to run this showroom for {company}. Other companies on BluModel Studio can’t see them.
+            </p>
+            <p>
+              <b>Deleting your details.</b> Ask {company} to delete them, using the contact details on this showroom. Its team can delete your details, your designs and their
+              history in one step. If you can’t reach {company}, contact BluModel Studio {w.contact} and we will pass your request on and make sure it is done.
+            </p>
+          </>
+        ),
+      },
+      ...base.sections,
     ],
   };
 }
@@ -694,7 +749,8 @@ export function refundsDoc(w: LegalWords): LegalDoc {
   };
 }
 
-export function legalDoc(id: LegalDocId, legal: LegalConfig, payments: PaymentsMode | null = null): LegalDoc {
+/** `company`: the showroom's company name on a showroom (the privacy policy then opens with its own section). */
+export function legalDoc(id: LegalDocId, legal: LegalConfig, payments: PaymentsMode | null = null, company: string | null = null): LegalDoc {
   const w = legalWords(legal, payments);
-  return id === 'terms' ? termsDoc(w) : id === 'privacy' ? privacyDoc(w) : refundsDoc(w);
+  return id === 'terms' ? termsDoc(w) : id === 'privacy' ? privacyDoc(w, company) : refundsDoc(w);
 }

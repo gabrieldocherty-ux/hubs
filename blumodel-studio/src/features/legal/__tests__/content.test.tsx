@@ -99,3 +99,22 @@ test('the removed homeowner and contractor products appear only in the earlier-p
     if (id !== 'privacy') assert.ok(d.sections.some((s) => s.id === 'earlier'), `${id} has no earlier-purchases section`);
   }
 });
+
+test('on a showroom the privacy policy opens with what that showroom keeps, why, who is responsible and how to have it deleted', () => {
+  const d = legalDoc('privacy', QA_LEGAL, 'stripe', 'Northline Kitchen & Bath');
+  assert.equal(d.sections[0].id, 'showroom');
+  assert.equal(d.sections[0].heading, 'On Northline Kitchen & Bath’s showroom');
+  const plain = renderToStaticMarkup(
+    <>
+      <p>{d.lede}</p>
+      {d.sections[0].body}
+    </>,
+  ).replace(/<[^>]+>/g, ' ');
+  for (const want of [/name and an email address or phone number/, /may contact you/, /words you agreed to and the time/, /Why\./, /is the controller/, /processor/, /Ask Northline Kitchen &amp; Bath to delete them/, /help@example\.test/])
+    assert.match(plain, want);
+  // The general policy follows, unchanged, and mentions the visitor cookie.
+  assert.deepEqual(d.sections.slice(1).map((s) => s.id), legalDoc('privacy', QA_LEGAL, 'stripe').sections.map((s) => s.id));
+  assert.match(renderToStaticMarkup(<>{d.sections.find((s) => s.id === 'cookies')!.body}</>), /blumodel_visitor/);
+  // Not on the sales site.
+  assert.notEqual(legalDoc('privacy', QA_LEGAL, 'stripe').sections[0].id, 'showroom');
+});

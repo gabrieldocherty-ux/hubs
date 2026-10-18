@@ -18,10 +18,11 @@ const DOCS: { id: LegalDocId; label: string }[] = [
 export default function LegalScreen({ doc }: { doc: LegalDocId }) {
   const config = useAppConfig();
   const signedIn = useSession((s) => s.status === 'signedIn');
-  const d = useMemo(() => legalDoc(doc, config?.legal ?? NO_LEGAL, config?.payments ?? null), [doc, config]);
   // On a company's showroom the pages keep the company's header; visitors never pay, so there is
-  // no refund policy for them, and the terms open at the part written for visitors.
+  // no refund policy for them, the terms open at the part written for visitors, and the privacy
+  // policy opens with what that showroom keeps about the people who design on it.
   const tenant = config?.tenant ?? null;
+  const d = useMemo(() => legalDoc(doc, config?.legal ?? NO_LEGAL, config?.payments ?? null, tenant?.name ?? null), [doc, config, tenant]);
   const company = tenant ? tenant.name.replace(/\s*\((demo|sample)\)\s*$/i, '').trim() || tenant.name : null;
   const docs = tenant ? DOCS.filter((x) => x.id !== 'refunds') : DOCS;
 
