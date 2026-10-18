@@ -344,18 +344,18 @@ function commitOf() {
 if (ROLLBACK) {
   const failed = readDeployed(L.app);
   const back = readDeployed(L.appPrevious);
-  if (WIN) fs.writeFileSync(L.deploying, new Date().toISOString());
+  fs.writeFileSync(L.deploying, new Date().toISOString());
   let stopped = false;
   try {
     stopped = await stopServer();
     rollbackApp(L);
   } catch (err) {
     console.error(`Could not roll back (${err?.code ?? err?.message}): something may have a file in ${L.app} or ${L.appPrevious} open. Nothing was swapped.`);
-    if (WIN) fs.rmSync(L.deploying, { force: true });
+    fs.rmSync(L.deploying, { force: true });
     if (stopped) startServer();
     process.exit(EXIT.REFUSED);
   } finally {
-    if (WIN) fs.rmSync(L.deploying, { force: true });
+    fs.rmSync(L.deploying, { force: true });
   }
   console.log(`Rolled back: ${rel(L.app)}${sep} is commit ${back?.commit ?? '?'} again; commit ${failed?.commit ?? '?'} is kept in ${rel(L.appFailed)}${sep}.`);
   const last = deployBackupDirs(L.backups).at(-1);
@@ -374,7 +374,7 @@ if (ROLLBACK) {
 
 ensureDir(L.data);
 ensureDir(L.logs);
-if (WIN) fs.writeFileSync(L.deploying, new Date().toISOString());
+fs.writeFileSync(L.deploying, new Date().toISOString());
 let settingsNote = '';
 let swapped = false;
 let stoppedSomething = false;
@@ -451,7 +451,7 @@ try {
   if (!err?.refused) throw err;
   process.exitCode = EXIT.REFUSED;
 } finally {
-  if (WIN) fs.rmSync(L.deploying, { force: true });
+  fs.rmSync(L.deploying, { force: true });
 }
 if (process.exitCode === EXIT.REFUSED) {
   // Nothing changed: start the old app again if this run stopped it.

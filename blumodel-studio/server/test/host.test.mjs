@@ -512,11 +512,11 @@ function homeWithApp(commit) {
   return home;
 }
 
-test('runUpdate: refuses on local changes or a pull that can’t fast-forward; stops when the commit is already deployed; otherwise npm ci, build, deploy in that order', async () => {
+test('runUpdate: refuses on local changes or a pull that can’t fast-forward; stops when the commit is already deployed; otherwise deploys the prebuilt dist/ (no npm ci, no build); --build is the emergency npm ci + build', async () => {
   const { runUpdate } = await import('../../scripts/host/update.mjs');
   const home = homeWithApp('old1234');
   try {
-    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, out: () => {} };
+    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, out: () => {}, exists: () => true };
     let f = fakeExec({ dirty: ' M src/app.tsx\n' });
     assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
     assert.equal(f.calls.length, 1, 'stopped after git status');
@@ -532,35 +532,49 @@ test('runUpdate: refuses on local changes or a pull that can’t fast-forward; s
     assert.equal(runUpdate({ ...base, exec: f.exec, force: true }).deployed, 'old1234', '--force redeploys');
     assert.ok(f.calls.some((c) => /deploy-local/.test(c.line)));
 
+    // A branch without a prebuilt release (not published with npm run release): refused, with --build named.
+    f = fakeExec();
+    let out = [];
+    assert.equal(runUpdate({ ...base, exists: () => false, exec: f.exec, out: (s) => out.push(s) }).code, EXIT.REFUSED);
+    assert.match(out.join('\n'), /no prebuilt release .*--build/s);
+    assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)));
+
     f = fakeExec({ npm: 1 });
-    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.equal(runUpdate({ ...base, build: true, exec: f.exec }).code, EXIT.REFUSED);
     assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'a failed npm ci never reaches the deploy');
     f = fakeExec({ build: 1 });
-    assert.equal(runUpdate({ ...base, exec: f.exec }).code, EXIT.REFUSED);
+    assert.equal(runUpdate({ ...base, build: true, exec: f.exec }).code, EXIT.REFUSED);
     assert.ok(!f.calls.some((c) => /deploy-local/.test(c.line)), 'a failed build never reaches the deploy');
 
+    const kind = (c) => (/status/.test(c.line) ? 'status' : /pull/.test(c.line) ? 'pull' : /rev-parse/.test(c.line) ? 'rev-parse' : / ci /.test(` ${c.line} `) ? 'ci' : /build\.mjs/.test(c.line) ? 'build' : /deploy-local/.test(c.line) ? 'deploy' : c.line);
     f = fakeExec();
-    const out = [];
+    out = [];
     assert.deepEqual(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }), { code: EXIT.OK, deployed: 'new5678' });
-    const order = f.calls.map((c) => (/status/.test(c.line) ? 'status' : /pull/.test(c.line) ? 'pull' : /rev-parse/.test(c.line) ? 'rev-parse' : / ci /.test(` ${c.line} `) ? 'ci' : /build\.mjs/.test(c.line) ? 'build' : /deploy-local/.test(c.line) ? 'deploy' : c.line));
-    assert.deepEqual(order, ['status', 'pull', 'rev-parse', 'ci', 'build', 'deploy']);
+    assert.deepEqual(f.calls.map(kind), ['status', 'pull', 'rev-parse', 'deploy'], 'the prebuilt release: nothing installed or built');
     const deploy = f.calls.at(-1);
-    assert.match(deploy.line, /deploy-local\.mjs --dist .*dist --commit new5678$/);
+    assert.match(deploy.line, /deploy-local\.mjs --dist \S*[\\/]repo[\\/]blumodel-studio[\\/]dist --commit new5678$/);
     assert.deepEqual(deploy.env, { BLUMODEL_HOME: home }, 'deploys into the home it checked');
     assert.match(out.join('\n'), /Updated: commit new5678 is running\./);
+
+    f = fakeExec();
+    assert.equal(runUpdate({ ...base, build: true, exec: f.exec }).code, EXIT.OK);
+    assert.deepEqual(f.calls.map(kind), ['status', 'pull', 'rev-parse', 'ci', 'build', 'deploy']);
+    assert.match(f.calls.find((c) => /build\.mjs/.test(c.line)).line, /build\.mjs --out \.build[\\/]local$/, 'never over the tracked dist/');
+    assert.match(f.calls.at(-1).line, /--dist \S*[\\/]\.build[\\/]local --commit new5678$/);
   } finally {
     rm(home);
   }
 });
 
-test('runUpdate rolls back when the new app fails its health check (deploy exit 3), never when the deploy refused; a failed rollback says the site may be down', async () => {
-  const { runUpdate } = await import('../../scripts/host/update.mjs');
+test('runUpdate rolls back when the new app fails its health check (deploy exit 3; then exit 4), never when the deploy refused; a failed rollback says the site may be down', async () => {
+  const { runUpdate, ROLLED_BACK } = await import('../../scripts/host/update.mjs');
   const home = homeWithApp('old1234');
   try {
-    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform };
+    const base = { root: path.join(home, 'repo', 'blumodel-studio'), home, platform: process.platform, exists: () => true };
     let out = [];
     let f = fakeExec({ deploy: EXIT.UNHEALTHY });
-    assert.equal(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }).code, EXIT.REFUSED);
+    assert.equal(ROLLED_BACK, 4);
+    assert.equal(runUpdate({ ...base, exec: f.exec, out: (s) => out.push(s) }).code, ROLLED_BACK);
     assert.match(f.calls.at(-1).line, /deploy-local\.mjs --rollback$/);
     assert.deepEqual(f.calls.at(-1).env, { BLUMODEL_HOME: home });
     assert.match(out.join('\n'), /ROLLED BACK: commit old1234 is running again; new5678 did not start healthy/);
@@ -583,17 +597,22 @@ test('runUpdate rolls back when the new app fails its health check (deploy exit 
   }
 });
 
-test('runUpdate on Linux as root: git, npm and the build run as the checkout’s owner (runuser, HOME = the home); the deploy and rollback run as root', async () => {
+test('runUpdate on Linux as root: git (and with --build, npm and the build) run as the checkout’s owner (runuser, HOME = the home); the deploy and rollback run as root', async () => {
   const { runUpdate } = await import('../../scripts/host/update.mjs');
   const f = fakeExec({ deploy: EXIT.UNHEALTHY });
-  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {} });
+  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {}, exists: () => true });
+  const plain = f.calls.map((c) => c.line);
+  assert.ok(plain.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/dist --commit new5678'), 'the prebuilt dist');
+  assert.ok(!plain.some((l) => / ci |build\.mjs/.test(l)), 'nothing installed or built');
+  f.calls.length = 0;
+  runUpdate({ root: '/srv/blumodel-studio/repo/blumodel-studio', home: '/srv/blumodel-studio', platform: 'linux', serviceUser: 'blumodel', asRoot: true, node: '/usr/bin/node', exec: f.exec, out: () => {}, build: true });
   const svc = 'runuser -u blumodel -- env HOME=/srv/blumodel-studio PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
   const lines = f.calls.map((c) => c.line);
   assert.equal(lines[0], `${svc} git -C /srv/blumodel-studio/repo/blumodel-studio status --porcelain --untracked-files=no`);
   assert.equal(lines[1], `${svc} git -C /srv/blumodel-studio/repo/blumodel-studio pull --ff-only`);
   assert.ok(lines.some((l) => l.startsWith(svc) && / ci --no-audit --no-fund$/.test(l)), 'npm ci as blumodel');
-  assert.ok(lines.includes(`${svc} /usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/host/build.mjs --out dist`));
-  assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/dist --commit new5678'));
+  assert.ok(lines.includes(`${svc} /usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/host/build.mjs --out .build/local`));
+  assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --dist /srv/blumodel-studio/repo/blumodel-studio/.build/local --commit new5678'));
   assert.ok(lines.includes('/usr/bin/node /srv/blumodel-studio/repo/blumodel-studio/scripts/deploy-local.mjs --rollback'));
 });
 
@@ -604,14 +623,17 @@ test('update.mjs --dry-run --platform linux prints the whole plan, the rollback 
   for (const re of [
     /checkout \/srv\/blumodel-studio\/repo\/blumodel-studio, home \/srv\/blumodel-studio/,
     /\+ runuser -u blumodel -- .* git -C \/srv\/blumodel-studio\/repo\/blumodel-studio pull --ff-only/,
-    /\+ runuser -u blumodel -- .* npm ci --no-audit --no-fund/,
-    /\+ runuser -u blumodel -- .* \/usr\/bin\/node .*build\.mjs --out dist/,
+    /The prebuilt release \(nothing is built on this machine\)/,
     /\+ BLUMODEL_HOME=\/srv\/blumodel-studio \/usr\/bin\/node .*deploy-local\.mjs --dist .*dist --commit/,
     /Only if that health check fails: rolling back/,
     /\+ BLUMODEL_HOME=\/srv\/blumodel-studio \/usr\/bin\/node .*deploy-local\.mjs --rollback/,
     /Dry run: nothing was pulled, built, deployed or restarted\./,
   ])
     assert.match(r.stdout, re);
+  assert.doesNotMatch(r.stdout, /npm ci|build\.mjs/, 'a release is deployed as built');
+  const b = cli('--dry-run', '--platform', 'linux', '--build');
+  assert.match(b.stdout, /\+ runuser -u blumodel -- .* npm ci --no-audit --no-fund/);
+  assert.match(b.stdout, /\+ runuser -u blumodel -- .* \/usr\/bin\/node .*build\.mjs --out \.build\/local/);
   if (process.platform !== 'linux') assert.equal(cli('--platform', 'linux').status, EXIT.USAGE);
   assert.equal(cli('--bogus').status, EXIT.USAGE);
 });

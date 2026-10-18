@@ -497,12 +497,17 @@ Add `--dry-run` to see the plan first; `--force` redeploys the commit already ru
 1. refuses if the checkout has local changes;
 2. `git pull --ff-only` (if the update script itself changed, it runs the new one);
 3. stops if `app/DEPLOYED.txt` already has this commit ("Already deployed");
-4. `npm ci`, then the build (as `blumodel` on Linux); until here the site keeps running untouched;
+4. checks the **prebuilt release** is there (`dist/` and `server/generated/`, committed to the
+   `blumodel-studio` branch by `npm run release`): nothing is installed or built on the Wyse. Only in
+   an emergency, `--build` runs `npm ci` and the build here instead (as `blumodel` on Linux; it needs
+   about 2 GB of RAM + swap). Until here the site keeps running untouched;
 5. the deploy: stops the server, **copies the database to `data/backups/<time>/` first**, puts the new
    app in place keeping the old one as `app.previous`, starts the server and checks
    `http://127.0.0.1:8790/api/health`;
 6. if that check fails: `deploy-local.mjs --rollback`, the previous app back and checked again.
-   It ends with `Updated: commit <sha> is running.`, or `ROLLED BACK: …` and the logs to read.
+   It ends with `Updated: commit <sha> is running.`, or `ROLLED BACK: …` (exit 4) and the logs to read.
+
+Only one update runs at a time (`logs/update.lock`); the automatic one below uses the same steps.
 
 The site is down for a few seconds during step 5 (Cloudflare shows its 502 page); the tunnel keeps
 running. Keep the system current too: `sudo apt update && sudo apt upgrade` now and then (Node.js and
