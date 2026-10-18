@@ -38,6 +38,16 @@ export interface ShowroomSettings {
   dailyRenderCap: number;
   /** Months a lead that never sent a design is kept after its last activity: 0 is the default (24). */
   leadRetentionMonths?: number;
+  /** Staff may export the lead list (CSV). Off: owners only. */
+  staffLeadExport?: boolean;
+}
+
+/** One lead-list export, as owners see them (GET /api/workspace/leads/exports). */
+export interface LeadExport {
+  at: number;
+  by: string;
+  role: 'owner' | 'staff' | null;
+  rows: number;
 }
 
 export interface Hostname {
@@ -348,7 +358,8 @@ export const wsApi = {
   deleteLead: (id: string) => call<{ ok: true; removed: { designs: number; unlinked: number; sends: number } }>('DELETE', `/api/workspace/leads/${enc(id)}`),
   leadDesign: (id: string, designId: string) =>
     call<{ design: { id: string; name: string; doc: DesignDoc; createdAt: number; updatedAt: number } }>('GET', `/api/workspace/leads/${enc(id)}/designs/${enc(designId)}`),
-  exportLeads: () => call<{ filename: string; contentType: string; content: string }>('GET', '/api/workspace/leads/export'),
+  exportLeads: () => call<{ filename: string; contentType: string; content: string; rows: number }>('GET', '/api/workspace/leads/export'),
+  leadExports: () => call<{ exports: LeadExport[] }>('GET', '/api/workspace/leads/exports'),
 
   plan: () => call<PlanWire>('GET', '/api/workspace/plan'),
   portal: () => call<{ url: string }>('POST', '/api/workspace/plan/portal'),

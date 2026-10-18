@@ -114,6 +114,7 @@ export default function TeamTab() {
         </section>
       )}
       {owner ? <InviteForm onAdded={(m) => setMembers((cur) => [...(cur ?? []).filter((x) => x.userId !== m.userId), m])} /> : <p className="fine">Ask an owner to invite someone new.</p>}
+      {owner && <ExportSwitch />}
       {removing && (
         <Dialog title={`Remove ${removing.name || removing.email}?`} onClose={() => setRemoving(null)}>
           <p>They’re signed out of this workspace at once and can’t open it again. Their leads, notes and the designs they made stay with the showroom.</p>
@@ -225,5 +226,36 @@ function InviteForm({ onAdded }: { onAdded: (m: Member) => void }) {
         </div>
       )}
     </form>
+  );
+}
+
+/** Owners decide whether staff may download the whole lead list (off by default; every export is recorded). */
+function ExportSwitch() {
+  const { tenant, setTenant } = useWorkspace();
+  const toast = useDesignStore((s) => s.toast);
+  const [busy, setBusy] = useState(false);
+  const on = !!tenant.settings.staffLeadExport;
+  const flip = async (next: boolean) => {
+    setBusy(true);
+    try {
+      const r = await wsApi.saveShowroom({ settings: { ...tenant.settings, staffLeadExport: next } });
+      setTenant(r.tenant);
+      toast(next ? 'Staff can export the lead list now. Every export is recorded under Leads.' : 'Only owners can export the lead list now.', 'ok');
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : 'That didn’t change.', 'warn');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="ws-card" aria-label="Lead list export">
+      <label className="ws-switch">
+        <input type="checkbox" checked={on} disabled={busy} onChange={(e) => void flip(e.target.checked)} />
+        <span>
+          <b>Let staff export the lead list</b>
+          <em>Off: only owners can download every lead as a spreadsheet. Either way, each export is recorded with who made it and how many people it held (Leads, at the bottom).</em>
+        </span>
+      </label>
+    </section>
   );
 }

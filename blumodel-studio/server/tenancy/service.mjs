@@ -66,6 +66,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
    * (LEAD_RETENTION_CHOICES). Never more than the server's.
    */
   leadRetentionMonths: 0,
+  /** Staff may download the whole lead list (CSV). Off: owners only. Every export is audited either way. */
+  staffLeadExport: false,
 });
 
 /** What a company may choose for leadRetentionMonths (0: the default). */
@@ -159,7 +161,7 @@ export function cleanSettings(input, current = {}) {
   const out = { ...DEFAULT_SETTINGS, ...current };
   const errors = [];
   if (!input || typeof input !== 'object') return { ok: true, value: out };
-  for (const k of ['fillGaps', 'bathrooms', 'visitorRenders']) {
+  for (const k of ['fillGaps', 'bathrooms', 'visitorRenders', 'staffLeadExport']) {
     if (input[k] === undefined) continue;
     if (typeof input[k] !== 'boolean') errors.push({ field: `settings.${k}`, message: `${k} is on or off.` });
     else out[k] = input[k];

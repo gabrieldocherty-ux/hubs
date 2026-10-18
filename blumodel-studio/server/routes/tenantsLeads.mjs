@@ -14,7 +14,10 @@
 // Showroom, the team (auth 'staff'):
 //   GET    /api/workspace/leads             ?status=&q=&sent=yes|no&before=<lastActiveAt>&limit= -> { leads, counts }
 //   GET    /api/workspace/leads/summary     -> { counts }
-//   GET    /api/workspace/leads/export      -> { filename, contentType: 'text/csv', content }
+//   GET    /api/workspace/leads/export      -> { filename, contentType: 'text/csv', content, rows }: owners, or staff when
+//                                           an owner allows it (settings.staffLeadExport); every export is audited
+//                                           (showroom_leads_export: who, when, how many rows); 10 a day per person
+//   GET    /api/workspace/leads/exports     owner -> { exports: [{ at, by, role, rows }] } (the last 20)
 //   GET    /api/workspace/leads/:id         -> { lead } (with designs, sends and timeline; marks it read)
 //   PATCH  /api/workspace/leads/:id         { status?, staffNotes? } -> { lead }
 //   DELETE /api/workspace/leads/:id         -> { ok, removed: { designs, unlinked, sends } } (audited)
@@ -181,13 +184,35 @@ export default function routes(ctx) {
       handler: (rc) => ({ counts: leads.counts(rc.tenant.id) }),
     },
     {
+      // The whole customer list in one file (audit 2026-10: any staff member could take it silently):
+      // owners only unless an owner allows staff, every export recorded, and a daily limit.
       method: 'GET',
       path: '/api/workspace/leads/export',
       auth: 'staff',
+      rateLimit: { name: 'lead-export', max: 10, windowMs: 24 * HOUR, by: 'user' },
+      handler: (rc) => {
+        if (rc.memberRole !== 'owner' && !rc.tenant.settings?.staffLeadExport) {
+          throw new HttpError(403, 'Only an owner can export the lead list. An owner can allow staff to in Workspace > Team.', { code: 'export_owner_only' });
+        }
+        const content = leads.csv(rc.tenant.id);
+        const rows = leads.counts(rc.tenant.id).total;
+        audit(db, { admin: rc.user, action: 'showroom_leads_export', detail: { tenantId: rc.tenant.id, rows, role: rc.memberRole }, at: ctx.now() });
+        rc.res.setHeader('Cache-Control', 'no-store');
+        return { filename: `${rc.tenant.slug}-leads-${new Date(ctx.now()).toISOString().slice(0, 10)}.csv`, contentType: 'text/csv', content, rows };
+      },
+    },
+    {
+      method: 'GET',
+      path: '/api/workspace/leads/exports',
+      auth: 'owner',
       handler: (rc) => ({
-        filename: `${rc.tenant.slug}-leads-${new Date(ctx.now()).toISOString().slice(0, 10)}.csv`,
-        contentType: 'text/csv',
-        content: leads.csv(rc.tenant.id),
+        exports: db
+          .prepare("SELECT at, admin_email, detail FROM admin_audit WHERE action = 'showroom_leads_export' AND json_extract(detail, '$.tenantId') = ? ORDER BY id DESC LIMIT 20")
+          .all(rc.tenant.id)
+          .map((r) => {
+            const d = JSON.parse(r.detail || '{}');
+            return { at: r.at, by: r.admin_email, role: d.role ?? null, rows: Number(d.rows ?? 0) };
+          }),
       }),
     },
     {

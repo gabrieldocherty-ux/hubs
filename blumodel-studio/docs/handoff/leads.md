@@ -53,7 +53,7 @@ privacy-showroom; `workspace`: leads, lead, lead-design-3d; `admin`: admin-compa
   "Sent to" links, keeps account-owned designs (unlinked); audited in `admin_audit` as
   `showroom_lead_delete` with ids and counts only. `GET /:id/designs/:designId` → the whole doc for
   the view-only 3D (`#/studio/leads/<id>/design/<designId>`).
-- CSV export: one row per person (first seen, last active, status, name, email, phone, designs, sent,
+- CSV export (**owners only** unless an owner turns on `settings.staffLeadExport` in Workspace > Team; every export is audited as `showroom_leads_export` with who, when and how many rows, owners see the last 20 under Leads via `GET /api/workspace/leads/exports`; 10 a day per person): one row per person (first seen, last active, status, name, email, phone, designs, sent,
   the latest send's postal code/budget/timeline/notes, staff notes, consent), `csvCell`-escaped.
 
 ## Us (Admin > Companies)

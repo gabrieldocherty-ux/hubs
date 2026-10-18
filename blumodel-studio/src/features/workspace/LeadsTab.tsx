@@ -7,7 +7,7 @@ import { hrefFor, navigate } from '../../lib/router';
 import { useCatalog } from '../../store/useCatalog';
 import { useDesignStore } from '../../store/useDesignStore';
 import type { DesignDoc } from '../../types';
-import { LEAD_STATUSES, saveText, when, wsApi, type Lead, type LeadCounts, type LeadDesign, type LeadDetail as LeadDetailWire, type LeadEvent, type LeadStatus } from './api';
+import { LEAD_STATUSES, saveText, when, wsApi, type Lead, type LeadCounts, type LeadDesign, type LeadDetail as LeadDetailWire, type LeadEvent, type LeadStatus, type LeadExport } from './api';
 import { useWorkspace } from './context';
 import './leads.css';
 
@@ -51,8 +51,38 @@ export default function LeadsTab({ sub }: { sub: string }) {
   return id ? <LeadDetail key={id} id={id} /> : <Inbox />;
 }
 
+/** Owners: the last exports of the lead list (who, when, how many people). */
+function RecentExports({ bump }: { bump: number }) {
+  const [list, setList] = useState<LeadExport[] | null>(null);
+  useEffect(() => {
+    wsApi
+      .leadExports()
+      .then((r) => setList(r.exports))
+      .catch(() => setList([]));
+  }, [bump]);
+  if (!list) return null;
+  return (
+    <section className="ws-card ws-exports" aria-label="Recent exports">
+      <h2>Recent exports of this list</h2>
+      {list.length === 0 ? (
+        <p className="fine">Nobody has exported the lead list yet. Every export is recorded here.</p>
+      ) : (
+        <ul>
+          {list.map((e) => (
+            <li key={`${e.at}-${e.by}`}>
+              <b>{e.by}</b> ({e.role === 'owner' ? 'owner' : 'staff'}) exported {e.rows} {e.rows === 1 ? 'person' : 'people'} · {when(e.at)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function Inbox() {
-  const { refreshBadge } = useWorkspace();
+  const { refreshBadge, owner, tenant } = useWorkspace();
+  const canExport = owner || !!tenant.settings.staffLeadExport;
+  const [exportsBump, setExportsBump] = useState(0);
   const toast = useDesignStore((s) => s.toast);
   const [status, setStatus] = useState<LeadStatus | ''>('');
   const [sent, setSent] = useState<'' | 'yes' | 'no'>('');
@@ -96,6 +126,7 @@ function Inbox() {
     try {
       const r = await wsApi.exportLeads();
       saveText(r.filename, r.content, r.contentType);
+      setExportsBump((n) => n + 1);
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'The export didn’t work.', 'warn');
     } finally {
@@ -118,9 +149,13 @@ function Inbox() {
           </p>
         </div>
         <div className="ws-actions">
-          <button type="button" className="btn" onClick={() => void exportCsv()} disabled={busy || !counts?.total}>
-            {busy ? 'Exporting…' : 'Export CSV'}
-          </button>
+          {canExport ? (
+            <button type="button" className="btn" onClick={() => void exportCsv()} disabled={busy || !counts?.total} title="Every export is recorded, and owners can see who exported the list">
+              {busy ? 'Exporting…' : 'Export CSV'}
+            </button>
+          ) : (
+            <span className="fine">Only an owner can export this list.</span>
+          )}
         </div>
       </div>
       <div className="ws-filters ws-lead-filters">
@@ -212,6 +247,7 @@ function Inbox() {
           Show more
         </button>
       )}
+      {owner && <RecentExports bump={exportsBump} />}
     </div>
   );
 }

@@ -157,7 +157,7 @@ export default [
     path: '#/studio/leads',
     as: 'showroom-owner',
     waitFor: ['.ws-lead-table tbody tr', '.ws-filters'],
-    expectText: ['Everyone who used your showroom', 'Riley Okafor', 'Morgan Lee', 'Sam Patel', 'Export CSV'],
+    expectText: ['Everyone who used your showroom', 'Riley Okafor', 'Morgan Lee', 'Sam Patel', 'Export CSV', 'Recent exports of this list'],
     check: async (h) => {
       const t = await h.evaluate(() => ({
         head: [...document.querySelectorAll('.ws-lead-table th')].map((th) => th.textContent.trim()),
@@ -198,6 +198,21 @@ export default [
       await page(h);
     },
   }),
+  {
+    // Staff can't download the whole list unless an owner allows it (protect, 2026-10).
+    name: 'leads-staff-no-export',
+    host: 'demo',
+    path: '#/studio/leads',
+    as: 'showroom-staff',
+    waitFor: ['.ws-lead-table tbody tr'],
+    expectText: ['Everyone who used your showroom', 'Only an owner can export this list.'],
+    check: async (h) => {
+      const has = await h.evaluate(() => [...document.querySelectorAll('button')].some((b) => b.textContent.includes('Export CSV')));
+      if (has) throw new Error('staff are offered Export CSV');
+      const status = await h.evaluate(async () => (await fetch('/api/workspace/leads/export', { credentials: 'same-origin' })).status);
+      if (status !== 403) throw new Error(`a staff export answered ${status}`);
+    },
+  },
   ...[
     { suffix: '', viewport: 'desktop', colorScheme: 'light' },
     { suffix: '-phone-dark', viewport: 'phone', colorScheme: 'dark' },

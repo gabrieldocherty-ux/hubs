@@ -476,3 +476,16 @@
 .ws-dup .btn {
   min-height: 44px;
 }
+
+/* Owners: who exported the lead list (protect, 2026-10). */
+.ws-exports ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: var(--ink-2);
+}
+.ws-exports h2 {
+  font-size: 1rem;
+  margin: 0;
+}
