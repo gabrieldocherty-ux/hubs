@@ -79,9 +79,9 @@ function disk(dir) {
 
 /**
  * @param {{ db: any, config: any, now: () => number, startedAt: number, health: any,
- *   logFile?: string | null, appDir?: string, home?: string | null }} deps
+ *   logFile?: string | null, appDir?: string, home?: string | null, sitesSwitch?: any }} deps
  */
-export function systemStatus({ db, config, now, startedAt, health, logFile = process.env.BLUMODEL_LOG_FILE || null, appDir, home = serverHome() }) {
+export function systemStatus({ db, config, now, startedAt, health, logFile = process.env.BLUMODEL_LOG_FILE || null, appDir, home = serverHome(), sitesSwitch = null }) {
   const t = now();
   const memory = config.DB_PATH === ':memory:';
   const dbFile = memory ? null : path.resolve(config.DB_PATH);
@@ -160,5 +160,6 @@ export function systemStatus({ db, config, now, startedAt, health, logFile = pro
     llm: { configured: !!config.llmEnabled },
     log: recentLogProblems(logFile),
     updates: updateStatus({ home }),
+    sites: sitesSwitch ? sitesSwitch.state() : { on: true, since: null, by: null, via: null },
   };
 }

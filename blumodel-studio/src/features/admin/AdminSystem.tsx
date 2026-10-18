@@ -8,6 +8,7 @@ import { adminApi } from './api';
 import type { SystemStatus } from './types';
 import { Notice, Pill, Section, bytes, dateTime, duration, useLoad, yesNo } from './ui';
 import UpdatesCard from './UpdatesCard';
+import SitesCard from './SitesCard';
 
 const FAILURE_LABEL: Record<string, string> = {
   not_enabled: 'Stripe not on here (503)',
@@ -20,6 +21,22 @@ function PaymentsState({ p }: { p: SystemStatus['payments'] }) {
   if (p.provider === 'stripe') return <Pill tone={p.stripeMode === 'live' ? 'ok' : 'warn'}>Stripe {p.stripeMode ?? ''}</Pill>;
   if (p.provider === 'demo') return <Pill tone="warn">Demo (no real money)</Pill>;
   return <Pill tone="bad">Off</Pill>;
+}
+
+/** The encrypted off-site copies (server/ops/offsite.mjs), when the server reports them. */
+function OffsiteState({ o }: { o: SystemStatus['backups']['offsite'] }) {
+  if (!o) return <>—</>;
+  if (!o.configured) return <Pill tone="warn">Not set up</Pill>;
+  return (
+    <>
+      {o.problem || o.lastError ? <Pill tone="bad">Problem</Pill> : o.stale ? <Pill tone="warn">over two days old</Pill> : <Pill tone="ok">OK</Pill>}{' '}
+      {o.lastSuccessAt ? `last ${dateTime(o.lastSuccessAt)}${o.lastBytes ? `, ${bytes(o.lastBytes)}` : ''}` : 'none made yet'}
+      {o.copies ? ` · ${o.copies} kept` : ''}
+      <div className="adm-note mono">{o.dir}</div>
+      {(o.problem || o.lastError) && <div className="adm-note">{o.problem ?? o.lastError}</div>}
+      {!o.passphraseSet && <div className="adm-note">BACKUP_PASSPHRASE is not set, so no copy can be made.</div>}
+    </>
+  );
 }
 
 export default function AdminSystem() {
@@ -44,6 +61,7 @@ export default function AdminSystem() {
           </button>
         </div>
       </div>
+      <SitesCard sites={s.sites} onChange={(sites) => setData({ ...s, sites })} />
       <Notice>
         Keys and secrets are shown only as set or not set: this page never receives their values. They live in <code>blumodel.env</code> on the server and are edited there by hand, then the server is restarted.
       </Notice>
@@ -84,6 +102,10 @@ export default function AdminSystem() {
             <dt>Last backup</dt>
             <dd>
               {s.backups.lastAt ? dateTime(s.backups.lastAt) : s.backups.enabled ? 'None yet' : '—'} {backupsStale && <Pill tone="warn">over a day old</Pill>}
+            </dd>
+            <dt>Off-site copies</dt>
+            <dd>
+              <OffsiteState o={s.backups.offsite} />
             </dd>
             <dt>Disk free</dt>
             <dd>

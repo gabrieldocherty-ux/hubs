@@ -27,6 +27,7 @@ import { createImageTickets } from './tenancy/images.mjs';
 import { createSiteResolver } from './tenancy/hosts.mjs';
 import { showroomIndexHtml, unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
 import { requestOrigin } from './tenancy/hosts.mjs';
+import { createSitesSwitch, maintenanceGate, maintenancePage, switchFileFor } from './ops/sitesSwitch.mjs';
 
 /**
  * What a lapsed or suspended showroom still answers (everything else is a 503): the app's config,
@@ -59,9 +60,9 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   const limiter = createRateLimiter({ now, enabled: config.RATE_LIMITS !== 'off' });
   const sessions = createSessionStore({ db, config, now });
   const auth = createAuthService({ db });
-  const files = createFileService({ db, config, now, auth });
   // Two-factor sign-in: required for BluModel admins, optional for everyone else.
   const mfa = createMfaStore({ db, now });
+  const files = createFileService({ db, config, now, auth });
   // In production the demo brands never show, even if a demo seed was forced in (seed --force-demo).
   const brands = createBrandService({ db, files, hideDemo: !config.SHOW_DEMO_BRANDS });
   // Seams the billing and contractor packages register into (BUILD_PLAN §13.2).
@@ -82,9 +83,11 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   // Each paid month adds its render credits, once per invoice.
   const credits = createCredits({ db, now });
   showroomBilling.onMonthPaid((tenantId, { invoiceRef, at }) => credits.grantMonth(tenantId, invoiceRef, { at }));
-  const leads = createLeadService({ db, now });
   // ...and a refunded or disputed month takes back what is left of them.
   showroomBilling.onReversal((tenantId, { lotId, cents, note }) => credits.revokeLot(tenantId, lotId, cents, { note }));
+  const leads = createLeadService({ db, now });
+  // The site-wide on/off switch (ops/sitesSwitch.mjs): the server face, Admin > System, `blumodel sites`.
+  const sitesSwitch = createSitesSwitch({ db, file: switchFileFor(config.DB_PATH), now, log });
 
   /**
    * The client's real address. With TRUST_PROXY=1 AND a loopback peer (cloudflared on this
@@ -113,18 +116,20 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
     services: { auth, mfa, files, products, brands, events, webhooks, billing, pricing, contractors, tenants, showroomBilling, credits, leads, imageTickets: createImageTickets({ now }) },
     /** Foundation internals (sessions, limiter, clientIp, sites). Feature packages shouldn't need these. */
     internal: { sessions, limiter, clientIp, sites },
+    /** Every site on or off (maintenance): ops/sitesSwitch.mjs. */
+    sitesSwitch,
     /** When this app was made (GET /api/health's uptime) and what the startup checks found. */
     startedAt: now(),
     health: { integrity: /** @type {null | { ok: boolean, problems: string[] }} */ (null), shuttingDown: false },
     /** Periodic housekeeping; index.mjs runs it every 10 minutes. */
     maintenance() {
       sessions.purgeExpired();
+      mfa.purgeExpired();
       try {
         tenants.refreshAll();
         credits.expire();
       } catch (err) {
         log.warn?.(`tenants: status refresh or credit expiry failed: ${err?.message ?? err}`);
-      mfa.purgeExpired();
       }
       limiter.prune();
       const tmp = path.join(config.UPLOAD_DIR, 'tmp');
@@ -200,6 +205,16 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
       const site = sites.resolve(req);
       req.blumodelSite = site;
       const isApi = url.pathname === '/api' || url.pathname.startsWith('/api/');
+      // Every site switched off (maintenance): a calm 503 on every host, except what an admin needs to
+      // switch it back on, the health check and Stripe's webhooks (ops/sitesSwitch.mjs).
+      if (!sitesSwitch.isOn()) {
+        const g = maintenanceGate({ method: req.method, pathname: url.pathname, siteKind: site.kind, isAdmin: () => sessions.currentUser(req)?.role === 'admin' });
+        if (g !== 'pass') {
+          res.setHeader('Retry-After', '600');
+          if (g === 'api') throw Object.assign(new HttpError(503, 'BluModel Studio is offline for a short while for maintenance. Please try again in a few minutes.', { code: 'maintenance' }), { retryAfter: 600 });
+          return sendPage(res, 503, maintenancePage({ hostname: site.hostname }));
+        }
+      }
       if (site.kind === 'unknown') {
         if (isApi || req.method !== 'GET') throw new HttpError(404, 'There’s no showroom at this address.', { code: 'unknown_host' });
         return sendPage(res, 404, unknownHostPage(site.hostname));

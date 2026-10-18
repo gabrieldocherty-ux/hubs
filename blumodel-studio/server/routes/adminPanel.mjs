@@ -13,6 +13,7 @@
 //   POST /api/admin/contractors/:id/verify {verified}   the Verified badge on their brand page
 //   GET  /api/admin/system                         health and setup, secrets as yes/no only
 //   POST /api/admin/system/update-now              leave the Update now trigger for the automatic update
+//   POST /api/admin/system/sites {on}              every site on, or off for maintenance (ops/sitesSwitch.mjs)
 //   GET  /api/admin/audit?actor=&action=&from=&to=&page=
 //
 // Every route is admin-only (the router answers 401 / 403 before the handler runs), every write
@@ -114,9 +115,9 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/role',
       auth: 'admin',
-      rateLimit: WRITE,
       // Money or access: the password and 2FA code again within REAUTH_MINUTES.
       reauth: true,
+      rateLimit: WRITE,
       maxBytes: 2_048,
       params: { id: ID },
       handler: (rc) => {
@@ -135,9 +136,9 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/comp',
       auth: 'admin',
-      rateLimit: WRITE,
       // Money or access: the password and 2FA code again within REAUTH_MINUTES.
       reauth: true,
+      rateLimit: WRITE,
       maxBytes: 4_096,
       params: { id: ID },
       handler: (rc) => {
@@ -208,9 +209,9 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/disable',
       auth: 'admin',
-      rateLimit: WRITE,
       // Money or access: the password and 2FA code again within REAUTH_MINUTES.
       reauth: true,
+      rateLimit: WRITE,
       maxBytes: 4_096,
       params: { id: ID },
       handler: (rc) => {
@@ -248,9 +249,9 @@ export default function routes(ctx) {
       method: 'POST',
       path: '/api/admin/users/:id/delete',
       auth: 'admin',
-      rateLimit: DESTROY,
       // Money or access: the password and 2FA code again within REAUTH_MINUTES.
       reauth: true,
+      rateLimit: DESTROY,
       maxBytes: 2_048,
       params: { id: ID },
       handler: (rc) => {
@@ -306,7 +307,21 @@ export default function routes(ctx) {
       rateLimit: READ,
       handler: (rc) => {
         rc.res.setHeader('Cache-Control', 'no-store');
-        return systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home: ctx.home === undefined ? serverHome() : ctx.home });
+        return systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home: ctx.home === undefined ? serverHome() : ctx.home, sitesSwitch: ctx.sitesSwitch });
+      },
+    },
+    {
+      // Admin > System > All websites: the site-wide switch (ops/sitesSwitch.mjs). OFF leaves the
+      // sales site's sign-in and Admin working for admins, so this same button turns it back on.
+      method: 'POST',
+      path: '/api/admin/system/sites',
+      auth: 'admin',
+      rateLimit: { name: 'admin-sites-switch', max: 30, windowMs: HOUR, by: 'user' },
+      maxBytes: 256,
+      handler: (rc) => {
+        if (typeof rc.body.on !== 'boolean') throw bad('on', 'Say whether the sites should be on (true or false).');
+        const state = ctx.sitesSwitch.set(rc.body.on, { via: 'admin', admin: rc.user });
+        return { sites: { on: state.on, since: state.since, by: state.by, via: state.via }, changed: state.changed };
       },
     },
     {

@@ -1,6 +1,6 @@
 /** The owner's admin panel API (server/routes/adminPanel.mjs). Writes go through `call` (CSRF header). */
 import { call } from '../../lib/api';
-import type { AuditPage, ContractorRow, Dashboard, PanelUser, SystemStatus, UpdatesStatus, UserDetail } from './types';
+import type { AuditPage, ContractorRow, Dashboard, PanelUser, SitesState, SystemStatus, UpdatesStatus, UserDetail } from './types';
 
 const enc = encodeURIComponent;
 const qs = (o: Record<string, string | number | undefined>) => {
@@ -27,6 +27,8 @@ export const adminApi = {
   /** The existing extra-models grant (server/routes/orders.mjs). */
   grantModels: (userId: string, models: number, note: string) => call<unknown>('POST', '/api/admin/model-grants', { userId, models, note }),
   system: () => call<SystemStatus>('GET', '/api/admin/system'),
+  /** Every site on, or off for maintenance (audited). */
+  setSites: (on: boolean) => call<{ sites: SitesState; changed: boolean }>('POST', '/api/admin/system/sites', { on }),
   /** Leaves the Update now trigger for the automatic update (audited). */
   updateNow: () => call<{ requested: true; alreadyPending: boolean; updates: UpdatesStatus }>('POST', '/api/admin/system/update-now'),
   audit: (f: { actor?: string; action?: string; from?: string; to?: string; page?: number }) => call<AuditPage>('GET', `/api/admin/audit${qs(f)}`),

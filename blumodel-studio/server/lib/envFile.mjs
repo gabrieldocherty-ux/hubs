@@ -54,6 +54,7 @@ export const ENV_FILE_KEYS = Object.freeze([
   'BACKUP_PASSPHRASE',
   'BACKUP_OFFSITE_DIR',
   'BACKUP_OFFSITE_KEEP',
+  'SERVER_FACE_PIN',
 ]);
 const ALLOWED = new Set(ENV_FILE_KEYS);
 

@@ -26,6 +26,8 @@ export const ACTION_LABEL: Record<string, string> = {
   tenant_create: 'Company created',
   tenant_quick_setup: 'Showroom made with Quick setup',
   update_now: 'Update now pressed',
+  sites_off: 'All websites turned off (maintenance)',
+  sites_on: 'All websites turned on',
   tenant_trial_extend: 'Trial extended',
   tenant_trial_end: 'Trial ended',
   tenant_trial_convert: 'Trial converted to a paying customer',

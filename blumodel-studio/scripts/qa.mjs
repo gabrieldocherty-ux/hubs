@@ -35,11 +35,13 @@
 //     check: async ({ evaluate, send, api, sleep, mouseDrag, touchDrag, pinch, tap, click, rectOf,
 //                     key, type, waitFor, waitForText, reload, goto, shot, note, data, me, viewport }) => {},
 //     ignoreConsole: [/known message/], knownIssue: 'why this route is expected to fail',
-//     host: 'demo', allowStatus: [503] }
+//     host: 'demo', allowStatus: [503], face: true }
 // `host: '<slug>'` opens the route on that showroom, http://<slug>.localhost:<port> (BASE_DOMAIN is
 // localhost here; docs/handoff/tenancy.md), instead of the sales site at 127.0.0.1. On a showroom
 // `as` is 'anon' or one of the seeded demo showroom's people: 'showroom-owner', 'showroom-staff',
 // 'showroom-visitor' (their session is made straight in the database, bound to that showroom).
+// `face: true` opens the server face instead (server/face/face.mjs: http://127.0.0.1:<port + 1>/, which QA
+// starts with SERVER_FACE_PORT=<port + 1>; path is '/'); `as` must be anon there.
 // `allowStatus` lists HTTP statuses the page itself may answer (an unknown host's 404, a lapsed
 // showroom's 503) without failing the route.
 // `as: 'fresh'` is a brand-new free customer made for that route alone. `knownIssue` reports a
@@ -54,9 +56,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { hashPassword } from '../server/auth/passwords.mjs';
+import { base32Encode, hotp, stepAt } from '../server/auth/totp.mjs';
 import { assertAllowedPort, isLocalUrl, killTree, launchBrowser, openPage, resolveViewport, sleep } from './qa-shot.mjs';
 
-import { base32Encode, hotp, stepAt } from '../server/auth/totp.mjs';
 // node:sqlite prints an ExperimentalWarning on load; it is expected here, so keep it out of the output.
 const { DatabaseSync } = await (async () => {
   const emit = process.emitWarning;
@@ -159,6 +161,7 @@ function validateRoute(r, file, seen) {
   if (!ROLES.includes(r.as ?? 'anon')) throw new Error(`${where}: as must be one of ${ROLES.join(', ')}.`);
   if (r.host !== undefined && (typeof r.host !== 'string' || !/^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/.test(r.host))) throw new Error(`${where}: host is a showroom slug like 'demo'.`);
   if (SHOWROOM_EMAIL[r.as] && !r.host) throw new Error(`${where}: as '${r.as}' needs host (the showroom).`);
+  if (r.face && (r.host || (r.as ?? 'anon') !== 'anon' || r.path !== '/')) throw new Error(`${where}: a face route is anon, path '/', no host.`);
   if (r.host && !(r.as === undefined || r.as === 'anon' || SHOWROOM_EMAIL[r.as])) throw new Error(`${where}: on a showroom, as is anon or showroom-owner|showroom-staff|showroom-visitor.`);
   for (const s of asList(r.allowStatus)) if (!Number.isInteger(s) || s < 400 || s > 599) throw new Error(`${where}: allowStatus takes HTTP error statuses.`);
   resolveViewport(r.viewport);
@@ -283,11 +286,11 @@ class Users {
     this.base = base;
     this.dbPath = dbPath;
     this.password = password;
+    /** The demo admin's two-factor secret for this run (SEED_TOTP_SECRET). */
+    this.totpSecret = totpSecret;
     this.anon = new Agent(base, 'anon');
     /** @type {Map<string, Promise<Agent>>} */
     this.byRole = new Map();
-    /** The demo admin's two-factor secret for this run (SEED_TOTP_SECRET). */
-    this.totpSecret = totpSecret;
     this.freshCount = 0;
   }
 
@@ -350,9 +353,6 @@ class Users {
     return a;
   }
 
-  async #make(role) {
-    if (role === 'contractor') {
-      await this.createUser(CONTRACTOR_EMAIL, 'Quinn Contractor');
   /**
    * A code from this run's demo-admin secret the server hasn't taken yet: a code works once, so
    * when this 30-second step was already used, the next step's code (still inside the window), or
@@ -369,6 +369,9 @@ class Users {
     }
   }
 
+  async #make(role) {
+    if (role === 'contractor') {
+      await this.createUser(CONTRACTOR_EMAIL, 'Quinn Contractor');
       const a = await this.login(CONTRACTOR_EMAIL, role);
       if (a.user.plan?.id !== 'contractor') {
         // A Contractor plan bought before the showroom pivot (nothing new is sold since): its
@@ -466,12 +469,12 @@ function makeApi(users, getFresh) {
   return {
     base: users.base,
     as,
-    get: (...a) => anon.get(...a),
-    post: (...a) => anon.post(...a),
-    put: (...a) => anon.put(...a),
     /** The seeded password, and a fresh two-factor code for the demo admin (routes that sign in through the UI). */
     password: users.password,
     totpCode: (email) => users.totpCode(email),
+    get: (...a) => anon.get(...a),
+    post: (...a) => anon.post(...a),
+    put: (...a) => anon.put(...a),
     patch: (...a) => anon.patch(...a),
     delete: (...a) => anon.delete(...a),
     sql: (q, ...p) => users.sql(q, ...p),
@@ -513,12 +516,12 @@ function serverEnv(extra) {
     'DIST_DIR',
     'ADMIN_EMAILS',
     'SEED_PASSWORD',
-    'PAYMENTS',
-    'DEMO_PAYMENTS',
-    'SHOW_DEMO_BRANDS',
     'SEED_TOTP_SECRET',
     'REAUTH_MINUTES',
     'ADMIN_SESSION_HOURS',
+    'PAYMENTS',
+    'DEMO_PAYMENTS',
+    'SHOW_DEMO_BRANDS',
     'BASE_DOMAIN',
     // Photoreal renders: the QA server never calls a real rendering service (it uses the demo).
     'ARCHITECT_AI_URL',
@@ -777,7 +780,7 @@ async function runRoute(env, pkg, route, outDir) {
     const agent = as === 'anon' || showroomAs ? null : as === 'fresh' ? await getFresh() : await users.agentFor(as);
     const me = as === 'anon' || showroomAs ? null : api.as(as);
     // A showroom route opens on <slug>.localhost; the sales site stays 127.0.0.1.
-    const pageBase = route.host ? base.replace('//127.0.0.1', `//${route.host}.localhost`) : base;
+    const pageBase = route.face ? env.faceBase : route.host ? base.replace('//127.0.0.1', `//${route.host}.localhost`) : base;
     let data = {};
     if (route.setup) {
       const out = await route.setup({ api, as, me, user: agent?.user ?? null, base, sleep, home: env.home });
@@ -798,7 +801,7 @@ async function runRoute(env, pkg, route, outDir) {
     if (route.reducedMotion) media.push({ name: 'prefers-reduced-motion', value: 'reduce' });
     if (route.colorScheme) media.push({ name: 'prefers-color-scheme', value: String(route.colorScheme) });
     if (media.length) await page.send('Emulation.setEmulatedMedia', { features: media });
-    await page.goto(`${pageBase}/?qa=1#${hashPath}`, routeTimeout);
+    await page.goto(route.face ? `${pageBase}/` : `${pageBase}/?qa=1#${hashPath}`, routeTimeout);
     if (!env.renderer) {
       env.renderer = await page
         .evaluate(() => {
@@ -951,18 +954,21 @@ export async function main(argv = process.argv.slice(2)) {
   const dist = path.resolve(ROOT, opts.dist ?? 'dist');
   if (!fs.existsSync(path.join(dist, 'index.html'))) throw new Error(`No built app at ${dist} (index.html missing). Run npm run build${opts.dist ? ` or vite build --outDir ${opts.dist}` : ''} first.`);
   if (!(await portFree(port))) throw new Error(`Port ${port} is already in use. QA starts its own server; stop whatever you started there (by PID), or pick another port.`);
+  // The server face (server/face/face.mjs) listens on the next port up.
+  const facePort = assertAllowedPort(port + 1);
+  if (!(await portFree(facePort))) throw new Error(`Port ${facePort} (the server face, --port + 1) is already in use; pick another --port.`);
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `blumodel-qa-${opts.pkg}-`));
   const logFile = path.join(tmp, 'server.log');
   const password = crypto.randomBytes(18).toString('base64url');
+  // The demo admin's two-factor secret for this run (admins must sign in with a code).
+  const totpSecret = base32Encode(crypto.randomBytes(20));
   const env = serverEnv({
     PORT: String(port),
     HOST: '127.0.0.1',
     DB_PATH: path.join(tmp, 'blumodel.db'),
     UPLOAD_DIR: path.join(tmp, 'uploads'),
     PAYMENTS: 'demo',
-  // The demo admin's two-factor secret for this run (admins must sign in with a code).
-  const totpSecret = base32Encode(crypto.randomBytes(20));
     DEMO_PAYMENTS: '1',
     // The routes use the seeded "(Demo)" brands, which a production server hides without this.
     SHOW_DEMO_BRANDS: '1',
@@ -973,16 +979,18 @@ export async function main(argv = process.argv.slice(2)) {
     DEMO_RENDERS: '1',
     ADMIN_EMAILS: DEMO_EMAIL.admin,
     SEED_PASSWORD: password,
-    // A temp home for Admin > System > Updates (server/admin/updates.mjs): routes write its
-    // auto-update.conf and logs/update-status.json in setup ({ home }). Never a real home.
-    BLUMODEL_HOME: path.join(tmp, 'home'),
-    ...(opts.dist ? { DIST_DIR: dist } : {}),
-  });
-  fs.mkdirSync(path.join(tmp, 'home', 'logs'), { recursive: true });
     SEED_TOTP_SECRET: totpSecret,
     // The admin package runs longer than the 10-minute re-authentication; the "Confirm it's you"
     // dialog has its own route (admin-reauth-dialog), which ages the session on purpose.
     REAUTH_MINUTES: '240',
+    // A temp home for Admin > System > Updates (server/admin/updates.mjs): routes write its
+    // auto-update.conf and logs/update-status.json in setup ({ home }). Never a real home.
+    BLUMODEL_HOME: path.join(tmp, 'home'),
+    SERVER_FACE_PORT: String(facePort),
+    SERVER_FACE_PIN: '',
+    ...(opts.dist ? { DIST_DIR: dist } : {}),
+  });
+  fs.mkdirSync(path.join(tmp, 'home', 'logs'), { recursive: true });
 
   let server = null;
   let browser = null;
@@ -1018,6 +1026,7 @@ export async function main(argv = process.argv.slice(2)) {
       users,
       base: server.base,
       home: path.join(tmp, 'home'),
+      faceBase: `http://127.0.0.1:${facePort}`,
       timeout: opts.timeout,
       serverErr,
       renderer: null,

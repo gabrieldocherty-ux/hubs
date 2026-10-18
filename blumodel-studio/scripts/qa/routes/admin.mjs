@@ -120,6 +120,54 @@ async function press(h, text) {
   await h.evaluate(() => document.querySelector('[data-qa-press]')?.removeAttribute('data-qa-press'));
 }
 
+/** The server face: every site listed, 44px buttons, AA contrast, the switch OFF through its confirm, then ON; Update now. */
+function faceRoutes() {
+  const out = [];
+  for (const scheme of ['light', 'dark']) {
+    for (const vp of ['desktop', 'phone']) {
+      out.push({
+        name: `server-face${vp === 'phone' ? '-phone' : ''}${scheme === 'dark' ? '-dark' : ''}`,
+        face: true,
+        path: '/',
+        viewport: vp,
+        colorScheme: scheme,
+        fullPage: true,
+        setup: async ({ home }) => seedUpdates(home),
+        expectText: ['BluModel Server', 'All websites are', 'ON', 'Sales site', 'demo.localhost', 'Deployed commit', 'Last backup', 'Last automatic update', 'Memory', 'Update now', 'Checks GitHub daily at 04:00'],
+        check: async (h) => {
+          const dark = await h.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark !== (scheme === 'dark')) throw new Error(`expected the ${scheme} scheme`);
+          const r = await h.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
+          if (r.sw > r.w + 1) throw new Error(`the face scrolls sideways: ${r.sw}px in ${r.w}px`);
+          const small = await h.evaluate(() => [...document.querySelectorAll('button')].filter((b) => b.offsetParent && b.getBoundingClientRect().height < 44).map((b) => b.textContent.trim()));
+          if (small.length) throw new Error(`buttons under 44px tall: ${small.join(', ')}`);
+          const c = await contrastAudit(h);
+          h.note(`contrast (${scheme}): ${c.checked} checked, ${c.fails.length} under AA`);
+          if (c.fails.length) throw new Error(`under WCAG AA: ${c.fails.slice(0, 5).map((f) => `"${f.text}" ${f.fg} on ${f.bg} = ${f.ratio}:1`).join('; ')}`);
+          await h.click('#toggle');
+          await h.waitForText(['Turn every website off?', 'Yes, turn them off']);
+          await h.shot('confirm');
+          await h.click('#yes');
+          await h.waitForText(['Turn all sites ON']);
+          const st = await h.evaluate(() => document.getElementById('state').textContent);
+          if (st !== 'OFF') throw new Error(`the face says ${st} after turning off`);
+          await h.shot('off');
+          await h.click('#toggle');
+          await h.waitForText(['Turn all sites OFF']);
+          // Update now: the same trigger as Admin > System; the page then follows the updater.
+          await h.click('#update');
+          await h.waitForText(['Waiting for the updater to start', 'Updating…']);
+          const trigger = path.join(h.home, 'logs', 'update-now.request');
+          if (!fs.existsSync(trigger)) throw new Error('Update now on the face left no trigger file');
+          await h.shot('updating');
+          fs.rmSync(trigger, { force: true });
+        },
+      });
+    }
+  }
+  return out;
+}
+
 /** The automatic update's files in QA's temp home: on at 04:00, the last release rolled back. */
 function seedUpdates(home) {
   if (!home) throw new Error('QA gave no temp home');
@@ -464,7 +512,33 @@ export default [
       await h.evaluate(() => document.getElementById('adm-updates')?.scrollIntoView({ block: 'start' }));
     },
   }),
+  // Admin > System > All websites: OFF (through its confirm) puts every site in maintenance - the
+  // health check says so - while this admin keeps the page; then ON again (the run goes on after).
+  ...four({
+    name: 'admin-sites-switch',
+    path: '#/admin/system',
+    as: 'admin',
+    expectText: ['All websites', 'Turn all sites off'],
+    extra: async (h) => {
+      await press(h, 'Turn all sites off');
+      await h.waitForText(['Yes, turn every site off', 'Nothing is deleted']);
+      await press(h, 'Yes, turn every site off');
+      await h.waitForText(['OFF (maintenance)', 'Turn all sites on']);
+      const health = await h.evaluate(() => fetch('/api/health').then((r) => r.json()));
+      if (health.maintenance !== true) throw new Error(`/api/health did not say maintenance: ${JSON.stringify(health)}`);
+      const page = await h.evaluate(() => fetch('/api/catalog/brands', { credentials: 'omit' }).then((r) => r.status));
+      if (page !== 503) throw new Error(`signed out, the API answered ${page}, not 503`);
+      await h.shot('off');
+      await press(h, 'Turn all sites on');
+      await h.waitForText(['Turn all sites off']);
+      const after = await h.evaluate(() => fetch('/api/health').then((r) => r.json()));
+      if (after.maintenance) throw new Error('still in maintenance after turning the sites on');
+    },
+  }),
   ...four({ name: 'admin-audit', path: '#/admin/audit', as: 'admin', setup: async ({ api }) => (await seedContractor(api), {}), expectText: ['Audit log', 'Complimentary plan given'] }),
+
+  // ── the server face (server/face/face.mjs, 127.0.0.1:<port + 1>) at 1440 and 390, light and dark ─
+  ...faceRoutes(),
 
   // ── entry point and access ───────────────────────────────────────────────
   {
@@ -514,6 +588,78 @@ export default [
       await h.waitUntil(() => location.hash === '#/admin/studio', 8000, 'the studio role being sent to its own tab');
       const tabs = await h.evaluate(() => [...document.querySelectorAll('.admin-tabs [role="tab"]')].map((e) => e.textContent.trim()));
       if (tabs.join(',') !== 'Studio') throw new Error(`the studio role sees tabs: ${tabs.join(', ')}`);
+    },
+  },
+
+  // ── two-factor sign-in (server/auth/mfa.mjs) ────────────────────────────
+  {
+    // The admin signs in through the page: password, then the code from the app; the admin pages open.
+    name: 'admin-signin-2fa',
+    path: '#/signin?next=%23%2Fadmin%2Foverview',
+    as: 'anon',
+    viewport: 'phone',
+    setup: async ({ api }) => ({ email: 'demo-admin@blumodel.test', password: api.password, code: await api.totpCode() }),
+    check: async (h) => {
+      await fill(h, 'input[type="email"]', h.data.email);
+      await fill(h, 'input[autocomplete="current-password"]', h.data.password);
+      await press(h, 'Sign in');
+      await h.waitForText(['Enter your code', 'Lost your phone? Use a recovery code']);
+      await touchTargets(h, '.auth-form');
+      await h.shot('code-step');
+      await fill(h, 'input[autocomplete="one-time-code"]', h.data.code);
+      await press(h, 'Sign in');
+      await h.waitUntil(() => location.hash === '#/admin/overview', 10_000, 'the admin overview after the code');
+      await h.waitForText(['Monthly recurring revenue']);
+      const me = await h.evaluate(async () => (await (await fetch('/api/auth/me', { credentials: 'same-origin' })).json()).user.mfa);
+      if (!me?.enabled || !me.verified) throw new Error(`after the code the session says ${JSON.stringify(me)}`);
+      await noSideScroll(h);
+    },
+  },
+  {
+    // A dangerous action after the re-authentication window: "Confirm it's you" asks for the password
+    // and a code, then the action goes through.
+    name: 'admin-reauth-dialog',
+    path: '#/admin/users',
+    as: 'admin',
+    setup: async ({ api }) => {
+      const email = (await api.as('fresh').user()).email;
+      // This admin last proved the password long ago (the QA server's window is 240 minutes).
+      api.sql("UPDATE sessions SET auth_at = 0 WHERE user_id = (SELECT id FROM users WHERE email = 'demo-admin@blumodel.test' AND tenant_id IS NULL)");
+      return { email, password: api.password, code: await api.totpCode() };
+    },
+    check: async (h) => {
+      await settle(h);
+      await openAccount(h, h.data.email);
+      await press(h, 'Create reset link');
+      await h.waitForText(['Confirm it’s you', 'and a code from your authenticator app']);
+      await touchTargets(h, '.reauth-form');
+      await h.shot('confirm');
+      await fill(h, '.reauth-form input[type="password"]', h.data.password);
+      await fill(h, '.reauth-form input[autocomplete="one-time-code"]', h.data.code);
+      await press(h, 'Confirm');
+      await h.waitForText(`Reset link for ${h.data.email}`, 10_000);
+    },
+  },
+  {
+    // An admin without two-factor sign-in sees only the enrolment, then the admin pages once it is on.
+    name: 'admin-enrol-2fa',
+    path: '#/admin/overview',
+    as: 'fresh',
+    setup: async ({ api }) => {
+      const me = await api.as('fresh').user();
+      api.sql("UPDATE users SET role = 'admin' WHERE id = ?", me.id);
+      return { password: api.password };
+    },
+    check: async (h) => {
+      await h.waitForText(['Turn on two-factor sign-in', 'Set it up now to open the admin pages']);
+      const status = await h.evaluate(async () => (await fetch('/api/admin/tenants', { credentials: 'same-origin' })).status);
+      if (status !== 403) throw new Error(`an admin without 2FA got ${status} from an admin route`);
+      await fill(h, '.mfa input[type="password"]', h.data.password);
+      await press(h, 'Set up');
+      await h.waitForText(['open this link in your authenticator app', 'Enter the 6-digit code']);
+      await touchTargets(h, '.mfa');
+      await noSideScroll(h);
+      await h.shot('enrol');
     },
   },
 
@@ -591,78 +737,6 @@ export default [
       await h.waitForText('License recorded: $1,250 CAD');
       await h.click('input[aria-label="Why the plan is complimentary"]');
       await h.type('Launch partner (QA)');
-  // ── two-factor sign-in (server/auth/mfa.mjs) ────────────────────────────
-  {
-    // The admin signs in through the page: password, then the code from the app; the admin pages open.
-    name: 'admin-signin-2fa',
-    path: '#/signin?next=%23%2Fadmin%2Foverview',
-    as: 'anon',
-    viewport: 'phone',
-    setup: async ({ api }) => ({ email: 'demo-admin@blumodel.test', password: api.password, code: await api.totpCode() }),
-    check: async (h) => {
-      await fill(h, 'input[type="email"]', h.data.email);
-      await fill(h, 'input[autocomplete="current-password"]', h.data.password);
-      await press(h, 'Sign in');
-      await h.waitForText(['Enter your code', 'Lost your phone? Use a recovery code']);
-      await touchTargets(h, '.auth-form');
-      await h.shot('code-step');
-      await fill(h, 'input[autocomplete="one-time-code"]', h.data.code);
-      await press(h, 'Sign in');
-      await h.waitUntil(() => location.hash === '#/admin/overview', 10_000, 'the admin overview after the code');
-      await h.waitForText(['Monthly recurring revenue']);
-      const me = await h.evaluate(async () => (await (await fetch('/api/auth/me', { credentials: 'same-origin' })).json()).user.mfa);
-      if (!me?.enabled || !me.verified) throw new Error(`after the code the session says ${JSON.stringify(me)}`);
-      await noSideScroll(h);
-    },
-  },
-  {
-    // A dangerous action after the re-authentication window: "Confirm it's you" asks for the password
-    // and a code, then the action goes through.
-    name: 'admin-reauth-dialog',
-    path: '#/admin/users',
-    as: 'admin',
-    setup: async ({ api }) => {
-      const email = (await api.as('fresh').user()).email;
-      // This admin last proved the password long ago (the QA server's window is 240 minutes).
-      api.sql("UPDATE sessions SET auth_at = 0 WHERE user_id = (SELECT id FROM users WHERE email = 'demo-admin@blumodel.test' AND tenant_id IS NULL)");
-      return { email, password: api.password, code: await api.totpCode() };
-    },
-    check: async (h) => {
-      await settle(h);
-      await openAccount(h, h.data.email);
-      await press(h, 'Create reset link');
-      await h.waitForText(['Confirm it’s you', 'and a code from your authenticator app']);
-      await touchTargets(h, '.reauth-form');
-      await h.shot('confirm');
-      await fill(h, '.reauth-form input[type="password"]', h.data.password);
-      await fill(h, '.reauth-form input[autocomplete="one-time-code"]', h.data.code);
-      await press(h, 'Confirm');
-      await h.waitForText(`Reset link for ${h.data.email}`, 10_000);
-    },
-  },
-  {
-    // An admin without two-factor sign-in sees only the enrolment, then the admin pages once it is on.
-    name: 'admin-enrol-2fa',
-    path: '#/admin/overview',
-    as: 'fresh',
-    setup: async ({ api }) => {
-      const me = await api.as('fresh').user();
-      api.sql("UPDATE users SET role = 'admin' WHERE id = ?", me.id);
-      return { password: api.password };
-    },
-    check: async (h) => {
-      await h.waitForText(['Turn on two-factor sign-in', 'Set it up now to open the admin pages']);
-      const status = await h.evaluate(async () => (await fetch('/api/admin/tenants', { credentials: 'same-origin' })).status);
-      if (status !== 403) throw new Error(`an admin without 2FA got ${status} from an admin route`);
-      await fill(h, '.mfa input[type="password"]', h.data.password);
-      await press(h, 'Set up');
-      await h.waitForText(['open this link in your authenticator app', 'Enter the 6-digit code']);
-      await touchTargets(h, '.mfa');
-      await noSideScroll(h);
-      await h.shot('enrol');
-    },
-  },
-
       await press(h, 'Make it complimentary');
       await h.waitForText('Complimentary monthly plan on.');
       await press(h, 'Launch showroom');

@@ -27,6 +27,7 @@ import { startupReport } from './ops/startup.mjs';
 import { integrityCheck, scheduleBackups } from './ops/backup.mjs';
 import { installLogFile } from './ops/logs.mjs';
 import { warmDist } from './http/static.mjs';
+import { facePort, startFace } from './face/face.mjs';
 
 /** How long open requests get to finish once shutdown starts. */
 const DRAIN_MS = 10_000;
@@ -95,6 +96,10 @@ server.listen(config.PORT, config.HOST, () => {
   for (const l of report.warn) console.warn(`Warning: ${l}`);
   if (config.BACKUPS === 'on') scheduleBackups({ db, config, log: console, paused: () => !integrity.ok });
   void warmDist(config.DIST_DIR);
+  // The server face: the on/off switch for every site, on 127.0.0.1 only (server/face/face.mjs).
+  const fp = facePort(process.env, { prod: config.PROD });
+  if (fp === null) console.warn('SERVER_FACE_PORT is not a port number: the server face is off.');
+  else startFace({ ctx, port: fp, pin: process.env.SERVER_FACE_PIN || null, log: console });
 });
 
 setInterval(() => ctx.maintenance(), 10 * 60_000).unref();

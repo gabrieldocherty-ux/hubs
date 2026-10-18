@@ -96,6 +96,7 @@ test('loadEnvFile: only the settings keys are applied; other keys are ignored an
       'PUBLIC_URL',
       'RENDER_CREDIT_CENTS',
       'RESEND_API_KEY',
+      'SERVER_FACE_PIN',
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET',
       'SUPPORT_EMAIL',
