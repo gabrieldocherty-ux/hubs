@@ -314,7 +314,7 @@ test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as b
   assert.deepEqual(u.Install.WantedBy, ['multi-user.target']);
   // Another home, port and node: all follow; unsafe values are refused rather than written.
   const other = parseUnit(systemdServerUnit({ home: '/opt/bms', port: 8899, node: '/usr/local/bin/node', user: 'bms' })).Service;
-  assert.deepEqual(other.ExecStart, ['/usr/local/bin/node --no-warnings /opt/bms/app/server/index.mjs --prod']);
+  assert.deepEqual(other.ExecStart, ['/usr/local/bin/node --max-old-space-size=384 --no-warnings /opt/bms/app/server/index.mjs --prod']);
   assert.ok(other.Environment.includes('PORT=8899') && other.Environment.includes('DB_PATH=/opt/bms/data/blumodel.db'));
   assert.deepEqual(other.User, ['bms']);
   assert.throws(() => systemdServerUnit({ home: '/srv/blu model' }), /absolute path/);
@@ -405,7 +405,7 @@ test('Windows update tasks: daily at the update time and a two-minute Update now
   const vbs = updateLauncherVbs({ node: 'C:\\Program Files\\nodejs\\node.exe' });
   assert.ok(/^[^\n]*\r\n/.test(vbs) && !/[^\r]\n/.test(vbs), 'CRLF');
   const q3 = '"'.repeat(3);
-  assert.ok(vbs.includes(`sh.Run(${q3}C:\Program Files\nodejs\node.exe"" --no-warnings ${q3} & dir & "\repo\blumodel-studio\scripts\host\update.mjs"" --home ${q3} & dir & ${q3}" & args, 0, True)`), vbs);
+  assert.ok(vbs.includes(String.raw`sh.Run(${q3}C:\Program Files\nodejs\node.exe"" --no-warnings ${q3} & dir & "\repo\blumodel-studio\scripts\host\update.mjs"" --home ${q3} & dir & ${q3}" & args, 0, True)`), vbs);
   assert.match(vbs, /WScript\.Quit code/, 'the task’s Last Run Result is the update’s exit code');
   assert.throws(() => updateLauncherVbs({ node: 'C:\\a"b\\node.exe' }), /no quotes/);
   if (WIN) {
