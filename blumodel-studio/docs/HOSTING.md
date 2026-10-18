@@ -12,9 +12,14 @@ dependencies. Everything 3D runs in each visitor's browser, so the machine only 
 API and one SQLite database. A Wyse 5070 (4-core Celeron J4105 or Pentium Silver J5005, 4-8 GB of
 RAM) is plenty.
 
+**The Wyse runs Windows 11 Pro.** Its step-by-step guide, written for a Claude Code session on the
+Wyse and for Gabe, is `WYSE_SETUP.md` at the top of the release branch (in the repo:
+`release/WYSE_SETUP.md`); this runbook has the background for both Windows and Linux.
+
 Everything needed comes from two places:
 
-- **GitHub** (public): the repo `gabrieldocherty-ux/hubs`, branch **`blumodel-studio`**, folder
+- **GitHub** (**private**, read on the server with a read-only deploy key: section 3, *The deploy
+  key*): the repo `gabrieldocherty-ux/hubs`, branch **`blumodel-studio`**, folder
   `blumodel-studio/`. The install scripts check out only that folder (plus the few files at the top
   of the repo, which git always includes). The branch is what the Wyse runs: section 10, *Publishing
   a version*, says how a version gets onto it, and it must exist before the install can start.
@@ -127,14 +132,25 @@ sudo ufw allow OpenSSH && sudo ufw enable
 
 ### On Linux (Ubuntu 24.04 / Debian 12)
 
-Over SSH, as your admin user:
+The repo is private, so the installer can't be downloaded anonymously. Copy it from a checkout you
+already have (your PC), by USB stick or `scp`, then over SSH, as your admin user:
 
 ```
-sudo apt-get update && sudo apt-get install -y curl
-curl -fsSLO https://raw.githubusercontent.com/gabrieldocherty-ux/hubs/blumodel-studio/blumodel-studio/scripts/host/install-linux.sh
+scp blumodel-studio/scripts/host/install-linux.sh you@wyse:~/      # from the PC's checkout
 sudo bash install-linux.sh --dry-run      # prints every command it would run; runs none
 sudo bash install-linux.sh
 ```
+
+It makes the deploy key first, prints its public key and waits for you to add it on GitHub (*The
+deploy key* below), then clones over SSH.
+
+**Disk encryption (recommended):** install Ubuntu with *Encrypt the new installation* (LUKS). The
+trade-off is plain: without TPM unlocking (Ubuntu 24.04 offers it only experimentally, and the Wyse
+5070's firmware is old), the passphrase must be typed at the box at every boot, so after a power cut
+the site stays down until someone does. Without encryption, a stolen box is a readable database. On
+Windows, BitLocker with the TPM has no such cost (WYSE_SETUP.md, step 2). Either way, `blumodel.env`
+is mode 600 for `blumodel`, the database and its backups are 600 in 750 folders, and the tunnel's
+account can read none of them.
 
 It takes a few minutes on a Wyse: **nothing is built there**. The branch carries each release
 prebuilt (section 10, *Publishing a version*), so there is no `npm ci`, no vite and no
@@ -173,7 +189,8 @@ The home it makes:
 | `/srv/blumodel-studio/logs/` | `server.log` |
 | `/srv/blumodel-studio/blumodel.env` | the private settings, mode 600, owned by `blumodel` |
 | `/srv/blumodel-studio/cloudflared.yml` | the tunnel's config |
-| `/srv/blumodel-studio/.cloudflared/` | the tunnel's credentials JSON, which you copy in (mode 700) |
+| `/srv/blumodel-studio/.cloudflared/` | the tunnel's credentials JSON, which you copy in (owned by `blumodel-tunnel`, mode 700; the file 600) |
+| `/srv/blumodel-studio/.ssh/` | the deploy key and GitHub's pinned host key (`blumodel`'s, 700) |
 | `/srv/blumodel-studio/auto-update.conf` | `AUTO_UPDATE=on\|off`, `AUTO_UPDATE_TIME=04:00` (not secret; section 10) |
 | `/etc/systemd/system/blumodel-studio.service`, `blumodel-tunnel.service` | the server and the tunnel |
 | `/etc/systemd/system/blumodel-update.service`, `.timer`, `.path` | the automatic update (section 10) |
@@ -181,7 +198,11 @@ The home it makes:
 The server unit runs `node --no-warnings /srv/blumodel-studio/app/server/index.mjs --prod` as
 `blumodel` with `NODE_ENV=production`, restarts it 5 seconds after any exit, and sandboxes it
 (`ProtectSystem=strict` with only `data/` and `logs/` writable, `ProtectHome`, `PrivateTmp`,
-`NoNewPrivileges`, no capabilities). On a small machine it also caps Node's heap
+`NoNewPrivileges`, no capabilities). The tunnel runs as its own account, **`blumodel-tunnel`**, which can
+read `cloudflared.yml` (root:blumodel-tunnel 640) and `.cloudflared/` (its own, 700) and nothing of
+the site's: the home is 751 (it may pass through, not list), `data/` and `logs/` are 750 `blumodel`,
+`blumodel.env` is 600 `blumodel`, and its unit makes them `InaccessiblePaths` besides. On a small
+machine the server unit also caps Node's heap
 (`--max-old-space-size=384`, `--heap-mb`) with `MemoryHigh=640M` and `MemoryMax=896M` above it.
 Read them with `systemctl cat blumodel-studio blumodel-tunnel`.
 
@@ -199,14 +220,19 @@ Read them with `systemctl cat blumodel-studio blumodel-tunnel`.
    `cloudflared-windows-amd64.msi` from Cloudflare's cloudflared releases page on GitHub. Then open a
    **new** PowerShell window, so `node`, `git` and `cloudflared` are on its PATH.
 
-2. Open **PowerShell as administrator** (needed for the startup task in the last step) and run:
+2. Get the installer. The repo is private: on a machine where the GitHub CLI is signed in (the Wyse
+   is), clone or update a checkout over HTTPS (`gh repo clone gabrieldocherty-ux/hubs
+   $env:USERPROFILE\hubs -- --branch blumodel-studio`, or `git -C $env:USERPROFILE\hubs pull --ff-only`);
+   otherwise copy `install-windows.ps1` from the PC by USB stick. Then open **PowerShell as
+   administrator** (needed for the startup tasks) and run:
 
    ```
-   $u = 'https://raw.githubusercontent.com/gabrieldocherty-ux/hubs/blumodel-studio/blumodel-studio/scripts/host/install-windows.ps1'
-   Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile "$env:TEMP\install-windows.ps1"
-   powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\install-windows.ps1" -DryRun
-   powershell -NoProfile -ExecutionPolicy Bypass -File "$env:TEMP\install-windows.ps1"
+   $s = "$env:USERPROFILE\hubs\blumodel-studio\scripts\host\install-windows.ps1"
+   powershell -NoProfile -ExecutionPolicy Bypass -File "$s" -DryRun
+   powershell -NoProfile -ExecutionPolicy Bypass -File "$s"
    ```
+
+   The dry run prints every step ("+ ...") and changes nothing.
 
 It checks Node 24+/git/cloudflared (when one is missing it prints the `winget` command and stops: it
 never installs software itself), clones just `blumodel-studio\` into
@@ -221,6 +247,28 @@ server through that task, so it keeps running after you sign out. Options: `-Hom
 registers the automatic update's two tasks (section 10), asking for the password once for each.
 
 The tunnel's task, `BluModelTunnel`, is registered at the cutover, not before.
+
+### The deploy key
+
+The repo is private. Each server reads it with its **own read-only deploy key**, never a person's
+credentials: the installer makes `<home>/.ssh/id_ed25519` once (Linux: the `blumodel` account's, the
+folder 700 and the key 600; Windows: under the home, restricted to the account the server's tasks run
+as, which the update also runs as), writes GitHub's published ed25519 host key into
+`<home>/.ssh/known_hosts` (SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU, pinned, never a
+first-use scan), prints the public key and waits:
+
+- Add it at github.com > gabrieldocherty-ux/hubs > Settings > Deploy keys > *Add deploy key*, title
+  the machine, and **leave "Allow write access" unchecked**. Or, where the GitHub CLI is signed in:
+  `gh repo deploy-key add <home>/.ssh/id_ed25519.pub --repo gabrieldocherty-ux/hubs --title Wyse`
+  (read-only unless `--allow-write`, which you never pass).
+- Press Enter; the installer checks GitHub accepts it, then clones `git@github.com:gabrieldocherty-ux/hubs.git`.
+
+The checkout's `core.sshCommand` names that key and that known_hosts file (`IdentitiesOnly`,
+`StrictHostKeyChecking=yes`), so the updates, by hand or automatic, use it and nothing else.
+**A checkout made over public HTTPS** (before the repo went private) is switched once: run the
+installer again, which does `git remote set-url origin git@github.com:gabrieldocherty-ux/hubs.git`
+and sets `core.sshCommand`. `--repo` / `-Repo` takes another address (an HTTPS one skips the key).
+To revoke a machine, delete its key on GitHub.
 
 ## 4. The settings file
 
@@ -670,8 +718,40 @@ it takes `sudo`; it rotates itself at 10 MB, 5 kept. `journalctl` needs `sudo` u
 the `adm` or `systemd-journal` group (Ubuntu's first user is in `adm`; Debian's isn't).
 
 Windows: `logs\server.log`, `logs\console.log` (the supervisor, and anything printed before the log
-opened), `logs\tunnel.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status with
+opened), `logs\tunnel.log`, `logs\update.log`, in `%USERPROFILE%\Projects\BluModelStudio`; status with
 `schtasks /Query /TN BluModelStudioServer /V /FO LIST` and http://127.0.0.1:8790/api/health.
+
+### Turning the sites off and on
+
+One switch takes **every** site offline at once (blumodel.studio, `www.`, the demo, every company's
+showroom and their own domains) and puts it back, with no restart: the tunnel and the server keep
+running. While it is OFF:
+
+- every page answers a calm "We'll be right back" (HTTP 503, `Retry-After`), and the API answers
+  503 `{ "code": "maintenance" }`;
+- still answering: `/api/health` (200, with `"maintenance": true`, so an update's health check
+  passes), `/api/config`, Stripe's webhooks (so billing stays right), and on the sales site the
+  sign-in and the app at **https://blumodel.studio/admin**: a signed-in admin has the whole sales site,
+  so Admin > System turns it back on from anywhere.
+
+The state is `data/sites-switch.json` (on, since, by, via), so it survives a restart; every change is
+in the admin audit log (*All websites turned off / on*, with where it came from). Three ways to flip it:
+
+- **The server face**, a page served by the same server process on **http://127.0.0.1:8799**
+  (`SERVER_FACE_PORT`; 0 turns it off), on the machine itself only: it refuses any peer that isn't
+  loopback and any `Host` that isn't a loopback name, and is never routed by the tunnel. One big ON /
+  OFF switch (a confirm before OFF), every site with a status dot (live, trial, lapsed, suspended: a
+  showroom's own suspension shows here), uptime, the deployed commit, the last backup, the last
+  automatic update and the server's memory, and **Update now** with its progress. Writes need the
+  page's token, and **`SERVER_FACE_PIN`** in `blumodel.env` when set (five wrong tries lock it for five
+  minutes). Windows: the **BluModel Server** shortcut on the desktop (the installer makes it).
+  Linux: the *BluModel Server* launcher (`/usr/share/applications`; `--desktop-autostart` opens it at
+  login, off by default to save RAM); headless, from your PC: `ssh -L 8799:127.0.0.1:8799 you@wyse`,
+  then http://127.0.0.1:8799.
+- **Admin > System > All websites** (admins only, audited, a confirm before OFF).
+- **`blumodel sites status|on|off`** (`scripts/host/blumodel.mjs`: `<home>\blumodel.cmd` on Windows,
+  `/usr/local/bin/blumodel` on Linux), for SSH and a Claude session: `--yes` skips the question,
+  `--pin` (or `BLUMODEL_FACE_PIN`) gives the PIN.
 
 ## 13. Disk and memory
 
@@ -739,6 +819,9 @@ All in the repo's `blumodel-studio/` folder. Each has the full details in its he
 | `scripts/host/install-windows.ps1` | install or repair on Windows 10/11 (`-DryRun`, `-HomeDir`, `-Branch`, `-Repo`, `-Port`, `-SkipTasks`) |
 | `scripts/host/update-linux.sh` | the update on Linux, with sudo (runs `update.mjs`) |
 | `scripts/host/update.mjs` | the update (`npm run host:update`; `--dry-run`, `--force`, `--no-pull`, `--home`, `--build`), and the unattended `--auto` (`--trigger-only`) |
+| `scripts/host/blumodel.mjs` | `blumodel sites status\|on\|off` (`--yes`, `--port`, `--pin`, `--json`): the sites switch from a shell |
+| `server/face/face.mjs`, `server/ops/sitesSwitch.mjs` | the server face on 127.0.0.1:8799 and the switch it flips |
+| `server/ops/winTools.mjs` | Windows: `blumodel.cmd`, `update-now.cmd` (the *Update BluModel* shortcut) and the shortcuts' icon, written by each deploy |
 | `scripts/host/autoupdate.mjs` | what `--auto` decides and records (the lock, the failed commit, `logs/update.log`, `logs/update-status.json`) |
 | `scripts/release.mjs` | `npm run release`: publish a prebuilt release to the branch (`--yes`, `--qa`, `--dry-run`, `--branch`, `--remote`) |
 | `scripts/host/build.mjs` | the build with the memory guard (`npm run host:build`; `--out`, `--dry-run`) |

@@ -129,8 +129,11 @@ test('release.mjs: bad options are a usage error; the release files it puts at t
   for (const f of TOP_FILES) assert.ok(fs.existsSync(path.join(ROOT, 'release', f)), f);
   const setup = fs.readFileSync(path.join(ROOT, 'release', 'WYSE_SETUP.md'), 'utf8');
   assert.match(setup.split('\n').slice(0, 4).join('\n'), /\*\*Run this\*\*/, 'leads with Run this');
-  for (const re of [/never open, read, print/i, /never force-push/i, /data\//, /Ask Gabe before the cutover/, /split-brain/i, /--rollback/, /blumodel-update\.timer/]) assert.match(setup, re);
+  for (const re of [/never open, read, print/i, /never force-push/i, /data\\/, /Ask Gabe before the cutover/, /split-brain/i, /--rollback/, /BluModelStudioUpdate/, /install-windows\.ps1/, /\[Gabe, admin\]/, /\[session\]/, /BitLocker/, /Open at login/, /BluModel Server/, /Update BluModel/, /deploy key/i]) assert.match(setup, re);
   assert.match(fs.readFileSync(path.join(ROOT, 'release', 'CLAUDE.md'), 'utf8'), /WYSE_SETUP\.md/);
+  // The last numbered step is the finish (shortcut, boot, memory, closing the session).
+  const steps = [...setup.matchAll(/^## (\d+)\. (.+)$/gm)];
+  assert.match(steps.at(-1)[2], /^Finish/);
   assert.equal(JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).scripts.release, 'node scripts/release.mjs');
   const src = fs.readFileSync(path.join(ROOT, 'scripts', 'release.mjs'), 'utf8');
   const pushes = src.split('\n').filter((l) => /\['push',/.test(l));
