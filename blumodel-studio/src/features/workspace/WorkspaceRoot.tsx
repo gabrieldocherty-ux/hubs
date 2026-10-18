@@ -5,6 +5,7 @@ import { ApiError } from '../../lib/api';
 import { hrefFor } from '../../lib/router';
 import { wsApi, type MemberRole, type StaffTenant } from './api';
 import { WorkspaceContext, type Workspace } from './context';
+import { TABS, tabOf } from './tabs';
 import './workspace.css';
 import './products.css';
 import './tabs.css';
@@ -16,24 +17,8 @@ const RendersTab = lazy(() => import('./RendersTab'));
 const TeamTab = lazy(() => import('./TeamTab'));
 const PlanTab = lazy(() => import('./PlanTab'));
 
-export type WorkspaceTab = 'showroom' | 'products' | 'leads' | 'renders' | 'team' | 'plan';
-
-export const TABS: [WorkspaceTab, string][] = [
-  ['showroom', 'Showroom'],
-  ['products', 'Products'],
-  ['leads', 'Leads'],
-  ['renders', 'Renders'],
-  ['team', 'Team'],
-  ['plan', 'Plan'],
-];
-
-/** `#/studio/<tab>/<rest>` → the tab ('' is the Showroom tab) and what follows it. */
-export function tabOf(rest: string): { tab: WorkspaceTab | null; sub: string } {
-  const [first = '', ...more] = rest.split('/');
-  if (!first) return { tab: 'showroom', sub: '' };
-  const tab = TABS.find(([k]) => k === first)?.[0] ?? null;
-  return { tab, sub: more.join('/') };
-}
+// The tab list lives in tabs.ts so it can be imported (and tested) without the tabs themselves.
+export { TABS, tabOf, type WorkspaceTab } from './tabs';
 
 type State = 'loading' | { error: string; code: 'sales' | 'not_staff' | 'other' } | { tenant: StaffTenant; role: MemberRole };
 

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { checkAccent, checkPrimary, contrast, normalizeHex, textOn } from '../colour';
 import { markupFor, parseDollars, sellFrom, workedPrices } from '../pricing';
-import { tabOf } from '../WorkspaceRoot';
+import { tabOf } from '../tabs';
 
 test('colours: hex codes, contrast ratios and the warnings the Showroom tab shows', () => {
   assert.equal(normalizeHex('#ABC'), '#aabbcc');
