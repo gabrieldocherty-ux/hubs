@@ -1082,13 +1082,17 @@ export default [
     }),
   }),
   phoneEditor('dark-editor-phone-catalog', (h) => openSheet(h, 'Add products')),
-  phoneEditor('dark-editor-phone-catalog-stores', async (h) => {
-    await openSheet(h, 'Add products');
-    await h.waitFor('.sheet #catalog-store');
-    await pick(h, '.sheet #catalog-store', 'home-depot');
-    await h.waitFor('.sheet .store-chip');
-    await h.sleep(400);
-  }),
+  {
+    // The store filter needs the retail library: BluModel staff only (src/catalog/retail.ts).
+    ...phoneEditor('dark-editor-phone-catalog-stores', async (h) => {
+      await openSheet(h, 'Add products');
+      await h.waitFor('.sheet #catalog-store');
+      await pick(h, '.sheet #catalog-store', 'home-depot');
+      await h.waitFor('.sheet .store-chip');
+      await h.sleep(400);
+    }),
+    as: 'studio',
+  },
   phoneEditor('dark-editor-phone-place', async (h) => {
     // A tap on a product arms it and shows "Tap the room to place" over the plan.
     await openSheet(h, 'Add products');

@@ -159,7 +159,14 @@ if ($UseSsh) {
   Must 'icacls' 'icacls.exe' @($SshDir, '/inheritance:r', '/grant:r', "${env:USERDOMAIN}\${env:USERNAME}:(OI)(CI)F")
   if ($DryRun) { Note '(a real run prints the public key here and waits until it works on GitHub)' }
   else {
-    function KeyWorks { & git -c "core.sshCommand=$SshCmd" ls-remote --heads $Repo $Branch *> $null; return ($LASTEXITCODE -eq 0) }
+    # Windows PowerShell 5.1 with ErrorActionPreference=Stop turns git's stderr ("Permission denied
+    # (publickey)" before the key is on GitHub) into a terminating NativeCommandError, which killed the
+    # first run before it could print the key. Relax it inside this probe only; the exit code decides.
+    function KeyWorks {
+      $ErrorActionPreference = 'Continue'
+      try { & git -c "core.sshCommand=$SshCmd" ls-remote --heads $Repo $Branch *> $null; return ($LASTEXITCODE -eq 0) }
+      catch { return $false }
+    }
     if (-not (KeyWorks)) {
       Write-Host ''
       Write-Host '    Add this key on GitHub: github.com/gabrieldocherty-ux/hubs > Settings > Deploy keys > Add deploy key,'
