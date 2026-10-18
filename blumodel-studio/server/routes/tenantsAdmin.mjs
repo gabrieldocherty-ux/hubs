@@ -12,6 +12,10 @@
 //   DELETE /api/admin/tenants/:id/hostnames/:hostname
 //   POST   /api/admin/tenants/:id/members              { email, name?, role } -> { member, invite? }
 //   DELETE /api/admin/tenants/:id/members/:userId
+//   POST   /api/admin/tenants/:id/export          re-authenticated -> { url, expiresAt }: a 2-minute, one-use link
+//   GET    /api/admin/tenants/:id/export?ticket=  the company's whole data as a zip, streamed (audited tenant_export)
+//   POST   /api/admin/tenants/:id/delete          { confirm: <slug> }, re-authenticated -> { deleted, counts }:
+//                                                 everything of the showroom, billing kept anonymised (audited)
 //   POST   /api/admin/tenants/:id/showroom-images     -> { url, expiresAt, run }: the showroom's picture
 //                                                      generator, opened in the admin's own browser with a
 //                                                      2-hour ticket (server/tenancy/images.mjs); ?auto=1
@@ -29,6 +33,8 @@ import { MEMBER_ROLES } from '../tenancy/service.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
 import { createMailer } from '../email/index.mjs';
 import { inviteAcceptEmail } from '../tenancy/emails.mjs';
+import crypto from 'node:crypto';
+import { companyCounts, deleteCompany, exportCompany } from '../tenancy/companyData.mjs';
 
 const HOSTNAME_PARAM = /^[A-Za-z0-9._-]{1,253}$/;
 const ID_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
@@ -60,7 +66,69 @@ export default function routes(ctx) {
     return out;
   }
 
+  /** One-use export links: ticket -> { tenantId, adminId, expiresAt } (a browser download can't answer "confirm it's you"). */
+  const exportTickets = new Map();
+
   return [
+    {
+      method: 'POST',
+      path: '/api/admin/tenants/:id/export',
+      auth: 'admin',
+      reauth: true,
+      body: 'none',
+      params: { id: ID_PARAM },
+      handler: (rc) => {
+        const t = mustGet(rc.params.id);
+        for (const [k, v] of exportTickets) if (v.expiresAt < ctx.now()) exportTickets.delete(k);
+        const ticket = crypto.randomBytes(24).toString('base64url');
+        const expiresAt = ctx.now() + 2 * 60_000;
+        exportTickets.set(ticket, { tenantId: t.id, adminId: rc.user.id, expiresAt });
+        rc.res.setHeader('Cache-Control', 'no-store');
+        return { url: `/api/admin/tenants/${encodeURIComponent(t.id)}/export?ticket=${ticket}`, expiresAt, counts: companyCounts(db, t.id) };
+      },
+    },
+    {
+      method: 'GET',
+      path: '/api/admin/tenants/:id/export',
+      auth: 'admin',
+      params: { id: ID_PARAM },
+      handler: async (rc) => {
+        const t = mustGet(rc.params.id);
+        const ticket = String(rc.query.get('ticket') ?? '');
+        const held = exportTickets.get(ticket);
+        exportTickets.delete(ticket);
+        if (!held || held.tenantId !== t.id || held.adminId !== rc.user.id || held.expiresAt < ctx.now()) {
+          throw new HttpError(403, 'That export link has expired. Start the export again.', { code: 'export_ticket_invalid' });
+        }
+        log(rc, 'tenant_export', t, { counts: companyCounts(db, t.id) });
+        const day = new Date(ctx.now()).toISOString().slice(0, 10);
+        rc.res.writeHead(200, {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${t.slug}-data-${day}.zip"`,
+          'Cache-Control': 'no-store',
+        });
+        await exportCompany(ctx, t, rc.res, { origin: from(rc), now: ctx.now() });
+        rc.sent = true;
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/tenants/:id/delete',
+      auth: 'admin',
+      reauth: true,
+      params: { id: ID_PARAM },
+      maxBytes: 1_024,
+      rateLimit: { name: 'tenant-delete', max: 10, windowMs: 3_600_000, by: 'user' },
+      handler: (rc) => {
+        const t = mustGet(rc.params.id);
+        if (t.isDemo) throw new HttpError(409, 'The demo showroom can’t be deleted.', { code: 'demo_tenant' });
+        if (str(rc.body?.confirm, 100).toLowerCase() !== t.slug) throw new HttpError(400, `Type the showroom’s address, ${t.slug}, to confirm.`, { field: 'confirm' });
+        const counts = deleteCompany(ctx, t);
+        // Counts only: the company's people were pseudonymised in this log as it went.
+        audit(db, { admin: rc.user, action: 'tenant_delete', detail: { tenantId: t.id, slug: t.slug, counts }, at: ctx.now() });
+        return { deleted: true, counts };
+      },
+    },
     {
       method: 'GET',
       path: '/api/admin/tenants',

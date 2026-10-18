@@ -19,6 +19,9 @@
 //                shown to the team as "possible duplicate of <name>" until they merge it or keep it
 //                separate (duplicate_dismissed_at). The unique email / phone indexes now cover only
 //                leads that aren't duplicates, so a duplicate can hold the same address.
+//   protect-005  deleted_tenant_billing: when a company is deleted (server/tenancy/companyData.mjs),
+//                its receipts and licenses are kept here for the tax records, with amounts, dates,
+//                the provider's reference and the slug only (no names, notes, emails or phones).
 
 import { rebuildTable } from './tenancy.mjs';
 
@@ -94,6 +97,29 @@ export const steps = [
         CREATE UNIQUE INDEX tenant_leads_email ON tenant_leads(tenant_id, email) WHERE email <> '' AND duplicate_of IS NULL;
         CREATE UNIQUE INDEX tenant_leads_phone ON tenant_leads(tenant_id, phone_key) WHERE phone_key <> '' AND duplicate_of IS NULL;
         CREATE INDEX tenant_leads_duplicate ON tenant_leads(duplicate_of) WHERE duplicate_of IS NOT NULL;
+      `);
+    },
+  },
+  {
+    id: 'protect-005-deleted-tenant-billing',
+    up(db) {
+      db.exec(`
+        CREATE TABLE deleted_tenant_billing (
+          id TEXT PRIMARY KEY,
+          tenant_id TEXT NOT NULL,
+          tenant_slug TEXT NOT NULL,
+          kind TEXT NOT NULL,
+          amount_cents INTEGER NOT NULL,
+          currency TEXT NOT NULL,
+          provider TEXT NOT NULL,
+          ref TEXT,
+          period_start TEXT,
+          period_end INTEGER,
+          paid_how TEXT,
+          status TEXT,
+          created_at INTEGER NOT NULL,
+          deleted_at INTEGER NOT NULL);
+        CREATE INDEX deleted_tenant_billing_tenant ON deleted_tenant_billing(tenant_id);
       `);
     },
   },

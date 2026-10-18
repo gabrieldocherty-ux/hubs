@@ -504,7 +504,78 @@ function CompanyView({ id, onBack, invite, clearInvite }: { id: string; onBack: 
         <TeamSection t={t} onChange={() => void reload()} />
       </div>
       <QueueSection data={usage.data} error={usage.error} />
+      <LeavingSection t={t} onDeleted={onBack} />
     </div>
+  );
+}
+
+/**
+ * A company that leaves: Export all data (a zip of everything, made on the server and downloaded
+ * here) and Delete company (typed confirmation). Both ask "Confirm it's you" when the password and
+ * code weren't given in the last 10 minutes.
+ */
+function LeavingSection({ t, onDeleted }: { t: AdminTenant; onDeleted: () => void }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ tone: 'ok' | 'bad'; text: string } | null>(null);
+  const [typed, setTyped] = useState('');
+  const [open, setOpen] = useState(false);
+  const exportAll = async () => {
+    setBusy('export');
+    setMsg(null);
+    try {
+      const r = await showroomApi.exportLink(t.id);
+      // A one-use link that lasts 2 minutes: the browser downloads the zip from it.
+      window.location.assign(r.url);
+      setMsg({ tone: 'ok', text: `The download has started: ${r.counts.leads ?? 0} leads, ${r.counts.designs ?? 0} designs, ${r.counts.products ?? 0} products and ${r.counts.files ?? 0} uploads. Recorded in the audit log.` });
+    } catch (x) {
+      setMsg({ tone: 'bad', text: errorText(x, 'The export didn’t start.') });
+    } finally {
+      setBusy(null);
+    }
+  };
+  const remove = async () => {
+    setBusy('delete');
+    setMsg(null);
+    try {
+      await showroomApi.deleteCompany(t.id, typed.trim());
+      onDeleted();
+    } catch (x) {
+      setMsg({ tone: 'bad', text: errorText(x, 'It wasn’t deleted.') });
+      setBusy(null);
+    }
+  };
+  return (
+    <Section title="If the company leaves" id="adm-leaving">
+      {msg && <Notice tone={msg.tone}>{msg.text}</Notice>}
+      <p className="adm-note">Give the company its data first: settings, team, products, every design and lead (also as a spreadsheet), receipts, credits, renders and every upload, as one zip.</p>
+      <div className="adm-inline">
+        <button type="button" className="btn" disabled={busy !== null} onClick={() => void exportAll()}>
+          {busy === 'export' ? 'Preparing…' : 'Export all data'}
+        </button>
+        {!t.isDemo && !open && (
+          <button type="button" className="btn danger" disabled={busy !== null} onClick={() => setOpen(true)}>
+            Delete company…
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="adm-callout">
+          <b>Delete {t.name} for good?</b>
+          <p className="adm-note">
+            The showroom, its web addresses, team, showroom accounts, products, designs, leads, renders, credits and uploads are deleted and can’t be brought back. Receipts and licenses are kept for the tax records without names or contact details. Type <b>{t.slug}</b> to confirm.
+          </p>
+          <div className="adm-inline">
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} aria-label="Type the showroom’s address to confirm deletion" autoComplete="off" />
+            <button type="button" className="btn danger" disabled={busy !== null || typed.trim().toLowerCase() !== t.slug} onClick={() => void remove()}>
+              {busy === 'delete' ? 'Deleting…' : 'Delete company permanently'}
+            </button>
+            <button type="button" className="btn" disabled={busy !== null} onClick={() => (setOpen(false), setTyped(''))}>
+              Keep it
+            </button>
+          </div>
+        </div>
+      )}
+    </Section>
   );
 }
 

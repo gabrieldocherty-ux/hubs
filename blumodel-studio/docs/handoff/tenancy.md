@@ -199,6 +199,9 @@ The staff open a lead's design at `lead.design.url` (`#/s/<token>` on the showro
 | POST | `/api/admin/tenants/:id/trial/convert` | | `{ tenant }`: live, trial cleared, everything kept; 409 `not_paid_up` with `missing: ['license'\|'monthly']` |
 | POST | `/api/admin/tenants/:id/showroom-images` | `?auto=1` | `{ url, expiresAt, run }`: the generator link (auto: starts at once) |
 | GET | `/api/admin/tenants/:id/showroom-images/:run` | | `{ state: 'waiting'\|'running'\|'done', uploads, made, failed, finishedAt, expiresAt }` (the generator posts `/api/showroom-images/done` with its ticket when it finishes) |
+| POST | `/api/admin/tenants/:id/export` | | re-authenticated: `{ url, expiresAt, counts }`, a 2-minute one-use link for that admin |
+| GET | `/api/admin/tenants/:id/export?ticket=` | | the company's whole data as a zip, streamed (server/tenancy/companyData.mjs; audited `tenant_export`) |
+| POST | `/api/admin/tenants/:id/delete` | `{ confirm: <slug> }` | re-authenticated: `{ deleted, counts }`. Everything of the showroom; receipts and licenses copied to `deleted_tenant_billing` without names (protect-005); people pseudonymised in the audit log; the demo refused (409 `demo_tenant`); audited `tenant_delete` |
 | GET | `/api/admin/sales-leads` | `?status=` | `{ leads: [{ id, company, name, phone, email, city, message, status: new\|contacted\|demo\|won\|lost, adminNotes, emailed, createdAt }], counts }` |
 | PATCH | `/api/admin/sales-leads/:id` | `{ status?, adminNotes? }` | `{ lead }` |
 

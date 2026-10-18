@@ -714,6 +714,47 @@ export default [
 
   // ── companies through the UI ─────────────────────────────────────────────
   {
+    // A company that leaves: the export link (a zip of its data) and Delete company with the typed slug.
+    name: 'admin-company-leaving',
+    path: '#/admin/companies',
+    as: 'admin',
+    check: async (h) => {
+      await settle(h);
+      const tag = Date.now().toString(36);
+      const name = `Leaving Co QA ${tag}`;
+      await press(h, 'New company');
+      await h.click('input[placeholder="Acme Kitchens"]');
+      await h.type(name);
+      await press(h, 'Create company');
+      await h.waitForText(['If the company leaves', 'Export all data', 'Delete company…']);
+      const slug = await h.evaluate(async (n) => (await (await fetch('/api/admin/tenants', { credentials: 'same-origin' })).json()).tenants.find((x) => x.name === n)?.slug, name);
+      if (!slug) throw new Error('the new company is not listed');
+      // The zip itself, as the button's link gets it.
+      const zip = await h.evaluate(async (n) => {
+        const t = (await (await fetch('/api/admin/tenants', { credentials: 'same-origin' })).json()).tenants.find((x) => x.name === n);
+        const link = await (await fetch(`/api/admin/tenants/${t.id}/export`, { method: 'POST', credentials: 'same-origin', headers: { 'X-BluModel': '1', 'Content-Type': 'application/json' }, body: '{}' })).json();
+        const r = await fetch(link.url, { credentials: 'same-origin' });
+        const b = new Uint8Array(await r.arrayBuffer());
+        return { status: r.status, type: r.headers.get('content-type'), magic: [b[0], b[1]] };
+      }, name);
+      if (zip.status !== 200 || zip.type !== 'application/zip' || zip.magic[0] !== 0x50 || zip.magic[1] !== 0x4b) throw new Error(`the export answered ${JSON.stringify(zip)}`);
+      await press(h, 'Delete company…');
+      await h.waitForText(`Delete ${name} for good?`);
+      await touchTargets(h, '#adm-leaving');
+      const before = await h.evaluate(() => [...document.querySelectorAll('button')].find((b) => b.textContent.includes('Delete company permanently'))?.disabled);
+      if (before !== true) throw new Error('Delete is enabled before the address is typed');
+      await h.click('input[aria-label="Type the showroom’s address to confirm deletion"]');
+      await h.type(slug);
+      await h.shot('confirm');
+      await press(h, 'Delete company permanently');
+      await h.waitUntil(new Function(`return !document.body.innerText.includes(${JSON.stringify(`Delete ${name} for good?`)})`), 10_000, 'the company page to close');
+      const audit = await h.evaluate(async () => (await fetch('/api/admin/audit?action=tenant_delete', { credentials: 'same-origin' })).json());
+      if (!audit.entries?.some((e) => e.detail?.slug === slug)) throw new Error('the deletion is not in the audit log');
+      const still = await h.evaluate(async (n) => (await (await fetch('/api/admin/tenants', { credentials: 'same-origin' })).json()).tenants.some((x) => x.name === n), name);
+      if (still) throw new Error('the company is still listed');
+    },
+  },
+  {
     name: 'admin-company-lifecycle',
     path: '#/admin/companies',
     as: 'admin',
