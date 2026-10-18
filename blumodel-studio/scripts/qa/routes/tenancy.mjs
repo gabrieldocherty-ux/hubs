@@ -105,7 +105,7 @@ export default [
     host: 'demo',
     // A showroom has no device-only mode (a design there must reach the company): the visitor's own kitchen.
     as: 'showroom-visitor',
-    setup: async ({ api }) => ({ path: `#/k/${api.sql("SELECT id FROM projects WHERE tenant_id = 't_demo' ORDER BY name LIMIT 1")[0].id}` }),
+    setup: async ({ api }) => ({ path: `#/k/${api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE p.tenant_id = 't_demo' AND u.email = 'demo-visitor@blumodel.test' ORDER BY p.name LIMIT 1")[0].id}` }),
     viewport: v.viewport,
     ...(v.colorScheme ? { colorScheme: v.colorScheme } : {}),
     waitFor: ['.topbar', '.plan-view canvas'],
