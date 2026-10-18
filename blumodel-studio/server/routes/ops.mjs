@@ -1,6 +1,6 @@
 // Operations: the health check and robots.txt. Public, cheap, and nothing secret in either.
 //
-//   GET /api/health   { ok, version, uptimeSec, db }   503 when the database can't answer (or
+//   GET /api/health   { ok, version, uptimeSec, db, maintenance? }   503 when the database can't answer (or
 //                     failed its startup integrity check, db: 'corrupt'), or while shutting down
 //   GET /robots.txt   search engines may index the pages (the sales site, a showroom's pages), never
 //                     /api or /files; the known AI-training and AI-answer crawlers may take nothing.
@@ -79,6 +79,8 @@ export default function routes(ctx) {
           uptimeSec: Math.max(0, Math.floor((ctx.now() - ctx.startedAt) / 1000)),
           db: state,
           ...(ctx.health.shuttingDown ? { shuttingDown: true } : {}),
+          // Every site switched off (ops/sitesSwitch.mjs): the server itself is healthy, so still 200.
+          ...(ctx.sitesSwitch && !ctx.sitesSwitch.isOn() ? { maintenance: true } : {}),
         });
       },
     },
