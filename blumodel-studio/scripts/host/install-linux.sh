@@ -4,8 +4,9 @@
 # checks first and only does what is missing. docs/HOSTING.md is the runbook.
 #
 #   sudo bash install-linux.sh [--dry-run] [--home /srv/blumodel-studio] [--branch blumodel-studio]
-#                              [--repo https://github.com/gabrieldocherty-ux/hubs.git] [--port 8790]
+#                              [--repo git@github.com:gabrieldocherty-ux/hubs.git] [--port 8790]
 #                              [--auto-update-time 04:00] [--no-auto-update] [--heap-mb 384] [--build]
+#                              [--desktop-autostart]
 #
 # What it does, in order:
 #   1. checks the machine: root, Ubuntu or Debian with systemd, the CPU, the RAM, the disk
@@ -14,8 +15,16 @@
 #   3. the 'blumodel' system account (no login shell, home = the BluModel home) and the home:
 #      <home> (750), data/ and logs/ (750), .cloudflared/ (700), all owned by blumodel. The server's
 #      log and database files are mode 600 (blumodel's only): an admin reads them with sudo
-#   4. the code: a sparse, partial clone of just blumodel-studio/ on the branch into <home>/repo,
-#      or a fast-forward of the one already there (both as blumodel)
+#      The tunnel runs as its own account, 'blumodel-tunnel', which can read only its config and
+#      credentials: the home is 751 (it may pass through, not list), data/ and logs/ are 750
+#      blumodel, blumodel.env is 600 blumodel, and its unit makes them inaccessible besides
+#   4. the code, over SSH with a read-only DEPLOY KEY (the repo is private): <home>/.ssh/id_ed25519
+#      (made here once, blumodel's, 600; the .ssh folder 700), GitHub's published ed25519 host key
+#      pinned in <home>/.ssh/known_hosts (never a blind keyscan), and the public key printed for
+#      GitHub > hubs > Settings > Deploy keys (read-only). It waits for Enter, then checks the key
+#      works. A sparse, partial clone of just blumodel-studio/ on the branch into <home>/repo, or a
+#      fast-forward of the one already there (both as blumodel); a checkout made over public HTTPS
+#      is switched to SSH once. The checkout's core.sshCommand names the key, so the updates use it
 #   5. nothing is built: the branch carries the release prebuilt (dist/ and server/generated/, made
 #      by npm run release on a developer's machine), so there is no npm ci, no vite and no
 #      devDependencies here. --build (an emergency only) runs npm ci and scripts/host/build.mjs into
@@ -29,7 +38,11 @@
 #      <home>/app (keeping the old one as app.previous), writes the settings template only if there
 #      is no blumodel.env, starts the server and checks http://127.0.0.1:<port>/api/health
 #   8. cloudflared.yml (scripts/tunnel/setup-tunnel.mjs --validate, an offline check)
-#   9. prints what is left for you: the settings, the tunnel's credentials, the data, the cutover,
+#   9. the `blumodel` command (/usr/local/bin/blumodel: blumodel sites on|off|status) and the desktop
+#      launcher 'BluModel Server' (/usr/share/applications/blumodel-server.desktop, the server face at
+#      http://127.0.0.1:8799); --desktop-autostart also opens it at every desktop login (off by
+#      default: a browser costs RAM). Headless: ssh -L 8799:127.0.0.1:8799 you@wyse
+#  10. prints what is left for you: the settings, the tunnel's credentials, the data, the cutover,
 #      the wildcard DNS record for the showrooms
 # It never starts the tunnel, never opens blumodel.env or the tunnel's credentials, and never
 # copies anything from another machine.
@@ -43,7 +56,12 @@ umask 022
 
 HOME_DIR=/srv/blumodel-studio
 BRANCH=blumodel-studio
-REPO=https://github.com/gabrieldocherty-ux/hubs.git
+REPO=git@github.com:gabrieldocherty-ux/hubs.git
+# GitHub's published SSH host key (docs.github.com, "GitHub's SSH key fingerprints":
+# SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU), pinned rather than trusted on first use.
+GITHUB_HOST_KEY='github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
+TUNNEL_USER=blumodel-tunnel
+DESKTOP_AUTOSTART=0
 # Empty: the port this home already uses (its blumodel-studio.service), else 8790.
 PORT=
 # Where register-tasks writes the server unit (BLUMODEL_SERVER_UNIT_FILE is for the tests).
@@ -61,7 +79,7 @@ ARGS="$*"
 
 usage() {
   echo "Usage: sudo bash install-linux.sh [--dry-run] [--home /srv/blumodel-studio] [--branch blumodel-studio] [--repo <git url>] [--port 8790]"
-  echo "                                  [--auto-update-time HH:MM] [--no-auto-update] [--heap-mb 384] [--build]"
+  echo "                                  [--auto-update-time HH:MM] [--no-auto-update] [--heap-mb 384] [--build] [--desktop-autostart]"
 }
 
 while [ $# -gt 0 ]; do
@@ -75,6 +93,7 @@ while [ $# -gt 0 ]; do
     --no-auto-update) AUTO_UPDATE=0 ;;
     --heap-mb) HEAP_MB="${2:?--heap-mb needs a number of MB}"; shift ;;
     --build) BUILD=1 ;;
+    --desktop-autostart) DESKTOP_AUTOSTART=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -206,7 +225,7 @@ fi
 # -- 2. packages -------------------------------------------------------------
 say "Packages"
 NEED=()
-for p in ca-certificates curl gnupg git; do
+for p in ca-certificates curl gnupg git openssh-client; do
   dpkg -s "$p" >/dev/null 2>&1 || NEED+=("$p")
 done
 APT_UPDATED=0
@@ -217,7 +236,7 @@ if [ "${#NEED[@]}" -gt 0 ]; then
   apt_update
   run env DEBIAN_FRONTEND=noninteractive apt-get install -y "${NEED[@]}"
 else
-  note "ca-certificates, curl, gnupg, git: installed"
+  note "ca-certificates, curl, gnupg, git, openssh-client: installed"
 fi
 
 if [ "$(node_major)" -ge "$NODE_MAJOR" ]; then
@@ -256,15 +275,70 @@ if id -u "$SVC_USER" >/dev/null 2>&1; then
 else
   run useradd --system --user-group --home-dir "$HOME_DIR" --no-create-home --shell /usr/sbin/nologin --comment "BluModel Studio" "$SVC_USER"
 fi
-run install -d -m 0750 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR" "$HOME_DIR/data" "$HOME_DIR/logs"
-run install -d -m 0700 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR/.cloudflared"
+if id -u "$TUNNEL_USER" >/dev/null 2>&1; then
+  note "account $TUNNEL_USER: exists"
+else
+  run useradd --system --user-group --home-dir /nonexistent --no-create-home --shell /usr/sbin/nologin --comment "BluModel Studio tunnel" "$TUNNEL_USER"
+fi
+# 751: the tunnel's account may pass through the home to its own two files, never list it or read
+# data/, logs/ (750 blumodel) or blumodel.env (600 blumodel).
+run install -d -m 0751 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR"
+run install -d -m 0750 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR/data" "$HOME_DIR/logs"
+run install -d -m 0700 -o "$TUNNEL_USER" -g "$TUNNEL_USER" "$HOME_DIR/.cloudflared"
+run install -d -m 0700 -o "$SVC_USER" -g "$SVC_USER" "$HOME_DIR/.ssh"
+if [ -f "$HOME_DIR/blumodel.env" ]; then
+  run chown "$SVC_USER:$SVC_USER" "$HOME_DIR/blumodel.env"
+  run chmod 600 "$HOME_DIR/blumodel.env"
+fi
 
-# -- 4. the code -------------------------------------------------------------
+# -- 4. the deploy key, then the code ---------------------------------------------
+KEY="$HOME_DIR/.ssh/id_ed25519"
+KNOWN="$HOME_DIR/.ssh/known_hosts"
+SSH_CMD="ssh -i $KEY -o IdentitiesOnly=yes -o UserKnownHostsFile=$KNOWN -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519"
+case "$REPO" in
+  git@github.com:*|ssh://git@github.com/*) USE_SSH=1 ;;
+  *) USE_SSH=0 ;;
+esac
+if [ "$USE_SSH" = 1 ]; then
+  say "The deploy key (read-only access to the private repo)"
+  write_file "$KNOWN" 0600 "$GITHUB_HOST_KEY"
+  if [ "$DRY_RUN" = 0 ]; then chown "$SVC_USER:$SVC_USER" "$KNOWN"; fi
+  if [ -f "$KEY" ]; then
+    note "deploy key: $KEY (exists)"
+  else
+    run runuser -u "$SVC_USER" -- ssh-keygen -q -t ed25519 -N "" -C "blumodel-deploy@$(hostname)" -f "$KEY"
+  fi
+  # Does GitHub take it? (git ls-remote reads nothing but the branch names.)
+  key_works() { svc_q env GIT_SSH_COMMAND="$SSH_CMD" git ls-remote --heads "$REPO" "$BRANCH" >/dev/null 2>&1; }
+  if [ "$DRY_RUN" = 1 ]; then
+    note "(a real run prints the public key here and waits until it works on GitHub)"
+  elif ! key_works; then
+    echo
+    echo "    Add this key on GitHub: github.com/gabrieldocherty-ux/hubs > Settings > Deploy keys > Add deploy key,"
+    echo "    title 'Wyse', READ-ONLY (leave 'Allow write access' unchecked):"
+    echo
+    echo "    $(cat "$KEY.pub")"
+    echo
+    for _ in 1 2 3 4 5; do
+      if [ -t 0 ]; then read -r -p "    Press Enter once it is added... " _ || true; else sleep 20; fi
+      if key_works; then break; fi
+      echo "    GitHub doesn't accept it yet (not added, or added to another repo)."
+    done
+    key_works || die "The deploy key still doesn't work. Add $KEY.pub as a read-only deploy key of gabrieldocherty-ux/hubs, then run this again."
+  fi
+  if [ "$DRY_RUN" = 0 ]; then note "deploy key: accepted by GitHub"; fi
+fi
+
 say "The code: $REPO, branch $BRANCH, only blumodel-studio/"
 if [ -d "$REPO_DIR/.git" ]; then
   if [ "$DRY_RUN" = 0 ]; then
     CHANGES="$(svc_q git -C "$REPO_DIR" status --porcelain --untracked-files=no)"
     [ -z "$CHANGES" ] || die "The checkout in $REPO_DIR has local changes (git -C $REPO_DIR status). Undo them, then run this again."
+  fi
+  if [ "$USE_SSH" = 1 ]; then
+    # Once: a checkout made over public HTTPS switches to the private repo's SSH address.
+    if [ "$DRY_RUN" = 1 ] || [ "$(svc_q git -C "$REPO_DIR" remote get-url origin)" != "$REPO" ]; then as_svc_in "$REPO_DIR" git remote set-url origin "$REPO"; fi
+    as_svc_in "$REPO_DIR" git config core.sshCommand "$SSH_CMD"
   fi
   as_svc_in "$REPO_DIR" git sparse-checkout set blumodel-studio
   as_svc_in "$REPO_DIR" git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
@@ -275,7 +349,12 @@ if [ -d "$REPO_DIR/.git" ]; then
   fi
   as_svc_in "$REPO_DIR" git merge --ff-only "origin/$BRANCH"
 else
-  as_svc_in "$HOME_DIR" git clone --filter=blob:none --sparse --branch "$BRANCH" --single-branch "$REPO" "$REPO_DIR"
+  if [ "$USE_SSH" = 1 ]; then
+    as_svc_in "$HOME_DIR" git -c core.sshCommand="$SSH_CMD" clone --filter=blob:none --sparse --branch "$BRANCH" --single-branch "$REPO" "$REPO_DIR"
+    as_svc_in "$REPO_DIR" git config core.sshCommand "$SSH_CMD"
+  else
+    as_svc_in "$HOME_DIR" git clone --filter=blob:none --sparse --branch "$BRANCH" --single-branch "$REPO" "$REPO_DIR"
+  fi
   as_svc_in "$REPO_DIR" git sparse-checkout set blumodel-studio
 fi
 if [ "$DRY_RUN" = 1 ]; then COMMIT="<commit>"; else COMMIT="$(svc_q git -C "$REPO_DIR" rev-parse --short HEAD)"; fi
@@ -317,8 +396,40 @@ say "The tunnel's config (written, checked offline; the tunnel is NOT started)"
 if ! run node "$APP_SRC/scripts/tunnel/setup-tunnel.mjs" --home "$HOME_DIR" --port "$PORT" --validate; then
   note "WARNING: the tunnel config did not validate; see the lines above (docs/HOSTING.md, \"Move the tunnel\")."
 fi
+# Readable by the tunnel's account (and root) only.
+if [ "$DRY_RUN" = 1 ] || [ -f "$HOME_DIR/cloudflared.yml" ]; then
+  run chown "root:$TUNNEL_USER" "$HOME_DIR/cloudflared.yml"
+  run chmod 640 "$HOME_DIR/cloudflared.yml"
+fi
+if [ "$DRY_RUN" = 0 ]; then
+  for f in "$HOME_DIR"/.cloudflared/*.json; do
+    if [ -f "$f" ]; then chown "$TUNNEL_USER:$TUNNEL_USER" "$f"; chmod 600 "$f"; fi
+  done
+fi
 
-# -- 9. what is left ---------------------------------------------------------
+# -- 9. the blumodel command and the desktop launcher --------------------------
+say "The blumodel command and the 'BluModel Server' launcher"
+write_file /usr/local/bin/blumodel 0755 "#!/bin/sh
+# blumodel sites on|off|status: every site on, or off for maintenance (docs/HOSTING.md).
+exec node $APP_SRC/scripts/host/blumodel.mjs \"\$@\""
+DESKTOP_ENTRY="[Desktop Entry]
+Type=Application
+Name=BluModel Server
+Comment=Turn every BluModel Studio site on or off, and update it (this machine only)
+Exec=xdg-open http://127.0.0.1:8799/
+Icon=$HOME_DIR/app/dist/icons/icon-192.png
+Terminal=false
+Categories=Network;"
+if [ -d /usr/share/applications ] || [ "$DRY_RUN" = 1 ]; then write_file /usr/share/applications/blumodel-server.desktop 0644 "$DESKTOP_ENTRY"; fi
+if [ "$DESKTOP_AUTOSTART" = 1 ]; then
+  run install -d -m 0755 /etc/xdg/autostart
+  write_file /etc/xdg/autostart/blumodel-server.desktop 0644 "$DESKTOP_ENTRY"
+else
+  if [ "$DRY_RUN" = 0 ]; then rm -f /etc/xdg/autostart/blumodel-server.desktop; fi
+  note "not opened at login (--desktop-autostart does that; a browser costs RAM)"
+fi
+
+# -- 10. what is left --------------------------------------------------------
 TUNNEL_ID="064671cd-a658-4240-8626-c697b9f148ac"
 if [ "$AUTO_UPDATE" = 0 ]; then UPDATE_SHOWN="automatic updates are OFF (--no-auto-update), and so is Admin > System > Update now"; else UPDATE_SHOWN="automatic, daily at ${UPDATE_TIME:-04:00}, and Admin > System > Update now applies a release at once"; fi
 say "Installed. What is left (docs/HOSTING.md has each step):"
@@ -329,7 +440,7 @@ cat <<EOF
   1. Settings: sudo nano $HOME_DIR/blumodel.env   (paste a NEW Stripe key here, nowhere else),
      then: sudo systemctl restart blumodel-studio
   2. The tunnel's credentials: copy $TUNNEL_ID.json yourself into $HOME_DIR/.cloudflared/, then
-       sudo chown $SVC_USER:$SVC_USER $HOME_DIR/.cloudflared/$TUNNEL_ID.json
+       sudo chown $TUNNEL_USER:$TUNNEL_USER $HOME_DIR/.cloudflared/$TUNNEL_ID.json
        sudo chmod 600 $HOME_DIR/.cloudflared/$TUNNEL_ID.json
   3. The data from the old machine: docs/MOVING_DATA.md
   4. The cutover (stop the old machine's server and tunnel FIRST, then):
@@ -339,6 +450,8 @@ cat <<EOF
      (docs/ONBOARDING_A_COMPANY.md, "Once: Cloudflare")
   Updates: $UPDATE_SHOWN.
     By hand: sudo bash $APP_SRC/scripts/host/update-linux.sh   Log: journalctl -u blumodel-update; $HOME_DIR/logs/update.log
+  Every site on or off: blumodel sites status|on|off, or the 'BluModel Server' launcher
+    (http://127.0.0.1:8799; headless: ssh -L 8799:127.0.0.1:8799 you@this-machine).
   Logs: sudo tail -f $HOME_DIR/logs/server.log   sudo journalctl -u blumodel-studio -u blumodel-tunnel -f
 EOF
 if [ "$DRY_RUN" = 1 ]; then echo; echo "Dry run: nothing was installed, written, started or changed."; fi

@@ -73,6 +73,8 @@ export const PUBLIC_URL = 'https://blumodel.studio';
 /** Linux: the default home, the system account that owns it and runs the server, and the units. */
 export const LINUX_HOME = '/srv/blumodel-studio';
 export const SERVICE_USER = 'blumodel';
+/** The tunnel's own account: it reads its config and credentials, never the database or the settings. */
+export const TUNNEL_USER = 'blumodel-tunnel';
 export const SERVER_UNIT = 'blumodel-studio.service';
 export const TUNNEL_UNIT = 'blumodel-tunnel.service';
 export const SYSTEMD_DIR = '/etc/systemd/system';
@@ -92,8 +94,29 @@ export const DEFAULT_UPDATE_TIME = '04:00';
  * (SQLite's cache, buffers) and stop a leak from taking the whole 4 GB machine.
  */
 export const DEFAULT_HEAP_MB = 384;
-/** Where a new machine gets the code (public), and the branch it deploys. */
-export const REPO_URL = 'https://github.com/gabrieldocherty-ux/hubs.git';
+/**
+ * Where a machine gets the code, and the branch it deploys. The repo is PRIVATE: the install scripts
+ * clone it over SSH with a read-only deploy key (docs/HOSTING.md, "The deploy key"); --repo / -Repo
+ * gives another address.
+ */
+export const REPO_URL = 'git@github.com:gabrieldocherty-ux/hubs.git';
+/**
+ * GitHub's published ed25519 SSH host key (docs.github.com, "GitHub's SSH key fingerprints":
+ * SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU). The installers pin it in the home's
+ * .ssh/known_hosts instead of trusting whatever answers the first time.
+ */
+export const GITHUB_HOST_KEY = 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl';
+
+/**
+ * The checkout's core.sshCommand: the home's deploy key and pinned known_hosts, nothing else (no
+ * agent keys, no prompt for an unknown host). Forward slashes, so Git for Windows' ssh reads it too.
+ * @param {string} home
+ */
+export function deploySshCommand(home) {
+  const h = String(home).replace(/\\/g, '/').replace(/\/$/, '');
+  if (/[\s"']/.test(h)) throw new Error(`The home's path can't have spaces or quotes for ssh: ${home}`);
+  return `ssh -i ${h}/.ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=${h}/.ssh/known_hosts -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519`;
+}
 export const DEPLOY_BRANCH = 'blumodel-studio';
 
 /** Path functions for `platform`'s paths, whatever this machine is (tests make Linux files on Windows). */
@@ -206,14 +229,18 @@ export const CLEARED_ENV = Object.freeze([
  * unless the file says DEMO_PAYMENTS=1).
  * start-server.cmd starts the server through its scheduled task `task` when the home's startup-tasks
  * file lists it (a machine nobody logs on to), else with wscript directly.
- * @param {{ node: string, port?: number | string, host?: string, task?: string }} o
+ * The server runs with node --max-old-space-size=<heapMb> (DEFAULT_HEAP_MB, 384): a small machine's
+ * memory cap, as the Linux unit has.
+ * @param {{ node: string, port?: number | string, host?: string, task?: string, heapMb?: number | string }} o
  */
-export function serverScripts({ node, port = DEFAULT_PORT, host = DEFAULT_HOST, task = SERVER_TASK }) {
+export function serverScripts({ node, port = DEFAULT_PORT, host = DEFAULT_HOST, task = SERVER_TASK, heapMb = DEFAULT_HEAP_MB }) {
   if (!node) throw new Error('serverScripts needs the node.exe path');
   const P = String(port);
   if (!/^\d{1,5}$/.test(P)) throw new Error(`Not a port: ${P}`);
   if (!/^[\w.:[\]-]+$/.test(host)) throw new Error(`Not a host: ${host}`);
   if (!/^[\w-]+$/.test(task)) throw new Error(`Not a task name: ${task}`);
+  const heap = Number(heapMb);
+  if (!Number.isInteger(heap) || heap < 128 || heap > 8192) throw new Error(`The heap must be 128-8192 MB (got ${heapMb})`);
   const listening = `netstat -ano -p tcp | findstr /R /C:":${P} .*LISTENING" >nul`;
   const run = `@echo off
 rem BluModel Studio home server supervisor: runs the server and restarts it when it exits.
@@ -241,7 +268,7 @@ ${listening} && goto busy
 "${node}" --no-warnings "%~dp0app\\server\\scripts\\rotate-log.mjs" "%~dp0logs\\console.log" >nul 2>&1
 echo [%date% %time%] starting on %HOST%:%PORT% >> logs\\console.log
 rem Absolute script path, so deploy-local can tell this server from other node processes.
-"${node}" --no-warnings "%~dp0app\\server\\index.mjs" --prod >> logs\\console.log 2>&1
+"${node}" --max-old-space-size=${heap} --no-warnings "%~dp0app\\server\\index.mjs" --prod >> logs\\console.log 2>&1
 echo [%date% %time%] server exited with code %errorlevel% >> logs\\console.log
 if exist stopped exit /b 0
 ping -n 6 127.0.0.1 >nul
@@ -375,6 +402,10 @@ TRIAL_CREDIT_CENTS=
 BACKUP_OFFSITE_DIR=
 BACKUP_PASSPHRASE=
 BACKUP_OFFSITE_KEEP=
+
+# Optional: a PIN for the server face (http://127.0.0.1:8799 on this machine only: every site on or
+# off, Update now) and 'blumodel sites on|off'. Empty: being on this machine is enough.
+SERVER_FACE_PIN=
 `;
   return eol(t, platform);
 }
@@ -791,12 +822,14 @@ WantedBy=multi-user.target
 
 /**
  * /etc/systemd/system/blumodel-tunnel.service: `cloudflared tunnel --config <home>/cloudflared.yml
- * run` as 'blumodel', after (and pulling in) the server, restarted 10 s after any exit. It is
+ * run` as its own account, 'blumodel-tunnel', which may read only cloudflared.yml (root:blumodel-tunnel
+ * 640) and .cloudflared/ (its own, 700): the database, uploads, logs and blumodel.env are
+ * InaccessiblePaths besides being another account's. After (and pulling in) the server, restarted 10 s after any exit. It is
  * installed DISABLED: enable it only at the cutover (docs/HOSTING.md), because two machines must
  * never serve the tunnel at the same time with different databases.
  * @param {{ home?: string, cloudflared?: string, user?: string }} [o]
  */
-export function systemdTunnelUnit({ home = LINUX_HOME, cloudflared = '/usr/bin/cloudflared', user = SERVICE_USER } = {}) {
+export function systemdTunnelUnit({ home = LINUX_HOME, cloudflared = '/usr/bin/cloudflared', user = TUNNEL_USER } = {}) {
   const L = homeLayout(unixPath(home, 'The home'), 'linux');
   unixPath(cloudflared, 'The cloudflared path');
   unixName(user, 'user name');
@@ -820,6 +853,8 @@ RestartSec=10
 TimeoutStopSec=30
 UMask=0077
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# Never the site's data or settings, whatever their permissions.
+InaccessiblePaths=-${L.data} -${L.logs} -${L.settings} -${L.home}/.ssh
 ${HARDENING}
 
 [Install]
@@ -900,10 +935,10 @@ WantedBy=paths.target
 
 /**
  * Every unit by file name: the server, the tunnel and the three update units.
- * @param {{ home?: string, node?: string, cloudflared?: string, user?: string, port?: number | string, host?: string, heapMb?: number, time?: string }} [o]
+ * @param {{ home?: string, node?: string, cloudflared?: string, user?: string, tunnelUser?: string, port?: number | string, host?: string, heapMb?: number, time?: string }} [o]
  */
 export function systemdUnits(o = {}) {
-  return { [SERVER_UNIT]: systemdServerUnit(o), [TUNNEL_UNIT]: systemdTunnelUnit(o), ...systemdUpdateUnits(o) };
+  return { [SERVER_UNIT]: systemdServerUnit(o), [TUNNEL_UNIT]: systemdTunnelUnit({ ...o, user: o.tunnelUser ?? TUNNEL_USER }), ...systemdUpdateUnits(o) };
 }
 
 const UPDATE_UNITS = [UPDATE_UNIT, UPDATE_TIMER, UPDATE_PATH_UNIT];

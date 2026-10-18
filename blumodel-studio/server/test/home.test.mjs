@@ -78,7 +78,7 @@ test('run-server.cmd: port 8790 on 127.0.0.1, settings from %~dp0blumodel.env on
   assert.deepEqual(run.match(/^set "?DEMO_PAYMENTS[^\r]*/gm), ['set "DEMO_PAYMENTS="']);
   for (const k of [...ENV_FILE_KEYS, 'PAYMENTS', 'NODE_ENV', 'NODE_OPTIONS', 'NODE_TLS_REJECT_UNAUTHORIZED', 'MISE_ENV_FILE']) assert.match(run, new RegExp(`^set "${k}="\\r$`, 'm'), k);
   assert.ok(CLEARED_ENV.includes('STRIPE_SECRET_KEY') && CLEARED_ENV.includes('ANTHROPIC_API_KEY'));
-  assert.match(run, /"C:\\Program Files\\nodejs\\node\.exe" --no-warnings "%~dp0app\\server\\index\.mjs" --prod >> logs\\console\.log 2>&1/);
+  assert.match(run, /"C:\\Program Files\\nodejs\\node\.exe" --max-old-space-size=384 --no-warnings "%~dp0app\\server\\index\.mjs" --prod >> logs\\console\.log 2>&1/);
   assert.match(run, /rotate-log\.mjs" "%~dp0logs\\console\.log"/);
   assert.match(s['start-hidden.vbs'], /sh\.Run "cmd \/c """ & dir & "\\run-server\.cmd""", 0, False/);
   assert.match(s['stop-server.cmd'], /echo\.> shutdown\.request/);

@@ -325,7 +325,7 @@ test('blumodel-studio.service: node server/index.mjs --prod from <home>/app as b
   assert.throws(() => systemdServerUnit({ port: '87 90' }), /Not a port/);
 });
 
-test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumodel, after and wanting the server and the network, restarted for ever, sandboxed', async () => {
+test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as its own account (blumodel-tunnel; the data, logs, settings and deploy key inaccessible), after and wanting the server and the network, restarted for ever, sandboxed', async () => {
   const { systemdTunnelUnit } = await import('../ops/home.mjs');
   const text = systemdTunnelUnit();
   assert.ok(!text.includes('\r'));
@@ -333,7 +333,13 @@ test('blumodel-tunnel.service: cloudflared with <home>/cloudflared.yml as blumod
   assert.deepEqual(u.Service.ExecStart, ['/usr/bin/cloudflared tunnel --config /srv/blumodel-studio/cloudflared.yml --no-autoupdate run']);
   assert.deepEqual(u.Unit.After, ['network-online.target blumodel-studio.service']);
   assert.deepEqual(u.Unit.Wants, ['network-online.target blumodel-studio.service']);
-  assert.deepEqual([u.Service.User, u.Service.Restart, u.Service.RestartSec], [['blumodel'], ['always'], ['10']]);
+  assert.deepEqual([u.Service.User, u.Service.Group, u.Service.Restart, u.Service.RestartSec], [['blumodel-tunnel'], ['blumodel-tunnel'], ['always'], ['10']]);
+  assert.deepEqual(u.Service.InaccessiblePaths, ['-/srv/blumodel-studio/data -/srv/blumodel-studio/logs -/srv/blumodel-studio/blumodel.env -/srv/blumodel-studio/.ssh']);
+  const { systemdUnits, TUNNEL_USER } = await import('../ops/home.mjs');
+  assert.equal(TUNNEL_USER, 'blumodel-tunnel');
+  const all = systemdUnits({ user: 'blumodel' });
+  assert.match(all['blumodel-studio.service'], /^User=blumodel$/m);
+  assert.match(all['blumodel-tunnel.service'], /^User=blumodel-tunnel$/m, 'the server’s account never runs the tunnel');
   for (const k of ['NoNewPrivileges', 'ProtectHome', 'PrivateTmp']) assert.deepEqual(u.Service[k], ['yes'], k);
   assert.deepEqual(u.Service.ProtectSystem, ['strict']);
   assert.equal(u.Service.ReadWritePaths, undefined, 'the tunnel writes nothing');
@@ -787,9 +793,19 @@ test('install-linux.sh --dry-run prints every step (apt repos, the account, the 
   for (const re of [
     /DRY RUN: every command is printed/,
     /\+ useradd --system --user-group --home-dir \/srv\/blumodel-dryrun --no-create-home --shell \/usr\/sbin\/nologin --comment BluModel\\ Studio blumodel/,
-    /\+ install -d -m 0750 -o blumodel -g blumodel \/srv\/blumodel-dryrun \/srv\/blumodel-dryrun\/data \/srv\/blumodel-dryrun\/logs/,
-    /\+ install -d -m 0700 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/\.cloudflared/,
-    /\+ runuser -u blumodel -- env -C \/srv\/blumodel-dryrun HOME=\/srv\/blumodel-dryrun PATH=\S+ git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git \/srv\/blumodel-dryrun\/repo/,
+    /\+ install -d -m 0750 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/data \/srv\/blumodel-dryrun\/logs/,
+    /\+ install -d -m 0700 -o blumodel -g blumodel \/srv\/blumodel-dryrun\/\.ssh/,
+    /\+ runuser -u blumodel -- env -C \/srv\/blumodel-dryrun HOME=\/srv\/blumodel-dryrun PATH=\S+ git -c core\.sshCommand=ssh\\ -i\\ \/srv\/blumodel-dryrun\/\.ssh\/id_ed25519\\ -o\\ IdentitiesOnly=yes.* clone --filter=blob:none --sparse --branch blumodel-studio --single-branch git@github\.com:gabrieldocherty-ux\/hubs\.git \/srv\/blumodel-dryrun\/repo/,
+    /\+ write \/srv\/blumodel-dryrun\/\.ssh\/known_hosts \(mode 0600\): github\.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl/,
+    /\+ runuser -u blumodel -- ssh-keygen -q -t ed25519 -N '' -C \S+ -f \/srv\/blumodel-dryrun\/\.ssh\/id_ed25519/,
+    /git config core\.sshCommand ssh\\ -i\\ \/srv\/blumodel-dryrun\/\.ssh\/id_ed25519\\ -o\\ IdentitiesOnly=yes\\ -o\\ UserKnownHostsFile=\/srv\/blumodel-dryrun\/\.ssh\/known_hosts\\ -o\\ StrictHostKeyChecking=yes\\ -o\\ HostKeyAlgorithms=ssh-ed25519/,
+    /\+ useradd --system --user-group --home-dir \/nonexistent --no-create-home --shell \/usr\/sbin\/nologin --comment BluModel\\ Studio\\ tunnel blumodel-tunnel/,
+    /\+ install -d -m 0751 -o blumodel -g blumodel \/srv\/blumodel-dryrun$/m,
+    /\+ install -d -m 0700 -o blumodel-tunnel -g blumodel-tunnel \/srv\/blumodel-dryrun\/\.cloudflared/,
+    /\+ chown root:blumodel-tunnel \/srv\/blumodel-dryrun\/cloudflared\.yml/,
+    /\+ write \/usr\/local\/bin\/blumodel \(mode 0755\)/,
+    /\+ write \/usr\/share\/applications\/blumodel-server\.desktop \(mode 0644\): \[Desktop Entry\]/,
+    /Exec=xdg-open http:\/\/127\.0\.0\.1:8799\//,
     /git sparse-checkout set blumodel-studio/,
     /The prebuilt release \(nothing is installed or built on this machine\)/,
     /\+ node \/srv\/blumodel-dryrun\/repo\/blumodel-studio\/scripts\/register-tasks\.mjs --home \/srv\/blumodel-dryrun --user blumodel --port 8899 --node \S+ --cloudflared \S+$/m,
@@ -854,7 +870,13 @@ test('install-windows.ps1: ASCII only, parses, and -DryRun prints every step (ne
     assert.equal(r.status, 0, r.stdout + r.stderr);
     const o = r.stdout;
     for (const re of [
-      /git clone --filter=blob:none --sparse --branch blumodel-studio --single-branch https:\/\/github\.com\/gabrieldocherty-ux\/hubs\.git .*Home\\repo/,
+      /git -c "core\.sshCommand=ssh -i \S+\/Home\/\.ssh\/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=\S+\/Home\/\.ssh\/known_hosts -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519" clone --filter=blob:none --sparse --branch blumodel-studio --single-branch git@github\.com:gabrieldocherty-ux\/hubs\.git .*Home\\repo/,
+      /\+ write .*Home\\\.ssh\\known_hosts \(GitHub's pinned ed25519 host key\)/,
+      /\+ ssh-keygen -q -t ed25519 -N \S+ -C blumodel-deploy@\S+ -f .*Home\\\.ssh\\id_ed25519/,
+      /\+ icacls\.exe .*Home\\\.ssh \/inheritance:r \/grant:r \S+:\(OI\)\(CI\)F/,
+      /==> Desktop shortcuts/,
+      /\+ write ".*BluModel Server\.url": http:\/\/127\.0\.0\.1:8799\//,
+      /\+ shortcut ".*Update BluModel\.lnk" -> .*Home\\update-now\.cmd/,
       /sparse-checkout set blumodel-studio/,
       /The prebuilt release \(nothing is installed or built on this machine\)/,
       /\+ node scripts\\deploy-local\.mjs --dist .*Home\\repo\\blumodel-studio\\dist --commit <commit>/,
@@ -1005,7 +1027,7 @@ test('HOSTING.md covers what the runbook must: OS choice, BIOS/power, install on
     /AC Recovery\*: \*\*Power On\*\*/,
     /Wake on LAN/,
     /sudo bash install-linux\.sh --dry-run/,
-    /install-windows\.ps1" -DryRun/,
+    /install-windows\.ps1"[\s\S]*-File "\$s" -DryRun/,
     /Unified Write Filter/,
     /\*\*new\*\* key/,
     /MOVING_DATA\.md/,

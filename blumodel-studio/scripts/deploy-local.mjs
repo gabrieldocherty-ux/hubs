@@ -19,7 +19,8 @@
 // blumodel-studio.service (scripts/register-tasks.mjs installs it) and this must run with sudo,
 // because it stops and starts that service. docs/HOSTING.md.
 //
-// Env: BLUMODEL_HOME (the folder), BLUMODEL_PORT (default: the port this home was installed with,
+// Env: BLUMODEL_HEAP_MB (Windows: the server's heap cap in run-server.cmd; default the home's, else 384),
+//      BLUMODEL_HOME (the folder), BLUMODEL_PORT (default: the port this home was installed with,
 //      read from its run-server.cmd on Windows or blumodel-studio.service on Linux, else 8790; so an
 //      update or a rollback checks the port the install used), BLUMODEL_HOST (127.0.0.1; Windows),
 //      BLUMODEL_ADMIN_EMAILS (ADMIN_EMAILS in a new settings template; empty otherwise).
@@ -76,6 +77,7 @@ import {
   userIds,
 } from '../server/ops/home.mjs';
 import { homePort } from '../server/ops/homePort.mjs';
+import { icoFromPng, toolScripts } from '../server/ops/winTools.mjs';
 import { EXIT, listening, readDeployed, rollbackApp, stageApp, swapInApp, unitState, waitForHealth } from './host/lib.mjs';
 import { checkSites, tunnelGaps } from '../server/ops/sites.mjs';
 import { tunnelRoutes } from './tunnel/tunnel.mjs';
@@ -112,6 +114,18 @@ const L = homeLayout(setting('HOME', defaultHome()));
 const HOME = L.home;
 const PORT = String(setting('PORT', homePort(HOME) ?? '8790'));
 const HOST = setting('HOST', '127.0.0.1');
+/** Windows: the server's heap cap in run-server.cmd: BLUMODEL_HEAP_MB, else what this home's run-server.cmd has, else 384. */
+const HEAP_MB = Number(
+  process.env.BLUMODEL_HEAP_MB ||
+    (() => {
+      try {
+        return /--max-old-space-size=(\d+)/.exec(fs.readFileSync(L.runServer, 'utf8'))?.[1];
+      } catch {
+        return null;
+      }
+    })() ||
+    384,
+);
 const healthArg = Number(opt('--health-timeout') || 60);
 const HEALTH_MS = (Number.isFinite(healthArg) ? Math.max(5, healthArg) : 60) * 1000;
 const sep = path.sep;
@@ -443,7 +457,13 @@ try {
     console.error(`Could not put the new app in place (${err?.code ?? err?.message}): something has a file in ${L.app} open. The old app is unchanged.`);
     throw Object.assign(err, { refused: true });
   }
-  if (WIN) for (const [name, body] of Object.entries(serverScripts({ node: process.execPath, port: PORT, host: HOST }))) fs.writeFileSync(path.join(HOME, name), body);
+  if (WIN) {
+    for (const [name, body] of Object.entries(serverScripts({ node: process.execPath, port: PORT, host: HOST, heapMb: HEAP_MB }))) fs.writeFileSync(path.join(HOME, name), body);
+    // blumodel.cmd, update-now.cmd ("Update BluModel") and the shortcuts' icon (server/ops/winTools.mjs).
+    for (const [name, body] of Object.entries(toolScripts({ node: process.execPath }))) fs.writeFileSync(path.join(HOME, name), body);
+    const png = path.join(DIST, 'icons', 'icon-192.png');
+    if (fs.existsSync(png)) fs.writeFileSync(path.join(HOME, 'blumodel.ico'), icoFromPng(fs.readFileSync(png)));
+  }
   console.log(`Deployed commit ${commit} to ${L.app}`);
   console.log(settingsNote);
   if (!fs.existsSync(L.tunnelConfig)) console.log(`No tunnel set up in ${HOME} yet: node scripts/tunnel/setup-tunnel.mjs (docs/HOSTING.md).`);

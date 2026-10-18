@@ -4,14 +4,21 @@
   docs/HOSTING.md is the runbook.
 
     powershell -NoProfile -ExecutionPolicy Bypass -File install-windows.ps1 [-DryRun]
-        [-HomeDir <folder>] [-Branch blumodel-studio] [-Repo https://github.com/gabrieldocherty-ux/hubs.git]
-        [-Port 8790] [-SkipTasks] [-AutoUpdateTime 04:00] [-NoAutoUpdate] [-Build]
+        [-HomeDir <folder>] [-Branch blumodel-studio] [-Repo git@github.com:gabrieldocherty-ux/hubs.git]
+        [-Port 8790] [-SkipTasks] [-AutoUpdateTime 04:00] [-NoAutoUpdate] [-Build] [-HeapMb 384]
+        [-NoShortcuts]
 
   What it does, in order:
     1. checks for Node.js 24 or newer, git and cloudflared. If one is missing it prints the winget
        command that installs it and stops: it never installs software itself.
-    2. the code: a sparse, partial clone of just blumodel-studio\ on the branch into <home>\repo,
-       or a fast-forward of the one already there
+    2. the code, over SSH with a read-only DEPLOY KEY (the repo is private): <home>\.ssh\id_ed25519,
+       made here once and readable only by this account (the one the server's tasks run as, so
+       the automatic update can use it), GitHub's published ed25519 host key pinned in
+       <home>\.ssh\known_hosts, and the public key printed for GitHub > hubs > Settings > Deploy
+       keys (read-only); it waits for Enter and checks the key works. Then a sparse, partial clone
+       of just blumodel-studio\ on the branch into <home>\repo, or a fast-forward of the one
+       already there; a checkout made over public HTTPS is switched to SSH once. The checkout's
+       core.sshCommand names the key, so every update uses it.
     3. nothing is built: the branch carries the release prebuilt (dist\ and server\generated\, made
        by npm run release on a developer's machine). -Build (an emergency only) runs npm ci and
        scripts\host\build.mjs into .build\local instead.
@@ -29,6 +36,10 @@
        daily at -AutoUpdateTime (04:00), and BluModelStudioUpdateNow, which every two minutes looks
        for Admin > System > Update now's trigger file and otherwise does nothing. schtasks asks for
        the password once for each. -NoAutoUpdate registers neither (and disables them if they exist).
+    8. two desktop shortcuts (-NoShortcuts: none): 'BluModel Server' (http://127.0.0.1:8799, the
+       server face: every site on or off, Update now) and 'Update BluModel' (<home>\update-now.cmd:
+       the update run directly, in a window that stays open; the fallback when the server is down).
+       The server runs with a 384 MB V8 heap cap (-HeapMb), written into run-server.cmd.
   It never opens blumodel.env or the tunnel's credentials and never copies anything from another
   machine. -DryRun prints every command (the lines starting with +) and runs none of them.
 #>
@@ -37,13 +48,18 @@ param(
   [switch]$DryRun,
   [string]$HomeDir = (Join-Path $env:USERPROFILE 'Projects\BluModelStudio'),
   [string]$Branch = 'blumodel-studio',
-  [string]$Repo = 'https://github.com/gabrieldocherty-ux/hubs.git',
+  [string]$Repo = 'git@github.com:gabrieldocherty-ux/hubs.git',
   [int]$Port = 8790,
   [switch]$SkipTasks,
   [string]$AutoUpdateTime = '',
   [switch]$NoAutoUpdate,
-  [switch]$Build
+  [switch]$Build,
+  [int]$HeapMb = 0,
+  [switch]$NoShortcuts
 )
+# GitHub's published SSH host key (docs.github.com, "GitHub's SSH key fingerprints":
+# SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU), pinned rather than trusted on first use.
+$GitHubHostKey = 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl'
 $ErrorActionPreference = 'Stop'
 $NodeMajor = 24
 
@@ -114,12 +130,65 @@ if (Get-Command uwfmgr.exe -ErrorAction SilentlyContinue) {
   Note 'prompt: uwfmgr get-config. Turn it off before going on (docs/HOSTING.md, "Windows on the Wyse").'
 }
 
-# 2. the code
+# 2. the deploy key, then the code
+$UseSsh = $Repo -match '^(git@github\.com:|ssh://git@github\.com/)'
+$SshDir = Join-Path $HomeDir '.ssh'
+$Key = Join-Path $SshDir 'id_ed25519'
+$Known = Join-Path $SshDir 'known_hosts'
+$HomeFwd = $HomeDir -replace '\\', '/'
+if ($HomeFwd -match '[\s"'']') { throw "-HomeDir can't have spaces or quotes (ssh reads the key's path): $HomeDir" }
+$SshCmd = "ssh -i $HomeFwd/.ssh/id_ed25519 -o IdentitiesOnly=yes -o UserKnownHostsFile=$HomeFwd/.ssh/known_hosts -o StrictHostKeyChecking=yes -o HostKeyAlgorithms=ssh-ed25519"
+if ($UseSsh) {
+  Say 'The deploy key (read-only access to the private repo)'
+  Write-Host "+ New-Item -ItemType Directory -Force $(Quote $SshDir)"
+  Write-Host "+ write $Known (GitHub's pinned ed25519 host key)"
+  if (-not $DryRun) {
+    New-Item -ItemType Directory -Force -Path $SshDir | Out-Null
+    Set-Content -LiteralPath $Known -Value $GitHubHostKey -Encoding ASCII
+  }
+  if (Test-Path -LiteralPath $Key) { Note "deploy key: $Key (exists)" }
+  else {
+    $keygen = Get-Command ssh-keygen -ErrorAction SilentlyContinue
+    if (-not $keygen -and -not $DryRun) { throw 'ssh-keygen was not found (Windows has it in System32\OpenSSH; Git for Windows in usr\bin).' }
+    # An empty passphrase: Windows PowerShell 5.1 drops an empty argument, so it is passed as '""'
+    # there (ssh-keygen reads that as empty); PowerShell 7.3+ passes '' as it is.
+    $empty = if ($PSVersionTable.PSVersion.Major -ge 7) { '' } else { '""' }
+    Must 'ssh-keygen' 'ssh-keygen' @('-q', '-t', 'ed25519', '-N', $empty, '-C', "blumodel-deploy@$env:COMPUTERNAME", '-f', $Key)
+  }
+  # The key and the .ssh folder: this account only (the server's tasks run as it).
+  Must 'icacls' 'icacls.exe' @($SshDir, '/inheritance:r', '/grant:r', "${env:USERDOMAIN}\${env:USERNAME}:(OI)(CI)F")
+  if ($DryRun) { Note '(a real run prints the public key here and waits until it works on GitHub)' }
+  else {
+    function KeyWorks { & git -c "core.sshCommand=$SshCmd" ls-remote --heads $Repo $Branch *> $null; return ($LASTEXITCODE -eq 0) }
+    if (-not (KeyWorks)) {
+      Write-Host ''
+      Write-Host '    Add this key on GitHub: github.com/gabrieldocherty-ux/hubs > Settings > Deploy keys > Add deploy key,'
+      Write-Host "    title 'Wyse', READ-ONLY (leave 'Allow write access' unchecked):"
+      Write-Host ''
+      Write-Host ("    " + (Get-Content -LiteralPath "$Key.pub" -Raw).Trim())
+      Write-Host ''
+      for ($i = 0; $i -lt 5 -and -not (KeyWorks); $i++) {
+        [void](Read-Host '    Press Enter once it is added')
+        if (-not (KeyWorks)) { Write-Host "    GitHub doesn't accept it yet (not added, or added to another repo)." }
+      }
+      if (-not (KeyWorks)) { throw "The deploy key still doesn't work. Add $Key.pub as a read-only deploy key of gabrieldocherty-ux/hubs, then run this again." }
+    }
+    Note 'deploy key: accepted by GitHub'
+  }
+}
+
 Say "The code: $Repo, branch $Branch, only blumodel-studio\"
 if (Test-Path -LiteralPath (Join-Path $RepoDir '.git')) {
   if (-not $DryRun) {
     $changes = (& git -C $RepoDir status --porcelain --untracked-files=no)
     if ($changes) { throw "The checkout in $RepoDir has local changes (git -C $RepoDir status). Undo them, then run this again." }
+  }
+  if ($UseSsh) {
+    # Once: a checkout made over public HTTPS switches to the private repo's SSH address.
+    $origin = ''
+    if (-not $DryRun) { $origin = ((& git -C $RepoDir remote get-url origin) | Select-Object -First 1) }
+    if ($DryRun -or $origin -ne $Repo) { Must 'git remote set-url' git @('-C', $RepoDir, 'remote', 'set-url', 'origin', $Repo) }
+    Must 'git config core.sshCommand' git @('-C', $RepoDir, 'config', 'core.sshCommand', $SshCmd)
   }
   Must 'git sparse-checkout' git @('-C', $RepoDir, 'sparse-checkout', 'set', 'blumodel-studio')
   Must 'git fetch' git @('-C', $RepoDir, 'fetch', 'origin', "+refs/heads/${Branch}:refs/remotes/origin/$Branch")
@@ -131,7 +200,12 @@ if (Test-Path -LiteralPath (Join-Path $RepoDir '.git')) {
 } else {
   Write-Host "+ New-Item -ItemType Directory -Force $(Quote $HomeDir)"
   if (-not $DryRun) { New-Item -ItemType Directory -Force -Path $HomeDir | Out-Null }
-  Must 'git clone' git @('clone', '--filter=blob:none', '--sparse', '--branch', $Branch, '--single-branch', $Repo, $RepoDir)
+  if ($UseSsh) {
+    Must 'git clone' git @('-c', "core.sshCommand=$SshCmd", 'clone', '--filter=blob:none', '--sparse', '--branch', $Branch, '--single-branch', $Repo, $RepoDir)
+    Must 'git config core.sshCommand' git @('-C', $RepoDir, 'config', 'core.sshCommand', $SshCmd)
+  } else {
+    Must 'git clone' git @('clone', '--filter=blob:none', '--sparse', '--branch', $Branch, '--single-branch', $Repo, $RepoDir)
+  }
   Must 'git sparse-checkout' git @('-C', $RepoDir, 'sparse-checkout', 'set', 'blumodel-studio')
 }
 $commit = '<commit>'
@@ -155,8 +229,8 @@ if ($Build) {
 
 # 4. the deploy
 Say 'The deploy (backs up an existing database first, starts the server, checks its health)'
-Write-Host "+ `$env:BLUMODEL_HOME = $(Quote $HomeDir); `$env:BLUMODEL_PORT = $Port"
-if (-not $DryRun) { $env:BLUMODEL_HOME = $HomeDir; $env:BLUMODEL_PORT = "$Port" }
+Write-Host "+ `$env:BLUMODEL_HOME = $(Quote $HomeDir); `$env:BLUMODEL_PORT = $Port$(if ($HeapMb) { "; `$env:BLUMODEL_HEAP_MB = $HeapMb" })"
+if (-not $DryRun) { $env:BLUMODEL_HOME = $HomeDir; $env:BLUMODEL_PORT = "$Port"; if ($HeapMb) { $env:BLUMODEL_HEAP_MB = "$HeapMb" } }
 $code = Run node @('scripts\deploy-local.mjs', '--dist', $Dist, '--commit', $commit) $AppSrc
 if ($code -ne 0) {
   throw "The deploy did not finish healthy (exit $code). Look at $HomeDir\logs\server.log and $HomeDir\logs\console.log. If an older app was there: node scripts\deploy-local.mjs --rollback"
@@ -167,6 +241,9 @@ Say "The tunnel's files (written, checked offline; the tunnel is NOT started)"
 $tunnelArgs = @('scripts\tunnel\setup-tunnel.mjs', '--home', $HomeDir, '--port', "$Port", '--validate')
 if ($cf -is [string]) { $tunnelArgs += @('--cloudflared', $cf) }
 if ((Run node $tunnelArgs $AppSrc) -ne 0) { Note 'WARNING: the tunnel files did not validate; see the lines above (docs/HOSTING.md, "Move the tunnel").' }
+# The tunnel's credentials: this account only (the BluModelTunnel task runs as it).
+$cfDir = Join-Path $env:USERPROFILE '.cloudflared'
+if ($DryRun -or (Test-Path -LiteralPath $cfDir)) { Must 'icacls' 'icacls.exe' @($cfDir, '/inheritance:r', '/grant:r', "${env:USERDOMAIN}\${env:USERNAME}:(OI)(CI)F") }
 
 # 6. start at boot
 Say 'Starting at boot, with nobody signed in'
@@ -202,7 +279,29 @@ if ($SkipTasks) {
   Note 'The update tasks were not registered; run the command above again from PowerShell run as administrator.'
 }
 
-# 8. what is left
+# 8. the desktop shortcuts
+if ($NoShortcuts) { Say 'Desktop shortcuts: skipped (-NoShortcuts)' }
+else {
+  Say 'Desktop shortcuts'
+  $desk = [Environment]::GetFolderPath('Desktop')
+  $url = Join-Path $desk 'BluModel Server.url'
+  $lnk = Join-Path $desk 'Update BluModel.lnk'
+  $ico = Join-Path $HomeDir 'blumodel.ico'
+  Write-Host "+ write $(Quote $url): http://127.0.0.1:8799/ (the server face: every site on or off, Update now)"
+  Write-Host "+ shortcut $(Quote $lnk) -> $(Join-Path $HomeDir 'update-now.cmd') (the update, directly)"
+  if (-not $DryRun) {
+    Set-Content -LiteralPath $url -Encoding ASCII -Value "[InternetShortcut]`r`nURL=http://127.0.0.1:8799/`r`nIconFile=$ico`r`nIconIndex=0"
+    $ws = New-Object -ComObject WScript.Shell
+    $s = $ws.CreateShortcut($lnk)
+    $s.TargetPath = Join-Path $HomeDir 'update-now.cmd'
+    $s.WorkingDirectory = $HomeDir
+    $s.IconLocation = "$ico,0"
+    $s.Description = 'Update BluModel Studio from GitHub now'
+    $s.Save()
+  }
+}
+
+# 9. what is left
 $tunnelId = '064671cd-a658-4240-8626-c697b9f148ac'
 Say 'Installed. What is left (docs/HOSTING.md has each step):'
 Write-Host "  The site runs on this machine at http://127.0.0.1:$Port (open http://127.0.0.1:$Port/api/health)."
@@ -220,6 +319,7 @@ Write-Host '       schtasks /Run /TN BluModelTunnel'
 Write-Host '  5. Showrooms (once, in Cloudflare): the wildcard DNS record *.blumodel.studio for the tunnel, and the demo showroom:'
 Write-Host "       cd `"$HomeDir\app`"; node server\scripts\seed-demo-tenant.mjs   (docs/ONBOARDING_A_COMPANY.md, `"Once: Cloudflare`")"
 Write-Host '  Power: never sleep on mains power: powercfg /change standby-timeout-ac 0'
+Write-Host "  Every site on or off, and Update now: the 'BluModel Server' shortcut (http://127.0.0.1:8799), or $HomeDir\blumodel.cmd sites status|on|off" 
 if ($NoAutoUpdate) { Write-Host '  Updates: automatic updates are OFF (-NoAutoUpdate), and so is Admin > System > Update now.' }
 else { Write-Host "  Updates: automatic, daily at $(if ($AutoUpdateTime) { $AutoUpdateTime } else { '04:00' }), and Admin > System > Update now applies a release at once." }
 Write-Host "    By hand: node `"$AppSrc\scripts\host\update.mjs`"   Log: $HomeDir\logs\update.log"
