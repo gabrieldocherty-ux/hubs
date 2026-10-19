@@ -1,0 +1,4 @@
+# Shell scripts run on Linux: LF line ends even in a Windows checkout (bash rejects CR).
+*.sh text eol=lf
+# Windows PowerShell 5.1 reads its scripts best with CRLF.
+*.ps1 text eol=crlf

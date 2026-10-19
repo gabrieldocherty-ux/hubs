@@ -1,0 +1,157 @@
+/* ─── Setup wizard: "Choose your brands" (step 4) ───────────────────────── */
+
+.wiz-brands {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.wiz-brand-cat {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.wiz-brand-cat legend {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.wiz-brand-cat legend b {
+  font-size: 14.5px;
+}
+
+.wiz-brand-cat legend span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.wiz-brand-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 8px;
+}
+
+.wiz-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 11px 9px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wiz-brand b {
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wiz-brand span {
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wiz-brand:hover {
+  border-color: var(--line-2);
+  box-shadow: var(--shadow);
+}
+
+/* Chosen reads at a glance: a 2px accent edge (border + inset) and the soft ring. */
+.wiz-brand.on {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 3px var(--accent-soft);
+}
+
+.wiz-brand:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wiz-brand-loading {
+  align-self: center;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.wiz-brand-more {
+  margin-top: 6px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: none;
+  border: 0;
+}
+
+.wiz-brand-more:hover {
+  text-decoration: underline;
+}
+
+.wiz-brand-share {
+  margin-top: 4px;
+  color: var(--ink) !important;
+  font-weight: 500;
+}
+
+/* Phones: the preview becomes a compact strip above the step (it used to fill the first screen,
+   pushing the step's heading and fields below the fold), and the layouts sit two a row. */
+@media (max-width: 600px) {
+  .wizard .wizard-main {
+    padding: 14px 16px 40px;
+    gap: 18px;
+  }
+  .wizard .wizard-card {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    align-items: center;
+  }
+  .wizard .wizard-card > svg {
+    width: 112px;
+    padding: 8px;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+  }
+  .wizard .wizard-card-meta {
+    padding: 10px 12px;
+  }
+  .wizard .wizard-card-meta b {
+    font-size: 16px;
+  }
+  .wizard .wizard-card-meta span {
+    font-size: 12px;
+  }
+  .wizard .layout-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .wiz-brand-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .wiz-brand {
+    padding: 7px 9px 8px;
+  }
+  .wiz-brand span {
+    white-space: normal;
+  }
+}

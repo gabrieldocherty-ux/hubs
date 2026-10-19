@@ -1,0 +1,582 @@
+/*
+ * Launch (blumodel.studio going public): the payment-state notes, the legal footer, the
+ * connection banner, the error and 404 screens, and the phone rules every screen shares.
+ * Imported by main.tsx after styles.css. Tokens come from styles.css (:root).
+ */
+
+/* A link no rule colours (a link inside a sentence) takes the brand's link colour, never the
+   browser's blue and purple. Zero specificity: every screen's own link style still wins. */
+:where(a) {
+  color: var(--accent-2);
+  text-underline-offset: 2px;
+}
+
+/* ─── Payment notes: DEMO, "opens soon" ─────────────────── */
+
+.pay-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.pay-note--compact {
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+.pay-note--demo {
+  border: 1px dashed var(--warn);
+  background: var(--warn-soft);
+  color: #6b4810;
+}
+
+.pay-note-tag {
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: #6b4810;
+  color: #fff8ea;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+}
+
+.pay-note--soon {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: 1px solid #cfdccf;
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+
+.pay-note-title {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pay-note--compact .pay-note-title {
+  font-size: 15px;
+}
+
+.agree {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.agree a,
+.legal-links a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.agree a:hover,
+.legal-links a:hover {
+  color: var(--ink);
+}
+
+.unlock-soon .modal-actions {
+  flex-wrap: wrap;
+}
+
+.billing-return {
+  margin-bottom: 16px;
+}
+
+/* The pricing page's DEMO / opens-soon note sits centred under the hero copy. */
+.mk-pay-note {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.mk-pay-note .pay-note {
+  max-width: 640px;
+  margin: 0;
+  text-align: left;
+}
+
+.ord-agree {
+  text-align: right;
+}
+
+.ord-return,
+.pro-return {
+  margin: 0 0 14px;
+}
+
+.pro-return {
+  margin: 16px auto 0;
+  max-width: min(720px, calc(100% - 32px));
+}
+
+.pro-pitch-card .pay-note,
+.pro-pitch-card .auth-note {
+  margin: 0 0 12px;
+}
+
+.billing-policy {
+  margin-top: 16px;
+}
+
+/* ─── Legal footer ──────────────────────────────────────── */
+
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: 28px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.legal-links-owner {
+  margin-left: auto;
+}
+
+/* Where each screen puts it. */
+.page-legal {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.mk-foot .legal-links {
+  max-width: var(--mk-max);
+  margin: 18px auto 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.auth-legal {
+  justify-content: center;
+  width: min(380px, 100%);
+  margin: 24px auto 0;
+}
+
+.auth-legal .legal-links-owner {
+  margin-left: 0;
+}
+
+.home-legal {
+  margin-top: 40px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.gen-legal {
+  margin-top: 32px;
+}
+
+.bp-foot .legal-links {
+  margin-top: 14px;
+}
+
+.share-bar-note a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+.legal-unset {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px dashed var(--bad);
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: help;
+}
+
+/* ─── Connection banner ─────────────────────────────────── */
+
+.conn-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  z-index: 90;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 12px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 8px 8px 8px 14px;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+}
+
+.conn-banner b {
+  font-weight: 600;
+}
+
+.conn-banner .btn {
+  min-height: 34px;
+  padding: 4px 12px;
+  border-color: rgba(251, 249, 244, 0.35);
+  background: transparent;
+  color: inherit;
+}
+
+.conn-banner .btn:hover {
+  background: rgba(251, 249, 244, 0.12);
+}
+
+/* ─── Something went wrong / not found ──────────────────── */
+
+.crash,
+.nf {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+  background: var(--paper);
+}
+
+.crash-card,
+.nf-card {
+  width: min(480px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.crash-card h1,
+.nf-card h1 {
+  margin: 4px 0 0;
+  font-family: var(--display);
+  font-size: clamp(26px, 6vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.crash-card p,
+.nf-card p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+
+.crash-actions,
+.nf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.crash-detail {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+/* The wordmark link: the root boundary has no app styles around it, so it would be a blue underlined link. */
+.nf-card .brand,
+.crash-card .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nf-card .legal-links {
+  margin-top: 18px;
+}
+
+/* A broken panel inside a screen (a route-level boundary) stays inside its space. */
+.crash--inline {
+  min-height: 60vh;
+}
+
+/* ─── Account settings: your data ───────────────────────── */
+
+.acct-modal {
+  width: min(480px, 100%);
+}
+
+.acct-copy {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+}
+
+.acct-copy a,
+.acct-delete a {
+  color: var(--accent-2);
+  text-underline-offset: 2px;
+}
+
+.acct-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn.acct-danger {
+  color: var(--bad);
+  border-color: #e3b4ad;
+}
+
+.btn.acct-danger:hover {
+  background: var(--bad-soft);
+}
+
+.btn.acct-danger--solid {
+  background: var(--bad-solid);
+  border-color: var(--bad);
+  color: #fff;
+}
+
+.btn.acct-danger--solid:hover {
+  background: #a33224;
+}
+
+.acct-delete {
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid #e8c3bd;
+  border-radius: 12px;
+  background: #fdf5f3;
+}
+
+.acct-delete h4 {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.acct-delete ul {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+
+.acct-delete li + li {
+  margin-top: 4px;
+}
+
+.acct-delete .modal-actions {
+  flex-wrap: wrap;
+}
+
+.acct-main {
+  max-width: 640px;
+}
+
+.acct-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.menu-legal {
+  display: flex;
+  gap: 12px;
+  margin: 4px 10px 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.menu-legal a {
+  color: var(--ink-3);
+  text-underline-offset: 2px;
+}
+
+.mk-deleted {
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+  text-align: center;
+  font-size: 14px;
+}
+
+/* The sign-in panel stacks the form and the legal links in its centre. */
+.auth-panel {
+  align-content: center;
+}
+
+/* ─── Phones, tablets and safe areas ────────────────────── */
+
+/* The editor's "← Kitchens" stays on one line. */
+.back-label {
+  white-space: nowrap;
+}
+
+/* No button in a header bar wraps onto two lines (it did beside the wordmark on a 360px phone). */
+.home-bar .btn {
+  white-space: nowrap;
+}
+
+/* A phone's header that also carries steps (new kitchen) or a button (custom models) keeps the
+   mark and drops the wordmark, as the editor and Start from a photo already do; at 360px the
+   steps sat on top of the name and "Request a model" covered it. */
+@media (max-width: 480px) {
+  .home-bar:has(> .steps) .wordmark,
+  .ord-page .home-bar .wordmark {
+    display: none;
+  }
+}
+
+/*
+ * index.html asks for viewport-fit=cover, so the page may run under a notch or the home indicator.
+ * In-flow content keeps clear of the side insets (landscape); fixed bars pad themselves.
+ */
+body {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* The dynamic viewport height: a phone's collapsing browser bars never cut a dialog or panel off. */
+.modal-backdrop > .modal {
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 901px) {
+  .gen-compare {
+    height: calc(100dvh - 58px - 84px - 32px);
+  }
+}
+
+/*
+ * Touch screens (phones, tablets): every control is at least 44 × 44 px, and every text field is
+ * 16 px (smaller makes iOS zoom the page in on focus). One block for the whole app, so a screen
+ * added later is covered too. `min-height` / `min-width` win over a fixed `height` / `width`, so
+ * the rules that size each control for a mouse stay as they are. The QA phone pass
+ * (scripts/qa/routes/launch.mjs) measures every routed screen against this at five sizes.
+ */
+@media (pointer: coarse) {
+  /* !important: feature stylesheets load later and set their own smaller sizes on fields. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .btn,
+  .chip,
+  .icon-btn,
+  .avatar,
+  .swatch,
+  [role='tab'],
+  .seg button,
+  .steps button,
+  .ord-step,
+  .link-btn,
+  .legal-toc button,
+  .plan-hud--br button,
+  .project-actions button,
+  .ord-q-title button,
+  .pw button,
+  select,
+  summary,
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden']) {
+    /* !important: a floor, not a size; the screens' own (lazy-loaded, so later) rules set smaller ones. */
+    min-height: 44px !important;
+  }
+
+  .btn,
+  .chip,
+  .icon-btn,
+  .avatar,
+  .swatch,
+  .steps button,
+  .plan-hud--br button,
+  .project-actions button,
+  .pw button {
+    min-width: 44px !important;
+  }
+
+  /* A checkbox or radio is tapped through its label, so the label is the 44px target. A bare
+     (inline) label becomes a centred row; one a screen already lays out keeps its display. */
+  label:has(> input[type='checkbox']),
+  label:has(> input[type='radio']) {
+    min-height: 44px !important;
+  }
+
+  :where(label:has(> input[type='checkbox']), label:has(> input[type='radio'])) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Links drawn as chips are inline: give them a box the height applies to, text centred. */
+  a.chip {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* A disclosure keeps its marker (so it stays a list item); the padding centres one line in 44px. */
+  summary {
+    padding-block: 12px;
+  }
+
+  /* Show/Hide password fills the field's height at its right end. */
+  .pw button {
+    top: 0;
+    right: 0;
+    height: 100%;
+  }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ─── Dark theme: rules whose light colour is a one-off rather than a token (styles.css has the tokens) ─── */
+@media screen {
+  :root[data-theme='dark'] .pay-note--demo {
+    color: var(--warn-ink);
+  }
+
+  :root[data-theme='dark'] .pay-note--soon {
+    border-color: #2f5a3d;
+  }
+
+  :root[data-theme='dark'] .btn.acct-danger {
+    border-color: rgba(240, 138, 124, 0.45);
+  }
+
+  :root[data-theme='dark'] .acct-delete {
+    border-color: rgba(240, 138, 124, 0.35);
+    background: var(--bad-soft);
+  }
+
+  /* "Can't reach BluModel Studio" floats over the top bar: in light it is a dark pill on a light
+     bar, in dark the same surface tone as the bar, so it read as part of the bar, over the
+     kitchen's name. A light hairline gives it its edge back. */
+  :root[data-theme='dark'] .conn-banner {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), var(--shadow);
+  }
+}
+
+/* The 404's home mark is a 44px touch target on touch screens. */
+@media (pointer: coarse) {
+  .nf-card .brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

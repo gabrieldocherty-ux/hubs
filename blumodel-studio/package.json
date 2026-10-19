@@ -1,0 +1,55 @@
+{
+  "name": "blumodel-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "api": "node scripts/build-kit.mjs && node --no-warnings server/index.mjs",
+    "build": "node scripts/build-kit.mjs && tsc -b && vite build",
+    "build:kit": "node scripts/build-kit.mjs --verbose",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "npm run test:ts && npm run test:server",
+    "test:ts": "node scripts/test.mjs",
+    "test:server": "node scripts/build-kit.mjs && node --no-warnings --test \"server/test/*.test.mjs\"",
+    "preview": "vite preview",
+    "start": "node --no-warnings server/index.mjs --prod",
+    "seed": "node scripts/build-kit.mjs && node --no-warnings server/seed/index.mjs",
+    "qa": "node scripts/build-kit.mjs && node scripts/qa.mjs",
+    "deploy:local": "npm run build && node scripts/deploy-local.mjs",
+    "release": "node scripts/release.mjs",
+    "home:migrate": "node scripts/migrate-home.mjs",
+    "home:tasks": "node scripts/register-tasks.mjs",
+    "tunnel:setup": "node scripts/tunnel/setup-tunnel.mjs",
+    "stripe:check": "node --no-warnings scripts/stripe-check.mjs",
+    "host:build": "node scripts/host/build.mjs",
+    "host:update": "node scripts/host/update.mjs",
+    "data:export": "node --no-warnings server/scripts/export-data.mjs",
+    "data:import": "node --no-warnings server/scripts/import-data.mjs",
+    "data:restore": "node --no-warnings server/scripts/restore.mjs",
+    "data:restore-offsite": "node --no-warnings server/scripts/restore-offsite.mjs"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.10",
+    "@react-three/postprocessing": "2.19.1",
+    "konva": "^9.3.14",
+    "postprocessing": "6.39.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "three": "^0.169.0",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  },
+  "engines": {
+    "node": ">=22.5"
+  }
+}

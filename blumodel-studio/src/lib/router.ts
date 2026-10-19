@@ -1,0 +1,255 @@
+import { useEffect, useMemo, useState } from 'react';
+
+/**
+ * Hash routing with query strings inside the hash (`#/p/range-30?finish=black-steel`).
+ * `location.search` is only read through `pageQuery()` (Stripe's `?session_id=` return).
+ */
+export type AdminTab = 'overview' | 'companies' | 'sales-leads' | 'moderation' | 'brands' | 'retailers' | 'studio' | 'revenue' | 'billing' | 'users' | 'contractors' | 'system' | 'audit';
+export const ADMIN_TABS: AdminTab[] = ['overview', 'companies', 'sales-leads', 'users', 'contractors', 'moderation', 'brands', 'retailers', 'studio', 'revenue', 'billing', 'system', 'audit'];
+
+export type Route =
+  | { name: 'signin' }
+  | { name: 'signup' }
+  | { name: 'home' }
+  | { name: 'new' }
+  | { name: 'local' }
+  | { name: 'kitchen'; id: string; add?: string } // #/k/:uuid?add=
+  | { name: 'welcome' }
+  | { name: 'pricing' } // #/welcome, #/pricing
+  | { name: 'book' } // #/book (the sales site's Book a call)
+  | { name: 'product'; id: string; finish?: string } // #/p/:id?finish=
+  | { name: 'brandPage'; slug: string } // #/b/:slug
+  | { name: 'brand'; rest: string } // #/brand, #/brand/<rest…>
+  | { name: 'orders'; rest: string } // #/orders, #/orders/<rest…>
+  | { name: 'payDemo'; orderId: string } // #/pay/demo/:orderId
+  | { name: 'share'; token: string } // #/s/:token
+  | { name: 'admin'; tab: AdminTab } // #/admin/:tab
+  | { name: 'billing' } // #/account/billing
+  | { name: 'account' } // #/account (settings: name, password, download or delete my data)
+  | { name: 'pro'; rest: string } // #/pro, #/pro/<rest…> (the Contractor workspace)
+  | { name: 'studio'; rest: string } // #/studio, #/studio/<tab>/<rest…> (the company workspace on a showroom)
+  | { name: 'payDemoPlan'; ref: string } // #/pay/demo-plan/:ref
+  | { name: 'payShowroom'; ref: string } // #/pay/showroom/:ref (a company's monthly plan link, sales site)
+  | { name: 'legal'; doc: LegalDocId } // #/terms, #/privacy, #/refunds
+  | { name: 'showroomImages' } // #/showroom-images?ticket= (a showroom's picture generator; showrooms only)
+  | { name: 'notFound' }; // anything else
+
+export type LegalDocId = 'terms' | 'privacy' | 'refunds';
+
+const UUID = /^[0-9a-f-]{36}$/;
+/** Product ids, slugs, order ids and share tokens: the server's `:param` alphabet. */
+const PARAM = /^[A-Za-z0-9_-]{1,80}$/;
+/** Free sub-paths for the brand portal and orders: a few `/`-separated params. */
+const REST = /^[A-Za-z0-9_-]{1,80}(\/[A-Za-z0-9_-]{1,80}){0,5}$/;
+
+function decode(s: string): string | null {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return null;
+  }
+}
+
+/** Splits `#/path?query` into its path (no leading `#/` or trailing `/`) and query. */
+export function splitHash(hash: string): { path: string; query: URLSearchParams } {
+  const h = hash.replace(/^#\/?/, '');
+  const q = h.indexOf('?');
+  const path = (q < 0 ? h : h.slice(0, q)).replace(/\/+$/, '');
+  return { path, query: new URLSearchParams(q < 0 ? '' : h.slice(q + 1)) };
+}
+
+/**
+ * The server answers any extensionless path with the app (server/http/static.mjs), but every route
+ * lives in the hash, so `https://blumodel.studio/terms` used to open the landing page. A typed or
+ * shared `/terms`, `/pricing` or `/b/<slug>` now becomes `/#/terms` and so on, and an unknown path
+ * lands on the 404 like an unknown `#/…`. A path that came with a hash of its own keeps the hash.
+ * Returns the URL to put in the address bar, or null when the path is already the root.
+ */
+export function pathToHashUrl(pathname: string, search: string, hash: string): string | null {
+  const path = pathname.replace(/\/+$/, '');
+  if (!path || path === '/index.html') return null;
+  const own = hash && hash !== '#' && hash !== '#/' ? hash : '';
+  return `/${search}${own || `#${path}`}`;
+}
+
+/**
+ * The route for a hash. A path the app doesn't know (or a malformed id) is `notFound`, which shows
+ * a friendly page with a way home, never a blank screen or someone else's page.
+ */
+export function parseRoute(hash: string): Route {
+  const { path, query } = splitHash(hash);
+  const parts = path.split('/').map((p) => decode(p));
+  if (parts.some((p) => p === null)) return { name: 'notFound' };
+  const seg = parts as string[];
+  const [a, b, c] = seg;
+
+  switch (a) {
+    case '':
+      return seg.length === 1 ? { name: 'home' } : { name: 'notFound' };
+    case 'signin':
+    case 'signup':
+    case 'new':
+    case 'local':
+    case 'welcome':
+    case 'pricing':
+    case 'book':
+      return seg.length === 1 ? { name: a } : { name: 'notFound' };
+    case 'terms':
+    case 'privacy':
+    case 'refunds':
+      if (seg.length === 1) return { name: 'legal', doc: a };
+      break;
+    case 'showroom-images':
+      return seg.length === 1 ? { name: 'showroomImages' } : { name: 'notFound' };
+    // Start from a photo was removed in the showroom pivot: an old link opens the new-kitchen wizard.
+    case 'generate':
+      return seg.length === 1 ? { name: 'new' } : { name: 'notFound' };
+    case 'k':
+      if (seg.length === 2 && UUID.test(b)) {
+        const add = query.get('add');
+        return add && PARAM.test(add) ? { name: 'kitchen', id: b, add } : { name: 'kitchen', id: b };
+      }
+      break;
+    case 'p':
+      if (seg.length === 2 && PARAM.test(b)) {
+        const finish = query.get('finish');
+        return finish ? { name: 'product', id: b, finish } : { name: 'product', id: b };
+      }
+      break;
+    case 'b':
+      if (seg.length === 2 && PARAM.test(b)) return { name: 'brandPage', slug: b };
+      break;
+    case 'brand':
+    case 'orders':
+    case 'pro':
+    case 'studio': {
+      const rest = seg.slice(1).join('/');
+      if (!rest || REST.test(rest)) return { name: a, rest };
+      break;
+    }
+    case 'account':
+      if (seg.length === 1) return { name: 'account' };
+      if (seg.length === 2 && b === 'billing') return { name: 'billing' };
+      break;
+    case 'pay':
+      if (seg.length === 3 && b === 'demo' && PARAM.test(c)) return { name: 'payDemo', orderId: c };
+      if (seg.length === 3 && b === 'demo-plan' && PARAM.test(c)) return { name: 'payDemoPlan', ref: c };
+      if (seg.length === 3 && b === 'showroom' && PARAM.test(c)) return { name: 'payShowroom', ref: c };
+      break;
+    case 's':
+      if (seg.length === 2 && PARAM.test(b)) return { name: 'share', token: b };
+      break;
+    case 'admin': {
+      if (seg.length === 1) return { name: 'admin', tab: 'overview' };
+      if (seg.length === 2 && (ADMIN_TABS as string[]).includes(b)) return { name: 'admin', tab: b as AdminTab };
+      break;
+    }
+  }
+  return { name: 'notFound' };
+}
+
+function withQuery(path: string, q: Record<string, string | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(q)) if (v) params.set(k, v);
+  const s = params.toString();
+  return s ? `${path}?${s}` : path;
+}
+
+const enc = encodeURIComponent;
+
+export function hrefFor(r: Route): string {
+  switch (r.name) {
+    case 'home':
+      return '#/';
+    case 'kitchen':
+      return withQuery(`#/k/${r.id}`, { add: r.add });
+    case 'product':
+      return withQuery(`#/p/${enc(r.id)}`, { finish: r.finish });
+    case 'brandPage':
+      return `#/b/${enc(r.slug)}`;
+    case 'brand':
+    case 'orders':
+    case 'pro':
+    case 'studio':
+      return r.rest ? `#/${r.name}/${r.rest}` : `#/${r.name}`;
+    case 'billing':
+      return '#/account/billing';
+    case 'account':
+      return '#/account';
+    case 'legal':
+      return `#/${r.doc}`;
+    case 'notFound':
+      return '#/';
+    case 'payDemo':
+      return `#/pay/demo/${enc(r.orderId)}`;
+    case 'payDemoPlan':
+      return `#/pay/demo-plan/${enc(r.ref)}`;
+    case 'payShowroom':
+      return `#/pay/showroom/${enc(r.ref)}`;
+    case 'share':
+      return `#/s/${enc(r.token)}`;
+    case 'admin':
+      return `#/admin/${r.tab}`;
+    case 'showroomImages':
+      return '#/showroom-images';
+    default:
+      return `#/${r.name}`;
+  }
+}
+
+/** Navigates to a raw hash (`#/…`), e.g. a route plus extra query parameters a package owns. */
+export function navigateHash(href: string, replace = false) {
+  if (replace) history.replaceState(null, '', href);
+  else history.pushState(null, '', href);
+  window.dispatchEvent(new HashChangeEvent('hashchange'));
+}
+
+export function navigate(r: Route, replace = false) {
+  navigateHash(hrefFor(r), replace);
+}
+
+function useHash(): string {
+  const [hash, setHash] = useState(() => location.hash);
+  useEffect(() => {
+    const on = () => setHash(location.hash);
+    window.addEventListener('hashchange', on);
+    window.addEventListener('popstate', on);
+    return () => {
+      window.removeEventListener('hashchange', on);
+      window.removeEventListener('popstate', on);
+    };
+  }, []);
+  return hash;
+}
+
+export function useRoute(): Route {
+  const hash = useHash();
+  // Parsed once per hash, so an unrelated re-render keeps the same route object.
+  return useMemo(() => parseRoute(hash), [hash]);
+}
+
+/** The query string inside the hash (`#/orders/new?ref=…`), live as the hash changes. */
+export function useHashQuery(): URLSearchParams {
+  const hash = useHash();
+  return useMemo(() => splitHash(hash).query, [hash]);
+}
+
+/** Where to go after signing in: the `next` hash the sign-in page was sent with, if it is one of ours. */
+export function safeNext(query: URLSearchParams): string {
+  const next = query.get('next');
+  if (!next || !next.startsWith('#/')) return '#/';
+  const r = parseRoute(next);
+  return r.name === 'signin' || r.name === 'signup' || r.name === 'notFound' ? '#/' : next;
+}
+
+/** The sign-in page, remembering the current hash so the user comes back to it. */
+export function signinHref(from: string = location.hash): string {
+  const r = parseRoute(from);
+  if (r.name === 'home' || r.name === 'signin' || r.name === 'signup') return '#/signin';
+  return `#/signin?next=${encodeURIComponent(from)}`;
+}
+
+/** The page's real query string (`?session_id=…` from a Stripe return), not the hash's. */
+export function pageQuery(): URLSearchParams {
+  return new URLSearchParams(location.search);
+}

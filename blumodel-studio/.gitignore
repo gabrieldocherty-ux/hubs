@@ -1,0 +1,54 @@
+node_modules/
+dist/
+*.local
+tsconfig.tsbuildinfo
+.smoke/
+
+# The repo root ignores data/ (bot runtime state); the app catalog must ship.
+!src/data/
+server/data/
+.qa/
+.build/
+.tmp-tests/
+# Built from src/lib/exportKit.ts by scripts/build-kit.mjs (npm run build / api / test).
+server/generated/
+
+# The demo seed writes a generated password next to DB_PATH (server/seed/core.mjs).
+seed-credentials.txt
+
+# ---------------------------------------------------------------------------
+# Live data and secrets (never commit; the repo is public). These cover the names
+# the app and the host scripts use wherever they end up, not only under server/data/.
+# ---------------------------------------------------------------------------
+# The private settings file (BluModel's blumodel.env, the kitchen app's mise.env, any *.env).
+*.env
+blumodel.env
+mise.env
+# Databases and their WAL/SHM/journal sidecars, and the copies backups and imports keep.
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+*.before-restore-*
+*.before-import-*
+*.failed-import-*
+# Uploaded files, backups (local and off-site), logs.
+uploads/
+backups/
+logs/
+*.log
+# Export / move-data bundles, plain or encrypted (server/ops/dataBundle.mjs, offsite.mjs).
+blumodel-data-*
+blumodel-offsite-*
+*.enc
+# Cloudflare tunnel: the credentials file is named after the tunnel's UUID; cert.pem is the login.
+.cloudflared/
+????????-????-????-????-????????????.json
+cloudflared.yml
+cert.pem
+*.pem
+*.key
+# The prospect list Gabe works from, and the seed's generated password.
+*BluModel-Prospects*

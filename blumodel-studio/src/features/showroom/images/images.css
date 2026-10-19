@@ -1,0 +1,115 @@
+/* The showroom picture generator (#/showroom-images): a working page for the team or an admin. */
+.sri-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100vh;
+}
+.sri-head h1 {
+  font-family: var(--display);
+  font-size: clamp(26px, 4vw, 36px);
+  margin: 0 0 10px;
+}
+.sri-head p {
+  color: var(--ink-2);
+  max-width: 70ch;
+  margin: 0;
+  line-height: 1.55;
+}
+.sri-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  margin: 24px 0;
+}
+.sri-actions p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.sri-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.sri-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--stage-2);
+  border: 1px solid var(--line);
+}
+.sri-stage .scene-view {
+  position: absolute;
+  inset: 0;
+}
+.sri-stage .scene-hud {
+  display: none;
+}
+.sri-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.sri-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+.sri-state {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.sri-list li[data-state='done'] .sri-state {
+  color: var(--ok-ink);
+}
+.sri-list li[data-state='failed'] .sri-state,
+.sri-list li[data-state='skipped'] .sri-state {
+  color: var(--bad-ink);
+}
+.sri-note {
+  grid-column: 1 / -1;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.sri-previews {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sri-previews img {
+  height: 64px;
+  width: auto;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+.sri-msg {
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+.sri-msg--bad {
+  background: var(--bad-soft);
+  color: var(--bad-ink);
+  border-color: transparent;
+}
+.sri-foot {
+  margin-top: 24px;
+}
+@media (max-width: 760px) {
+  .sri-body {
+    grid-template-columns: 1fr;
+  }
+}

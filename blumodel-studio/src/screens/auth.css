@@ -1,0 +1,71 @@
+/*
+ * The sign-in page's password-reset pieces (#/signin?forgot=1, #/signin?reset=…). The page itself is
+ * styled in styles.css (.auth*); this adds only what the reset pages need, from the design tokens.
+ */
+
+.auth-forgot {
+  margin: -6px 0 16px;
+  text-align: right;
+  font-size: 13px;
+}
+
+.auth-form .auth-sub strong,
+.auth-ok strong {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.auth-help {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.auth-help p {
+  margin: 0;
+}
+
+.auth-help a {
+  overflow-wrap: anywhere;
+}
+
+.auth-help .auth-help-small {
+  margin-top: 8px;
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+
+.auth-linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-linkbtn:hover,
+.auth-forgot a:hover {
+  text-decoration: underline;
+}
+
+.auth-form > .btn.primary + .auth-switch {
+  margin-top: 18px;
+}
+
+/* A finger needs 44px: the text buttons under the sign-in forms (Lost your phone?, Start again)
+   keep their look but get a full-height tap area on touch screens. */
+@media (pointer: coarse) {
+  .auth-linkbtn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 4px;
+  }
+}
