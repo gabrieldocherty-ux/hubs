@@ -136,6 +136,8 @@ interface State {
   /** A position in CABINET_FINISHES or a cabinet finish id. */
   applyCabinetFinishToAll: (finish: number | string) => void;
   applyTemplate: (id: TemplateId) => void;
+  /** Lay out a grid of pot lights over the floor (replacing any already placed); `remove` takes them all out. Returns how many. */
+  potLights: (remove?: boolean) => number;
   clearItems: () => void;
   importDoc: (doc: DesignDoc) => void;
   /** Opens a different kitchen for editing: replaces the document and clears undo history and selection. */
@@ -597,6 +599,13 @@ export const useDesignStore = create<State>()(
               }),
             };
           }),
+
+        potLights: (remove = false) => {
+          const { doc } = get();
+          const out = remove ? { room: doc.room, items: doc.items.filter((i) => i.productId !== 'pot-light') } : edit.layoutPotLights({ room: doc.room, items: doc.items });
+          commit((d) => ({ ...d, items: out.items }));
+          return out.items.filter((i) => i.productId === 'pot-light').length;
+        },
 
         applyTemplate: (id) => {
           const { doc, readOnly } = get();

@@ -200,3 +200,21 @@ describe('rooms joined by walkways and doors', () => {
     assert.equal(out.items[0].widthIn, 42);
   });
 });
+
+import { layoutPotLights } from './roomEdit';
+
+describe('pot lights', () => {
+  test('a 12 x 14 room with an 8 foot ceiling gets a 4 foot grid, all at least a foot off the walls', () => {
+    const d: Draft = { room: { widthIn: 144, lengthIn: 168, ceilingIn: 96 }, items: [] };
+    const out = layoutPotLights(d);
+    assert.equal(out.items.length, 3 * 4);
+    for (const it of out.items) assert.ok(it.x >= 12 && it.x <= 132 && it.y >= 12 && it.y <= 156);
+  });
+  test('running it again replaces the grid instead of doubling it, and an L skips its notch', () => {
+    const L: Draft = { room: { widthIn: 240, lengthIn: 168, ceilingIn: 96, outline: [[0, 0], [240, 0], [240, 96], [144, 96], [144, 168], [0, 168]] }, items: [] };
+    const once = layoutPotLights(L);
+    const twice = layoutPotLights(once);
+    assert.equal(twice.items.length, once.items.length);
+    assert.ok(once.items.every((i) => !(i.x > 144 && i.y > 96)));
+  });
+});

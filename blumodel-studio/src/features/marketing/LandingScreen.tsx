@@ -4,7 +4,7 @@ import { DemoLink, MarketingFooter, MarketingHeader, PRICES, scrollIfHere, Secti
 import { BookSection, Faq, FinalCta, Included, PricingCards } from './sections';
 import './marketing.css';
 
-export const SALES_TITLE = 'BluModel Studio · Virtual showrooms for kitchen and bath companies';
+export const SALES_TITLE = 'BluModel Studio (blue model) | 3D Kitchen Design Showrooms for Kitchen & Bath Companies';
 
 /**
  * blumodel.studio, the sales site (docs/SHOWROOM_PIVOT.md §6): signed-out `#/` and `#/welcome`.

@@ -8,7 +8,7 @@
 // "up to 50"), while the $50 monthly plan, its $25 + $25 split and "quoted" do appear.
 // Run: node scripts/qa.mjs --pkg sales --port 8925
 
-const SALES_TITLE = 'BluModel Studio · Virtual showrooms for kitchen and bath companies';
+const SALES_TITLE = 'BluModel Studio (blue model) | 3D Kitchen Design Showrooms for Kitchen & Bath Companies';
 const HERO = 'Your own virtual showroom, with your products, under your name.';
 
 const views = [
@@ -150,7 +150,7 @@ export default [
     waitFor: ['.mk-hero h1'],
     check: async (h) => {
       const m = await h.evaluate(() => Object.fromEntries([...document.head.querySelectorAll('meta[name], meta[property]')].map((x) => [x.getAttribute('name') ?? x.getAttribute('property'), x.getAttribute('content')])));
-      const want = 'We build, host and run your own 3D kitchen and bath design website, with your products and your brand. Every customer design arrives as a lead.';
+      const want = "BluModel Studio builds, hosts and runs a 3D kitchen and bath design website under your company's name: an online kitchen planner with your products, where every customer design arrives as a lead. From Guelph, Ontario.";
       for (const k of ['description', 'og:description', 'twitter:description']) if (m[k] !== want) throw new Error(`${k} is "${m[k]}"`);
       for (const k of ['og:title', 'twitter:title']) if (m[k] !== SALES_TITLE) throw new Error(`${k} is "${m[k]}"`);
       if (m['og:image'] !== 'https://blumodel.studio/marketing/og.png') throw new Error(`og:image is ${m['og:image']}`);

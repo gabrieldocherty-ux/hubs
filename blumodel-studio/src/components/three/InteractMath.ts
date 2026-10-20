@@ -6,7 +6,7 @@
  * Units: the scene is drawn in FEET (one world unit = 12 room inches) with +Y up,
  * world x = room x / 12, world z = room y / 12. See lib/interaction.ts.
  */
-import { planSize } from '../../lib/outline';
+import { EDGE_STYLES, floorOutlines, planSize, pointInOutline, wallSegs } from '../../lib/outline';
 import * as THREE from 'three';
 import type { Room } from '../../types';
 import type { AABB, Wall } from '../../lib/geometry';
@@ -49,6 +49,7 @@ export type RoomFace = Wall | 'floor' | 'ceiling';
  * furniture. Null when the ray misses the room entirely.
  */
 export function rayExitRoom(ray: THREE.Ray, room: Room): { point: THREE.Vector3; face: RoomFace } | null {
+  if (room.outline || room.extra?.length) return rayExitDrawn(ray, room);
   const o = [ray.origin.x, ray.origin.y, ray.origin.z];
   const d = [ray.direction.x, ray.direction.y, ray.direction.z];
   const size = planSize(room);
@@ -191,4 +192,44 @@ export function rayThroughOpening(
   const l = toItemLocal(point, item);
   if (Math.abs(l.x) > hole.w / 2 || l.y < hole.z0 || l.y > hole.z1) return null;
   return { distance: t, point };
+}
+
+/**
+ * A drawn room (an L, several rooms): the first floor or wall the ray meets that the viewer can
+ * actually see. Walls between the camera and the room are cut away in the scene (Room3D), so only a
+ * wall whose inside faces the camera counts; the floor counts only where there is floor.
+ */
+function rayExitDrawn(ray: THREE.Ray, room: Room): { point: THREE.Vector3; face: RoomFace } | null {
+  const k = INCHES_PER_WORLD_UNIT;
+  const o = ray.origin;
+  const d = ray.direction;
+  const cam = { x: o.x * k, y: o.z * k };
+  let best: { t: number; face: RoomFace } | null = null;
+  // The floor.
+  if (d.y < -1e-9) {
+    const t = -o.y / d.y;
+    const px = (o.x + d.x * t) * k;
+    const py = (o.z + d.z * t) * k;
+    if (t > 0 && floorOutlines(room).some((f) => pointInOutline(f, px, py))) best = { t, face: 'floor' };
+  }
+  // Walls that face the camera.
+  const H = room.ceilingIn;
+  for (const sg of wallSegs(room)) {
+    if (!EDGE_STYLES[sg.style].holdsOpenings && !EDGE_STYLES[sg.style].backs) continue;
+    const alongX = sg.wall === 'north' || sg.wall === 'south';
+    const camSide = alongX ? cam.y : cam.x;
+    const facing = sg.wall === 'north' || sg.wall === 'west' ? camSide > sg.at : camSide < sg.at;
+    if (!facing) continue;
+    const dv = alongX ? d.z : d.x;
+    if (Math.abs(dv) < 1e-9) continue;
+    const t = (sg.at / k - (alongX ? o.z : o.x)) / dv;
+    if (!(t > 0) || (best && t >= best.t)) continue;
+    const along = ((alongX ? o.x + d.x * t : o.z + d.z * t) * k);
+    const up = (o.y + d.y * t) * k;
+    const hgt = EDGE_STYLES[sg.style].heightIn ?? H;
+    if (along < sg.a0 || along > sg.a1 || up < 0 || up > Math.min(H, hgt || H)) continue;
+    best = { t, face: sg.wall };
+  }
+  if (!best) return null;
+  return { point: ray.origin.clone().addScaledVector(ray.direction, best.t), face: best.face };
 }

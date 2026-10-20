@@ -90,6 +90,10 @@ export function showroomIndexHtml(html, t, { origin, logoUrl = null, images = nu
     (h) => h.replace(/(<link rel="canonical" href=")[^"]*(")/, (_m, a, b) => `${a}${esc(url)}${b}`),
     drop(/\s*<meta property="og:image(?::[a-z]+)?" content="[^"]*" \/>/g),
     drop(/\s*<meta name="twitter:image(?::alt)?" content="[^"]*" \/>/g),
+    // Our own structured data and the sales home page's plain-HTML text are about BluModel Studio, not the company.
+    drop(/\s*<!-- Who we are, for search engines[^>]*-->\s*<script type="application\/ld\+json" data-sales-only>[\s\S]*?<\/script>/),
+    drop(/\s*<!-- The sales home page in plain HTML[^>]*-->/),
+    (h) => h.replace(/<div id="root"><main class="prerender" data-sales-only[\s\S]*?<\/main><\/div>/, '<div id="root"></div>'),
     (h) => h.replace(/<meta name="twitter:card" content="summary_large_image" \/>/, '<meta name="twitter:card" content="summary" />'),
   ];
   let out = steps.reduce((h, f) => f(h), html);

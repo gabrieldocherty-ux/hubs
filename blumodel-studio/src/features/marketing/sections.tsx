@@ -128,6 +128,10 @@ export function PricingCards({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
 
 export const FAQ: { q: string; a: ReactNode }[] = [
   {
+    q: 'What is BluModel Studio?',
+    a: 'BluModel Studio (BluModel, sometimes searched as Blue Model) is a 3D kitchen designer that kitchen and bath companies give their customers: an online kitchen planner and visualizer under your own name, with your cabinets, appliances and finishes. Customers draw their room, design it in 3D and send it to you as a lead. It is made by Digital Design Solutions in Guelph, Ontario.',
+  },
+  {
     q: 'Do we need to install anything?',
     a: 'No. Your showroom is a website we host and run. Your customers open it in the browser on a phone, tablet or computer, and your team uses the same site in the showroom or at the customer’s table.',
   },

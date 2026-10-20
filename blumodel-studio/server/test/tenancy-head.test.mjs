@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { startTestServer } from './helpers.mjs';
 
 const INDEX = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'index.html'), 'utf8');
-const SALES = [/Virtual showrooms for kitchen and bath companies/, /We build, host and run/, /marketing\/og\.png/, /https:\/\/blumodel\.studio\//];
+const SALES = [/3D Kitchen Design Showrooms for Kitchen &amp; Bath Companies/, /BluModel Studio builds, hosts and runs/, /application\/ld\+json/, /class="prerender"/, /marketing\/og\.png/, /https:\/\/blumodel\.studio\//];
 
 test("a showroom's HTML carries the company's title, description and preview tags, escaped; the sales site keeps ours", async () => {
   const t = await startTestServer();
@@ -31,7 +31,10 @@ test("a showroom's HTML carries the company's title, description and preview tag
     assert.match((await t.agent({ host: A.host }).get('/some/route')).text, /<title>Acme/);
     // The sales site is untouched.
     const sales = await t.agent().get('/');
-    assert.match(sales.text, /<title>BluModel Studio · Virtual showrooms for kitchen and bath companies<\/title>/);
+    assert.match(sales.text, /<title>BluModel Studio \(blue model\) \| 3D Kitchen Design Showrooms for Kitchen &amp; Bath Companies<\/title>/);
+    // Our structured data and the plain-HTML home page are the sales site's only.
+    assert.match(sales.text, /application\/ld\+json/);
+    assert.match(sales.text, /<main class="prerender"/);
   } finally {
     await t.close();
   }

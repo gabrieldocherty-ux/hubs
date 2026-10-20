@@ -17,7 +17,9 @@ test('robots.txt: search engines crawl the pages, not /api or /files; the AI cra
   try {
     const r = await s.agent().get('/robots.txt');
     assert.equal(r.status, 200);
-    assert.equal(r.text, ROBOTS);
+    // The sales site adds its sitemap after the groups; the rules themselves are ROBOTS exactly.
+    assert.ok(r.text.startsWith(ROBOTS), r.text);
+    assert.match(r.text.slice(ROBOTS.length), /^\nSitemap: https?:\/\/\S+\/sitemap\.xml\n$/);
     // The AI crawlers are one group, refused everything.
     const groups = r.text.trim().split(/\n\n/);
     const ai = groups[0].split('\n');
@@ -28,6 +30,10 @@ test('robots.txt: search engines crawl the pages, not /api or /files; the AI cra
     assert.ok(!/User-agent: (Googlebot|Bingbot)\b/.test(r.text), 'search engines are not refused');
     assert.equal(r.headers.get('content-type'), 'text/plain; charset=utf-8');
     assert.equal(r.headers.get('cache-control'), 'public, max-age=86400');
+    const map = await s.agent().get('/sitemap.xml');
+    assert.equal(map.status, 200);
+    assert.match(map.text, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+    assert.match(map.headers.get('content-type'), /application\/xml/);
     const h = await s.agent().head('/robots.txt');
     assert.equal(h.status, 200);
     assert.equal(h.text, '');

@@ -211,6 +211,32 @@ export function RoomPanel() {
         </div>
       </section>
 
+      <section className="room-section">
+        <header>
+          <h4>Lighting</h4>
+          <span className="sub">{items.filter((i) => i.productId === 'pot-light').length || 'No'} pot lights</span>
+        </header>
+        <p className="sub" style={{ margin: '0 0 8px' }}>A grid of recessed lights spaced about half the ceiling height apart, the usual rule. Move or delete any of them on the plan.</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn"
+            data-testid="pot-lights"
+            onClick={() => {
+              const n = useDesignStore.getState().potLights();
+              useDesignStore.getState().toast(`${n} pot lights laid out. Ctrl+Z to undo.`, 'ok');
+            }}
+          >
+            Lay out pot lights
+          </button>
+          {items.some((i) => i.productId === 'pot-light') && (
+            <button type="button" className="btn" onClick={() => useDesignStore.getState().potLights(true)}>
+              Remove pot lights
+            </button>
+          )}
+        </div>
+      </section>
+
       <SurfacePicker title="Countertop" options={COUNTERTOPS} value={surfaces.countertopId} onPick={(id) => set({ countertopId: id })} />
       <SurfacePicker title="Backsplash" options={BACKSPLASHES} value={surfaces.backsplashId} onPick={(id) => set({ backsplashId: id })} />
       <SurfacePicker title="Flooring" options={FLOORING} value={surfaces.flooringId} onPick={(id) => set({ flooringId: id })} />

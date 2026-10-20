@@ -310,6 +310,13 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       break;
     }
     case 'pendant': {
+      if (product.variant === 'recessed') {
+        // The lighting-plan symbol for a pot light: a small circle with a dot.
+        nodes.push(<Circle key="r" x={0} y={0} radius={w / 2} fill={rendered ? 'rgba(255,214,140,0.55)' : sheet} {...hair} dash={dash} listening={false} />);
+        nodes.push(<Circle key="d" x={0} y={0} radius={0.9} fill={ink} listening={false} />);
+        label = null;
+        break;
+      }
       if (product.variant === 'linear') {
         if (rendered) nodes.push(<Rect key="glow" x={x0 - 8} y={y0 - 10} width={w + 16} height={d + 20} cornerRadius={12} fillRadialGradientStartPoint={{ x: 0, y: 0 }} fillRadialGradientEndPoint={{ x: 0, y: 0 }} fillRadialGradientStartRadius={0} fillRadialGradientEndRadius={w / 2 + 8} fillRadialGradientColorStops={[0, 'rgba(255,196,110,0.28)', 1, 'rgba(255,196,110,0)']} listening={false} />);
         nodes.push(<Rect key="bar" x={x0} y={y0} width={w} height={d} fill={rendered ? finish.hex : sheet} opacity={0.8} />);

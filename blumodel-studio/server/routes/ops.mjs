@@ -59,6 +59,12 @@ export const ROBOTS = [
 /** @param {any} ctx */
 export default function routes(ctx) {
   const { db, config } = ctx;
+  /** The sales site's public origin when this request is for the sales site (not a showroom), else null. */
+  const salesOrigin = (rc) => {
+    if (rc.site?.kind !== 'sales' || rc.site?.tenantId) return null;
+    const pub = String(config.PUBLIC_URL || '').replace(/\/+$/, '');
+    return /^https?:\/\//.test(pub) ? pub : null;
+  };
   return [
     {
       method: 'GET',
@@ -89,9 +95,32 @@ export default function routes(ctx) {
       path: '/robots.txt',
       auth: 'none',
       handler: (rc) => {
+        // The sales site names its sitemap; a showroom's robots.txt stays as it was.
+        const origin = salesOrigin(rc);
+        const body = origin ? `${ROBOTS}\nSitemap: ${origin}/sitemap.xml\n` : ROBOTS;
         rc.sent = true;
-        rc.res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400', 'Content-Length': Buffer.byteLength(ROBOTS) });
-        rc.res.end(rc.method === 'HEAD' ? undefined : ROBOTS);
+        rc.res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400', 'Content-Length': Buffer.byteLength(body) });
+        rc.res.end(rc.method === 'HEAD' ? undefined : body);
+      },
+    },
+    {
+      method: 'GET',
+      path: '/sitemap.xml',
+      auth: 'none',
+      handler: (rc) => {
+        // Only the sales site has one. The app's pages are #/ routes, which search engines treat as the
+        // home page, so the home page is the one URL; the demo showroom is its own host.
+        const origin = salesOrigin(rc);
+        if (!origin) {
+          rc.sent = true;
+          rc.res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+          rc.res.end('Not found');
+          return;
+        }
+        const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${origin}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>\n</urlset>\n`;
+        rc.sent = true;
+        rc.res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=86400', 'Content-Length': Buffer.byteLength(body) });
+        rc.res.end(rc.method === 'HEAD' ? undefined : body);
       },
     },
   ];

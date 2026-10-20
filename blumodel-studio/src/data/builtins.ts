@@ -257,6 +257,15 @@ const LIST: Product[] = [
 
   // ─── Lighting ──────────────────────────────────────────────────────────
   {
+    id: 'pot-light', kind: 'pendant', variant: 'recessed', category: 'lighting', brand: BASICS_BRAND, name: 'Recessed Pot Light',
+    code: 'LR-6', widthIn: 6, depthIn: 6, heightIn: 1, elevationIn: 95, widthOptions: [4, 6], price: 85,
+    finishes: [
+      { id: 'white', name: 'White Trim', hex: '#f4f3ef', material: 'paint' },
+      { id: 'black', name: 'Black Trim', hex: '#222222', material: 'metal' },
+    ],
+    blurb: 'A slim LED pot light set into the ceiling. Room & Finishes lays out a whole grid of them.',
+  },
+  {
     id: 'pendant-dome', kind: 'pendant', variant: 'dome', category: 'lighting', brand: BASICS_BRAND, name: 'Dome Pendant',
     code: 'LP-D', widthIn: 14, depthIn: 14, heightIn: 10, elevationIn: 68, price: 289,
     finishes: [

@@ -373,3 +373,31 @@ export function connectNewRoom(d: Draft, roomId: string, productId: string, widt
   const out = placeOpening(d, productId, best.seg.id, (best.from + best.to) / 2, widthIn);
   return isError(out) ? d : { room: out.room, items: out.items };
 }
+
+/**
+ * A grid of pot lights over every room's floor (not open areas, which sit on a floor already):
+ * spaced about half the ceiling height apart (the usual rule, 4′ under an 8′ ceiling), half a
+ * spacing in from the walls, each at least 12″ from any wall. Replaces the pot lights already there.
+ */
+export function layoutPotLights(d: Draft, productId = 'pot-light'): Draft {
+  const spacing = Math.min(72, Math.max(36, Math.round(d.room.ceilingIn / 2)));
+  const items = d.items.filter((it) => it.productId !== productId);
+  const lights: PlacedItem[] = [];
+  for (const o of floorOutlines(d.room)) {
+    const b = bounds(o);
+    const nx = Math.max(1, Math.round((b.maxX - b.minX) / spacing));
+    const ny = Math.max(1, Math.round((b.maxY - b.minY) / spacing));
+    const sx = (b.maxX - b.minX) / nx;
+    const sy = (b.maxY - b.minY) / ny;
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        const x = Math.round(b.minX + sx * (i + 0.5));
+        const y = Math.round(b.minY + sy * (j + 0.5));
+        const m = 12;
+        if (![[-m, -m], [m, -m], [m, m], [-m, m]].every(([dx, dy]) => pointInOutline(o, x + dx, y + dy))) continue;
+        lights.push({ id: makeId(), productId, x, y, rotation: 0, finishIndex: 0 });
+      }
+    }
+  }
+  return { room: d.room, items: [...items, ...lights] };
+}

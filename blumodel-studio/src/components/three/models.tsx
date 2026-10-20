@@ -736,6 +736,17 @@ function PendantModel({ r, finish, ctx }: ModelProps) {
     });
   }, [v, finish.hex]);
 
+  if (v === 'recessed') {
+    // A pot light: a trim ring flush with the ceiling, whatever the ceiling height, and the lit lens inside.
+    const y = ctx.ceiling;
+    return (
+      <group>
+        <Cyl r={w / 2} h={0.3} pos={[0, y - 0.15, 0]} mat={shadeMat} seg={24} cast={false} />
+        <Cyl r={w / 2 - 0.8} h={0.1} pos={[0, y - 0.32, 0]} mat={M.bulb()} seg={24} cast={false} />
+      </group>
+    );
+  }
+
   if (v === 'linear') {
     return (
       <group>

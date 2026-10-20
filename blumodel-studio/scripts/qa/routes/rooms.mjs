@@ -283,4 +283,29 @@ export default [
       await h.shot('3d');
     },
   },
+  {
+    name: 'pot-lights',
+    as: 'studio',
+    viewport: DESK,
+    setup: async ({ me }) => {
+      const d = { name: 'QA Pot Lights', room: { widthIn: 168, lengthIn: 144, ceilingIn: 108 }, surfaces: {}, items: [{ id: 'b0', productId: 'base', x: 15, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 }], version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Pot Lights', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.left-panel'],
+    check: async (h) => {
+      await h.evaluate(() => [...document.querySelectorAll('.left-panel [role="tab"]')].find((b) => /Room/.test(b.textContent))?.click());
+      await h.waitForText('Lay out pot lights');
+      await h.sleep(300);
+      await h.click('[data-testid="pot-lights"]');
+      await h.waitForText('pot lights laid out');
+      const n = await h.evaluate(() => window.__blumodelQA.store.getState().doc.items.filter((i) => i.productId === 'pot-light').length);
+      if (n < 6) throw new Error(`only ${n} pot lights in a 14' x 12' kitchen`);
+      h.note(`${n} pot lights`);
+      await viewTab(h, 'Plan');
+      await h.sleep(500);
+      await h.shot('plan');
+    },
+  },
 ];

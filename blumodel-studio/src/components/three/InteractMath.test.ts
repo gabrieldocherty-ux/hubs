@@ -173,3 +173,22 @@ describe('rays through a wall opening', () => {
     near(hit.point.z, 0, 1e-9);
   });
 });
+
+describe('rayExitRoom on a drawn L', () => {
+  // 20' x 14' with the south-east 8' x 6' cut out (the notch).
+  const L: Room = { widthIn: 240, lengthIn: 168, ceilingIn: 108, outline: [[0, 0], [240, 0], [240, 96], [144, 96], [144, 168], [0, 168]] };
+  const down = (x: number, y: number) => new THREE.Ray(new THREE.Vector3(x / 12, 20, y / 12), new THREE.Vector3(0, -1, 0));
+  test('straight down onto the floor of the L lands on the floor', () => {
+    const hit = rayExitRoom(down(60, 60), L);
+    assert.equal(hit?.face, 'floor');
+  });
+  test('straight down into the notch is not floor', () => {
+    assert.equal(rayExitRoom(down(200, 140), L), null);
+  });
+  test('looking east from inside the room meets the near inner wall of the notch first', () => {
+    const ray = new THREE.Ray(new THREE.Vector3(60 / 12, 4, 130 / 12), new THREE.Vector3(1, 0, 0));
+    const hit = rayExitRoom(ray, L);
+    assert.equal(hit?.face, 'east');
+    assert.ok(Math.abs(hit!.point.x * 12 - 144) < 0.01);
+  });
+});
