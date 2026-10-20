@@ -287,7 +287,7 @@ export default [
     check: async (h) => {
       await h.click('.topbar .menu-wrap > .btn.primary');
       await h.waitFor('.topbar .menu[role="menu"]');
-      await h.waitForText(['Floor plan', '3D render', 'Product list', 'Printable, with Northline Kitchen & Bath’s details']);
+      await h.waitForText(['Floor plan', '3D render', 'Product list', 'Printable, with the work by trade and Northline Kitchen & Bath’s details']);
       const t = await h.evaluate(() => document.querySelector('.topbar .menu').innerText);
       if (/paid|unlock|\$5/i.test(t)) throw new Error(`the Export menu says: ${t}`);
       await h.shot('menu');
@@ -312,7 +312,7 @@ export default [
       await h.waitForText('Product list saved.');
       await h.waitUntil(() => (window.__qaDownloads ?? []).some((d) => /product-list\.html$/.test(d.name) && d.text), 10_000, 'the product list');
       const html = await h.evaluate(() => window.__qaDownloads.find((d) => /product-list\.html$/.test(d.name)).text);
-      for (const want of ['Northline Kitchen &amp; Bath', '555-', 'Designed on demo.localhost']) if (!html.includes(want)) throw new Error(`the product list lacks "${want}"`);
+      for (const want of ['Northline Kitchen &amp; Bath', '555-', 'Designed on demo.localhost', 'Scope of work', 'Demolition and protection', 'Electrical']) if (!html.includes(want)) throw new Error(`the product list lacks "${want}"`);
       if (/home depot|\brona\b|buy from|where to buy/i.test(html)) throw new Error('the product list names a store');
       // The server recorded both downloads as free exports of the visitor's own kitchen.
       const n = h.api.sql("SELECT COUNT(*) AS n FROM export_events e JOIN projects p ON p.id = e.project_id WHERE p.tenant_id = 't_demo' AND e.kind IN ('plan_png', 'quote')")[0].n;

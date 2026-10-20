@@ -53,6 +53,8 @@ export interface ProductListInput {
   planImage: string | null;
   /** Every wall with something on it, as SVG markup we drew ourselves (ElevationSvg), in the paper colours. */
   elevations?: { title: string; svg: string }[];
+  /** The scope of work by trade (lib/scope.ts). */
+  scope?: { trade: string; tasks: { text: string; qty?: string }[] }[];
   host: string;
   at: Date;
 }
@@ -108,6 +110,12 @@ h1{margin:24px 0 2px;font:600 26px ${DISPLAY}}
 .walls figure{margin:0 0 18px;break-inside:avoid;page-break-inside:avoid;border:1px solid var(--rule);border-radius:10px;padding:8px}
 .walls figcaption{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 4px}
 .walls svg{display:block;width:100%;height:auto;max-height:420px}
+.scope h2{margin:28px 0 4px;font:600 18px ${DISPLAY}}
+.scope p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.scope h3{margin:16px 0 4px;font:600 14px ${FONT};color:var(--brand)}
+.scope ol{margin:0;padding-left:20px}
+.scope li{padding:3px 0;break-inside:avoid}
+.scope li i{float:right;font-style:normal;color:var(--muted);white-space:nowrap;margin-left:12px}
 table{width:100%;border-collapse:collapse}
 th,td{padding:8px 6px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
@@ -136,6 +144,8 @@ ${p.showPrices && p.lines.length ? `<tr class="total"><td colspan="5">Estimated 
 </table>
 ${p.elevations?.length ? `<section class="walls"><h2>Wall elevations</h2>
 ${p.elevations.map((e) => `<figure><figcaption>${esc(e.title)}</figcaption>${/^<svg[\s>]/.test(e.svg) ? e.svg : ''}</figure>`).join('')}</section>` : ''}
+${p.scope?.length ? `<section class="scope"><h2>Scope of work</h2><p>What each trade does to build this design, in the order it happens on site. Quantities come from the design; ${esc(name)} confirms them on a site visit.</p>
+${p.scope.map((t) => `<h3>${esc(t.trade)}</h3><ol>${t.tasks.map((k) => `<li>${k.qty ? `<i>${esc(k.qty)}</i>` : ''}${esc(k.text)}</li>`).join('')}</ol>`).join('\n')}</section>` : ''}
 <footer>
 <div>${contact}</div>
 <div class="fine">${esc(madeOnLine(p.host, p.at))}. A planning draft for a conversation with ${esc(name)}: sizes, prices and availability are confirmed by ${esc(name)} before anything is ordered.</div>

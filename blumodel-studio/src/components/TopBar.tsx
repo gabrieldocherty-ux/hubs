@@ -1,3 +1,4 @@
+import { scopeOfWork } from '../lib/scope';
 import { useEffect, useRef, useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
@@ -141,6 +142,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
       logoUrl: logo,
       planImage: planShot,
       elevations: elevationsForPrint(resolveAll(doc.items), doc.room, doc.surfaces),
+      scope: scopeOfWork(doc, est),
       host: location.host,
       at: new Date(),
     });
@@ -263,7 +265,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
                 </button>
                 {showroom && (
                   <button role="menuitem" onClick={() => doExport('quote')}>
-                    <b>{lock}Product list</b><span>Printable, with {shortName(showroom)}’s details</span>
+                    <b>{lock}Product list and scope</b><span>Printable, with the work by trade and {shortName(showroom)}’s details</span>
                   </button>
                 )}
                 {showPrices && (
