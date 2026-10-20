@@ -366,6 +366,27 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
       if (product.variant === 'alcove') nodes.push(<line key="split" x1={w / 2} x2={w / 2} y1={Y(h)} y2={Y(3)} stroke={INK} strokeWidth={0.5} />);
       break;
     }
+    case 'outlet': {
+      // Front view, enlarged: the plate and its device on a strip of wall.
+      const metal = f.material === 'metal';
+      H = 9;
+      const pw = 5.2;
+      const ph = 8;
+      const x = w / 2 - pw / 2;
+      nodes.push(<rect key="plate" x={x} y={0.5} width={pw} height={ph} rx={0.4} fill={f.hex} stroke={INK} strokeWidth={0.35} />);
+      const dev = metal ? '#f4f2ee' : f.hex;
+      nodes.push(<rect key="dev" x={w / 2 - 1.3} y={1.6} width={2.6} height={ph - 2.2} rx={0.25} fill={dev} stroke={INK} strokeWidth={0.25} />);
+      const dark = '#2a2a2a';
+      if (product.variant === 'switch' || product.variant === 'dimmer') nodes.push(<line key="rk" x1={w / 2 - 1} x2={w / 2 + 1} y1={4.6} y2={4.6} stroke={INK} strokeWidth={0.25} />);
+      else
+        for (const cy of [3.2, 6.2]) {
+          nodes.push(<rect key={`a${cy}`} x={w / 2 - 0.6} y={cy - 0.4} width={0.18} height={0.6} fill={dark} />);
+          nodes.push(<rect key={`b${cy}`} x={w / 2 + 0.42} y={cy - 0.45} width={0.18} height={0.7} fill={dark} />);
+          nodes.push(<circle key={`g${cy}`} cx={w / 2} cy={cy + 0.5} r={0.18} fill={dark} />);
+        }
+      if (product.variant === 'gfci') nodes.push(<rect key="rs" x={w / 2 + 0.1} y={4.45} width={0.9} height={0.35} fill="#c9483b" />);
+      break;
+    }
     case 'mirror': {
       const y0 = product.elevationIn;
       H = Math.max(H, y0 + product.heightIn);

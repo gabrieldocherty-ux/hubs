@@ -295,7 +295,8 @@ export function PlanView() {
   const margin = 70;
 
   const ordered = useMemo(() => {
-    const rank = (kind: string, z0: number) => (kind === 'rug' ? 0 : kind === 'window' || kind === 'door' ? 4 : kind === 'pendant' ? 3 : isOverheadKind(kind) || z0 >= 48 ? 2 : 1);
+    // Outlets and switches sit on top, like an electrical plan over the cabinet plan.
+    const rank = (kind: string, z0: number) => (kind === 'rug' ? 0 : kind === 'window' || kind === 'door' || kind === 'outlet' ? 4 : kind === 'pendant' ? 3 : isOverheadKind(kind) || z0 >= 48 ? 2 : 1);
     return [...all].sort((a, b) => rank(a.product.kind, a.z0) - rank(b.product.kind, b.z0));
   }, [all]);
 

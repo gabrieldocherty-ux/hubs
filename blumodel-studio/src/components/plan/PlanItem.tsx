@@ -435,6 +435,23 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       label = null;
       break;
     }
+    case 'outlet': {
+      // Drawn as on an electrical plan, standing off the wall: a duplex outlet is a circle with two
+      // ticks through it; GFCI and USB are labelled; a switch is an S (S with a D for a dimmer).
+      const r0 = 3.2;
+      const cy = d / 2 + r0 + 1;
+      nodes.push(<Line key="lead" points={[0, d / 2, 0, cy - r0]} {...hair} listening={false} />);
+      if (product.variant === 'switch' || product.variant === 'dimmer') {
+        nodes.push(<Text key="s" x={-r0 * 1.6} y={cy - r0} width={r0 * 3.2} height={r0 * 2} text={product.variant === 'dimmer' ? 'SD' : 'S'} fontSize={r0 * 1.7} fontStyle="bold" align="center" verticalAlign="middle" fill={ink} listening={false} />);
+      } else {
+        nodes.push(<Circle key="c" x={0} y={cy} radius={r0} fill={rendered ? '#fff' : sheet} {...hair} />);
+        nodes.push(<Line key="t1" points={[-r0 * 1.5, cy - 1, r0 * 1.5, cy - 1]} {...hair} listening={false} />);
+        nodes.push(<Line key="t2" points={[-r0 * 1.5, cy + 1, r0 * 1.5, cy + 1]} {...hair} listening={false} />);
+        if (product.variant === 'gfci' || product.variant === 'usb') nodes.push(<Text key="g" x={r0 + 0.8} y={cy - 2} text={product.variant === 'gfci' ? 'GFCI' : 'USB'} fontSize={2.6} fill={ink} listening={false} />);
+      }
+      label = null;
+      break;
+    }
     case 'mirror': {
       nodes.push(<Rect key="m" x={x0} y={y0} width={w} height={Math.max(d, 1.5)} fill={rendered ? '#cfd8dc' : sheet} opacity={0.8} {...hair} dash={dash} />);
       label = null;

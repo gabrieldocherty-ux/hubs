@@ -26,7 +26,9 @@ export type Kind =
   | 'toilet'
   | 'tub'
   | 'shower'
-  | 'mirror';
+  | 'mirror'
+  // Electrical (2026-10-20): outlets and switches on the wall.
+  | 'outlet';
 
 export type CategoryId =
   | 'cabinets'

@@ -26,7 +26,8 @@
     "toilet",
     "tub",
     "shower",
-    "mirror"
+    "mirror",
+    "outlet"
   ],
   "categories": [
     {
@@ -43,7 +44,7 @@
     },
     {
       "id": "lighting",
-      "label": "Lighting"
+      "label": "Lighting & electrical"
     },
     {
       "id": "bath",
@@ -101,7 +102,8 @@
     "toilet": "bath",
     "tub": "bath",
     "shower": "bath",
-    "mirror": "bath"
+    "mirror": "bath",
+    "outlet": "lighting"
   },
   "variants": {
     "base": [
@@ -209,6 +211,14 @@
       "rect",
       "round",
       "cabinet"
+    ],
+    "outlet": [
+      "duplex",
+      "gfci",
+      "usb",
+      "low",
+      "switch",
+      "dimmer"
     ]
   }
 }

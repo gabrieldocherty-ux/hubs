@@ -37,6 +37,11 @@ var MIRROR_FRAME = [
   { id: "brass", name: "Brass Frame", hex: "#b48a4a", material: "metal" },
   { id: "frameless", name: "Frameless", hex: "#dfe6ea", material: "glass" }
 ];
+var DEVICE_FINISH = [
+  { id: "white", name: "White", hex: "#f4f2ee", material: "paint" },
+  { id: "black", name: "Matte Black", hex: "#1f1f21", material: "paint" },
+  { id: "nickel", name: "Brushed Nickel Plate", hex: "#b9b6ae", material: "metal" }
+];
 var LIST = [
   // ─── Cabinets ──────────────────────────────────────────────────────────
   {
@@ -641,6 +646,103 @@ var LIST = [
       { id: "black", name: "Black Trim", hex: "#222222", material: "metal" }
     ],
     blurb: "A slim LED pot light set into the ceiling. Room & Finishes lays out a whole grid of them."
+  },
+  // ─── Electrical: outlets and switches, supplied and installed by an electrician ───
+  {
+    id: "outlet-counter",
+    kind: "outlet",
+    variant: "duplex",
+    category: "lighting",
+    brand: BASICS_BRAND,
+    name: "Counter Outlet",
+    code: "EL-DUP",
+    widthIn: 2.75,
+    depthIn: 0.5,
+    heightIn: 4.5,
+    elevationIn: 42,
+    price: 120,
+    finishes: DEVICE_FINISH,
+    blurb: "A duplex outlet on the backsplash, 6\u2033 above the counter. Keep every stretch of counter within 36\u2033 (900 mm) of one."
+  },
+  {
+    id: "outlet-gfci",
+    kind: "outlet",
+    variant: "gfci",
+    category: "lighting",
+    brand: BASICS_BRAND,
+    name: "GFCI Counter Outlet",
+    code: "EL-GFCI",
+    widthIn: 2.75,
+    depthIn: 0.6,
+    heightIn: 4.5,
+    elevationIn: 42,
+    price: 165,
+    finishes: DEVICE_FINISH,
+    blurb: "Ground-fault protected: the one the code wants within 1.5 m (5\u2032) of a sink."
+  },
+  {
+    id: "outlet-usb",
+    kind: "outlet",
+    variant: "usb",
+    category: "lighting",
+    brand: BASICS_BRAND,
+    name: "USB-C Counter Outlet",
+    code: "EL-USB",
+    widthIn: 2.75,
+    depthIn: 0.6,
+    heightIn: 4.5,
+    elevationIn: 42,
+    price: 150,
+    finishes: DEVICE_FINISH,
+    blurb: "One outlet and two USB charging ports (USB-C and USB-A), for a charging spot on the counter."
+  },
+  {
+    id: "outlet-wall",
+    kind: "outlet",
+    variant: "low",
+    category: "lighting",
+    brand: BASICS_BRAND,
+    name: "Wall Outlet",
+    code: "EL-WALL",
+    widthIn: 2.75,
+    depthIn: 0.5,
+    heightIn: 4.5,
+    elevationIn: 14,
+    price: 110,
+    finishes: DEVICE_FINISH,
+    blurb: "A duplex outlet low on the wall, for a dining or living area."
+  },
+  {
+    id: "light-switch",
+    kind: "outlet",
+    variant: "switch",
+    category: "lighting",
+    brand: BASICS_BRAND,
+    name: "Light Switch",
+    code: "EL-SW",
+    widthIn: 2.75,
+    depthIn: 0.5,
+    heightIn: 4.5,
+    elevationIn: 46,
+    price: 110,
+    finishes: DEVICE_FINISH,
+    blurb: "A rocker switch at 48\u2033 to the centre, beside the door you come in by."
+  },
+  {
+    id: "dimmer-switch",
+    kind: "outlet",
+    variant: "dimmer",
+    category: "lighting",
+    brand: BASICS_BRAND,
+    name: "Dimmer Switch",
+    code: "EL-DIM",
+    widthIn: 2.75,
+    depthIn: 0.6,
+    heightIn: 4.5,
+    elevationIn: 46,
+    price: 160,
+    finishes: DEVICE_FINISH,
+    blurb: "A rocker with a slide dimmer, for pot lights or pendants."
   },
   {
     id: "pendant-dome",
@@ -1283,7 +1385,8 @@ var kinds_default = {
     "toilet",
     "tub",
     "shower",
-    "mirror"
+    "mirror",
+    "outlet"
   ],
   categories: [
     {
@@ -1300,7 +1403,7 @@ var kinds_default = {
     },
     {
       id: "lighting",
-      label: "Lighting"
+      label: "Lighting & electrical"
     },
     {
       id: "bath",
@@ -1358,7 +1461,8 @@ var kinds_default = {
     toilet: "bath",
     tub: "bath",
     shower: "bath",
-    mirror: "bath"
+    mirror: "bath",
+    outlet: "lighting"
   },
   variants: {
     base: [
@@ -1466,6 +1570,14 @@ var kinds_default = {
       "rect",
       "round",
       "cabinet"
+    ],
+    outlet: [
+      "duplex",
+      "gfci",
+      "usb",
+      "low",
+      "switch",
+      "dimmer"
     ]
   }
 };

@@ -319,6 +319,7 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
 
   bathChecks(all, room, checks, problemIds);
   fridgeChecks(all, room, checks, problemIds);
+  outletChecks(all, room, checks, problemIds);
 
   const order: Record<CheckLevel, number> = { bad: 0, warn: 1, info: 2, ok: 3 };
   checks.sort((a, b) => order[a.level] - order[b.level]);
@@ -607,5 +608,94 @@ function bathChecks(all: Resolved[], room: Room, checks: Check[], problemIds: Se
     } else if (inside < 34) {
       checks.push({ id: `shower-size-${sh.item.id}`, level: 'warn', title: `A tight ${feetInches(inside)} shower`, detail: 'Above the 30″ minimum, but 36″ × 36″ is the comfortable size.', itemIds: [sh.item.id] });
     }
+  }
+}
+
+/** No point along a kitchen counter more than 900 mm (about 36″) from an outlet (Canadian Electrical Code). */
+export const COUNTER_OUTLET_REACH_IN = 36;
+/** Outlets within 1.5 m (about 5′) of a sink must be GFCI-protected. */
+export const GFCI_SINK_REACH_IN = 60;
+
+/**
+ * Outlets, once the design has any (a kitchen nobody has wired yet isn't nagged): every stretch of
+ * counter along a wall within 36″ of an outlet on that wall, and a GFCI outlet near each sink.
+ */
+function outletChecks(all: Resolved[], room: Room, checks: Check[], problemIds: Set<string>) {
+  // Any device (outlet or switch) a cabinet, appliance or tub stands in front of can't be reached.
+  for (const dev of all.filter((r) => r.product.kind === 'outlet')) {
+    const ds = flushSeg(dev, room);
+    if (!ds) continue;
+    const [s0, s1] = alongWall(ds.wall, dev.box);
+    const hid = all.find((r) => {
+      if (r === dev || r.product.kind === 'outlet' || isOpening(r.product) || r.product.heightIn < 12) return false;
+      const rs = flushSeg(r, room);
+      if (!rs || rs.room !== ds.room || rs.id !== ds.id) return false;
+      const [r0, r1] = alongWall(rs.wall, r.box);
+      return overlap1D(s0, s1, r0, r1) > 0.5 && overlap1D(dev.z0, dev.z1, r.z0, r.z1) > 0.5;
+    });
+    if (!hid) continue;
+    problemIds.add(dev.item.id);
+    checks.push({ id: `outlet-hidden-${dev.item.id}`, level: 'warn', title: `The ${label(dev).toLowerCase()} is behind the ${label(hid).toLowerCase()}`, detail: 'Nobody can reach it there. Move it along the wall, or up onto the backsplash.', itemIds: [dev.item.id, hid.item.id] });
+  }
+  const outlets = all.filter((r) => r.product.kind === 'outlet' && r.product.variant !== 'switch' && r.product.variant !== 'dimmer');
+  if (!outlets.length) return;
+  // Counter runs along each wall: the countertop pieces standing against it, joined where they touch.
+  const runs = new Map<string, { seg: ReturnType<typeof flushSeg>; parts: [number, number, string][] }>();
+  for (const r of all) {
+    if (!hasCountertop(r.product)) continue;
+    const seg = flushSeg(r, room);
+    if (!seg) continue;
+    const key = `${seg.room}:${seg.id}`;
+    const run = runs.get(key) ?? { seg, parts: [] };
+    const [s, e] = alongWall(seg.wall, r.box);
+    run.parts.push([s, e, r.item.id]);
+    runs.set(key, run);
+  }
+  for (const [key, run] of runs) {
+    const seg = run.seg!;
+    const parts = run.parts.sort((a, b) => a[0] - b[0]);
+    const merged: { s: number; e: number; ids: string[] }[] = [];
+    for (const [s, e, id] of parts) {
+      const last = merged[merged.length - 1];
+      if (last && s <= last.e + 1) {
+        last.e = Math.max(last.e, e);
+        last.ids.push(id);
+      } else merged.push({ s, e, ids: [id] });
+    }
+    const here = outlets.filter((o) => {
+      const os = flushSeg(o, room);
+      return !!os && `${os.room}:${os.id}` === key;
+    });
+    for (const m of merged) {
+      if (m.e - m.s < 12) continue;
+      const mine = here.map((o) => ({ o, at: (alongWall(seg.wall, o.box)[0] + alongWall(seg.wall, o.box)[1]) / 2 })).filter((x) => x.at >= m.s - 6 && x.at <= m.e + 6);
+      const at = mine.map((x) => x.at).sort((a, b) => a - b);
+      let reach = at.length ? Math.max(at[0] - m.s, m.e - at[at.length - 1]) : m.e - m.s;
+      for (let i = 1; i < at.length; i++) reach = Math.max(reach, (at[i] - at[i - 1]) / 2);
+      if (reach <= COUNTER_OUTLET_REACH_IN + 0.5) continue;
+      const need = Math.max(1, Math.ceil((m.e - m.s) / (COUNTER_OUTLET_REACH_IN * 2)));
+      checks.push({
+        id: `outlets-${key}-${Math.round(m.s)}`,
+        level: 'warn',
+        title: at.length ? `A stretch of counter is ${feetInches(reach)} from an outlet` : `A ${feetInches(m.e - m.s)} counter with no outlet`,
+        detail: `The electrical code wants every point along a kitchen counter within 900 mm (about 36″) of an outlet: this ${feetInches(m.e - m.s)} run needs at least ${need}, spaced evenly. Add a Counter Outlet from Lighting & electrical.`,
+        itemIds: [...mine.map((x) => x.o.item.id), m.ids[0]],
+      });
+    }
+  }
+  // GFCI near a sink (a kitchen sink or a vanity's basin).
+  const sinks = all.filter((r) => r.product.kind === 'sink' || r.product.kind === 'vanity');
+  for (const o of outlets) {
+    if (o.product.variant === 'gfci') continue;
+    const near = sinks.find((sk) => Math.hypot(sk.item.x - o.item.x, sk.item.y - o.item.y) <= GFCI_SINK_REACH_IN);
+    if (!near) continue;
+    problemIds.add(o.item.id);
+    checks.push({
+      id: `gfci-${o.item.id}`,
+      level: 'warn',
+      title: 'Use a GFCI outlet near the sink',
+      detail: `Outlets within 1.5 m (5′) of a sink must be ground-fault protected. Swap this one for a GFCI Counter Outlet (or protect it from a GFCI upstream).`,
+      itemIds: [o.item.id, near.item.id],
+    });
   }
 }

@@ -11,6 +11,7 @@ import { farmhouseFronts, farmhouseSink } from '../../lib/fronts';
 import { boxGeo, canopy } from './geom3d';
 import { GltfModel, slotMaterials } from './gltf';
 import { MirrorModel, ShowerModel, ToiletModel, TubModel, VanityModel } from './bathModels';
+import { OutletModel } from './electricalModels';
 
 export interface ModelProps {
   r: Resolved;
@@ -906,6 +907,8 @@ export function proceduralModel(p: ModelProps): JSX.Element | null {
       return <ShowerModel {...p} />;
     case 'mirror':
       return <MirrorModel {...p} />;
+    case 'outlet':
+      return <OutletModel {...p} />;
     default:
       return null;
   }

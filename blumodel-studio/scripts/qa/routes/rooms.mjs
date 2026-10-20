@@ -470,6 +470,38 @@ export default [
     },
   },
   {
+    // Outlets and switches: the plan's electrical symbols, the 3D plates, and the code checks.
+    name: 'electrical',
+    as: 'studio',
+    viewport: DESK,
+    setup: async ({ me }) => {
+      const items = [0, 1, 2, 3].map((i) => ({ id: `b${i}`, productId: 'base', x: 15 + i * 30, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 }))
+        .concat([
+          { id: 'sk', productId: 'sink-farm', x: 138, y: 12, rotation: 0, finishIndex: 0 },
+          { id: 'o1', productId: 'outlet-counter', x: 20, y: 0.25, rotation: 0, finishIndex: 0 },
+          { id: 'o2', productId: 'outlet-counter', x: 112, y: 0.25, rotation: 0, finishIndex: 0 },
+          { id: 'sw', productId: 'dimmer-switch', x: 200, y: 0.25, rotation: 0, finishIndex: 0 },
+        ]);
+      const d = { name: 'QA Electrical', room: { widthIn: 240, lengthIn: 144, ceilingIn: 96 }, surfaces: { flooringId: 'oak-natural' }, items, version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Electrical', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status} ${JSON.stringify(r.body)})`);
+      if (r.body.project.doc.items.length !== items.length) throw new Error('the server dropped the outlets');
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.plan-view canvas'],
+    check: async (h) => {
+      // o2 sits 5′ from the sink and isn't a GFCI; the run between the outlets is fine.
+      await h.evaluate(() => [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent.trim().startsWith('Checks'))?.click());
+      await h.waitUntil(() => document.body.innerText.includes('Use a GFCI outlet near the sink'), 6000, 'the GFCI check');
+      await h.shot('plan');
+      await viewTab(h, '3D');
+      await h.waitFor('canvas');
+      await h.evaluate(() => window.__blumodelQA.store.getState().select('o1'));
+      await h.sleep(1500);
+      await h.shot('3d');
+    },
+  },
+  {
     name: 'flooring-picker',
     as: 'studio',
     viewport: DESK,
