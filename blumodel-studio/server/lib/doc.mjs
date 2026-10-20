@@ -244,7 +244,30 @@ function cleanShape(r) {
     }
     if (extra.length) out.extra = extra;
   }
+  const walls = cleanWallFinishes(r.wallFinishes);
+  if (walls) out.wallFinishes = walls;
   return out;
+}
+
+const PANELS = new Set(['wainscot', 'board-batten', 'shiplap', 'tile']);
+const FINISH_ID = /^[a-z0-9-]{1,40}$/;
+
+/** Feature walls (src/lib/wallFinish.ts): `${spaceId}:${edge}` -> { paintId?, panel?, panelHeightIn?, tileId? }, known fields only. */
+function cleanWallFinishes(raw) {
+  if (!isObj(raw)) return null;
+  const out = {};
+  for (const [k, v] of Object.entries(raw).slice(0, 200)) {
+    if (!/^[A-Za-z0-9_-]{1,32}:\d{1,3}$/.test(k) || !isObj(v)) continue;
+    const c = {};
+    if (typeof v.paintId === 'string' && FINISH_ID.test(v.paintId)) c.paintId = v.paintId;
+    if (PANELS.has(v.panel)) {
+      c.panel = v.panel;
+      if ((v.panel === 'wainscot' || v.panel === 'board-batten') && isNum(v.panelHeightIn)) c.panelHeightIn = Math.round(Math.min(138, Math.max(12, v.panelHeightIn)));
+      if (v.panel === 'tile' && typeof v.tileId === 'string' && FINISH_ID.test(v.tileId)) c.tileId = v.tileId;
+    }
+    if (Object.keys(c).length) out[k] = c;
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 /**

@@ -3,9 +3,10 @@ import type { PriceQuote } from '../types/platform';
 import { hasCountertop, isBuiltin, priceFor, productCode } from '../data/catalog';
 import { BACKSPLASHES, COUNTERTOPS, FLOORING, PAINTS, byId, resolveBacksplash } from '../data/finishes';
 import { resolveFaucet, resolveHardware } from './fixtures';
-import { backsplashSegments, resolveAll } from './geometry';
+import { backsplashSegments, flushSeg, resolveAll } from './geometry';
 import { resolveFinish } from './finish';
-import { area, floorSpaces, perimeterIn } from './outline';
+import { area, floorSpaces, perimeterIn, wallSegs } from './outline';
+import { PANEL_PRICE, WALL_PANELS, finishFor, panelTop } from './wallFinish';
 
 export type EstimateGroup =
   | 'Cabinetry'
@@ -81,6 +82,10 @@ const GROUP_BY_CATEGORY: Partial<Record<string, EstimateGroup>> = {
 
 /** Crown moulding per linear foot, supplied and installed, in the cabinet finish. */
 const CROWN_PRICE = { flat: 14, cove: 22 };
+/** Paint-grade MDF baseboard, supplied and installed, per linear foot. */
+const BASEBOARD_PRICE = 6;
+/** Things that stand on the floor tight to a wall, so no baseboard runs behind them. */
+const AGAINST_WALL = new Set(['base', 'corner', 'tall', 'oven-tower', 'sink', 'range', 'fridge', 'dishwasher', 'wine', 'vanity', 'tub', 'shower']);
 
 export function pullCount(p: Product, w: number): number {
   if (p.source === 'missing') return 0;
@@ -174,7 +179,10 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
     lines.push({ key: 'counter', group: 'Surfaces', label: `${ct.brand} ${ct.name}`, sub: 'Countertop, fabricated + installed', qty: sq, unit: 'sq ft', unitPrice: ct.price, total: sq * ct.price });
   }
 
-  const splashIn2 = backsplashSegments(all, room).reduce((s, seg) => s + (seg.end - seg.start) * (seg.top - seg.bottom), 0);
+  // A wall tiled floor to ceiling is its own backsplash (priced with the wall tile).
+  const splashIn2 = backsplashSegments(all, room)
+    .filter((seg) => finishFor(room, seg.seg)?.panel !== 'tile')
+    .reduce((s, seg) => s + (seg.end - seg.start) * (seg.top - seg.bottom), 0);
   if (splashIn2 > 0) {
     const bs = resolveBacksplash(surfaces.backsplashId, surfaces.countertopId);
     const src = byId(BACKSPLASHES, surfaces.backsplashId);
@@ -202,9 +210,61 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   const openingsIn2 = all
     .filter((r) => r.product.kind === 'window' || r.product.kind === 'door')
     .reduce((s, r) => s + r.w * r.product.heightIn, 0);
-  const wallSq = (perimeterIn(room) * room.ceilingIn - openingsIn2) / 144;
-  const gallons = Math.max(1, Math.ceil((wallSq * 2) / 350));
-  lines.push({ key: 'paint', group: 'Surfaces', label: `${paint.brand} ${paint.name}`, sub: 'Wall paint, two coats', qty: gallons, unit: 'gal', unitPrice: paint.price, total: gallons * paint.price });
+  if (!room.wallFinishes) {
+    const wallSq = (perimeterIn(room) * room.ceilingIn - openingsIn2) / 144;
+    const gallons = Math.max(1, Math.ceil((wallSq * 2) / 350));
+    lines.push({ key: 'paint', group: 'Surfaces', label: `${paint.brand} ${paint.name}`, sub: 'Wall paint, two coats', qty: gallons, unit: 'gal', unitPrice: paint.price, total: gallons * paint.price });
+  } else {
+    // Feature walls: paint per colour on what stays painted, and the panelling and wall tile by area.
+    const H = room.ceilingIn;
+    const paintIn2 = new Map<string, number>();
+    const panelIn2 = new Map<string, number>();
+    const openingsOn = (sg: { room: number; id: number }) =>
+      all.filter((r) => (r.product.kind === 'window' || r.product.kind === 'door') && (() => { const f = flushSeg(r, room); return !!f && f.room === sg.room && f.id === sg.id; })()).reduce((s, r) => s + r.w * r.product.heightIn, 0);
+    for (const sg of wallSegs(room)) {
+      const len = sg.a1 - sg.a0;
+      const f = finishFor(room, sg);
+      let in2 = Math.max(0, len * H - (sg.style === 'wall' ? openingsOn(sg) : 0));
+      if (f?.panel) {
+        const covered = f.panel === 'tile' || f.panel === 'shiplap' ? in2 : Math.min(in2, len * panelTop(f, H));
+        const key = f.panel === 'tile' ? `tile:${f.tileId ?? 'subway-white'}` : f.panel;
+        panelIn2.set(key, (panelIn2.get(key) ?? 0) + covered);
+        // Shiplap is painted in the wall's colour; wainscoting and board & batten in trim.
+        if (f.panel !== 'shiplap') in2 -= covered;
+      }
+      const pid = f?.paintId ?? paint.id;
+      paintIn2.set(pid, (paintIn2.get(pid) ?? 0) + in2);
+    }
+    for (const [pid, in2] of paintIn2) {
+      if (in2 <= 0 && pid !== paint.id) continue;
+      const p = byId(PAINTS, pid);
+      const gallons = Math.max(1, Math.ceil(((in2 / 144) * 2) / 350));
+      const accent = pid !== paint.id;
+      lines.push({ key: accent ? `paint:${pid}` : 'paint', group: 'Surfaces', label: `${p.brand} ${p.name}`, sub: accent ? 'Feature wall paint, two coats' : 'Wall paint, two coats', qty: gallons, unit: 'gal', unitPrice: p.price, total: gallons * p.price });
+    }
+    for (const [key, in2] of panelIn2) {
+      if (key.startsWith('tile:')) {
+        const t = byId(BACKSPLASHES, key.slice(5));
+        const sq = Math.ceil((in2 / 144) * 1.1);
+        lines.push({ key: `walltile:${t.id}`, group: 'Surfaces', label: `${t.brand} ${t.name}`, sub: 'Wall tile, floor to ceiling, incl. 10% overage', qty: sq, unit: 'sq ft', unitPrice: t.price, total: sq * t.price });
+      } else {
+        const kind = key as keyof typeof PANEL_PRICE;
+        const sq = Math.ceil(in2 / 144);
+        const label = WALL_PANELS.find((p) => p.id === kind)?.label ?? kind;
+        lines.push({ key: `panel:${kind}`, group: 'Surfaces', label, sub: kind === 'shiplap' ? 'Shiplap boards, installed' : 'Installed and painted in trim white', qty: sq, unit: 'sq ft', unitPrice: PANEL_PRICE[kind], total: sq * PANEL_PRICE[kind] });
+      }
+    }
+  }
+
+  // Baseboard: along every full, half and bar wall, less doorways and walkways and the stretches behind
+  // cabinets, appliances, vanities and tubs (they stand tight to the wall), plus 10% for corners and waste.
+  const wallRunIn = wallSegs(room)
+    .filter((sg) => !sg.zone && (sg.style === 'wall' || sg.style === 'half' || sg.style === 'bar'))
+    .reduce((n, sg) => n + (sg.a1 - sg.a0), 0);
+  const doorwaysIn = all.filter((r) => r.product.kind === 'door').reduce((n, r) => n + r.w, 0);
+  const behindIn = all.filter((r) => r.z0 < 1 && AGAINST_WALL.has(r.product.kind) && flushSeg(r, room)).reduce((n, r) => n + r.w, 0);
+  const baseFt = Math.ceil((Math.max(0, wallRunIn - doorwaysIn - behindIn) / 12) * 1.1);
+  if (baseFt > 0) lines.push({ key: 'baseboard', group: 'Surfaces', label: 'Baseboard, paint grade', sub: 'Along the walls, less doorways and the runs behind cabinets and appliances, incl. 10%', qty: baseFt, unit: 'lin ft', unitPrice: BASEBOARD_PRICE, total: baseFt * BASEBOARD_PRICE });
 
   // Crown moulding: the run along every wall and tall cabinet that has room for it under the
   // ceiling, plus 20% for returns, mitres and waste, priced per linear foot.

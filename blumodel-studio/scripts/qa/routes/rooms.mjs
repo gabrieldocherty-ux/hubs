@@ -424,6 +424,52 @@ export default [
     },
   },
   {
+    // Feature walls: tile floor to ceiling on the north wall (around its window), olive wainscoting on the west.
+    name: 'feature-walls',
+    as: 'studio',
+    viewport: DESK,
+    setup: async ({ me }) => {
+      const items = [0, 1, 2].map((i) => ({ id: `b${i}`, productId: 'base', x: 15 + i * 30, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 }))
+        .concat([{ id: 'w1', productId: 'window', x: 130, y: 0, rotation: 0, finishIndex: 0 }]);
+      const d = { name: 'QA Feature walls', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: { flooringId: 'oak-natural', paintId: 'chalk' }, items, version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Feature walls', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.left-panel'],
+    check: async (h) => {
+      await h.evaluate(() => [...document.querySelectorAll('.left-panel [role="tab"]')].find((b) => /Room/.test(b.textContent))?.click());
+      await h.waitFor('[data-testid="feature-wall"]');
+      const pick = async (re) =>
+        h.evaluate((src) => {
+          const sel = document.querySelector('[data-testid="feature-wall"]');
+          const opt = [...sel.options].find((o) => new RegExp(src).test(o.textContent));
+          const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+          set.call(sel, opt.value);
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          return opt.value;
+        }, re);
+      const north = await pick('north wall');
+      await h.click('[data-testid="panel-tile"]');
+      await h.waitUntil(() => Object.values(window.__blumodelQA.store.getState().doc.room.wallFinishes ?? {}).some((f) => f.panel === 'tile'), 4000, 'the north wall tiled');
+      const west = await pick('west wall');
+      await h.click('[data-testid="panel-wainscot"]');
+      await h.click('.feature-walls .swatch[aria-label="Olive Grove"]');
+      const wf = await h.evaluate(() => window.__blumodelQA.store.getState().doc.room.wallFinishes);
+      if (wf[north]?.panel !== 'tile' || wf[north]?.tileId !== 'subway-white') throw new Error(`north: ${JSON.stringify(wf[north])}`);
+      if (wf[west]?.panel !== 'wainscot' || wf[west]?.paintId !== 'olive') throw new Error(`west: ${JSON.stringify(wf[west])}`);
+      await h.shot('panel');
+      await viewTab(h, '3D');
+      await h.waitFor('canvas');
+      await h.sleep(1800);
+      await h.shot('3d');
+      // Undo takes the last change back.
+      await h.evaluate(() => window.__blumodelQA.store.getState().undo());
+      const after = await h.evaluate(() => window.__blumodelQA.store.getState().doc.room.wallFinishes);
+      if (after[west]?.paintId) throw new Error('undo didn’t take the olive back');
+    },
+  },
+  {
     name: 'flooring-picker',
     as: 'studio',
     viewport: DESK,

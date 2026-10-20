@@ -86,3 +86,9 @@ test('an added room keeps its own floor; an open area and a junk id get none', (
   assert.equal(r.ok, true);
   assert.deepEqual(r.doc.room.extra.map((e) => e.flooringId), ['porcelain-12x24', undefined, undefined]);
 });
+
+test('feature walls survive a save with known fields only', () => {
+  const r = keep(room({ wallFinishes: { 'main:0': { paintId: 'olive', panel: 'wainscot', panelHeightIn: 40, evil: 1 }, 'main:1': { panel: 'tile', tileId: 'subway-white' }, 'x y': { paintId: 'ink' }, 'main:2': { panel: 'lava' } } }));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.doc.room.wallFinishes, { 'main:0': { paintId: 'olive', panel: 'wainscot', panelHeightIn: 40 }, 'main:1': { panel: 'tile', tileId: 'subway-white' } });
+});

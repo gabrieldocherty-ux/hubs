@@ -191,6 +191,20 @@ export interface ExtraRoom {
   flooringId?: string;
 }
 
+/** What covers a feature wall (lib/wallFinish.ts). */
+export type WallPanel = 'wainscot' | 'board-batten' | 'shiplap' | 'tile';
+
+/** One wall's own finish: an accent colour, and/or a panel treatment. */
+export interface WallFinish {
+  /** A PAINTS id for this wall (and its shiplap); absent: the room's paint. */
+  paintId?: string;
+  panel?: WallPanel;
+  /** Wainscoting and board & batten: how high, inches. */
+  panelHeightIn?: number;
+  /** Tile: a BACKSPLASHES id. */
+  tileId?: string;
+}
+
 export interface Room {
   /** Bounding box of the main room. For a drawn room these are derived from `outline`. */
   widthIn: number;
@@ -202,6 +216,8 @@ export interface Room {
   styles?: EdgeStyle[];
   /** Further rooms and open areas that share the plan (and its walls and doorways). */
   extra?: ExtraRoom[];
+  /** Feature walls, keyed `${spaceId}:${edge}` (lib/wallFinish.ts). */
+  wallFinishes?: Record<string, WallFinish>;
 }
 
 export type DoorStyle = 'shaker' | 'slab' | 'fluted';

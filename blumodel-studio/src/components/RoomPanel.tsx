@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { Dialog } from './Dialog';
 import { RoomSketcher } from './sketch/RoomSketcher';
-import { floorAreaIn2, floorSpaces } from '../lib/outline';
+import { floorAreaIn2, floorSpaces, spaces, wallSegs } from '../lib/outline';
+import { WALL_PANELS, wallKey } from '../lib/wallFinish';
 import type { Draft } from '../lib/roomEdit';
 import { FeetInchesInput } from './FeetInchesInput';
 import { TEMPLATES, type TemplateId } from '../data/templates';
 import { BACKSPLASHES, CABINET_BRAND, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HARDWARE, PAINTS, SURFACE_GROUP_ORDER, type SurfaceOption } from '../data/finishes';
 import { patternDataUrl } from '../lib/textures';
 import { feetInches, money } from '../lib/format';
-import type { DoorStyle, Surfaces } from '../types';
+import type { DoorStyle, Surfaces, WallFinish } from '../types';
 import { PLAIN_PRESET, STYLE_PRESETS } from '../data/styles';
 import { PresetStrip } from './PresetStrip';
 import { RetailFixtures } from '../catalog/RetailFixtures';
@@ -130,6 +131,83 @@ function FlooringPicker() {
       )}
       <SurfacePicker title={list.length > 1 ? `Flooring · ${sp.id === 'main' ? 'kitchen' : sp.name}` : 'Flooring'} options={FLOORING} value={value} onPick={(id) => setRoomFloor(sp.id, id)} />
     </>
+  );
+}
+
+const PANEL_HEIGHTS = [32, 36, 42, 48, 54, 60];
+
+/** One wall at a time: an accent colour, wainscoting, board & batten, shiplap or floor-to-ceiling tile. */
+function FeatureWalls() {
+  const room = useDesignStore((s) => s.doc.room);
+  const roomPaint = useDesignStore((s) => s.doc.surfaces.paintId);
+  const setWallFinish = useDesignStore((s) => s.setWallFinish);
+  const [key, setKey] = useState<string | null>(null);
+  const names = spaces(room).map((sp) => (sp.id === 'main' ? 'Kitchen' : sp.name));
+  const walls = wallSegs(room)
+    .filter((sg) => sg.style === 'wall' && !sg.zone)
+    .map((sg) => ({ key: wallKey(room, sg), label: `${names[sg.room]} · ${sg.wall} wall · ${feetInches(sg.a1 - sg.a0)}` }));
+  const cur = walls.find((w) => w.key === key) ?? walls[0];
+  if (!cur) return null;
+  const f: WallFinish = room.wallFinishes?.[cur.key] ?? {};
+  const count = Object.keys(room.wallFinishes ?? {}).length;
+  const put = (patch: Partial<WallFinish>) => setWallFinish(cur.key, { ...f, ...patch });
+  const def = WALL_PANELS.find((p) => p.id === f.panel)?.heightIn ?? 36;
+  return (
+    <section className="room-section feature-walls" aria-labelledby="feature-walls-title">
+      <header>
+        <h4 id="feature-walls-title">Feature walls</h4>
+        <span className="sub">{count ? `${count} wall${count === 1 ? '' : 's'} finished` : 'Accent colour, panelling or tile'}</span>
+      </header>
+      <div className="floor-for">
+        <label>
+          <span>Wall (north is the top of the plan)</span>
+          <select value={cur.key} onChange={(e) => setKey(e.target.value)} data-testid="feature-wall">
+            {walls.map((w) => (
+              <option key={w.key} value={w.key}>
+                {w.label}
+                {room.wallFinishes?.[w.key] ? ' ✓' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="fw-chips" role="group" aria-label="What covers the wall">
+        <button type="button" className={!f.panel ? 'chip on' : 'chip'} aria-pressed={!f.panel} onClick={() => put({ panel: undefined, panelHeightIn: undefined, tileId: undefined })}>
+          Paint only
+        </button>
+        {WALL_PANELS.map((p) => (
+          <button key={p.id} type="button" title={p.blurb} className={f.panel === p.id ? 'chip on' : 'chip'} aria-pressed={f.panel === p.id} onClick={() => put({ panel: p.id, ...(p.id === 'tile' && !f.tileId ? { tileId: 'subway-white' } : {}) })} data-testid={`panel-${p.id}`}>
+            {p.label}
+          </button>
+        ))}
+      </div>
+      {(f.panel === 'wainscot' || f.panel === 'board-batten') && (
+        <div className="fw-chips" role="group" aria-label="How high">
+          {PANEL_HEIGHTS.map((h) => (
+            <button key={h} type="button" className={(f.panelHeightIn ?? def) === h ? 'chip on' : 'chip'} aria-pressed={(f.panelHeightIn ?? def) === h} onClick={() => put({ panelHeightIn: h })}>
+              {h}″
+            </button>
+          ))}
+        </div>
+      )}
+      {f.panel === 'tile' && <SurfacePicker title="Wall tile" options={BACKSPLASHES.filter((b) => b.id !== 'slab-match')} value={f.tileId ?? 'subway-white'} onPick={(id) => put({ tileId: id })} />}
+      {f.panel !== 'tile' && (
+        <>
+          <span className="fw-label">{f.panel === 'shiplap' ? 'Shiplap colour' : f.panel ? 'Colour above the panelling' : 'Wall colour'}</span>
+          <div className="swatches">
+            <button type="button" className={!f.paintId ? 'swatch on same' : 'swatch same'} style={{ background: PAINTS.find((p) => p.id === roomPaint)?.hex }} title="Same as the other walls" aria-label="Same as the other walls" aria-pressed={!f.paintId} onClick={() => put({ paintId: undefined })} />
+            {PAINTS.filter((p) => p.id !== roomPaint).map((p) => (
+              <button key={p.id} type="button" className={p.id === f.paintId ? 'swatch on' : 'swatch'} style={{ background: p.hex }} title={p.name} aria-label={p.name} aria-pressed={p.id === f.paintId} onClick={() => put({ paintId: p.id })} />
+            ))}
+          </div>
+        </>
+      )}
+      {room.wallFinishes?.[cur.key] && (
+        <button type="button" className="btn small fw-clear" onClick={() => setWallFinish(cur.key, null)}>
+          Make it a plain wall
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -302,6 +380,8 @@ export function RoomPanel() {
           ))}
         </div>
       </section>
+
+      <FeatureWalls />
 
       <section className="room-section room-palettes" aria-labelledby="room-palettes-title">
         <header>

@@ -255,3 +255,55 @@ describe('a floor per room', () => {
     assert.match(floors[1].sub, /Bathroom/);
   });
 });
+
+import { sanitizeDoc } from './doc';
+import { carryWallFinishes, setWallFinish, wallKey, finishFor } from './wallFinish';
+import { moveWallTo as moveWall } from './roomEdit';
+
+describe('saved and reloaded', () => {
+  test('a room’s own floor and the feature walls survive the app’s doc cleaner', () => {
+    const out = addRoomOfKind({ room: { widthIn: 240, lengthIn: 168, ceilingIn: 108 }, items: [] }, 'bath');
+    assert.ok(!isError(out));
+    const room = setWallFinish(out.room, 'main:0', { paintId: 'olive', panel: 'wainscot', panelHeightIn: 40 });
+    const doc = sanitizeDoc({ name: 'T', room: { ...room, wallFinishes: { ...room.wallFinishes, 'bad key': { paintId: 'x' } } as never }, items: [], surfaces: DEFAULT_SURFACES } as unknown as DesignDoc);
+    assert.equal(doc.room.extra![0].flooringId, 'porcelain-12x24');
+    assert.deepEqual(doc.room.wallFinishes, { 'main:0': { paintId: 'olive', panel: 'wainscot', panelHeightIn: 40 } });
+  });
+});
+
+describe('feature walls follow their wall', () => {
+  const plain = (): Draft => ({ room: { widthIn: 240, lengthIn: 168, ceilingIn: 108 }, items: [] });
+  test('moving the wall keeps its finish; the other walls stay plain', () => {
+    const d = plain();
+    const east = wallSegs(d.room).find((s) => s.wall === 'east')!;
+    const room = setWallFinish(d.room, wallKey(d.room, east), { panel: 'tile', tileId: 'subway-white' });
+    const moved = moveWall({ ...d, room }, east.id, 300);
+    assert.ok(!isError(moved));
+    const next = carryWallFinishes(room, moved.room);
+    const segs = wallSegs(next);
+    assert.deepEqual(finishFor(next, segs.find((s) => s.wall === 'east')!), { panel: 'tile', tileId: 'subway-white' });
+    assert.equal(segs.filter((s) => finishFor(next, s)).length, 1);
+  });
+  test('clearing the last finish leaves no wallFinishes key', () => {
+    const r = setWallFinish(setWallFinish(plain().room, 'main:0', { paintId: 'ink' }), 'main:0', null);
+    assert.equal('wallFinishes' in r, false);
+  });
+});
+
+describe('feature walls in the estimate', () => {
+  const docWith = (wallFinishes: Record<string, object>) =>
+    ({ name: 'T', room: { widthIn: 240, lengthIn: 168, ceilingIn: 108, wallFinishes }, items: [], surfaces: { ...DEFAULT_SURFACES, paintId: 'chalk' } }) as unknown as DesignDoc;
+  test('a tiled wall is priced by area with overage and comes off the paint; an accent wall gets its own paint line', () => {
+    const n = wallSegs({ widthIn: 240, lengthIn: 168, ceilingIn: 108 }).find((s) => s.wall === 'north')!;
+    const e = wallSegs({ widthIn: 240, lengthIn: 168, ceilingIn: 108 }).find((s) => s.wall === 'east')!;
+    const lines = buildEstimate(docWith({ [`main:${n.id}`]: { panel: 'tile', tileId: 'subway-white' }, [`main:${e.id}`]: { paintId: 'olive', panel: 'wainscot' } })).lines;
+    const tile = lines.find((l) => l.key === 'walltile:subway-white')!;
+    assert.equal(tile.qty, Math.ceil(((240 * 108) / 144) * 1.1));
+    const wains = lines.find((l) => l.key === 'panel:wainscot')!;
+    assert.equal(wains.qty, Math.ceil((168 * 36) / 144));
+    const olive = lines.find((l) => l.key === 'paint:olive')!;
+    assert.equal(olive.qty, Math.max(1, Math.ceil((((168 * 108 - 168 * 36) / 144) * 2) / 350)));
+    const main = lines.find((l) => l.key === 'paint')!;
+    assert.equal(main.qty, Math.max(1, Math.ceil(((((240 + 168) * 108) / 144) * 2) / 350)));
+  });
+});

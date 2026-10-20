@@ -5,7 +5,8 @@ import type { Room, Surfaces } from '../../types';
 import { alongWall, backsplashSegments, flushSeg, type Resolved, type WallSeg } from '../../lib/geometry';
 import { BEAM_DROP_IN, EDGE_STYLES, floorOutlines, floorRects, floorSpaces, planSize, pointInOutline, wallSegs } from '../../lib/outline';
 import { isOpening } from '../../data/catalog';
-import { FLOORING, PAINTS, byId } from '../../data/finishes';
+import { FLOORING, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
+import { finishFor, panelTop } from '../../lib/wallFinish';
 import { resolveFinish } from '../../lib/finish';
 import { luminance, shade } from '../../lib/color';
 import { Box, Front, type SceneCtx } from './parts';
@@ -84,6 +85,12 @@ interface SegGeo {
   base: { size: [number, number, number]; center: [number, number, number] }[];
   caps: { size: [number, number, number]; center: [number, number, number] }[];
   splash: THREE.BufferGeometry[];
+  /** A feature wall's own paint (else the room's). */
+  paint?: THREE.Material;
+  /** Tile or shiplap over the wall face, with their own material. */
+  panels: { geo: THREE.BufferGeometry; mat: THREE.Material }[];
+  /** Wainscoting and board & batten: panels, rails and stiles in trim. */
+  trim: { size: [number, number, number]; center: [number, number, number] }[];
   /** Everything that is not paint and plaster: a half wall's cap, a bar ledge, railings, glass. */
   parts: { size: [number, number, number]; center: [number, number, number]; kind: 'counter' | 'steel' | 'glass' | 'trim'; cast: boolean }[];
 }
@@ -170,7 +177,7 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
 
   const wallGeos = useMemo<SegGeo[]>(() => {
     return segs.map((seg) => {
-      const out: SegGeo = { seg, walls: [], base: [], caps: [], splash: [], parts: [] };
+      const out: SegGeo = { seg, walls: [], base: [], caps: [], splash: [], parts: [], panels: [], trim: [] };
       const st = seg.style;
       if (st !== 'wall') {
         // Anything but a full wall stands on its line (centred), not outside it.
@@ -209,30 +216,76 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
         const [s, e] = alongWall(seg.wall, r.box);
         return { s, e, z0: r.z0, z1: r.z1 };
       });
+      // A feature wall: its own paint, and tile, shiplap or panelling over its face (around the openings, as the wall itself).
+      const f = finishFor(room, seg);
+      const wallPaint = f?.paintId ? byId(PAINTS, f.paintId) : paint;
+      if (f?.paintId) out.paint = surfaceMaterial(`paint:${wallPaint.id}`, wallPaint.pattern, 0.05).mat;
+      let baseDepth = 0.6;
+      if (f?.panel) {
+        const top = panelTop(f, H);
+        const pieces = wallPieces(seg.a0, seg.a1, top, ops);
+        if (f.panel === 'tile' || f.panel === 'shiplap') {
+          const m =
+            f.panel === 'tile'
+              ? (() => {
+                  const t = resolveBacksplash(f.tileId ?? 'subway-white', surfaces.countertopId);
+                  return surfaceMaterial(`walltile:${t.id}:${t.hex}`, t.pattern, t.gloss);
+                })()
+              : surfaceMaterial(`shiplap:${wallPaint.hex}`, { type: 'brick', base: wallPaint.hex, grout: shade(wallPaint.hex, -0.3), tileW: 96, tileH: 6, offset: 0.5, vary: 0.015, gloss: 0.05 }, 0.08);
+          for (const p of pieces) {
+            const b = wallBox(seg, p.a0, p.a1, p.y0, p.y1, 0, 0.3);
+            out.panels.push({ geo: worldUVBox(b.size, b.center, null, m.tileIn), mat: m.mat });
+          }
+          // A tiled wall has no baseboard; shiplap's stands proud of the boards.
+          baseDepth = f.panel === 'tile' ? 0 : 0.9;
+        } else {
+          const bb = f.panel === 'board-batten';
+          const spacing = bb ? 16 : 24;
+          const w = bb ? 2.5 : 3;
+          for (const p of pieces) {
+            out.trim.push(wallBox(seg, p.a0, p.a1, p.y0, p.y1, 0, 0.35));
+            if (p.y1 >= top - 0.01) out.trim.push(wallBox(seg, p.a0, p.a1, top - 0.75, top + 0.75, 0, 1.1));
+            if (p.y0 > 0.01 || p.y1 < top - 0.01 || p.a1 - p.a0 < w * 2) continue;
+            // Stiles (and, for framed wainscoting, a top and bottom rail) over the flat panel.
+            const n = Math.max(1, Math.round((p.a1 - p.a0) / spacing));
+            for (let k = 0; k <= n; k++) {
+              const a = Math.min(p.a1 - w / 2, Math.max(p.a0 + w / 2, p.a0 + ((p.a1 - p.a0) * k) / n));
+              out.trim.push(wallBox(seg, a - w / 2, a + w / 2, 4.5, top - 0.75, 0.35, 0.8));
+            }
+            if (!bb) {
+              out.trim.push(wallBox(seg, p.a0, p.a1, 4.5, 7.5, 0.35, 0.8));
+              out.trim.push(wallBox(seg, p.a0, p.a1, top - 4, top - 0.75, 0.35, 0.8));
+            }
+          }
+          baseDepth = 1;
+        }
+      }
       for (const p of wallPieces(start, end, H, ops)) {
         const b = wallBox(seg, p.a0, p.a1, p.y0, p.y1, -T, 0);
         out.walls.push(worldUVBox(b.size, b.center, null, wallMat.tileIn));
-        if (p.y0 === 0) {
+        if (p.y0 === 0 && baseDepth > 0) {
           const a0 = Math.max(p.a0, seg.a0);
           const a1 = Math.min(p.a1, seg.a1);
-          if (a1 - a0 > 0.5) out.base.push(wallBox(seg, a0, a1, 0, 4.5, 0, 0.6));
+          if (a1 - a0 > 0.5) out.base.push(wallBox(seg, a0, a1, 0, 4.5, 0, baseDepth));
         }
         if (p.y1 >= H - 0.01) out.caps.push(wallBox(seg, p.a0, p.a1, H, H + 0.6, -T - 0.05, 0.05));
       }
       for (const sp of splash) {
-        if (sp.seg.id !== seg.id) continue;
+        // A wall tiled floor to ceiling is its own backsplash.
+        if (sp.seg.id !== seg.id || f?.panel === 'tile') continue;
         const b = wallBox(seg, sp.start, sp.end, sp.bottom, sp.top, 0, 0.4);
         out.splash.push(worldUVBox(b.size, b.center, null, ctx.splashTile));
       }
       return out;
     });
-  }, [segs, H, openingsBySeg, splash, wallMat.tileIn, ctx.splashTile]);
+  }, [segs, H, openingsBySeg, splash, wallMat.tileIn, ctx.splashTile, room, paint, surfaces.countertopId]);
 
   useEffect(
     () => () => {
       for (const g of wallGeos) {
         g.walls.forEach((x) => x.dispose());
         g.splash.forEach((x) => x.dispose());
+        g.panels.forEach((x) => x.geo.dispose());
       }
     },
     [wallGeos],
@@ -299,7 +352,13 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
           }}
         >
           {g.walls.map((geo, i) => (
-            <mesh key={i} geometry={geo} material={wallMat.mat} castShadow receiveShadow />
+            <mesh key={i} geometry={geo} material={g.paint ?? wallMat.mat} castShadow receiveShadow />
+          ))}
+          {g.panels.map((p, i) => (
+            <mesh key={`f${i}`} geometry={p.geo} material={p.mat} receiveShadow />
+          ))}
+          {g.trim.map((b, i) => (
+            <Box key={`t${i}`} size={b.size} pos={b.center} mat={trimMat} />
           ))}
           {g.base.map((b, i) => (
             <Box key={`b${i}`} size={b.size} pos={b.center} mat={trimMat} />

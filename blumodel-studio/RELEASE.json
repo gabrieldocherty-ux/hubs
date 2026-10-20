@@ -1,7 +1,7 @@
 {
-  "source": "aad6af1900d2cf6cfe9102ece84ae49b249153aa",
-  "subject": "rooms(floors): a floor per room - an added bathroom, powder room, laundry or mudroom starts on tile ",
-  "builtAt": "2026-10-20T06:37:05.616Z",
+  "source": "ef7a320a7b735ce8626ebf4321ce7936b993d9b4",
+  "subject": "renovation(walls): feature walls and baseboard - Room & Finishes > Feature walls gives any wall an a",
+  "builtAt": "2026-10-20T06:50:00.391Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

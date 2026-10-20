@@ -1,10 +1,11 @@
-import type { DesignDoc, EdgeStyle, EstimateExtra, ExtraRoom, OutlinePt, PlacedItem, Product, Room, Rotation, Surfaces } from '../types';
+import type { DesignDoc, EdgeStyle, EstimateExtra, ExtraRoom, OutlinePt, PlacedItem, Product, Room, Rotation, Surfaces, WallFinish } from '../types';
 import { DEFAULT_KITCHEN_NAME, DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { getProduct, isBuiltin, isProductIdShape, missingProduct } from '../data/catalog';
 import { useCatalog } from '../store/useCatalog';
 import { finishAt, finishList } from './finish';
 import { cleanBrandPrefs } from './generate/brands';
 import { isEdgeStyle, normalizeStyled, outlineProblem } from './outline';
+import { isPanel } from './wallFinish';
 import { FIXTURE_ID_RE, fixturesForSave, registerFixtures } from './fixtures';
 
 /**
@@ -34,8 +35,8 @@ function cleanStyles(raw: unknown, n: number): EdgeStyle[] | undefined {
 }
 
 /** Drawn walls, edge styles, extra rooms and open areas, kept only when valid: a bad outline falls back to the plain rectangle. */
-function cleanShape(r: Partial<Room>): Pick<Room, 'outline' | 'styles' | 'extra'> {
-  const out: Pick<Room, 'outline' | 'styles' | 'extra'> = {};
+function cleanShape(r: Partial<Room>): Pick<Room, 'outline' | 'styles' | 'extra' | 'wallFinishes'> {
+  const out: Pick<Room, 'outline' | 'styles' | 'extra' | 'wallFinishes'> = {};
   const read = (raw: unknown, styles: unknown, fallback: EdgeStyle): { pts: OutlinePt[]; styles: EdgeStyle[] } | null => {
     if (!Array.isArray(raw) || raw.length < 4 || raw.length > 64) return null;
     const p: OutlinePt[] = [];
@@ -71,12 +72,36 @@ function cleanShape(r: Partial<Room>): Pick<Room, 'outline' | 'styles' | 'extra'
           ...(zone ? { kind: 'zone' as const } : {}),
           ...(o.styles.some((v) => v !== base) ? { styles: o.styles } : {}),
           ...(Number.isFinite(x.ceilingIn) ? { ceilingIn: clamp(Math.round(x.ceilingIn as number), 90, 144) } : {}),
+          ...(!zone && typeof x.flooringId === 'string' && /^[a-z0-9-]{1,40}$/.test(x.flooringId) ? { flooringId: x.flooringId } : {}),
         },
       ];
     });
     if (extra.length) out.extra = extra.slice(0, 8);
   }
+  const walls = cleanWallFinishes(r.wallFinishes);
+  if (walls) out.wallFinishes = walls;
   return out;
+}
+
+const ID_RE = /^[a-z0-9-]{1,40}$/;
+
+/** Feature-wall finishes with known keys and fields only (lib/wallFinish.ts). */
+export function cleanWallFinishes(raw: unknown): Record<string, WallFinish> | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const out: Record<string, WallFinish> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>).slice(0, 200)) {
+    if (!/^[A-Za-z0-9_-]{1,32}:\d{1,3}$/.test(k) || !v || typeof v !== 'object') continue;
+    const f = v as WallFinish;
+    const c: WallFinish = {};
+    if (typeof f.paintId === 'string' && ID_RE.test(f.paintId)) c.paintId = f.paintId;
+    if (isPanel(f.panel)) {
+      c.panel = f.panel;
+      if ((f.panel === 'wainscot' || f.panel === 'board-batten') && Number.isFinite(f.panelHeightIn)) c.panelHeightIn = clamp(Math.round(f.panelHeightIn as number), 12, 138);
+      if (f.panel === 'tile' && typeof f.tileId === 'string' && ID_RE.test(f.tileId)) c.tileId = f.tileId;
+    }
+    if (Object.keys(c).length) out[k] = c;
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 const DOOR_STYLES = ['shaker', 'slab', 'fluted'];

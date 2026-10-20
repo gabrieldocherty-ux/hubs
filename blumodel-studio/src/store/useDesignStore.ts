@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DesignDoc, EdgeStyle, EstimateExtra, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
+import type { DesignDoc, EdgeStyle, EstimateExtra, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode, WallFinish } from '../types';
 import { getProduct, isBuiltin, isOpening, itemWidth, snapsToWall } from '../data/catalog';
 import { CABINET_FINISHES } from '../data/finishes';
 import { buildTemplate, type TemplateId } from '../data/templates';
@@ -27,6 +27,7 @@ import {
   type Resolved,
 } from '../lib/geometry';
 import * as edit from '../lib/roomEdit';
+import { carryWallFinishes, setWallFinish } from '../lib/wallFinish';
 import { planBounds, wallSegs, type Pt } from '../lib/outline';
 import { defaultFinishIndex, finishAt, finishById, itemHasFinish } from '../lib/finish';
 import { makeId } from '../lib/id';
@@ -83,6 +84,8 @@ interface State {
   /** Set what stands along one wall. */
   setEdgeStyle: (segId: number, style: EdgeStyle) => string | null;
   renameRoom: (id: string, name: string) => string | null;
+  /** One wall's feature finish (key from lib/wallFinish wallKey); null makes it a plain wall again. */
+  setWallFinish: (key: string, finish: WallFinish | null) => void;
   /** A room's own floor ('main' sets the kitchen's); null puts an added room back on the kitchen's floor. */
   setRoomFloor: (id: string, flooringId: string | null) => string | null;
   /** Replace the room and its items with an edited draft (the Walls & rooms dialog) as one undo step. */
@@ -268,8 +271,11 @@ export const useDesignStore = create<State>()(
         const { doc, readOnly } = get();
         if (readOnly) return;
         let { past } = get();
-        const next = fn(doc);
+        let next = fn(doc);
         if (next === doc) return;
+        // Wall edits renumber walls: feature-wall finishes follow their walls by geometry. (An edit that
+        // sets the finishes itself, Feature walls, has them right already.)
+        if (next.room !== doc.room && doc.room.wallFinishes && next.room.wallFinishes === doc.room.wallFinishes) next = { ...next, room: carryWallFinishes(doc.room, next.room) };
         // An edit mid-drag (a rotate key, say) first banks the drag so far as its own step.
         if (dragOrigin) {
           if (dragOrigin !== doc) past = [...past, dragOrigin];
@@ -350,6 +356,8 @@ export const useDesignStore = create<State>()(
         removeRoom: (id) => applyEdit(edit.removeRoom({ room: get().doc.room, items: get().doc.items }, id)),
 
         renameRoom: (id, name) => applyEdit(edit.renameRoom({ room: get().doc.room, items: get().doc.items }, id, name)),
+
+        setWallFinish: (key, finish) => commit((doc) => ({ ...doc, room: setWallFinish(doc.room, key, finish) })),
 
         setRoomFloor: (id, flooringId) => {
           if (id === 'main') {
