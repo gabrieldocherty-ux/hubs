@@ -7,7 +7,7 @@ import { useDesignStore } from '../store/useDesignStore';
 import { useCatalog } from '../store/useCatalog';
 import { useSession } from '../store/useSession';
 import { findDropTarget, placeAt, usePlacement, type ViewId } from '../lib/interaction';
-import { ProductArt } from './ProductArt';
+import { ProductThumb } from './thumbs/ProductThumb';
 import { Info, Plus, Search } from './Icons';
 import { money } from '../lib/format';
 import { finishList } from '../lib/finish';
@@ -230,7 +230,7 @@ function pressProduct(e: ReactPointerEvent<HTMLElement>, product: Product, catal
 }
 
 const GhostArt = memo(function GhostArt({ product, surfaces }: { product: Product; surfaces: Surfaces }) {
-  return <ProductArt product={product} surfaces={surfaces} />;
+  return <ProductThumb product={product} surfaces={surfaces} />;
 });
 
 /** The card that follows the pointer while a product is dragged out of the catalog. */
@@ -479,7 +479,7 @@ export function CatalogPanel() {
                         title={`${p.brand} ${p.name}: ${p.blurb}`}
                       >
                         <span className="product-art">
-                          <ProductArt product={p} surfaces={surfaces} />
+                          <ProductThumb product={p} surfaces={surfaces} />
                           <span className="product-add"><Plus width={12} height={12} /></span>
                           {(p.model || custom || mine) && (
                             <span className="product-badges">

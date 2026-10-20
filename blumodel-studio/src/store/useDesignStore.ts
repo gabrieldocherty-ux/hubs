@@ -83,6 +83,8 @@ interface State {
   /** Set what stands along one wall. */
   setEdgeStyle: (segId: number, style: EdgeStyle) => string | null;
   renameRoom: (id: string, name: string) => string | null;
+  /** A room's own floor ('main' sets the kitchen's); null puts an added room back on the kitchen's floor. */
+  setRoomFloor: (id: string, flooringId: string | null) => string | null;
   /** Replace the room and its items with an edited draft (the Walls & rooms dialog) as one undo step. */
   applyRoomEdit: (draft: edit.Draft) => void;
   setSurfaces: (s: Partial<Surfaces>) => void;
@@ -348,6 +350,14 @@ export const useDesignStore = create<State>()(
         removeRoom: (id) => applyEdit(edit.removeRoom({ room: get().doc.room, items: get().doc.items }, id)),
 
         renameRoom: (id, name) => applyEdit(edit.renameRoom({ room: get().doc.room, items: get().doc.items }, id, name)),
+
+        setRoomFloor: (id, flooringId) => {
+          if (id === 'main') {
+            if (flooringId) get().setSurfaces({ flooringId });
+            return null;
+          }
+          return applyEdit(edit.setRoomFloor({ room: get().doc.room, items: get().doc.items }, id, flooringId));
+        },
 
         applyRoomEdit: (draft) => {
           const out = edit.rebase(draft);

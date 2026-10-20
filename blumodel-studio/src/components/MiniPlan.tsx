@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { DesignDoc } from '../types';
 import { resolveAll } from '../lib/geometry';
-import { floorOutlines, planSize, spaces } from '../lib/outline';
+import { floorSpaces, planSize, spaces } from '../lib/outline';
 import { hasCountertop, isOpening } from '../data/catalog';
 import { COUNTERTOPS, FLOORING, byId } from '../data/finishes';
 import { resolveFinish } from '../lib/finish';
@@ -17,7 +17,8 @@ export const MiniPlan = memo(function MiniPlan({ doc, className, highlight }: { 
   const { room, surfaces } = doc;
   const { W, L } = planSize(room);
   const drawn = !!room.outline || !!room.extra?.length;
-  const outlines = floorOutlines(room);
+  const floors = floorSpaces(room);
+  const outlines = floors.map((sp) => sp.pts);
   const zones = spaces(room).filter((sp) => sp.zone);
   const T = Math.max(4, Math.max(W, L) * 0.025);
   const floor = byId(FLOORING, surfaces.flooringId).hex;
@@ -27,7 +28,7 @@ export const MiniPlan = memo(function MiniPlan({ doc, className, highlight }: { 
 
   return (
     <svg className={className} viewBox={`${-pad} ${-pad} ${W + pad * 2} ${L + pad * 2}`} preserveAspectRatio="xMidYMid meet" aria-hidden>
-      {drawn ? outlines.map((o, i) => <polygon key={i} points={o.map((q) => q.join(',')).join(' ')} fill={shade(floor, 0.18)} />) : <rect x={0} y={0} width={W} height={L} fill={shade(floor, 0.18)} />}
+      {drawn ? floors.map((sp, i) => <polygon key={i} points={sp.pts.map((q) => q.join(',')).join(' ')} fill={shade(sp.flooringId ? byId(FLOORING, sp.flooringId).hex : floor, 0.18)} />) : <rect x={0} y={0} width={W} height={L} fill={shade(floor, 0.18)} />}
       {all.map((r) => {
         if (isOpening(r.product)) return null;
         const b = r.box;

@@ -187,6 +187,8 @@ export interface ExtraRoom {
   kind?: 'room' | 'zone';
   /** One style per edge (edge i runs from corner i to corner i+1). Absent: every edge is the default. */
   styles?: EdgeStyle[];
+  /** This room's own floor (a FLOORING id). Absent: the kitchen's (surfaces.flooringId). Open areas have no floor of their own. */
+  flooringId?: string;
 }
 
 export interface Room {

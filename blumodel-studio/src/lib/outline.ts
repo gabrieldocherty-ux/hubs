@@ -114,6 +114,14 @@ export function floorOutlines(room: Room): Pt[][] {
   return spaces(room).filter((sp) => !sp.zone).map((sp) => sp.pts);
 }
 
+/** Every space with a floor (not open areas), with its own flooring id when it has one (else the kitchen's). */
+export function floorSpaces(room: Room): { id: string; name: string; pts: Pt[]; flooringId?: string }[] {
+  const own = new Map((room.extra ?? []).map((e) => [e.id, e.flooringId]));
+  return spaces(room)
+    .filter((sp) => !sp.zone)
+    .map((sp) => ({ id: sp.id, name: sp.name, pts: sp.pts, ...(own.get(sp.id) ? { flooringId: own.get(sp.id) } : {}) }));
+}
+
 export function signedArea(p: Pt[]): number {
   let a = 0;
   for (let i = 0; i < p.length; i++) {

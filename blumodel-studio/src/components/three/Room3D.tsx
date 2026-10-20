@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Room, Surfaces } from '../../types';
 import { alongWall, backsplashSegments, flushSeg, type Resolved, type WallSeg } from '../../lib/geometry';
-import { BEAM_DROP_IN, EDGE_STYLES, floorOutlines, floorRects, planSize, pointInOutline, wallSegs } from '../../lib/outline';
+import { BEAM_DROP_IN, EDGE_STYLES, floorOutlines, floorRects, floorSpaces, planSize, pointInOutline, wallSegs } from '../../lib/outline';
 import { isOpening } from '../../data/catalog';
 import { FLOORING, PAINTS, byId } from '../../data/finishes';
 import { resolveFinish } from '../../lib/finish';
@@ -116,8 +116,18 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   const outlines = useMemo(() => floorOutlines(room), [room]);
   const rects = useMemo(() => outlines.flatMap((o) => floorRects(o)), [outlines]);
 
-  const floorGeos = useMemo(() => rects.map((r) => worldUVBox([r.x1 - r.x0, 0.5, r.y1 - r.y0], [(r.x0 + r.x1) / 2, -0.25, (r.y0 + r.y1) / 2], null, floorMat.tileIn)), [rects, floorMat.tileIn]);
-  useEffect(() => () => floorGeos.forEach((g) => g.dispose()), [floorGeos]);
+  // Each room on its own floor (an added bathroom on tile); the kitchen's floor where a room has none of its own.
+  const floorParts = useMemo(
+    () =>
+      floorSpaces(room).flatMap((sp) => {
+        const f = sp.flooringId ? byId(FLOORING, sp.flooringId) : floor;
+        const m = surfaceMaterial(`floor:${f.id}`, f.pattern, f.gloss);
+        return floorRects(sp.pts).map((r) => ({ mat: m.mat, geo: worldUVBox([r.x1 - r.x0, 0.5, r.y1 - r.y0], [(r.x0 + r.x1) / 2, -0.25, (r.y0 + r.y1) / 2], null, m.tileIn) }));
+      }),
+    // floorMat follows the kitchen's floor, which rooms without their own use.
+    [room, floor, floorMat],
+  );
+  useEffect(() => () => floorParts.forEach((p) => p.geo.dispose()), [floorParts]);
 
   // Each opening belongs to the wall it is flush against; it also cuts any wall sharing that line
   // (the partition between two rooms is two coincident walls, one per room).
@@ -270,8 +280,8 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   return (
     <group>
       <mesh geometry={boxGeo(W + T * 2 + 36, 6, L + T * 2 + 36)} position={[W / 2, -3.5, L / 2]} material={M.plinth()} receiveShadow dispose={null} />
-      {floorGeos.map((g, i) => (
-        <mesh key={i} geometry={g} material={floorMat.mat} receiveShadow />
+      {floorParts.map((p, i) => (
+        <mesh key={i} geometry={p.geo} material={p.mat} receiveShadow />
       ))}
       <group ref={ceiling} visible={false}>
         {rects.map((r, i) => (

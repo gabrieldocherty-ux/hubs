@@ -238,6 +238,8 @@ function cleanShape(r) {
         ...(zone ? { kind: 'zone' } : {}),
         ...(styles ? { styles } : {}),
         ...(isNum(e.ceilingIn) ? { ceilingIn: clamp(e.ceilingIn, LIMITS.room.ceilingIn) } : {}),
+        // An added room's own floor (a flooring id; the app falls back to the kitchen's for one it doesn't know).
+        ...(!zone && typeof e.flooringId === 'string' && /^[a-z0-9-]{1,40}$/.test(e.flooringId) ? { flooringId: e.flooringId } : {}),
       });
     }
     if (extra.length) out.extra = extra;

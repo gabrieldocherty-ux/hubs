@@ -5,7 +5,7 @@ import { BACKSPLASHES, COUNTERTOPS, FLOORING, PAINTS, byId, resolveBacksplash } 
 import { resolveFaucet, resolveHardware } from './fixtures';
 import { backsplashSegments, resolveAll } from './geometry';
 import { resolveFinish } from './finish';
-import { floorAreaIn2, perimeterIn } from './outline';
+import { area, floorSpaces, perimeterIn } from './outline';
 
 export type EstimateGroup =
   | 'Cabinetry'
@@ -182,9 +182,21 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
     lines.push({ key: 'splash', group: 'Surfaces', label: `${src.brand} ${src.name}`, sub: `Backsplash${bs.id === 'slab-match' ? ', book-matched slab' : ', incl. 10% overage'}`, qty: sq, unit: 'sq ft', unitPrice: src.price, total: sq * src.price });
   }
 
-  const floor = byId(FLOORING, surfaces.flooringId);
-  const floorSq = Math.ceil((floorAreaIn2(room) / 144) * 1.1);
-  lines.push({ key: 'floor', group: 'Surfaces', label: `${floor.brand} ${floor.name}`, sub: 'Flooring, incl. 10% overage', qty: floorSq, unit: 'sq ft', unitPrice: floor.price, total: floorSq * floor.price });
+  // One line per floor: a kitchen in hardwood with a bathroom in tile is two lines, each naming its rooms.
+  const kitchenFloor = byId(FLOORING, surfaces.flooringId);
+  const floors = new Map<string, { opt: typeof kitchenFloor; in2: number; rooms: string[] }>();
+  for (const sp of floorSpaces(room)) {
+    const opt = sp.flooringId ? byId(FLOORING, sp.flooringId) : kitchenFloor;
+    const f = floors.get(opt.id) ?? { opt, in2: 0, rooms: [] };
+    f.in2 += area(sp.pts);
+    f.rooms.push(sp.name);
+    floors.set(opt.id, f);
+  }
+  for (const [id, f] of floors) {
+    const sq = Math.ceil((f.in2 / 144) * 1.1);
+    const where = floors.size > 1 ? ` · ${f.rooms.join(', ')}` : '';
+    lines.push({ key: id === kitchenFloor.id ? 'floor' : `floor:${id}`, group: 'Surfaces', label: `${f.opt.brand} ${f.opt.name}`, sub: `Flooring, incl. 10% overage${where}`, qty: sq, unit: 'sq ft', unitPrice: f.opt.price, total: sq * f.opt.price });
+  }
 
   const paint = byId(PAINTS, surfaces.paintId);
   const openingsIn2 = all

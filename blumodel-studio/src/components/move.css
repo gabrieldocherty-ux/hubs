@@ -165,7 +165,7 @@ html:has(.app) body {
   padding: 0 4px;
   border-radius: 9px;
   background: var(--warn-solid);
-  color: #fff;
+  color: #1c1408;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;

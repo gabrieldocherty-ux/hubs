@@ -66,6 +66,7 @@ function build(room: Room, sp: Space[]): Room {
       name: s.name,
       outline: s.pts,
       ...(e?.ceilingIn ? { ceilingIn: e.ceilingIn } : {}),
+      ...(e?.flooringId && !s.zone ? { flooringId: e.flooringId } : {}),
       ...(s.zone ? { kind: 'zone' as const } : {}),
       ...(!allDefault(s.styles, s.zone ? 'open' : 'wall') ? { styles: s.styles } : {}),
     };
@@ -211,6 +212,21 @@ export function removeRoom(d: Draft, id: string): Draft {
   return { room, items: d.items };
 }
 
+/** Gives an added room its own floor, or (null) the kitchen's again. */
+export function setRoomFloor(d: Draft, id: string, flooringId: string | null): Draft {
+  return {
+    ...d,
+    room: {
+      ...d.room,
+      extra: d.room.extra?.map((e) => {
+        if (e.id !== id || e.kind === 'zone') return e;
+        const { flooringId: _old, ...rest } = e;
+        return flooringId ? { ...rest, flooringId } : rest;
+      }),
+    },
+  };
+}
+
 export function renameRoom(d: Draft, id: string, name: string): Draft {
   return { ...d, room: { ...d.room, extra: d.room.extra?.map((e) => (e.id === id ? { ...e, name: name.trim().slice(0, 40) || e.name } : e)) } };
 }
@@ -335,7 +351,9 @@ export function addRoomOfKind(d: Draft, kindId: string): Edit & { id?: string } 
     const rect = rectPts(w, l).map(([px, py]): Pt => [px + x, py + y]);
     if (floors.some((f) => outlinesOverlap(f, rect))) continue;
     if (sharedWall(rect, floors) < 36) continue;
-    const out = addRoom(d, rect, kind.label);
+    const added = addRoom(d, rect, kind.label);
+    // A bathroom, laundry or mudroom starts on tile; living and dining rooms carry the kitchen's floor on.
+    const out = !isError(added) && kind.floor ? { ...setRoomFloor(added, added.id!, kind.floor), id: added.id } : added;
     if (!isError(out)) {
       // Join it to what it sits beside: a walkway for an open room, a door for a bath or bedroom.
       const joined = connectNewRoom(out, out.id!, kind.link.productId, kind.link.widthIn);

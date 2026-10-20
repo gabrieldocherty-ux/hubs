@@ -218,3 +218,40 @@ describe('pot lights', () => {
     assert.ok(once.items.every((i) => !(i.x > 144 && i.y > 96)));
   });
 });
+
+import { setRoomFloor } from './roomEdit';
+import { buildEstimate } from './estimate';
+import { DEFAULT_SURFACES } from '../data/defaults';
+import type { DesignDoc } from '../types';
+
+describe('a floor per room', () => {
+  const plain = (): Draft => ({ room: { widthIn: 240, lengthIn: 168, ceilingIn: 108 }, items: [] });
+  test('a bathroom, powder room, laundry or mudroom starts on tile; a living room carries the kitchen floor on', () => {
+    let d: Draft = plain();
+    for (const id of ['bath', 'living', 'powder', 'mudroom']) {
+      const out = addRoomOfKind(d, id);
+      assert.ok(!isError(out));
+      d = out;
+    }
+    assert.deepEqual(d.room.extra!.map((e) => e.flooringId), ['porcelain-12x24', undefined, 'hex-white', 'slate-natural']);
+  });
+  test('set and cleared per room; an open area never gets one', () => {
+    const out = addRoomOfKind(plain(), 'dining');
+    assert.ok(!isError(out));
+    const id = out.room.extra![0].id;
+    const tiled = setRoomFloor(out, id, 'travertine');
+    assert.equal(tiled.room.extra![0].flooringId, 'travertine');
+    assert.equal(setRoomFloor(tiled, id, null).room.extra![0].flooringId, undefined);
+    const zone: Draft = { ...plain(), room: { ...plain().room, extra: [{ id: 'z', name: 'Living', outline: [[0, 0], [96, 0], [96, 96], [0, 96]], kind: 'zone' }] } };
+    assert.equal(setRoomFloor(zone, 'z', 'travertine').room.extra![0].flooringId, undefined);
+  });
+  test('the estimate has one flooring line per floor, naming its rooms, each with 10% overage', () => {
+    const out = addRoomOfKind(plain(), 'bath');
+    assert.ok(!isError(out));
+    const doc = { name: 'T', room: out.room, items: [], surfaces: { ...DEFAULT_SURFACES, flooringId: 'oak-natural' } } as unknown as DesignDoc;
+    const floors = buildEstimate(doc).lines.filter((l) => l.key === 'floor' || l.key.startsWith('floor:'));
+    assert.deepEqual(floors.map((l) => [l.key, l.qty]), [['floor', Math.ceil(((240 * 168) / 144) * 1.1)], ['floor:porcelain-12x24', Math.ceil(((96 * 120) / 144) * 1.1)]].sort((a, b) => 0));
+    assert.match(floors[0].sub, /Main room/);
+    assert.match(floors[1].sub, /Bathroom/);
+  });
+});

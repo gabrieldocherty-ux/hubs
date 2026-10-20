@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { Dialog } from './Dialog';
 import { RoomSketcher } from './sketch/RoomSketcher';
-import { floorAreaIn2 } from '../lib/outline';
+import { floorAreaIn2, floorSpaces } from '../lib/outline';
 import type { Draft } from '../lib/roomEdit';
 import { FeetInchesInput } from './FeetInchesInput';
 import { TEMPLATES, type TemplateId } from '../data/templates';
-import { BACKSPLASHES, CABINET_BRAND, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HARDWARE, PAINTS, type SurfaceOption } from '../data/finishes';
+import { BACKSPLASHES, CABINET_BRAND, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HARDWARE, PAINTS, SURFACE_GROUP_ORDER, type SurfaceOption } from '../data/finishes';
 import { patternDataUrl } from '../lib/textures';
 import { feetInches, money } from '../lib/format';
 import type { DoorStyle, Surfaces } from '../types';
@@ -57,14 +57,29 @@ function TemplateGlyph({ id }: { id: TemplateId }) {
 
 function SurfacePicker({ title, options, value, onPick, unitPrice = true }: { title: string; options: SurfaceOption[]; value: string; onPick: (id: string) => void; unitPrice?: boolean }) {
   const current = options.find((o) => o.id === value) ?? options[0];
+  // Long lists (flooring) filter by group; the chips open on the current pick's group.
+  const rank = (g: string) => (SURFACE_GROUP_ORDER.indexOf(g) + 1 || 99);
+  const groups = [...new Set(options.map((o) => o.group).filter((g): g is string => !!g))].sort((a, b) => rank(a) - rank(b));
+  const [group, setGroup] = useState<string | null>(null);
+  const shown = groups.length > 1 ? (group ?? current.group ?? groups[0]) : null;
+  const visible = shown ? options.filter((o) => o.group === shown) : options;
   return (
     <section className="room-section">
       <header>
         <h4>{title}</h4>
         <span className="sub">{current.brand} · {current.name}</span>
       </header>
+      {shown && (
+        <div className="tex-groups" role="group" aria-label={`${title} type`}>
+          {groups.map((g) => (
+            <button key={g} type="button" className={g === shown ? 'chip on' : 'chip'} aria-pressed={g === shown} onClick={() => setGroup(g)}>
+              {g} <span className="tex-count">{options.filter((o) => o.group === g).length}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="tex-grid">
-        {options.map((o) => (
+        {visible.map((o) => (
           <button
             key={o.id}
             className={o.id === value ? 'tex on' : 'tex'}
@@ -79,6 +94,42 @@ function SurfacePicker({ title, options, value, onPick, unitPrice = true }: { ti
         ))}
       </div>
     </section>
+  );
+}
+
+/** Flooring, per room once the plan has more than one: a kitchen in oak beside a bathroom in tile. */
+function FlooringPicker() {
+  const room = useDesignStore((s) => s.doc.room);
+  const kitchenFloor = useDesignStore((s) => s.doc.surfaces.flooringId);
+  const setRoomFloor = useDesignStore((s) => s.setRoomFloor);
+  const list = floorSpaces(room);
+  const [spaceId, setSpaceId] = useState('main');
+  const sp = list.find((x) => x.id === spaceId) ?? list[0];
+  const own = sp.id !== 'main' && !!sp.flooringId;
+  const value = own ? sp.flooringId! : kitchenFloor;
+  return (
+    <>
+      {list.length > 1 && (
+        <div className="floor-for">
+          <label>
+            <span>Floor for</span>
+            <select value={sp.id} onChange={(e) => setSpaceId(e.target.value)} data-testid="floor-for">
+              {list.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.id === 'main' ? 'The kitchen (main room)' : `${x.name}${x.flooringId ? '' : ' (same as the kitchen)'}`}
+                </option>
+              ))}
+            </select>
+          </label>
+          {own && (
+            <button type="button" className="btn small" onClick={() => setRoomFloor(sp.id, null)}>
+              Same as the kitchen
+            </button>
+          )}
+        </div>
+      )}
+      <SurfacePicker title={list.length > 1 ? `Flooring · ${sp.id === 'main' ? 'kitchen' : sp.name}` : 'Flooring'} options={FLOORING} value={value} onPick={(id) => setRoomFloor(sp.id, id)} />
+    </>
   );
 }
 
@@ -239,7 +290,7 @@ export function RoomPanel() {
 
       <SurfacePicker title="Countertop" options={COUNTERTOPS} value={surfaces.countertopId} onPick={(id) => set({ countertopId: id })} />
       <SurfacePicker title="Backsplash" options={BACKSPLASHES} value={surfaces.backsplashId} onPick={(id) => set({ backsplashId: id })} />
-      <SurfacePicker title="Flooring" options={FLOORING} value={surfaces.flooringId} onPick={(id) => set({ flooringId: id })} />
+      <FlooringPicker />
       <section className="room-section">
         <header>
           <h4>Walls</h4>

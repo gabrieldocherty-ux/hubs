@@ -23,7 +23,7 @@ import { PlanRoomDraw } from './PlanRoomDraw';
 import { PlanWalls } from './PlanWalls';
 import { BorderPicker } from './BorderPicker';
 import { ROOM_KINDS } from '../../lib/roomKinds';
-import { floorOutlines, planSize } from '../../lib/outline';
+import { floorOutlines, floorSpaces, planSize } from '../../lib/outline';
 
 /** The pane's visible part in client px (on a phone it can be scrolled partly off-screen). */
 function visibleRect(el: HTMLElement): { left: number; top: number; right: number; bottom: number } {
@@ -339,8 +339,8 @@ export function PlanView() {
               fill={rendered ? pal.paper : pal.sheet}
             />
             {drawn ? (
-              outlines.map((o, i) => (
-                <Line key={i} name="bg" points={o.flat()} closed {...(rendered ? patternFill(floor.pattern) : { fill: pal.sheet })} />
+              floorSpaces(room).map((sp, i) => (
+                <Line key={i} name="bg" points={sp.pts.flat()} closed {...(rendered ? patternFill((sp.flooringId ? byId(FLOORING, sp.flooringId) : floor).pattern) : { fill: pal.sheet })} />
               ))
             ) : (
               <>

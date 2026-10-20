@@ -75,3 +75,14 @@ test('crown moulding on the surfaces is kept when it is a known style and refuse
   const bad = normalizeDoc(sampleDoc({ surfaces: { ...sampleDoc().surfaces, crown: 'gothic' } }));
   assert.equal(bad.ok, false);
 });
+
+test('an added room keeps its own floor; an open area and a junk id get none', () => {
+  const sq = [[240, 0], [336, 0], [336, 120], [240, 120]];
+  const r = keep(room({ extra: [
+    { id: 'b', name: 'Bathroom', outline: sq, flooringId: 'porcelain-12x24' },
+    { id: 'z', name: 'Living', outline: [[0, 0], [96, 0], [96, 96], [0, 96]], kind: 'zone', flooringId: 'oak-natural' },
+    { id: 'c', name: 'Den', outline: [[0, 168], [96, 168], [96, 264], [0, 264]], flooringId: '<script>' },
+  ] }));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.doc.room.extra.map((e) => e.flooringId), ['porcelain-12x24', undefined, undefined]);
+});

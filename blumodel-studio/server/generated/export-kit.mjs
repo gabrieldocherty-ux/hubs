@@ -1670,6 +1670,7 @@ var BACKSPLASHES = [
 var FLOORING = [
   {
     id: "oak-natural",
+    group: "Hardwood",
     name: "Wide Plank, Natural Oak",
     brand: "Groundwork",
     hex: "#caa27a",
@@ -1680,6 +1681,7 @@ var FLOORING = [
   },
   {
     id: "oak-smoked",
+    group: "Hardwood",
     name: "Wide Plank, Smoked Oak",
     brand: "Groundwork",
     hex: "#7b5d45",
@@ -1690,6 +1692,7 @@ var FLOORING = [
   },
   {
     id: "herringbone",
+    group: "Hardwood",
     name: "Herringbone, Honey Oak",
     brand: "Groundwork",
     hex: "#c39062",
@@ -1700,6 +1703,7 @@ var FLOORING = [
   },
   {
     id: "checker",
+    group: "Stone",
     name: "Checkerboard Marble",
     brand: "Quarry Row",
     hex: "#bdb6aa",
@@ -1710,6 +1714,7 @@ var FLOORING = [
   },
   {
     id: "terracotta",
+    group: "Tile",
     name: "Terracotta Square",
     brand: "Kiln & Glaze",
     hex: "#b8694a",
@@ -1720,6 +1725,7 @@ var FLOORING = [
   },
   {
     id: "porcelain",
+    group: "Tile",
     name: "Large Format, Limestone",
     brand: "Kiln & Glaze",
     hex: "#d8d1c4",
@@ -1730,6 +1736,7 @@ var FLOORING = [
   },
   {
     id: "concrete-floor",
+    group: "Concrete",
     name: "Polished Concrete",
     brand: "Formwork",
     hex: "#9d9993",
@@ -1737,7 +1744,40 @@ var FLOORING = [
     price: 9,
     unit: "sq ft",
     gloss: 0.55
-  }
+  },
+  // ── hardwood ──
+  { id: "oak-white", group: "Hardwood", name: "Wide Plank, White Oak Matte", brand: "Groundwork", hex: "#d9c3a3", pattern: { type: "planks", base: "#d8c2a2", plankIn: 8 }, price: 13, unit: "sq ft", gloss: 0.2 },
+  { id: "oak-bleached", group: "Hardwood", name: "Wide Plank, Bleached Oak", brand: "Groundwork", hex: "#e2d6c3", pattern: { type: "planks", base: "#e1d5c2", plankIn: 9 }, price: 14, unit: "sq ft", gloss: 0.2 },
+  { id: "walnut-plank", group: "Hardwood", name: "Plank, American Walnut", brand: "Groundwork", hex: "#5e4232", pattern: { type: "planks", base: "#5f4333", plankIn: 6 }, price: 15, unit: "sq ft", gloss: 0.35 },
+  { id: "maple-strip", group: "Hardwood", name: "Strip, Hard Maple", brand: "Groundwork", hex: "#e0c49b", pattern: { type: "planks", base: "#dfc39a", plankIn: 3.25 }, price: 9, unit: "sq ft", gloss: 0.45 },
+  { id: "hickory", group: "Hardwood", name: "Wide Plank, Rustic Hickory", brand: "Groundwork", hex: "#a7764f", pattern: { type: "planks", base: "#a8774f", plankIn: 7 }, price: 11, unit: "sq ft", gloss: 0.3 },
+  { id: "chevron-oak", group: "Hardwood", name: "Chevron, Natural Oak", brand: "Groundwork", hex: "#c8a37c", pattern: { type: "chevron", base: "#c7a27b", plankIn: 4 }, price: 18, unit: "sq ft", gloss: 0.3 },
+  { id: "chevron-smoked", group: "Hardwood", name: "Chevron, Smoked Oak", brand: "Groundwork", hex: "#6f5442", pattern: { type: "chevron", base: "#705543", plankIn: 4 }, price: 19, unit: "sq ft", gloss: 0.3 },
+  { id: "herringbone-white", group: "Hardwood", name: "Herringbone, White Oak", brand: "Groundwork", hex: "#d4bc9a", pattern: { type: "herringbone", base: "#d3bb99", plankIn: 3.5 }, price: 17, unit: "sq ft", gloss: 0.3 },
+  // ── vinyl & laminate ──
+  { id: "lvp-greige", group: "Vinyl & laminate", name: "Luxury Vinyl Plank, Greige Oak", brand: "Everlay", hex: "#b5a796", pattern: { type: "planks", base: "#b4a695", plankIn: 7 }, price: 5, unit: "sq ft", gloss: 0.25 },
+  { id: "lvp-grey", group: "Vinyl & laminate", name: "Luxury Vinyl Plank, Driftwood Grey", brand: "Everlay", hex: "#a19d97", pattern: { type: "planks", base: "#a09c96", plankIn: 7 }, price: 5, unit: "sq ft", gloss: 0.25 },
+  { id: "lvp-honey", group: "Vinyl & laminate", name: "Luxury Vinyl Plank, Honey Oak", brand: "Everlay", hex: "#bf9466", pattern: { type: "planks", base: "#be9365", plankIn: 7 }, price: 5, unit: "sq ft", gloss: 0.25 },
+  { id: "laminate-espresso", group: "Vinyl & laminate", name: "Laminate, Espresso Oak", brand: "Everlay", hex: "#4e3b30", pattern: { type: "planks", base: "#4f3c31", plankIn: 7.5 }, price: 4, unit: "sq ft", gloss: 0.35 },
+  { id: "lvt-slate", group: "Vinyl & laminate", name: "Luxury Vinyl Tile, Slate", brand: "Everlay", hex: "#5c5f62", pattern: { type: "brick", base: "#5d6063", grout: "#4a4c4e", tileW: 24, tileH: 12, offset: 0.5, vary: 0.12 }, price: 6, unit: "sq ft", gloss: 0.2 },
+  // ── tile ──
+  { id: "porcelain-12x24", group: "Tile", name: "12x24 Porcelain, Warm Grey", brand: "Kiln & Glaze", hex: "#b6b0a6", pattern: { type: "brick", base: "#b7b1a7", grout: "#a29b90", tileW: 24, tileH: 12, offset: 0.33, vary: 0.04 }, price: 8, unit: "sq ft", gloss: 0.3 },
+  { id: "porcelain-white-24", group: "Tile", name: "24x48 Porcelain, Statuario Look", brand: "Kiln & Glaze", hex: "#ebe8e3", pattern: { type: "brick", base: "#ece9e4", grout: "#d6d2cb", tileW: 48, tileH: 24, offset: 0.5, vary: 0.03, gloss: 0.5 }, price: 12, unit: "sq ft", gloss: 0.55 },
+  { id: "wood-look-tile", group: "Tile", name: "8x48 Wood-Look Porcelain, Oak", brand: "Kiln & Glaze", hex: "#b48d68", pattern: { type: "brick", base: "#b58e69", grout: "#8e7258", tileW: 48, tileH: 8, offset: 0.33, vary: 0.12, wood: true }, price: 7, unit: "sq ft", gloss: 0.25 },
+  { id: "hex-white", group: "Tile", name: "Hexagon 8in, Matte White", brand: "Kiln & Glaze", hex: "#e8e4dc", pattern: { type: "hex", base: "#e9e5dd", grout: "#c9c3b8", tileIn: 8, vary: 0.04 }, price: 11, unit: "sq ft", gloss: 0.2 },
+  { id: "hex-encaustic", group: "Tile", name: "Hexagon 8in, Cement Blue Mix", brand: "Kiln & Glaze", hex: "#8fa2ad", pattern: { type: "hex", base: "#d9d4c8", grout: "#bdb6a8", tileIn: 8, vary: 0.05, accent: "#5f7d8c" }, price: 15, unit: "sq ft", gloss: 0.2 },
+  { id: "hex-mosaic", group: "Tile", name: "Hexagon 2in Mosaic, Carrara", brand: "Kiln & Glaze", hex: "#e3e1dc", pattern: { type: "hex", base: "#e4e2dd", grout: "#c7c4bd", tileIn: 2, vary: 0.06, accent: "#b9bcbf" }, price: 16, unit: "sq ft", gloss: 0.35 },
+  { id: "penny-white", group: "Tile", name: "Penny Round, Gloss White", brand: "Kiln & Glaze", hex: "#ecebe7", pattern: { type: "penny", base: "#efeeea", grout: "#b3afa7", vary: 0.03 }, price: 14, unit: "sq ft", gloss: 0.6 },
+  { id: "penny-black", group: "Tile", name: "Penny Round, Matte Black", brand: "Kiln & Glaze", hex: "#2f2f30", pattern: { type: "penny", base: "#303031", grout: "#8b8781", vary: 0.05 }, price: 14, unit: "sq ft", gloss: 0.3 },
+  { id: "quarry-red", group: "Tile", name: "6x6 Quarry Tile, Red", brand: "Kiln & Glaze", hex: "#9b4b37", pattern: { type: "tile", base: "#9c4c38", grout: "#8a7d6c", tileIn: 6, vary: 0.1 }, price: 6, unit: "sq ft", gloss: 0.2 },
+  // ── stone ──
+  { id: "travertine", group: "Stone", name: "Travertine, Versailles Ivory", brand: "Quarry Row", hex: "#d7c4a5", pattern: { type: "brick", base: "#d8c5a6", grout: "#c5b293", tileW: 16, tileH: 16, offset: 0.5, vary: 0.08 }, price: 15, unit: "sq ft", gloss: 0.2 },
+  { id: "slate-natural", group: "Stone", name: "Natural Slate, Charcoal", brand: "Quarry Row", hex: "#4c4f52", pattern: { type: "tile", base: "#4d5053", grout: "#3b3c3d", tileIn: 16, vary: 0.16 }, price: 12, unit: "sq ft", gloss: 0.15 },
+  { id: "marble-floor", group: "Stone", name: "Carrara Marble, Honed 18in", brand: "Quarry Row", hex: "#e3e2de", pattern: { type: "marble", base: "#e6e5e1", vein: "#8b8e93", intensity: 0.7 }, price: 22, unit: "sq ft", gloss: 0.45 },
+  { id: "terrazzo-floor", group: "Stone", name: "Terrazzo, Warm Chip", brand: "Quarry Row", hex: "#ddd4c6", pattern: { type: "terrazzo", base: "#e0d8ca", chips: ["#b7a48d", "#8d8378", "#c98f6c", "#f4efe6", "#6d6862"] }, price: 26, unit: "sq ft", gloss: 0.45 },
+  // ── concrete ──
+  { id: "concrete-light", group: "Concrete", name: "Polished Concrete, Pale", brand: "Formwork", hex: "#c4c0b9", pattern: { type: "concrete", base: "#c5c1ba" }, price: 9, unit: "sq ft", gloss: 0.55 },
+  { id: "concrete-dark", group: "Concrete", name: "Ground Concrete, Graphite", brand: "Formwork", hex: "#5f5d5a", pattern: { type: "concrete", base: "#605e5b" }, price: 10, unit: "sq ft", gloss: 0.5 }
 ];
 var PAINTS = [
   { id: "chalk", name: "Chalk White", brand: "Loam & Co", hex: "#f1ece3", pattern: { type: "plaster", color: "#f1ece3" }, price: 68, unit: "gal", gloss: 0.1 },
@@ -1826,8 +1866,9 @@ function spaces(room) {
 function fitStyles(styles, n, fallback) {
   return Array.from({ length: n }, (_, i) => styles && isEdgeStyle(styles[i]) ? styles[i] : fallback);
 }
-function floorOutlines(room) {
-  return spaces(room).filter((sp) => !sp.zone).map((sp) => sp.pts);
+function floorSpaces(room) {
+  const own = new Map((room.extra ?? []).map((e) => [e.id, e.flooringId]));
+  return spaces(room).filter((sp) => !sp.zone).map((sp) => ({ id: sp.id, name: sp.name, pts: sp.pts, ...own.get(sp.id) ? { flooringId: own.get(sp.id) } : {} }));
 }
 function signedArea(p) {
   let a = 0;
@@ -1876,9 +1917,6 @@ function wallSegs(room) {
   }
   segCache.set(room, out);
   return out;
-}
-function floorAreaIn2(room) {
-  return floorOutlines(room).reduce((n, o) => n + area(o), 0);
 }
 function perimeterIn(room) {
   return wallSegs(room).reduce((n, s) => n + (s.a1 - s.a0), 0);
@@ -2127,9 +2165,20 @@ function buildEstimate(doc, opts = {}) {
     const sq = Math.ceil(splashIn2 / 144 * 1.1);
     lines.push({ key: "splash", group: "Surfaces", label: `${src.brand} ${src.name}`, sub: `Backsplash${bs.id === "slab-match" ? ", book-matched slab" : ", incl. 10% overage"}`, qty: sq, unit: "sq ft", unitPrice: src.price, total: sq * src.price });
   }
-  const floor = byId2(FLOORING, surfaces.flooringId);
-  const floorSq = Math.ceil(floorAreaIn2(room) / 144 * 1.1);
-  lines.push({ key: "floor", group: "Surfaces", label: `${floor.brand} ${floor.name}`, sub: "Flooring, incl. 10% overage", qty: floorSq, unit: "sq ft", unitPrice: floor.price, total: floorSq * floor.price });
+  const kitchenFloor = byId2(FLOORING, surfaces.flooringId);
+  const floors = /* @__PURE__ */ new Map();
+  for (const sp of floorSpaces(room)) {
+    const opt = sp.flooringId ? byId2(FLOORING, sp.flooringId) : kitchenFloor;
+    const f = floors.get(opt.id) ?? { opt, in2: 0, rooms: [] };
+    f.in2 += area(sp.pts);
+    f.rooms.push(sp.name);
+    floors.set(opt.id, f);
+  }
+  for (const [id, f] of floors) {
+    const sq = Math.ceil(f.in2 / 144 * 1.1);
+    const where = floors.size > 1 ? ` \xB7 ${f.rooms.join(", ")}` : "";
+    lines.push({ key: id === kitchenFloor.id ? "floor" : `floor:${id}`, group: "Surfaces", label: `${f.opt.brand} ${f.opt.name}`, sub: `Flooring, incl. 10% overage${where}`, qty: sq, unit: "sq ft", unitPrice: f.opt.price, total: sq * f.opt.price });
+  }
   const paint = byId2(PAINTS, surfaces.paintId);
   const openingsIn2 = all.filter((r) => r.product.kind === "window" || r.product.kind === "door").reduce((s, r) => s + r.w * r.product.heightIn, 0);
   const wallSq = (perimeterIn(room) * room.ceilingIn - openingsIn2) / 144;

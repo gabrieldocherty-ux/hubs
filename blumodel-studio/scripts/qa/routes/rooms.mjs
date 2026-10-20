@@ -284,6 +284,182 @@ export default [
     },
   },
   {
+    // The plan's HUD on a phone: every control on screen, big enough to tap, none on top of another,
+    // and the Add a room menu inside the screen and usable.
+    name: 'plan-hud-phone',
+    as: 'studio',
+    viewport: 'phone',
+    setup: async ({ me }) => {
+      const d = { name: 'QA HUD', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: {}, items: [{ id: 'b0', productId: 'base', x: 15, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 }], version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA HUD', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar'],
+    check: async (h) => {
+      if (await h.evaluate(() => !!document.querySelector('.views [role="tab"]'))) await viewTab(h, 'Plan');
+      await h.waitFor('.plan-view canvas');
+      await h.sleep(500);
+      const r = await h.evaluate(() => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const boxes = [...document.querySelectorAll('.plan-view .plan-hud')]
+          .filter((e) => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().width > 0)
+          .map((e) => ({ name: e.className, b: e.getBoundingClientRect() }));
+        const off = boxes.filter(({ b }) => b.left < -1 || b.right > vw + 1 || b.bottom > vh + 1 || b.top < -1).map((x) => x.name);
+        const hit = [];
+        for (let i = 0; i < boxes.length; i++)
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i].b;
+            const c = boxes[j].b;
+            if (Math.min(a.right, c.right) - Math.max(a.left, c.left) > 2 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 2) hit.push(`${boxes[i].name} / ${boxes[j].name}`);
+          }
+        const small = [...document.querySelectorAll('.plan-view .plan-hud button, .plan-view .plan-hud label')]
+          .map((e) => ({ t: (e.textContent || e.getAttribute('aria-label') || '').trim(), b: e.getBoundingClientRect() }))
+          .filter((x) => x.b.width > 0 && Math.max(x.b.height, x.b.width) < 32)
+          .map((x) => `${x.t} ${Math.round(x.b.width)}x${Math.round(x.b.height)}`);
+        return { off, hit, small, sw: document.documentElement.scrollWidth, vw };
+      });
+      if (r.sw > r.vw + 1) throw new Error(`the page scrolls sideways (${r.sw} in ${r.vw})`);
+      if (r.off.length) throw new Error(`HUD off screen: ${r.off.join(', ')}`);
+      if (r.hit.length) throw new Error(`HUD pieces on top of each other: ${r.hit.join('; ')}`);
+      if (r.small.length) throw new Error(`HUD controls too small to tap: ${r.small.join(', ')}`);
+      await h.shot('plan');
+      await h.click('[data-testid="add-room"]');
+      await h.waitFor('.plan-menu-list');
+      const m = await h.evaluate(() => {
+        const b = document.querySelector('.plan-menu-list').getBoundingClientRect();
+        return { l: b.left, r: b.right, t: b.top, bt: b.bottom, vw: window.innerWidth, vh: window.innerHeight, scroll: document.querySelector('.plan-menu-list').scrollHeight > document.querySelector('.plan-menu-list').clientHeight };
+      });
+      if (m.l < 0 || m.r > m.vw || m.t < 0) throw new Error(`the Add a room menu spills off screen: ${JSON.stringify(m)}`);
+      if (m.bt > m.vh && !m.scroll) throw new Error(`the Add a room menu runs past the bottom and doesn't scroll: ${JSON.stringify(m)}`);
+      await h.shot('menu');
+      await h.click('[data-testid="add-room-dining"]');
+      await h.waitUntil(() => window.__blumodelQA.store.getState().doc.room.extra?.length === 1, 4000, 'the dining room being added');
+      await h.click('[data-testid="add-zone"]');
+      await h.waitForText('Cancel');
+      await h.shot('open-area');
+    },
+  },
+  {
+    // Catalog cards show the product's own 3D model in the kitchen's finishes once on screen.
+    name: 'catalog-3d-thumbs',
+    as: 'studio',
+    viewport: DESK,
+    setup: async ({ me }) => {
+      const d = { name: 'QA Thumbs', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: { cabinetFinishId: 'forest', doorStyle: 'shaker', hardwareId: 'brass' }, items: [], version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Thumbs', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.product-card'],
+    check: async (h) => {
+      await h.waitUntil(() => [...document.querySelectorAll('.product-card .product-thumb img[src^="data:"]')].filter((i) => i.complete && i.naturalWidth > 0).length >= 6, 20_000, 'six catalog cards drawn in 3D');
+      await h.sleep(800);
+      const r = await h.evaluate(() => {
+        const imgs = [...document.querySelectorAll('.product-card .product-thumb img[src^="data:"]')];
+        return { n: imgs.length, cards: document.querySelectorAll('.product-card').length, bad: imgs.filter((i) => i.complete && i.naturalWidth < 100).map((i) => `${i.closest('.product-card').dataset.product} ${i.naturalWidth}x${i.naturalHeight} ${i.src.slice(0, 40)}`).join('; '), src: imgs[0]?.src.slice(0, 15) };
+      });
+      if (r.bad) throw new Error(`3D card pictures that didn't load: ${r.bad}`);
+      h.note(`${r.n} of ${r.cards} cards in 3D (${r.src}…)`);
+      await h.shot('cards');
+      // A new cabinet finish redraws them in it.
+      await h.evaluate(() => {
+        window.__qaThumbBefore = document.querySelector('.product-card .product-thumb img[src^="data:"]').src;
+        window.__blumodelQA.store.getState().setSurfaces({ cabinetFinishId: 'navy' });
+      });
+      await h.waitUntil(() => {
+        const src = document.querySelector('.product-card .product-thumb img[src^="data:"]')?.src;
+        return !!src && src !== window.__qaThumbBefore;
+      }, 15_000, 'the cards redrawn in the new finish');
+      await h.sleep(600);
+      await h.shot('navy');
+      // The branded appliances.
+      await h.evaluate(() => [...document.querySelectorAll('.catalog-panel button, .chip')].find((b) => b.textContent.trim() === 'Appliances')?.click());
+      await h.waitUntil(() => [...document.querySelectorAll('.product-card .product-thumb img[src^="data:"]')].filter((i) => i.complete && i.naturalWidth > 0).length >= 6, 20_000, 'appliance cards drawn in 3D');
+      await h.sleep(1500);
+      await h.shot('appliances');
+    },
+  },
+  {
+    // A floor per room: an added bathroom starts on tile, the picker sets each room's floor, 3D shows both.
+    name: 'floor-per-room',
+    as: 'studio',
+    viewport: DESK,
+    setup: async ({ me }) => {
+      const items = [0, 1, 2].map((i) => ({ id: `b${i}`, productId: 'base', x: 15 + i * 30, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 }));
+      const d = { name: 'QA Floors per room', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: { flooringId: 'oak-natural' }, items, version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Floors per room', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.plan-view canvas'],
+    check: async (h) => {
+      await h.click('[data-testid="add-room"]');
+      await h.click('[data-testid="add-room-bath"]');
+      await h.waitUntil(() => window.__blumodelQA.store.getState().doc.room.extra?.[0]?.flooringId === 'porcelain-12x24', 4000, 'the bathroom starting on tile');
+      await h.evaluate(() => [...document.querySelectorAll('.left-panel [role="tab"]')].find((b) => /Room/.test(b.textContent))?.click());
+      await h.waitFor('[data-testid="floor-for"]');
+      const opts = await h.evaluate(() => [...document.querySelectorAll('[data-testid="floor-for"] option')].map((o) => o.textContent));
+      if (opts.length !== 2 || !/kitchen/.test(opts[0]) || !/Bathroom/.test(opts[1])) throw new Error(`Floor for: ${opts.join(' | ')}`);
+      // Pick the bathroom, then a hex floor for it, through the UI.
+      await h.evaluate(() => {
+        const sel = document.querySelector('[data-testid="floor-for"]');
+        const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+        set.call(sel, sel.options[1].value);
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await h.waitForText('Same as the kitchen');
+      await h.evaluate(() => [...document.querySelectorAll('.tex-groups .chip')].find((b) => b.firstChild.textContent.trim() === 'Tile').click());
+      await h.click('.tex[aria-label="Hexagon 8in, Cement Blue Mix"]');
+      await h.waitUntil(() => window.__blumodelQA.store.getState().doc.room.extra[0].flooringId === 'hex-encaustic', 4000, 'the bathroom floor set');
+      if (await h.evaluate(() => window.__blumodelQA.store.getState().doc.surfaces.flooringId) !== 'oak-natural') throw new Error('setting the bathroom floor changed the kitchen floor');
+      const est = await h.evaluate(() => window.__blumodelQA.store.getState().doc.room.extra.length);
+      h.note(`rooms: ${est + 1}`);
+      await h.shot('plan');
+      await viewTab(h, '3D');
+      await h.waitFor('canvas');
+      await h.sleep(1500);
+      await h.shot('3d');
+    },
+  },
+  {
+    name: 'flooring-picker',
+    as: 'studio',
+    viewport: DESK,
+    setup: async ({ me }) => {
+      const items = [0, 1, 2].map((i) => ({ id: `b${i}`, productId: 'base', x: 15 + i * 30, y: 12, rotation: 0, finishIndex: 0, widthIn: 30 }));
+      const d = { name: 'QA Floors', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: { flooringId: 'oak-natural' }, items, version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Floors', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.left-panel'],
+    check: async (h) => {
+      await h.evaluate(() => [...document.querySelectorAll('.left-panel [role="tab"]')].find((b) => /Room/.test(b.textContent))?.click());
+      await h.waitFor('.tex-groups');
+      const groups = await h.evaluate(() => [...document.querySelectorAll('.tex-groups .chip')].map((b) => b.firstChild.textContent.trim()));
+      if (groups.join('|') !== 'Hardwood|Vinyl & laminate|Tile|Stone|Concrete') throw new Error(`flooring groups: ${groups.join(', ')}`);
+      const on = await h.evaluate(() => document.querySelector('.tex-groups .chip.on')?.firstChild.textContent.trim());
+      if (on !== 'Hardwood') throw new Error(`the chips opened on ${on}, not the current floor's group`);
+      await h.shot('hardwood');
+      // Every floor in every group draws (no blank swatch), then each new pattern in 3D.
+      for (const g of groups) {
+        await h.evaluate((name) => [...document.querySelectorAll('.tex-groups .chip')].find((b) => b.firstChild.textContent.trim() === name).click(), g);
+        await h.sleep(150);
+        const blank = await h.evaluate(() => [...document.querySelectorAll('.tex-groups + .tex-grid .tex')].filter((b) => !/url\(/.test(b.style.backgroundImage)).map((b) => b.getAttribute('aria-label')));
+        if (blank.length) throw new Error(`no swatch for ${blank.join(', ')}`);
+      }
+      await viewTab(h, '3D');
+      await h.waitFor('canvas');
+      for (const id of ['chevron-oak', 'hex-encaustic', 'penny-white', 'wood-look-tile', 'porcelain-12x24', 'travertine']) {
+        await h.evaluate((fid) => window.__blumodelQA.store.getState().setSurfaces({ flooringId: fid }), id);
+        await h.sleep(900);
+        await h.shot(id);
+      }
+    },
+  },
+  {
     name: 'pot-lights',
     as: 'studio',
     viewport: DESK,

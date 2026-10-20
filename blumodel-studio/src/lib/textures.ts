@@ -13,7 +13,12 @@ export type PatternSpec =
   | { type: 'tile'; base: string; grout: string; tileIn?: number; vary?: number }
   | { type: 'subway'; base: string; grout: string; vary?: number }
   | { type: 'zellige'; base: string; grout: string }
-  | { type: 'stack'; base: string; grout: string };
+  | { type: 'stack'; base: string; grout: string }
+  | { type: 'chevron'; base: string; plankIn?: number }
+  | { type: 'hex'; base: string; grout: string; tileIn?: number; vary?: number; accent?: string }
+  | { type: 'penny'; base: string; grout: string; vary?: number }
+  /** Rectangular tiles in rows, shifted `offset` of a tile's length (0.5 half, 0.33 a third, 0 stacked). */
+  | { type: 'brick'; base: string; grout: string; tileW: number; tileH: number; offset?: number; vary?: number; gloss?: number; wood?: boolean };
 
 export interface TextureInfo {
   key: string;
@@ -259,7 +264,149 @@ function build(spec: PatternSpec, key: string): TextureInfo {
       return brickTiles({ base: spec.base, grout: spec.grout, tileW: 4, tileH: 4, cols: 4, rows: 4, offset: 0, vary: 0.16, gloss: 0.55, wobble: true }, key, rand);
     case 'stack':
       return brickTiles({ base: spec.base, grout: spec.grout, tileW: 2, tileH: 8, cols: 4, rows: 2, offset: 0, vary: 0.07, gloss: 0.4 }, key, rand);
+    case 'brick': {
+      // A whole repeat of the offset: 3 rows for thirds, 2 for halves (and stacked), at least ~4 ft wide.
+      const offset = spec.offset ?? 0.5;
+      const period = offset > 0.3 && offset < 0.4 ? 3 : 2;
+      const cols = Math.max(2, Math.round(48 / spec.tileW));
+      const rows = period * Math.max(1, Math.round(36 / (spec.tileH * period)));
+      const pxPerIn = Math.min(16, 1024 / Math.max(spec.tileW * cols, spec.tileH * rows));
+      return brickTiles({ base: spec.base, grout: spec.grout, tileW: spec.tileW, tileH: spec.tileH, cols, rows, offset, vary: spec.vary ?? 0.06, gloss: spec.gloss ?? 0.15, wood: spec.wood, pxPerIn }, key, rand);
+    }
+    case 'chevron':
+      return chevron(spec.base, spec.plankIn ?? 4, key, rand);
+    case 'hex':
+      return hex(spec, key, rand);
+    case 'penny':
+      return penny(spec, key, rand);
   }
+}
+
+/** Wood planks cut at 45 degrees and laid in a V; the points run along the canvas's height. */
+function chevron(base: string, plankIn: number, key: string, rand: () => number): TextureInfo {
+  const pxPerIn = 8;
+  const w = plankIn * pxPerIn; // across the plank
+  const rowH = w * Math.SQRT2; // one plank's rise, measured straight up
+  const half = 6 * w; // how far each arm runs across
+  const W = half * 2;
+  const H = Math.round(rowH * 6);
+  const { canvas, ctx } = makeCanvas(W, H);
+  ctx.fillStyle = shade(base, -0.45);
+  ctx.fillRect(0, 0, W, H);
+  const rows = Math.ceil(H / rowH);
+  for (let r = -Math.ceil(half / rowH) - 1; r < rows + 1; r++) {
+    const y = r * rowH;
+    const arms: { pts: [number, number][]; from: (t: number) => [number, number]; to: (t: number) => [number, number] }[] = [
+      { pts: [[0, y + half], [half, y], [half, y + rowH], [0, y + half + rowH]], from: (t) => [0, y + half + t * rowH], to: (t) => [half, y + t * rowH] },
+      { pts: [[half, y], [W, y + half], [W, y + half + rowH], [half, y + rowH]], from: (t) => [half, y + t * rowH], to: (t) => [W, y + half + t * rowH] },
+    ];
+    for (const arm of arms) {
+      const c = shade(base, (rand() - 0.5) * 0.26);
+      const lines = Array.from({ length: 9 }, () => ({ t: rand(), c: shade(c, -0.12 - rand() * 0.18), a: 0.2 + rand() * 0.3 }));
+      for (const oy of [0, H, -H]) {
+        ctx.save();
+        ctx.translate(0, oy);
+        ctx.beginPath();
+        arm.pts.forEach(([px, py], k) => (k === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
+        ctx.closePath();
+        ctx.fillStyle = c;
+        ctx.fill();
+        ctx.save();
+        ctx.clip();
+        for (const l of lines) {
+          const [ax, ay] = arm.from(l.t);
+          const [bx, by] = arm.to(l.t);
+          ctx.strokeStyle = rgba(l.c, l.a);
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        }
+        ctx.restore();
+        ctx.strokeStyle = rgba(shade(base, -0.55), 0.7);
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+  grain(ctx, W, H, 6, rand);
+  return { key, canvas, pxPerIn, widthIn: W / pxPerIn, heightIn: H / pxPerIn };
+}
+
+/** Hexagon tiles (pointy side up), `tileIn` across the flats; `accent` scatters a second colour. */
+function hex(spec: { base: string; grout: string; tileIn?: number; vary?: number; accent?: string }, key: string, rand: () => number): TextureInfo {
+  const tileIn = spec.tileIn ?? 8;
+  const flat = 64; // px across the flats
+  const pxPerIn = flat / tileIn;
+  const side = flat / Math.sqrt(3);
+  const W = flat * 8;
+  const H = Math.round(side * 12);
+  const { canvas, ctx } = makeCanvas(W, H);
+  ctx.fillStyle = spec.grout;
+  ctx.fillRect(0, 0, W, H);
+  // 3/16in grout, so the joints still read across the room.
+  const g = Math.max(2, pxPerIn * 0.19);
+  const vary = spec.vary ?? 0.05;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const cx = c * flat + (r % 2 ? flat / 2 : 0);
+      const cy = r * side * 1.5;
+      const col = shade(spec.accent && rand() < 0.18 ? spec.accent : spec.base, (rand() - 0.5) * vary * 2);
+      for (const ox of [-W, 0, W]) {
+        for (const oy of [-H, 0, H]) {
+          ctx.beginPath();
+          for (let k = 0; k < 6; k++) {
+            const a = Math.PI / 6 + (k * Math.PI) / 3;
+            const px = cx + ox + Math.cos(a) * (side - g / 2);
+            const py = cy + oy + Math.sin(a) * (side - g / 2);
+            if (k === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fillStyle = col;
+          ctx.fill();
+        }
+      }
+    }
+  }
+  grain(ctx, W, H, 6, rand);
+  return { key, canvas, pxPerIn, widthIn: W / pxPerIn, heightIn: H / pxPerIn };
+}
+
+/** Penny-round mosaic: 3/4in rounds in offset rows. */
+function penny(spec: { base: string; grout: string; vary?: number }, key: string, rand: () => number): TextureInfo {
+  const pxPerIn = 24;
+  const d = 0.75 * pxPerIn;
+  const pitch = d * 1.1;
+  const rowH = pitch * (Math.sqrt(3) / 2);
+  const cols = 14;
+  const rows = 16; // even, so the offset rows repeat
+  const W = Math.round(cols * pitch);
+  const H = Math.round(rows * rowH);
+  const { canvas, ctx } = makeCanvas(W, H);
+  ctx.fillStyle = spec.grout;
+  ctx.fillRect(0, 0, W, H);
+  const vary = spec.vary ?? 0.06;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cx = (c + 0.5 + (r % 2 ? 0.5 : 0)) * (W / cols);
+      const cy = (r + 0.5) * (H / rows);
+      const col = shade(spec.base, (rand() - 0.5) * vary * 2);
+      for (const ox of [-W, 0, W]) {
+        const gr = ctx.createRadialGradient(cx + ox - d * 0.15, cy - d * 0.15, d * 0.05, cx + ox, cy, d / 2);
+        gr.addColorStop(0, shade(col, 0.12));
+        gr.addColorStop(1, col);
+        ctx.fillStyle = gr;
+        ctx.beginPath();
+        ctx.arc(cx + ox, cy, d / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  grain(ctx, W, H, 5, rand);
+  return { key, canvas, pxPerIn, widthIn: W / pxPerIn, heightIn: H / pxPerIn };
 }
 
 function marble(base: string, vein: string, intensity: number, key: string, rand: () => number): TextureInfo {
@@ -508,10 +655,13 @@ interface BrickOpts {
   vary: number;
   gloss: number;
   wobble?: boolean;
+  /** Wood-look porcelain: grain along each tile. */
+  wood?: boolean;
+  pxPerIn?: number;
 }
 
 function brickTiles(o: BrickOpts, key: string, rand: () => number): TextureInfo {
-  const pxPerIn = 16;
+  const pxPerIn = o.pxPerIn ?? 16;
   const tw = o.tileW * pxPerIn;
   const th = o.tileH * pxPerIn;
   const W = tw * o.cols;
@@ -519,18 +669,20 @@ function brickTiles(o: BrickOpts, key: string, rand: () => number): TextureInfo 
   const { canvas, ctx } = makeCanvas(W, H);
   ctx.fillStyle = o.grout;
   ctx.fillRect(0, 0, W, H);
-  const g = 2.2;
+  const g = Math.max(2.2, pxPerIn * 0.19);
   const [br, bg, bb] = hexToRgb(o.base);
   const isDark = br + bg + bb < 240;
 
   for (let r = 0; r < o.rows; r++) {
-    const shift = (r % 2) * o.offset * tw;
+    // Halves alternate; thirds step a third each row (r * offset, wrapped).
+    const shift = ((r * o.offset) % 1) * tw;
     for (let c = 0; c < o.cols; c++) {
       const x0 = c * tw + shift;
       const y0 = r * th;
       const col = shade(o.base, (rand() - 0.5) * o.vary * 2);
       const jit: number[] = o.wobble ? Array.from({ length: 8 }, () => (rand() - 0.5) * 2.2) : new Array(8).fill(0);
       const blobs = Array.from({ length: o.wobble ? 5 : 2 }, () => ({ x: rand(), y: rand(), r: 0.3 + rand() * 0.6, l: rand() > 0.5 }));
+      const grainLines = o.wood ? Array.from({ length: 12 }, () => ({ t: rand(), amp: 0.5 + rand() * 2, k: 1 + rand() * 2, ph: rand() * 6, dark: -0.12 - rand() * 0.18, a: 0.22 + rand() * 0.3 })) : [];
       for (const x of [x0, x0 - W]) {
         if (x + tw <= 0 || x >= W) continue;
         ctx.save();
@@ -545,6 +697,23 @@ function brickTiles(o: BrickOpts, key: string, rand: () => number): TextureInfo 
         ctx.clip();
         for (const b of blobs) {
           blob(ctx, x + b.x * tw, y0 + b.y * th, b.r * Math.max(tw, th), shade(col, b.l ? 0.14 : -0.14), 0.35);
+        }
+        if (o.wood) {
+          const along = tw >= th;
+          for (const l of grainLines) {
+            ctx.strokeStyle = rgba(shade(col, l.dark), l.a);
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            for (let s = 0; s <= 12; s++) {
+              const u = s / 12;
+              const off = Math.sin(u * Math.PI * 2 * l.k + l.ph) * l.amp;
+              const px = along ? x + u * tw : x + l.t * tw + off;
+              const py = along ? y0 + l.t * th + off : y0 + u * th;
+              if (s === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+          }
         }
         const hl = ctx.createLinearGradient(x, y0, x + tw * 0.6, y0 + th);
         hl.addColorStop(0, `rgba(255,255,255,${o.gloss * (isDark ? 0.35 : 0.55)})`);

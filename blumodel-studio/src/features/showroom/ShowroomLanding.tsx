@@ -4,7 +4,7 @@ import { useSession } from '../../store/useSession';
 import { useCatalog } from '../../store/useCatalog';
 import { AccountMenu } from '../../components/AccountMenu';
 import { MiniPlan } from '../../components/MiniPlan';
-import { ProductArt } from '../../components/ProductArt';
+import { ProductThumb } from '../../components/thumbs/ProductThumb';
 import { Toasts } from '../../components/Toasts';
 import { composeNewKitchen } from '../../data/compose';
 import { DEFAULT_SURFACES } from '../../data/defaults';
@@ -265,7 +265,7 @@ function LineCard({ line, pic, signedIn, disabled, wide }: { line: ShowroomLine;
           <div className="sr-line-art" style={{ gridTemplateColumns: `repeat(${Math.max(1, pics.length)}, 1fr)` }} aria-hidden>
             {pics.map((p) => (
               <span key={p.id} className="sr-line-pic">
-                <ProductArt product={p} surfaces={DEFAULT_SURFACES} />
+                <ProductThumb product={p} surfaces={DEFAULT_SURFACES} />
               </span>
             ))}
           </div>
