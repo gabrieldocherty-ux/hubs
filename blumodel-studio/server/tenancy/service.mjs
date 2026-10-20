@@ -58,6 +58,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   bathrooms: false,
   /** Let signed-in visitors make AI renders (staff always can, with credits). */
   visitorRenders: false,
+  /** Show visitors the Estimate (prices and a total) in the designer. The company's own staff always see it. */
+  visitorEstimate: false,
   /** Visitor renders a day across the showroom, when visitorRenders is on. */
   dailyRenderCap: 0,
   /**
@@ -161,7 +163,7 @@ export function cleanSettings(input, current = {}) {
   const out = { ...DEFAULT_SETTINGS, ...current };
   const errors = [];
   if (!input || typeof input !== 'object') return { ok: true, value: out };
-  for (const k of ['fillGaps', 'bathrooms', 'visitorRenders', 'staffLeadExport']) {
+  for (const k of ['fillGaps', 'bathrooms', 'visitorRenders', 'visitorEstimate', 'staffLeadExport']) {
     if (input[k] === undefined) continue;
     if (typeof input[k] !== 'boolean') errors.push({ field: `settings.${k}`, message: `${k} is on or off.` });
     else out[k] = input[k];
@@ -741,7 +743,7 @@ export function createTenantService({ db, config, now = Date.now, files = null, 
           featuredLines: Array.isArray(b.featuredLines) ? b.featuredLines : [],
         },
         contact: { phone: c.phone ?? '', email: c.email ?? '', website: c.website ?? '', address: c.address ?? '', serviceArea: c.serviceArea ?? '', hours: c.hours ?? '' },
-        features: { fillGaps: !!t.settings.fillGaps, bathrooms: !!t.settings.bathrooms, visitorRenders: !!t.settings.visitorRenders },
+        features: { fillGaps: !!t.settings.fillGaps, bathrooms: !!t.settings.bathrooms, visitorRenders: !!t.settings.visitorRenders, visitorEstimate: !!t.settings.visitorEstimate },
         images: publicImages(b.images, { url: (id) => svc.imageUrl(t, id) }),
       };
     },

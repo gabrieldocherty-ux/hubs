@@ -70,6 +70,7 @@ export interface TenantSettings {
   fillGaps: boolean;
   bathrooms: boolean;
   visitorRenders: boolean;
+  visitorEstimate?: boolean;
   dailyRenderCap: number;
 }
 

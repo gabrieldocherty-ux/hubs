@@ -366,6 +366,13 @@ function SwitchesCard({ settings, owner, onChange, errors }: { settings: Showroo
         </span>
       </label>
       <label className="ws-switch">
+        <input type="checkbox" checked={!!settings.visitorEstimate} onChange={(e) => onChange({ visitorEstimate: e.target.checked })} data-testid="visitor-estimate" />
+        <span>
+          <b>Show visitors an estimate</b>
+          <em>Off by default. On: the designer shows your prices and a running total as they design. Your team always sees it.</em>
+        </span>
+      </label>
+      <label className="ws-switch">
         <input type="checkbox" checked={settings.visitorRenders} onChange={(e) => onChange({ visitorRenders: e.target.checked, ...(e.target.checked && !settings.dailyRenderCap ? { dailyRenderCap: 5 } : {}) })} />
         <span>
           <b>Photoreal renders for visitors</b>

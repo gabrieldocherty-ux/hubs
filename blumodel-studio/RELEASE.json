@@ -1,7 +1,7 @@
 {
-  "source": "95683a0f3b31d27d5a29438d2d20f53c7fb773bd",
-  "subject": "3d(products): the Item sheet shows the selected piece in 3D, in its own finish and width, inside its",
-  "builtAt": "2026-10-20T15:54:50.881Z",
+  "source": "0a3706108974cfaf95e5b86bb2c4b0ab9c869196",
+  "subject": "test(showroom): the public features include visitorEstimate",
+  "builtAt": "2026-10-20T23:29:22.761Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

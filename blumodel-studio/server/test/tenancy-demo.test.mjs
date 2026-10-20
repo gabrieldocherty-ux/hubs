@@ -38,7 +38,7 @@ test('the demo showroom: live, its own catalog (no store links), branding, peopl
     assert.equal(cfg.tenant.name, 'Northline Kitchen & Bath (Demo)');
     assert.equal(cfg.tenant.status, 'live');
     assert.equal(cfg.tenant.isDemo, true);
-    assert.deepEqual(cfg.tenant.features, { fillGaps: true, bathrooms: true, visitorRenders: false });
+    assert.deepEqual(cfg.tenant.features, { fillGaps: true, bathrooms: true, visitorRenders: false, visitorEstimate: false });
     assert.deepEqual(cfg.tenant.branding.featuredLines, ['Lakeshore Shaker', 'Harbourfront Slab', 'Northline Sinks', 'Chef’s Appliance Suite', 'Bay Lighting', 'Bayview Bath']);
     // Its pictures, from the committed demo-images: a hero, a tall hero, every featured line, a gallery
     // whose kitchens open in 3D.

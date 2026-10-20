@@ -486,3 +486,20 @@ test('scene: cleaned and bounded; the prompt names the room, finishes and produc
   assert.equal(imageFromJson({ nothing: 1 }), null);
   assert.equal(imageFromJson(null), null);
 });
+
+test('the visitor estimate is the company’s setting: off by default, on from Showroom settings, shown to visitors through the public features', async () => {
+  const t = await startTestServer();
+  try {
+    const w = await world(t, { slug: 'estim' });
+    assert.equal((await w.visitor.get('/api/config')).body.tenant.features.visitorEstimate, false);
+    const bad = await w.owner.patch('/api/workspace/showroom', { settings: { visitorEstimate: 'yes' } });
+    assert.equal(bad.status, 400);
+    const on = await w.owner.patch('/api/workspace/showroom', { settings: { visitorEstimate: true } });
+    assert.equal(on.status, 200, on.text);
+    assert.equal((await w.visitor.get('/api/config')).body.tenant.features.visitorEstimate, true);
+    // A visitor can't change it.
+    assert.notEqual((await w.visitor.patch('/api/workspace/showroom', { settings: { visitorEstimate: false } })).status, 200);
+  } finally {
+    await t.close();
+  }
+});

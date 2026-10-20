@@ -62,7 +62,7 @@ test('normalizeTenant keeps what is usable and drops what is not', () => {
   assert.deepEqual(t.branding.featuredLines, ['A', 'B']);
   assert.equal(t.contact.email, '');
   assert.equal(t.contact.website, '');
-  assert.deepEqual(t.features, { fillGaps: true, bathrooms: false, visitorRenders: false });
+  assert.deepEqual(t.features, { fillGaps: true, bathrooms: false, visitorRenders: false, visitorEstimate: false });
   assert.equal(shortName(t), 'Northline Kitchen & Bath');
   assert.equal(normalizeTenant({ id: '', slug: 'x', name: 'y' }), null);
   assert.equal(normalizeTenant(null), null);

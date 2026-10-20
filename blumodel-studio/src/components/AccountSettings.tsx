@@ -9,6 +9,7 @@ import { navigateHash } from '../lib/router';
 import { THEME_PREFS, type ThemePref } from '../lib/theme';
 import { timeAgo, useSession } from '../store/useSession';
 import { useConfig } from '../lib/config';
+import { useShowroom } from '../features/showroom';
 import { proApi } from '../features/contractors/api';
 import { draftToInput, type CompanyDraft } from '../features/contractors/CompanyFields';
 import { TwoFactorSettings } from './TwoFactor';
@@ -447,6 +448,8 @@ const THEME_LABEL: Record<ThemePref, string> = { system: 'System', light: 'Light
 
 function PreferencesSection() {
   const prefs = usePrefs((s) => s.prefs);
+  // On a showroom the company decides whether visitors see an estimate (its Showroom settings).
+  const onShowroom = !!useShowroom();
   const isContractor = useSession((s) => s.user?.plan.id === 'contractor');
   const [msg, setMsg] = useState<Msg>(null);
 
@@ -476,8 +479,8 @@ function PreferencesSection() {
           ))}
         </div>
       </div>
-      <div className="set-divider" />
-      <Switch
+      {!onShowroom && <div className="set-divider" />}
+      {!onShowroom && <Switch
         id="set-estimator"
         label="Show cost estimator"
         hint={
@@ -488,7 +491,7 @@ function PreferencesSection() {
         }
         checked={prefs.showEstimator}
         onChange={(on) => void change({ showEstimator: on })}
-      />
+      />}
       <Note msg={msg} />
     </Section>
   );

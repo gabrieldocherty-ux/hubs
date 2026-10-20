@@ -13,6 +13,7 @@ type Lazy<P> = LazyExoticComponent<ComponentType<P>>;
 export const ShowroomLanding: Lazy<{}> = lazy(() => import('./ShowroomLanding'));
 
 export { useShowroom, currentShowroom, useSiteKind, basicsAllowed } from './useShowroom';
+export { useEstimateVisible } from './useEstimateVisible';
 export { SiteMark, CompanyLogo } from './SiteMark';
 export { applyShowroomBranding, pageTitle, siteName } from './branding';
 export { shortName, looksLikeShowroomHost, type PublicTenant, type SiteKind } from './site';

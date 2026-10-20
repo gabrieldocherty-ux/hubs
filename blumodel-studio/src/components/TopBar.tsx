@@ -8,14 +8,13 @@ import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
 import { AccountMenu } from './AccountMenu';
-import { useShowEstimator } from '../lib/prefs';
 import { Check } from './Icons';
 import { RenderButton } from '../features/viewer';
 import { PhotorealButton } from '../features/renders';
 import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
-import { shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
+import { shortName, SiteMark, useEstimateVisible, useShowroom, useVisitor } from '../features/showroom';
 import { roomLabel, floorSqFt } from '../lib/outline';
 import { elevationsForPrint } from './ElevationsView';
 import { resolveAll } from '../lib/geometry';
@@ -75,7 +74,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   const est = useEstimate();
   // The Est. chip is the cost estimator: a setting, off by default (Account settings > Preferences).
   // A shared kitchen (view) follows its link's own price setting.
-  const showEstimator = useShowEstimator();
+  const showEstimator = useEstimateVisible();
   const hasUser = useSession((s) => !!s.user);
   // A showroom visitor who gave their details ("Before you start") has saved designs without an account.
   const visitor = useVisitor();

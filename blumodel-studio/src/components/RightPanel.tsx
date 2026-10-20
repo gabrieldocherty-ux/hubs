@@ -13,10 +13,9 @@ import { downloadText } from '../lib/exporters';
 import { PLACEHOLDER_PRICES_NOTE, VISUALIZER_DISCLAIMER } from '../lib/csv';
 import { makeId } from '../lib/id';
 import { useSession } from '../store/useSession';
-import { useShowEstimator } from '../lib/prefs';
 import { requestExport, useEntitlements } from '../features/billing';
 import { ClientViewToggle, useKitchenPriceOf, usePriceBook, useShowCosts } from '../features/contractors';
-import { SendDesign } from '../features/showroom';
+import { SendDesign, useEstimateVisible } from '../features/showroom';
 import { priceFor } from '../data/catalog';
 import { atStoreNote, pricedAtStore } from '../lib/estimate';
 import type { EstimateExtra } from '../types';
@@ -412,7 +411,7 @@ export function RightPanel({ mode = 'edit', showPrices: pricesAllowed = true, va
   const view = mode === 'view';
   // The cost estimator (Estimate tab and totals) is a setting, off unless the person turns it on
   // (Account settings > Preferences). A shared kitchen (view) follows its link's own price setting.
-  const showEstimator = useShowEstimator();
+  const showEstimator = useEstimateVisible();
   const showPrices = pricesAllowed && (view || showEstimator);
   /** The details column on a desktop; with variant="sheet" the same tabs inside the phone layout's Details sheet. */
   const compact = variant === 'sheet';

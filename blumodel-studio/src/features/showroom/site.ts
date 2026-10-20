@@ -95,7 +95,7 @@ export interface PublicTenant {
   url: string;
   branding: TenantBranding;
   contact: TenantContact;
-  features: { fillGaps: boolean; bathrooms: boolean; visitorRenders: boolean };
+  features: { fillGaps: boolean; bathrooms: boolean; visitorRenders: boolean; visitorEstimate: boolean };
   images: ShowroomImages;
 }
 
@@ -155,7 +155,7 @@ export function normalizeTenant(raw: unknown): PublicTenant | null {
       serviceArea: str(c.serviceArea, 200),
       hours: str(c.hours, 120),
     },
-    features: { fillGaps: f.fillGaps === true, bathrooms: f.bathrooms === true, visitorRenders: f.visitorRenders === true },
+    features: { fillGaps: f.fillGaps === true, bathrooms: f.bathrooms === true, visitorRenders: f.visitorRenders === true, visitorEstimate: f.visitorEstimate === true },
     images: normalizeImages(t.images),
   };
 }

@@ -1066,7 +1066,7 @@ function SettingsSection({ t, act, busy }: SectionProps) {
   const [s, setS] = useState<TenantSettings>(t.settings);
   useEffect(() => setS(t.settings), [t.settings]);
   const dirty = useMemo(() => JSON.stringify(s) !== JSON.stringify(t.settings), [s, t.settings]);
-  const toggle = (k: 'fillGaps' | 'bathrooms' | 'visitorRenders', label: string, note: ReactNode) => (
+  const toggle = (k: 'fillGaps' | 'bathrooms' | 'visitorRenders' | 'visitorEstimate', label: string, note: ReactNode) => (
     <label className="adm-check">
       <input type="checkbox" checked={s[k]} onChange={(e) => setS({ ...s, [k]: e.target.checked })} />
       <span>
@@ -1080,6 +1080,7 @@ function SettingsSection({ t, act, busy }: SectionProps) {
       <div className="adm-form">
         {toggle('fillGaps', 'Fill the gaps with BluModel Basics', 'Our basic cabinets and appliances next to their own products, never with store links.')}
         {toggle('bathrooms', 'Bathrooms', 'A “Design your bathroom” button on their landing page.')}
+        {toggle('visitorEstimate', 'Visitor estimate', 'Visitors see the company’s prices and a running total in the designer. Staff always do.')}
         {toggle('visitorRenders', 'Visitor renders', 'Signed-in visitors can make photoreal renders, paid from the company’s credits. Staff always can.')}
         <label className="adm-field adm-narrow">
           <span>Visitor renders a day (whole showroom)</span>

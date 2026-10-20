@@ -35,6 +35,7 @@ export interface ShowroomSettings {
   fillGaps: boolean;
   bathrooms: boolean;
   visitorRenders: boolean;
+  visitorEstimate?: boolean;
   dailyRenderCap: number;
   /** Months a lead that never sent a design is kept after its last activity: 0 is the default (24). */
   leadRetentionMonths?: number;
@@ -70,7 +71,7 @@ export interface StaffTenant {
   url: string;
   branding: Branding;
   contact: Contact;
-  features: { fillGaps: boolean; bathrooms: boolean; visitorRenders: boolean };
+  features: { fillGaps: boolean; bathrooms: boolean; visitorRenders: boolean; visitorEstimate?: boolean };
   settings: ShowroomSettings;
   hostnames: Hostname[];
   createdAt: number;

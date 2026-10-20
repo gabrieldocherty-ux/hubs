@@ -1,1 +1,0 @@
-import"./index-DamiiBEg.js";const s="Brand names and prices are placeholders for illustration.",a="BluModel Studio is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional.";export{s as P,a as V};
