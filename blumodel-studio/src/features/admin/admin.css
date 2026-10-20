@@ -708,3 +708,48 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ── prospects ──────────────────────────────────────────────── */
+
+.adm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adm-prospect-tools {
+  margin-bottom: 10px;
+}
+
+.adm-prospect-tools .adm-field span {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.adm-grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+.adm-grid2 > .adm-actions,
+.adm-grid2 > .adm-notice {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 720px) {
+  .adm-grid2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -7,6 +7,7 @@ import { lazy } from 'react';
 export const AdminDashboardTab = lazy(() => import('./AdminDashboard'));
 export const AdminCompaniesTab = lazy(() => import('./AdminCompanies'));
 export const AdminSalesLeadsTab = lazy(() => import('./AdminSalesLeads'));
+export const AdminProspectsTab = lazy(() => import('./AdminProspects'));
 export const AdminUsersTab = lazy(() => import('./AdminUsers'));
 export const AdminContractorsTab = lazy(() => import('./AdminContractors'));
 export const AdminSystemTab = lazy(() => import('./AdminSystem'));

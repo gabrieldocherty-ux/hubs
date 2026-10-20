@@ -26,8 +26,9 @@ import adminShowrooms from './adminShowrooms.mjs';
 import quickSetup from './quickSetup.mjs';
 import renders from './renders.mjs';
 import workspace from './workspace.mjs';
+import adminProspects from './adminProspects.mjs';
 
-export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, orders, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling, tenantsLeads, adminShowrooms, quickSetup, renders, workspace];
+export const ROUTE_MODULES = [auth, projects, config, catalog, files, events, admin, webhooks, viewer, brands, orders, share, billing, contractors, account, ops, adminPanel, tenants, tenantsAdmin, tenantsBilling, tenantsLeads, adminShowrooms, quickSetup, renders, workspace, adminProspects];
 export const ROUTE_MODULE_NAMES = [
   'auth',
   'projects',
@@ -54,6 +55,7 @@ export const ROUTE_MODULE_NAMES = [
   'quick-setup',
   'renders',
   'workspace',
+  'admin-prospects',
 ];
 
 /**

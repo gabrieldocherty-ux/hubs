@@ -11,6 +11,10 @@
 //                      secret. The newest 200 are kept.
 //   indexes            admin_audit by action and by admin (the audit viewer's filters); users by
 //                      created_at (sign-ups this week / month).
+//   prospects          (admin-002) the companies we reach out to: the outreach list imported from its
+//                      spreadsheet (Admin > Prospects), with where each one stands. Business contact
+//                      details only (the company's published phone, email and web address). `key` is
+//                      what makes a re-import update a row instead of adding it twice.
 
 /** @type {{ id: string, up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
@@ -36,6 +40,37 @@ export const steps = [
         CREATE INDEX IF NOT EXISTS admin_audit_action ON admin_audit(action, at);
         CREATE INDEX IF NOT EXISTS admin_audit_admin ON admin_audit(admin_user_id, at);
         CREATE INDEX IF NOT EXISTS users_created ON users(created_at);
+      `);
+    },
+  },
+  {
+    id: 'admin-002-prospects',
+    up(db) {
+      db.exec(`
+        CREATE TABLE prospects (
+          id TEXT PRIMARY KEY,
+          key TEXT NOT NULL UNIQUE,
+          company TEXT NOT NULL,
+          city TEXT NOT NULL DEFAULT '',
+          province TEXT NOT NULL DEFAULT '',
+          type TEXT NOT NULL DEFAULT '',
+          phone TEXT NOT NULL DEFAULT '',
+          email TEXT NOT NULL DEFAULT '',
+          website TEXT NOT NULL DEFAULT '',
+          address TEXT NOT NULL DEFAULT '',
+          contact_name TEXT NOT NULL DEFAULT '',
+          contact_role TEXT NOT NULL DEFAULT '',
+          fit INTEGER,
+          pitch TEXT NOT NULL DEFAULT '',
+          outreach TEXT NOT NULL DEFAULT '',
+          notes TEXT NOT NULL DEFAULT '',
+          stage TEXT NOT NULL DEFAULT 'new',
+          admin_notes TEXT NOT NULL DEFAULT '',
+          emailed_at INTEGER,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL);
+        CREATE INDEX prospects_stage ON prospects(stage, emailed_at);
+        CREATE INDEX prospects_company ON prospects(company);
       `);
     },
   },

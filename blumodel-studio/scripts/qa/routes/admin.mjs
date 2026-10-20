@@ -98,6 +98,17 @@ async function seedContractor(api) {
   return u;
 }
 
+/** The outreach spreadsheet imported (two companies) and a Book a call request, for Admin > Prospects. */
+async function seedProspects(api) {
+  await seedCompany(api);
+  const csv = [
+    'Name,City,Province,Type,Phone,Website,Contact name,Email,Fit,Pitch angle,Status,Notes',
+    'Northgate Kitchens (QA),Barrie,ON,cabinet showroom,705-555-0101,https://northgate-qa.test/,Jo North,jo@northgate-qa.test,4,Showroom with three door lines,Emailed 2026-10-19 01:51 (drip),',
+    'Prairie Millwork (QA),Red Deer,AB,custom cabinet maker,403-555-0102,https://prairie-qa.test/,,,3,Design team,,',
+  ].join('\n');
+  must(await api.as('admin').post('/api/admin/prospects/import', { csv }), 'Importing the prospects');
+}
+
 /** Opens the account `email` from Admin > Users. */
 async function openAccount(h, email) {
   await h.click('.admin-users .home-search input');
@@ -496,6 +507,31 @@ export default [
     },
   }),
   ...four({ name: 'admin-sales-leads', path: '#/admin/sales-leads', as: 'admin', setup: async ({ api }) => (await seedCompany(api), {}), expectText: ['Sales leads', 'Ridgeline Cabinets (QA)', 'Can we talk Thursday?', 'Our notes'] }),
+  ...four({ name: 'admin-prospects', path: '#/admin/prospects', as: 'admin', setup: async ({ api }) => (await seedProspects(api), {}), expectText: ['Prospects', 'Import spreadsheet', 'Asked for a call', 'Ridgeline Cabinets (QA)', 'Northgate Kitchens (QA)', 'Emailed', 'Not contacted'] }),
+  {
+    name: 'admin-prospects-search-and-stage',
+    path: '#/admin/prospects',
+    as: 'admin',
+    setup: async ({ api }) => (await seedProspects(api), {}),
+    check: async (h) => {
+      await settle(h);
+      await h.click('.admin-prospects .home-search input');
+      await h.type('northgate');
+      await h.waitUntil(() => document.querySelectorAll('.admin-prospects table[aria-label="Prospects"] tbody tr').length === 1, 6000, 'the search narrowing the list to one company');
+      await h.waitUntil(() => !document.querySelector('#adm-prospect-leads'), 6000, 'no call requests matching');
+      await h.click('.admin-prospects .adm-open');
+      await h.waitForText(['Northgate Kitchens (QA)', 'Our notes', 'Fit', '4 of 5']);
+      await h.evaluate(() => {
+        const sel = document.querySelector('.admin-prospect select');
+        const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+        set.call(sel, 'demo');
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await h.waitForText('Saved.');
+      await press(h, '← All prospects');
+      await h.waitForText('Demo');
+    },
+  },
   ...four({ name: 'admin-system', path: '#/admin/system', as: 'admin', expectText: ['System', 'Payments', 'Webhook signing secret', 'Database and backups', 'blumodel.env'] }),
   // Admin > System > Updates: the files the automatic update writes, in QA's temp home (never a real
   // one), showing a rolled-back release; then Update now through its confirm leaves the trigger file.
@@ -577,7 +613,7 @@ export default [
     as: 'customer',
     expectText: 'This area is for BluModel Studio staff.',
     check: async (h) => {
-      for (const p of ['/api/admin/dashboard', '/api/admin/system', '/api/admin/audit', '/api/admin/contractors', '/api/admin/users', '/api/admin/tenants', '/api/admin/showrooms/overview', '/api/admin/showrooms/queue', '/api/admin/sales-leads']) {
+      for (const p of ['/api/admin/dashboard', '/api/admin/system', '/api/admin/audit', '/api/admin/contractors', '/api/admin/users', '/api/admin/tenants', '/api/admin/showrooms/overview', '/api/admin/showrooms/queue', '/api/admin/sales-leads', '/api/admin/prospects']) {
         const status = await h.evaluate(async (u) => (await fetch(u, { credentials: 'same-origin' })).status, p);
         if (status !== 403) throw new Error(`${p} answered ${status} to a customer (expected 403)`);
       }

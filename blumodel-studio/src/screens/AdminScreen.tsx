@@ -8,7 +8,7 @@ import { Logo, Wordmark } from '../components/Icons';
 import { AdminBrandsTab, AdminModerationTab } from '../features/brands';
 import { AdminRevenueTab, AdminStudioTab } from '../features/orders';
 import { AdminBillingTab } from '../features/billing';
-import { AdminAuditTab, AdminCompaniesTab, AdminContractorsTab, AdminDashboardTab, AdminSalesLeadsTab, AdminSystemTab, AdminUsersTab } from '../features/admin';
+import { AdminAuditTab, AdminCompaniesTab, AdminContractorsTab, AdminDashboardTab, AdminProspectsTab, AdminSalesLeadsTab, AdminSystemTab, AdminUsersTab } from '../features/admin';
 
 // Real-retailer link settings and link-out counts (its own chunk: admins only).
 const AdminRetailersTab = lazy(() => import('../catalog/retailAdmin'));
@@ -17,6 +17,7 @@ const LABELS: Record<AdminTab, string> = {
   overview: 'Overview',
   companies: 'Companies',
   'sales-leads': 'Sales leads',
+  prospects: 'Prospects',
   moderation: 'Moderation',
   brands: 'Brands',
   retailers: 'Retailers',
@@ -85,6 +86,7 @@ export default function AdminScreen({ tab }: { tab: AdminTab }) {
             {tab === 'overview' && <AdminDashboardTab />}
             {tab === 'companies' && <AdminCompaniesTab />}
             {tab === 'sales-leads' && <AdminSalesLeadsTab />}
+            {tab === 'prospects' && <AdminProspectsTab />}
             {tab === 'users' && <AdminUsersTab />}
             {tab === 'contractors' && <AdminContractorsTab />}
             {tab === 'system' && <AdminSystemTab />}
