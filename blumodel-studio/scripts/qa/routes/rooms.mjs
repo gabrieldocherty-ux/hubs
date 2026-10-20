@@ -490,6 +490,12 @@ export default [
     },
     waitFor: ['.topbar', '.plan-view canvas'],
     check: async (h) => {
+      // The Overview's scope of work lists the electrician's work for these devices.
+      await h.evaluate(() => window.__blumodelQA.store.getState().setUI({ rightTab: 'details' }));
+      await h.waitFor('[data-testid="scope-card"]');
+      await h.evaluate(() => (document.querySelector('[data-testid="scope-card"]').open = true));
+      await h.waitForText(['Scope of work', 'Electrical', 'GFCI', 'Light switches (1 dimmer)']);
+      await h.shot('scope');
       // o2 sits 5′ from the sink and isn't a GFCI; the run between the outlets is fine.
       await h.evaluate(() => [...document.querySelectorAll('[role="tab"]')].find((b) => b.textContent.trim().startsWith('Checks'))?.click());
       await h.waitUntil(() => document.body.innerText.includes('Use a GFCI outlet near the sink'), 6000, 'the GFCI check');

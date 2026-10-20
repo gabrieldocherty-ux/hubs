@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDesignStore, useSelected } from '../store/useDesignStore';
 import { useEstimate, useReport } from '../store/derived';
+import { scopeOfWork } from '../lib/scope';
 import { productCode, isOpening } from '../data/catalog';
 import { finishList, finishPosition, resolveFinish } from '../lib/finish';
 import { inches, money } from '../lib/format';
@@ -177,6 +178,7 @@ function Summary({ view, showPrices, compact }: { view: boolean; showPrices: boo
             : `${counts.bad ? `${counts.bad} problem${counts.bad > 1 ? 's' : ''}` : ''}${counts.bad && counts.warn ? ' · ' : ''}${counts.warn ? `${counts.warn} suggestion${counts.warn > 1 ? 's' : ''}` : ''}`}
         </span>
       </button>
+      {items.length > 0 && <ScopeCard />}
       {view ? (
         <div className="tips">
           <span className="mini-label">Shortcuts</span>
@@ -216,6 +218,38 @@ function Summary({ view, showPrices, compact }: { view: boolean; showPrices: boo
       </div>
       )}
     </div>
+  );
+}
+
+/** The work to build this design, by trade, from lib/scope.ts: folded until opened. */
+function ScopeCard() {
+  const doc = useDesignStore((s) => s.doc);
+  const est = useEstimate();
+  const scope = useMemo(() => scopeOfWork(doc, est), [doc, est]);
+  const tasks = scope.reduce((n, t) => n + t.tasks.length, 0);
+  return (
+    <details className="scope-card" data-testid="scope-card">
+      <summary>
+        <span className="mini-label">Scope of work</span>
+        <span className="scope-count">
+          {scope.length} trades · {tasks} tasks
+        </span>
+      </summary>
+      <p className="scope-note">What each trade does to build this design, in site order. Quantities come from the design; your designer confirms them on a site visit.</p>
+      {scope.map((t) => (
+        <div key={t.id} className="scope-trade">
+          <b>{t.trade}</b>
+          <ul>
+            {t.tasks.map((k, i) => (
+              <li key={i}>
+                <span>{k.text}</span>
+                {k.qty && <span className="mono">{k.qty}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </details>
   );
 }
 
