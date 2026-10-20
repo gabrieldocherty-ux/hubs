@@ -45,8 +45,10 @@ const ROOM_LIGHT = (() => {
   const base = {
     hemiSky: '#fbf9f6',
     hemiGround: '#a9a297',
-    hemi: 0.6,
-    ambient: 0.14,
+    // Less flat fill than before (was 0.6 / 0.14 and env panels 2.2 / 1.2 / 1.4 / 2.5): the sun and the
+    // ambient occlusion model the cabinets, and a light floor keeps its grain (the realism bench).
+    hemi: 0.4,
+    ambient: 0.06,
     sun: '#fff8f0',
     sunI: 2.3,
     fill: '#e8eef6',
@@ -58,6 +60,11 @@ const ROOM_LIGHT = (() => {
     key: '#fffaf3',
     side: '#eff3fa',
     top: '#fffcf7',
+    /** The environment's light panels (reflections and soft fill): key, side, far side, overhead. */
+    envKeyI: 1.7,
+    envSideI: 0.95,
+    envFarI: 1.05,
+    envTopI: 1.9,
   };
   if (!QA) return base;
   try {
@@ -328,10 +335,10 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
       <Lights room={room} />
       <Environment resolution={256} frames={1}>
         <color attach="background" args={[ROOM_LIGHT.envBg]} />
-        <Lightformer form="rect" intensity={2.2} position={[0, 6, 9]} scale={[14, 5, 1]} color={ROOM_LIGHT.key} />
-        <Lightformer form="rect" intensity={1.2} position={[-9, 4, 0]} rotation-y={Math.PI / 2} scale={[10, 4, 1]} color={ROOM_LIGHT.side} />
-        <Lightformer form="rect" intensity={1.4} position={[9, 4, -2]} rotation-y={-Math.PI / 2} scale={[10, 4, 1]} color="#fff" />
-        <Lightformer form="circle" intensity={2.5} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={6} color={ROOM_LIGHT.top} />
+        <Lightformer form="rect" intensity={ROOM_LIGHT.envKeyI} position={[0, 6, 9]} scale={[14, 5, 1]} color={ROOM_LIGHT.key} />
+        <Lightformer form="rect" intensity={ROOM_LIGHT.envSideI} position={[-9, 4, 0]} rotation-y={Math.PI / 2} scale={[10, 4, 1]} color={ROOM_LIGHT.side} />
+        <Lightformer form="rect" intensity={ROOM_LIGHT.envFarI} position={[9, 4, -2]} rotation-y={-Math.PI / 2} scale={[10, 4, 1]} color="#fff" />
+        <Lightformer form="circle" intensity={ROOM_LIGHT.envTopI} position={[0, 10, 0]} rotation-x={Math.PI / 2} scale={6} color={ROOM_LIGHT.top} />
       </Environment>
       <group scale={1 / 12}>
         <Room3D room={room} all={all} surfaces={surfaces} ctx={ctx} selectedId={selectedId} problemIds={report.problemIds} onSelect={onSelect} onHover={hover} />

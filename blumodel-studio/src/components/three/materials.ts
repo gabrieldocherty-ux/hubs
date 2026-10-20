@@ -20,6 +20,54 @@ export function texFor(spec: PatternSpec): { tex: THREE.Texture; tileIn: number 
   return hit;
 }
 
+let brushed: THREE.Texture | null = null;
+
+/**
+ * Brushed-metal grain: fine streaks along the height, light and dark, used as a colour map (a
+ * faint grain) and a roughness map (the streaks catch the light at slightly different angles), so a
+ * stainless front shows the room's light running along it instead of a flat grey.
+ */
+export function brushedTex(): THREE.Texture {
+  if (brushed) return brushed;
+  const W = 256;
+  const H = 512;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const g = c.getContext('2d')!;
+  g.fillStyle = 'rgb(232,232,232)';
+  g.fillRect(0, 0, W, H);
+  const rand = mulberry32(hashString('brushed'));
+  for (let i = 0; i < 1400; i++) {
+    const x = rand() * W;
+    const v = 214 + Math.floor(rand() * 41);
+    g.fillStyle = `rgba(${v},${v},${v},${0.12 + rand() * 0.22})`;
+    const y = rand() * H;
+    const len = 60 + rand() * 400;
+    const w = 0.4 + rand() * 1.1;
+    g.fillRect(x, y, w, len);
+    if (y + len > H) g.fillRect(x, y - H, w, len);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.anisotropy = 8;
+  brushed = tex;
+  return tex;
+}
+
+/** Brushed stainless (or any light metal) in `hex`. */
+export function brushedMetal(hex: string, roughness = 0.24): THREE.MeshStandardMaterial {
+  return cached(`brushed:${hex}:${roughness}`, () => {
+    const t = brushedTex();
+    // Satin, not mirror: part diffuse so it stays a light steel, with the environment running along the grain.
+    const m = new THREE.MeshStandardMaterial({ color: hex, map: t, roughnessMap: t, metalness: 0.62, roughness, envMapIntensity: 1.7 });
+    // A 6″ × 12″ patch of grain, run along each part's length (parts.tsx Box).
+    m.userData.tileIn = [6, 12];
+    return m;
+  });
+}
+
 export function cached<T extends THREE.Material>(key: string, make: () => T): T {
   let m = matCache.get(key) as T | undefined;
   if (!m) {
@@ -43,7 +91,7 @@ export function finishMaterial(f: Finish): THREE.Material {
         const dark = lum < 0.1;
         // Light metals are brushed stainless: part diffuse, so a fridge or range front reads as a
         // light satin steel under the room's lights rather than a mirror of the grey surroundings.
-        if (lum > 0.35) return new THREE.MeshStandardMaterial({ color: f.hex, metalness: 0.62, roughness: 0.34, envMapIntensity: 1.25 });
+        if (lum > 0.35) return brushedMetal(f.hex, 0.3);
         return new THREE.MeshStandardMaterial({ color: f.hex, metalness: 0.9, roughness: dark ? 0.38 : 0.28, envMapIntensity: 1.1 });
       }
       case 'glass':
@@ -97,11 +145,28 @@ export function sinkMaterial(f: Finish): THREE.Material {
   });
 }
 
+/** How much relief a pattern's dark lines get (grout, plank seams): the texture itself is the bump map. */
+const RELIEF: Partial<Record<PatternSpec['type'], number>> = {
+  tile: 3.3, brick: 3.3, subway: 3, zellige: 3.9, stack: 3, hex: 3.3, penny: 3.6, checker: 1.2,
+  planks: 1.8, herringbone: 1.8, chevron: 1.8, concrete: 0.9, plaster: 0.6, terrazzo: 0.6,
+};
+/** QA builds can scale the relief from localStorage (the realism bench). */
+const RELIEF_SCALE = (() => {
+  try {
+    const v = Number(localStorage.getItem('blumodel.qa.relief'));
+    return Number.isFinite(v) && v > 0 ? v : 1;
+  } catch {
+    return 1;
+  }
+})();
+
 export function surfaceMaterial(key: string, spec: PatternSpec, gloss: number): { mat: THREE.Material; tileIn: number } {
   const { tex, tileIn } = texFor(spec);
+  const relief = (RELIEF[spec.type] ?? 0) * RELIEF_SCALE;
   const mat = cached(`surface:${key}:${JSON.stringify(spec)}`, () =>
     new THREE.MeshPhysicalMaterial({
       map: tex,
+      ...(relief > 0 ? { bumpMap: tex, bumpScale: relief } : {}),
       roughness: THREE.MathUtils.lerp(0.85, 0.12, gloss),
       clearcoat: gloss > 0.6 ? 0.6 : 0,
       clearcoatRoughness: 0.2,
@@ -111,7 +176,7 @@ export function surfaceMaterial(key: string, spec: PatternSpec, gloss: number): 
 }
 
 export const M = {
-  steel: () => cached('steel', () => new THREE.MeshStandardMaterial({ color: '#c3c6ca', metalness: 0.9, roughness: 0.28 })),
+  steel: () => brushedMetal('#c9ccd0', 0.26),
   darkSteel: () => cached('darkSteel', () => new THREE.MeshStandardMaterial({ color: '#2b2c2e', metalness: 0.7, roughness: 0.45 })),
   castIron: () => cached('castIron', () => new THREE.MeshStandardMaterial({ color: '#1c1c1c', metalness: 0.3, roughness: 0.75 })),
   blackGlass: () => cached('blackGlass', () => new THREE.MeshPhysicalMaterial({ color: '#0d0e10', roughness: 0.08, metalness: 0.1, clearcoat: 1, clearcoatRoughness: 0.05 })),

@@ -410,15 +410,16 @@ function penny(spec: { base: string; grout: string; vary?: number }, key: string
 }
 
 function marble(base: string, vein: string, intensity: number, key: string, rand: () => number): TextureInfo {
-  const S = 512;
+  // 1024 px over 48″ (about 21 px an inch): veins as fine as real stone's, not drawn with a marker.
+  const S = 1024;
   const { canvas, ctx } = makeCanvas(S, S);
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, S, S);
 
-  const clouds = Array.from({ length: 46 }, () => ({
+  const clouds = Array.from({ length: 70 }, () => ({
     x: rand() * S,
     y: rand() * S,
-    r: 40 + rand() * 140,
+    r: 80 + rand() * 280,
     c: rand() > 0.55 ? mix(base, vein, 0.25) : shade(base, 0.08),
   }));
 
@@ -430,15 +431,15 @@ function marble(base: string, vein: string, intensity: number, key: string, rand
     let x = rand() * S;
     let y = rand() * S;
     let ang = -0.6 + rand() * 1.2 + (rand() > 0.5 ? 0 : Math.PI);
-    const steps = isMajor ? 140 : 30 + Math.floor(rand() * 40);
+    const steps = isMajor ? 200 : 40 + Math.floor(rand() * 60);
     const pts: [number, number][] = [[x, y]];
     for (let s = 0; s < steps; s++) {
-      ang += (rand() - 0.5) * 0.55;
-      x += Math.cos(ang) * 6;
-      y += Math.sin(ang) * 6;
+      ang += (rand() - 0.5) * 0.45;
+      x += Math.cos(ang) * 8;
+      y += Math.sin(ang) * 8;
       pts.push([x, y]);
     }
-    veins.push({ pts, w: isMajor ? 1 + rand() * 2.4 : 0.4 + rand() * 0.8, a: (isMajor ? 0.5 + rand() * 0.35 : 0.25 + rand() * 0.3) * intensity });
+    veins.push({ pts, w: isMajor ? 0.9 + rand() * 2.2 : 0.4 + rand() * 0.7, a: (isMajor ? 0.42 + rand() * 0.3 : 0.2 + rand() * 0.25) * intensity });
   }
 
   wrapped(ctx, S, S, () => {
@@ -448,7 +449,8 @@ function marble(base: string, vein: string, intensity: number, key: string, rand
       v.pts.forEach(([px, py], i) => (i === 0 ? path.moveTo(px, py) : path.lineTo(px, py)));
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      for (const [mult, alpha] of [[7, 0.06], [4, 0.1], [2.2, 0.16]]) {
+      // A soft bleed either side of the vein, as in the stone, kept narrow.
+      for (const [mult, alpha] of [[9, 0.035], [4.5, 0.07], [2.2, 0.14]]) {
         ctx.strokeStyle = rgba(vein, v.a * alpha);
         ctx.lineWidth = v.w * mult;
         ctx.stroke(path);
@@ -459,7 +461,7 @@ function marble(base: string, vein: string, intensity: number, key: string, rand
       ctx.stroke(path);
     }
   });
-  grain(ctx, S, S, 5, rand);
+  grain(ctx, S, S, 4, rand);
   return { key, canvas, pxPerIn: S / 48, widthIn: 48, heightIn: 48 };
 }
 
