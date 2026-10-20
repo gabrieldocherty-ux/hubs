@@ -27,7 +27,7 @@ const BRAND_CATEGORIES = ['cabinets', 'appliances', 'sinks', 'lighting'];
 
 const ROTATIONS = new Set([0, 90, 180, 270]);
 const DOOR_STYLES = new Set(['shaker', 'slab', 'fluted']);
-const SURFACE_KEYS = ['cabinetFinishId', 'doorStyle', 'hardwareId', 'faucetId', 'countertopId', 'backsplashId', 'flooringId', 'paintId', 'crown'];
+const SURFACE_KEYS = ['cabinetFinishId', 'doorStyle', 'hardwareId', 'faucetId', 'countertopId', 'backsplashId', 'flooringId', 'paintId', 'crown', 'underCabinet'];
 const CROWNS = new Set(['none', 'flat', 'cove']);
 
 /** A retail faucet, pull or knob id (src/lib/fixtures.ts FIXTURE_ID_RE). */
@@ -293,6 +293,7 @@ export function normalizeDoc(doc) {
       if (typeof v !== 'string' || v.length > 64) bad(`surfaces.${k}`, 'A room finish is not valid.');
       if (k === 'doorStyle' && !DOOR_STYLES.has(v)) bad('surfaces.doorStyle', 'The door style is not valid.');
       if (k === 'crown' && !CROWNS.has(v)) bad('surfaces.crown', 'The crown moulding is not valid.');
+      if (k === 'underCabinet' && v !== 'led') bad('surfaces.underCabinet', 'The under-cabinet lighting is not valid.');
       if (k === 'faucetId' && !FIXTURE_ID_RE.test(v)) bad('surfaces.faucetId', 'The faucet is not valid.');
       surfaces[k] = v;
     }

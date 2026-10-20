@@ -35,6 +35,7 @@ export function makeSceneCtx(surfaces: Surfaces, room: Pick<Room, 'ceilingIn'>):
     ceiling: room.ceilingIn,
     paintHex: byId(PAINTS, surfaces.paintId).hex,
     crown: surfaces.crown === 'flat' || surfaces.crown === 'cove' ? surfaces.crown : 'none',
+    underCabinet: surfaces.underCabinet === 'led',
   };
 }
 

@@ -2213,6 +2213,7 @@ var GROUP_BY_CATEGORY = {
   openings: "Doors & windows"
 };
 var CROWN_PRICE = { flat: 14, cove: 22 };
+var UCL_PRICE = 38;
 var BASEBOARD_PRICE = 6;
 var AGAINST_WALL = /* @__PURE__ */ new Set(["base", "corner", "tall", "oven-tower", "sink", "range", "fridge", "dishwasher", "wine", "vanity", "tub", "shower"]);
 function pullCount(p, w) {
@@ -2366,6 +2367,13 @@ function buildEstimate(doc, opts = {}) {
   const behindIn = all.filter((r) => r.z0 < 1 && AGAINST_WALL.has(r.product.kind) && flushSeg(r, room)).reduce((n, r) => n + r.w, 0);
   const baseFt = Math.ceil(Math.max(0, wallRunIn - doorwaysIn - behindIn) / 12 * 1.1);
   if (baseFt > 0) lines.push({ key: "baseboard", group: "Surfaces", label: "Baseboard, paint grade", sub: "Along the walls, less doorways and the runs behind cabinets and appliances, incl. 10%", qty: baseFt, unit: "lin ft", unitPrice: BASEBOARD_PRICE, total: baseFt * BASEBOARD_PRICE });
+  if (surfaces.underCabinet === "led") {
+    const runIn = all.filter((r) => r.product.kind === "wall" && r.product.variant !== "bridge" && r.product.variant !== "filler" && r.product.variant !== "panel").reduce((n, r) => n + r.w, 0);
+    if (runIn > 0) {
+      const ft = Math.ceil(runIn / 12);
+      lines.push({ key: "ucl", group: "Lighting", label: "Under-cabinet LED strip lights", sub: "Warm white, under every wall cabinet, with drivers, supplied and installed", qty: ft, unit: "lin ft", unitPrice: UCL_PRICE, total: ft * UCL_PRICE });
+    }
+  }
   if (surfaces.crown === "flat" || surfaces.crown === "cove") {
     const runIn = all.filter((r) => (r.product.kind === "wall" || r.product.kind === "tall" || r.product.kind === "oven-tower") && r.z1 + 3 <= room.ceilingIn + 0.01).reduce((n, r) => n + r.w, 0);
     if (runIn > 0) {

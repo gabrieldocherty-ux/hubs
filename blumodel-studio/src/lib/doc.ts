@@ -116,6 +116,7 @@ function cleanSurfaces(raw: Partial<Surfaces> | undefined): Surfaces {
       (out as Record<string, string>)[k] = v;
     }
     if (raw.crown === 'flat' || raw.crown === 'cove') out.crown = raw.crown;
+    if (raw.underCabinet === 'led') out.underCabinet = 'led';
     // Optional: a retail faucet. Without one, every sink draws its own.
     if (typeof raw.faucetId === 'string' && FIXTURE_ID_RE.test(raw.faucetId)) out.faucetId = raw.faucetId;
   }

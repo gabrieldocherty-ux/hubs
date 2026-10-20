@@ -27,6 +27,8 @@ export interface SceneCtx {
   paintHex: string;
   /** Crown moulding on wall and tall cabinets. */
   crown: 'none' | 'flat' | 'cove';
+  /** LED strips under the wall cabinets, with their wash on the backsplash and counter. */
+  underCabinet: boolean;
 }
 
 type V3 = [number, number, number];

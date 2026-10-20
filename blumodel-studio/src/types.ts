@@ -265,6 +265,8 @@ export interface Surfaces {
   paintId: string;
   /** Crown moulding along the tops of wall and tall cabinets. Absent: none. */
   crown?: CrownStyle;
+  /** LED strip lights under the wall cabinets, washing the backsplash and counter. Absent: none. */
+  underCabinet?: 'led';
 }
 
 export type CrownStyle = 'none' | 'flat' | 'cove';

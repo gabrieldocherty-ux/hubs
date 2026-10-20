@@ -7,6 +7,8 @@
 
 const VARIANTS = {
   base: {},
+  // Under-cabinet LED lights on.
+  ucl: { _surfaces: { underCabinet: 'led' } },
 };
 
 const DESK = { w: 1440, h: 900 };
@@ -16,7 +18,7 @@ export default Object.entries(VARIANTS).map(([name, light]) => ({
   as: 'studio',
   viewport: DESK,
   setup: async ({ me }) => {
-    const d = { name: `Realism ${name}`, room: { widthIn: 192, lengthIn: 168, ceilingIn: 108 }, surfaces: { cabinetFinishId: 'warm-white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'calacatta', backsplashId: 'zellige-white', flooringId: 'oak-natural', paintId: 'chalk' }, items: [], version: 2 };
+    const d = { name: `Realism ${name}`, room: { widthIn: 192, lengthIn: 168, ceilingIn: 108 }, surfaces: { cabinetFinishId: 'warm-white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'calacatta', backsplashId: 'zellige-white', flooringId: 'oak-natural', paintId: 'chalk', ...(light._surfaces ?? {}) }, items: [], version: 2 };
     const r = await me.post('/api/projects', { name: d.name, doc: d });
     if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
     return { path: `#/k/${r.body.project.id}` };
@@ -24,7 +26,7 @@ export default Object.entries(VARIANTS).map(([name, light]) => ({
   waitFor: ['.topbar'],
   check: async (h) => {
     await h.evaluate((l) => {
-      const { _relief, ...light } = l;
+      const { _relief, _surfaces, ...light } = l;
       localStorage.setItem('blumodel.qa.relief', String(_relief ?? 1));
       localStorage.setItem('blumodel.qa.roomLight', JSON.stringify(light));
       localStorage.setItem('blumodel.viewMode', '3d');
@@ -39,6 +41,7 @@ export default Object.entries(VARIANTS).map(([name, light]) => ({
     });
     await h.waitUntil(() => !!document.querySelector('.scene-view canvas') && !document.querySelector('.scene-loading'), 25_000, 'the 3D scene');
     await h.sleep(2500);
+    h.note(JSON.stringify(await h.evaluate(() => { const d = window.__blumodelQA.store.getState().doc; return { ucl: d.surfaces.underCabinet ?? null, walls: d.items.filter((i) => /^wall/.test(i.productId)).length }; })));
     await h.shot('overview');
     await h.evaluate(() => window.__blumodelQA.store.getState().requestCamera('eye'));
     await h.sleep(2500);

@@ -82,6 +82,8 @@ const GROUP_BY_CATEGORY: Partial<Record<string, EstimateGroup>> = {
 
 /** Crown moulding per linear foot, supplied and installed, in the cabinet finish. */
 const CROWN_PRICE = { flat: 14, cove: 22 };
+/** Under-cabinet LED strip with its share of the driver and install, per linear foot. */
+const UCL_PRICE = 38;
 /** Paint-grade MDF baseboard, supplied and installed, per linear foot. */
 const BASEBOARD_PRICE = 6;
 /** Things that stand on the floor tight to a wall, so no baseboard runs behind them. */
@@ -265,6 +267,15 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   const behindIn = all.filter((r) => r.z0 < 1 && AGAINST_WALL.has(r.product.kind) && flushSeg(r, room)).reduce((n, r) => n + r.w, 0);
   const baseFt = Math.ceil((Math.max(0, wallRunIn - doorwaysIn - behindIn) / 12) * 1.1);
   if (baseFt > 0) lines.push({ key: 'baseboard', group: 'Surfaces', label: 'Baseboard, paint grade', sub: 'Along the walls, less doorways and the runs behind cabinets and appliances, incl. 10%', qty: baseFt, unit: 'lin ft', unitPrice: BASEBOARD_PRICE, total: baseFt * BASEBOARD_PRICE });
+
+  // Under-cabinet LED: a strip under every wall cabinet (not bridges over a fridge or hood), with drivers and install.
+  if (surfaces.underCabinet === 'led') {
+    const runIn = all.filter((r) => r.product.kind === 'wall' && r.product.variant !== 'bridge' && r.product.variant !== 'filler' && r.product.variant !== 'panel').reduce((n, r) => n + r.w, 0);
+    if (runIn > 0) {
+      const ft = Math.ceil(runIn / 12);
+      lines.push({ key: 'ucl', group: 'Lighting', label: 'Under-cabinet LED strip lights', sub: 'Warm white, under every wall cabinet, with drivers, supplied and installed', qty: ft, unit: 'lin ft', unitPrice: UCL_PRICE, total: ft * UCL_PRICE });
+    }
+  }
 
   // Crown moulding: the run along every wall and tall cabinet that has room for it under the
   // ceiling, plus 20% for returns, mitres and waste, priced per linear foot.

@@ -56,3 +56,16 @@ test('an outlet on the backsplash over a cabinet is not a collision; a low outle
   const low = checks([...bases(2), outlet('o2', 30, 'outlet-wall')]);
   assert.ok(low.some((c) => c.itemIds.includes('o2') && c.level !== 'ok'), JSON.stringify(low.map((c) => c.id)));
 });
+
+import { buildEstimate } from './estimate';
+import { DEFAULT_SURFACES } from '../data/defaults';
+import type { DesignDoc } from '../types';
+
+test('under-cabinet LEDs are priced per foot of wall cabinets, only when switched on', () => {
+  const items = [0, 1, 2].map((i) => it(`w${i}`, 'wall', 15 + i * 30, 6, { widthIn: 30 }));
+  const doc = (on: boolean) => ({ name: 'T', room, items, surfaces: { ...DEFAULT_SURFACES, ...(on ? { underCabinet: 'led' } : {}) } }) as unknown as DesignDoc;
+  assert.equal(buildEstimate(doc(false)).lines.find((l) => l.key === 'ucl'), undefined);
+  const line = buildEstimate(doc(true)).lines.find((l) => l.key === 'ucl')!;
+  assert.equal(line.qty, Math.ceil(90 / 12));
+  assert.equal(line.unit, 'lin ft');
+});

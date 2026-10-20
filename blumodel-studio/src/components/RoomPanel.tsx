@@ -364,6 +364,13 @@ export function RoomPanel() {
             </button>
           )}
         </div>
+        <label className="ucl-toggle">
+          <input type="checkbox" checked={surfaces.underCabinet === 'led'} onChange={(e) => set({ underCabinet: e.target.checked ? 'led' : undefined })} data-testid="under-cabinet" />
+          <span>
+            <b>Under-cabinet LED lights</b>
+            <small>A warm strip under every wall cabinet, lighting the backsplash and counter.</small>
+          </span>
+        </label>
       </section>
 
       <SurfacePicker title="Countertop" options={COUNTERTOPS} value={surfaces.countertopId} onPick={(id) => set({ countertopId: id })} />

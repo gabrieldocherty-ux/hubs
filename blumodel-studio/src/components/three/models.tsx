@@ -95,6 +95,59 @@ function CornerModel({ r, finish, ctx }: ModelProps) {
   );
 }
 
+/** A warm light falling off from 1 to 0 down a 64 px strip: the LED's wash on a wall or a counter. */
+let wash: THREE.Texture | null = null;
+function washTex(): THREE.Texture {
+  if (wash) return wash;
+  return (wash = (() => {
+    const c = document.createElement('canvas');
+    c.width = 4;
+    c.height = 128;
+    const g = c.getContext('2d')!;
+    const grad = g.createLinearGradient(0, 0, 0, 128);
+    grad.addColorStop(0, 'rgba(255,214,160,0.95)');
+    grad.addColorStop(0.25, 'rgba(255,214,160,0.5)');
+    grad.addColorStop(0.6, 'rgba(255,214,160,0.15)');
+    grad.addColorStop(1, 'rgba(255,214,160,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 4, 128);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  })());
+}
+const washMat = () =>
+  // A warm tint rather than added light: on a white backsplash in daylight, added light only clips
+  // to white, while the eye reads the warm gradient under the cabinet as the strip's glow.
+  cached('ucl-wash', () => new THREE.MeshBasicMaterial({ map: washTex(), color: '#ffe0b0', transparent: true, opacity: 0.5, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+
+/**
+ * An LED strip under a wall cabinet: the lit strip near the front, a wash down the backsplash and
+ * a pool on the counter below (when the cabinet hangs at counter-and-backsplash height), faked
+ * with additive gradients so it costs nothing to light.
+ */
+function UnderCabinetLight({ w, d, y0 }: { w: number; d: number; y0: number }) {
+  const over = y0 >= 48 && y0 <= 62;
+  const counterY = 36.06;
+  return (
+    <group>
+      <Box size={[w - 3, 0.25, 0.6]} pos={[0, y0 - 0.12, d / 2 - 2]} mat={M.led()} cast={false} />
+      {over && (
+        <>
+          <mesh position={[0, y0 - (y0 - counterY) / 2, -d / 2 + 0.5]} renderOrder={2}>
+            <planeGeometry args={[w - 1, y0 - counterY]} />
+            <primitive object={washMat()} attach="material" />
+          </mesh>
+          <mesh position={[0, counterY, -d / 2 + 11]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
+            <planeGeometry args={[w - 1, 22]} />
+            <primitive object={washMat()} attach="material" />
+          </mesh>
+        </>
+      )}
+    </group>
+  );
+}
+
 function WallCabModel({ r, finish, ctx, ends }: ModelProps) {
   const { w, d, product } = r;
   const y0 = product.elevationIn;
@@ -148,7 +201,7 @@ function WallCabModel({ r, finish, ctx, ends }: ModelProps) {
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
-      {!bridge && !plain && <Box size={[w - 3, 0.25, 0.6]} pos={[0, y0 - 0.12, d / 2 - 2]} mat={M.led()} cast={false} />}
+      {ctx.underCabinet && !bridge && !plain && <UnderCabinetLight w={w} d={d} y0={y0} />}
       <Crown w={w} d={d} top={y0 + h} finish={finish} ctx={ctx} ends={ends} />
     </group>
   );
