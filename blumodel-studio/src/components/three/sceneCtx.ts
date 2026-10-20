@@ -34,6 +34,7 @@ export function makeSceneCtx(surfaces: Surfaces, room: Pick<Room, 'ceilingIn'>):
     faucetMat: faucet ? hardwareMaterial(faucet.hex, faucet.roughness) : hardwareMaterial(hw.hex, hw.roughness),
     ceiling: room.ceilingIn,
     paintHex: byId(PAINTS, surfaces.paintId).hex,
+    crown: surfaces.crown === 'flat' || surfaces.crown === 'cove' ? surfaces.crown : 'none',
   };
 }
 

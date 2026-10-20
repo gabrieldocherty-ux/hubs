@@ -51,6 +51,8 @@ export interface ProductListInput {
   logoUrl: string | null;
   /** The floor plan as a data: URL, when it could be captured. */
   planImage: string | null;
+  /** Every wall with something on it, as SVG markup we drew ourselves (ElevationSvg), in the paper colours. */
+  elevations?: { title: string; svg: string }[];
   host: string;
   at: Date;
 }
@@ -102,6 +104,10 @@ header span{display:block;font-size:13px;opacity:.92}
 h1{margin:24px 0 2px;font:600 26px ${DISPLAY}}
 .room{margin:0 0 16px;color:var(--muted)}
 .plan{display:block;width:100%;max-height:520px;object-fit:contain;border:1px solid var(--rule);border-radius:10px;margin:0 0 18px}
+.walls h2{margin:28px 0 8px;font:600 18px ${DISPLAY}}
+.walls figure{margin:0 0 18px;break-inside:avoid;page-break-inside:avoid;border:1px solid var(--rule);border-radius:10px;padding:8px}
+.walls figcaption{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 4px}
+.walls svg{display:block;width:100%;height:auto;max-height:420px}
 table{width:100%;border-collapse:collapse}
 th,td{padding:8px 6px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
 th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
@@ -128,6 +134,8 @@ ${rows || `<tr><td colspan="${p.showPrices ? 6 : 4}">No products placed yet.</td
 ${p.showPrices && p.lines.length ? `<tr class="total"><td colspan="5">Estimated total</td><td class="n">${money(p.total)}</td></tr>` : ''}
 </tbody>
 </table>
+${p.elevations?.length ? `<section class="walls"><h2>Wall elevations</h2>
+${p.elevations.map((e) => `<figure><figcaption>${esc(e.title)}</figcaption>${/^<svg[\s>]/.test(e.svg) ? e.svg : ''}</figure>`).join('')}</section>` : ''}
 <footer>
 <div>${contact}</div>
 <div class="fine">${esc(madeOnLine(p.host, p.at))}. A planning draft for a conversation with ${esc(name)}: sizes, prices and availability are confirmed by ${esc(name)} before anything is ordered.</div>

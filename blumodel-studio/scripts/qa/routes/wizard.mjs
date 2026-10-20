@@ -52,7 +52,7 @@ async function toBrandStep(h, { size, shots = false } = {}) {
     await h.shot('basics');
   }
   await h.click(next);
-  await h.waitForText('How big is the room?');
+  await h.waitForText('Draw the room.');
   if (size) {
     await h.evaluate((label) => [...document.querySelectorAll('.size-picks .chip')].find((b) => b.textContent.includes(label))?.click(), size);
     await h.sleep(150);
@@ -210,7 +210,7 @@ export default [
     waitFor: '.wizard',
     check: async (h) => {
       await h.click(next);
-      await h.waitForText('How big is the room?');
+      await h.waitForText('Draw the room.');
       await h.evaluate(() => [...document.querySelectorAll('.size-picks .chip')].find((b) => b.textContent.includes('Compact'))?.click());
       await h.click(next);
       await h.waitForText('Pick a starting layout.');
@@ -255,7 +255,7 @@ export default [
       await fill(h, '.wizard-form label.field:nth-of-type(1) input', 'QA Measured Kitchen');
       await fill(h, '.wizard-form label.field:nth-of-type(2) input', 'The Okafors');
       await h.click(next);
-      await h.waitForText('How big is the room?');
+      await h.waitForText('Draw the room.');
       // Width 15′ 4″ typed and committed on blur; length one 6″ step up from the 13′ default.
       for (const [part, v] of [['feet', '15'], ['inches', '4']]) {
         await fill(h, `input[aria-label="Width (E–W) ${part}"]`, v);
@@ -270,7 +270,7 @@ export default [
       await h.evaluate(() => [...document.querySelectorAll('.layout-pick')].find((b) => b.querySelector('b').textContent === 'Blank room')?.click());
       // Back to Room and forward again: the size and the blank room are still chosen.
       await h.click('.wizard-nav .btn:not(.primary)');
-      await h.waitForText('How big is the room?');
+      await h.waitForText('Draw the room.');
       const kept = await h.evaluate(() => ({ ft: document.querySelector('input[aria-label="Width (E–W) feet"]').value, inch: document.querySelector('input[aria-label="Width (E–W) inches"]').value, sq: document.querySelector('.wizard-note.mono')?.textContent }));
       if (kept.ft !== '15' || kept.inch !== '4' || kept.sq !== sq) throw new Error(`Back shows ${kept.ft}′ ${kept.inch}″ (${kept.sq}), not 15′ 4″ (${sq})`);
       await h.click(next);

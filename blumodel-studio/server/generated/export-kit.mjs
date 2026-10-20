@@ -23,6 +23,20 @@ var FRAME = [
   { id: "oak", name: "Natural Oak", hex: "#c49a6c", material: "wood" }
 ];
 var BASE_WIDTHS = [9, 12, 15, 18, 21, 24, 27, 30, 33, 36];
+var PORCELAIN = [
+  { id: "white", name: "White", hex: "#f4f3ef", material: "ceramic" },
+  { id: "biscuit", name: "Biscuit", hex: "#e9dfcc", material: "ceramic" }
+];
+var SHOWER_TRIM = [
+  { id: "chrome", name: "Chrome", hex: "#d9dcdf", material: "metal" },
+  { id: "matte-black", name: "Matte Black", hex: "#232323", material: "metal" },
+  { id: "brushed-nickel", name: "Brushed Nickel", hex: "#b8b4ac", material: "metal" }
+];
+var MIRROR_FRAME = [
+  { id: "black", name: "Black Frame", hex: "#232323", material: "metal" },
+  { id: "brass", name: "Brass Frame", hex: "#b48a4a", material: "metal" },
+  { id: "frameless", name: "Frameless", hex: "#dfe6ea", material: "glass" }
+];
 var LIST = [
   // ─── Cabinets ──────────────────────────────────────────────────────────
   {
@@ -107,6 +121,91 @@ var LIST = [
     price: 290,
     finishes: "cabinet",
     blurb: "Hung 18\u2033 above the counter, standard 30\u2033 tall."
+  },
+  {
+    id: "base-filler",
+    kind: "base",
+    variant: "filler",
+    category: "cabinets",
+    brand: BASICS_BRAND,
+    name: "Base Filler",
+    code: "BF{w}",
+    widthIn: 3,
+    depthIn: 24,
+    heightIn: 36,
+    elevationIn: 0,
+    widthOptions: [1.5, 3, 4.5, 6],
+    price: 45,
+    finishes: "cabinet",
+    blurb: "A flat strip that closes a gap in a run, or keeps a door or drawer clear of a wall."
+  },
+  {
+    id: "base-panel",
+    kind: "base",
+    variant: "panel",
+    category: "cabinets",
+    brand: BASICS_BRAND,
+    name: "Base End Panel",
+    code: "BEP{w}",
+    widthIn: 0.75,
+    depthIn: 24,
+    heightIn: 36,
+    elevationIn: 0,
+    widthOptions: [0.75, 1.5],
+    price: 95,
+    finishes: "cabinet",
+    blurb: "A finished panel for the exposed end of a run: covers the cabinet side and the toe kick."
+  },
+  {
+    id: "wall-filler",
+    kind: "wall",
+    variant: "filler",
+    category: "cabinets",
+    brand: BASICS_BRAND,
+    name: "Wall Filler",
+    code: "WF{w}30",
+    widthIn: 3,
+    depthIn: 12,
+    heightIn: 30,
+    elevationIn: 54,
+    widthOptions: [1.5, 3, 4.5, 6],
+    price: 35,
+    finishes: "cabinet",
+    blurb: "A flat strip between uppers, or between an upper and a wall."
+  },
+  {
+    id: "wall-36",
+    kind: "wall",
+    variant: "door",
+    category: "cabinets",
+    brand: BASICS_BRAND,
+    name: "Wall Cabinet 36\u2033 Tall",
+    code: "W{w}36",
+    widthIn: 30,
+    depthIn: 12,
+    heightIn: 36,
+    elevationIn: 54,
+    widthOptions: BASE_WIDTHS,
+    price: 340,
+    finishes: "cabinet",
+    blurb: "Taller uppers for a 9\u2032 ceiling with crown, or an 8\u2032 ceiling with a short soffit."
+  },
+  {
+    id: "wall-42",
+    kind: "wall",
+    variant: "door",
+    category: "cabinets",
+    brand: BASICS_BRAND,
+    name: "Wall Cabinet 42\u2033 Tall",
+    code: "W{w}42",
+    widthIn: 30,
+    depthIn: 12,
+    heightIn: 42,
+    elevationIn: 54,
+    widthOptions: BASE_WIDTHS,
+    price: 390,
+    finishes: "cabinet",
+    blurb: "Uppers that run to an 8\u2032 ceiling: no dust shelf on top."
   },
   {
     id: "wall-glass",
@@ -795,6 +894,243 @@ var LIST = [
     finishes: FRAME,
     blurb: "A trimmed doorway with no door, open to the next room."
   },
+  {
+    id: "walkway",
+    kind: "door",
+    variant: "opening",
+    category: "openings",
+    brand: BASICS_BRAND,
+    name: "Open Walkway",
+    code: "WW{w}",
+    widthIn: 72,
+    depthIn: 6,
+    heightIn: 84,
+    elevationIn: 0,
+    widthOptions: [48, 60, 72, 84, 96, 120, 144],
+    price: 480,
+    finishes: FRAME,
+    blurb: "A wide passage between rooms with no door: how most kitchens open onto a hall, dining room or living room."
+  },
+  // ─── Bath ──────────────────────────────────────────────────────────────
+  {
+    id: "vanity",
+    kind: "vanity",
+    variant: "single",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Bathroom Vanity",
+    code: "V{w}",
+    widthIn: 36,
+    depthIn: 21,
+    heightIn: 34,
+    elevationIn: 0,
+    widthOptions: [24, 30, 36, 42, 48],
+    price: 1180,
+    finishes: "cabinet",
+    blurb: "Doors and drawers under a stone top with an undermount basin. 34\u2033 comfort height."
+  },
+  {
+    id: "vanity-double",
+    kind: "vanity",
+    variant: "double",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Double Vanity",
+    code: "VD{w}",
+    widthIn: 60,
+    depthIn: 21,
+    heightIn: 34,
+    elevationIn: 0,
+    widthOptions: [60, 72],
+    price: 2150,
+    finishes: "cabinet",
+    blurb: "Two basins and a bank of drawers between them, for a shared ensuite."
+  },
+  {
+    id: "vanity-floating",
+    kind: "vanity",
+    variant: "floating",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Floating Vanity",
+    code: "VF{w}",
+    widthIn: 36,
+    depthIn: 19,
+    heightIn: 21,
+    elevationIn: 12,
+    widthOptions: [24, 30, 36, 48],
+    price: 1290,
+    finishes: "cabinet",
+    blurb: "Wall-hung, with the floor running underneath: a small bath looks bigger. Top at 33\u2033."
+  },
+  {
+    id: "toilet",
+    kind: "toilet",
+    variant: "two-piece",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Elongated Toilet",
+    code: "WC-2",
+    widthIn: 20,
+    depthIn: 29,
+    heightIn: 30,
+    elevationIn: 0,
+    price: 420,
+    finishes: PORCELAIN,
+    blurb: "Two-piece, elongated bowl, comfort height. Needs 15\u2033 from its centre to a wall and 21\u2033 clear in front."
+  },
+  {
+    id: "toilet-wall",
+    kind: "toilet",
+    variant: "wall-hung",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Wall-Hung Toilet",
+    code: "WC-W",
+    widthIn: 15,
+    depthIn: 22,
+    heightIn: 16,
+    elevationIn: 0,
+    price: 980,
+    finishes: PORCELAIN,
+    blurb: "Tank hidden in the wall, flush plate above. Saves 7\u2033 of floor."
+  },
+  {
+    id: "tub",
+    kind: "tub",
+    variant: "alcove",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Alcove Tub",
+    code: "BT{w}",
+    widthIn: 60,
+    depthIn: 30,
+    heightIn: 20,
+    elevationIn: 0,
+    widthOptions: [54, 60, 66, 72],
+    price: 690,
+    finishes: PORCELAIN,
+    blurb: "Set between three walls with a tiled surround. The standard 5\u2032 tub."
+  },
+  {
+    id: "tub-free",
+    kind: "tub",
+    variant: "freestanding",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Freestanding Tub",
+    code: "FT{w}",
+    widthIn: 66,
+    depthIn: 32,
+    heightIn: 23,
+    elevationIn: 0,
+    widthOptions: [59, 66, 71],
+    price: 1890,
+    finishes: PORCELAIN,
+    blurb: "An oval soaker with a floor-mounted filler. Leave 6\u2033 around it to clean."
+  },
+  {
+    id: "shower",
+    kind: "shower",
+    variant: "alcove",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Alcove Shower",
+    code: "SH{w}",
+    widthIn: 60,
+    depthIn: 32,
+    heightIn: 78,
+    elevationIn: 0,
+    widthOptions: [48, 54, 60],
+    price: 1450,
+    finishes: SHOWER_TRIM,
+    blurb: "Base, sliding glass door and a rain head, between three walls."
+  },
+  {
+    id: "shower-corner",
+    kind: "shower",
+    variant: "corner",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Corner Shower",
+    code: "SC{w}",
+    widthIn: 36,
+    depthIn: 36,
+    heightIn: 78,
+    elevationIn: 0,
+    widthOptions: [32, 36, 42, 48],
+    price: 1290,
+    finishes: SHOWER_TRIM,
+    blurb: "Two glass sides meeting a corner. 36\u2033 \xD7 36\u2033 is the comfortable minimum."
+  },
+  {
+    id: "shower-walkin",
+    kind: "shower",
+    variant: "walk-in",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Walk-In Shower",
+    code: "SW{w}",
+    widthIn: 60,
+    depthIn: 36,
+    heightIn: 78,
+    elevationIn: 0,
+    widthOptions: [48, 60, 72],
+    price: 2390,
+    finishes: SHOWER_TRIM,
+    blurb: "A low curbless base behind one fixed glass panel: no door to swing."
+  },
+  {
+    id: "mirror",
+    kind: "mirror",
+    variant: "rect",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Vanity Mirror",
+    code: "MR{w}",
+    widthIn: 30,
+    depthIn: 1.5,
+    heightIn: 36,
+    elevationIn: 40,
+    widthOptions: [24, 30, 36, 48, 60],
+    price: 260,
+    finishes: MIRROR_FRAME,
+    blurb: "Hangs over the vanity, bottom edge at 40\u2033."
+  },
+  {
+    id: "mirror-round",
+    kind: "mirror",
+    variant: "round",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Round Mirror",
+    code: "MRR{w}",
+    widthIn: 28,
+    depthIn: 1.5,
+    heightIn: 28,
+    elevationIn: 44,
+    widthOptions: [24, 28, 32],
+    price: 220,
+    finishes: MIRROR_FRAME,
+    blurb: "A round mirror over a single vanity."
+  },
+  {
+    id: "medicine-cabinet",
+    kind: "mirror",
+    variant: "cabinet",
+    category: "bath",
+    brand: BASICS_BRAND,
+    name: "Medicine Cabinet",
+    code: "MC{w}",
+    widthIn: 24,
+    depthIn: 5,
+    heightIn: 30,
+    elevationIn: 44,
+    widthOptions: [16, 20, 24, 30],
+    price: 340,
+    finishes: MIRROR_FRAME,
+    blurb: "A mirrored door over shelves, surface-mounted."
+  },
   // ─── Decor ─────────────────────────────────────────────────────────────
   {
     id: "rug-runner",
@@ -922,16 +1258,46 @@ var kinds_default = {
     "window",
     "door",
     "rug",
-    "plant"
+    "plant",
+    "vanity",
+    "toilet",
+    "tub",
+    "shower",
+    "mirror"
   ],
   categories: [
-    { id: "cabinets", label: "Cabinets" },
-    { id: "appliances", label: "Appliances" },
-    { id: "sinks", label: "Sinks" },
-    { id: "lighting", label: "Lighting" },
-    { id: "seating", label: "Seating & Tables" },
-    { id: "openings", label: "Doors & Windows" },
-    { id: "decor", label: "Decor" }
+    {
+      id: "cabinets",
+      label: "Cabinets"
+    },
+    {
+      id: "appliances",
+      label: "Appliances"
+    },
+    {
+      id: "sinks",
+      label: "Sinks"
+    },
+    {
+      id: "lighting",
+      label: "Lighting"
+    },
+    {
+      id: "bath",
+      label: "Bath"
+    },
+    {
+      id: "seating",
+      label: "Seating & Tables"
+    },
+    {
+      id: "openings",
+      label: "Doors & Windows"
+    },
+    {
+      id: "decor",
+      label: "Decor"
+    }
   ],
   materialKinds: [
     "wood",
@@ -967,31 +1333,119 @@ var kinds_default = {
     window: "openings",
     door: "openings",
     rug: "decor",
-    plant: "decor"
+    plant: "decor",
+    vanity: "bath",
+    toilet: "bath",
+    tub: "bath",
+    shower: "bath",
+    mirror: "bath"
   },
   variants: {
-    base: ["door-drawer", "drawers", "trash"],
+    base: [
+      "door-drawer",
+      "drawers",
+      "trash",
+      "filler",
+      "panel"
+    ],
     corner: [],
-    wall: ["door", "glass", "bridge"],
-    tall: ["pantry"],
+    wall: [
+      "door",
+      "glass",
+      "bridge",
+      "filler",
+      "panel"
+    ],
+    tall: [
+      "pantry"
+    ],
     "oven-tower": [],
     island: [],
-    sink: ["undermount", "farmhouse", "double", "prep"],
-    range: ["gas-4", "gas-6", "griddle", "induction"],
-    fridge: ["french", "column", "retro"],
+    sink: [
+      "undermount",
+      "farmhouse",
+      "double",
+      "prep"
+    ],
+    range: [
+      "gas-4",
+      "gas-6",
+      "griddle",
+      "induction"
+    ],
+    fridge: [
+      "french",
+      "column",
+      "retro"
+    ],
     dishwasher: [],
-    hood: ["chimney", "plaster"],
+    hood: [
+      "chimney",
+      "plaster"
+    ],
     microwave: [],
-    wine: ["wine", "beverage"],
-    stool: ["counter", "backed"],
-    pendant: ["dome", "globe", "cone", "woven", "linear"],
-    table: ["round", "rect"],
+    wine: [
+      "wine",
+      "beverage"
+    ],
+    stool: [
+      "counter",
+      "backed"
+    ],
+    pendant: [
+      "dome",
+      "globe",
+      "cone",
+      "woven",
+      "linear"
+    ],
+    table: [
+      "round",
+      "rect"
+    ],
     chair: [],
     shelf: [],
-    window: ["casement", "picture"],
-    door: ["single", "double", "opening"],
-    rug: ["runner", "area"],
-    plant: ["olive", "fig"]
+    window: [
+      "casement",
+      "picture"
+    ],
+    door: [
+      "single",
+      "double",
+      "opening"
+    ],
+    rug: [
+      "runner",
+      "area"
+    ],
+    plant: [
+      "olive",
+      "fig"
+    ],
+    vanity: [
+      "single",
+      "double",
+      "floating"
+    ],
+    toilet: [
+      "two-piece",
+      "one-piece",
+      "wall-hung"
+    ],
+    tub: [
+      "alcove",
+      "freestanding"
+    ],
+    shower: [
+      "alcove",
+      "corner",
+      "walk-in"
+    ],
+    mirror: [
+      "rect",
+      "round",
+      "cabinet"
+    ]
   }
 };
 
@@ -1300,6 +1754,121 @@ function resolveFaucet(surfaces, fixtures) {
   return f && f.kind === "faucet" ? { fixture: f, hex: f.finish.hex, roughness: f.roughness } : null;
 }
 
+// src/lib/format.ts
+function feetInches(totalIn) {
+  const sign = totalIn < 0 ? "-" : "";
+  const abs = Math.abs(totalIn);
+  let feet = Math.floor(abs / 12);
+  let inches = Math.round((abs - feet * 12) * 2) / 2;
+  if (inches >= 12) {
+    feet += 1;
+    inches -= 12;
+  }
+  const whole = Math.floor(inches);
+  const half = inches - whole >= 0.5 ? "\xBD" : "";
+  const inchStr = `${whole === 0 && half ? "" : whole}${half}"`;
+  if (feet === 0) return `${sign}${inchStr}`;
+  return `${sign}${feet}' ${inchStr}`;
+}
+
+// src/lib/outline.ts
+var EDGE_STYLES = {
+  wall: { label: "Wall", blurb: "A full-height wall. Doors and windows go here.", heightIn: null, thicknessIn: 5, holdsOpenings: true, backs: true, cutaway: true },
+  half: { label: "Half wall", blurb: "A 42\u2033 pony wall between kitchen and living room. Cabinets can back onto it.", heightIn: 42, thicknessIn: 5, holdsOpenings: false, backs: true, cutaway: false },
+  bar: { label: "Bar wall", blurb: "A 42\u2033 half wall with a counter ledge for stools on the room side.", heightIn: 42, thicknessIn: 5, holdsOpenings: false, backs: true, cutaway: false },
+  rail: { label: "Railing", blurb: "A 36\u2033 railing for an open stair or a step down.", heightIn: 36, thicknessIn: 1.5, holdsOpenings: false, backs: false, cutaway: false },
+  glass: { label: "Glass partition", blurb: "A full-height glass wall that keeps the sightline open.", heightIn: null, thicknessIn: 1, holdsOpenings: false, backs: true, cutaway: false },
+  beam: { label: "Dropped beam", blurb: "No wall: a bulkhead or beam overhead marks where the kitchen ends.", heightIn: 0, thicknessIn: 0, holdsOpenings: false, backs: false, cutaway: false },
+  open: { label: "Open", blurb: "No wall at all: the floor just continues into the next area.", heightIn: 0, thicknessIn: 0, holdsOpenings: false, backs: false, cutaway: false }
+};
+var isEdgeStyle = (v) => typeof v === "string" && v in EDGE_STYLES;
+function rectOutline(widthIn, lengthIn) {
+  return [
+    [0, 0],
+    [widthIn, 0],
+    [widthIn, lengthIn],
+    [0, lengthIn]
+  ];
+}
+function outlineOf(room) {
+  return room.outline && room.outline.length >= 4 ? room.outline : rectOutline(room.widthIn, room.lengthIn);
+}
+function spaces(room) {
+  const main = outlineOf(room);
+  const out = [{ index: 0, id: "main", name: "Main room", pts: main, styles: fitStyles(room.styles, main.length, "wall"), zone: false }];
+  (room.extra ?? []).forEach((e, i) => {
+    const zone = e.kind === "zone";
+    out.push({ index: i + 1, id: e.id, name: e.name, pts: e.outline, styles: fitStyles(e.styles, e.outline.length, zone ? "open" : "wall"), zone });
+  });
+  return out;
+}
+function fitStyles(styles, n, fallback) {
+  return Array.from({ length: n }, (_, i) => styles && isEdgeStyle(styles[i]) ? styles[i] : fallback);
+}
+function floorOutlines(room) {
+  return spaces(room).filter((sp) => !sp.zone).map((sp) => sp.pts);
+}
+function signedArea(p) {
+  let a = 0;
+  for (let i = 0; i < p.length; i++) {
+    const [x0, y0] = p[i];
+    const [x1, y1] = p[(i + 1) % p.length];
+    a += x0 * y1 - x1 * y0;
+  }
+  return a / 2;
+}
+function area(p) {
+  return Math.abs(signedArea(p));
+}
+function segsOf(p, room = 0, styles, zone = false) {
+  const out = [];
+  const st = fitStyles(styles, p.length, zone ? "open" : "wall");
+  const n = p.length;
+  const convexAt = (i) => {
+    const a = p[(i + n - 1) % n];
+    const b = p[i];
+    const c = p[(i + 1) % n];
+    return (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) > 0;
+  };
+  for (let i = 0; i < n; i++) {
+    const a = p[i];
+    const b = p[(i + 1) % n];
+    const cs = convexAt(i);
+    const ce = convexAt((i + 1) % n);
+    if (a[1] === b[1]) {
+      const east = b[0] > a[0];
+      out.push({ id: i, wall: east ? "north" : "south", at: a[1], a0: Math.min(a[0], b[0]), a1: Math.max(a[0], b[0]), room, convex0: east ? cs : ce, convex1: east ? ce : cs, style: st[i], zone });
+    } else {
+      const south = b[1] > a[1];
+      out.push({ id: i, wall: south ? "east" : "west", at: a[0], a0: Math.min(a[1], b[1]), a1: Math.max(a[1], b[1]), room, convex0: south ? cs : ce, convex1: south ? ce : cs, style: st[i], zone });
+    }
+  }
+  return out;
+}
+var segCache = /* @__PURE__ */ new WeakMap();
+function wallSegs(room) {
+  const hit = segCache.get(room);
+  if (hit) return hit;
+  const out = [];
+  for (const sp of spaces(room)) {
+    for (const sg of segsOf(sp.pts, sp.index, sp.styles, sp.zone)) out.push({ ...sg, id: out.length });
+  }
+  segCache.set(room, out);
+  return out;
+}
+function floorAreaIn2(room) {
+  return floorOutlines(room).reduce((n, o) => n + area(o), 0);
+}
+function perimeterIn(room) {
+  return wallSegs(room).reduce((n, s) => n + (s.a1 - s.a0), 0);
+}
+function roomLabel(room) {
+  const size = `${feetInches(room.widthIn)} \xD7 ${feetInches(room.lengthIn)}`;
+  const rooms = 1 + (room.extra ?? []).filter((e) => e.kind !== "zone").length;
+  if (rooms > 1) return `${rooms} rooms`;
+  return room.outline || room.extra?.length ? `${size} overall` : size;
+}
+
 // src/lib/geometry.ts
 function wallForRotation(r) {
   return r === 0 ? "north" : r === 90 ? "east" : r === 180 ? "south" : "west";
@@ -1333,25 +1902,33 @@ function resolveAll(items) {
   }
   return out;
 }
+var segAlongX = (seg) => seg.wall === "north" || seg.wall === "south";
 function overlap1D(a0, a1, b0, b1) {
   return Math.min(a1, b1) - Math.max(a0, b0);
 }
-function flushWall(r, room, tol = 1) {
+function flushSeg(r, room, tol = 1) {
   const wall = wallForRotation(r.item.rotation);
-  if (isOpening(r.product)) {
-    const onLine = wall === "north" && Math.abs(r.item.y) < tol || wall === "south" && Math.abs(r.item.y - room.lengthIn) < tol || wall === "west" && Math.abs(r.item.x) < tol || wall === "east" && Math.abs(r.item.x - room.widthIn) < tol;
-    return onLine ? wall : null;
-  }
+  const opening = isOpening(r.product);
   const b = r.box;
-  const flush = wall === "north" && Math.abs(b.minY) < tol || wall === "south" && Math.abs(b.maxY - room.lengthIn) < tol || wall === "west" && Math.abs(b.minX) < tol || wall === "east" && Math.abs(b.maxX - room.widthIn) < tol;
-  return flush ? wall : null;
+  for (const seg of wallSegs(room)) {
+    if (seg.wall !== wall) continue;
+    if (opening ? !EDGE_STYLES[seg.style].holdsOpenings : !EDGE_STYLES[seg.style].backs) continue;
+    const face = opening ? segAlongX(seg) ? r.item.y : r.item.x : wall === "north" ? b.minY : wall === "south" ? b.maxY : wall === "west" ? b.minX : b.maxX;
+    if (Math.abs(face - seg.at) >= tol) continue;
+    const [lo, hi] = opening ? segAlongX(seg) ? [r.item.x, r.item.x] : [r.item.y, r.item.y] : alongWall(wall, b);
+    if (opening ? lo >= seg.a0 - tol && lo <= seg.a1 + tol : overlap1D(lo, hi, seg.a0, seg.a1) > tol) return seg;
+  }
+  return null;
 }
-function wallsTouched(b, room, tol = 1) {
+function segsTouched(b, room, tol = 1) {
   const out = [];
-  if (Math.abs(b.minY) < tol) out.push("north");
-  if (Math.abs(b.maxY - room.lengthIn) < tol) out.push("south");
-  if (Math.abs(b.minX) < tol) out.push("west");
-  if (Math.abs(b.maxX - room.widthIn) < tol) out.push("east");
+  for (const seg of wallSegs(room)) {
+    if (!EDGE_STYLES[seg.style].backs) continue;
+    const face = seg.wall === "north" ? b.minY : seg.wall === "south" ? b.maxY : seg.wall === "west" ? b.minX : b.maxX;
+    if (Math.abs(face - seg.at) >= tol) continue;
+    const [lo, hi] = segAlongX(seg) ? [b.minX, b.maxX] : [b.minY, b.maxY];
+    if (overlap1D(lo, hi, seg.a0, seg.a1) > tol) out.push(seg);
+  }
   return out;
 }
 function alongWall(wall, box) {
@@ -1361,17 +1938,29 @@ function backsplashSegments(all, room) {
   const raw = [];
   for (const r of all) {
     const k = r.product.kind;
+    if (k === "tub" && r.product.variant !== "freestanding" || k === "shower") {
+      const back = flushSeg(r, room);
+      if (!back) continue;
+      const bottom = k === "tub" ? r.z1 : 3;
+      const top = Math.min(room.ceilingIn, k === "tub" ? 80 : r.z1);
+      for (const sg of [back, ...segsTouched(r.box, room).filter((q) => q.id !== back.id)]) {
+        const [s, e] = alongWall(sg.wall, r.box);
+        raw.push({ wall: sg.wall, seg: sg, start: s, end: e, bottom, top });
+      }
+      continue;
+    }
     if (!(hasCountertop(r.product) || k === "range") || k === "island") continue;
-    const back = flushWall(r, room);
-    if (!back) continue;
-    const walls = k === "corner" ? [back, ...wallsTouched(r.box, room).filter((w) => w !== back)] : [back];
-    for (const wall of walls) {
+    const backSeg = flushSeg(r, room);
+    if (!backSeg) continue;
+    const segs = k === "corner" ? [backSeg, ...segsTouched(r.box, room).filter((sg) => sg.id !== backSeg.id)] : [backSeg];
+    for (const sg of segs) {
+      const wall = sg.wall;
       const [s, e] = alongWall(wall, r.box);
       let top = 54;
       let overheadFound = false;
       for (const o of all) {
         if (o === r || o.z0 < 40) continue;
-        if (flushWall(o, room) !== wall) continue;
+        if (flushSeg(o, room)?.id !== sg.id) continue;
         const [os, oe] = alongWall(wall, o.box);
         if (overlap1D(s, e, os, oe) <= 1) continue;
         if (o.product.kind === "window") continue;
@@ -1380,14 +1969,14 @@ function backsplashSegments(all, room) {
       }
       if (!overheadFound && k === "range") top = 66;
       top = Math.min(Math.max(top, 44), room.ceilingIn);
-      raw.push({ wall, start: s, end: e, bottom: 36, top });
+      raw.push({ wall, seg: sg, start: s, end: e, bottom: 36, top });
     }
   }
   const windows = all.filter((r) => r.product.kind === "window");
   const out = [];
   for (const seg of raw) {
     const win = windows.find((wr) => {
-      if (flushWall(wr, room) !== seg.wall) return false;
+      if (flushSeg(wr, room)?.id !== seg.seg.id) return false;
       const [ws, we] = alongWall(seg.wall, wr.box);
       return overlap1D(seg.start, seg.end, ws, we) > 0;
     });
@@ -1431,6 +2020,7 @@ var GROUP_BY_CATEGORY = {
   decor: "Furniture & decor",
   openings: "Doors & windows"
 };
+var CROWN_PRICE = { flat: 14, cove: 22 };
 function pullCount(p, w) {
   if (p.source === "missing") return 0;
   switch (p.kind) {
@@ -1517,13 +2107,21 @@ function buildEstimate(doc, opts = {}) {
     lines.push({ key: "splash", group: "Surfaces", label: `${src.brand} ${src.name}`, sub: `Backsplash${bs.id === "slab-match" ? ", book-matched slab" : ", incl. 10% overage"}`, qty: sq, unit: "sq ft", unitPrice: src.price, total: sq * src.price });
   }
   const floor = byId2(FLOORING, surfaces.flooringId);
-  const floorSq = Math.ceil(room.widthIn * room.lengthIn / 144 * 1.1);
+  const floorSq = Math.ceil(floorAreaIn2(room) / 144 * 1.1);
   lines.push({ key: "floor", group: "Surfaces", label: `${floor.brand} ${floor.name}`, sub: "Flooring, incl. 10% overage", qty: floorSq, unit: "sq ft", unitPrice: floor.price, total: floorSq * floor.price });
   const paint = byId2(PAINTS, surfaces.paintId);
   const openingsIn2 = all.filter((r) => r.product.kind === "window" || r.product.kind === "door").reduce((s, r) => s + r.w * r.product.heightIn, 0);
-  const wallSq = (2 * (room.widthIn + room.lengthIn) * room.ceilingIn - openingsIn2) / 144;
+  const wallSq = (perimeterIn(room) * room.ceilingIn - openingsIn2) / 144;
   const gallons = Math.max(1, Math.ceil(wallSq * 2 / 350));
   lines.push({ key: "paint", group: "Surfaces", label: `${paint.brand} ${paint.name}`, sub: "Wall paint, two coats", qty: gallons, unit: "gal", unitPrice: paint.price, total: gallons * paint.price });
+  if (surfaces.crown === "flat" || surfaces.crown === "cove") {
+    const runIn = all.filter((r) => (r.product.kind === "wall" || r.product.kind === "tall" || r.product.kind === "oven-tower") && r.z1 + 3 <= room.ceilingIn + 0.01).reduce((n, r) => n + r.w, 0);
+    if (runIn > 0) {
+      const ft = Math.ceil(runIn / 12 * 1.2);
+      const price = surfaces.crown === "cove" ? CROWN_PRICE.cove : CROWN_PRICE.flat;
+      lines.push({ key: "crown", group: "Surfaces", label: surfaces.crown === "cove" ? "Cove crown moulding" : "Flat crown moulding", sub: "Along the tops of the uppers and tall cabinets, incl. returns and 20% waste", qty: ft, unit: "lin ft", unitPrice: price, total: ft * price });
+    }
+  }
   if (pulls > 0) {
     const hw = resolveHardware(surfaces, doc.fixtures);
     const f = hw.fixture;
@@ -1587,23 +2185,6 @@ function csvEscape(v) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-// src/lib/format.ts
-function feetInches(totalIn) {
-  const sign = totalIn < 0 ? "-" : "";
-  const abs = Math.abs(totalIn);
-  let feet = Math.floor(abs / 12);
-  let inches = Math.round((abs - feet * 12) * 2) / 2;
-  if (inches >= 12) {
-    feet += 1;
-    inches -= 12;
-  }
-  const whole = Math.floor(inches);
-  const half = inches - whole >= 0.5 ? "\xBD" : "";
-  const inchStr = `${whole === 0 && half ? "" : whole}${half}"`;
-  if (feet === 0) return `${sign}${inchStr}`;
-  return `${sign}${feet}' ${inchStr}`;
-}
-
 // src/lib/csv.ts
 var PLACEHOLDER_PRICES_NOTE = "Brand names and prices are placeholders for illustration.";
 var VISUALIZER_DISCLAIMER = "BluModel Studio is a visualizer. Layouts, dimensions and estimates are for planning conversations, not construction or installation drawings. Verify everything with a professional.";
@@ -1612,7 +2193,7 @@ function safeCell(v) {
 }
 function estimateCsv(doc, est) {
   const rows = [
-    [`${doc.name} \u2014 ${feetInches(doc.room.widthIn)} x ${feetInches(doc.room.lengthIn)}`],
+    [`${doc.name} \u2014 ${roomLabel(doc.room).replace("\xD7", "x")}`],
     ["Group", "Item", "Detail", "SKU", "Qty", "Unit", "Unit price", "Total", "Buy link"],
     ...est.lines.map((l) => [l.group, l.label, l.sub, l.sku ?? "", l.qty, l.unit, l.atStore ? "Price at store" : l.unitPrice, l.atStore ? "" : l.total, l.buyUrl ?? ""]),
     [],

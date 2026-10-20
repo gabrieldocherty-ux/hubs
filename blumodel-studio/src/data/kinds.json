@@ -21,16 +21,46 @@
     "window",
     "door",
     "rug",
-    "plant"
+    "plant",
+    "vanity",
+    "toilet",
+    "tub",
+    "shower",
+    "mirror"
   ],
   "categories": [
-    { "id": "cabinets", "label": "Cabinets" },
-    { "id": "appliances", "label": "Appliances" },
-    { "id": "sinks", "label": "Sinks" },
-    { "id": "lighting", "label": "Lighting" },
-    { "id": "seating", "label": "Seating & Tables" },
-    { "id": "openings", "label": "Doors & Windows" },
-    { "id": "decor", "label": "Decor" }
+    {
+      "id": "cabinets",
+      "label": "Cabinets"
+    },
+    {
+      "id": "appliances",
+      "label": "Appliances"
+    },
+    {
+      "id": "sinks",
+      "label": "Sinks"
+    },
+    {
+      "id": "lighting",
+      "label": "Lighting"
+    },
+    {
+      "id": "bath",
+      "label": "Bath"
+    },
+    {
+      "id": "seating",
+      "label": "Seating & Tables"
+    },
+    {
+      "id": "openings",
+      "label": "Doors & Windows"
+    },
+    {
+      "id": "decor",
+      "label": "Decor"
+    }
   ],
   "materialKinds": [
     "wood",
@@ -66,30 +96,118 @@
     "window": "openings",
     "door": "openings",
     "rug": "decor",
-    "plant": "decor"
+    "plant": "decor",
+    "vanity": "bath",
+    "toilet": "bath",
+    "tub": "bath",
+    "shower": "bath",
+    "mirror": "bath"
   },
   "variants": {
-    "base": ["door-drawer", "drawers", "trash"],
+    "base": [
+      "door-drawer",
+      "drawers",
+      "trash",
+      "filler",
+      "panel"
+    ],
     "corner": [],
-    "wall": ["door", "glass", "bridge"],
-    "tall": ["pantry"],
+    "wall": [
+      "door",
+      "glass",
+      "bridge",
+      "filler",
+      "panel"
+    ],
+    "tall": [
+      "pantry"
+    ],
     "oven-tower": [],
     "island": [],
-    "sink": ["undermount", "farmhouse", "double", "prep"],
-    "range": ["gas-4", "gas-6", "griddle", "induction"],
-    "fridge": ["french", "column", "retro"],
+    "sink": [
+      "undermount",
+      "farmhouse",
+      "double",
+      "prep"
+    ],
+    "range": [
+      "gas-4",
+      "gas-6",
+      "griddle",
+      "induction"
+    ],
+    "fridge": [
+      "french",
+      "column",
+      "retro"
+    ],
     "dishwasher": [],
-    "hood": ["chimney", "plaster"],
+    "hood": [
+      "chimney",
+      "plaster"
+    ],
     "microwave": [],
-    "wine": ["wine", "beverage"],
-    "stool": ["counter", "backed"],
-    "pendant": ["dome", "globe", "cone", "woven", "linear"],
-    "table": ["round", "rect"],
+    "wine": [
+      "wine",
+      "beverage"
+    ],
+    "stool": [
+      "counter",
+      "backed"
+    ],
+    "pendant": [
+      "dome",
+      "globe",
+      "cone",
+      "woven",
+      "linear"
+    ],
+    "table": [
+      "round",
+      "rect"
+    ],
     "chair": [],
     "shelf": [],
-    "window": ["casement", "picture"],
-    "door": ["single", "double", "opening"],
-    "rug": ["runner", "area"],
-    "plant": ["olive", "fig"]
+    "window": [
+      "casement",
+      "picture"
+    ],
+    "door": [
+      "single",
+      "double",
+      "opening"
+    ],
+    "rug": [
+      "runner",
+      "area"
+    ],
+    "plant": [
+      "olive",
+      "fig"
+    ],
+    "vanity": [
+      "single",
+      "double",
+      "floating"
+    ],
+    "toilet": [
+      "two-piece",
+      "one-piece",
+      "wall-hung"
+    ],
+    "tub": [
+      "alcove",
+      "freestanding"
+    ],
+    "shower": [
+      "alcove",
+      "corner",
+      "walk-in"
+    ],
+    "mirror": [
+      "rect",
+      "round",
+      "cabinet"
+    ]
   }
 }

@@ -2,7 +2,6 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Dialog } from '../../components/Dialog';
 import { ApiError } from '../../lib/api';
 import { buildEstimate } from '../../lib/estimate';
-import { feetInches } from '../../lib/format';
 import { hrefFor, navigate } from '../../lib/router';
 import { useCatalog } from '../../store/useCatalog';
 import { useDesignStore } from '../../store/useDesignStore';
@@ -10,6 +9,7 @@ import type { DesignDoc } from '../../types';
 import { LEAD_STATUSES, saveText, when, wsApi, type Lead, type LeadCounts, type LeadDesign, type LeadDetail as LeadDetailWire, type LeadEvent, type LeadStatus, type LeadExport } from './api';
 import { useWorkspace } from './context';
 import './leads.css';
+import { roomLabel } from '../../lib/outline';
 
 const LeadDesignView = lazy(() => import('./LeadDesignView'));
 
@@ -564,7 +564,7 @@ function DesignRow({ leadId, design }: { leadId: string; design: LeadDesign }) {
         <div>
           <b>{design.name}</b>
           <span className="muted">
-            {design.room ? `${feetInches(design.room.widthIn)} × ${feetInches(design.room.lengthIn)} · ` : ''}
+            {design.room ? `${roomLabel({ ...design.room, ceilingIn: 0 })} · ` : ''}
             {design.items} piece{design.items === 1 ? '' : 's'} · changed {when(design.updatedAt)}
           </span>
         </div>

@@ -1,0 +1,370 @@
+/* ─── Room sketcher (walls, doorways, extra rooms) ──────────────────────── */
+
+.sk {
+  --sk-grid: rgba(120, 108, 90, 0.16);
+  --sk-grid-l: rgba(120, 108, 90, 0.3);
+  --sk-wall: var(--ink-2);
+  --sk-floor: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  outline: none;
+}
+
+.sk:focus-visible .sk-canvas {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.sk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.sk-spacer {
+  flex: 1;
+}
+
+.sk-tool {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sk-tool.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.sk-tool:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sk-canvas {
+  width: 100%;
+  display: block;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  background: var(--panel);
+  touch-action: none;
+  user-select: none;
+  cursor: default;
+}
+
+.sk-tool-draw,
+.sk-tool-room,
+.sk-tool-rect {
+  cursor: crosshair;
+}
+
+.sk-tool-doorway,
+.sk-tool-door,
+.sk-tool-window {
+  cursor: copy;
+}
+
+.sk-floor {
+  fill: var(--sk-floor);
+}
+
+.sk-floor-x {
+  fill: var(--paper-2);
+}
+
+.sk-thing {
+  fill: rgba(120, 108, 90, 0.1);
+  stroke: rgba(120, 108, 90, 0.35);
+  stroke-width: 0.6;
+}
+
+.sk-wall {
+  fill: var(--sk-wall);
+}
+
+.sk-wall.hover {
+  fill: var(--accent-2);
+}
+
+.sk-wall.sel {
+  fill: var(--accent);
+}
+
+.sk-gap {
+  fill: var(--sk-floor);
+}
+
+.sk-glass {
+  stroke: #5a8db3;
+  stroke-width: 2.4;
+}
+
+.sk-door {
+  fill: none;
+  stroke: var(--sk-wall);
+  stroke-width: 1.2;
+}
+
+.sk-open.sel .sk-door,
+.sk-open.sel .sk-glass {
+  stroke: var(--accent);
+  stroke-width: 2.4;
+}
+
+.sk-len rect {
+  fill: var(--card);
+  stroke: var(--line-2);
+  stroke-width: 0.6;
+}
+
+.sk-len text {
+  font-family: var(--mono);
+  font-size: inherit;
+  fill: var(--ink-2);
+}
+
+.sk-draw {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 5;
+  stroke-linejoin: miter;
+  opacity: 0.85;
+}
+
+.sk-draw-rect {
+  fill: rgba(194, 84, 45, 0.1);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.sk-pt {
+  fill: var(--accent);
+}
+
+.sk-pt.first {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.sk-guide {
+  stroke: var(--accent);
+  stroke-width: 0.8;
+  stroke-dasharray: 4 4;
+  opacity: 0.55;
+}
+
+.sk-cur {
+  fill: var(--card);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.sk-cur.corner {
+  fill: var(--accent);
+}
+
+.sk-livelen {
+  fill: var(--accent);
+}
+
+.sk-livetext {
+  font-family: var(--mono);
+  fill: #fff;
+}
+
+.sk-livetext.dark {
+  fill: var(--ink);
+}
+
+.sk-hint {
+  margin: 0;
+  min-height: 2.6em;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.sk-error {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.sk-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sk-inspector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: flex-end;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.sk-bump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.sk-bump-t {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.sk-bump label,
+.sk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.sk-bump input,
+.sk-field select {
+  width: 84px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+.sk-rooms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sk-rooms li {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.sk-rooms input {
+  flex: 1;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+}
+
+@media (pointer: coarse) {
+  .sk-tool {
+    min-height: 44px;
+  }
+}
+
+.sk-zone {
+  fill: var(--accent);
+  opacity: 0.08;
+}
+
+.sk-zone-name {
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  fill: var(--accent-text);
+  opacity: 0.75;
+}
+
+.sk-halo {
+  stroke: var(--accent);
+  opacity: 0.35;
+  stroke-linecap: round;
+}
+
+.sk-edge {
+  fill: var(--sk-floor);
+  stroke: var(--sk-wall);
+  stroke-width: 1;
+}
+
+.sk-edge.hover,
+.sk-edge.sel {
+  stroke: var(--accent);
+}
+
+.sk-edge-half {
+  fill: var(--paper-2);
+}
+
+.sk-edge-bar {
+  fill: var(--paper-2);
+}
+
+.sk-ledge {
+  fill: var(--card);
+  stroke: var(--sk-wall);
+  stroke-width: 0.8;
+}
+
+.sk-edge-rail {
+  fill: none;
+  stroke: var(--sk-wall);
+}
+
+.sk-edge-glass {
+  fill: none;
+  stroke: #6d9ec3;
+  opacity: 0.8;
+}
+
+.sk-edge-beam {
+  fill: rgba(120, 100, 80, 0.12);
+  stroke-dasharray: 6 4;
+}
+
+.sk-edge-open {
+  fill: none;
+  stroke: var(--accent);
+  stroke-dasharray: 10 6;
+}
+
+.sk-style-blurb {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.sk-kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  min-width: 70px;
+}
+
+.sk-inline select {
+  width: auto;
+}

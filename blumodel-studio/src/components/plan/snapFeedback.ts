@@ -6,7 +6,8 @@
  */
 import type { Room } from '../../types';
 import { isOpening } from '../../data/catalog';
-import { alongWall, boxGap, boxesOverlap, flushWall, overlap1D, type AABB, type Resolved, type Wall } from '../../lib/geometry';
+import { planSize } from '../../lib/outline';
+import { alongWall, boxGap, boxesOverlap, clearToWall, flushSeg, overlap1D, type AABB, type Resolved, type Wall, type WallSeg } from '../../lib/geometry';
 
 export interface Seg {
   x1: number;
@@ -56,19 +57,11 @@ function blocks(me: Resolved, o: Resolved): boolean {
   return overlap1D(me.z0, me.z1, o.z0, o.z1) > 0.25;
 }
 
-export function wallFace(wall: Wall, room: Room): Seg {
-  const W = room.widthIn;
-  const L = room.lengthIn;
-  switch (wall) {
-    case 'north':
-      return { x1: 0, y1: 0, x2: W, y2: 0 };
-    case 'south':
-      return { x1: 0, y1: L, x2: W, y2: L };
-    case 'west':
-      return { x1: 0, y1: 0, x2: 0, y2: L };
-    case 'east':
-      return { x1: W, y1: 0, x2: W, y2: L };
-  }
+/** A wall segment's inner face as a line, for the snap guide. */
+export function wallFace(seg: WallSeg): Seg {
+  return seg.wall === 'north' || seg.wall === 'south'
+    ? { x1: seg.a0, y1: seg.at, x2: seg.a1, y2: seg.at }
+    : { x1: seg.at, y1: seg.a0, x2: seg.at, y2: seg.a1 };
 }
 
 /**
@@ -78,8 +71,9 @@ export function wallFace(wall: Wall, room: Room): Seg {
  */
 export function dragFeedback(me: Resolved, all: Resolved[], room: Room, inset = 8): Feedback {
   const others = all.filter((o) => o.item.id !== me.item.id);
-  const wall = flushWall(me, room);
-  const out: Feedback = { wall, wallLine: wall ? wallFace(wall, room) : null, guides: [], gaps: [], overlaps: [], overlapIds: [] };
+  const seg = flushSeg(me, room);
+  const wall = seg?.wall ?? null;
+  const out: Feedback = { wall, wallLine: seg ? wallFace(seg) : null, guides: [], gaps: [], overlaps: [], overlapIds: [] };
 
   for (const o of others) {
     if (!collides(me, o)) continue;
@@ -90,15 +84,14 @@ export function dragFeedback(me: Resolved, all: Resolved[], room: Room, inset = 
   }
 
   if (isOpening(me.product)) {
-    if (!wall) return out;
-    const len = wall === 'north' || wall === 'south' ? room.widthIn : room.lengthIn;
+    if (!wall || !seg) return out;
     const [s, e] = alongWall(wall, me.box);
-    let left = 0;
-    let right = len;
+    let left = seg.a0;
+    let right = seg.a1;
     let leftTo: Gap['to'] = 'wall';
     let rightTo: Gap['to'] = 'wall';
     for (const o of others) {
-      if (!isOpening(o.product) || flushWall(o, room) !== wall) continue;
+      if (!isOpening(o.product) || flushSeg(o, room)?.id !== seg.id) continue;
       const [os, oe] = alongWall(wall, o.box);
       if (oe <= s + 0.5 && oe > left) {
         left = oe;
@@ -110,7 +103,7 @@ export function dragFeedback(me: Resolved, all: Resolved[], room: Room, inset = 
       }
     }
     const at = (a: number): [number, number] =>
-      wall === 'north' ? [a, inset] : wall === 'south' ? [a, room.lengthIn - inset] : wall === 'west' ? [inset, a] : [room.widthIn - inset, a];
+      wall === 'north' ? [a, seg.at + inset] : wall === 'south' ? [a, seg.at - inset] : wall === 'west' ? [seg.at + inset, a] : [seg.at - inset, a];
     for (const [a, b, to] of [
       [left, s, leftTo],
       [e, right, rightTo],
@@ -124,8 +117,7 @@ export function dragFeedback(me: Resolved, all: Resolved[], room: Room, inset = 
   }
 
   const m = me.box;
-  const W = room.widthIn;
-  const L = room.lengthIn;
+  const { W, L } = planSize(room);
 
   // Edge guides: any neighbour edge within a hair of one of ours, on either axis.
   const seen = new Set<string>();
@@ -164,9 +156,10 @@ export function dragFeedback(me: Resolved, all: Resolved[], room: Room, inset = 
   const dirs: Dir[] = ['west', 'east', 'north', 'south'];
   for (const dir of dirs) {
     const horizontal = dir === 'east' || dir === 'west';
-    let best = dir === 'east' ? W - m.maxX : dir === 'west' ? m.minX : dir === 'south' ? L - m.maxY : m.minY;
+    const toWall = clearToWall(room, m, dir);
+    let best = toWall ? toWall.gap : Infinity;
     let to: Gap['to'] = 'wall';
-    let lane = horizontal ? cy : cx;
+    let lane = toWall ? toWall.lane : horizontal ? cy : cx;
     for (const o of others) {
       if (!blocks(me, o)) continue;
       const b = o.box;
@@ -178,7 +171,7 @@ export function dragFeedback(me: Resolved, all: Resolved[], room: Room, inset = 
       to = 'item';
       lane = horizontal ? (Math.max(m.minY, b.minY) + Math.min(m.maxY, b.maxY)) / 2 : (Math.max(m.minX, b.minX) + Math.min(m.maxX, b.maxX)) / 2;
     }
-    if (best <= MIN_GAP) continue;
+    if (best <= MIN_GAP || !Number.isFinite(best)) continue;
     const seg: Seg =
       dir === 'east'
         ? { x1: m.maxX, y1: lane, x2: m.maxX + best, y2: lane }

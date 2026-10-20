@@ -10,11 +10,14 @@ import { DRAIN_R, farmhouseBowl } from './sinkGeo';
 import { farmhouseFronts, farmhouseSink } from '../../lib/fronts';
 import { boxGeo, canopy } from './geom3d';
 import { GltfModel, slotMaterials } from './gltf';
+import { MirrorModel, ShowerModel, ToiletModel, TubModel, VanityModel } from './bathModels';
 
 export interface ModelProps {
   r: Resolved;
   finish: Finish;
   ctx: SceneCtx;
+  /** Which ends are open to the room ([left, right], see geometry.openEnds): where crown moulding returns. */
+  ends?: [boolean, boolean];
 }
 
 function doubleSided(f: Finish) {
@@ -23,6 +26,34 @@ function doubleSided(f: Finish) {
     m.side = THREE.DoubleSide;
     return m;
   });
+}
+
+/**
+ * Crown moulding along a cabinet's top: across the front and back along both sides, in the cabinet
+ * finish. Flat is a plain 3″ band; cove steps out in two parts. Left off when it would hit the ceiling.
+ */
+function Crown({ w, d, top, finish, ctx, ends = [true, true] }: { w: number; d: number; top: number; finish: Finish; ctx: SceneCtx; ends?: [boolean, boolean] }) {
+  if (ctx.crown === 'none') return null;
+  const h = ctx.crown === 'cove' ? 3.5 : 3;
+  if (top + h > ctx.ceiling + 0.01) return null;
+  const mat = finishMaterial(finish);
+  const proj = ctx.crown === 'cove' ? 2.25 : 1.25;
+  const band = (y0: number, bh: number, p: number, key: string) => (
+    <group key={key}>
+      {/* The front band runs to each open end's return and stops flush where a neighbour carries on. */}
+      <Box size={[w + (ends[0] ? p : 0) + (ends[1] ? p : 0), bh, p]} pos={[((ends[1] ? p : 0) - (ends[0] ? p : 0)) / 2, y0 + bh / 2, d / 2 + p / 2]} mat={mat} />
+      {ends[0] && <Box size={[p, bh, d]} pos={[-w / 2 - p / 2, y0 + bh / 2, 0]} mat={mat} />}
+      {ends[1] && <Box size={[p, bh, d]} pos={[w / 2 + p / 2, y0 + bh / 2, 0]} mat={mat} />}
+    </group>
+  );
+  return ctx.crown === 'cove' ? (
+    <group>
+      {band(top, 1.6, 0.9, 'a')}
+      {band(top + 1.6, h - 1.6, proj, 'b')}
+    </group>
+  ) : (
+    band(top, h, proj, 'a')
+  );
 }
 
 function Toe({ w, d }: { w: number; d: number }) {
@@ -34,7 +65,7 @@ function BaseModel({ r, finish, ctx }: ModelProps) {
   const fronts = baseFronts(w, product.variant);
   return (
     <group>
-      <Toe w={w} d={d} />
+      {product.variant !== 'panel' && <Toe w={w} d={d} />}
       <Box size={[w, 30.5, d - 0.1]} pos={[0, 19.25, 0]} mat={finishMaterial(finish)} />
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
@@ -63,20 +94,23 @@ function CornerModel({ r, finish, ctx }: ModelProps) {
   );
 }
 
-function WallCabModel({ r, finish, ctx }: ModelProps) {
+function WallCabModel({ r, finish, ctx, ends }: ModelProps) {
   const { w, d, product } = r;
   const y0 = product.elevationIn;
   const h = product.heightIn;
   const body = finishMaterial(finish);
   const glass = product.variant === 'glass';
   const bridge = product.variant === 'bridge';
+  const plain = product.variant === 'filler' || product.variant === 'panel';
   const doors = w > 21 ? 2 : 1;
   const fronts: FrontSpec[] = [];
-  for (let i = 0; i < doors; i++) {
-    const dw = w / doors;
-    const pullX = doors === 2 ? (i === 0 ? -2 : 2) : w / 2 - 2.2;
-    fronts.push({ x: -w / 2 + dw * (i + 0.5), y: y0, w: dw, h, glass, pull: { dir: 'v', x: pullX, y: bridge ? y0 + 3.5 : y0 + 4.5, len: bridge ? 4 : 5 } });
-  }
+  if (plain) fronts.push({ x: 0, y: y0, w, h, pull: null });
+  else
+    for (let i = 0; i < doors; i++) {
+      const dw = w / doors;
+      const pullX = doors === 2 ? (i === 0 ? -2 : 2) : w / 2 - 2.2;
+      fronts.push({ x: -w / 2 + dw * (i + 0.5), y: y0, w: dw, h, glass, pull: { dir: 'v', x: pullX, y: bridge ? y0 + 3.5 : y0 + 4.5, len: bridge ? 4 : 5 } });
+    }
   const rng = mulberry32(hashString(r.item.id));
   return (
     <group>
@@ -113,12 +147,13 @@ function WallCabModel({ r, finish, ctx }: ModelProps) {
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
-      {!bridge && <Box size={[w - 3, 0.25, 0.6]} pos={[0, y0 - 0.12, d / 2 - 2]} mat={M.led()} cast={false} />}
+      {!bridge && !plain && <Box size={[w - 3, 0.25, 0.6]} pos={[0, y0 - 0.12, d / 2 - 2]} mat={M.led()} cast={false} />}
+      <Crown w={w} d={d} top={y0 + h} finish={finish} ctx={ctx} ends={ends} />
     </group>
   );
 }
 
-function TallModel({ r, finish, ctx }: ModelProps) {
+function TallModel({ r, finish, ctx, ends }: ModelProps) {
   const { w, d } = r;
   const doors = w > 21 ? 2 : 1;
   const fronts: FrontSpec[] = [];
@@ -139,6 +174,7 @@ function TallModel({ r, finish, ctx }: ModelProps) {
       {fronts.map((f, i) => (
         <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       ))}
+      <Crown w={w} d={d} top={84} finish={finish} ctx={ctx} ends={ends} />
     </group>
   );
 }
@@ -155,7 +191,7 @@ function OvenFront({ w, y0, y1, z, mat, trim }: { w: number; y0: number; y1: num
   );
 }
 
-function OvenTowerModel({ r, finish, ctx }: ModelProps) {
+function OvenTowerModel({ r, finish, ctx, ends }: ModelProps) {
   const { w, d } = r;
   const cab = ctx.cabinet;
   const steel = finishMaterial(finish);
@@ -168,6 +204,7 @@ function OvenTowerModel({ r, finish, ctx }: ModelProps) {
       <OvenFront w={w - 1.5} y0={18.2} y1={43.8} z={d / 2} mat={steel} trim={trim} />
       <OvenFront w={w - 1.5} y0={44.2} y1={69.8} z={d / 2} mat={steel} trim={trim} />
       <Front f={{ x: 0, y: 70, w, h: 14, pull: { dir: 'h', x: 0, y: 73, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+      <Crown w={w} d={d} top={84} finish={cab} ctx={ctx} ends={ends} />
     </group>
   );
 }
@@ -848,6 +885,16 @@ export function proceduralModel(p: ModelProps): JSX.Element | null {
       return <RugModel {...p} />;
     case 'plant':
       return <PlantModel {...p} />;
+    case 'vanity':
+      return <VanityModel {...p} />;
+    case 'toilet':
+      return <ToiletModel {...p} />;
+    case 'tub':
+      return <TubModel {...p} />;
+    case 'shower':
+      return <ShowerModel {...p} />;
+    case 'mirror':
+      return <MirrorModel {...p} />;
     default:
       return null;
   }

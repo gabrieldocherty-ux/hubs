@@ -1,0 +1,1574 @@
+{
+  "group": "retail-retailers-3-bath",
+  "checkedAt": "2026-10-19",
+  "products": [
+    {
+      "key": "vanity-art-chambery-36-white",
+      "brand": "Vanity Art",
+      "name": "Chambery 36 in. bathroom vanity in White with engineered marble top (VA5036-W)",
+      "line": "Chambery",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/vanity-art-chambery-36-inch-w-bathroom-vanity-in-white-with-engineered-marble-top-in-white/1001761573",
+          "sku": "1001761573",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/vanity-art-chambery-36-inch-w-bathroom-vanity-in-white-with-engineered-marble-top-in-white/1001761573"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "glacier-bay-lancaster-36-white",
+      "brand": "Glacier Bay",
+      "name": "Lancaster 36 in. bathroom vanity in White with cultured marble sink top",
+      "line": "Lancaster",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/glacier-bay-lancaster-36-inch-w-bathroom-vanity-in-white-with-cultured-marble-sink-top/1000736392",
+          "sku": "1000736392",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/glacier-bay-lancaster-36-inch-w-bathroom-vanity-in-white-with-cultured-marble-sink-top/1000736392"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "glacier-bay-addison-36-white",
+      "brand": "Glacier Bay",
+      "name": "Addison 36 in. bathroom vanity in White with cultured marble sink top",
+      "line": "Addison",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/glacier-bay-addison-36-inch-w-bathroom-vanity-in-white-with-cultured-marble-sink-top/1001842208",
+          "sku": "1001842208",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/glacier-bay-addison-36-inch-w-bathroom-vanity-in-white-with-cultured-marble-sink-top/1001842208"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Top predrilled for a 4 in. centreset faucet."
+    },
+    {
+      "key": "hdc-farley-36-natural-wood",
+      "brand": "Home Decorators Collection",
+      "name": "Farley 36 in. vanity in natural wood with white artificial stone top",
+      "line": "Farley",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Natural Wood"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/home-decorators-collection-farley-36-inch-vanity-with-white-artificial-stone-vanity-top-in-natural-wood-finish/1001581524",
+          "sku": "1001581524",
+          "priceCad": 598,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/home-decorators-collection-farley-36-inch-vanity-with-white-artificial-stone-vanity-top-in-natural-wood-finish/1001581524"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Undermount ceramic sink."
+    },
+    {
+      "key": "glacier-bay-36-wall-mounted-white",
+      "brand": "Glacier Bay",
+      "name": "36 in. 2-drawer wall-mounted bathroom vanity in White with integral ceramic top",
+      "line": null,
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 36,
+      "depthIn": 18,
+      "heightIn": 22,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/glacier-bay-36-inch-w-x-22-inch-h-x-18-inch-d-2-drawer-wall-mounted-bathroom-white-wood-vanity-with-integral-single-sink-ceramic-top/1001631292",
+          "sku": "1001631292",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/glacier-bay-36-inch-w-x-22-inch-h-x-18-inch-d-2-drawer-wall-mounted-bathroom-white-wood-vanity-with-integral-single-sink-ceramic-top/1001631292"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "gef-willow-30-white",
+      "brand": "GEF",
+      "name": "Willow 30 in. White single-sink bathroom vanity with marble countertop (CM30W-V-CTCT)",
+      "line": "Willow",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 30,
+      "depthIn": 22,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/gef-willow-30-in-white-single-sink-bathroom-vanity-with-marble-countertop-cm30w-v-ctct/330920046",
+          "sku": "330920046",
+          "priceCad": 1099,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/gef-willow-30-in-white-single-sink-bathroom-vanity-with-marble-countertop-cm30w-v-ctct/330920046"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. The listing names the top quartz in one place and marble in another."
+    },
+    {
+      "key": "diamond-now-waverly-30-grey",
+      "brand": "Diamond Now",
+      "name": "Waverly 30 in. bathroom vanity with sink, Grey",
+      "line": "Waverly",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 30,
+      "depthIn": 18,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Grey"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/diamond-now-waverly-bathroom-vanity-with-sink-grey-30-in/13847777",
+          "sku": "13847777",
+          "priceCad": 499,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/diamond-now-waverly-bathroom-vanity-with-sink-grey-30-in/13847777"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. One door, three drawers, white cultured marble top."
+    },
+    {
+      "key": "valu-ohan-30-white",
+      "brand": "VALU+",
+      "name": "Ohan 30 in. shaker vanity with 2 doors, White (RNW022730P2-WH)",
+      "line": "Ohan",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/valu-ohan-30-in-vanity-shaker-style-with-2-doors-white-rnw022730p2-wh/40975015",
+          "sku": "40975015",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/valu-ohan-30-in-vanity-shaker-style-with-2-doors-white-rnw022730p2-wh/40975015"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "cutler-kato-30-organic",
+      "brand": "Cutler Kitchen & Bath",
+      "name": "Kato 30 in. wall mounted bathroom vanity in Organic with cultured marble top",
+      "line": "Kato",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 30,
+      "depthIn": 19,
+      "heightIn": 20,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Organic Wood"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cutler-kitchen-bath-kato-30-inch-w-x-19-inch-d-x-20-inch-h-wall-mounted-bathroom-vanity-in-organic-with-cultured-marble-top-and-integrated-sink/1001632023",
+          "sku": "1001632023",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cutler-kitchen-bath-kato-30-inch-w-x-19-inch-d-x-20-inch-h-wall-mounted-bathroom-vanity-in-organic-with-cultured-marble-top-and-integrated-sink/1001632023"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Made in Canada."
+    },
+    {
+      "key": "cutler-milano-30-blue",
+      "brand": "Cutler Kitchen & Bath",
+      "name": "Milano 30 in. wall mounted bathroom vanity in Blue with cultured marble top",
+      "line": "Milano",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 30,
+      "depthIn": 18,
+      "heightIn": 20,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Blue"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cutler-kitchen-bath-milano-30-inch-w-x-18-inch-d-x-20-inch-h-wall-mounted-bathroom-vanity-in-blue-with-cultured-marble-top-and-integrated-sink/1001596374",
+          "sku": "1001596374",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cutler-kitchen-bath-milano-30-inch-w-x-18-inch-d-x-20-inch-h-wall-mounted-bathroom-vanity-in-blue-with-cultured-marble-top-and-integrated-sink/1001596374"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "fresca-elliot-30-vanilla-oak",
+      "brand": "Fresca",
+      "name": "Elliot 30 in. wall mount floating bathroom vanity in Vanilla Oak with quartz top",
+      "line": "Elliot",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Vanilla Oak"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/fresca-elliot-30-in-wall-mount-floating-bathroom-vanity-in-vanilla-oak-w-quartz-top-faucet-not-included/1001902153",
+          "sku": "1001902153",
+          "priceCad": 1453,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/fresca-elliot-30-in-wall-mount-floating-bathroom-vanity-in-vanilla-oak-w-quartz-top-faucet-not-included/1001902153"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "hdc-ellia-60-oak-double",
+      "brand": "Home Decorators Collection",
+      "name": "Ellia 60 in. double sink bathroom vanity in Oak with white engineered stone top",
+      "line": "Ellia",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 60,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Oak"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/home-decorators-collection-ellia-60-inch-w-4-door-3-drawer-oak-wood-bathroom-vanity-double-undermount-sinks-with-white-engineered-stone-top/1001779318",
+          "sku": "1001779318",
+          "priceCad": 1349,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/home-decorators-collection-ellia-60-inch-w-4-door-3-drawer-oak-wood-bathroom-vanity-double-undermount-sinks-with-white-engineered-stone-top/1001779318"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "vanity-art-savona-60-grey-double",
+      "brand": "Vanity Art",
+      "name": "Savona 60 in. double basin vanity in Grey with marble top",
+      "line": "Savona",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 60,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Grey"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/vanity-art-savona-60-inch-vanity-in-grey-with-double-basin-vanity-top-in-white-and-grey-marble-and-mirror/1001239610",
+          "sku": "1001239610",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/vanity-art-savona-60-inch-vanity-in-grey-with-double-basin-vanity-top-in-white-and-grey-marble-and-mirror/1001239610"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "vanity-art-avignon-60-tan-double",
+      "brand": "Vanity Art",
+      "name": "Avignon 60 in. double sink freestanding vanity in Tan with black limestone top",
+      "line": "Avignon",
+      "upc": null,
+      "category": "bath",
+      "kind": "vanity",
+      "widthIn": 60,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Tan"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/vanity-art-60-inch-w-double-sink-freestanding-bathroom-vanity-in-tan-with-black-lime-marble-top/1001854292",
+          "sku": "1001854292",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/vanity-art-60-inch-w-double-sink-freestanding-bathroom-vanity-in-tan-with-black-lime-marble-top/1001854292"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "toto-entrada-2pc-cotton",
+      "brand": "TOTO",
+      "name": "Entrada 2-piece elongated 1.28 GPF universal height toilet, Cotton White",
+      "line": "Entrada",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Cotton White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/toto-entrada-2-piece-elongated-1-28-gpf-universal-height-toilet-cotton-white/1001189111",
+          "sku": "1001189111",
+          "priceCad": 418,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/toto-entrada-2-piece-elongated-1-28-gpf-universal-height-toilet-cotton-white/1001189111"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "toto-drake-2pc-128-cotton",
+      "brand": "TOTO",
+      "name": "Drake 2-piece 1.28 GPF elongated toilet, Cotton White",
+      "line": "Drake",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Cotton White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/toto-drake-2-piece-1-28-gpf-single-flush-elongated-toilet-in-cotton-white/1001708055",
+          "sku": "1001708055",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/toto-drake-2-piece-1-28-gpf-single-flush-elongated-toilet-in-cotton-white/1001708055"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Listed prices vary between pages."
+    },
+    {
+      "key": "toto-drake-2pc-16-cotton",
+      "brand": "TOTO",
+      "name": "Drake 2-piece 1.6 GPF elongated toilet, Cotton White",
+      "line": "Drake",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Cotton White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/toto-drake-2-piece-1-6-gpf-single-flush-elongated-toilet-in-cotton-white/1001708057",
+          "sku": "1001708057",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/toto-drake-2-piece-1-6-gpf-single-flush-elongated-toilet-in-cotton-white/1001708057"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "am-std-mainstream-2pc-chair",
+      "brand": "American Standard",
+      "name": "Mainstream 4.8 L chair height elongated 2-piece toilet, White, with slow close seat (729AA104.020)",
+      "line": "Mainstream",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/american-standard-mainstream-4-8l-chair-height-elongated-2-piece-toilet-in-white-with-a-slow-close-toilet-seat/1001877077",
+          "sku": "1001877077",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/american-standard-mainstream-4-8l-chair-height-elongated-2-piece-toilet-in-white-with-a-slow-close-toilet-seat/1001877077"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "am-std-decor-2pc-concealed",
+      "brand": "American Standard",
+      "name": "Decor 2-piece 4.8 LPF chair height concealed elongated toilet, White",
+      "line": "Decor",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/american-standard-decor-2-piece-4-8-lpf-single-flush-chair-height-concealed-elongated-toilet-in-white/1001645520",
+          "sku": "1001645520",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/american-standard-decor-2-piece-4-8-lpf-single-flush-chair-height-concealed-elongated-toilet-in-white/1001645520"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "swiss-madison-ivy-1pc",
+      "brand": "Swiss Madison",
+      "name": "Ivy one-piece 0.8/1.28 GPF dual flush elongated toilet, White",
+      "line": "Ivy",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/swiss-madison-ivy-1-piece-0-8-1-28-gpf-dual-flush-elongated-toilet-in-white/1001691748",
+          "sku": "1001691748",
+          "priceCad": 519,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/swiss-madison-ivy-1-piece-0-8-1-28-gpf-dual-flush-elongated-toilet-in-white/1001691748"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "swiss-madison-chateau-1pc",
+      "brand": "Swiss Madison",
+      "name": "Chateau one-piece elongated toilet, dual flush, White",
+      "line": "Chateau",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/swiss-madison-chateau-one-piece-elongated-toilet-dual-flush/1001639841",
+          "sku": "1001639841",
+          "priceCad": 379,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/swiss-madison-chateau-one-piece-elongated-toilet-dual-flush/1001639841"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. 12 in. rough-in."
+    },
+    {
+      "key": "swiss-madison-st-tropez-1pc-side",
+      "brand": "Swiss Madison",
+      "name": "St. Tropez one-piece 1.28 GPF elongated toilet, side flush, White",
+      "line": "St. Tropez",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/swiss-madison-st-tropez-1-28-gpf-one-piece-elongated-toilet-side-flush-in-white/1001777535",
+          "sku": "1001777535",
+          "priceCad": 722,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/swiss-madison-st-tropez-1-28-gpf-one-piece-elongated-toilet-side-flush-in-white/1001777535"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "foremost-aria-wall-hung-white",
+      "brand": "Foremost",
+      "name": "Aria concealed tank wall hung dual flush toilet with white push button",
+      "line": "Aria",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/foremost-concealed-tank-wall-hung-dual-flush-toilet-with-white-push-button/1001200193",
+          "sku": "1001200193",
+          "priceCad": 875,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/foremost-concealed-tank-wall-hung-dual-flush-toilet-with-white-push-button/1001200193"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Complete kit: bowl, in-wall tank carrier, push plate; seat height adjustable 14.5 to 17 in."
+    },
+    {
+      "key": "foremost-aria-wall-hung-chrome",
+      "brand": "Foremost",
+      "name": "Aria concealed tank wall hung dual flush toilet with chrome push button",
+      "line": "Aria",
+      "upc": null,
+      "category": "bath",
+      "kind": "toilet",
+      "widthIn": null,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/foremost-concealed-tank-wall-hung-dual-flush-toilet-with-chrome-push-button/1001200194",
+          "sku": "1001200194",
+          "priceCad": 955,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/foremost-concealed-tank-wall-hung-dual-flush-toilet-with-chrome-push-button/1001200194"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "maax-bosca-access-60x30-hd",
+      "brand": "MAAX",
+      "name": "Bosca Access 60 x 30 in. acrylic alcove bathtub with anti-slip floor, left drain",
+      "line": "Bosca",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": 30,
+      "heightIn": 16,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/maax-bosca-access-60-inch-l-x-30-inch-w-x-16-inch-h-acrylic-alcove-bathtub-with-certified-anti-slip-floor-above-the-floor-rough-left-drain/1001588065",
+          "sku": "1001588065",
+          "priceCad": 498,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/maax-bosca-access-60-inch-l-x-30-inch-w-x-16-inch-h-acrylic-alcove-bathtub-with-certified-anti-slip-floor-above-the-floor-rough-left-drain/1001588065"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "kohler-archer-60-left",
+      "brand": "KOHLER",
+      "name": "Archer 60 in. acrylic left drain rectangular alcove bathtub, White",
+      "line": "Archer",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": null,
+      "heightIn": 19,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kohler-archer-60-inch-acrylic-left-drain-rectangular-alcove-non-whirlpool-bathtub-in-white/1000705021",
+          "sku": "1000705021",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kohler-archer-60-inch-acrylic-left-drain-rectangular-alcove-non-whirlpool-bathtub-in-white/1000705021"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. 19 in. is the step-over height."
+    },
+    {
+      "key": "streamline-nal-5260-60x30",
+      "brand": "Streamline",
+      "name": "NAL-5260-BGL 60 x 30 in. acrylic alcove bathtub, right drain, glossy white",
+      "line": null,
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": 30,
+      "heightIn": 19.3,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Glossy White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/streamline-nal-5260-bgl-60-in-x-30-in-acrylic-right-hand-drain-alcove-bathtub-in-glossy-white-with-external-drain-in-brushed-gold/1001889653",
+          "sku": "1001889653",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/streamline-nal-5260-bgl-60-in-x-30-in-acrylic-right-hand-drain-alcove-bathtub-in-glossy-white-with-external-drain-in-brushed-gold/1001889653"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "agua-canada-brio-60-right",
+      "brand": "AGUA CANADA",
+      "name": "Brio 60 in. acrylic right alcove square bathtub, glossy white",
+      "line": "Brio",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Glossy White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/agua-canada-brio-60-inch-acrylic-right-alcove-square-bathtub-with-overflow-in-glossy-white/1001886322",
+          "sku": "1001886322",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/agua-canada-brio-60-inch-acrylic-right-alcove-square-bathtub-with-overflow-in-glossy-white/1001886322"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "maax-bosca-afr-60x30-left",
+      "brand": "MAAX",
+      "name": "Bosca AFR 60 x 30 in. alcove bathtub with left drain",
+      "line": "Bosca",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": 30,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/maax-bosca-afr-60-x-30-in-alcove-bathtub-with-left-drain/330054086",
+          "sku": "330054086",
+          "priceCad": 717,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/maax-bosca-afr-60-x-30-in-alcove-bathtub-with-left-drain/330054086"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "maax-newtown-60x30-right",
+      "brand": "MAAX",
+      "name": "Newtown acrylic bathtub 60 x 30 in., right-side drain, White (105454000001002)",
+      "line": "Newtown",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": 30,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/maax-newtown-acrylic-bathtub-60-in-x-30-in-right-side-drain-white-105454000001002/06385181",
+          "sku": "06385181",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/maax-newtown-acrylic-bathtub-60-in-x-30-in-right-side-drain-white-105454000001002/06385181"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "maax-corinthia-ii-60x30-right",
+      "brand": "MAAX",
+      "name": "Corinthia II 60 x 30 in. white acrylic alcove right-hand drain bathtub",
+      "line": "Corinthia",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 60,
+      "depthIn": 30,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "RONA",
+          "url": "https://www.rona.ca/en/product/maax-corinthia-ii-60-x-30-in-white-acrylic-alcove-right-hand-drain-bathtub/332037460",
+          "sku": "332037460",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.rona.ca/en/product/maax-corinthia-ii-60-x-30-in-white-acrylic-alcove-right-hand-drain-bathtub/332037460"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "vanity-art-domme-67",
+      "brand": "Vanity Art",
+      "name": "Domme 67 x 32.3 in. acrylic freestanding soaking bathtub, centre drain, Pure White",
+      "line": "Domme",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 67,
+      "depthIn": 32.3,
+      "heightIn": 22.8,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Pure White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/vanity-art-domme-5-6-ft-freestanding-oval-soaker-bathtub-with-centre-drain-in-pure-white/1001822835",
+          "sku": "1001822835",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/vanity-art-domme-5-6-ft-freestanding-oval-soaker-bathtub-with-centre-drain-in-pure-white/1001822835"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "streamline-n581bgm-67",
+      "brand": "Streamline",
+      "name": "N581BGM 67 in. freestanding oval acrylic bathtub, glossy white, centre drain",
+      "line": null,
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 67,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Glossy White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/streamline-n581bgm-67-inch-freestanding-oval-acrylic-bathtub-and-tray-in-glossy-white-with-centre-drain/1001752152",
+          "sku": "1001752152",
+          "priceCad": 991,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/streamline-n581bgm-67-inch-freestanding-oval-acrylic-bathtub-and-tray-in-glossy-white-with-centre-drain/1001752152"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "maax-cariso-67",
+      "brand": "MAAX",
+      "name": "Cariso 67 x 34 x 23 in. acrylic oval freestanding bathtub, White",
+      "line": "Cariso",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 67,
+      "depthIn": 34,
+      "heightIn": 23,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/maax-cariso-67-in-l-x-34-in-w-x-23-in-h-1-piece-acrylic-oval-centre-drain-freestanding-bathtub-in-white-with-14-inch-soaking-depth/1001775568",
+          "sku": "1001775568",
+          "priceCad": 1298,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/maax-cariso-67-in-l-x-34-in-w-x-23-in-h-1-piece-acrylic-oval-centre-drain-freestanding-bathtub-in-white-with-14-inch-soaking-depth/1001775568"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "jade-bath-kayden-67",
+      "brand": "Jade Bath",
+      "name": "Kayden 67 in. acrylic oval freestanding soaker bathtub, White",
+      "line": "Kayden",
+      "upc": null,
+      "category": "bath",
+      "kind": "tub",
+      "widthIn": 67,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/jade-bath-kayden-67-inch-acrylic-oval-freestanding-soaker-bathtub-in-white/1000758516",
+          "sku": "1000758516",
+          "priceCad": 1291,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/jade-bath-kayden-67-inch-acrylic-oval-freestanding-soaker-bathtub-in-white/1000758516"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "dreamline-cornerview-36-black",
+      "brand": "DreamLine",
+      "name": "Cornerview 36 x 36 in. square corner shower kit, white base, matte black sliding door",
+      "line": "Cornerview",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": 74.75,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/dreamline-cornerview-36-in-d-x-36-in-w-x-74-75-in-h-square-corner-shower-kit-enclosure-with-white-base-corner-drain-clear-glass-sliding-door-in-matte-black-no-shower-wall-/1001606572",
+          "sku": "1001606572",
+          "priceCad": 1509,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/dreamline-cornerview-36-in-d-x-36-in-w-x-74-75-in-h-square-corner-shower-kit-enclosure-with-white-base-corner-drain-clear-glass-sliding-door-in-matte-black-no-shower-wall-/1001606572"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "dreamline-prism-lux-36-chrome",
+      "brand": "DreamLine",
+      "name": "Prism Lux 36 x 36 in. neo-angle corner shower kit, white base, chrome pivot door",
+      "line": "Prism",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": 74.75,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Chrome"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/dreamline-prism-lux-36-in-d-x-36-in-w-x-74-75-in-h-neo-angle-corner-shower-kit-enclosure-with-white-base-corner-drain-clear-glass-pivot-door-in-chrome-no-shower-wall/1001193525",
+          "sku": "1001193525",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/dreamline-prism-lux-36-in-d-x-36-in-w-x-74-75-in-h-neo-angle-corner-shower-kit-enclosure-with-white-base-corner-drain-clear-glass-pivot-door-in-chrome-no-shower-wall/1001193525"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Neo-angle: drawn as a square corner shower."
+    },
+    {
+      "key": "maax-scarlet-36-corner-black",
+      "brand": "MAAX",
+      "name": "Scarlet 36 x 36 x 75 in. corner shower kit, black base, sliding door",
+      "line": "Scarlet",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": 75,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/maax-scarlet-36l-x-36w-x-75h-in-2-in-1-corner-shower-kit-shower-enclosure-with-corner-drain-shower-base-and-glass-shower-door-in-black-no-wall-/1001711792",
+          "sku": "1001711792",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/maax-scarlet-36l-x-36w-x-75h-in-2-in-1-corner-shower-kit-shower-enclosure-with-corner-drain-shower-base-and-glass-shower-door-in-black-no-wall-/1001711792"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "ove-breeze-36-round-corner",
+      "brand": "OVE Decors",
+      "name": "Breeze 36 x 36 in. round corner shower kit, white and chrome",
+      "line": "Breeze",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 36,
+      "depthIn": 36,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Chrome"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/ove-decors-breeze-36-inch-x-36-inch-x-36-inch-round-corner-shower-kit-in-white-and-chrome-with-corner-drain/1001105620",
+          "sku": "1001105620",
+          "priceCad": 1142,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/ove-decors-breeze-36-inch-x-36-inch-x-36-inch-round-corner-shower-kit-in-white-and-chrome-with-corner-drain/1001105620"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Round front: drawn as a square corner shower. Includes acrylic walls."
+    },
+    {
+      "key": "dreamline-visions-32x60-nickel",
+      "brand": "DreamLine",
+      "name": "Visions 32 x 60 in. alcove shower kit, white base, left drain, brushed nickel sliding door",
+      "line": "Visions",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 60,
+      "depthIn": 32,
+      "heightIn": 74.75,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Brushed Nickel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/dreamline-visions-32-in-d-x-60-in-w-x-74-75-in-h-alcove-shower-kit-with-white-acrylic-base-left-drain-clear-glass-sliding-door-in-brushed-nickel-no-shower-wall/1001038257",
+          "sku": "1001038257",
+          "priceCad": 989.4,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/dreamline-visions-32-in-d-x-60-in-w-x-74-75-in-h-alcove-shower-kit-with-white-acrylic-base-left-drain-clear-glass-sliding-door-in-brushed-nickel-no-shower-wall/1001038257"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "dreamline-encore-36x60-black",
+      "brand": "DreamLine",
+      "name": "Encore 36 x 60 in. alcove shower kit, white base, right drain, matte black bypass door",
+      "line": "Encore",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 60,
+      "depthIn": 36,
+      "heightIn": 78.75,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/dreamline-encore-36-in-d-x-60-in-w-x-78-75-in-h-alcove-shower-kit-with-white-acrylic-base-right-drain-clear-glass-bypass-sliding-door-in-matte-black-no-shower-wall-/1001192966",
+          "sku": "1001192966",
+          "priceCad": 2098,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/dreamline-encore-36-in-d-x-60-in-w-x-78-75-in-h-alcove-shower-kit-with-white-acrylic-base-right-drain-clear-glass-bypass-sliding-door-in-matte-black-no-shower-wall-/1001192966"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "dreamline-infinity-z-32x60-black",
+      "brand": "DreamLine",
+      "name": "Infinity-Z 32 x 60 in. alcove shower kit, white base, centre drain, matte black sliding door",
+      "line": "Infinity-Z",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 60,
+      "depthIn": 32,
+      "heightIn": 74.75,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/dreamline-infinity-z-32-in-d-x-60-in-w-x-74-75-in-h-alcove-shower-kit-with-white-acrylic-base-centre-drain-clear-glass-sliding-door-in-matte-black-no-shower-wall-/1001682824",
+          "sku": "1001682824",
+          "priceCad": 1629,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/dreamline-infinity-z-32-in-d-x-60-in-w-x-74-75-in-h-alcove-shower-kit-with-white-acrylic-base-centre-drain-clear-glass-sliding-door-in-matte-black-no-shower-wall-/1001682824"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "glass-warehouse-vela-60-panel-chrome",
+      "brand": "Glass Warehouse",
+      "name": "Vela 60 x 78 in. single fixed panel frameless shower screen, walk-in",
+      "line": "Vela",
+      "upc": null,
+      "category": "bath",
+      "kind": "shower",
+      "widthIn": 60,
+      "depthIn": null,
+      "heightIn": 78,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Chrome"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/glass-warehouse-vela-60-in-w-x-78-in-h-single-fixed-panel-frameless-shower-door-in-polished-brass-without-handle/1001802700",
+          "sku": "1001802700",
+          "priceCad": 765,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/glass-warehouse-vela-60-in-w-x-78-in-h-single-fixed-panel-frameless-shower-door-in-polished-brass-without-handle/1001802700"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate. Panel only, no base: drawn as a walk-in shower at the typical depth. Also sold in brushed nickel, matte black, polished brass."
+    },
+    {
+      "key": "deco-mirror-spectrum-30x36",
+      "brand": "Deco Mirror",
+      "name": "Spectrum 30 x 36 in. wall mirror, Chrome",
+      "line": "Spectrum",
+      "upc": null,
+      "category": "bath",
+      "kind": "mirror",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": 36,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Chrome"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/deco-mirror-30-in-x-36-in-spectrum-chrome-wall-mirror/1001530476",
+          "sku": "1001530476",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/deco-mirror-30-in-x-36-in-spectrum-chrome-wall-mirror/1001530476"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "mirrorize-round-34-black",
+      "brand": "MIRRORIZE",
+      "name": "Round black metal framed vanity mirror, 34 in. diameter",
+      "line": null,
+      "upc": null,
+      "category": "bath",
+      "kind": "mirror",
+      "widthIn": 34,
+      "depthIn": null,
+      "heightIn": 34,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/mirrorize-round-black-bathroom-metal-framed-vanity-wall-mirror-34-in-diameter/1001600369",
+          "sku": "1001600369",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/mirrorize-round-black-bathroom-metal-framed-vanity-wall-mirror-34-in-diameter/1001600369"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "glacier-bay-4582-medicine-24x30",
+      "brand": "Glacier Bay",
+      "name": "24 x 30 in. frameless recessed or surface-mount medicine cabinet with beveled mirror (4582)",
+      "line": null,
+      "upc": null,
+      "category": "bath",
+      "kind": "medicine-cabinet",
+      "widthIn": 24,
+      "depthIn": 5,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Frameless"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/glacier-bay-24-inch-w-x-30-inch-h-x-5-inch-d-frameless-recessed-or-surface-mount-bathroom-medicine-cabinet-with-beveled-mirror/1000675539",
+          "sku": "1000675539",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/glacier-bay-24-inch-w-x-30-inch-h-x-5-inch-d-frameless-recessed-or-surface-mount-bathroom-medicine-cabinet-with-beveled-mirror/1000675539"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "glacier-bay-4450-medicine-nickel",
+      "brand": "Glacier Bay",
+      "name": "24 x 30 in. framed recessed or surface-mount medicine cabinet, Brushed Nickel (4450)",
+      "line": null,
+      "upc": null,
+      "category": "bath",
+      "kind": "medicine-cabinet",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Brushed Nickel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/glacier-bay-24-inch-w-x-30-inch-h-framed-recessed-or-surface-mount-bathroom-medicine-cabinet-in-brushed-nickel/1000675540",
+          "sku": "1000675540",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/glacier-bay-24-inch-w-x-30-inch-h-framed-recessed-or-surface-mount-bathroom-medicine-cabinet-in-brushed-nickel/1000675540"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "kohler-verdera-medicine-24x30",
+      "brand": "KOHLER",
+      "name": "Verdera 24 x 30 in. recessed or surface-mount medicine cabinet with magnifying mirror",
+      "line": "Verdera",
+      "upc": null,
+      "category": "bath",
+      "kind": "medicine-cabinet",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Mirror"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/kohler-verdera-24-inch-w-x-30-inch-h-aluminum-medicine-cabinet-with-magnifying-mirror-and-slow-close-door/1001158471",
+          "sku": "1001158471",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/kohler-verdera-24-inch-w-x-30-inch-h-aluminum-medicine-cabinet-with-magnifying-mirror-and-slow-close-door/1001158471"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    },
+    {
+      "key": "aquadom-royale-basic-24x30",
+      "brand": "Aquadom",
+      "name": "Royale Basic 24 x 30 in. LED medicine cabinet, one door, left hinge (RB-2430L)",
+      "line": "Royale",
+      "upc": null,
+      "category": "bath",
+      "kind": "medicine-cabinet",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": 30,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Mirror"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/aquadom-royale-basic-24-in-w-x-30-in-h-recessed-or-surface-mount-led-medicine-cabinet-one-door-left-hinge/1001562005",
+          "sku": "1001562005",
+          "priceCad": 669,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/aquadom-royale-basic-24-in-w-x-30-in-h-recessed-or-surface-mount-led-medicine-cabinet-one-door-left-hinge/1001562005"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Size from the title where it gave one; the rest is left null (drawn at the type's typical size). Finish swatch is approximate."
+    }
+  ]
+}

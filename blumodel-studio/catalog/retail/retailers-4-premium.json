@@ -1,0 +1,966 @@
+{
+  "group": "retail-retailers-4-premium",
+  "checkedAt": "2026-10-19",
+  "products": [
+    {
+      "key": "bosch-she53ce5n",
+      "brand": "Bosch",
+      "name": "300 Series 24 in. 46 dB front control dishwasher with third rack, Stainless Steel (SHE53CE5N)",
+      "line": "300 Series",
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-stainless-steel-tub-third-rack-she53ce5n-stainless-steel/17182310",
+          "sku": "17182310",
+          "priceCad": 949.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-stainless-steel-tub-third-rack-she53ce5n-stainless-steel/17182310"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-shx78cm5n",
+      "brand": "Bosch",
+      "name": "24 in. 42 dB built-in dishwasher with third rack, Stainless Steel (SHX78CM5N)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-shx78cm5n-stainless-steel/17109446",
+          "sku": "17109446",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-shx78cm5n-stainless-steel/17109446"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-shp78cm4n",
+      "brand": "Bosch",
+      "name": "24 in. 42 dB built-in dishwasher with third rack, Black Stainless (SHP78CM4N)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Black Stainless"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-shp78cm4n-black-stainless/17109445",
+          "sku": "17109445",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-shp78cm4n-black-stainless/17109445"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-she78cm5n",
+      "brand": "Bosch",
+      "name": "24 in. 42 dB built-in dishwasher with third rack, recessed handle, Stainless Steel (SHE78CM5N)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-she78cm5n-stainless-steel/17109451",
+          "sku": "17109451",
+          "priceCad": 2299.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-she78cm5n-stainless-steel/17109451"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-shx78dm5n",
+      "brand": "Bosch",
+      "name": "800 Series 24 in. 42 dB dishwasher with CrystalDry, Stainless (SHX78DM5N)",
+      "line": "800 Series",
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-24-42db-built-in-dishwasher-w-stainless-steel-tub-third-rack-shx78dm5n-stainless/19323913",
+          "sku": "19323913",
+          "priceCad": 2699.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-800-series-24-42db-built-in-dishwasher-w-stainless-steel-tub-third-rack-shx78dm5n-stainless/19323913"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "miele-g5006-scu-obsidian",
+      "brand": "Miele",
+      "name": "G 5006 SCU 24 in. 44 dB pre-finished dishwasher, Obsidian Black (G 5006 SCU OBS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Obsidian Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/miele-24-44-db-pre-finished-full-size-dishwasher-with-cutlery-tray-g-5006-scu-obsidian-black/15930984",
+          "sku": "15930984",
+          "priceCad": 1934.1,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/miele-24-44-db-pre-finished-full-size-dishwasher-with-cutlery-tray-g-5006-scu-obsidian-black/15930984"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "miele-g5006-scu-white",
+      "brand": "Miele",
+      "name": "G 5006 SCU 24 in. 44 dB pre-finished dishwasher, Brilliant White (G 5006 SCU BRW)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Brilliant White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/miele-g-5006-scu-pre-finished-full-size-dishwasher-with-cutlery-tray-brilliant-white-limited-time-free-5-year-warranty/15931159",
+          "sku": "15931159",
+          "priceCad": 1934.1,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/miele-g-5006-scu-pre-finished-full-size-dishwasher-with-cutlery-tray-brilliant-white-limited-time-free-5-year-warranty/15931159"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "miele-g5216-scu-stainless",
+      "brand": "Miele",
+      "name": "G 5216 SCU pre-finished dishwasher with 3D MultiFlex tray and AutoOpen drying, Stainless Steel",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/miele-g-5216-scu-pre-finished-full-size-dishwasher-with-3d-multiflex-cutlery-tray-and-autoopen-drying-stainless-steel/15930980",
+          "sku": "15930980",
+          "priceCad": 2384.1,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/miele-g-5216-scu-pre-finished-full-size-dishwasher-with-3d-multiflex-cutlery-tray-and-autoopen-drying-stainless-steel/15930980"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-cdt888p4vw2-matte-white",
+      "brand": "Café",
+      "name": "24 in. smart top control CustomFit dishwasher, 39 dBA, Matte White (CDT888P4VW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "dishwasher",
+      "widthIn": 24,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-24-inch-smart-top-control-customfit-dishwasher-with-stainless-tub-interior-led-lighting-and-ultrawash-in-matte-white-39-dba-energy-star-/1001876149",
+          "sku": "1001876149",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-24-inch-smart-top-control-customfit-dishwasher-with-stainless-tub-interior-led-lighting-and-ultrawash-in-matte-white-39-dba-energy-star-/1001876149"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-cwe23sp4mw2",
+      "brand": "Café",
+      "name": "36 in. 23.1 cu. ft. counter-depth French door refrigerator, Matte White (CWE23SP4MW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.75,
+      "depthIn": 28.75,
+      "heightIn": 69.88,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-36-inch-23-1-cu-ft-counter-depth-french-door-refrigerator-in-matte-white-energy-star/1001319486",
+          "sku": "1001319486",
+          "priceCad": 6898,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-36-inch-23-1-cu-ft-counter-depth-french-door-refrigerator-in-matte-white-energy-star/1001319486"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative. Ships with brushed bronze handles. Depth includes the doors; height is to the top hinge."
+    },
+    {
+      "key": "cafe-cye22tp4mw2",
+      "brand": "Café",
+      "name": "36 in. 22.2 cu. ft. counter-depth French door refrigerator with hot water dispenser, Matte White (CYE22TP4MW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-36-inch-22-2-cu-ft-counter-depth-french-door-refrigerator-in-matte-white-energy-star-/1001319488",
+          "sku": "1001319488",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-36-inch-22-2-cu-ft-counter-depth-french-door-refrigerator-in-matte-white-energy-star-/1001319488"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-cve28dp4nw2",
+      "brand": "Café",
+      "name": "36 in. 27.8 cu. ft. 4-door French door refrigerator, full depth, Matte White (CVE28DP4NW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-36-inch-4-door-regfrigerator-with-customizable-accessories-and-full-depth-in-matte-white-energy-star/1001592629",
+          "sku": "1001592629",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-36-inch-4-door-regfrigerator-with-customizable-accessories-and-full-depth-in-matte-white-energy-star/1001592629"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-b36ct80sns",
+      "brand": "Bosch",
+      "name": "800 Series 36 in. 21 cu. ft. counter-depth French door refrigerator, Stainless Steel (B36CT80SNS)",
+      "line": "800 Series",
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.43,
+      "depthIn": 27.56,
+      "heightIn": 72.05,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583",
+          "sku": "13694583",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-b36cl80sns",
+      "brand": "Bosch",
+      "name": "800 Series 36 in. 21 cu. ft. counter-depth 4-door French door refrigerator, Stainless Steel (B36CL80SNS)",
+      "line": "800 Series",
+      "upc": null,
+      "category": "appliances",
+      "kind": "fridge",
+      "widthIn": 35.43,
+      "depthIn": 27.56,
+      "heightIn": 72,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-21-cu-ft-counter-depth-4-door-french-door-refrigerator-b36cl80sns-stainless-steel/13694581",
+          "sku": "13694581",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-21-cu-ft-counter-depth-4-door-french-door-refrigerator-b36cl80sns-stainless-steel/13694581"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-cc2s900p4mw2",
+      "brand": "Café",
+      "name": "30 in. slide-in smart dual fuel range with warming drawer, Matte White (CC2S900P4MW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 29.87,
+      "depthIn": 29.5,
+      "heightIn": 37.37,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-inch-slide-in-dual-fuel-convection-range-with-warming-drawer-in-matte-white/1001501216",
+          "sku": "1001501216",
+          "priceCad": 3298,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-inch-slide-in-dual-fuel-convection-range-with-warming-drawer-in-matte-white/1001501216"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative. Gas cooktop over an electric oven."
+    },
+    {
+      "key": "cafe-cchs900p4mw2",
+      "brand": "Café",
+      "name": "30 in. slide-in smart induction range with warming drawer, Matte White (CCHS900P4MW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-inch-slide-in-induction-and-convection-range-with-warming-drawer-in-matte-white/1001501218",
+          "sku": "1001501218",
+          "priceCad": 3898,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-inch-slide-in-induction-and-convection-range-with-warming-drawer-in-matte-white/1001501218"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-ccgs700p4mw2",
+      "brand": "Café",
+      "name": "30 in. slide-in smart gas range with convection, Matte White (CCGS700P4MW2)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-inch-slide-in-gas-range-with-convection-oven-in-matte-white/1001501219",
+          "sku": "1001501219",
+          "priceCad": 2998,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-inch-slide-in-gas-range-with-convection-oven-in-matte-white/1001501219"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-his8655c",
+      "brand": "Bosch",
+      "name": "800 Series 36 in. true convection 5-element induction range, Stainless Steel (HIS8655C)",
+      "line": "800 Series",
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-true-convection-5-element-induction-range-his8655c-stainless-steel/16493983",
+          "sku": "16493983",
+          "priceCad": 9799.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-true-convection-5-element-induction-range-his8655c-stainless-steel/16493983"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-hgs8645uc",
+      "brand": "Bosch",
+      "name": "36 in. double oven 6-burner freestanding gas range, Black Stainless (HGS8645UC)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Black Stainless"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-36-3-5-cu-ft-double-oven-6-burner-freestanding-gas-range-hgs8645uc-black-stainless/14762562",
+          "sku": "14762562",
+          "priceCad": 6799.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-36-3-5-cu-ft-double-oven-6-burner-freestanding-gas-range-hgs8645uc-black-stainless/14762562"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "bosch-hds8655c",
+      "brand": "Bosch",
+      "name": "36 in. true convection 6-burner dual fuel gas range, Stainless Steel (HDS8655C)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/bosch-36-3-7-cu-ft-true-convection-6-burner-dual-fuel-range-hds8655c-stainless-steel/14742142",
+          "sku": "14742142",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/bosch-36-3-7-cu-ft-true-convection-6-burner-dual-fuel-range-hds8655c-stainless-steel/14742142"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "kitchenaid-kfis936sss",
+      "brand": "KitchenAid",
+      "name": "36 in. true convection 6-element induction range, Stainless Steel (KFIS936SSS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/kitchenaid-36-5-1-cu-ft-true-convection-free-standing-6-element-induction-range-kfis936sss-stainless-steel/19586648",
+          "sku": "19586648",
+          "priceCad": 8999.99,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/kitchenaid-36-5-1-cu-ft-true-convection-free-standing-6-element-induction-range-kfis936sss-stainless-steel/19586648"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "kitchenaid-kfdc506jss",
+      "brand": "KitchenAid",
+      "name": "36 in. true convection 6-burner dual fuel gas range, Stainless Steel (KFDC506JSS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "range",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/kitchenaid-36-5-1-cu-ft-true-convection-6-burner-dual-fuel-range-kfdc506jss-stainless-steel/14321153",
+          "sku": "14321153",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/kitchenaid-36-5-1-cu-ft-true-convection-6-burner-dual-fuel-range-kfdc506jss-stainless-steel/14321153"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-cvw93043pds-matte-black",
+      "brand": "Café",
+      "name": "30 in. smart commercial wall-mount range hood, 600 CFM, Matte Black (CVW93043PDS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-inch-smart-commercial-wall-mount-range-hood-with-600-cfm-4-speed-fan-led-lighting-night-light-and-built-in-wifi-in-matte-black/1001651505",
+          "sku": "1001651505",
+          "priceCad": 1298,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-inch-smart-commercial-wall-mount-range-hood-with-600-cfm-4-speed-fan-led-lighting-night-light-and-built-in-wifi-in-matte-black/1001651505"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-36-commercial-hood-black",
+      "brand": "Café",
+      "name": "36 in. commercial wall-mount range hood, Matte Black",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "hood",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-36-inch-commerical-hood-matte-black/1001651506",
+          "sku": "1001651506",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-36-inch-commerical-hood-matte-black/1001651506"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-30-wall-hood-stainless",
+      "brand": "Café",
+      "name": "30 in. wall mount range hood with light, Stainless Steel",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-in-wall-mount-range-hood-with-light-in-stainless-steel/1001319482",
+          "sku": "1001319482",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-in-wall-mount-range-hood-with-light-in-stainless-steel/1001319482"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-30-wall-hood-matte-white",
+      "brand": "Café",
+      "name": "30 in. wall mount range hood with light, Matte White",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "hood",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte White"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-in-wall-mount-range-hood-with-light-in-matte-white-fingerprint-resistant/1001319484",
+          "sku": "1001319484",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-in-wall-mount-range-hood-with-light-in-matte-white-fingerprint-resistant/1001319484"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "kitchenaid-kvwb606dss",
+      "brand": "KitchenAid",
+      "name": "36 in. wall-mount canopy range hood, Stainless Steel (KVWB606DSS)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "hood",
+      "widthIn": 36,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Best Buy",
+          "url": "https://www.bestbuy.ca/en-ca/product/kitchenaid-kitchenaid-36-wall-mount-canopy-range-hood-stainless-steel-kvwb606dss/10396383",
+          "sku": "10396383",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.bestbuy.ca/en-ca/product/kitchenaid-kitchenaid-36-wall-mount-canopy-range-hood-stainless-steel-kvwb606dss/10396383"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-cts90fp3nd1",
+      "brand": "Café",
+      "name": "30 in. professional French-door convection single wall oven, Matte Black (CTS90FP3ND1)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Matte Black"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-inch-professional-french-door-convection-single-wall-oven-with-hot-air-fry-in-matte-black/1001543010",
+          "sku": "1001543010",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-inch-professional-french-door-convection-single-wall-oven-with-hot-air-fry-in-matte-black/1001543010"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative. A single oven: drawn in a tall oven cabinet."
+    },
+    {
+      "key": "cafe-cts70dp2ns1",
+      "brand": "Café",
+      "name": "30 in. single electric smart wall oven, drop-down door, Stainless Steel (CTS70DP2NS1)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-inch-w-built-in-convection-wall-oven-in-stainless-steel/1001509801",
+          "sku": "1001509801",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-inch-w-built-in-convection-wall-oven-in-stainless-steel/1001509801"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    },
+    {
+      "key": "cafe-ctd90fp2ns1",
+      "brand": "Café",
+      "name": "30 in. double electric French-door smart wall oven, Stainless Steel (CTD90FP2NS1)",
+      "line": null,
+      "upc": null,
+      "category": "appliances",
+      "kind": "wall-oven",
+      "widthIn": 30,
+      "depthIn": null,
+      "heightIn": null,
+      "widthOptionsIn": null,
+      "finishes": [
+        {
+          "name": "Stainless Steel"
+        }
+      ],
+      "stores": [
+        {
+          "store": "Home Depot",
+          "url": "https://www.homedepot.ca/product/cafe-30-in-smart-double-electric-french-door-wall-oven-with-convection-self-cleaning-in-stainless-steel/1001543011",
+          "sku": "1001543011",
+          "priceCad": null,
+          "inStockOnline": null
+        }
+      ],
+      "sources": [
+        "https://www.homedepot.ca/product/cafe-30-in-smart-double-electric-french-door-wall-oven-with-convection-self-cleaning-in-stainless-steel/1001543011"
+      ],
+      "confidence": "medium",
+      "notes": "Facts read from the store product title, URL and search result summary on 2026-10-19; the page itself was not fetched. Sizes are the listing's where it gave them, else left null (drawn at the type's typical size). Prices are search snapshots; listings often disagree, so treat them as indicative."
+    }
+  ]
+}

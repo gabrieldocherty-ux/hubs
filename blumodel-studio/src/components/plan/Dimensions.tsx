@@ -1,7 +1,8 @@
 import { Group, Line, Rect, Text } from 'react-konva';
 import type { Room } from '../../types';
 import { feetInches } from '../../lib/format';
-import { alongWall, flushWall, WALLS, type Resolved, type Wall } from '../../lib/geometry';
+import { alongWall, clearToWall, flushSeg, type Resolved, type Wall, type WallSeg } from '../../lib/geometry';
+import { planSize, wallSegs } from '../../lib/outline';
 import { isOpening } from '../../data/catalog';
 import { FONT_MONO, WALL_T, usePlanPalette } from './planStyle';
 
@@ -63,59 +64,66 @@ export function Dim({ x1, y1, x2, y2, label, k, color: colorProp, ticks, pill = 
   );
 }
 
-/** Overall room size plus a chained string of every piece along each wall, like a real plan set. */
+/** The point `a` along `seg`, `off` outside its line (the dimension strings sit outside the wall). */
+function outside(seg: WallSeg, a: number, off: number): [number, number] {
+  switch (seg.wall) {
+    case 'north':
+      return [a, seg.at - off];
+    case 'south':
+      return [a, seg.at + off];
+    case 'west':
+      return [seg.at - off, a];
+    case 'east':
+      return [seg.at + off, a];
+  }
+}
+
+/**
+ * Overall plan size plus a chained string of every piece along each wall, like a real plan set.
+ * In a drawn room every wall also gets its own length, so an L or a bump-out reads in full.
+ */
 export function WallDimensions({ room, all, k }: { room: Room; all: Resolved[]; k: number }) {
   const muted = usePlanPalette().muted;
-  const W = room.widthIn;
-  const L = room.lengthIn;
+  const { W, L } = planSize(room);
+  const segs = wallSegs(room);
+  const drawn = !!room.outline || !!room.extra?.length;
   const chainOff = WALL_T + 16 * k;
   const overallOff = WALL_T + 40 * k;
-  const chains = WALLS.map((wall) => {
-    const edges = new Set<number>();
-    for (const r of all) {
-      if (r.z0 >= 40 && !isOpening(r.product)) continue;
-      if (flushWall(r, room) !== wall) continue;
-      const [s, e] = alongWall(wall, r.box);
-      edges.add(Math.round(s * 2) / 2);
-      edges.add(Math.round(e * 2) / 2);
-    }
-    if (!edges.size) return null;
-    const len = wall === 'north' || wall === 'south' ? W : L;
-    edges.add(0);
-    edges.add(len);
-    const sorted = [...edges].filter((v) => v >= 0 && v <= len).sort((a, b) => a - b);
-    return { wall, sorted };
-  }).filter(Boolean) as { wall: Wall; sorted: number[] }[];
+  const chains = segs
+    .filter((seg) => !(seg.zone && (seg.style === 'open' || seg.style === 'beam')))
+    .map((seg) => {
+      const edges = new Set<number>();
+      for (const r of all) {
+        if (r.z0 >= 40 && !isOpening(r.product)) continue;
+        if (flushSeg(r, room)?.id !== seg.id) continue;
+        const [s, e] = alongWall(seg.wall, r.box);
+        edges.add(Math.round(s * 2) / 2);
+        edges.add(Math.round(e * 2) / 2);
+      }
+      // A drawn wall always shows its own length, even with nothing against it.
+      if (!edges.size && !drawn) return null;
+      edges.add(seg.a0);
+      edges.add(seg.a1);
+      const sorted = [...edges].filter((v) => v >= seg.a0 && v <= seg.a1).sort((a, b) => a - b);
+      return { seg, sorted };
+    })
+    .filter(Boolean) as { seg: WallSeg; sorted: number[] }[];
 
   return (
     <Group listening={false}>
       <Dim x1={0} y1={-overallOff} x2={W} y2={-overallOff} label={feetInches(W)} k={k} fontPx={11} />
       <Dim x1={-overallOff} y1={0} x2={-overallOff} y2={L} label={feetInches(L)} k={k} fontPx={11} />
-      {chains.map(({ wall, sorted }) => {
-        const segs = sorted.slice(1).map((v, i) => ({ a: sorted[i], b: v }));
-        const pos = (a: number): [number, number] => {
-          switch (wall) {
-            case 'north':
-              return [a, -chainOff];
-            case 'south':
-              return [a, L + chainOff];
-            case 'west':
-              return [-chainOff, a];
-            case 'east':
-              return [W + chainOff, a];
-          }
-        };
-        return (
-          <Group key={wall}>
-            {segs.map(({ a, b }, i) => {
-              const [x1, y1] = pos(a);
-              const [x2, y2] = pos(b);
-              const label = b - a >= 6 ? feetInches(b - a).replace(/^0' /, '') : undefined;
-              return <Dim key={i} x1={x1} y1={y1} x2={x2} y2={y2} label={label} k={k} color={muted} fontPx={9} />;
-            })}
-          </Group>
-        );
-      })}
+      {chains.map(({ seg, sorted }) => (
+        <Group key={seg.id}>
+          {sorted.slice(1).map((v, i) => {
+            const a = sorted[i];
+            const [x1, y1] = outside(seg, a, chainOff);
+            const [x2, y2] = outside(seg, v, chainOff);
+            const label = v - a >= 6 ? feetInches(v - a).replace(/^0' /, '') : undefined;
+            return <Dim key={i} x1={x1} y1={y1} x2={x2} y2={y2} label={label} k={k} color={muted} fontPx={9} />;
+          })}
+        </Group>
+      ))}
     </Group>
   );
 }
@@ -123,16 +131,15 @@ export function WallDimensions({ room, all, k }: { room: Room; all: Resolved[]; 
 /** Live distances from the selected piece to each wall. */
 export function SelectionDimensions({ r, room, k, color }: { r: Resolved; room: Room; k: number; color: string }) {
   if (isOpening(r.product)) {
-    const wall = flushWall(r, room);
-    if (!wall) return null;
-    const [s, e] = alongWall(wall, r.box);
-    const len = wall === 'north' || wall === 'south' ? room.widthIn : room.lengthIn;
+    const seg = flushSeg(r, room);
+    if (!seg) return null;
+    const [s, e] = alongWall(seg.wall, r.box);
     const off = 12 * k + 6;
     const at = (a: number): [number, number] =>
-      wall === 'north' ? [a, off] : wall === 'south' ? [a, room.lengthIn - off] : wall === 'west' ? [off, a] : [room.widthIn - off, a];
+      seg.wall === 'north' ? [a, seg.at + off] : seg.wall === 'south' ? [a, seg.at - off] : seg.wall === 'west' ? [seg.at + off, a] : [seg.at - off, a];
     const parts: [number, number][] = [
-      [0, s],
-      [e, len],
+      [seg.a0, s],
+      [e, seg.a1],
     ];
     return (
       <Group listening={false}>
@@ -145,21 +152,22 @@ export function SelectionDimensions({ r, room, k, color }: { r: Resolved; room: 
     );
   }
   const b = r.box;
-  const cx = (b.minX + b.maxX) / 2;
-  const cy = (b.minY + b.maxY) / 2;
-  const segs: [number, number, number, number, number][] = [
-    [0, cy, b.minX, cy, b.minX],
-    [b.maxX, cy, room.widthIn, cy, room.widthIn - b.maxX],
-    [cx, 0, cx, b.minY, b.minY],
-    [cx, b.maxY, cx, room.lengthIn, room.lengthIn - b.maxY],
-  ];
+  const dims: [number, number, number, number, number][] = [];
+  for (const dir of ['west', 'east', 'north', 'south'] as Wall[]) {
+    const hit = clearToWall(room, b, dir);
+    if (!hit || hit.gap <= 0.75) continue;
+    dims.push(
+      dir === 'west' ? [b.minX - hit.gap, hit.lane, b.minX, hit.lane, hit.gap]
+      : dir === 'east' ? [b.maxX, hit.lane, b.maxX + hit.gap, hit.lane, hit.gap]
+      : dir === 'north' ? [hit.lane, b.minY - hit.gap, hit.lane, b.minY, hit.gap]
+      : [hit.lane, b.maxY, hit.lane, b.maxY + hit.gap, hit.gap],
+    );
+  }
   return (
     <Group listening={false}>
-      {segs
-        .filter((s) => s[4] > 0.75)
-        .map(([x1, y1, x2, y2, v], i) => (
-          <Dim key={i} x1={x1} y1={y1} x2={x2} y2={y2} label={feetInches(v)} k={k} color={color} pill />
-        ))}
+      {dims.map(([x1, y1, x2, y2, v], i) => (
+        <Dim key={i} x1={x1} y1={y1} x2={x2} y2={y2} label={feetInches(v)} k={k} color={color} pill />
+      ))}
     </Group>
   );
 }

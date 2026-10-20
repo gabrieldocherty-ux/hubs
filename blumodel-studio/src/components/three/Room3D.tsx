@@ -2,7 +2,8 @@ import { memo, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Room, Surfaces } from '../../types';
-import { alongWall, backsplashSegments, flushWall, WALLS, type Resolved, type Wall } from '../../lib/geometry';
+import { alongWall, backsplashSegments, flushSeg, type Resolved, type WallSeg } from '../../lib/geometry';
+import { BEAM_DROP_IN, EDGE_STYLES, floorOutlines, floorRects, planSize, pointInOutline, wallSegs } from '../../lib/outline';
 import { isOpening } from '../../data/catalog';
 import { FLOORING, PAINTS, byId } from '../../data/finishes';
 import { resolveFinish } from '../../lib/finish';
@@ -54,29 +55,55 @@ function wallPieces(start: number, end: number, height: number, openings: { s: n
   return out;
 }
 
-/** Converts a span along a wall (a) at a depth into the room (inset) to a world-space box. */
-function wallBox(wall: Wall, room: Room, a0: number, a1: number, y0: number, y1: number, z0: number, z1: number): { size: [number, number, number]; center: [number, number, number] } {
+/**
+ * Converts a span along a wall (a0..a1, plan inches along the wall) at a depth (z0..z1, positive into
+ * the room, negative inside the wall's thickness) to a world-space box.
+ */
+function wallBox(seg: WallSeg, a0: number, a1: number, y0: number, y1: number, z0: number, z1: number): { size: [number, number, number]; center: [number, number, number] } {
   const len = a1 - a0;
   const h = y1 - y0;
   const dep = z1 - z0;
   const am = (a0 + a1) / 2;
   const ym = (y0 + y1) / 2;
   const zm = (z0 + z1) / 2;
-  switch (wall) {
+  switch (seg.wall) {
     case 'north':
-      return { size: [len, h, dep], center: [am, ym, zm] };
+      return { size: [len, h, dep], center: [am, ym, seg.at + zm] };
     case 'south':
-      return { size: [len, h, dep], center: [am, ym, room.lengthIn - zm] };
+      return { size: [len, h, dep], center: [am, ym, seg.at - zm] };
     case 'west':
-      return { size: [dep, h, len], center: [zm, ym, am] };
+      return { size: [dep, h, len], center: [seg.at + zm, ym, am] };
     case 'east':
-      return { size: [dep, h, len], center: [room.widthIn - zm, ym, am] };
+      return { size: [dep, h, len], center: [seg.at - zm, ym, am] };
+  }
+}
+
+interface SegGeo {
+  seg: WallSeg;
+  walls: THREE.BufferGeometry[];
+  base: { size: [number, number, number]; center: [number, number, number] }[];
+  caps: { size: [number, number, number]; center: [number, number, number] }[];
+  splash: THREE.BufferGeometry[];
+  /** Everything that is not paint and plaster: a half wall's cap, a bar ledge, railings, glass. */
+  parts: { size: [number, number, number]; center: [number, number, number]; kind: 'counter' | 'steel' | 'glass' | 'trim'; cast: boolean }[];
+}
+
+/** Is a wall's inside facing the camera? Walls seen from behind are cut away so the room can be looked into. */
+function facesCamera(seg: WallSeg, camX: number, camZ: number): boolean {
+  switch (seg.wall) {
+    case 'north':
+      return camZ > seg.at;
+    case 'south':
+      return camZ < seg.at;
+    case 'west':
+      return camX > seg.at;
+    case 'east':
+      return camX < seg.at;
   }
 }
 
 export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedId, problemIds, onSelect, onHover }: Props) {
-  const W = room.widthIn;
-  const L = room.lengthIn;
+  const { W, L } = planSize(room);
   const H = room.ceilingIn;
   const floor = byId(FLOORING, surfaces.flooringId);
   const paint = byId(PAINTS, surfaces.paintId);
@@ -85,70 +112,127 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   const trimHex = luminance(paint.hex) < 0.2 ? shade(paint.hex, 0.05) : '#f3efe6';
   const trimMat = cached(`trim3d:${trimHex}`, () => new THREE.MeshStandardMaterial({ color: trimHex, roughness: 0.45 }));
 
-  const floorGeo = useMemo(() => worldUVBox([W, 0.5, L], [W / 2, -0.25, L / 2], null, floorMat.tileIn), [W, L, floorMat.tileIn]);
-  useEffect(() => () => floorGeo.dispose(), [floorGeo]);
+  const segs = useMemo(() => wallSegs(room), [room]);
+  const outlines = useMemo(() => floorOutlines(room), [room]);
+  const rects = useMemo(() => outlines.flatMap((o) => floorRects(o)), [outlines]);
 
-  const openingsByWall = useMemo(() => {
-    const map: Record<Wall, Resolved[]> = { north: [], east: [], south: [], west: [] };
+  const floorGeos = useMemo(() => rects.map((r) => worldUVBox([r.x1 - r.x0, 0.5, r.y1 - r.y0], [(r.x0 + r.x1) / 2, -0.25, (r.y0 + r.y1) / 2], null, floorMat.tileIn)), [rects, floorMat.tileIn]);
+  useEffect(() => () => floorGeos.forEach((g) => g.dispose()), [floorGeos]);
+
+  // Each opening belongs to the wall it is flush against; it also cuts any wall sharing that line
+  // (the partition between two rooms is two coincident walls, one per room).
+  const openingsBySeg = useMemo(() => {
+    const map = new Map<number, Resolved[]>();
+    for (const sg of segs) map.set(sg.id, []);
     for (const r of all) {
       if (!isOpening(r.product)) continue;
-      const wall = flushWall(r, room);
-      if (wall) map[wall].push(r);
+      for (const sg of segs) {
+        const alongX = sg.wall === 'north' || sg.wall === 'south';
+        const line = alongX ? r.item.y : r.item.x;
+        const along = alongX ? r.item.x : r.item.y;
+        if (Math.abs(line - sg.at) < 1 && along >= sg.a0 - 1 && along <= sg.a1 + 1) map.get(sg.id)!.push(r);
+      }
+    }
+    return map;
+  }, [all, segs]);
+  // The wall an opening's model is drawn on (once), not every coincident one.
+  const ownSeg = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of all) {
+      if (!isOpening(r.product)) continue;
+      const sg = flushSeg(r, room);
+      if (sg) map.set(r.item.id, sg.id);
     }
     return map;
   }, [all, room]);
 
+  // A door, walkway or window with another room behind it shows that room, not a painted backdrop.
+  const roomBehind = (r: Resolved): boolean => {
+    const sg = flushSeg(r, room);
+    if (!sg) return false;
+    const d = 8;
+    const px = sg.wall === 'west' ? r.item.x - d : sg.wall === 'east' ? r.item.x + d : r.item.x;
+    const py = sg.wall === 'north' ? r.item.y - d : sg.wall === 'south' ? r.item.y + d : r.item.y;
+    return outlines.some((o) => pointInOutline(o, px, py));
+  };
+
   const splash = useMemo(() => backsplashSegments(all, room), [all, room]);
 
-  const wallGeos = useMemo(() => {
-    const out: Record<Wall, { walls: THREE.BufferGeometry[]; base: { size: [number, number, number]; center: [number, number, number] }[]; caps: { size: [number, number, number]; center: [number, number, number] }[]; splash: THREE.BufferGeometry[] }> = {
-      north: { walls: [], base: [], caps: [], splash: [] },
-      east: { walls: [], base: [], caps: [], splash: [] },
-      south: { walls: [], base: [], caps: [], splash: [] },
-      west: { walls: [], base: [], caps: [], splash: [] },
-    };
-    for (const wall of WALLS) {
-      const ns = wall === 'north' || wall === 'south';
-      const len = ns ? W : L;
-      const start = ns ? -T : 0;
-      const end = ns ? len + T : len;
-      const ops = openingsByWall[wall].map((r) => {
-        const [s, e] = alongWall(wall, r.box);
+  const wallGeos = useMemo<SegGeo[]>(() => {
+    return segs.map((seg) => {
+      const out: SegGeo = { seg, walls: [], base: [], caps: [], splash: [], parts: [] };
+      const st = seg.style;
+      if (st !== 'wall') {
+        // Anything but a full wall stands on its line (centred), not outside it.
+        const half = EDGE_STYLES[st].thicknessIn / 2;
+        const put = (a0: number, a1: number, y0: number, y1: number, z0: number, z1: number) => wallBox(seg, a0, a1, y0, y1, z0, z1);
+        if (st === 'half' || st === 'bar') {
+          const h = EDGE_STYLES[st].heightIn!;
+          const b = put(seg.a0, seg.a1, 0, h, -half, half);
+          out.walls.push(worldUVBox(b.size, b.center, null, wallMat.tileIn));
+          out.parts.push({ ...put(seg.a0 - 1, seg.a1 + 1, h, h + 1.5, -half - 1, half + 1), kind: 'trim', cast: true });
+          out.base.push(put(seg.a0, seg.a1, 0, 4.5, half, half + 0.6));
+          // A bar wall's ledge juts out the far side, over the stools.
+          if (st === 'bar') out.parts.push({ ...put(seg.a0 - 1, seg.a1 + 1, h, h + 1.5, -half - 12, -half), kind: 'counter', cast: true });
+        } else if (st === 'rail') {
+          out.parts.push({ ...put(seg.a0, seg.a1, 34.5, 36, -half, half), kind: 'steel', cast: true });
+          const n = Math.max(1, Math.ceil((seg.a1 - seg.a0) / 36));
+          for (let i = 0; i <= n; i++) {
+            const a = seg.a0 + ((seg.a1 - seg.a0) * i) / n;
+            out.parts.push({ ...put(a - 0.75, a + 0.75, 0, 34.5, -0.75, 0.75), kind: 'steel', cast: true });
+          }
+        } else if (st === 'glass') {
+          out.parts.push({ ...put(seg.a0, seg.a1, 1.5, H - 1.5, -half, half), kind: 'glass', cast: false });
+          out.parts.push({ ...put(seg.a0, seg.a1, 0, 1.5, -half - 0.5, half + 0.5), kind: 'steel', cast: true });
+          out.parts.push({ ...put(seg.a0, seg.a1, H - 1.5, H, -half - 0.5, half + 0.5), kind: 'steel', cast: true });
+        } else if (st === 'beam') {
+          const b = put(seg.a0, seg.a1, H - BEAM_DROP_IN, H, -5, 5);
+          out.walls.push(worldUVBox(b.size, b.center, null, wallMat.tileIn));
+        }
+        return out;
+      }
+      const alongX = seg.wall === 'north' || seg.wall === 'south';
+      // North and south walls own the corners that stick out, as in the plan, so two walls never overlap there.
+      const start = seg.a0 - (alongX && seg.convex0 ? T : 0);
+      const end = seg.a1 + (alongX && seg.convex1 ? T : 0);
+      const ops = (openingsBySeg.get(seg.id) ?? []).map((r) => {
+        const [s, e] = alongWall(seg.wall, r.box);
         return { s, e, z0: r.z0, z1: r.z1 };
       });
       for (const p of wallPieces(start, end, H, ops)) {
-        const b = wallBox(wall, room, p.a0, p.a1, p.y0, p.y1, -T, 0);
-        out[wall].walls.push(worldUVBox(b.size, b.center, null, wallMat.tileIn));
+        const b = wallBox(seg, p.a0, p.a1, p.y0, p.y1, -T, 0);
+        out.walls.push(worldUVBox(b.size, b.center, null, wallMat.tileIn));
         if (p.y0 === 0) {
-          const a0 = Math.max(p.a0, 0);
-          const a1 = Math.min(p.a1, len);
-          if (a1 - a0 > 0.5) out[wall].base.push(wallBox(wall, room, a0, a1, 0, 4.5, 0, 0.6));
+          const a0 = Math.max(p.a0, seg.a0);
+          const a1 = Math.min(p.a1, seg.a1);
+          if (a1 - a0 > 0.5) out.base.push(wallBox(seg, a0, a1, 0, 4.5, 0, 0.6));
         }
-        if (p.y1 >= H - 0.01) out[wall].caps.push(wallBox(wall, room, p.a0, p.a1, H, H + 0.6, -T - 0.05, 0.05));
+        if (p.y1 >= H - 0.01) out.caps.push(wallBox(seg, p.a0, p.a1, H, H + 0.6, -T - 0.05, 0.05));
       }
-    }
-    for (const seg of splash) {
-      const b = wallBox(seg.wall, room, seg.start, seg.end, seg.bottom, seg.top, 0, 0.4);
-      out[seg.wall].splash.push(worldUVBox(b.size, b.center, null, ctx.splashTile));
-    }
-    return out;
-  }, [W, L, H, room, openingsByWall, splash, wallMat.tileIn, ctx.splashTile]);
+      for (const sp of splash) {
+        if (sp.seg.id !== seg.id) continue;
+        const b = wallBox(seg, sp.start, sp.end, sp.bottom, sp.top, 0, 0.4);
+        out.splash.push(worldUVBox(b.size, b.center, null, ctx.splashTile));
+      }
+      return out;
+    });
+  }, [segs, H, openingsBySeg, splash, wallMat.tileIn, ctx.splashTile]);
 
   useEffect(
     () => () => {
-      for (const wall of WALLS) {
-        wallGeos[wall].walls.forEach((g) => g.dispose());
-        wallGeos[wall].splash.forEach((g) => g.dispose());
+      for (const g of wallGeos) {
+        g.walls.forEach((x) => x.dispose());
+        g.splash.forEach((x) => x.dispose());
       }
     },
     [wallGeos],
   );
 
-  const groups = useRef<Record<Wall, THREE.Group | null>>({ north: null, east: null, south: null, west: null });
+  const groups = useRef<Map<number, THREE.Group>>(new Map());
   // A ceiling for a camera standing in the room (eye level, the showroom's pictures): without it
   // the tops of the walls end in the sky. Seen from above it never shows (it faces down, and it is
   // hidden whenever the camera is outside the room or above it).
-  const ceiling = useRef<THREE.Mesh | null>(null);
+  const ceiling = useRef<THREE.Group | null>(null);
   const ceilingMat = cached(`ceiling:${trimHex}`, () => new THREE.MeshStandardMaterial({ color: trimHex, roughness: 0.92 }));
   const gl = useThree((s) => s.gl);
   // The cut-away: walls between the camera and the room hide. Run every frame (cheap) and by the
@@ -158,24 +242,21 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
     const camLocal = new THREE.Vector3();
     return (cameraPos: THREE.Vector3) => {
       camLocal.copy(cameraPos).multiplyScalar(12);
-      const g = groups.current;
       let changed = false;
-      const set = (grp: THREE.Group | null, v: boolean) => {
+      for (const sg of segs) {
+        const grp = groups.current.get(sg.id);
+        const v = EDGE_STYLES[sg.style].cutaway ? facesCamera(sg, camLocal.x, camLocal.z) : true;
         if (grp && grp.visible !== v) {
           grp.visible = v;
           changed = true;
         }
-      };
-      set(g.north, camLocal.z > 0);
-      set(g.south, camLocal.z < L);
-      set(g.west, camLocal.x > 0);
-      set(g.east, camLocal.x < W);
-      const inside = camLocal.x > 0 && camLocal.x < W && camLocal.z > 0 && camLocal.z < L && camLocal.y < H;
+      }
+      const inside = camLocal.y < H && outlines.some((o) => pointInOutline(o, camLocal.x, camLocal.z));
       if (ceiling.current && ceiling.current.visible !== inside) ceiling.current.visible = inside;
       if (changed) gl.shadowMap.needsUpdate = true;
       return changed;
     };
-  }, [W, L, gl]);
+  }, [segs, outlines, H, gl]);
   useEffect(() => {
     activeCutaway = cutaway;
     return () => {
@@ -189,49 +270,66 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   return (
     <group>
       <mesh geometry={boxGeo(W + T * 2 + 36, 6, L + T * 2 + 36)} position={[W / 2, -3.5, L / 2]} material={M.plinth()} receiveShadow dispose={null} />
-      <mesh geometry={floorGeo} material={floorMat.mat} receiveShadow />
-      <mesh ref={ceiling} position={[W / 2, H, L / 2]} rotation={[Math.PI / 2, 0, 0]} material={ceilingMat} visible={false}>
-        <planeGeometry args={[W, L]} />
-      </mesh>
-      {WALLS.map((wall) => (
-        <group key={wall} ref={(el) => (groups.current[wall] = el)}>
-          {wallGeos[wall].walls.map((g, i) => (
-            <mesh key={i} geometry={g} material={wallMat.mat} castShadow receiveShadow />
+      {floorGeos.map((g, i) => (
+        <mesh key={i} geometry={g} material={floorMat.mat} receiveShadow />
+      ))}
+      <group ref={ceiling} visible={false}>
+        {rects.map((r, i) => (
+          <mesh key={i} position={[(r.x0 + r.x1) / 2, H, (r.y0 + r.y1) / 2]} rotation={[Math.PI / 2, 0, 0]} material={ceilingMat}>
+            <planeGeometry args={[r.x1 - r.x0, r.y1 - r.y0]} />
+          </mesh>
+        ))}
+      </group>
+      {wallGeos.map((g) => (
+        <group
+          key={g.seg.id}
+          ref={(el) => {
+            if (el) groups.current.set(g.seg.id, el);
+            else groups.current.delete(g.seg.id);
+          }}
+        >
+          {g.walls.map((geo, i) => (
+            <mesh key={i} geometry={geo} material={wallMat.mat} castShadow receiveShadow />
           ))}
-          {wallGeos[wall].base.map((b, i) => (
+          {g.base.map((b, i) => (
             <Box key={`b${i}`} size={b.size} pos={b.center} mat={trimMat} />
           ))}
-          {wallGeos[wall].caps.map((b, i) => (
+          {g.caps.map((b, i) => (
             <Box key={`c${i}`} size={b.size} pos={b.center} mat={M.wallCap()} cast={false} />
           ))}
-          {wallGeos[wall].splash.map((g, i) => (
-            <mesh key={`s${i}`} geometry={g} material={ctx.splashMat} receiveShadow />
+          {g.splash.map((geo, i) => (
+            <mesh key={`s${i}`} geometry={geo} material={ctx.splashMat} receiveShadow />
           ))}
-          {openingsByWall[wall].map((r) => (
-            <group
-              key={r.item.id}
-              position={[r.item.x, 0, r.item.y]}
-              rotation={[0, (-r.item.rotation * Math.PI) / 180, 0]}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(r.item.id);
-              }}
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                onHover(r.item.id);
-                document.body.style.cursor = 'pointer';
-              }}
-              onPointerOut={() => {
-                onHover(null);
-                document.body.style.cursor = '';
-              }}
-            >
-              {r.product.kind === 'window' ? <WindowModel r={r} surfaces={surfaces} /> : <DoorModel r={r} surfaces={surfaces} ctx={ctx} />}
-              {(r.item.id === selectedId || problemIds.has(r.item.id)) && (
-                <SelectionEdges w={r.w + 7} d={T + 2} y0={r.z0 - 2} h={r.product.heightIn + 4} z={-T / 2} problem={problemIds.has(r.item.id)} />
-              )}
-            </group>
+          {g.parts.map((pt, i) => (
+            <Box key={`p${i}`} size={pt.size} pos={pt.center} mat={pt.kind === 'counter' ? ctx.counterMat : pt.kind === 'steel' ? M.steel() : pt.kind === 'glass' ? M.clearGlass() : trimMat} cast={pt.cast} />
           ))}
+          {(openingsBySeg.get(g.seg.id) ?? [])
+            .filter((r) => ownSeg.get(r.item.id) === g.seg.id)
+            .map((r) => (
+              <group
+                key={r.item.id}
+                position={[r.item.x, 0, r.item.y]}
+                rotation={[0, (-r.item.rotation * Math.PI) / 180, 0]}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(r.item.id);
+                }}
+                onPointerOver={(e) => {
+                  e.stopPropagation();
+                  onHover(r.item.id);
+                  document.body.style.cursor = 'pointer';
+                }}
+                onPointerOut={() => {
+                  onHover(null);
+                  document.body.style.cursor = '';
+                }}
+              >
+                {r.product.kind === 'window' ? <WindowModel r={r} surfaces={surfaces} bare={roomBehind(r)} /> : <DoorModel r={r} surfaces={surfaces} ctx={ctx} bare={roomBehind(r)} />}
+                {(r.item.id === selectedId || problemIds.has(r.item.id)) && (
+                  <SelectionEdges w={r.w + 7} d={T + 2} y0={r.z0 - 2} h={r.product.heightIn + 4} z={-T / 2} problem={problemIds.has(r.item.id)} />
+                )}
+              </group>
+            ))}
         </group>
       ))}
     </group>

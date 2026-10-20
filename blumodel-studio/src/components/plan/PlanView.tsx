@@ -11,7 +11,7 @@ import { registerExporter } from '../../lib/exporters';
 import { qaExpose } from '../../lib/qa';
 import { clamp, type Resolved } from '../../lib/geometry';
 import { placeAt, planClientToRoom, planRoomToClient, registerDropTarget, useOverlay, usePlacement } from '../../lib/interaction';
-import { BAD, FONT_MONO, OK, PLAN_LIGHT, PlanPaletteContext, WALL_T, WARN, patternFill, planPalette, type PlanPalette } from './planStyle';
+import { BAD, FONT_MONO, OK, PLAN_LIGHT, PlanPaletteContext, WARN, patternFill, planPalette, type PlanPalette } from './planStyle';
 import { useResolvedTheme } from '../../lib/theme';
 import { PlanItem, isOverheadKind } from './PlanItem';
 import { SelectionDimensions, WallDimensions } from './Dimensions';
@@ -19,6 +19,11 @@ import { DragFeedback } from './DragFeedback';
 import { itemRoomBox } from './planHit';
 import { MAX_SCALE, MIN_SCALE, usePlanGestures, type View } from './usePlanGestures';
 import { fitView } from './planFit';
+import { PlanRoomDraw } from './PlanRoomDraw';
+import { PlanWalls } from './PlanWalls';
+import { BorderPicker } from './BorderPicker';
+import { ROOM_KINDS } from '../../lib/roomKinds';
+import { floorOutlines, planSize } from '../../lib/outline';
 
 /** The pane's visible part in client px (on a phone it can be scrolled partly off-screen). */
 function visibleRect(el: HTMLElement): { left: number; top: number; right: number; bottom: number } {
@@ -126,7 +131,7 @@ export function PlanView() {
 
   const fit = useCallback(() => {
     // Room and dimension strings centred in the pane (planFit.ts).
-    applyView(fitView(size.w, size.h, room.widthIn, room.lengthIn, MIN_SCALE, MAX_SCALE));
+    applyView(fitView(size.w, size.h, planSize(room).W, planSize(room).L, MIN_SCALE, MAX_SCALE));
     userZoomed.current = false;
   }, [size.w, size.h, room.widthIn, room.lengthIn, applyView]);
 
@@ -148,6 +153,9 @@ export function PlanView() {
     const prev = lastFit.current;
     lastFit.current = { w: size.w, h: size.h, W: room.widthIn, L: room.lengthIn };
     const roomChanged = !prev || prev.W !== room.widthIn || prev.L !== room.lengthIn;
+    // A wall being dragged changes the room on every move: refitting then would slide the plan out
+    // from under the pointer. Keep the view; the next resize or room change refits as usual.
+    if (prev && roomChanged && useDesignStore.getState().dragging) return;
     if (prev && userZoomed.current && !roomChanged) {
       const v = viewRef.current;
       applyView({ ...v, x: v.x + (size.w - prev.w) / 2, y: v.y + (size.h - prev.h) / 2 });
@@ -278,8 +286,12 @@ export function PlanView() {
   }, [select, hover]);
 
   const floor = byId(FLOORING, surfaces.flooringId);
-  const W = room.widthIn;
-  const L = room.lengthIn;
+  const { W, L } = planSize(room);
+  const outlines = useMemo(() => floorOutlines(room), [room]);
+  const drawn = !!room.outline || !!room.extra?.length;
+  const [addingRoom, setAddingRoom] = useState<null | 'room' | 'zone'>(null);
+  const [styling, setStyling] = useState<string | null>(null);
+  const [roomMenu, setRoomMenu] = useState(false);
   const margin = 70;
 
   const ordered = useMemo(() => {
@@ -326,9 +338,30 @@ export function PlanView() {
               height={L + margin * 2}
               fill={rendered ? pal.paper : pal.sheet}
             />
-            <Rect name="bg" x={0} y={0} width={W} height={L} {...(rendered ? patternFill(floor.pattern) : { fill: pal.sheet })} />
-            {rendered && <Rect x={0} y={0} width={W} height={L} fill="#f6f1e7" opacity={0.12} />}
+            {drawn ? (
+              outlines.map((o, i) => (
+                <Line key={i} name="bg" points={o.flat()} closed {...(rendered ? patternFill(floor.pattern) : { fill: pal.sheet })} />
+              ))
+            ) : (
+              <>
+                <Rect name="bg" x={0} y={0} width={W} height={L} {...(rendered ? patternFill(floor.pattern) : { fill: pal.sheet })} />
+                {rendered && <Rect x={0} y={0} width={W} height={L} fill="#f6f1e7" opacity={0.12} />}
+              </>
+            )}
             {ui.showGrid && (
+              <Group
+                clipFunc={
+                  drawn
+                    ? (ctx) => {
+                        ctx.beginPath();
+                        for (const o of outlines) {
+                          o.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+                          ctx.closePath();
+                        }
+                      }
+                    : undefined
+                }
+              >
               <Shape
                 sceneFunc={(ctx, shape) => {
                   ctx.beginPath();
@@ -346,30 +379,14 @@ export function PlanView() {
                 strokeWidth={1}
                 strokeScaleEnabled={false}
               />
+              </Group>
             )}
 
             {ordered.filter((r) => r.product.kind !== 'window' && r.product.kind !== 'door').map(renderItem)}
 
             {/* Walls sit above the floor pieces so openings can punch through them. */}
             <Group>
-              {[
-                [-WALL_T, -WALL_T, W + WALL_T * 2, WALL_T],
-                [-WALL_T, L, W + WALL_T * 2, WALL_T],
-                [-WALL_T, 0, WALL_T, L],
-                [W, 0, WALL_T, L],
-              ].map(([x, y, w, h], i) => (
-                <Rect
-                  key={i}
-                  x={x}
-                  y={y}
-                  width={w}
-                  height={h}
-                  {...(rendered ? { fill: pal.wall } : { fillPatternImage: hatch as unknown as HTMLImageElement, fillPatternScale: { x: k, y: k } })}
-                  stroke={rendered ? pal.wallStroke : pal.ink}
-                  strokeWidth={1.2}
-                  strokeScaleEnabled={false}
-                />
-              ))}
+              <PlanWalls room={room} k={k} rendered={rendered} hatch={hatch} />
             </Group>
             {ordered.filter((r) => r.product.kind === 'window' || r.product.kind === 'door').map(renderItem)}
 
@@ -441,6 +458,50 @@ export function PlanView() {
           <label><input type="checkbox" checked={ui.showTriangle} onChange={(e) => setUI({ showTriangle: e.target.checked })} /> Work triangle</label>
           <label><input type="checkbox" checked={ui.showGrid} onChange={(e) => setUI({ showGrid: e.target.checked })} /> 1′ grid</label>
         </div>
+        {!readOnly && (
+          <div className="plan-add-row">
+            <div className="plan-menu">
+              <button type="button" className="btn plan-add-room" onClick={() => setRoomMenu((o) => !o)} aria-expanded={roomMenu} aria-haspopup="menu" data-testid="add-room">
+                Add a room ▾
+              </button>
+              {roomMenu && (
+                <div className="plan-menu-list" role="menu">
+                  {ROOM_KINDS.map((k) => (
+                    <button
+                      key={k.id}
+                      type="button"
+                      role="menuitem"
+                      data-testid={`add-room-${k.id}`}
+                      onClick={() => {
+                        setRoomMenu(false);
+                        const out = useDesignStore.getState().addRoomKind(k.id);
+                        useDesignStore.getState().toast(out.error ?? `${k.label} added beside your plan. Drag its walls in Room & Finishes → Walls & rooms to resize. Ctrl+Z to undo.`, out.error ? 'warn' : 'ok');
+                      }}
+                    >
+                      <span>{k.label}</span>
+                      <small>{k.blurb}</small>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="plan-menu-draw"
+                    onClick={() => {
+                      setRoomMenu(false);
+                      setAddingRoom('room');
+                    }}
+                  >
+                    <span>Draw your own…</span>
+                    <small>click the corners</small>
+                  </button>
+                </div>
+              )}
+            </div>
+            <button type="button" className="btn plan-add-room" onClick={() => setAddingRoom((a) => (a === 'zone' ? null : 'zone'))} aria-pressed={addingRoom === 'zone'} data-testid="add-zone" title="Mark the kitchen (or living, dining) inside open space, then pick what stands along its border">
+              {addingRoom === 'zone' ? 'Cancel' : 'Open area'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="plan-hud plan-hud--tr" aria-hidden>
@@ -469,16 +530,39 @@ export function PlanView() {
         <button aria-label="Zoom in" onClick={() => zoomAt(1.25, size.w / 2, size.h / 2)}>+</button>
       </div>
 
+      {styling && !readOnly && <BorderPicker id={styling} onDone={() => setStyling(null)} />}
+
+      {addingRoom && !readOnly && (
+        <PlanRoomDraw
+          room={room}
+          view={view}
+          size={size}
+          kind={addingRoom}
+          onCancel={() => setAddingRoom(null)}
+          onFinish={(outline) => {
+            const out = useDesignStore.getState().addRoom(outline, undefined, addingRoom);
+            if (out.error) return out.error;
+            setAddingRoom(null);
+            // An open area's border is a choice (open, half wall, bar...), so offer it straight away.
+            if (addingRoom === 'zone' && out.id) setStyling(out.id);
+            else useDesignStore.getState().toast('Room added. Ctrl+Z to undo.', 'ok');
+            return null;
+          }}
+        />
+      )}
+
       {items.length === 0 && !armed && !readOnly && (
         <div className="plan-empty">
-          <h3>A blank room, {feetInches(W)} × {feetInches(L)}</h3>
-          <p>Start from a proven layout, or drag products in from the catalog.</p>
+          <h3>{drawn ? 'Your room is ready' : `A blank room, ${feetInches(W)} × ${feetInches(L)}`}</h3>
+          <p>{drawn ? 'Drag cabinets and appliances in from the catalog. They snap to your walls and to each other. Room & Finishes → Walls & rooms changes the shape.' : 'Start from a proven layout, or drag products in from the catalog.'}</p>
+          {!drawn && (
           <div className="plan-empty-actions">
             <button onClick={() => applyTemplate('l-island')}>L + Island</button>
             <button onClick={() => applyTemplate('galley')}>Galley</button>
             <button onClick={() => applyTemplate('u-shape')}>U-Shape</button>
             <button onClick={() => applyTemplate('one-wall')}>One Wall</button>
           </div>
+          )}
         </div>
       )}
     </div>

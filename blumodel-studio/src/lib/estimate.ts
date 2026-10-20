@@ -5,6 +5,7 @@ import { BACKSPLASHES, COUNTERTOPS, FLOORING, PAINTS, byId, resolveBacksplash } 
 import { resolveFaucet, resolveHardware } from './fixtures';
 import { backsplashSegments, resolveAll } from './geometry';
 import { resolveFinish } from './finish';
+import { floorAreaIn2, perimeterIn } from './outline';
 
 export type EstimateGroup =
   | 'Cabinetry'
@@ -77,6 +78,9 @@ const GROUP_BY_CATEGORY: Partial<Record<string, EstimateGroup>> = {
   decor: 'Furniture & decor',
   openings: 'Doors & windows',
 };
+
+/** Crown moulding per linear foot, supplied and installed, in the cabinet finish. */
+const CROWN_PRICE = { flat: 14, cove: 22 };
 
 export function pullCount(p: Product, w: number): number {
   if (p.source === 'missing') return 0;
@@ -179,16 +183,29 @@ export function buildEstimate(doc: DesignDoc, opts: EstimateOptions = {}): Estim
   }
 
   const floor = byId(FLOORING, surfaces.flooringId);
-  const floorSq = Math.ceil(((room.widthIn * room.lengthIn) / 144) * 1.1);
+  const floorSq = Math.ceil((floorAreaIn2(room) / 144) * 1.1);
   lines.push({ key: 'floor', group: 'Surfaces', label: `${floor.brand} ${floor.name}`, sub: 'Flooring, incl. 10% overage', qty: floorSq, unit: 'sq ft', unitPrice: floor.price, total: floorSq * floor.price });
 
   const paint = byId(PAINTS, surfaces.paintId);
   const openingsIn2 = all
     .filter((r) => r.product.kind === 'window' || r.product.kind === 'door')
     .reduce((s, r) => s + r.w * r.product.heightIn, 0);
-  const wallSq = (2 * (room.widthIn + room.lengthIn) * room.ceilingIn - openingsIn2) / 144;
+  const wallSq = (perimeterIn(room) * room.ceilingIn - openingsIn2) / 144;
   const gallons = Math.max(1, Math.ceil((wallSq * 2) / 350));
   lines.push({ key: 'paint', group: 'Surfaces', label: `${paint.brand} ${paint.name}`, sub: 'Wall paint, two coats', qty: gallons, unit: 'gal', unitPrice: paint.price, total: gallons * paint.price });
+
+  // Crown moulding: the run along every wall and tall cabinet that has room for it under the
+  // ceiling, plus 20% for returns, mitres and waste, priced per linear foot.
+  if (surfaces.crown === 'flat' || surfaces.crown === 'cove') {
+    const runIn = all
+      .filter((r) => (r.product.kind === 'wall' || r.product.kind === 'tall' || r.product.kind === 'oven-tower') && r.z1 + 3 <= room.ceilingIn + 0.01)
+      .reduce((n, r) => n + r.w, 0);
+    if (runIn > 0) {
+      const ft = Math.ceil((runIn / 12) * 1.2);
+      const price = surfaces.crown === 'cove' ? CROWN_PRICE.cove : CROWN_PRICE.flat;
+      lines.push({ key: 'crown', group: 'Surfaces', label: surfaces.crown === 'cove' ? 'Cove crown moulding' : 'Flat crown moulding', sub: 'Along the tops of the uppers and tall cabinets, incl. returns and 20% waste', qty: ft, unit: 'lin ft', unitPrice: price, total: ft * price });
+    }
+  }
 
   if (pulls > 0) {
     const hw = resolveHardware(surfaces, doc.fixtures);

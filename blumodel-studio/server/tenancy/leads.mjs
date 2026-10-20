@@ -19,7 +19,7 @@
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { randomId } from '../lib/ids.mjs';
-import { EMAIL_RE } from '../auth/userWire.mjs';
+import { emailProblem } from '../lib/emailCheck.mjs';
 import { csvCell } from '../contractors/csv.mjs';
 import { normalizePhone } from '../account/phone.mjs';
 import { readCookie, secureAttr, sha256 } from '../auth/sessions.mjs';
@@ -63,7 +63,8 @@ export function checkContact(b, company, { consentField = 'consent' } = {}) {
   const email = one(b?.email, 254).toLowerCase();
   const p = normalizePhone(typeof b?.phone === 'string' ? b.phone : '');
   if (!name) errors.push({ field: 'name', message: 'Tell us your name.' });
-  if (email && (!EMAIL_RE.test(email) || /[\r\n,;<>]/.test(email))) errors.push({ field: 'email', message: 'That email address doesn’t look right.' });
+  const emailBad = email ? emailProblem(email) : null;
+  if (emailBad) errors.push({ field: 'email', message: emailBad });
   if (!p.ok) errors.push({ field: 'phone', message: p.reason });
   if (!email && p.ok && !p.value) errors.push({ field: 'contact', message: `Give an email or a phone number so ${company} can reach you.` });
   if (b?.consent !== true) errors.push({ field: consentField, message: `Tick the box so ${company} can contact you.` });

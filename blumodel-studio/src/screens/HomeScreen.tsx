@@ -8,12 +8,13 @@ import { MiniPlan } from '../components/MiniPlan';
 import { AccountMenu } from '../components/AccountMenu';
 import { Copy, Plus, Search, Trash } from '../components/Icons';
 import { buildEstimate } from '../lib/estimate';
-import { feetInches, money } from '../lib/format';
+import { money } from '../lib/format';
 import { Toasts } from '../components/Toasts';
 import { usePriceBook } from '../features/contractors';
 import { useShowEstimator } from '../lib/prefs';
 import { LegalLinks } from '../features/legal/LegalLinks';
 import { newDesignHash, shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
+import { roomLabel } from '../lib/outline';
 
 export function HomeScreen() {
   const user = useSession((s) => s.user);
@@ -208,7 +209,7 @@ export function HomeScreen() {
                     )}
                     <span className="project-meta">
                       {p.client ? `${p.client} · ` : ''}
-                      {feetInches(p.doc.room.widthIn)} × {feetInches(p.doc.room.lengthIn)} · {p.doc.items.length} pieces
+                      {roomLabel(p.doc.room)} · {p.doc.items.length} pieces
                     </span>
                     <span className="project-foot">
                       <span>Edited {timeAgo(p.updatedAt)}</span>

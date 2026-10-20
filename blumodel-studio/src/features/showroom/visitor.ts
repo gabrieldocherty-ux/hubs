@@ -84,7 +84,8 @@ export const EMPTY_START: StartDraft = { name: '', email: '', phone: '', consent
  */
 export const startConsentText = (company: string) => `${company} may contact me about my design.`;
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The same shape rule as the server (server/lib/emailCheck.mjs): a real domain with a letters-only ending, no "..", no stray dots.
+const EMAIL = /^(?!\.)(?!.*\.\.)[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]{1,64}(?<!\.)@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,24}$/;
 const one = (v: string, max: number) => v.replace(/\s+/g, ' ').trim().slice(0, max);
 
 /** Field errors, worded like the server's (checkContact); empty when the form can go. */

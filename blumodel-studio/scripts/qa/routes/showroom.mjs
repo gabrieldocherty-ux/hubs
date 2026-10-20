@@ -248,7 +248,8 @@ export default [
     expectText: ['Let’s design your bathroom.', 'Bathroom name'],
     check: async (h) => {
       const steps = await h.evaluate(() => [...document.querySelectorAll('.wizard .steps li')].map((l) => l.textContent.trim()));
-      if (steps.length !== 3) throw new Error(`a bathroom has ${steps.length} steps (no layout step expected): ${steps.join(' / ')}`);
+      // 2026-10-19: a bathroom has a layout step too (tub, toilet and vanity placed with code clearances).
+      if (steps.length !== 4 || !/Layout/.test(steps[2])) throw new Error(`a bathroom has ${steps.length} steps (Basics, Room, Layout, Our lines expected): ${steps.join(' / ')}`);
       await noSideScroll(h);
       await noUpsell(h);
     },

@@ -20,7 +20,13 @@ export type Kind =
   | 'window'
   | 'door'
   | 'rug'
-  | 'plant';
+  | 'plant'
+  // Bathrooms (2026-10-19): a vanity with its own top and basin, a toilet, a tub, a shower, a mirror.
+  | 'vanity'
+  | 'toilet'
+  | 'tub'
+  | 'shower'
+  | 'mirror';
 
 export type CategoryId =
   | 'cabinets'
@@ -29,6 +35,7 @@ export type CategoryId =
   | 'lighting'
   | 'seating'
   | 'openings'
+  | 'bath'
   | 'decor';
 
 export type MaterialKind =
@@ -151,10 +158,48 @@ export interface PlacedItem {
   mirrored?: boolean;
 }
 
+/** Corner points in inches from the plan's north-west origin; see `lib/outline.ts`. */
+export type OutlinePt = [number, number];
+
+/**
+ * What stands along one edge of an outline. `wall` is the default for a room's own walls and `open`
+ * for an open area's border, so most plans never say.
+ * - wall: a full-height wall (holds doors and windows)
+ * - half: a half wall, 42″ (a pony wall between kitchen and living room)
+ * - bar: a half wall with a bar-height counter ledge on the room side
+ * - rail: a 36″ railing (an open stair, a step down)
+ * - glass: a full-height glass partition
+ * - beam: no wall, a dropped beam (bulkhead) overhead that marks the edge
+ * - open: nothing, just the line where one area ends and the next begins
+ */
+export type EdgeStyle = 'wall' | 'half' | 'bar' | 'rail' | 'glass' | 'beam' | 'open';
+
+/**
+ * Another space in the same plan. A `room` has its own floor and walls (a pantry, a dining room, a
+ * hall) and sits beside the others. A `zone` is an area marked inside open space (the kitchen part
+ * of an open-plan kitchen and living room): it adds no floor, its border is `open` unless styled.
+ */
+export interface ExtraRoom {
+  id: string;
+  name: string;
+  outline: OutlinePt[];
+  ceilingIn?: number;
+  kind?: 'room' | 'zone';
+  /** One style per edge (edge i runs from corner i to corner i+1). Absent: every edge is the default. */
+  styles?: EdgeStyle[];
+}
+
 export interface Room {
+  /** Bounding box of the main room. For a drawn room these are derived from `outline`. */
   widthIn: number;
   lengthIn: number;
   ceilingIn: number;
+  /** Walls the person drew: a closed rectilinear outline. Absent means the plain rectangle. */
+  outline?: OutlinePt[];
+  /** Edge styles of `outline` (or of the rectangle), same length as its corners. Absent: all walls. */
+  styles?: EdgeStyle[];
+  /** Further rooms and open areas that share the plan (and its walls and doorways). */
+  extra?: ExtraRoom[];
 }
 
 export type DoorStyle = 'shaker' | 'slab' | 'fluted';
@@ -198,7 +243,11 @@ export interface Surfaces {
   backsplashId: string;
   flooringId: string;
   paintId: string;
+  /** Crown moulding along the tops of wall and tall cabinets. Absent: none. */
+  crown?: CrownStyle;
 }
+
+export type CrownStyle = 'none' | 'flat' | 'cove';
 
 /**
  * An extra estimate line: labour or a service such as installation, demolition or delivery.

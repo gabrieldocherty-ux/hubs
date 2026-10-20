@@ -15,6 +15,9 @@
  *   tap                                          selects (again on a stack: the next piece
  *                                                down), tap empty space deselects, and with a
  *                                                product armed for tap-to-place, places it
+ *   press on a wall (mouse or pen), move           drags the wall; what stands against it moves
+ *                                                with it (touch pans instead, so a phone never
+ *                                                moves a wall by accident)
  *   wheel                                        zooms at the pointer
  *   Escape during a drag                         puts the piece back
  *
@@ -27,6 +30,7 @@ import { clamp } from '../../lib/geometry';
 import { placeAt, planClientToRoom, useOverlay, usePlacement } from '../../lib/interaction';
 import { useDesignStore } from '../../store/useDesignStore';
 import { pickAt, touchPad, type Pick } from './planHit';
+import { planSize, wallSegs, type WallSeg } from '../../lib/outline';
 
 export interface View {
   scale: number;
@@ -52,6 +56,7 @@ type Gesture =
   | { kind: 'pending'; pointerId: number; type: string; start: Pt; startRoom: Pt; pick: Pick; button: number }
   | { kind: 'item'; pointerId: number; id: string; offset: Pt; last: Pt }
   | { kind: 'pan'; pointerId: number; start: Pt; startView: View }
+  | { kind: 'wall'; pointerId: number; segId: number; horizontal: boolean; offset: number }
   | { kind: 'pinch'; ids: [number, number]; startDist: number; startMid: Pt; startView: View };
 
 export interface PlanGestureOptions {
@@ -159,9 +164,9 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
           // Only scroll while there is more room to reveal in that direction.
           const margin = 24;
           if (dx > 0) dx = Math.min(dx, Math.max(0, margin - v.x));
-          if (dx < 0) dx = Math.max(dx, Math.min(0, w - margin - (v.x + room.widthIn * v.scale)));
+          if (dx < 0) dx = Math.max(dx, Math.min(0, w - margin - (v.x + planSize(room).W * v.scale)));
           if (dy > 0) dy = Math.min(dy, Math.max(0, margin - v.y));
-          if (dy < 0) dy = Math.max(dy, Math.min(0, h - margin - (v.y + room.lengthIn * v.scale)));
+          if (dy < 0) dy = Math.max(dy, Math.min(0, h - margin - (v.y + planSize(room).L * v.scale)));
           if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
             applyRef.current({ ...v, x: v.x + dx, y: v.y + dy }, true);
             moveItem(g.last);
@@ -209,6 +214,55 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
     const startPan = (pointerId: number, start: Pt) => {
       gesture.current = { kind: 'pan', pointerId, start, startView: { ...viewRef.current } };
       setCursor('grabbing');
+    };
+
+    // ── walls ──
+    /** The wall under a plan point, within a few screen pixels of its line. */
+    const wallAt = (p: Pt): WallSeg | null => {
+      const reach = 7 / viewRef.current.scale;
+      let best: WallSeg | null = null;
+      let bd = reach;
+      for (const sg of wallSegs(store().doc.room)) {
+        const alongX = sg.wall === 'north' || sg.wall === 'south';
+        const along = alongX ? p.x : p.y;
+        const across = alongX ? p.y : p.x;
+        if (along < sg.a0 - 2 || along > sg.a1 + 2) continue;
+        // The wall's body sits outside its line: count a press on the body too.
+        const out = sg.wall === 'north' || sg.wall === 'west' ? sg.at - across : across - sg.at;
+        const d = out >= 0 && out <= 5 ? 0 : Math.abs(across - sg.at);
+        if (d < bd) {
+          bd = d;
+          best = sg;
+        }
+      }
+      return best;
+    };
+    const beginWall = (sg: WallSeg, pointerId: number, startRoom: Pt) => {
+      const horizontal = sg.wall === 'north' || sg.wall === 'south';
+      gesture.current = { kind: 'wall', pointerId, segId: sg.id, horizontal, offset: sg.at - (horizontal ? startRoom.y : startRoom.x) };
+      setCursor(horizontal ? 'ns-resize' : 'ew-resize');
+    };
+    const moveWall = (client: Pt) => {
+      const g = gesture.current;
+      if (g.kind !== 'wall') return;
+      const p = toRoom(client);
+      store().wallDragMove(g.segId, Math.round((g.horizontal ? p.y : p.x) + g.offset));
+    };
+    const endWall = (commit: boolean) => {
+      const g = gesture.current;
+      if (g.kind !== 'wall') return;
+      gesture.current = { kind: 'idle' };
+      setCursor('');
+      if (!commit) {
+        store().dragCancel();
+        return;
+      }
+      // The plan rebases to its new north-west corner: shift the view so nothing jumps on screen.
+      const { dx, dy } = store().wallDragEnd();
+      if (dx || dy) {
+        const v = viewRef.current;
+        applyRef.current({ ...v, x: v.x - dx * v.scale, y: v.y - dy * v.scale }, true);
+      }
     };
 
     // ── tap ──
@@ -269,7 +323,8 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
           const r = toRoom({ x: e.clientX, y: e.clientY });
           const pick = pickAt(itemsRef.current, r.x, r.y, padFor('mouse'), store().selectedId);
           setHover(pick.hits[0]?.id ?? null);
-          setCursor(usePlacement.getState().armedProductId ? 'crosshair' : pick.dragId ? 'grab' : '');
+          const wl = !pick.dragId && !store().readOnly ? wallAt(r) : null;
+          setCursor(usePlacement.getState().armedProductId ? 'crosshair' : pick.dragId ? 'grab' : wl ? (wl.wall === 'north' || wl.wall === 'south' ? 'ns-resize' : 'ew-resize') : '');
         }
         return;
       }
@@ -282,13 +337,19 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
           if (g.pointerId !== e.pointerId) return;
           if (dist(client, g.start) <= (THRESHOLD[g.type] ?? 6)) return;
           if (g.pick.dragId) beginItem(g.pick.dragId, g.pointerId, g.startRoom, client);
-          else {
+          else if (g.type !== 'touch' && !store().readOnly && !usePlacement.getState().armedProductId && wallAt(g.startRoom)) {
+            beginWall(wallAt(g.startRoom)!, g.pointerId, g.startRoom);
+            moveWall(client);
+          } else {
             startPan(g.pointerId, g.start);
             onMove(e);
           }
           return;
         case 'item':
           if (g.pointerId === e.pointerId) moveItem(client);
+          return;
+        case 'wall':
+          if (g.pointerId === e.pointerId) moveWall(client);
           return;
         case 'pan':
           if (g.pointerId !== e.pointerId) return;
@@ -317,6 +378,9 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
           break;
         case 'item':
           if (g.pointerId === e.pointerId) endItem(!cancelled);
+          break;
+        case 'wall':
+          if (g.pointerId === e.pointerId) endWall(!cancelled);
           break;
         case 'pan':
           if (g.pointerId === e.pointerId) {
@@ -375,6 +439,10 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
         endItem(false);
         e.preventDefault();
         e.stopPropagation();
+      } else if (gesture.current.kind === 'wall') {
+        endWall(false);
+        e.preventDefault();
+        e.stopPropagation();
       } else if (usePlacement.getState().armedProductId) {
         usePlacement.getState().disarm();
         e.preventDefault();
@@ -397,6 +465,7 @@ export function usePlanGestures({ wrapRef, stageRef, viewRef, applyView, itemsRe
     return () => {
       // Unmounting mid-drag (view switch): don't leave the store's drag open.
       if (gesture.current.kind === 'item') endItem(true);
+      if (gesture.current.kind === 'wall') endWall(true);
       gesture.current = { kind: 'idle' };
       cancelAnimationFrame(raf);
       wrap.removeEventListener('pointerdown', onDown);

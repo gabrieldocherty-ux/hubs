@@ -22,6 +22,9 @@ export function baseFronts(w: number, variant: string | undefined, opts: { false
     return cuts.slice(1).map((c, i) => ({ x: 0, y: cuts[i], w, h: c - cuts[i], pull: hPull(0, c - (i === 2 ? 3.1 : 3), w) }));
   }
   if (variant === 'trash') return [{ x: 0, y: bottom, w, h: top - bottom, pull: hPull(0, top - 3, w) }];
+  // A filler strip is one flat board in the run; an end panel runs to the floor and covers the toe kick.
+  if (variant === 'filler') return [{ x: 0, y: bottom, w, h: top - bottom, pull: null }];
+  if (variant === 'panel') return [{ x: 0, y: 0, w, h: top, pull: null }];
   const fronts: FrontSpec[] = [{ x: 0, y: 28, w, h: top - 28, pull: opts.falseTop ? null : hPull(0, 31.2, w) }];
   const doorTop = 28;
   const pullY = doorTop - 4;

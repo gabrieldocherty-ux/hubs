@@ -1,6 +1,6 @@
 import type { BrandPrefs, PlacedItem, Product, Room, Rotation, Surfaces } from '../../types';
 import { getProduct, isOpening } from '../../data/catalog';
-import { WALL_ROTATION, placeOnWall, resolveAll, findOverlaps, outsideRoom, type Wall } from '../geometry';
+import { WALL_ROTATION, placeOnWall, wallLength, resolveAll, findOverlaps, outsideRoom, type Wall } from '../geometry';
 import { defaultFinishIndex } from '../finish';
 import { makeId } from '../id';
 import { brandPicker, type BrandSwap } from './brands';
@@ -302,6 +302,11 @@ export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: stri
     }
     working.push({ slot: s, pick });
   }
+  // A fridge at a run's end against a side wall gets a 3″ filler there, so its door opens past 90°
+  // and the crisper drawers come out (the fridge check flags it otherwise).
+  const isFridge = (w: Working | undefined) => !!w && isRole(w) && w.pick.product.kind === 'fridge';
+  if (isFridge(working[0]) && start <= 0.5) working.unshift({ gap: 3 });
+  if (isFridge(working[working.length - 1]) && end >= wallLength(wall, room) - 0.5) working.push({ gap: 3 });
   const widthOf = (s: Working) => (s === 'flex' ? 0 : isGap(s) ? s.gap : s.pick.widthIn);
   const fixed = () => working.reduce((sum, s) => sum + widthOf(s), 0);
   const optionalIdx = () => working.map((s, i) => (isRole(s) && s.slot.optional ? i : -1)).filter((i) => i >= 0);

@@ -107,7 +107,7 @@ export function buildScene(doc: DesignDoc, productOf: (id: string) => Product | 
   }
   const hardware = s.hardwareId && doc.fixtures?.[s.hardwareId] ? doc.fixtures[s.hardwareId].name : byId(HARDWARE, s.hardwareId).name;
   return {
-    room: { kind: bath ? 'bathroom' : 'kitchen', widthIn: doc.room.widthIn, lengthIn: doc.room.lengthIn, ceilingIn: doc.room.ceilingIn },
+    room: { kind: bath ? 'bathroom' : 'kitchen', widthIn: doc.room.widthIn, lengthIn: doc.room.lengthIn, ceilingIn: doc.room.ceilingIn, ...(doc.room.extra?.length ? { shape: `${doc.room.extra.length + 1} connected rooms` } : doc.room.outline ? { shape: `a room with ${doc.room.outline.length} corners, not a plain rectangle` } : {}) },
     finishes: {
       cabinets: byId(CABINET_FINISHES, s.cabinetFinishId).name,
       doorStyle: byId(DOOR_STYLES, s.doorStyle).name,

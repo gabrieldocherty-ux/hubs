@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useDesignStore } from '../../store/useDesignStore';
 import { isOpening } from '../../data/catalog';
-import { flushWall, resolve, type Resolved } from '../../lib/geometry';
+import { flushSeg, resolve, type Resolved } from '../../lib/geometry';
 import { INCHES_PER_WORLD_UNIT, useOverlay, type ViewId } from '../../lib/interaction';
 import { projectBoxToClient } from './InteractMath';
 import type * as THREE from 'three';
@@ -26,14 +26,14 @@ export function markActiveView(view: ViewId) {
 /** Room3D hides the walls between the camera and the room, and the doors/windows on them. */
 function hiddenOpening(r: Resolved, camera: THREE.Camera, room: Room): boolean {
   if (!isOpening(r.product)) return false;
-  const wall = flushWall(r, room);
+  const seg = flushSeg(r, room);
+  if (!seg) return false;
   const x = camera.position.x * INCHES_PER_WORLD_UNIT;
   const z = camera.position.z * INCHES_PER_WORLD_UNIT;
-  if (wall === 'north') return !(z > 0);
-  if (wall === 'south') return !(z < room.lengthIn);
-  if (wall === 'west') return !(x > 0);
-  if (wall === 'east') return !(x < room.widthIn);
-  return false;
+  if (seg.wall === 'north') return !(z > seg.at);
+  if (seg.wall === 'south') return !(z < seg.at);
+  if (seg.wall === 'west') return !(x > seg.at);
+  return !(x < seg.at);
 }
 
 export function InteractOverlay() {

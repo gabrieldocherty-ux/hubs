@@ -10,6 +10,10 @@ import { MiniPlan } from '../components/MiniPlan';
 import { FeetInchesInput } from '../components/FeetInchesInput';
 import { AccountMenu } from '../components/AccountMenu';
 import { Check } from '../components/Icons';
+import { BATH_LAYOUTS, bathLayoutFits, bathLayoutItems, type BathLayoutId } from '../data/bathLayouts';
+import { RoomSketcher } from '../components/sketch/RoomSketcher';
+import { floorAreaIn2 } from '../lib/outline';
+import type { Draft } from '../lib/roomEdit';
 import { feetInches } from '../lib/format';
 import { useCatalog, useCatalogVersion } from '../store/useCatalog';
 import { useSession } from '../store/useSession';
@@ -22,7 +26,7 @@ import './setupWizard.css';
 const STEPS = ['Basics', 'Room', 'Layout', 'Brands'] as const;
 /** On a showroom the last step is the company's own product lines; a bathroom has no layout step (it starts as a blank room). */
 const SHOWROOM_STEPS = ['Basics', 'Room', 'Layout', 'Our lines'] as const;
-const BATHROOM_STEPS = ['Basics', 'Room', 'Our lines'] as const;
+const BATHROOM_STEPS = ['Basics', 'Room', 'Layout', 'Our lines'] as const;
 /** Brand chips shown per category before "Show all". */
 const BRANDS_SHOWN = 6;
 
@@ -32,6 +36,11 @@ const SIZES: { label: string; room: Room }[] = [
   { label: 'Spacious · 16′8″ × 13′', room: { widthIn: 200, lengthIn: 156, ceilingIn: 108 } },
   { label: 'Open plan · 20′ × 16′', room: { widthIn: 240, lengthIn: 192, ceilingIn: 120 } },
 ];
+
+/** Floor area in square inches: the main room and any extra rooms. */
+function floorArea(room: Room): number {
+  return floorAreaIn2(room);
+}
 
 const BATH_SIZES: { label: string; room: Room }[] = [
   { label: 'Powder room · 5′ × 6′', room: { widthIn: 60, lengthIn: 72, ceilingIn: 96 } },
@@ -57,14 +66,18 @@ export function SetupWizard() {
   const bathroom = !!showroom?.features.bathrooms && roomFromQuery(query) === 'bathroom';
   const steps: readonly string[] = bathroom ? BATHROOM_STEPS : showroom ? SHOWROOM_STEPS : STEPS;
   const BRAND_STEP = steps.length - 1;
-  const LAYOUT_STEP = bathroom ? -1 : 2;
+  const LAYOUT_STEP = 2;
   const products = useCatalog((s) => s.products);
   const lines = useMemo(() => (showroom ? showroomLines(products) : []), [showroom, products]);
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
-  const [room, setRoom] = useState<Room>(bathroom ? BATH_SIZES[1].room : DEFAULT_ROOM);
+  // The room is drawn, not picked: `draft` is its walls and the doorways and windows set into them.
+  const [draft, setDraft] = useState<Draft>({ room: bathroom ? BATH_SIZES[1].room : DEFAULT_ROOM, items: [] });
+  const room = draft.room;
+  const setRoom = (r: Room) => setDraft({ room: r, items: [] });
   const [templateId, setTemplateId] = useState<TemplateId | null>(bathroom ? null : 'l-island');
+  const [bathLayout, setBathLayout] = useState<BathLayoutId | null>('three-piece');
   const [brands, setBrands] = useState<BrandPrefs>({});
   // `?line=` once the company's products have arrived (the catalog loads in the background).
   const lineParam = query.get('line');
@@ -79,13 +92,17 @@ export function SetupWizard() {
   const retail = useRetailBrands(!showroom);
   const catalogVersion = useCatalogVersion();
 
-  const fits = (t: (typeof TEMPLATES)[number]) => room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
-  const layoutOk = templateId === null || fits(TEMPLATES.find((t) => t.id === templateId)!);
+  // Suggested layouts are built for a plain rectangle with nothing set into its walls yet. A drawn
+  // room starts empty (with the doorways and windows drawn), and the layout is built in the designer.
+  const rectPlain = !room.outline && !room.extra?.length && draft.items.length === 0;
+  const fits = (t: (typeof TEMPLATES)[number]) => rectPlain && room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
+  const layoutOk = !rectPlain || templateId === null || fits(TEMPLATES.find((t) => t.id === templateId)!);
+  const startItems = draft.items.length ? draft.items : null;
   const kitchenName = name.trim() || (bathroom ? 'My Bathroom' : 'My Kitchen');
   const roomWord = bathroom ? 'bathroom' : 'kitchen';
 
   // New kitchens start plain: neutral finishes, no colour palette (those live in Room & finishes).
-  const layoutPreviews = useMemo(() => TEMPLATES.map((t) => ({ t, doc: composeNewKitchen('', room, fits(t) ? t.id : null) })), [room]);
+  const layoutPreviews = useMemo(() => TEMPLATES.map((t) => ({ t, doc: composeNewKitchen('', room, fits(t) ? t.id : startItems) })), [room]);
   // The chosen brands fill every slot one of them sells in that size (see brandPicker). The
   // catalog version is a dependency because the retail products register after the page opens.
   // On a showroom a category with no choice means every line the company sells there, so a new
@@ -93,9 +110,13 @@ export function SetupWizard() {
   const brandPrefs = useMemo(() => (showroom ? showroomPrefs(brands, lines) : cleanBrandPrefs(brands)), [brands, showroom, lines]);
   // Without "fill the gaps" a showroom design holds only the company's own products.
   const fillGaps = !showroom || showroom.features.fillGaps;
+  // A bathroom's starting layout: tub (or shower), toilet and vanity placed with code clearances.
+  const bathFits = (id: BathLayoutId) => rectPlain && bathLayoutFits(BATH_LAYOUTS.find((l) => l.id === id)!, room);
+  const bathItems = useMemo(() => (bathroom && bathLayout && bathFits(bathLayout) ? bathLayoutItems(bathLayout, room) : null), [bathroom, bathLayout, room, rectPlain]);
+  const bathPreviews = useMemo(() => (bathroom ? BATH_LAYOUTS.map((l) => ({ l, items: bathFits(l.id) ? bathLayoutItems(l.id, room) : [] })) : []), [bathroom, room, rectPlain]);
   const preview = useMemo(
-    () => keepShowroomItems(composeNewKitchen(kitchenName, room, layoutOk ? templateId : null, brandPrefs), fillGaps),
-    [kitchenName, room, templateId, layoutOk, brandPrefs, catalogVersion, fillGaps],
+    () => keepShowroomItems(composeNewKitchen(kitchenName, room, bathroom ? (bathItems ?? startItems) : rectPlain && layoutOk ? templateId : startItems, brandPrefs), fillGaps),
+    [kitchenName, room, templateId, layoutOk, rectPlain, startItems, brandPrefs, catalogVersion, fillGaps, bathroom, bathItems],
   );
   const share = useMemo(() => brandShare(preview, brandPrefs), [preview, brandPrefs]);
 
@@ -161,7 +182,7 @@ export function SetupWizard() {
               <h1>{showroom ? `Let’s design your ${roomWord}.` : 'Let’s set up a new kitchen.'}</h1>
               <p className="wizard-sub">
                 {showroom
-                  ? `A few quick steps: a name, the room${bathroom ? '' : ', a starting layout'} and ${shortName(showroom)}’s product lines. You can change everything afterwards.`
+                  ? `A few quick steps: a name, the room, a starting layout and ${shortName(showroom)}’s product lines. You can change everything afterwards.`
                   : 'Set it up step by step. Give it a name you’ll recognise on your projects page.'}
               </p>
               <label className="field">
@@ -179,30 +200,70 @@ export function SetupWizard() {
 
           {step === 1 && (
             <>
-              <h1>How big is the room?</h1>
-              <p className="wizard-sub">Measure wall to wall. You can fine-tune this any time.</p>
-              <div className="size-picks">
-                {(bathroom ? BATH_SIZES : SIZES).map((s) => (
-                  <button key={s.label} className={s.room.widthIn === room.widthIn && s.room.lengthIn === room.lengthIn ? 'chip on' : 'chip'} onClick={() => setRoom(s.room)}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+              <h1>Draw the room.</h1>
+              <p className="wizard-sub">
+                Click or tap the corners of the walls, type a length to be exact, then add doorways and windows. Any shape works; there’s nothing to pick first. You can change all of it later in the designer.
+              </p>
+              <RoomSketcher draft={draft} onChange={setDraft} />
+              <details className="size-quick" open>
+                <summary>Or start from a size</summary>
+                <div className="size-picks">
+                  {(bathroom ? BATH_SIZES : SIZES).map((s) => (
+                    <button key={s.label} className={!room.outline && s.room.widthIn === room.widthIn && s.room.lengthIn === room.lengthIn ? 'chip on' : 'chip'} onClick={() => setRoom(s.room)}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="dims">
+                  <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={bathroom ? 48 : 72} max={480} onCommit={(v) => setDraft({ room: { ...room, outline: undefined, extra: undefined, widthIn: v }, items: [] })} />
+                  <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={bathroom ? 48 : 72} max={480} onCommit={(v) => setDraft({ room: { ...room, outline: undefined, extra: undefined, lengthIn: v }, items: [] })} />
+                </div>
+              </details>
               <div className="dims">
-                <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={bathroom ? 48 : 72} max={480} onCommit={(v) => setRoom({ ...room, widthIn: v })} />
-                <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={bathroom ? 48 : 72} max={480} onCommit={(v) => setRoom({ ...room, lengthIn: v })} />
-                <FeetInchesInput label="Ceiling" valueIn={room.ceilingIn} min={90} max={144} onCommit={(v) => setRoom({ ...room, ceilingIn: v })} />
+                <FeetInchesInput label="Ceiling" valueIn={room.ceilingIn} min={90} max={144} onCommit={(v) => setDraft({ ...draft, room: { ...room, ceilingIn: v } })} />
               </div>
-              <p className="wizard-note mono">{Math.round((room.widthIn * room.lengthIn) / 144)} sq ft</p>
+              <p className="wizard-note mono">{Math.round(floorArea(room) / 144)} sq ft{room.extra?.length ? ` · ${room.extra.length + 1} rooms` : ''}</p>
             </>
           )}
 
-          {step === LAYOUT_STEP && (
+          {step === LAYOUT_STEP && bathroom && (
             <>
               <h1>Pick a starting layout.</h1>
-              <p className="wizard-sub">Filled with real cabinet sizes for a {feetInches(room.widthIn)} × {feetInches(room.lengthIn)} room.</p>
+              <p className="wizard-sub">
+                {rectPlain
+                  ? 'Fixtures placed with the clearances the building code asks for. Move anything in the designer.'
+                  : 'You drew this bathroom yourself, so it starts empty with your doors and windows in place.'}
+              </p>
               <div className="layout-picks">
-                {layoutPreviews.map(({ t, doc }) => {
+                {bathPreviews.map(({ l, items }) => {
+                  const ok = bathFits(l.id);
+                  return (
+                    <button key={l.id} className={bathLayout === l.id && ok ? 'layout-pick on' : 'layout-pick'} disabled={!ok} onClick={() => setBathLayout(l.id)}>
+                      <MiniPlan doc={{ name: '', room, surfaces: preview.surfaces, items }} />
+                      <b>{l.name}</b>
+                      <span>{ok ? l.blurb : rectPlain ? `Needs ${Math.ceil(l.minShort / 12)}′ × ${Math.ceil(l.minLong / 12)}′` : 'For a plain rectangle'}</span>
+                    </button>
+                  );
+                })}
+                <button className={!bathItems ? 'layout-pick on' : 'layout-pick'} onClick={() => setBathLayout(null)}>
+                  <MiniPlan doc={{ name: '', room, surfaces: preview.surfaces, items: draft.items }} />
+                  <b>Blank room</b>
+                  <span>Start from scratch and drag everything in.</span>
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === LAYOUT_STEP && !bathroom && (
+            <>
+              <h1>Pick a starting layout.</h1>
+              <p className="wizard-sub">
+                {rectPlain
+                  ? `Filled with real cabinet sizes for a ${feetInches(room.widthIn)} × ${feetInches(room.lengthIn)} room.`
+                  : 'You drew this room yourself, so it starts empty with your doors and windows in place. Everything snaps to your walls in the designer.'}
+              </p>
+              <div className="layout-picks">
+                {(rectPlain ? layoutPreviews : []).map(({ t, doc }) => {
                   const ok = fits(t);
                   return (
                     <button key={t.id} className={templateId === t.id ? 'layout-pick on' : 'layout-pick'} disabled={!ok} onClick={() => setTemplateId(t.id)}>
@@ -212,8 +273,8 @@ export function SetupWizard() {
                     </button>
                   );
                 })}
-                <button className={templateId === null ? 'layout-pick on' : 'layout-pick'} onClick={() => setTemplateId(null)}>
-                  <MiniPlan doc={{ name: '', room, surfaces: preview.surfaces, items: [] }} />
+                <button className={templateId === null || !rectPlain ? 'layout-pick on' : 'layout-pick'} onClick={() => setTemplateId(null)}>
+                  <MiniPlan doc={{ name: '', room, surfaces: preview.surfaces, items: draft.items }} />
                   <b>Blank room</b>
                   <span>Start from scratch and drag everything in.</span>
                 </button>

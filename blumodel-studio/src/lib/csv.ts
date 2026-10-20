@@ -1,7 +1,7 @@
 import type { DesignDoc } from '../types';
 import { atStoreNote, type Estimate } from './estimate';
 import { csvEscape } from './exporters';
-import { feetInches } from './format';
+import { roomLabel } from './outline';
 
 export const PLACEHOLDER_PRICES_NOTE = 'Brand names and prices are placeholders for illustration.';
 export const VISUALIZER_DISCLAIMER =
@@ -14,7 +14,7 @@ function safeCell(v: string | number): string | number {
 
 export function estimateCsv(doc: DesignDoc, est: Estimate): string {
   const rows: (string | number)[][] = [
-    [`${doc.name} — ${feetInches(doc.room.widthIn)} x ${feetInches(doc.room.lengthIn)}`],
+    [`${doc.name} — ${roomLabel(doc.room).replace('×', 'x')}`],
     ['Group', 'Item', 'Detail', 'SKU', 'Qty', 'Unit', 'Unit price', 'Total', 'Buy link'],
     ...est.lines.map((l) => [l.group, l.label, l.sub, l.sku ?? '', l.qty, l.unit, l.atStore ? 'Price at store' : l.unitPrice, l.atStore ? '' : l.total, l.buyUrl ?? '']),
     [],

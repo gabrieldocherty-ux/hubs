@@ -3,7 +3,7 @@
 // to an outside service and is stored: short strings, bounded lists, finite numbers, nothing else.
 //
 //   Scene = {
-//     room: { kind: 'kitchen' | 'bathroom', widthIn, lengthIn, ceilingIn },
+//     room: { kind: 'kitchen' | 'bathroom', widthIn, lengthIn, ceilingIn, shape? },
 //     style: string,                       // the design's style or preset name, if any
 //     finishes: { cabinets, doorStyle, hardware, countertop, backsplash, flooring, walls },
 //     products: [{ name, brand, category, finish, count }],   // at most 60
@@ -52,6 +52,7 @@ export function cleanScene(raw, { showroom = '', designName = '' } = {}) {
       widthIn: num(room.widthIn, 12, 2400),
       lengthIn: num(room.lengthIn, 12, 2400),
       ceilingIn: num(room.ceilingIn, 60, 400),
+      ...(str(room.shape, 80) ? { shape: str(room.shape, 80) } : {}),
     },
     name: str(designName, 120),
     style: str(r.style, 80),
@@ -79,7 +80,8 @@ const feet = (inches) => {
  */
 export function scenePrompt(scene) {
   const parts = [];
-  const size = scene.room.widthIn && scene.room.lengthIn ? ` about ${feet(scene.room.widthIn)} by ${feet(scene.room.lengthIn)}` : '';
+  const shape = scene.room.shape ? ` (${scene.room.shape})` : '';
+  const size = scene.room.widthIn && scene.room.lengthIn ? ` about ${feet(scene.room.widthIn)} by ${feet(scene.room.lengthIn)}${scene.room.shape ? ' at its widest' : ''}${shape}` : '';
   parts.push(`A photorealistic interior photograph of this ${scene.room.kind}${size}, from exactly the camera position, layout and proportions of the attached 3D view. Keep every cabinet, appliance and fixture where it is; do not add, remove or move anything.`);
   if (scene.style) parts.push(`Style: ${scene.style}.`);
   const f = scene.finishes;

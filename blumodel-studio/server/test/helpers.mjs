@@ -16,6 +16,9 @@ import { migrate } from '../db/migrate.mjs';
 import { createApp } from '../app.mjs';
 import { randomId } from '../lib/ids.mjs';
 
+// The live DNS check on email domains is for the real server; tests must not depend on the network.
+process.env.BLUMODEL_EMAIL_DNS_CHECK ??= 'off';
+
 export const silentLog = { info() {}, warn() {}, error() {} };
 
 /** A valid ProductSpec (a 30″ range) with `over` merged on top. */

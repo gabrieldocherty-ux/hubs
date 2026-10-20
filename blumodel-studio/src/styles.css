@@ -3381,3 +3381,106 @@ a.btn {
     min-width: 44px;
   }
 }
+
+/* Plan: the picker for what stands along a new open area's border, and the Add buttons. */
+.plan-add-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.border-picker {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: min(560px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.border-picker-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.border-picker-head span,
+.border-picker-note {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin: 0;
+}
+
+.border-picker-opts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.border-picker-opts .btn.on {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* Plan: the Add a room menu. */
+.plan-menu {
+  position: relative;
+}
+
+.plan-menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 8;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.plan-menu-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-menu-list button:hover {
+  background: var(--paper-2);
+}
+
+.plan-menu-list small {
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.plan-menu-draw {
+  border-top: 1px solid var(--line) !important;
+  border-radius: 0 0 7px 7px !important;
+  margin-top: 4px;
+}

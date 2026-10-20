@@ -3,7 +3,6 @@ import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
 import { WallsIcon, CubeIcon, Download, Logo, Wordmark, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
 import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
-import { feetInches } from '../lib/format';
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
@@ -16,6 +15,9 @@ import { ShareButton } from '../features/share';
 import { requestExport, useEntitlements, useResumeExport, type ExportFile, type ExportRunner } from '../features/billing';
 import { openQuote, PresentButton, usePriceBook } from '../features/contractors';
 import { shortName, SiteMark, useShowroom, useVisitor } from '../features/showroom';
+import { roomLabel, floorSqFt } from '../lib/outline';
+import { elevationsForPrint } from './ElevationsView';
+import { resolveAll } from '../lib/geometry';
 
 function SaveStatus() {
   const projectId = useSession((s) => s.projectId);
@@ -132,12 +134,13 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
     const html = productListHtml({
       tenant: showroom,
       designName: doc.name,
-      roomText: `${feetInches(doc.room.widthIn)} × ${feetInches(doc.room.lengthIn)} · ${Math.round((doc.room.widthIn * doc.room.lengthIn) / 144)} sq ft`,
+      roomText: `${roomLabel(doc.room)} · ${floorSqFt(doc.room)} sq ft`,
       lines: est.lines.filter((l) => l.productId || l.fixtureId),
       showPrices,
       total: est.lines.filter((l) => l.productId || l.fixtureId).reduce((n, l) => n + l.total, 0),
       logoUrl: logo,
       planImage: planShot,
+      elevations: elevationsForPrint(resolveAll(doc.items), doc.room, doc.surfaces),
       host: location.host,
       at: new Date(),
     });

@@ -33,6 +33,7 @@ import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { hashPassword, verifyPassword, dummyHash, MAX_PASSWORD } from '../auth/passwords.mjs';
 import { EMAIL_RE, makeUserWire } from '../auth/userWire.mjs';
+import { emailDomainProblem, emailProblem } from '../lib/emailCheck.mjs';
 import { deviceLabel, deviceOf } from '../auth/device.mjs';
 import { createPrefsStore } from '../account/prefs.mjs';
 import { createMailer } from '../email/index.mjs';
@@ -167,6 +168,8 @@ export default function routes(ctx) {
         const password = typeof body.password === 'string' ? body.password : '';
         if (!name) throw new HttpError(400, 'Tell us your name.');
         if (!EMAIL_RE.test(email)) throw new HttpError(400, 'That email address does not look right.');
+        const emailBad = emailProblem(email) || (await emailDomainProblem(email));
+        if (emailBad) throw new HttpError(400, emailBad, { field: 'email' });
         if (password.length < 8) throw new HttpError(400, 'Use at least 8 characters for your password.');
         if (password.length > MAX_PASSWORD) throw new HttpError(400, 'That password is too long.');
         const taken = () => new HttpError(409, 'An account with that email already exists. Try signing in.');

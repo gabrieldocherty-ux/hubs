@@ -4,7 +4,8 @@ import {
   alongWall,
   boxGap,
   findOverlaps,
-  flushWall,
+  clearToWall,
+  flushSeg,
   frontVector,
   outsideRoom,
   overlap1D,
@@ -85,7 +86,9 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
   }
 
   // Work aisles: anything whose front faces something else, and islands/tables on every side.
-  const floor = all.filter(isFloorMass);
+  // Bathroom fixtures have their own clearances (bathChecks), not the kitchen's 42″ work aisle.
+  const BATH = new Set(['vanity', 'toilet', 'tub', 'shower', 'mirror']);
+  const floor = all.filter((r) => isFloorMass(r) && !BATH.has(r.product.kind));
   let aislePairs = 0;
   for (let i = 0; i < floor.length; i++) {
     for (let j = i + 1; j < floor.length; j++) {
@@ -115,12 +118,17 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
   }
   for (const r of floor.filter(isFreestanding)) {
     const b = r.box;
-    const walls: [string, number, AABB][] = [
-      ['north', b.minY, { minX: b.minX, maxX: b.maxX, minY: 0, maxY: b.minY }],
-      ['south', room.lengthIn - b.maxY, { minX: b.minX, maxX: b.maxX, minY: b.maxY, maxY: room.lengthIn }],
-      ['west', b.minX, { minX: 0, maxX: b.minX, minY: b.minY, maxY: b.maxY }],
-      ['east', room.widthIn - b.maxX, { minX: b.maxX, maxX: room.widthIn, minY: b.minY, maxY: b.maxY }],
-    ];
+    const walls: [string, number, AABB][] = [];
+    for (const dir of ['north', 'south', 'west', 'east'] as const) {
+      const hit = clearToWall(room, b, dir);
+      if (!hit) continue;
+      const zone: AABB =
+        dir === 'north' ? { minX: b.minX, maxX: b.maxX, minY: b.minY - hit.gap, maxY: b.minY }
+        : dir === 'south' ? { minX: b.minX, maxX: b.maxX, minY: b.maxY, maxY: b.maxY + hit.gap }
+        : dir === 'west' ? { minX: b.minX - hit.gap, maxX: b.minX, minY: b.minY, maxY: b.maxY }
+        : { minX: b.maxX, maxX: b.maxX + hit.gap, minY: b.minY, maxY: b.maxY };
+      walls.push([dir, hit.gap, zone]);
+    }
     for (const [name, gap, zone] of walls) {
       if (gap >= AISLE_MIN || gap < 0) continue;
       const blocked = floor.some(
@@ -309,6 +317,9 @@ export function runChecks(all: Resolved[], room: Room): CheckReport {
     }
   }
 
+  bathChecks(all, room, checks, problemIds);
+  fridgeChecks(all, room, checks, problemIds);
+
   const order: Record<CheckLevel, number> = { bad: 0, warn: 1, info: 2, ok: 3 };
   checks.sort((a, b) => order[a.level] - order[b.level]);
   return { checks, problemIds, triangle, tightAisles };
@@ -355,10 +366,11 @@ export function hoodCoverage(range: Resolved, all: Resolved[]): { vent: Resolved
  * flush to a wall, so callers report that instead of passing it.
  */
 export function landingWidths(r: Resolved, all: Resolved[], room: Room): { start: number; end: number } | null {
-  const wall = flushWall(r, room);
-  if (!wall) return null;
+  const seg = flushSeg(r, room);
+  if (!seg) return null;
+  const wall = seg.wall;
   const counters = all
-    .filter((o) => o !== r && hasCountertop(o.product) && o.product.kind !== 'island' && (flushWall(o, room) === wall || o.product.kind === 'corner'))
+    .filter((o) => o !== r && hasCountertop(o.product) && o.product.kind !== 'island' && (flushSeg(o, room)?.id === seg.id || o.product.kind === 'corner'))
     .map((o) => ({ o, span: alongWall(wall, o.box) }));
   const [s, e] = alongWall(wall, r.box);
   const walk = (edge: number, dir: -1 | 1) => {
@@ -410,7 +422,7 @@ export function bestTriangle(all: Resolved[], room: Room): TriangleChoice | null
           return Math.hypot(x1 - x0, y1 - y0);
         });
         const total = legs.reduce((s, l) => s + l, 0);
-        const walls = [sink, cook, fridge].map((r) => flushWall(r, room));
+        const walls = [sink, cook, fridge].map((r) => flushSeg(r, room)?.id ?? null);
         const oneWall = walls[0] !== null && walls.every((w) => w === walls[0]);
         const sorted = [...legs].sort((a, b) => a - b);
         const ok = oneWall ? sorted[0] >= 36 && sorted[1] >= 36 && total <= 312 : legs.every((l) => l >= 48 && l <= 108) && total <= 312;
@@ -490,4 +502,110 @@ export function doorSwingBox(r: Resolved): AABB {
   const hx = fx !== 0 ? reach / 2 : r.w / 2;
   const hy = fy !== 0 ? reach / 2 : r.w / 2;
   return { minX: cx - hx, maxX: cx + hx, minY: cy - hy, maxY: cy + hy };
+}
+
+type Dir4 = 'north' | 'south' | 'east' | 'west';
+
+/** Clear distance from a face of `r` in direction `dir` to the nearest wall or floor-standing piece, over its span lo..hi. */
+function clearFrom(all: Resolved[], room: Room, r: Resolved, dir: Dir4, lo: number, hi: number): number {
+  const solid = (o: Resolved) => isFloorMass(o) || o.product.kind === 'toilet' || o.product.kind === 'tub';
+  const b = r.box;
+  let best = clearToWall(room, b, dir)?.gap ?? Infinity;
+  for (const o of all) {
+    if (o === r || !solid(o)) continue;
+    const ob = o.box;
+    const horizontal = dir === 'east' || dir === 'west';
+    if ((horizontal ? overlap1D(lo, hi, ob.minY, ob.maxY) : overlap1D(lo, hi, ob.minX, ob.maxX)) <= 0.5) continue;
+    const gap = dir === 'east' ? ob.minX - b.maxX : dir === 'west' ? b.minX - ob.maxX : dir === 'south' ? ob.minY - b.maxY : b.minY - ob.maxY;
+    if (gap > -0.5 && gap < best) best = Math.max(0, gap);
+  }
+  return best;
+}
+
+const FRONT_DIR: Record<number, Dir4> = { 0: 'south', 90: 'west', 180: 'north', 270: 'east' };
+
+/**
+ * A fridge needs room to open: about 36″ clear in front for the doors and the person at them, and
+ * (the classic miss) a 2–3″ filler between its hinge side and a side wall, or the door stops at 90°
+ * and the crisper drawers can't come out.
+ */
+function fridgeChecks(all: Resolved[], room: Room, checks: Check[], problemIds: Set<string>) {
+  for (const f of all.filter((r) => r.product.kind === 'fridge')) {
+    const b = f.box;
+    const fd = FRONT_DIR[f.item.rotation];
+    const along = fd === 'south' || fd === 'north' ? [b.minX, b.maxX] : [b.minY, b.maxY];
+    const front = clearFrom(all, room, f, fd, along[0], along[1]);
+    if (front < 30) {
+      problemIds.add(f.item.id);
+      checks.push({ id: `fridge-front-${f.item.id}`, level: 'bad', title: `Only ${feetInches(front)} in front of the fridge`, detail: 'The doors need about 30″ to swing open, and 36″ leaves room to stand at them.', itemIds: [f.item.id] });
+    } else if (front < 36) {
+      checks.push({ id: `fridge-front-${f.item.id}`, level: 'warn', title: `${feetInches(front)} in front of the fridge`, detail: 'The doors open, but 36″ leaves room to stand at them with the doors wide.', itemIds: [f.item.id] });
+    }
+    // A side tight against a wall: the door on that side can't open past 90°.
+    const sides: Dir4[] = fd === 'south' || fd === 'north' ? ['west', 'east'] : ['north', 'south'];
+    for (const sd of sides) {
+      const toWall = clearToWall(room, b, sd);
+      if (toWall && toWall.gap < 1.5) {
+        checks.push({ id: `fridge-side-${f.item.id}-${sd}`, level: 'warn', title: 'The fridge is tight against a side wall', detail: 'Leave a 2–3″ filler between the fridge and the wall so its door opens past 90° and the crisper drawers come out.', itemIds: [f.item.id] });
+        break;
+      }
+    }
+  }
+}
+
+/**
+ * Bathroom clearances, from the building code and the NKBA bathroom guidelines: a toilet needs 15″
+ * from its centre to a wall or the next fixture (18″ recommended) and 21″ clear in front (30″
+ * recommended); a vanity needs 21″ clear in front (30″ recommended); a shower must be at least 30″
+ * × 30″ inside (36″ × 36″ recommended).
+ */
+function bathChecks(all: Resolved[], room: Room, checks: Check[], problemIds: Set<string>) {
+  const clear = (r: Resolved, dir: Dir4, lo: number, hi: number) => clearFrom(all, room, r, dir, lo, hi);
+  const frontDir = (r: Resolved) => (({ 0: 'south', 90: 'west', 180: 'north', 270: 'east' } as const)[r.item.rotation]);
+  const sides = (r: Resolved): ['north' | 'south' | 'east' | 'west', 'north' | 'south' | 'east' | 'west'] => (r.item.rotation === 0 || r.item.rotation === 180 ? ['west', 'east'] : ['north', 'south']);
+
+  for (const t of all.filter((r) => r.product.kind === 'toilet')) {
+    const b = t.box;
+    const fd = frontDir(t);
+    const along = fd === 'south' || fd === 'north' ? [b.minX, b.maxX] : [b.minY, b.maxY];
+    const front = clear(t, fd, along[0], along[1]);
+    // Side clearance is measured from the toilet's centre line: half its width plus the gap.
+    const [s1, s2] = sides(t);
+    const across = s1 === 'west' ? [b.minY, b.maxY] : [b.minX, b.maxX];
+    const half = t.w / 2;
+    const side = Math.min(clear(t, s1, across[0], across[1]), clear(t, s2, across[0], across[1])) + half;
+    if (side < 15) {
+      problemIds.add(t.item.id);
+      checks.push({ id: `wc-side-${t.item.id}`, level: 'bad', title: `Only ${feetInches(side)} from the toilet's centre to the side`, detail: 'The building code needs 15″ from the centre of a toilet to a wall or the next fixture; 18″ is comfortable.', itemIds: [t.item.id] });
+    } else if (side < 18) {
+      checks.push({ id: `wc-side-${t.item.id}`, level: 'warn', title: `${feetInches(side)} from the toilet's centre to the side`, detail: 'Meets the 15″ code minimum; 18″ is the recommended comfort clearance.', itemIds: [t.item.id] });
+    }
+    if (front < 21) {
+      problemIds.add(t.item.id);
+      checks.push({ id: `wc-front-${t.item.id}`, level: 'bad', title: `Only ${feetInches(front)} clear in front of the toilet`, detail: 'The building code needs 21″ of clear floor in front of a toilet; 30″ is recommended.', itemIds: [t.item.id] });
+    } else if (front < 30) {
+      checks.push({ id: `wc-front-${t.item.id}`, level: 'warn', title: `${feetInches(front)} clear in front of the toilet`, detail: 'Meets the 21″ code minimum; 30″ is the recommended clearance.', itemIds: [t.item.id] });
+    }
+  }
+
+  for (const v of all.filter((r) => r.product.kind === 'vanity')) {
+    const b = v.box;
+    const fd = frontDir(v);
+    const along = fd === 'south' || fd === 'north' ? [b.minX, b.maxX] : [b.minY, b.maxY];
+    const front = clear(v, fd, along[0], along[1]);
+    if (front < 21) {
+      problemIds.add(v.item.id);
+      checks.push({ id: `vanity-front-${v.item.id}`, level: 'bad', title: `Only ${feetInches(front)} in front of the vanity`, detail: 'Leave at least 21″ of clear floor in front of a vanity to stand at it; 30″ is recommended.', itemIds: [v.item.id] });
+    }
+  }
+
+  for (const sh of all.filter((r) => r.product.kind === 'shower')) {
+    const inside = Math.min(sh.w, sh.d) - 2;
+    if (inside < 30) {
+      problemIds.add(sh.item.id);
+      checks.push({ id: `shower-size-${sh.item.id}`, level: 'bad', title: `The shower is only ${feetInches(inside)} across inside`, detail: 'A shower must be at least 30″ × 30″ inside; 36″ × 36″ is the comfortable minimum.', itemIds: [sh.item.id] });
+    } else if (inside < 34) {
+      checks.push({ id: `shower-size-${sh.item.id}`, level: 'warn', title: `A tight ${feetInches(inside)} shower`, detail: 'Above the 30″ minimum, but 36″ × 36″ is the comfortable size.', itemIds: [sh.item.id] });
+    }
+  }
 }

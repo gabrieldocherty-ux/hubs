@@ -90,6 +90,19 @@ export const TYPES = {
   'pendant-linear': ['pendant', 'linear', 48, 6, 5, 70],
   'stool-counter': ['stool', 'counter', 17, 17, 26, 0],
   'stool-backed': ['stool', 'backed', 19, 20, 38, 0],
+  vanity: ['vanity', 'single', 36, 21, 34, 0],
+  'vanity-double': ['vanity', 'double', 60, 21, 34, 0],
+  'vanity-floating': ['vanity', 'floating', 36, 19, 21, 12],
+  toilet: ['toilet', 'two-piece', 20, 29, 30, 0],
+  'toilet-one-piece': ['toilet', 'one-piece', 19, 28, 28, 0],
+  'toilet-wall': ['toilet', 'wall-hung', 15, 22, 16, 0],
+  'tub-alcove': ['tub', 'alcove', 60, 30, 20, 0],
+  'tub-freestanding': ['tub', 'freestanding', 66, 32, 23, 0],
+  'shower-alcove': ['shower', 'alcove', 60, 32, 78, 0],
+  'shower-corner': ['shower', 'corner', 36, 36, 78, 0],
+  'shower-walkin': ['shower', 'walk-in', 60, 36, 78, 0],
+  mirror: ['mirror', 'rect', 30, 1.5, 36, 40],
+  'medicine-cabinet': ['mirror', 'cabinet', 24, 5, 30, 44],
 };
 const TYPE_ORDER = Object.keys(TYPES);
 
@@ -204,6 +217,27 @@ function classify(p, w, d, h) {
       return 'pendant-dome';
     case 'stool':
       return has(/back|upholster/, name) ? 'stool-backed' : 'stool-counter';
+    case 'vanity':
+      if (has(/float|wall[- ]?mount|wall[- ]hung/, name)) return 'vanity-floating';
+      if (has(/double/, name) || w >= 58) return 'vanity-double';
+      return 'vanity';
+    case 'toilet':
+      if (has(/wall[- ]?hung|wall[- ]?mount|in-wall/, name)) return 'toilet-wall';
+      if (has(/one[- ]piece|1[- ]piece/, name)) return 'toilet-one-piece';
+      return 'toilet';
+    case 'tub':
+    case 'bathtub':
+      return has(/freestanding|free-standing|clawfoot/, name) ? 'tub-freestanding' : 'tub-alcove';
+    case 'shower':
+    case 'shower-kit':
+    case 'shower-door':
+      if (has(/corner|neo[- ]angle|square/, name) || (d !== null && Math.abs(w - d) <= 2)) return 'shower-corner';
+      if (has(/walk[- ]in|fixed panel|screen/, name)) return 'shower-walkin';
+      return 'shower-alcove';
+    case 'mirror':
+      return has(/medicine/, name) ? 'medicine-cabinet' : 'mirror';
+    case 'medicine-cabinet':
+      return 'medicine-cabinet';
     default:
       return null;
   }
@@ -231,6 +265,7 @@ function finishMaterial(name, kind) {
   if (/leather/.test(n)) return 'leather';
   if (/fabric|linen|velvet|boucle|upholster/.test(n)) return 'fabric';
   if (/rattan|woven|wicker/.test(n)) return 'wood';
+  if (['toilet', 'tub'].includes(kind)) return 'ceramic';
   if (['range', 'fridge', 'dishwasher', 'hood', 'microwave', 'oven-tower', 'wine', 'sink'].includes(kind)) return /black|white/.test(n) ? 'paint' : 'metal';
   return 'paint';
 }
@@ -559,9 +594,9 @@ export function buildRetailCatalog(files) {
     }
     const opts = [...new Set((e.widthOptionsIn ?? []).map((v) => pos(v, 6, 96)).filter((v) => v !== null))].sort((a, b) => a - b);
     const pub = { w: pos(e.widthIn, 3, 240) ?? opts[0] ?? null, d: pos(e.depthIn, 1, 120), h: pos(e.heightIn, 0.1, 120) };
-    // A stool or a pendant stands alone (nothing lines up with its width), so a listing that gives
-    // only a seat height or no size at all still places at the type's typical size, marked typical.
-    const sizeFree = e.kind === 'stool' || e.kind === 'pendant';
+    // A stool, a pendant or a toilet stands alone (nothing lines up with its width), so a listing that
+    // gives only a seat height or no size at all still places at the type's typical size, marked typical.
+    const sizeFree = e.kind === 'stool' || e.kind === 'pendant' || e.kind === 'toilet';
     if (pub.w === null && !sizeFree) {
       drop('no published width');
       continue;

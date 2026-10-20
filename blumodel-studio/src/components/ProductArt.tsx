@@ -51,8 +51,8 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
   const front = (fr: FrontSpec, fill: string, key: string, offsetX = 0, st: DoorStyle = style) => {
     const x = offsetX + fr.x - fr.w / 2 + 0.2;
     const y = Y(fr.y + fr.h) + 0.2;
-    const fw = fr.w - 0.4;
-    const fh = fr.h - 0.4;
+    const fw = Math.max(0.1, fr.w - 0.4);
+    const fh = Math.max(0.1, fr.h - 0.4);
     const rail = Math.max(1, Math.min(2.6, fw * 0.17, fh * 0.17));
     const pull = fr.pull;
     return (
@@ -78,7 +78,7 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
   };
 
   const countertop = (x0: number, x1: number) => <rect key="ct" x={x0} y={Y(36)} width={x1 - x0} height={1.5} fill={counter} stroke={INK} />;
-  const toe = <rect key="toe" x={1.5} y={Y(4)} width={w - 3} height={4} fill="#3a342d" />;
+  const toe = <rect key="toe" x={Math.min(1.5, w / 4)} y={Y(4)} width={Math.max(0, w - 2 * Math.min(1.5, w / 4))} height={4} fill="#3a342d" />;
   const steel = (hex: string) => (f.material === 'metal' ? `url(#steel-${hex.slice(1)})` : hex);
 
   switch (k) {
@@ -86,7 +86,7 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
     case 'corner':
     case 'island': {
       H = 36;
-      nodes.push(toe);
+      if (product.variant !== 'panel') nodes.push(toe);
       nodes.push(<rect key="body" x={0} y={Y(34.5)} width={w} height={30.5} fill={color} stroke={INK} />);
       if (k === 'island') {
         const cols = Math.max(2, Math.round(w / 24));
@@ -140,6 +140,8 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
     case 'wall': {
       H = product.heightIn;
       nodes.push(<rect key="body" x={0} y={0} width={w} height={H} fill={color} stroke={INK} />);
+      // A filler or a panel is one flat board.
+      if (product.variant === 'filler' || product.variant === 'panel') break;
       const doors = w > 21 ? 2 : 1;
       for (let i = 0; i < doors; i++) {
         const dw = w / doors;
@@ -315,6 +317,60 @@ export function drawArt({ product, finish, surfaces, width }: Omit<Props, 'class
         if (v === 'woven') for (let i = 1; i < 6; i++) nodes.push(<line key={`wv${i}`} x1={(w / 6) * i} y1={top + 2} x2={(w / 6) * i} y2={H} stroke={shade(color, -0.3)} strokeWidth={0.6} />);
         nodes.push(<ellipse key="bulb" cx={w / 2} cy={H} rx={2.2} ry={1.2} fill="#ffe2a8" />);
       }
+      break;
+    }
+    case 'vanity': {
+      const top = product.elevationIn + product.heightIn;
+      H = Math.max(H, top);
+      const floating = product.variant === 'floating';
+      const y0 = floating ? product.elevationIn : 4;
+      const bodyH = top - 1.5 - y0;
+      if (!floating) nodes.push(<rect key="toe" x={0.5} y={Y(4)} width={w - 1} height={4} fill="#3b3631" />);
+      nodes.push(<rect key="body" x={0} y={Y(top - 1.5)} width={w} height={bodyH} fill={color} stroke={INK} />);
+      const n = product.variant === 'double' ? 4 : w > 24 ? 2 : 1;
+      for (let i = 0; i < n; i++) nodes.push(<rect key={`d${i}`} x={(w / n) * i + 0.4} y={Y(top - 1.5) + 0.4} width={w / n - 0.8} height={bodyH - 0.8} fill={color} stroke={INK} />);
+      nodes.push(<rect key="top" x={-0.4} y={Y(top)} width={w + 0.8} height={1.5} fill={counter} stroke={INK} />);
+      const centres = product.variant === 'double' ? [w / 2 - Math.min(15, w / 4), w / 2 + Math.min(15, w / 4)] : [w / 2];
+      for (const cx of centres) nodes.push(<path key={`f${cx}`} d={`M${cx - 0.8} ${Y(top)} v-6 h4 v1.4`} fill="none" stroke={INK} strokeWidth={1.2} />);
+      H = Math.max(H, top + 7);
+      break;
+    }
+    case 'toilet': {
+      const wallHung = product.variant === 'wall-hung';
+      if (wallHung) {
+        nodes.push(<rect key="bowl" x={w / 2 - 7.5} y={Y(16)} width={15} height={7} rx={3} fill={f.hex} stroke={INK} />);
+        nodes.push(<rect key="plate" x={w / 2 - 4.5} y={Y(43)} width={9} height={6} fill="#d9dcdf" stroke={INK} />);
+        H = Math.max(H, 44);
+      } else {
+        nodes.push(<rect key="tank" x={w / 2 - 9.5} y={Y(30.5)} width={19} height={15} rx={1.2} fill={f.hex} stroke={INK} />);
+        nodes.push(<rect key="bowl" x={w / 2 - 8} y={Y(17)} width={16} height={8} rx={3} fill={f.hex} stroke={INK} />);
+        nodes.push(<path key="ped" d={`M${w / 2 - 4} ${Y(9)} L${w / 2 - 5} ${Y(0)} L${w / 2 + 5} ${Y(0)} L${w / 2 + 4} ${Y(9)} Z`} fill={f.hex} stroke={INK} />);
+      }
+      break;
+    }
+    case 'tub': {
+      const h = product.heightIn;
+      if (product.variant === 'freestanding') {
+        nodes.push(<path key="tub" d={`M0 ${Y(h)} Q${w / 2} ${Y(h - 4)} ${w} ${Y(h)} L${w - 6} ${Y(0)} L6 ${Y(0)} Z`} fill={f.hex} stroke={INK} />);
+      } else {
+        nodes.push(<rect key="tub" x={0} y={Y(h)} width={w} height={h} fill={f.hex} stroke={INK} />);
+        nodes.push(<line key="rim" x1={0} x2={w} y1={Y(h - 1.5)} y2={Y(h - 1.5)} stroke={INK} strokeWidth={0.4} />);
+      }
+      break;
+    }
+    case 'shower': {
+      const h = product.heightIn;
+      nodes.push(<rect key="base" x={0} y={Y(3)} width={w} height={3} fill="#f2f1ed" stroke={INK} />);
+      nodes.push(<rect key="glass" x={0.5} y={Y(h)} width={w - 1} height={h - 3} fill="#dfeaf0" opacity={0.55} stroke={INK} strokeWidth={0.6} />);
+      nodes.push(<line key="rail" x1={0} x2={w} y1={Y(h)} y2={Y(h)} stroke={f.hex} strokeWidth={1.2} />);
+      if (product.variant === 'alcove') nodes.push(<line key="split" x1={w / 2} x2={w / 2} y1={Y(h)} y2={Y(3)} stroke={INK} strokeWidth={0.5} />);
+      break;
+    }
+    case 'mirror': {
+      const y0 = product.elevationIn;
+      H = Math.max(H, y0 + product.heightIn);
+      if (product.variant === 'round') nodes.push(<circle key="m" cx={w / 2} cy={Y(y0 + product.heightIn / 2)} r={w / 2} fill="#cfd8dc" stroke={f.id === 'frameless' ? INK : f.hex} strokeWidth={f.id === 'frameless' ? 0.5 : 1.6} />);
+      else nodes.push(<rect key="m" x={0} y={Y(y0 + product.heightIn)} width={w} height={product.heightIn} fill="#cfd8dc" stroke={f.id === 'frameless' ? INK : f.hex} strokeWidth={f.id === 'frameless' ? 0.5 : 1.6} />);
       break;
     }
     case 'window': {

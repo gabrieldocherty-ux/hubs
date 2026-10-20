@@ -1,7 +1,7 @@
 {
-  "source": "e5635fd4012df1f6f8c49fe29059b3862022863e",
-  "subject": "blumodel(wyse): install-windows.ps1's deploy-key probe no longer kills the first run - under Windows",
-  "builtAt": "2026-10-18T20:48:42.335Z",
+  "source": "86dbd5305c0098c3c4371a1e79b059b87fd677e6",
+  "subject": "blumodel(cabinets): fillers and end panels in BluModel Basics - base and wall filler strips (1.5 to ",
+  "builtAt": "2026-10-20T05:05:56.121Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

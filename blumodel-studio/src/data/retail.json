@@ -1,7 +1,7 @@
 {
  "version": 1,
- "checkedAt": "2026-10-16",
- "researched": 458,
+ "checkedAt": "2026-10-19",
+ "researched": 537,
  "stores": [
   {
    "slug": "rona",
@@ -6905,6 +6905,99 @@
    }
   },
   {
+   "id": "r-cafe-cc2s900p4mw2",
+   "kind": "range",
+   "variant": "gas-4",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. slide-in smart dual fuel range with warming drawer, Matte White",
+   "code": "CC2S900P4MW2",
+   "widthIn": 29.87,
+   "depthIn": 29.5,
+   "heightIn": 37.37,
+   "elevationIn": 0,
+   "price": 3298,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cc2s900p4mw2",
+    "type": "range-gas",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 29.87,
+     "d": 29.5,
+     "h": 37.37
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-inch-slide-in-dual-fuel-convection-range-with-warming-drawer-in-matte-white/1001501216",
+      "sku": "1001501216",
+      "priceCad": 3298,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-ccgs700p4mw2",
+   "kind": "range",
+   "variant": "gas-4",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. slide-in smart gas range with convection, Matte White",
+   "code": "CCGS700P4MW2",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2998,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-ccgs700p4mw2",
+    "type": "range-gas",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-inch-slide-in-gas-range-with-convection-oven-in-matte-white/1001501219",
+      "sku": "1001501219",
+      "priceCad": 2998,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-forno-capriasca-30-gas-range-100000btu",
    "kind": "range",
    "variant": "gas-4",
@@ -7338,6 +7431,102 @@
    }
   },
   {
+   "id": "r-bosch-hgs8645uc",
+   "kind": "range",
+   "variant": "gas-6",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "36 in. double oven 6-burner freestanding gas range, Black Stainless",
+   "code": "HGS8645UC",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 6800,
+   "finishes": [
+    {
+     "id": "black-stainless",
+     "name": "Black Stainless",
+     "hex": "#1f1f20",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "bosch-hgs8645uc",
+    "type": "range-gas-6",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-36-3-5-cu-ft-double-oven-6-burner-freestanding-gas-range-hgs8645uc-black-stainless/14762562",
+      "sku": "14762562",
+      "priceCad": 6799.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-hds8655c",
+   "kind": "range",
+   "variant": "gas-6",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "36 in. true convection 6-burner dual fuel gas range, Stainless Steel",
+   "code": "HDS8655C",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "bosch-hds8655c",
+    "type": "range-gas-6",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-36-3-7-cu-ft-true-convection-6-burner-dual-fuel-range-hds8655c-stainless-steel/14742142",
+      "sku": "14742142",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-bosch-ngm5658uc",
    "kind": "range",
    "variant": "gas-6",
@@ -7477,6 +7666,54 @@
       "store": "home-depot",
       "url": "https://www.homedepot.ca/product/frigidaire-gallery-36-inch-gas-cooktop-in-stainless-steel-with-5-burners-including-quick-boil/1001759011",
       "sku": "1001759011",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kitchenaid-kfdc506jss",
+   "kind": "range",
+   "variant": "gas-6",
+   "category": "appliances",
+   "brand": "KitchenAid",
+   "name": "36 in. true convection 6-burner dual fuel gas range, Stainless Steel",
+   "code": "KFDC506JSS",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "kitchenaid-kfdc506jss",
+    "type": "range-gas-6",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/kitchenaid-36-5-1-cu-ft-true-convection-6-burner-dual-fuel-range-kfdc506jss-stainless-steel/14321153",
+      "sku": "14321153",
       "priceCad": null,
       "inStock": null
      }
@@ -7718,6 +7955,103 @@
       "url": "https://rona.ca/en/amana-30-in-freestanding-electric-range-stainless-steel-self-cleaning-function-yaer6603sfs-30005194",
       "sku": "30005194",
       "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-his8655c",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "800 Series 36 in. true convection 5-element induction range, Stainless Steel",
+   "code": "HIS8655C",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 9800,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "line": "800 Series",
+   "retail": {
+    "key": "bosch-his8655c",
+    "type": "range-induction",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-true-convection-5-element-induction-range-his8655c-stainless-steel/16493983",
+      "sku": "16493983",
+      "priceCad": 9799.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cchs900p4mw2",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. slide-in smart induction range with warming drawer, Matte White",
+   "code": "CCHS900P4MW2",
+   "widthIn": 30,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 3898,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cchs900p4mw2",
+    "type": "range-induction",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-inch-slide-in-induction-and-convection-range-with-warming-drawer-in-matte-white/1001501218",
+      "sku": "1001501218",
+      "priceCad": 3898,
       "inStock": null
      }
     ]
@@ -8323,6 +8657,54 @@
       "url": "https://www.rona.ca/en/product/ge-30-in-white-freestanding-electric-range-with-5-elements-and-self-cleaning-5-ft3-convection-oven-jcb840dvww-23086150",
       "sku": "23086150",
       "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kitchenaid-kfis936sss",
+   "kind": "range",
+   "variant": "induction",
+   "category": "appliances",
+   "brand": "KitchenAid",
+   "name": "36 in. true convection 6-element induction range, Stainless Steel",
+   "code": "KFIS936SSS",
+   "widthIn": 36,
+   "depthIn": 28,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 9000,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "kitchenaid-kfis936sss",
+    "type": "range-induction",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/kitchenaid-36-5-1-cu-ft-true-convection-free-standing-6-element-induction-range-kfis936sss-stainless-steel/19586648",
+      "sku": "19586648",
+      "priceCad": 8999.99,
       "inStock": null
      }
     ]
@@ -9187,6 +9569,165 @@
    }
   },
   {
+   "id": "r-cafe-cvw93043pds-matte-black",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. smart commercial wall-mount range hood, 600 CFM, Matte Black",
+   "code": "CVW93043PDS",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": 1298,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cvw93043pds-matte-black",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-inch-smart-commercial-wall-mount-range-hood-with-600-cfm-4-speed-fan-led-lighting-night-light-and-built-in-wifi-in-matte-black/1001651505",
+      "sku": "1001651505",
+      "priceCad": 1298,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-30-wall-hood-stainless",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. wall mount range hood with light",
+   "code": "1001319482",
+   "widthIn": 30,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    },
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-30-wall-hood-stainless",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-in-wall-mount-range-hood-with-light-in-stainless-steel/1001319482",
+      "sku": "1001319482",
+      "priceCad": null,
+      "inStock": null,
+      "finish": "stainless-steel"
+     },
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-in-wall-mount-range-hood-with-light-in-matte-white-fingerprint-resistant/1001319484",
+      "sku": "1001319484",
+      "priceCad": null,
+      "inStock": null,
+      "finish": "matte-white"
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-36-commercial-hood-black",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "36 in. commercial wall-mount range hood, Matte Black",
+   "code": "1001651506",
+   "widthIn": 36,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-36-commercial-hood-black",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-36-inch-commerical-hood-matte-black/1001651506",
+      "sku": "1001651506",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-cosmo-cos-63175s-hood",
    "kind": "hood",
    "variant": "chimney",
@@ -9828,6 +10369,54 @@
    }
   },
   {
+   "id": "r-kitchenaid-kvwb606dss",
+   "kind": "hood",
+   "variant": "chimney",
+   "category": "appliances",
+   "brand": "KitchenAid",
+   "name": "36 in. wall-mount canopy range hood, Stainless Steel",
+   "code": "KVWB606DSS",
+   "widthIn": 36,
+   "depthIn": 20,
+   "heightIn": 18,
+   "elevationIn": 66,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "kitchenaid-kvwb606dss",
+    "type": "hood-chimney",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/kitchenaid-kitchenaid-36-wall-mount-canopy-range-hood-stainless-steel-kvwb606dss/10396383",
+      "sku": "10396383",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-kucht-36-900cfm-wall-hood",
    "kind": "hood",
    "variant": "chimney",
@@ -10358,33 +10947,132 @@
    }
   },
   {
-   "id": "r-bosch-b36ct80sns",
+   "id": "r-bosch-b36cl80sns",
    "kind": "fridge",
    "variant": "french",
    "category": "appliances",
    "brand": "Bosch",
-   "name": "800 Series 36 in 21 cu ft counter-depth French door refrigerator, stainless",
-   "code": "B36CT80SNS",
-   "widthIn": 36,
-   "depthIn": 30,
-   "heightIn": 70,
+   "name": "800 Series 36 in. 21 cu. ft. counter-depth 4-door French door refrigerator, Stainless Steel",
+   "code": "B36CL80SNS",
+   "widthIn": 35.43,
+   "depthIn": 27.56,
+   "heightIn": 72,
    "elevationIn": 0,
-   "price": 5880,
+   "price": null,
    "finishes": [
     {
      "id": "stainless-steel",
-     "name": "Stainless steel",
+     "name": "Stainless Steel",
      "hex": "#c4c8cb",
      "material": "metal"
     }
    ],
    "blurb": "Listed at Best Buy.",
+   "line": "800 Series",
+   "retail": {
+    "key": "bosch-b36cl80sns",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 35.43,
+     "d": 27.56,
+     "h": 72
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-21-cu-ft-counter-depth-4-door-french-door-refrigerator-b36cl80sns-stainless-steel/13694581",
+      "sku": "13694581",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-b36ct80sns",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "800 Series 36 in. 21 cu. ft. counter-depth French door refrigerator, Stainless Steel",
+   "code": "B36CT80SNS",
+   "widthIn": 35.43,
+   "depthIn": 27.56,
+   "heightIn": 72.05,
+   "elevationIn": 0,
+   "price": 5880,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "line": "800 Series",
    "retail": {
     "key": "bosch-b36ct80sns",
     "type": "fridge-french",
     "upc": null,
     "confidence": "medium",
-    "checkedAt": "2026-10-15",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 35.43,
+     "d": 27.56,
+     "h": 72.05
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583",
+      "sku": "13694583",
+      "priceCad": null,
+      "inStock": null
+     },
+     {
+      "store": "best-buy",
+      "url": "https://bestbuy.ca/en-ca/product/bosch-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583",
+      "sku": "13694583",
+      "priceCad": 5879.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cye22tp4mw2",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "36 in. 22.2 cu. ft. counter-depth French door refrigerator with hot water dispenser, Matte White",
+   "code": "CYE22TP4MW2",
+   "widthIn": 36,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cye22tp4mw2",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
     "size": {
      "w": 36,
      "d": null,
@@ -10396,10 +11084,103 @@
     ],
     "stores": [
      {
-      "store": "best-buy",
-      "url": "https://bestbuy.ca/en-ca/product/bosch-36-21-cu-ft-counter-depth-french-door-refrigerator-b36ct80sns-stainless-steel/13694583",
-      "sku": "13694583",
-      "priceCad": 5879.99,
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-36-inch-22-2-cu-ft-counter-depth-french-door-refrigerator-in-matte-white-energy-star-/1001319488",
+      "sku": "1001319488",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cwe23sp4mw2",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "36 in. 23.1 cu. ft. counter-depth French door refrigerator, Matte White",
+   "code": "CWE23SP4MW2",
+   "widthIn": 35.75,
+   "depthIn": 28.75,
+   "heightIn": 69.88,
+   "elevationIn": 0,
+   "price": 6898,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cwe23sp4mw2",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 35.75,
+     "d": 28.75,
+     "h": 69.88
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-36-inch-23-1-cu-ft-counter-depth-french-door-refrigerator-in-matte-white-energy-star/1001319486",
+      "sku": "1001319486",
+      "priceCad": 6898,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cve28dp4nw2",
+   "kind": "fridge",
+   "variant": "french",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "36 in. 27.8 cu. ft. 4-door French door refrigerator, full depth, Matte White",
+   "code": "CVE28DP4NW2",
+   "widthIn": 36,
+   "depthIn": 30,
+   "heightIn": 70,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cve28dp4nw2",
+    "type": "fridge-french",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-36-inch-4-door-regfrigerator-with-customizable-accessories-and-full-depth-in-matte-white-energy-star/1001592629",
+      "sku": "1001592629",
+      "priceCad": null,
       "inStock": null
      }
     ]
@@ -11713,6 +12494,150 @@
    }
   },
   {
+   "id": "r-cafe-ctd90fp2ns1",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. double electric French-door smart wall oven, Stainless Steel",
+   "code": "CTD90FP2NS1",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "cafe-ctd90fp2ns1",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-in-smart-double-electric-french-door-wall-oven-with-convection-self-cleaning-in-stainless-steel/1001543011",
+      "sku": "1001543011",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cts90fp3nd1",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. professional French-door convection single wall oven, Matte Black",
+   "code": "CTS90FP3ND1",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "cafe-cts90fp3nd1",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-inch-professional-french-door-convection-single-wall-oven-with-hot-air-fry-in-matte-black/1001543010",
+      "sku": "1001543010",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cts70dp2ns1",
+   "kind": "oven-tower",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "30 in. single electric smart wall oven, drop-down door, Stainless Steel",
+   "code": "CTS70DP2NS1",
+   "widthIn": 30,
+   "depthIn": 24,
+   "heightIn": 84,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot. A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+   "retail": {
+    "key": "cafe-cts70dp2ns1",
+    "type": "wall-oven",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "note": "A 30″ wall oven, drawn in an 84″ oven tower cabinet.",
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-30-inch-w-built-in-convection-wall-oven-in-stainless-steel/1001509801",
+      "sku": "1001509801",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-samsung-30-wifi-wall-oven-convection",
    "kind": "oven-tower",
    "category": "appliances",
@@ -11860,6 +12785,115 @@
    }
   },
   {
+   "id": "r-bosch-shx78cm5n",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "24 in. 42 dB built-in dishwasher with third rack",
+   "code": "SHX78CM5N",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    },
+    {
+     "id": "black-stainless",
+     "name": "Black Stainless",
+     "hex": "#1f1f20",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "bosch-shx78cm5n",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-shx78cm5n-stainless-steel/17109446",
+      "sku": "17109446",
+      "priceCad": null,
+      "inStock": null,
+      "finish": "stainless-steel"
+     },
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-shp78cm4n-black-stainless/17109445",
+      "sku": "17109445",
+      "priceCad": null,
+      "inStock": null,
+      "finish": "black-stainless"
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-she78cm5n",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "24 in. 42 dB built-in dishwasher with third rack, recessed handle, Stainless Steel",
+   "code": "SHE78CM5N",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2300,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "bosch-she78cm5n",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-42db-built-in-dishwasher-with-third-rack-she78cm5n-stainless-steel/17109451",
+      "sku": "17109451",
+      "priceCad": 2299.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-bosch-she53b75uc",
    "kind": "dishwasher",
    "category": "appliances",
@@ -11914,6 +12948,102 @@
    }
   },
   {
+   "id": "r-bosch-she53ce5n",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "300 Series 24 in. 46 dB front control dishwasher with third rack, Stainless Steel",
+   "code": "SHE53CE5N",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 950,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "line": "300 Series",
+   "retail": {
+    "key": "bosch-she53ce5n",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-24-46db-built-in-dishwasher-with-stainless-steel-tub-third-rack-she53ce5n-stainless-steel/17182310",
+      "sku": "17182310",
+      "priceCad": 949.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-bosch-shx78dm5n",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Bosch",
+   "name": "800 Series 24 in. 42 dB dishwasher with CrystalDry, Stainless",
+   "code": "SHX78DM5N",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2700,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "line": "800 Series",
+   "retail": {
+    "key": "bosch-shx78dm5n",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/bosch-800-series-24-42db-built-in-dishwasher-w-stainless-steel-tub-third-rack-shx78dm5n-stainless/19323913",
+      "sku": "19323913",
+      "priceCad": 2699.99,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
    "id": "r-cafe-24-smart-top-control-custo-287c2c",
    "kind": "dishwasher",
    "category": "appliances",
@@ -11954,6 +13084,53 @@
       "store": "home-depot",
       "url": "https://www.homedepot.ca/product/cafe-24-inch-smart-top-control-customfit-dishwasher-with-stainless-tub-interior-led-lighting-and-ultrawash-in-stainless-steel-39-dba-energy-star/1001876150",
       "sku": "1001876150",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cafe-cdt888p4vw2-matte-white",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Café",
+   "name": "24 in. smart top control CustomFit dishwasher, 39 dBA, Matte White",
+   "code": "CDT888P4VW2",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "matte-white",
+     "name": "Matte White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "cafe-cdt888p4vw2-matte-white",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cafe-24-inch-smart-top-control-customfit-dishwasher-with-stainless-tub-interior-led-lighting-and-ultrawash-in-matte-white-39-dba-energy-star-/1001876149",
+      "sku": "1001876149",
       "priceCad": null,
       "inStock": null
      }
@@ -12707,6 +13884,115 @@
       "url": "https://www.rona.ca/en/product/maytag-24-in-built-in-dishwasher-50-db-recessed-handle-stainless-steel-mdb4949skz-30006555",
       "sku": "30006555",
       "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-miele-g5006-scu-obsidian",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Miele",
+   "name": "G 5006 SCU 24 in. 44 dB pre-finished dishwasher",
+   "code": "15930984",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 1934,
+   "finishes": [
+    {
+     "id": "obsidian-black",
+     "name": "Obsidian Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    },
+    {
+     "id": "brilliant-white",
+     "name": "Brilliant White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "miele-g5006-scu-obsidian",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/miele-24-44-db-pre-finished-full-size-dishwasher-with-cutlery-tray-g-5006-scu-obsidian-black/15930984",
+      "sku": "15930984",
+      "priceCad": 1934.1,
+      "inStock": null,
+      "finish": "obsidian-black"
+     },
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/miele-g-5006-scu-pre-finished-full-size-dishwasher-with-cutlery-tray-brilliant-white-limited-time-free-5-year-warranty/15931159",
+      "sku": "15931159",
+      "priceCad": 1934.1,
+      "inStock": null,
+      "finish": "brilliant-white"
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-miele-g5216-scu-stainless",
+   "kind": "dishwasher",
+   "category": "appliances",
+   "brand": "Miele",
+   "name": "G 5216 SCU pre-finished dishwasher with 3D MultiFlex tray and AutoOpen drying, Stainless Steel",
+   "code": "15930980",
+   "widthIn": 24,
+   "depthIn": 24,
+   "heightIn": 36,
+   "elevationIn": 0,
+   "price": 2384,
+   "finishes": [
+    {
+     "id": "stainless-steel",
+     "name": "Stainless Steel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Best Buy.",
+   "retail": {
+    "key": "miele-g5216-scu-stainless",
+    "type": "dishwasher",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "best-buy",
+      "url": "https://www.bestbuy.ca/en-ca/product/miele-g-5216-scu-pre-finished-full-size-dishwasher-with-3d-multiflex-cutlery-tray-and-autoopen-drying-stainless-steel/15930980",
+      "sku": "15930980",
+      "priceCad": 2384.1,
       "inStock": null
      }
     ]
@@ -16796,6 +18082,2356 @@
       "url": "https://www.structube.com/en_ca/ulani-contemporary-dimmable-pendant-120-cm-72-64-70?pid=66336",
       "sku": "72.64.70.64",
       "priceCad": 199,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-diamond-now-waverly-30-grey",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "Diamond Now",
+   "name": "Waverly 30 in. bathroom vanity with sink, Grey",
+   "code": "13847777",
+   "widthIn": 30,
+   "depthIn": 18,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": 499,
+   "finishes": [
+    {
+     "id": "grey",
+     "name": "Grey",
+     "hex": "#8f9294",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Waverly",
+   "retail": {
+    "key": "diamond-now-waverly-30-grey",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": 18,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/diamond-now-waverly-bathroom-vanity-with-sink-grey-30-in/13847777",
+      "sku": "13847777",
+      "priceCad": 499,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-gef-willow-30-white",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "GEF",
+   "name": "Willow 30 in. White single-sink bathroom vanity with marble countertop",
+   "code": "CM30W-V-CTCT",
+   "widthIn": 30,
+   "depthIn": 22,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": 1099,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Willow",
+   "retail": {
+    "key": "gef-willow-30-white",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": 22,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/gef-willow-30-in-white-single-sink-bathroom-vanity-with-marble-countertop-cm30w-v-ctct/330920046",
+      "sku": "330920046",
+      "priceCad": 1099,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-glacier-bay-addison-36-white",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "Glacier Bay",
+   "name": "Addison 36 in. bathroom vanity in White with cultured marble sink top",
+   "code": "1001842208",
+   "widthIn": 36,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Addison",
+   "retail": {
+    "key": "glacier-bay-addison-36-white",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/glacier-bay-addison-36-inch-w-bathroom-vanity-in-white-with-cultured-marble-sink-top/1001842208",
+      "sku": "1001842208",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-glacier-bay-lancaster-36-white",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "Glacier Bay",
+   "name": "Lancaster 36 in. bathroom vanity in White with cultured marble sink top",
+   "code": "1000736392",
+   "widthIn": 36,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Lancaster",
+   "retail": {
+    "key": "glacier-bay-lancaster-36-white",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/glacier-bay-lancaster-36-inch-w-bathroom-vanity-in-white-with-cultured-marble-sink-top/1000736392",
+      "sku": "1000736392",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hdc-farley-36-natural-wood",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "Home Decorators Collection",
+   "name": "Farley 36 in. vanity in natural wood with white artificial stone top",
+   "code": "1001581524",
+   "widthIn": 36,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": 598,
+   "finishes": [
+    {
+     "id": "natural-wood",
+     "name": "Natural Wood",
+     "hex": "#b48a5e",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Farley",
+   "retail": {
+    "key": "hdc-farley-36-natural-wood",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/home-decorators-collection-farley-36-inch-vanity-with-white-artificial-stone-vanity-top-in-natural-wood-finish/1001581524",
+      "sku": "1001581524",
+      "priceCad": 598,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-valu-ohan-30-white",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "VALU+",
+   "name": "Ohan 30 in. shaker vanity with 2 doors, White",
+   "code": "RNW022730P2-WH",
+   "widthIn": 30,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Ohan",
+   "retail": {
+    "key": "valu-ohan-30-white",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/valu-ohan-30-in-vanity-shaker-style-with-2-doors-white-rnw022730p2-wh/40975015",
+      "sku": "40975015",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-vanity-art-chambery-36-white",
+   "kind": "vanity",
+   "variant": "single",
+   "category": "bath",
+   "brand": "Vanity Art",
+   "name": "Chambery 36 in. bathroom vanity in White with engineered marble top",
+   "code": "VA5036-W",
+   "widthIn": 36,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Chambery",
+   "retail": {
+    "key": "vanity-art-chambery-36-white",
+    "type": "vanity",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/vanity-art-chambery-36-inch-w-bathroom-vanity-in-white-with-engineered-marble-top-in-white/1001761573",
+      "sku": "1001761573",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-hdc-ellia-60-oak-double",
+   "kind": "vanity",
+   "variant": "double",
+   "category": "bath",
+   "brand": "Home Decorators Collection",
+   "name": "Ellia 60 in. double sink bathroom vanity in Oak with white engineered stone top",
+   "code": "1001779318",
+   "widthIn": 60,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": 1349,
+   "finishes": [
+    {
+     "id": "oak",
+     "name": "Oak",
+     "hex": "#b48a5e",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Ellia",
+   "retail": {
+    "key": "hdc-ellia-60-oak-double",
+    "type": "vanity-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/home-decorators-collection-ellia-60-inch-w-4-door-3-drawer-oak-wood-bathroom-vanity-double-undermount-sinks-with-white-engineered-stone-top/1001779318",
+      "sku": "1001779318",
+      "priceCad": 1349,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-vanity-art-avignon-60-tan-double",
+   "kind": "vanity",
+   "variant": "double",
+   "category": "bath",
+   "brand": "Vanity Art",
+   "name": "Avignon 60 in. double sink freestanding vanity in Tan with black limestone top",
+   "code": "1001854292",
+   "widthIn": 60,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "tan",
+     "name": "Tan",
+     "hex": "#cfc9bf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Avignon",
+   "retail": {
+    "key": "vanity-art-avignon-60-tan-double",
+    "type": "vanity-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/vanity-art-60-inch-w-double-sink-freestanding-bathroom-vanity-in-tan-with-black-lime-marble-top/1001854292",
+      "sku": "1001854292",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-vanity-art-savona-60-grey-double",
+   "kind": "vanity",
+   "variant": "double",
+   "category": "bath",
+   "brand": "Vanity Art",
+   "name": "Savona 60 in. double basin vanity in Grey with marble top",
+   "code": "1001239610",
+   "widthIn": 60,
+   "depthIn": 21,
+   "heightIn": 34,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "grey",
+     "name": "Grey",
+     "hex": "#8f9294",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Savona",
+   "retail": {
+    "key": "vanity-art-savona-60-grey-double",
+    "type": "vanity-double",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/vanity-art-savona-60-inch-vanity-in-grey-with-double-basin-vanity-top-in-white-and-grey-marble-and-mirror/1001239610",
+      "sku": "1001239610",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cutler-kato-30-organic",
+   "kind": "vanity",
+   "variant": "floating",
+   "category": "bath",
+   "brand": "Cutler Kitchen & Bath",
+   "name": "Kato 30 in. wall mounted bathroom vanity in Organic with cultured marble top",
+   "code": "1001632023",
+   "widthIn": 30,
+   "depthIn": 19,
+   "heightIn": 20,
+   "elevationIn": 12,
+   "price": null,
+   "finishes": [
+    {
+     "id": "organic-wood",
+     "name": "Organic Wood",
+     "hex": "#b48a5e",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Kato",
+   "retail": {
+    "key": "cutler-kato-30-organic",
+    "type": "vanity-floating",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": 19,
+     "h": 20
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cutler-kitchen-bath-kato-30-inch-w-x-19-inch-d-x-20-inch-h-wall-mounted-bathroom-vanity-in-organic-with-cultured-marble-top-and-integrated-sink/1001632023",
+      "sku": "1001632023",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-cutler-milano-30-blue",
+   "kind": "vanity",
+   "variant": "floating",
+   "category": "bath",
+   "brand": "Cutler Kitchen & Bath",
+   "name": "Milano 30 in. wall mounted bathroom vanity in Blue with cultured marble top",
+   "code": "1001596374",
+   "widthIn": 30,
+   "depthIn": 18,
+   "heightIn": 20,
+   "elevationIn": 12,
+   "price": null,
+   "finishes": [
+    {
+     "id": "blue",
+     "name": "Blue",
+     "hex": "#cfc9bf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Milano",
+   "retail": {
+    "key": "cutler-milano-30-blue",
+    "type": "vanity-floating",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": 18,
+     "h": 20
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/cutler-kitchen-bath-milano-30-inch-w-x-18-inch-d-x-20-inch-h-wall-mounted-bathroom-vanity-in-blue-with-cultured-marble-top-and-integrated-sink/1001596374",
+      "sku": "1001596374",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-fresca-elliot-30-vanilla-oak",
+   "kind": "vanity",
+   "variant": "floating",
+   "category": "bath",
+   "brand": "Fresca",
+   "name": "Elliot 30 in. wall mount floating bathroom vanity in Vanilla Oak with quartz top",
+   "code": "1001902153",
+   "widthIn": 30,
+   "depthIn": 19,
+   "heightIn": 21,
+   "elevationIn": 12,
+   "price": 1453,
+   "finishes": [
+    {
+     "id": "vanilla-oak",
+     "name": "Vanilla Oak",
+     "hex": "#b48a5e",
+     "material": "wood"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Elliot",
+   "retail": {
+    "key": "fresca-elliot-30-vanilla-oak",
+    "type": "vanity-floating",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/fresca-elliot-30-in-wall-mount-floating-bathroom-vanity-in-vanilla-oak-w-quartz-top-faucet-not-included/1001902153",
+      "sku": "1001902153",
+      "priceCad": 1453,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-glacier-bay-36-wall-mounted-white",
+   "kind": "vanity",
+   "variant": "floating",
+   "category": "bath",
+   "brand": "Glacier Bay",
+   "name": "36 in. 2-drawer wall-mounted bathroom vanity in White with integral ceramic top",
+   "code": "1001631292",
+   "widthIn": 36,
+   "depthIn": 18,
+   "heightIn": 22,
+   "elevationIn": 12,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "glacier-bay-36-wall-mounted-white",
+    "type": "vanity-floating",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": 18,
+     "h": 22
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/glacier-bay-36-inch-w-x-22-inch-h-x-18-inch-d-2-drawer-wall-mounted-bathroom-white-wood-vanity-with-integral-single-sink-ceramic-top/1001631292",
+      "sku": "1001631292",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-am-std-decor-2pc-concealed",
+   "kind": "toilet",
+   "variant": "two-piece",
+   "category": "bath",
+   "brand": "American Standard",
+   "name": "Decor 2-piece 4.8 LPF chair height concealed elongated toilet, White",
+   "code": "1001645520",
+   "widthIn": 20,
+   "depthIn": 29,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Decor",
+   "retail": {
+    "key": "am-std-decor-2pc-concealed",
+    "type": "toilet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/american-standard-decor-2-piece-4-8-lpf-single-flush-chair-height-concealed-elongated-toilet-in-white/1001645520",
+      "sku": "1001645520",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-am-std-mainstream-2pc-chair",
+   "kind": "toilet",
+   "variant": "two-piece",
+   "category": "bath",
+   "brand": "American Standard",
+   "name": "Mainstream 4.8 L chair height elongated 2-piece toilet, White, with slow close seat",
+   "code": "729AA104.020",
+   "widthIn": 20,
+   "depthIn": 29,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Mainstream",
+   "retail": {
+    "key": "am-std-mainstream-2pc-chair",
+    "type": "toilet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/american-standard-mainstream-4-8l-chair-height-elongated-2-piece-toilet-in-white-with-a-slow-close-toilet-seat/1001877077",
+      "sku": "1001877077",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-toto-drake-2pc-128-cotton",
+   "kind": "toilet",
+   "variant": "two-piece",
+   "category": "bath",
+   "brand": "TOTO",
+   "name": "Drake 2-piece 1.28 GPF elongated toilet, Cotton White",
+   "code": "1001708055",
+   "widthIn": 20,
+   "depthIn": 29,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "cotton-white",
+     "name": "Cotton White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Drake",
+   "retail": {
+    "key": "toto-drake-2pc-128-cotton",
+    "type": "toilet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/toto-drake-2-piece-1-28-gpf-single-flush-elongated-toilet-in-cotton-white/1001708055",
+      "sku": "1001708055",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-toto-drake-2pc-16-cotton",
+   "kind": "toilet",
+   "variant": "two-piece",
+   "category": "bath",
+   "brand": "TOTO",
+   "name": "Drake 2-piece 1.6 GPF elongated toilet, Cotton White",
+   "code": "1001708057",
+   "widthIn": 20,
+   "depthIn": 29,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "cotton-white",
+     "name": "Cotton White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Drake",
+   "retail": {
+    "key": "toto-drake-2pc-16-cotton",
+    "type": "toilet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/toto-drake-2-piece-1-6-gpf-single-flush-elongated-toilet-in-cotton-white/1001708057",
+      "sku": "1001708057",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-toto-entrada-2pc-cotton",
+   "kind": "toilet",
+   "variant": "two-piece",
+   "category": "bath",
+   "brand": "TOTO",
+   "name": "Entrada 2-piece elongated 1.28 GPF universal height toilet, Cotton White",
+   "code": "1001189111",
+   "widthIn": 20,
+   "depthIn": 29,
+   "heightIn": 30,
+   "elevationIn": 0,
+   "price": 418,
+   "finishes": [
+    {
+     "id": "cotton-white",
+     "name": "Cotton White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Entrada",
+   "retail": {
+    "key": "toto-entrada-2pc-cotton",
+    "type": "toilet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/toto-entrada-2-piece-elongated-1-28-gpf-universal-height-toilet-cotton-white/1001189111",
+      "sku": "1001189111",
+      "priceCad": 418,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-swiss-madison-chateau-1pc",
+   "kind": "toilet",
+   "variant": "one-piece",
+   "category": "bath",
+   "brand": "Swiss Madison",
+   "name": "Chateau one-piece elongated toilet, dual flush, White",
+   "code": "1001639841",
+   "widthIn": 19,
+   "depthIn": 28,
+   "heightIn": 28,
+   "elevationIn": 0,
+   "price": 379,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Chateau",
+   "retail": {
+    "key": "swiss-madison-chateau-1pc",
+    "type": "toilet-one-piece",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/swiss-madison-chateau-one-piece-elongated-toilet-dual-flush/1001639841",
+      "sku": "1001639841",
+      "priceCad": 379,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-swiss-madison-ivy-1pc",
+   "kind": "toilet",
+   "variant": "one-piece",
+   "category": "bath",
+   "brand": "Swiss Madison",
+   "name": "Ivy one-piece 0.8/1.28 GPF dual flush elongated toilet, White",
+   "code": "1001691748",
+   "widthIn": 19,
+   "depthIn": 28,
+   "heightIn": 28,
+   "elevationIn": 0,
+   "price": 519,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Ivy",
+   "retail": {
+    "key": "swiss-madison-ivy-1pc",
+    "type": "toilet-one-piece",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/swiss-madison-ivy-1-piece-0-8-1-28-gpf-dual-flush-elongated-toilet-in-white/1001691748",
+      "sku": "1001691748",
+      "priceCad": 519,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-swiss-madison-st-tropez-1pc-side",
+   "kind": "toilet",
+   "variant": "one-piece",
+   "category": "bath",
+   "brand": "Swiss Madison",
+   "name": "St. Tropez one-piece 1.28 GPF elongated toilet, side flush, White",
+   "code": "1001777535",
+   "widthIn": 19,
+   "depthIn": 28,
+   "heightIn": 28,
+   "elevationIn": 0,
+   "price": 722,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "St. Tropez",
+   "retail": {
+    "key": "swiss-madison-st-tropez-1pc-side",
+    "type": "toilet-one-piece",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/swiss-madison-st-tropez-1-28-gpf-one-piece-elongated-toilet-side-flush-in-white/1001777535",
+      "sku": "1001777535",
+      "priceCad": 722,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-foremost-aria-wall-hung-chrome",
+   "kind": "toilet",
+   "variant": "wall-hung",
+   "category": "bath",
+   "brand": "Foremost",
+   "name": "Aria concealed tank wall hung dual flush toilet with chrome push button",
+   "code": "1001200194",
+   "widthIn": 15,
+   "depthIn": 22,
+   "heightIn": 16,
+   "elevationIn": 0,
+   "price": 955,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Aria",
+   "retail": {
+    "key": "foremost-aria-wall-hung-chrome",
+    "type": "toilet-wall",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/foremost-concealed-tank-wall-hung-dual-flush-toilet-with-chrome-push-button/1001200194",
+      "sku": "1001200194",
+      "priceCad": 955,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-foremost-aria-wall-hung-white",
+   "kind": "toilet",
+   "variant": "wall-hung",
+   "category": "bath",
+   "brand": "Foremost",
+   "name": "Aria concealed tank wall hung dual flush toilet with white push button",
+   "code": "1001200193",
+   "widthIn": 15,
+   "depthIn": 22,
+   "heightIn": 16,
+   "elevationIn": 0,
+   "price": 875,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Aria",
+   "retail": {
+    "key": "foremost-aria-wall-hung-white",
+    "type": "toilet-wall",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": null,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "width",
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/foremost-concealed-tank-wall-hung-dual-flush-toilet-with-white-push-button/1001200193",
+      "sku": "1001200193",
+      "priceCad": 875,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-agua-canada-brio-60-right",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "AGUA CANADA",
+   "name": "Brio 60 in. acrylic right alcove square bathtub, glossy white",
+   "code": "1001886322",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 20,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glossy-white",
+     "name": "Glossy White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Brio",
+   "retail": {
+    "key": "agua-canada-brio-60-right",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/agua-canada-brio-60-inch-acrylic-right-alcove-square-bathtub-with-overflow-in-glossy-white/1001886322",
+      "sku": "1001886322",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kohler-archer-60-left",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "KOHLER",
+   "name": "Archer 60 in. acrylic left drain rectangular alcove bathtub, White",
+   "code": "1000705021",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 19,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Archer",
+   "retail": {
+    "key": "kohler-archer-60-left",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": null,
+     "h": 19
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kohler-archer-60-inch-acrylic-left-drain-rectangular-alcove-non-whirlpool-bathtub-in-white/1000705021",
+      "sku": "1000705021",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maax-bosca-access-60x30-hd",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "MAAX",
+   "name": "Bosca Access 60 x 30 in. acrylic alcove bathtub with anti-slip floor, left drain",
+   "code": "1001588065",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 16,
+   "elevationIn": 0,
+   "price": 498,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Bosca",
+   "retail": {
+    "key": "maax-bosca-access-60x30-hd",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 30,
+     "h": 16
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/maax-bosca-access-60-inch-l-x-30-inch-w-x-16-inch-h-acrylic-alcove-bathtub-with-certified-anti-slip-floor-above-the-floor-rough-left-drain/1001588065",
+      "sku": "1001588065",
+      "priceCad": 498,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maax-bosca-afr-60x30-left",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "MAAX",
+   "name": "Bosca AFR 60 x 30 in. alcove bathtub with left drain",
+   "code": "330054086",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 20,
+   "elevationIn": 0,
+   "price": 717,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Bosca",
+   "retail": {
+    "key": "maax-bosca-afr-60x30-left",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 30,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/maax-bosca-afr-60-x-30-in-alcove-bathtub-with-left-drain/330054086",
+      "sku": "330054086",
+      "priceCad": 717,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maax-corinthia-ii-60x30-right",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "MAAX",
+   "name": "Corinthia II 60 x 30 in. white acrylic alcove right-hand drain bathtub",
+   "code": "332037460",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 20,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Corinthia",
+   "retail": {
+    "key": "maax-corinthia-ii-60x30-right",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 30,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/maax-corinthia-ii-60-x-30-in-white-acrylic-alcove-right-hand-drain-bathtub/332037460",
+      "sku": "332037460",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maax-newtown-60x30-right",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "MAAX",
+   "name": "Newtown acrylic bathtub 60 x 30 in., right-side drain, White",
+   "code": "105454000001002",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 20,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at RONA.",
+   "line": "Newtown",
+   "retail": {
+    "key": "maax-newtown-60x30-right",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 30,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "rona",
+      "url": "https://www.rona.ca/en/product/maax-newtown-acrylic-bathtub-60-in-x-30-in-right-side-drain-white-105454000001002/06385181",
+      "sku": "06385181",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-streamline-nal-5260-60x30",
+   "kind": "tub",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "Streamline",
+   "name": "NAL-5260-BGL 60 x 30 in. acrylic alcove bathtub, right drain, glossy white",
+   "code": "1001889653",
+   "widthIn": 60,
+   "depthIn": 30,
+   "heightIn": 19.3,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "glossy-white",
+     "name": "Glossy White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "streamline-nal-5260-60x30",
+    "type": "tub-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 30,
+     "h": 19.3
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/streamline-nal-5260-bgl-60-in-x-30-in-acrylic-right-hand-drain-alcove-bathtub-in-glossy-white-with-external-drain-in-brushed-gold/1001889653",
+      "sku": "1001889653",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-jade-bath-kayden-67",
+   "kind": "tub",
+   "variant": "freestanding",
+   "category": "bath",
+   "brand": "Jade Bath",
+   "name": "Kayden 67 in. acrylic oval freestanding soaker bathtub, White",
+   "code": "1000758516",
+   "widthIn": 67,
+   "depthIn": 32,
+   "heightIn": 23,
+   "elevationIn": 0,
+   "price": 1291,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Kayden",
+   "retail": {
+    "key": "jade-bath-kayden-67",
+    "type": "tub-freestanding",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 67,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/jade-bath-kayden-67-inch-acrylic-oval-freestanding-soaker-bathtub-in-white/1000758516",
+      "sku": "1000758516",
+      "priceCad": 1291,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maax-cariso-67",
+   "kind": "tub",
+   "variant": "freestanding",
+   "category": "bath",
+   "brand": "MAAX",
+   "name": "Cariso 67 x 34 x 23 in. acrylic oval freestanding bathtub, White",
+   "code": "1001775568",
+   "widthIn": 67,
+   "depthIn": 34,
+   "heightIn": 23,
+   "elevationIn": 0,
+   "price": 1298,
+   "finishes": [
+    {
+     "id": "white",
+     "name": "White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Cariso",
+   "retail": {
+    "key": "maax-cariso-67",
+    "type": "tub-freestanding",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 67,
+     "d": 34,
+     "h": 23
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/maax-cariso-67-in-l-x-34-in-w-x-23-in-h-1-piece-acrylic-oval-centre-drain-freestanding-bathtub-in-white-with-14-inch-soaking-depth/1001775568",
+      "sku": "1001775568",
+      "priceCad": 1298,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-streamline-n581bgm-67",
+   "kind": "tub",
+   "variant": "freestanding",
+   "category": "bath",
+   "brand": "Streamline",
+   "name": "N581BGM 67 in. freestanding oval acrylic bathtub, glossy white, centre drain",
+   "code": "1001752152",
+   "widthIn": 67,
+   "depthIn": 32,
+   "heightIn": 23,
+   "elevationIn": 0,
+   "price": 991,
+   "finishes": [
+    {
+     "id": "glossy-white",
+     "name": "Glossy White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "streamline-n581bgm-67",
+    "type": "tub-freestanding",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 67,
+     "d": null,
+     "h": null
+    },
+    "typical": [
+     "depth",
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/streamline-n581bgm-67-inch-freestanding-oval-acrylic-bathtub-and-tray-in-glossy-white-with-centre-drain/1001752152",
+      "sku": "1001752152",
+      "priceCad": 991,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-vanity-art-domme-67",
+   "kind": "tub",
+   "variant": "freestanding",
+   "category": "bath",
+   "brand": "Vanity Art",
+   "name": "Domme 67 x 32.3 in. acrylic freestanding soaking bathtub, centre drain, Pure White",
+   "code": "1001822835",
+   "widthIn": 67,
+   "depthIn": 32.3,
+   "heightIn": 22.8,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "pure-white",
+     "name": "Pure White",
+     "hex": "#f2f0ea",
+     "material": "ceramic"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Domme",
+   "retail": {
+    "key": "vanity-art-domme-67",
+    "type": "tub-freestanding",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 67,
+     "d": 32.3,
+     "h": 22.8
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/vanity-art-domme-5-6-ft-freestanding-oval-soaker-bathtub-with-centre-drain-in-pure-white/1001822835",
+      "sku": "1001822835",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-dreamline-encore-36x60-black",
+   "kind": "shower",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "DreamLine",
+   "name": "Encore 36 x 60 in. alcove shower kit, white base, right drain, matte black bypass door",
+   "code": "1001192966",
+   "widthIn": 60,
+   "depthIn": 36,
+   "heightIn": 78.75,
+   "elevationIn": 0,
+   "price": 2098,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Encore",
+   "retail": {
+    "key": "dreamline-encore-36x60-black",
+    "type": "shower-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 36,
+     "h": 78.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/dreamline-encore-36-in-d-x-60-in-w-x-78-75-in-h-alcove-shower-kit-with-white-acrylic-base-right-drain-clear-glass-bypass-sliding-door-in-matte-black-no-shower-wall-/1001192966",
+      "sku": "1001192966",
+      "priceCad": 2098,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-dreamline-infinity-z-32x60-black",
+   "kind": "shower",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "DreamLine",
+   "name": "Infinity-Z 32 x 60 in. alcove shower kit, white base, centre drain, matte black sliding door",
+   "code": "1001682824",
+   "widthIn": 60,
+   "depthIn": 32,
+   "heightIn": 74.75,
+   "elevationIn": 0,
+   "price": 1629,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Infinity-Z",
+   "retail": {
+    "key": "dreamline-infinity-z-32x60-black",
+    "type": "shower-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 32,
+     "h": 74.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/dreamline-infinity-z-32-in-d-x-60-in-w-x-74-75-in-h-alcove-shower-kit-with-white-acrylic-base-centre-drain-clear-glass-sliding-door-in-matte-black-no-shower-wall-/1001682824",
+      "sku": "1001682824",
+      "priceCad": 1629,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-dreamline-visions-32x60-nickel",
+   "kind": "shower",
+   "variant": "alcove",
+   "category": "bath",
+   "brand": "DreamLine",
+   "name": "Visions 32 x 60 in. alcove shower kit, white base, left drain, brushed nickel sliding door",
+   "code": "1001038257",
+   "widthIn": 60,
+   "depthIn": 32,
+   "heightIn": 74.75,
+   "elevationIn": 0,
+   "price": 989,
+   "finishes": [
+    {
+     "id": "brushed-nickel",
+     "name": "Brushed Nickel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Visions",
+   "retail": {
+    "key": "dreamline-visions-32x60-nickel",
+    "type": "shower-alcove",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": 32,
+     "h": 74.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/dreamline-visions-32-in-d-x-60-in-w-x-74-75-in-h-alcove-shower-kit-with-white-acrylic-base-left-drain-clear-glass-sliding-door-in-brushed-nickel-no-shower-wall/1001038257",
+      "sku": "1001038257",
+      "priceCad": 989.4,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-dreamline-cornerview-36-black",
+   "kind": "shower",
+   "variant": "corner",
+   "category": "bath",
+   "brand": "DreamLine",
+   "name": "Cornerview 36 x 36 in. square corner shower kit, white base, matte black sliding door",
+   "code": "1001606572",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 74.75,
+   "elevationIn": 0,
+   "price": 1509,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Cornerview",
+   "retail": {
+    "key": "dreamline-cornerview-36-black",
+    "type": "shower-corner",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": 74.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/dreamline-cornerview-36-in-d-x-36-in-w-x-74-75-in-h-square-corner-shower-kit-enclosure-with-white-base-corner-drain-clear-glass-sliding-door-in-matte-black-no-shower-wall-/1001606572",
+      "sku": "1001606572",
+      "priceCad": 1509,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-dreamline-prism-lux-36-chrome",
+   "kind": "shower",
+   "variant": "corner",
+   "category": "bath",
+   "brand": "DreamLine",
+   "name": "Prism Lux 36 x 36 in. neo-angle corner shower kit, white base, chrome pivot door",
+   "code": "1001193525",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 74.75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "chrome",
+     "name": "Chrome",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Prism",
+   "retail": {
+    "key": "dreamline-prism-lux-36-chrome",
+    "type": "shower-corner",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": 74.75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/dreamline-prism-lux-36-in-d-x-36-in-w-x-74-75-in-h-neo-angle-corner-shower-kit-enclosure-with-white-base-corner-drain-clear-glass-pivot-door-in-chrome-no-shower-wall/1001193525",
+      "sku": "1001193525",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-maax-scarlet-36-corner-black",
+   "kind": "shower",
+   "variant": "corner",
+   "category": "bath",
+   "brand": "MAAX",
+   "name": "Scarlet 36 x 36 x 75 in. corner shower kit, black base, sliding door",
+   "code": "1001711792",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 75,
+   "elevationIn": 0,
+   "price": null,
+   "finishes": [
+    {
+     "id": "matte-black",
+     "name": "Matte Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Scarlet",
+   "retail": {
+    "key": "maax-scarlet-36-corner-black",
+    "type": "shower-corner",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": 75
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/maax-scarlet-36l-x-36w-x-75h-in-2-in-1-corner-shower-kit-shower-enclosure-with-corner-drain-shower-base-and-glass-shower-door-in-black-no-wall-/1001711792",
+      "sku": "1001711792",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-ove-breeze-36-round-corner",
+   "kind": "shower",
+   "variant": "corner",
+   "category": "bath",
+   "brand": "OVE Decors",
+   "name": "Breeze 36 x 36 in. round corner shower kit, white and chrome",
+   "code": "1001105620",
+   "widthIn": 36,
+   "depthIn": 36,
+   "heightIn": 78,
+   "elevationIn": 0,
+   "price": 1142,
+   "finishes": [
+    {
+     "id": "chrome",
+     "name": "Chrome",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Breeze",
+   "retail": {
+    "key": "ove-breeze-36-round-corner",
+    "type": "shower-corner",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 36,
+     "d": 36,
+     "h": null
+    },
+    "typical": [
+     "height"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/ove-decors-breeze-36-inch-x-36-inch-x-36-inch-round-corner-shower-kit-in-white-and-chrome-with-corner-drain/1001105620",
+      "sku": "1001105620",
+      "priceCad": 1142,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-glass-warehouse-vela-60-panel-chrome",
+   "kind": "shower",
+   "variant": "walk-in",
+   "category": "bath",
+   "brand": "Glass Warehouse",
+   "name": "Vela 60 x 78 in. single fixed panel frameless shower screen, walk-in",
+   "code": "1001802700",
+   "widthIn": 60,
+   "depthIn": 36,
+   "heightIn": 78,
+   "elevationIn": 0,
+   "price": 765,
+   "finishes": [
+    {
+     "id": "chrome",
+     "name": "Chrome",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Vela",
+   "retail": {
+    "key": "glass-warehouse-vela-60-panel-chrome",
+    "type": "shower-walkin",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 60,
+     "d": null,
+     "h": 78
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/glass-warehouse-vela-60-in-w-x-78-in-h-single-fixed-panel-frameless-shower-door-in-polished-brass-without-handle/1001802700",
+      "sku": "1001802700",
+      "priceCad": 765,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-deco-mirror-spectrum-30x36",
+   "kind": "mirror",
+   "variant": "rect",
+   "category": "bath",
+   "brand": "Deco Mirror",
+   "name": "Spectrum 30 x 36 in. wall mirror, Chrome",
+   "code": "1001530476",
+   "widthIn": 30,
+   "depthIn": 1.5,
+   "heightIn": 36,
+   "elevationIn": 40,
+   "price": null,
+   "finishes": [
+    {
+     "id": "chrome",
+     "name": "Chrome",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Spectrum",
+   "retail": {
+    "key": "deco-mirror-spectrum-30x36",
+    "type": "mirror",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 30,
+     "d": null,
+     "h": 36
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/deco-mirror-30-in-x-36-in-spectrum-chrome-wall-mirror/1001530476",
+      "sku": "1001530476",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-mirrorize-round-34-black",
+   "kind": "mirror",
+   "variant": "rect",
+   "category": "bath",
+   "brand": "MIRRORIZE",
+   "name": "Round black metal framed vanity mirror, 34 in. diameter",
+   "code": "1001600369",
+   "widthIn": 34,
+   "depthIn": 1.5,
+   "heightIn": 34,
+   "elevationIn": 40,
+   "price": null,
+   "finishes": [
+    {
+     "id": "black",
+     "name": "Black",
+     "hex": "#1f1f20",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "mirrorize-round-34-black",
+    "type": "mirror",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 34,
+     "d": null,
+     "h": 34
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/mirrorize-round-black-bathroom-metal-framed-vanity-wall-mirror-34-in-diameter/1001600369",
+      "sku": "1001600369",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-aquadom-royale-basic-24x30",
+   "kind": "mirror",
+   "variant": "cabinet",
+   "category": "bath",
+   "brand": "Aquadom",
+   "name": "Royale Basic 24 x 30 in. LED medicine cabinet, one door, left hinge",
+   "code": "RB-2430L",
+   "widthIn": 24,
+   "depthIn": 5,
+   "heightIn": 30,
+   "elevationIn": 44,
+   "price": 669,
+   "finishes": [
+    {
+     "id": "mirror",
+     "name": "Mirror",
+     "hex": "#cfc9bf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Royale",
+   "retail": {
+    "key": "aquadom-royale-basic-24x30",
+    "type": "medicine-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": 30
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/aquadom-royale-basic-24-in-w-x-30-in-h-recessed-or-surface-mount-led-medicine-cabinet-one-door-left-hinge/1001562005",
+      "sku": "1001562005",
+      "priceCad": 669,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-glacier-bay-4450-medicine-nickel",
+   "kind": "mirror",
+   "variant": "cabinet",
+   "category": "bath",
+   "brand": "Glacier Bay",
+   "name": "24 x 30 in. framed recessed or surface-mount medicine cabinet, Brushed Nickel",
+   "code": "4450",
+   "widthIn": 24,
+   "depthIn": 5,
+   "heightIn": 30,
+   "elevationIn": 44,
+   "price": null,
+   "finishes": [
+    {
+     "id": "brushed-nickel",
+     "name": "Brushed Nickel",
+     "hex": "#c4c8cb",
+     "material": "metal"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "glacier-bay-4450-medicine-nickel",
+    "type": "medicine-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": 30
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/glacier-bay-24-inch-w-x-30-inch-h-framed-recessed-or-surface-mount-bathroom-medicine-cabinet-in-brushed-nickel/1000675540",
+      "sku": "1000675540",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-glacier-bay-4582-medicine-24x30",
+   "kind": "mirror",
+   "variant": "cabinet",
+   "category": "bath",
+   "brand": "Glacier Bay",
+   "name": "24 x 30 in. frameless recessed or surface-mount medicine cabinet with beveled mirror",
+   "code": "4582",
+   "widthIn": 24,
+   "depthIn": 5,
+   "heightIn": 30,
+   "elevationIn": 44,
+   "price": null,
+   "finishes": [
+    {
+     "id": "frameless",
+     "name": "Frameless",
+     "hex": "#cfc9bf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "retail": {
+    "key": "glacier-bay-4582-medicine-24x30",
+    "type": "medicine-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": 5,
+     "h": 30
+    },
+    "typical": [],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/glacier-bay-24-inch-w-x-30-inch-h-x-5-inch-d-frameless-recessed-or-surface-mount-bathroom-medicine-cabinet-with-beveled-mirror/1000675539",
+      "sku": "1000675539",
+      "priceCad": null,
+      "inStock": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "r-kohler-verdera-medicine-24x30",
+   "kind": "mirror",
+   "variant": "cabinet",
+   "category": "bath",
+   "brand": "KOHLER",
+   "name": "Verdera 24 x 30 in. recessed or surface-mount medicine cabinet with magnifying mirror",
+   "code": "1001158471",
+   "widthIn": 24,
+   "depthIn": 5,
+   "heightIn": 30,
+   "elevationIn": 44,
+   "price": null,
+   "finishes": [
+    {
+     "id": "mirror",
+     "name": "Mirror",
+     "hex": "#cfc9bf",
+     "material": "paint"
+    }
+   ],
+   "blurb": "Listed at Home Depot.",
+   "line": "Verdera",
+   "retail": {
+    "key": "kohler-verdera-medicine-24x30",
+    "type": "medicine-cabinet",
+    "upc": null,
+    "confidence": "medium",
+    "checkedAt": "2026-10-19",
+    "size": {
+     "w": 24,
+     "d": null,
+     "h": 30
+    },
+    "typical": [
+     "depth"
+    ],
+    "stores": [
+     {
+      "store": "home-depot",
+      "url": "https://www.homedepot.ca/product/kohler-verdera-24-inch-w-x-30-inch-h-aluminum-medicine-cabinet-with-magnifying-mirror-and-slow-close-door/1001158471",
+      "sku": "1001158471",
+      "priceCad": null,
       "inStock": null
      }
     ]

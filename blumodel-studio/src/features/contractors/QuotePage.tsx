@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { MiniPlan } from '../../components/MiniPlan';
 import { Toasts } from '../../components/Toasts';
 import { ApiError } from '../../lib/api';
-import { feetInches } from '../../lib/format';
 import { hrefFor } from '../../lib/router';
 import { PLACEHOLDER_PRICES_NOTE } from '../../lib/csv';
 import { atStoreNote } from '../../lib/estimate';
@@ -12,6 +11,7 @@ import { requestExport } from '../billing';
 import { proApi, type Quote } from './api';
 import { useWorkspace } from './ContractorRoot';
 import { quoteImages } from './quoteCapture';
+import { roomLabel } from '../../lib/outline';
 
 /** Quotes are to the cent, so the lines add up to the total on paper. */
 const usd = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -122,7 +122,7 @@ export default function QuotePage({ projectId }: { projectId: string }) {
             <div>
               <dt>Room</dt>
               <dd>
-                {feetInches(quote.kitchen.room.widthIn)} × {feetInches(quote.kitchen.room.lengthIn)}
+                {roomLabel(quote.kitchen.room)}
               </dd>
             </div>
             <div>

@@ -6,6 +6,7 @@
  * Units: the scene is drawn in FEET (one world unit = 12 room inches) with +Y up,
  * world x = room x / 12, world z = room y / 12. See lib/interaction.ts.
  */
+import { planSize } from '../../lib/outline';
 import * as THREE from 'three';
 import type { Room } from '../../types';
 import type { AABB, Wall } from '../../lib/geometry';
@@ -50,7 +51,8 @@ export type RoomFace = Wall | 'floor' | 'ceiling';
 export function rayExitRoom(ray: THREE.Ray, room: Room): { point: THREE.Vector3; face: RoomFace } | null {
   const o = [ray.origin.x, ray.origin.y, ray.origin.z];
   const d = [ray.direction.x, ray.direction.y, ray.direction.z];
-  const hi = [room.widthIn / INCHES_PER_WORLD_UNIT, room.ceilingIn / INCHES_PER_WORLD_UNIT, room.lengthIn / INCHES_PER_WORLD_UNIT];
+  const size = planSize(room);
+  const hi = [size.W / INCHES_PER_WORLD_UNIT, room.ceilingIn / INCHES_PER_WORLD_UNIT, size.L / INCHES_PER_WORLD_UNIT];
   let tNear = -Infinity;
   let tFar = Infinity;
   let axis = -1;
@@ -88,12 +90,14 @@ export function roomPointUnderRay(ray: THREE.Ray, room: Room, margin = 48): Room
   const exit = rayExitRoom(ray, room);
   if (exit) {
     const p = worldToRoom(exit.point.x, exit.point.z);
-    return { x: Math.min(Math.max(p.x, 0), room.widthIn), y: Math.min(Math.max(p.y, 0), room.lengthIn) };
+    const sz = planSize(room);
+    return { x: Math.min(Math.max(p.x, 0), sz.W), y: Math.min(Math.max(p.y, 0), sz.L) };
   }
   const floor = rayToHorizontalPlane(ray, 0);
   if (!floor) return null;
   const p = worldToRoom(floor.x, floor.z);
-  if (p.x < -margin || p.y < -margin || p.x > room.widthIn + margin || p.y > room.lengthIn + margin) return null;
+  const sz = planSize(room);
+  if (p.x < -margin || p.y < -margin || p.x > sz.W + margin || p.y > sz.L + margin) return null;
   return p;
 }
 

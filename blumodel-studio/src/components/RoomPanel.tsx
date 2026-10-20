@@ -1,4 +1,9 @@
+import { useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
+import { Dialog } from './Dialog';
+import { RoomSketcher } from './sketch/RoomSketcher';
+import { floorAreaIn2 } from '../lib/outline';
+import type { Draft } from '../lib/roomEdit';
 import { FeetInchesInput } from './FeetInchesInput';
 import { TEMPLATES, type TemplateId } from '../data/templates';
 import { BACKSPLASHES, CABINET_BRAND, CABINET_FINISHES, COUNTERTOPS, DOOR_STYLES, FLOORING, HARDWARE, PAINTS, type SurfaceOption } from '../data/finishes';
@@ -97,7 +102,12 @@ export function RoomPanel() {
   const set = (patch: Partial<Surfaces>) => setSurfaces(patch);
   // The retail sinks and faucets (with their stores) never show on a company's showroom.
   const showroom = useShowroom();
-  const area = (room.widthIn * room.lengthIn) / 144;
+  const items = useDesignStore((s) => s.doc.items);
+  const applyRoomEdit = useDesignStore((s) => s.applyRoomEdit);
+  const [editing, setEditing] = useState<Draft | null>(null);
+  const area = floorAreaIn2(room) / 144;
+  // Suggested layouts are built for a plain rectangle; a drawn room is furnished by hand.
+  const rectangular = !room.outline && !room.extra?.length;
 
   return (
     <div className="room-panel">
@@ -107,10 +117,42 @@ export function RoomPanel() {
           <span className="sub mono">{area.toFixed(0)} sq ft</span>
         </header>
         <div className="dims">
-          <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={72} max={480} onCommit={(v) => setRoom({ widthIn: v })} />
-          <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={72} max={480} onCommit={(v) => setRoom({ lengthIn: v })} />
+          {rectangular && (
+            <>
+              <FeetInchesInput label="Width (E–W)" valueIn={room.widthIn} min={72} max={1200} onCommit={(v) => setRoom({ widthIn: v })} />
+              <FeetInchesInput label="Length (N–S)" valueIn={room.lengthIn} min={72} max={1200} onCommit={(v) => setRoom({ lengthIn: v })} />
+            </>
+          )}
           <FeetInchesInput label="Ceiling" valueIn={room.ceilingIn} min={90} max={144} onCommit={(v) => setRoom({ ceilingIn: v })} />
         </div>
+        <button type="button" className="btn" onClick={() => setEditing({ room, items })} data-testid="edit-walls">
+          Walls &amp; rooms…
+        </button>
+        {!rectangular && (
+          <p className="sub" style={{ marginTop: 6 }}>
+            {room.extra?.length ? `${room.extra.length + 1} rooms. ` : ''}Drawn walls: use Walls &amp; rooms to change them.
+          </p>
+        )}
+        {editing && (
+          <Dialog title="Walls & rooms" wide onClose={() => setEditing(null)}>
+            <RoomSketcher draft={editing} onChange={setEditing} height={460} />
+            <div className="dialog-actions" style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+              <button type="button" className="btn" onClick={() => setEditing(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => {
+                  applyRoomEdit(editing);
+                  setEditing(null);
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          </Dialog>
+        )}
       </section>
 
       <section className="room-section">
@@ -158,6 +200,14 @@ export function RoomPanel() {
             ))}
           </div>
           {!showroom && <RetailFixtures surfaces={surfaces} set={set} />}
+          <span className="mini-label">Crown moulding</span>
+          <div className="seg crown-seg" role="group" aria-label="Crown moulding">
+            {(['none', 'flat', 'cove'] as const).map((c) => (
+              <button key={c} type="button" className={(surfaces.crown ?? 'none') === c ? 'on' : ''} aria-pressed={(surfaces.crown ?? 'none') === c} onClick={() => set({ crown: c })} title={c === 'none' ? 'No crown on the uppers' : c === 'flat' ? 'A plain 3″ band along the tops' : 'A stepped cove along the tops'}>
+                {c === 'none' ? 'None' : c === 'flat' ? 'Flat' : 'Cove'}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -211,9 +261,9 @@ export function RoomPanel() {
         </header>
         <div className="templates">
           {TEMPLATES.map((t) => {
-            const fits = room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
+            const fits = rectangular && room.widthIn >= t.minWidth && room.lengthIn >= t.minLength;
             return (
-              <button key={t.id} className="template" disabled={!fits} onClick={() => applyTemplate(t.id)} title={fits ? t.blurb : `Needs at least ${feetInches(t.minWidth)} × ${feetInches(t.minLength)}`}>
+              <button key={t.id} className="template" disabled={!fits} onClick={() => applyTemplate(t.id)} title={fits ? t.blurb : !rectangular ? 'Suggested layouts fit a plain rectangular room. Yours is drawn, so place pieces by hand.' : `Needs at least ${feetInches(t.minWidth)} × ${feetInches(t.minLength)}`}>
                 <TemplateGlyph id={t.id} />
                 <span className="template-name">{t.name}</span>
                 <span className="template-blurb">{fits ? t.blurb : `Needs ${Math.ceil(t.minWidth / 12)}′ × ${Math.ceil(t.minLength / 12)}′`}</span>

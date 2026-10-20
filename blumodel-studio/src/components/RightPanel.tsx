@@ -3,7 +3,7 @@ import { useDesignStore, useSelected } from '../store/useDesignStore';
 import { useEstimate, useReport } from '../store/derived';
 import { productCode, isOpening } from '../data/catalog';
 import { finishList, finishPosition, resolveFinish } from '../lib/finish';
-import { feetInches, inches, money } from '../lib/format';
+import { inches, money } from '../lib/format';
 import { flushWall } from '../lib/geometry';
 import type { CheckLevel } from '../lib/checks';
 import { ProductArt } from './ProductArt';
@@ -19,6 +19,7 @@ import { SendDesign } from '../features/showroom';
 import { priceFor } from '../data/catalog';
 import { atStoreNote, pricedAtStore } from '../lib/estimate';
 import type { EstimateExtra } from '../types';
+import { roomLabel, floorSqFt } from '../lib/outline';
 
 function NumberField({ label, value, onCommit }: { label: string; value: number; onCommit: (v: number) => void }) {
   const [text, setText] = useState(value.toFixed(1).replace(/\.0$/, ''));
@@ -161,9 +162,9 @@ function Summary({ view, showPrices, compact }: { view: boolean; showPrices: boo
     <div className="summary">
       <div className="summary-card">
         <span className="eyebrow">This kitchen</span>
-        <div className="summary-big">{feetInches(room.widthIn)} × {feetInches(room.lengthIn)}</div>
+        <div className="summary-big">{roomLabel(room)}</div>
         <div className="summary-stats">
-          <div><b className="mono">{Math.round((room.widthIn * room.lengthIn) / 144)}</b><span>sq ft</span></div>
+          <div><b className="mono">{floorSqFt(room)}</b><span>sq ft</span></div>
           <div><b className="mono">{items.length}</b><span>pieces</span></div>
           {showPrices && <div><b className="mono">{money(est.total)}</b><span>estimated</span></div>}
         </div>

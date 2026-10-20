@@ -1,3 +1,4 @@
+import { planSize } from '../../lib/outline';
 import { memo, Suspense, useEffect, useMemo, useRef, useState, type DragEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Lightformer, OrbitControls } from '@react-three/drei';
@@ -9,7 +10,7 @@ import { useReport, useResolvedItems } from '../../store/derived';
 import { useCatalog, useCatalogVersion } from '../../store/useCatalog';
 import { getProduct, isOpening } from '../../data/catalog';
 import { placeAtClient, usePlacement } from '../../lib/interaction';
-import { resolve } from '../../lib/geometry';
+import { resolve, openEnds } from '../../lib/geometry';
 import { resolveFinish } from '../../lib/finish';
 import { registerExporter } from '../../lib/exporters';
 import { QA, qaExpose } from '../../lib/qa';
@@ -76,9 +77,12 @@ interface ItemProps {
   onHover: (id: string | null) => void;
   /** Bumps when the catalog registry changes, so `resolve` re-runs for the same item. */
   catalogVersion: number;
+  /** Open ends for crown moulding: two booleans, so memo compares them by value. */
+  endL?: boolean;
+  endR?: boolean;
 }
 
-const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, onSelect, onHover, catalogVersion }: ItemProps) {
+const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, onSelect, onHover, catalogVersion, endL = true, endR = true }: ItemProps) {
   const r = useMemo(() => resolve(item), [item, catalogVersion]);
   if (!r) return null;
   const finish = resolveFinish(item, r.product, surfaces);
@@ -102,7 +106,7 @@ const Item3D = memo(function Item3D({ item, surfaces, ctx, selected, problem, on
         if (!useDesignStore.getState().dragging) document.body.style.cursor = '';
       }}
     >
-      {renderModel({ r, finish, ctx })}
+      {renderModel({ r, finish, ctx, ends: [endL, endR] })}
       {(selected || problem) && <SelectionEdges w={r.w} d={r.d} y0={r.z0} h={Math.max(1, r.z1 - r.z0)} problem={problem} />}
     </group>
   );
@@ -136,7 +140,7 @@ function CameraRig({ room }: { room: Room }) {
   useEffect(() => {
     go('overview', first.current);
     first.current = false;
-  }, [room.widthIn, room.lengthIn, room.ceilingIn, Math.round(aspect * 10)]);
+  }, [planSize(room).W, planSize(room).L, room.ceilingIn, Math.round(aspect * 10)]);
 
   useEffect(() => {
     if (request) go(request.preset);
@@ -173,8 +177,8 @@ function CameraRig({ room }: { room: Room }) {
 }
 
 function Lights({ room }: { room: Room }) {
-  const W = room.widthIn / 12;
-  const L = room.lengthIn / 12;
+  const W = planSize(room).W / 12;
+  const L = planSize(room).L / 12;
   const H = room.ceilingIn / 12;
   const span = Math.max(W, L);
   const sun = useRef<THREE.DirectionalLight>(null);
@@ -309,6 +313,8 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
   const report = useReport();
   const catalogVersion = useCatalogVersion();
   const ctx = useSceneCtx(surfaces, room);
+  // Crown returns only on open ends; worked out only when there is crown to draw.
+  const ends = useMemo(() => (ctx.crown === 'none' ? new Map<string, [boolean, boolean]>() : openEnds(all)), [ctx.crown, all]);
   const onSelect = useMemo(
     () => (id: string) => {
       select(id);
@@ -343,6 +349,8 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
               onSelect={onSelect}
               onHover={hover}
               catalogVersion={catalogVersion}
+              endL={ends.get(it.id)?.[0] ?? true}
+              endR={ends.get(it.id)?.[1] ?? true}
             />
           );
         })}

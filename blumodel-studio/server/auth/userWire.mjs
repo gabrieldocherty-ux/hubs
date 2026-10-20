@@ -16,4 +16,7 @@ export function makeUserWire(services) {
   });
 }
 
-export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { emailSyntaxOk } from '../lib/emailCheck.mjs';
+
+/** Same `.test()` shape as before, but a real shape check (server/lib/emailCheck.mjs): "a@b.c", "a..b@c.com" and "x@y.123" no longer pass. */
+export const EMAIL_RE = { test: (s) => emailSyntaxOk(s) };

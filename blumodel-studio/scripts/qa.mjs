@@ -521,6 +521,7 @@ function serverEnv(extra) {
     'ADMIN_SESSION_HOURS',
     'PAYMENTS',
     'DEMO_PAYMENTS',
+    'BLUMODEL_EMAIL_DNS_CHECK',
     'SHOW_DEMO_BRANDS',
     'BASE_DOMAIN',
     // Photoreal renders: the QA server never calls a real rendering service (it uses the demo).
@@ -970,6 +971,8 @@ export async function main(argv = process.argv.slice(2)) {
     UPLOAD_DIR: path.join(tmp, 'uploads'),
     PAYMENTS: 'demo',
     DEMO_PAYMENTS: '1',
+    // The routes sign people up with made-up addresses (@ridgeline-qa.test): no mail-server lookup.
+    BLUMODEL_EMAIL_DNS_CHECK: 'off',
     // The routes use the seeded "(Demo)" brands, which a production server hides without this.
     SHOW_DEMO_BRANDS: '1',
     // Showrooms are <slug>.localhost:<port> (Chromium resolves *.localhost to 127.0.0.1); the sales

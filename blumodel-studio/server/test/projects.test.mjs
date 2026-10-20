@@ -168,7 +168,7 @@ test('strict doc validation: junk is rejected, unknown keys are stripped', async
   const doc = ok.body.project.doc;
   assert.equal(doc.junk, undefined);
   assert.equal(doc.version, 2);
-  assert.deepEqual(doc.room, { widthIn: 480, lengthIn: 72, ceilingIn: 100 }, 'room clamped, extra keys dropped');
+  assert.deepEqual(doc.room, { widthIn: 1200, lengthIn: 72, ceilingIn: 100 }, 'room clamped, extra keys dropped');
   assert.equal(doc.surfaces.evil, undefined);
   assert.deepEqual(doc.items[0], { id: 'it-9', productId: 'base', x: 50, y: 12, rotation: 0, finishIndex: 0, finishId: 'oak', widthIn: 30, mirrored: true });
   assert.equal(doc.items[1].productId, 'p_abcdefghijklmnopqrstuvwx', 'an unknown server product id is kept');

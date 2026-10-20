@@ -9,7 +9,10 @@ export const LIMITS = Object.freeze({
   products: 100,
   productBytes: 8 * 1024,
   coord: 2000,
-  room: { widthIn: [72, 480], lengthIn: [72, 480], ceilingIn: [90, 144] },
+  room: { widthIn: [72, 1200], lengthIn: [72, 1200], ceilingIn: [90, 144] },
+  /** Drawn rooms: corners per outline, extra rooms per plan (src/lib/outline.ts). */
+  outlinePoints: 64,
+  extraRooms: 8,
   /** Extra estimate lines (installation, delivery…): count, label length, amount in USD. */
   extras: 50,
   extraLabel: 80,
@@ -24,7 +27,8 @@ const BRAND_CATEGORIES = ['cabinets', 'appliances', 'sinks', 'lighting'];
 
 const ROTATIONS = new Set([0, 90, 180, 270]);
 const DOOR_STYLES = new Set(['shaker', 'slab', 'fluted']);
-const SURFACE_KEYS = ['cabinetFinishId', 'doorStyle', 'hardwareId', 'faucetId', 'countertopId', 'backsplashId', 'flooringId', 'paintId'];
+const SURFACE_KEYS = ['cabinetFinishId', 'doorStyle', 'hardwareId', 'faucetId', 'countertopId', 'backsplashId', 'flooringId', 'paintId', 'crown'];
+const CROWNS = new Set(['none', 'flat', 'cove']);
 
 /** A retail faucet, pull or knob id (src/lib/fixtures.ts FIXTURE_ID_RE). */
 const FIXTURE_ID_RE = /^r-[a-z0-9][a-z0-9-]{0,38}$/;
@@ -183,6 +187,64 @@ function normalizeBrandPrefs(raw) {
   return Object.keys(out).length ? out : null;
 }
 
+const EDGE_STYLES = new Set(['wall', 'half', 'bar', 'rail', 'glass', 'beam', 'open']);
+
+/**
+ * A drawn outline: 4..64 corners, every wall straight across or straight up and down (no diagonals),
+ * none shorter than a foot, within the plan limits. Anything else is dropped, so the room falls back
+ * to its rectangle rather than the save failing. The editor does the full crossing check; this keeps
+ * junk and oversized input out of storage. `styles` (what stands along each edge) is kept only when
+ * there is exactly one known value per corner.
+ */
+function cleanOutline(raw) {
+  if (!Array.isArray(raw) || raw.length < 4 || raw.length > LIMITS.outlinePoints) return null;
+  const pts = [];
+  for (const q of raw) {
+    if (!Array.isArray(q) || !isNum(q[0]) || !isNum(q[1]) || Math.abs(q[0]) > 2400 || Math.abs(q[1]) > 2400) return null;
+    pts.push([Math.round(q[0] * 4) / 4, Math.round(q[1] * 4) / 4]);
+  }
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    if (a[0] !== b[0] && a[1] !== b[1]) return null;
+    if (Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) < 12) return null;
+  }
+  return pts;
+}
+
+function cleanStyles(raw, n, fallback) {
+  if (!Array.isArray(raw) || raw.length !== n || !raw.every((v) => typeof v === 'string' && EDGE_STYLES.has(v))) return null;
+  return raw.some((v) => v !== fallback) ? raw : null;
+}
+
+function cleanShape(r) {
+  const out = {};
+  const main = cleanOutline(r.outline);
+  if (main) out.outline = main;
+  const mainStyles = cleanStyles(r.styles, main ? main.length : 4, 'wall');
+  if (mainStyles && (main || !r.outline)) out.styles = mainStyles;
+  if (Array.isArray(r.extra)) {
+    const extra = [];
+    for (const e of r.extra) {
+      if (extra.length >= LIMITS.extraRooms) break;
+      const outline = isObj(e) ? cleanOutline(e.outline) : null;
+      if (!outline) continue;
+      const zone = e.kind === 'zone';
+      const styles = cleanStyles(e.styles, outline.length, zone ? 'open' : 'wall');
+      extra.push({
+        id: typeof e.id === 'string' && /^[A-Za-z0-9_-]{1,32}$/.test(e.id) ? e.id : `r${extra.length + 1}`,
+        name: typeof e.name === 'string' ? e.name.slice(0, 40) : 'Room',
+        outline,
+        ...(zone ? { kind: 'zone' } : {}),
+        ...(styles ? { styles } : {}),
+        ...(isNum(e.ceilingIn) ? { ceilingIn: clamp(e.ceilingIn, LIMITS.room.ceilingIn) } : {}),
+      });
+    }
+    if (extra.length) out.extra = extra;
+  }
+  return out;
+}
+
 /**
  * Validates and normalises a DesignDoc. Returns `{ ok: true, doc }` or
  * `{ ok: false, field, message }`. `name` is set by the caller.
@@ -196,6 +258,7 @@ export function normalizeDoc(doc) {
       widthIn: clamp(r.widthIn, LIMITS.room.widthIn),
       lengthIn: clamp(r.lengthIn, LIMITS.room.lengthIn),
       ceilingIn: clamp(r.ceilingIn, LIMITS.room.ceilingIn),
+      ...cleanShape(r),
     };
     if (!isObj(doc.surfaces)) bad('surfaces', 'That is not a kitchen design.');
     const surfaces = {};
@@ -204,6 +267,7 @@ export function normalizeDoc(doc) {
       if (v === undefined) continue;
       if (typeof v !== 'string' || v.length > 64) bad(`surfaces.${k}`, 'A room finish is not valid.');
       if (k === 'doorStyle' && !DOOR_STYLES.has(v)) bad('surfaces.doorStyle', 'The door style is not valid.');
+      if (k === 'crown' && !CROWNS.has(v)) bad('surfaces.crown', 'The crown moulding is not valid.');
       if (k === 'faucetId' && !FIXTURE_ID_RE.test(v)) bad('surfaces.faucetId', 'The faucet is not valid.');
       surfaces[k] = v;
     }

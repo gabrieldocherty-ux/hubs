@@ -58,6 +58,29 @@ BluModel Studio`,
 }
 
 /**
+ * To the visitor who sent a design: what they sent, to whom, and the link back to it. Nothing they
+ * typed is repeated (the address is theirs, but a typo'd one would carry their notes to a stranger).
+ */
+export function designSentReceiptEmail({ showroom, designName, designUrl, showroomUrl }) {
+  const name = oneLine(showroom);
+  const design = oneLine(designName, 80);
+  return {
+    subject: `${name} has your design`,
+    text: `Hello,
+
+Thanks for sending ${design ? `“${design}”` : 'your design'} to ${name}. They’ll be in touch about it.
+
+${designUrl ? `Your design, to look at again or share:
+${designUrl}
+
+` : ''}Keep designing on ${name}’s showroom:
+${showroomUrl}
+
+You’re getting this because you sent a design from ${name}’s online showroom. BluModel Studio runs the showroom for ${name}.`,
+  };
+}
+
+/**
  * To SUPPORT_EMAIL (us) when a company books a call on the sales site. This one goes to our own
  * inbox, so it carries what they typed, each field on one line.
  */

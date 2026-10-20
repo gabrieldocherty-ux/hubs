@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DesignDoc, EstimateExtra, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
+import type { DesignDoc, EdgeStyle, EstimateExtra, PlacedItem, PlanStyle, Product, Room, Rotation, Surfaces, ViewMode } from '../types';
 import { getProduct, isBuiltin, isOpening, itemWidth, snapsToWall } from '../data/catalog';
 import { CABINET_FINISHES } from '../data/finishes';
 import { buildTemplate, type TemplateId } from '../data/templates';
@@ -11,19 +11,23 @@ import {
   alongWall,
   boxesOverlap,
   clamp,
+  boxInRoom,
+  flushSeg,
   flushWall,
   footprint,
+  keepInside,
+  segLength,
   overlap1D,
   placeOnWall,
   resolve,
   resolveAll,
   snapItem,
   WALL_ROTATION,
-  WALLS,
-  wallLength,
   type DragResult,
   type Resolved,
 } from '../lib/geometry';
+import * as edit from '../lib/roomEdit';
+import { planBounds, wallSegs, type Pt } from '../lib/outline';
 import { defaultFinishIndex, finishAt, finishById, itemHasFinish } from '../lib/finish';
 import { makeId } from '../lib/id';
 import { cleanExtras, prepareDocForSave, sanitizeDoc, withFinishIds } from '../lib/doc';
@@ -65,6 +69,22 @@ interface State {
 
   setName: (name: string) => void;
   setRoom: (room: Partial<Room>) => void;
+  /** Replace the main room's walls with a drawn outline (items stay where they are). Returns an error message, or null. */
+  setOutline: (outline: Pt[]) => string | null;
+  /** Move one wall (by its id in `wallSegs`) to a new position; things standing against it move with it. Returns an error message, or null. */
+  moveWall: (segId: number, to: number) => string | null;
+  /** Add another room to the plan. Returns its id, or an error message in `error`. */
+  addRoom: (outline: Pt[], name?: string, kind?: 'room' | 'zone') => { id?: string; error?: string };
+  /** Add a room of a known kind (living room, bathroom...) beside the others. Returns its id, or an error message. */
+  addRoomKind: (kindId: string) => { id?: string; error?: string };
+  removeRoom: (id: string) => string | null;
+  /** Set what stands along every edge of a room or open area (`spaceIndex` 0 is the main room). */
+  setSpaceStyle: (spaceIndex: number, style: EdgeStyle) => string | null;
+  /** Set what stands along one wall. */
+  setEdgeStyle: (segId: number, style: EdgeStyle) => string | null;
+  renameRoom: (id: string, name: string) => string | null;
+  /** Replace the room and its items with an edited draft (the Walls & rooms dialog) as one undo step. */
+  applyRoomEdit: (draft: edit.Draft) => void;
   setSurfaces: (s: Partial<Surfaces>) => void;
   /** Replaces the extra estimate lines (installation, delivery…). An empty list removes them. */
   setExtras: (extras: EstimateExtra[]) => void;
@@ -94,6 +114,13 @@ interface State {
    * `dragging` is true between start and end (autosave waits for it to clear).
    */
   dragStart: (id: string) => boolean;
+  /**
+   * Dragging a wall on the plan: each move puts the wall's line at `to` (things against it travel
+   * with it) as a live preview; the end records one undo step and rebases the plan, returning how far
+   * the origin moved so the view can stay put. A move the room can't take is ignored.
+   */
+  wallDragMove: (segId: number, to: number) => boolean;
+  wallDragEnd: () => { dx: number; dy: number };
   dragMove: (id: string, x: number, y: number) => DragResult | null;
   dragEnd: (id?: string) => boolean;
   dragCancel: () => void;
@@ -190,28 +217,37 @@ function findFreeSpot(productId: string, doc: DesignDoc, width?: number): { x: n
   const collides = collider(product, w, resolveAll(doc.items));
 
   if (isOpening(product) || snapsToWall(product)) {
-    for (const wall of WALLS) {
-      const len = wallLength(wall, room);
-      const rotation = WALL_ROTATION[wall];
+    for (const seg of wallSegs(room)) {
+      const rotation = WALL_ROTATION[seg.wall];
       const inset = isOpening(product) ? 0 : d / 2;
-      for (let along = w / 2; along <= len - w / 2; along += 3) {
-        const { x, y } = placeOnWall(wall, along, inset, room);
+      for (let along = seg.a0 + w / 2; along <= seg.a1 - w / 2; along += 3) {
+        const { x, y } = placeOnWall(seg, along, inset);
         if (!collides(x, y, rotation)) return { x, y, rotation };
       }
     }
   }
-  return spiralFrom(room.widthIn / 2, room.lengthIn / 2, 0, w, d, room, collides) ?? { x: room.widthIn / 2, y: room.lengthIn / 2, rotation: 0 };
+  const mid = planMiddle(room);
+  return spiralFrom(mid.x, mid.y, 0, w, d, room, collides) ?? { x: mid.x, y: mid.y, rotation: 0 };
+}
+
+/** A point well inside the main room: the middle of its bounding box, or the nearest floor to it in an L. */
+function planMiddle(room: Room): { x: number; y: number } {
+  const cx = room.widthIn / 2;
+  const cy = room.lengthIn / 2;
+  return keepInside(room, cx, cy, 1, 1);
 }
 
 function spiralFrom(cx: number, cy: number, rotation: Rotation, w: number, d: number, room: Room, collides: (x: number, y: number, r: Rotation) => boolean) {
   const swap = rotation === 90 || rotation === 270;
   const hx = (swap ? d : w) / 2;
   const hy = (swap ? w : d) / 2;
-  for (let r = 0; r < Math.max(room.widthIn, room.lengthIn); r += 4) {
+  const pb = planBounds(room);
+  for (let r = 0; r < Math.max(pb.maxX, pb.maxY); r += 4) {
     const steps = r === 0 ? 1 : 24;
     for (let a = 0; a < steps; a++) {
-      const x = clamp(cx + Math.cos((a / steps) * Math.PI * 2) * r, hx, room.widthIn - hx);
-      const y = clamp(cy + Math.sin((a / steps) * Math.PI * 2) * r, hy, room.lengthIn - hy);
+      const x = clamp(cx + Math.cos((a / steps) * Math.PI * 2) * r, hx, pb.maxX - hx);
+      const y = clamp(cy + Math.sin((a / steps) * Math.PI * 2) * r, hy, pb.maxY - hy);
+      if (!boxInRoom(room, { minX: x - hx, maxX: x + hx, minY: y - hy, maxY: y + hy }, 0.1)) continue;
       if (!collides(x, y, rotation)) return { x, y, rotation };
     }
   }
@@ -236,6 +272,13 @@ export const useDesignStore = create<State>()(
           dragOrigin = next;
         }
         set({ doc: next, past: [...past, doc].slice(-HISTORY_LIMIT), future: [], ...extra });
+      };
+
+      /** Commits an edit from lib/roomEdit as one undo step; returns its error message, or null. */
+      const applyEdit = (out: edit.Edit): string | null => {
+        if (edit.isError(out)) return out.error;
+        commit((doc) => ({ ...doc, room: out.room, items: out.items }));
+        return null;
       };
 
       return {
@@ -263,8 +306,8 @@ export const useDesignStore = create<State>()(
         setRoom: (patch) =>
           commit((doc) => {
             const room = { ...doc.room, ...patch };
-            room.widthIn = clamp(Math.round(room.widthIn), 72, 480);
-            room.lengthIn = clamp(Math.round(room.lengthIn), 72, 480);
+            room.widthIn = clamp(Math.round(room.widthIn), 72, 1200);
+            room.lengthIn = clamp(Math.round(room.lengthIn), 72, 1200);
             room.ceilingIn = clamp(Math.round(room.ceilingIn), 90, 144);
             const W0 = doc.room.widthIn;
             const L0 = doc.room.lengthIn;
@@ -279,6 +322,35 @@ export const useDesignStore = create<State>()(
             });
             return { ...doc, room, items };
           }),
+
+        setOutline: (outline) => applyEdit(edit.setMainOutline({ room: get().doc.room, items: get().doc.items }, outline)),
+
+        moveWall: (segId, to) => applyEdit(edit.moveWallTo({ room: get().doc.room, items: get().doc.items }, segId, to)),
+
+        addRoom: (outline, name, kind) => {
+          const out = edit.addRoom({ room: get().doc.room, items: get().doc.items }, outline, name, kind);
+          const error = applyEdit(out);
+          return error ? { error } : { id: out.id };
+        },
+
+        addRoomKind: (kindId) => {
+          const out = edit.addRoomOfKind({ room: get().doc.room, items: get().doc.items }, kindId);
+          const error = applyEdit(out);
+          return error ? { error } : { id: out.id };
+        },
+
+        setSpaceStyle: (spaceIndex, style) => applyEdit(edit.setSpaceStyle({ room: get().doc.room, items: get().doc.items }, spaceIndex, style)),
+
+        setEdgeStyle: (segId, style) => applyEdit(edit.setEdgeStyle({ room: get().doc.room, items: get().doc.items }, segId, style)),
+
+        removeRoom: (id) => applyEdit(edit.removeRoom({ room: get().doc.room, items: get().doc.items }, id)),
+
+        renameRoom: (id, name) => applyEdit(edit.renameRoom({ room: get().doc.room, items: get().doc.items }, id, name)),
+
+        applyRoomEdit: (draft) => {
+          const out = edit.rebase(draft);
+          commit((doc) => ({ ...doc, room: out.room, items: out.items }));
+        },
 
         setSurfaces: (patch) =>
           commit((doc) => {
@@ -379,6 +451,30 @@ export const useDesignStore = create<State>()(
           return moved;
         },
 
+        wallDragMove: (segId, to) => {
+          const { doc, readOnly } = get();
+          if (readOnly || !Number.isFinite(to)) return false;
+          if (!dragOrigin) dragOrigin = doc;
+          const out = edit.moveWallTo({ room: dragOrigin.room, items: dragOrigin.items }, segId, to, { keepOrigin: true });
+          if (edit.isError(out)) return false;
+          set({ doc: { ...get().doc, room: out.room, items: out.items }, dragging: true });
+          return true;
+        },
+
+        wallDragEnd: () => {
+          const origin = dragOrigin;
+          dragOrigin = null;
+          const { doc, past } = get();
+          if (!origin || origin === doc) {
+            set({ dragging: false });
+            return { dx: 0, dy: 0 };
+          }
+          const before = planBounds(doc.room);
+          const out = edit.rebase({ room: doc.room, items: doc.items });
+          set({ doc: { ...doc, room: out.room, items: out.items }, past: [...past, origin].slice(-HISTORY_LIMIT), future: [], dragging: false });
+          return { dx: -before.minX, dy: -before.minY };
+        },
+
         dragCancel: () => {
           const origin = dragOrigin;
           dragOrigin = null;
@@ -395,11 +491,9 @@ export const useDesignStore = create<State>()(
               const hx = (r.box.maxX - r.box.minX) / 2;
               const hy = (r.box.maxY - r.box.minY) / 2;
               const open = isOpening(r.product);
-              return {
-                ...i,
-                x: open ? clamp(i.x + dx, -3, doc.room.widthIn + 3) : clamp(i.x + dx, hx, doc.room.widthIn - hx),
-                y: open ? clamp(i.y + dy, -3, doc.room.lengthIn + 3) : clamp(i.y + dy, hy, doc.room.lengthIn - hy),
-              };
+              const pb = planBounds(doc.room);
+              if (open) return { ...i, x: clamp(i.x + dx, pb.minX - 3, pb.maxX + 3), y: clamp(i.y + dy, pb.minY - 3, pb.maxY + 3) };
+              return { ...i, ...keepInside(doc.room, i.x + dx, i.y + dy, hx, hy) };
             }),
           ),
 
@@ -413,7 +507,7 @@ export const useDesignStore = create<State>()(
               const hx = (box.maxX - box.minX) / 2;
               const hy = (box.maxY - box.minY) / 2;
               if (isOpening(p)) return { ...i, rotation };
-              return { ...i, rotation, x: clamp(i.x, hx, doc.room.widthIn - hx), y: clamp(i.y, hy, doc.room.lengthIn - hy) };
+              return { ...i, rotation, ...keepInside(doc.room, i.x, i.y, hx, hy) };
             }),
           ),
 
@@ -431,13 +525,13 @@ export const useDesignStore = create<State>()(
             updateItem(doc, id, (i) => {
               const r = resolve(i);
               if (!r) return i;
-              const wall = flushWall(r, doc.room);
+              const seg = flushSeg(r, doc.room);
               const next: PlacedItem = { ...i, widthIn: widthIn === r.product.widthIn ? undefined : widthIn };
-              if (!wall || isOpening(r.product)) return next;
+              if (!seg || isOpening(r.product)) return next;
               // Grow away from the fixed left edge, like extending a run of cabinets.
-              const [start] = alongWall(wall, r.box);
-              const along = clamp(start + widthIn / 2, widthIn / 2, wallLength(wall, doc.room) - widthIn / 2);
-              const pos = placeOnWall(wall, along, r.d / 2, doc.room);
+              const [start] = alongWall(seg.wall, r.box);
+              const along = clamp(start + widthIn / 2, seg.a0 + widthIn / 2, seg.a1 - widthIn / 2);
+              const pos = placeOnWall(seg, along, r.d / 2);
               return { ...next, ...pos };
             }),
           ),
@@ -453,17 +547,17 @@ export const useDesignStore = create<State>()(
           const newId = makeId();
           const others = resolveAll(doc.items);
           const collides = collider(r.product, r.w, others);
-          const wall = flushWall(r, doc.room);
+          const seg = flushSeg(r, doc.room);
           let spot: { x: number; y: number; rotation: Rotation } | null = null;
-          if (wall) {
+          if (seg) {
             // Walk outward along the same wall, right side first, until the copy fits.
-            const len = wallLength(wall, doc.room);
-            const [start, end] = alongWall(wall, r.box);
+            const len = segLength(seg);
+            const [start, end] = alongWall(seg.wall, r.box);
             const inset = isOpening(r.product) ? 0 : r.d / 2;
             for (let k = 0; k < len && !spot; k += 3) {
               for (const along of [end + r.w / 2 + k, start - r.w / 2 - k]) {
-                if (along < r.w / 2 || along > len - r.w / 2) continue;
-                const p = placeOnWall(wall, along, inset, doc.room);
+                if (along < seg.a0 + r.w / 2 || along > seg.a1 - r.w / 2) continue;
+                const p = placeOnWall(seg, along, inset);
                 if (!collides(p.x, p.y, it.rotation)) {
                   spot = { ...p, rotation: it.rotation };
                   break;
@@ -472,7 +566,8 @@ export const useDesignStore = create<State>()(
             }
           } else {
             const step = r.box.maxX - r.box.minX + 2;
-            spot = !collides(it.x + step, it.y, it.rotation) && it.x + step + (r.box.maxX - r.box.minX) / 2 <= doc.room.widthIn
+            const there = footprint(it.x + step, it.y, it.rotation, r.w, r.d);
+            spot = !collides(it.x + step, it.y, it.rotation) && boxInRoom(doc.room, there)
               ? { x: it.x + step, y: it.y, rotation: it.rotation }
               : spiralFrom(it.x, it.y, it.rotation, r.w, r.d, doc.room, collides);
           }

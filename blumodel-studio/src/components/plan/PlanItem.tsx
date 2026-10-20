@@ -369,6 +369,70 @@ export const PlanItem = memo(function PlanItem(p: Props) {
       label = null;
       break;
     }
+    case 'vanity': {
+      nodes.push(counterSlab('slab', product.variant === 'floating' ? { dash } : {}));
+      nodes.push(finishStrip('strip'));
+      const basin = { fill: rendered ? '#f4f3ef' : sheet, stroke: ink, strokeWidth: 0.9, strokeScaleEnabled: false, listening: false } as const;
+      const bw = Math.min(17, w - 8);
+      const centres = product.variant === 'double' ? [-Math.min(15, w / 4), Math.min(15, w / 4)] : [0];
+      for (const cx of centres) {
+        nodes.push(<Ellipse key={`b${cx}`} x={cx} y={y0 + 3 + 7.25} radiusX={bw / 2} radiusY={6.25} {...basin} />);
+        nodes.push(<Circle key={`f${cx}`} x={cx} y={y0 + 2.2} radius={1.1} fill={ink} listening={false} />);
+      }
+      labelColor = labelInk;
+      label = null;
+      break;
+    }
+    case 'toilet': {
+      const fill = rendered ? finish.hex : sheet;
+      const wallHung = product.variant === 'wall-hung';
+      const tankD = wallHung ? 3 : 8;
+      nodes.push(<Rect key="tank" x={-Math.min(9.5, w / 2 - 0.5)} y={y0 + (wallHung ? 0 : 1)} width={Math.min(19, w - 1)} height={tankD} cornerRadius={1.2} fill={fill} {...hair} {...shadow} />);
+      const bowlR = Math.min(7.6, w / 2 - 1);
+      nodes.push(<Ellipse key="bowl" x={0} y={d / 2 - 9.25} radiusX={bowlR} radiusY={9.25} fill={fill} {...hair} {...shadow} />);
+      nodes.push(<Ellipse key="in" x={0} y={d / 2 - 8.5} radiusX={bowlR - 2.4} radiusY={6.4} {...hair} opacity={0.55} listening={false} />);
+      label = null;
+      break;
+    }
+    case 'tub': {
+      const fill = rendered ? finish.hex : sheet;
+      if (product.variant === 'freestanding') {
+        nodes.push(<Ellipse key="o" x={0} y={0} radiusX={w / 2} radiusY={d / 2} fill={fill} {...hair} {...shadow} />);
+        nodes.push(<Ellipse key="i" x={0} y={0} radiusX={w / 2 - 3} radiusY={d / 2 - 3} {...hair} opacity={0.6} listening={false} />);
+        nodes.push(<Circle key="dr" x={w / 2 - 9} y={0} radius={1.2} fill={ink} opacity={0.6} listening={false} />);
+      } else {
+        nodes.push(<Rect key="o" x={x0} y={y0} width={w} height={d} fill={fill} {...hair} {...shadow} />);
+        nodes.push(<Rect key="i" x={x0 + 3} y={y0 + 3} width={w - 6} height={d - 6} cornerRadius={Math.min(8, d / 3)} {...hair} opacity={0.6} listening={false} />);
+        nodes.push(<Circle key="dr" x={x0 + 8} y={0} radius={1.2} fill={ink} opacity={0.6} listening={false} />);
+      }
+      label = null;
+      break;
+    }
+    case 'shower': {
+      nodes.push(<Rect key="base" x={x0} y={y0} width={w} height={d} fill={rendered ? '#ecebe6' : sheet} {...hair} {...shadow} />);
+      // The plan convention for a shower: a cross through the base.
+      nodes.push(<Line key="x1" points={[x0, y0, -x0, d / 2]} {...hair} opacity={0.35} listening={false} />);
+      nodes.push(<Line key="x2" points={[-x0, y0, x0, d / 2]} {...hair} opacity={0.35} listening={false} />);
+      nodes.push(<Circle key="dr" x={0} y={0} radius={1.4} fill={ink} opacity={0.6} listening={false} />);
+      const glassLine = { stroke: '#4f86ad', strokeWidth: 2.2, strokeScaleEnabled: false, listening: false } as const;
+      const sx = item.mirrored ? -1 : 1;
+      if (product.variant === 'corner') {
+        nodes.push(<Line key="g1" points={[x0, d / 2 - 0.6, -x0, d / 2 - 0.6]} {...glassLine} />);
+        nodes.push(<Line key="g2" points={[sx * (w / 2 - 0.6), y0, sx * (w / 2 - 0.6), d / 2]} {...glassLine} />);
+      } else if (product.variant === 'walk-in') {
+        nodes.push(<Line key="g1" points={[x0 + 0.5, d / 2 - 0.6, x0 + w * 0.6 + 0.5, d / 2 - 0.6]} {...glassLine} />);
+      } else {
+        nodes.push(<Line key="g1" points={[x0, d / 2 - 1.4, 2, d / 2 - 1.4]} {...glassLine} />);
+        nodes.push(<Line key="g2" points={[-2, d / 2 - 0.4, -x0, d / 2 - 0.4]} {...glassLine} />);
+      }
+      label = null;
+      break;
+    }
+    case 'mirror': {
+      nodes.push(<Rect key="m" x={x0} y={y0} width={w} height={Math.max(d, 1.5)} fill={rendered ? '#cfd8dc' : sheet} opacity={0.8} {...hair} dash={dash} />);
+      label = null;
+      break;
+    }
     case 'window': {
       const frame = rendered ? finish.hex : sheet;
       nodes.push(<Rect key="gap" x={x0} y={-WALL_T} width={w} height={WALL_T} fill={gap} />);
@@ -454,7 +518,7 @@ export const PlanItem = memo(function PlanItem(p: Props) {
 });
 
 export function isOverheadKind(kind: string): boolean {
-  return kind === 'wall' || kind === 'hood' || kind === 'microwave' || kind === 'shelf' || kind === 'pendant';
+  return kind === 'wall' || kind === 'hood' || kind === 'microwave' || kind === 'shelf' || kind === 'pendant' || kind === 'mirror';
 }
 
 export { PAPER };

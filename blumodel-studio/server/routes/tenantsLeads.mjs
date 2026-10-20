@@ -37,11 +37,11 @@
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { audit, pseudonymiseAudit } from '../lib/audit.mjs';
-import { EMAIL_RE } from '../auth/userWire.mjs';
+import { emailDomainProblem, emailProblem } from '../lib/emailCheck.mjs';
 import { createMailer } from '../email/index.mjs';
 import { requestOrigin } from '../tenancy/hosts.mjs';
-import { leadNoticeEmail, salesLeadEmail } from '../tenancy/emails.mjs';
-import { clearedVisitorCookie, requestVisitor, visitorCookie } from '../tenancy/leads.mjs';
+import { designSentReceiptEmail, leadNoticeEmail, salesLeadEmail } from '../tenancy/emails.mjs';
+import { checkContact, clearedVisitorCookie, requestVisitor, visitorCookie } from '../tenancy/leads.mjs';
 
 const LEAD_PARAM = /^ld_[A-Za-z0-9_-]{8,40}$/;
 const DESIGN_PARAM = /^[0-9a-f-]{36}$/;
@@ -58,6 +58,24 @@ const addCookie = (res, cookie) => {
 
 /** A bot filled the hidden field: answer as if it worked, store nothing. */
 const honeypot = (b) => typeof b?.website === 'string' && b.website.trim() !== '';
+
+/**
+ * 400 {errors:[{field:'email'}]} when the address's domain cannot receive mail. Runs only once the form is
+ * otherwise valid (checkContact: name, phone, consent, email shape and typos), so a person with several
+ * mistakes sees them all from the service, not one at a time. An empty email passes (a phone alone is allowed).
+ */
+async function requireDeliverable(b, company) {
+  const email = typeof b?.email === 'string' ? b.email.trim().toLowerCase() : '';
+  if (!email) return;
+  try {
+    checkContact({ ...b, phone: typeof b.phone === 'string' ? b.phone : '' }, company);
+  } catch (e) {
+    if (e instanceof HttpError) return; // the service throws the full list of mistakes itself
+    throw e;
+  }
+  const problem = await emailDomainProblem(email);
+  if (problem) throw new HttpError(400, problem, { errors: [{ field: 'email', message: problem }] });
+}
 
 /** @param {any} ctx */
 export default function routes(ctx) {
@@ -117,12 +135,13 @@ export default function routes(ctx) {
         { name: 'showroom-visitor', max: 10, windowMs: 10 * 60_000, by: 'ip' },
         { name: 'showroom-visitor-day', max: 60, windowMs: 24 * HOUR, by: 'ip' },
       ],
-      handler: (rc) => {
+      handler: async (rc) => {
         if (rc.tenant.status === 'setup') throw new HttpError(403, 'This showroom isn’t open yet.', { code: 'showroom_not_open' });
         if (rc.memberRole) throw new HttpError(409, 'You’re on this showroom’s team, so you can design without this form.', { code: 'team_member' });
         const b = rc.body ?? {};
         // A bot filled the hidden field: answer as if it worked, store nothing, set no cookie.
         if (honeypot(b)) return rc.send(201, { visitor: { name: one(b.name, 100), email: one(b.email, 254).toLowerCase(), phone: one(b.phone, 40), consentText: '', since: ctx.now() } });
+        await requireDeliverable(b, rc.tenant.name);
         const out = ctx.tx(() => leads.capture(rc.tenant, b, { userId: rc.user?.id ?? null }));
         addCookie(rc.res, visitorCookie(rc.req, config, out.token));
         rc.send(201, { visitor: out.visitor });
@@ -150,14 +169,21 @@ export default function routes(ctx) {
         { name: 'showroom-lead', max: 5, windowMs: 10 * 60_000, by: 'ip' },
         { name: 'showroom-lead-day', max: 30, windowMs: 24 * HOUR, by: 'ip' },
       ],
-      handler: (rc) => {
+      handler: async (rc) => {
         if (rc.tenant.status === 'setup') throw new HttpError(403, 'This showroom isn’t open yet.', { code: 'showroom_not_open' });
         if (honeypot(rc.body)) return rc.send(201, { ok: true, id: `ld_${crypto.randomBytes(12).toString('base64url')}` });
+        await requireDeliverable(rc.body, rc.tenant.name);
         const visitor = requestVisitor(rc);
         const lead = ctx.tx(() => leads.create(rc.tenant, rc.body, { userId: rc.user?.id ?? null, visitor, designUrlOf: designUrlOf(rc) }));
         if (mailer.enabled) {
           const msg = leadNoticeEmail({ showroom: rc.tenant.name, inboxUrl: `${originOf(rc)}/#/studio/leads/${lead.id}` });
           for (const to of noticeTo(rc.tenant)) void mailer.send({ to, ...msg });
+          // And a receipt to the visitor, with the link back to what they sent.
+          const send = db.prepare('SELECT email, share_token, design_name FROM showroom_leads WHERE id = ?').get(lead.sendId);
+          if (send?.email) {
+            const receipt = designSentReceiptEmail({ showroom: rc.tenant.name, designName: send.design_name, designUrl: send.share_token ? designUrlOf(rc)(send.share_token) : null, showroomUrl: `${originOf(rc)}/` });
+            void mailer.send({ to: send.email, ...receipt });
+          }
         }
         rc.send(201, { ok: true, id: lead.id });
       },
@@ -293,7 +319,7 @@ export default function routes(ctx) {
         { name: 'sales-lead', max: 5, windowMs: 10 * 60_000, by: 'ip' },
         { name: 'sales-lead-day', max: 20, windowMs: 24 * HOUR, by: 'ip' },
       ],
-      handler: (rc) => {
+      handler: async (rc) => {
         const b = rc.body ?? {};
         if (honeypot(b)) return rc.send(201, { ok: true });
         const lead = {
@@ -307,7 +333,8 @@ export default function routes(ctx) {
         const errors = [];
         if (!lead.company) errors.push({ field: 'company', message: 'Tell us your company’s name.' });
         if (!lead.name) errors.push({ field: 'name', message: 'Tell us your name.' });
-        if (!EMAIL_RE.test(lead.email) || /[\r\n,;<>]/.test(lead.email)) errors.push({ field: 'email', message: 'That email address doesn’t look right.' });
+        const emailBad = emailProblem(lead.email) || (errors.length ? null : await emailDomainProblem(lead.email));
+        if (emailBad) errors.push({ field: 'email', message: emailBad });
         if (lead.phone && !/^[0-9+().\-\s x]{7,40}$/i.test(lead.phone)) errors.push({ field: 'phone', message: 'That phone number doesn’t look right.' });
         if (errors.length) throw new HttpError(400, errors[0].message, { errors });
         const id = `sl_${crypto.randomBytes(12).toString('base64url')}`;

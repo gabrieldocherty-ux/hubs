@@ -1,7 +1,7 @@
 import type { Finish, Product } from '../types';
 
 /**
- * The 48 built-in products: BluModel Basics, the app's own plain range (they were 12 fictional brands
+ * The built-in products: BluModel Basics, the app's own plain range (they were 12 fictional brands
  * until 2026-10-15; the ids never changed, so saved kitchens still resolve). They stay compiled into
  * the app so `#/local` and the templates work offline (PRODUCT_SPEC decision 13). Server products (brand and custom)
  * join them at runtime through the catalog registry, `src/store/useCatalog.ts`.
@@ -37,6 +37,21 @@ const FRAME: Finish[] = [
 
 const BASE_WIDTHS = [9, 12, 15, 18, 21, 24, 27, 30, 33, 36];
 
+const PORCELAIN: Finish[] = [
+  { id: 'white', name: 'White', hex: '#f4f3ef', material: 'ceramic' },
+  { id: 'biscuit', name: 'Biscuit', hex: '#e9dfcc', material: 'ceramic' },
+];
+const SHOWER_TRIM: Finish[] = [
+  { id: 'chrome', name: 'Chrome', hex: '#d9dcdf', material: 'metal' },
+  { id: 'matte-black', name: 'Matte Black', hex: '#232323', material: 'metal' },
+  { id: 'brushed-nickel', name: 'Brushed Nickel', hex: '#b8b4ac', material: 'metal' },
+];
+const MIRROR_FRAME: Finish[] = [
+  { id: 'black', name: 'Black Frame', hex: '#232323', material: 'metal' },
+  { id: 'brass', name: 'Brass Frame', hex: '#b48a4a', material: 'metal' },
+  { id: 'frameless', name: 'Frameless', hex: '#dfe6ea', material: 'glass' },
+];
+
 const LIST: Product[] = [
   // ─── Cabinets ──────────────────────────────────────────────────────────
   {
@@ -63,6 +78,31 @@ const LIST: Product[] = [
     id: 'wall', kind: 'wall', variant: 'door', category: 'cabinets', brand: BASICS_BRAND, name: 'Wall Cabinet',
     code: 'W{w}30', widthIn: 30, depthIn: 12, heightIn: 30, elevationIn: 54, widthOptions: BASE_WIDTHS, price: 290,
     finishes: 'cabinet', blurb: 'Hung 18″ above the counter, standard 30″ tall.',
+  },
+  {
+    id: 'base-filler', kind: 'base', variant: 'filler', category: 'cabinets', brand: BASICS_BRAND, name: 'Base Filler',
+    code: 'BF{w}', widthIn: 3, depthIn: 24, heightIn: 36, elevationIn: 0, widthOptions: [1.5, 3, 4.5, 6], price: 45,
+    finishes: 'cabinet', blurb: 'A flat strip that closes a gap in a run, or keeps a door or drawer clear of a wall.',
+  },
+  {
+    id: 'base-panel', kind: 'base', variant: 'panel', category: 'cabinets', brand: BASICS_BRAND, name: 'Base End Panel',
+    code: 'BEP{w}', widthIn: 0.75, depthIn: 24, heightIn: 36, elevationIn: 0, widthOptions: [0.75, 1.5], price: 95,
+    finishes: 'cabinet', blurb: 'A finished panel for the exposed end of a run: covers the cabinet side and the toe kick.',
+  },
+  {
+    id: 'wall-filler', kind: 'wall', variant: 'filler', category: 'cabinets', brand: BASICS_BRAND, name: 'Wall Filler',
+    code: 'WF{w}30', widthIn: 3, depthIn: 12, heightIn: 30, elevationIn: 54, widthOptions: [1.5, 3, 4.5, 6], price: 35,
+    finishes: 'cabinet', blurb: 'A flat strip between uppers, or between an upper and a wall.',
+  },
+  {
+    id: 'wall-36', kind: 'wall', variant: 'door', category: 'cabinets', brand: BASICS_BRAND, name: 'Wall Cabinet 36″ Tall',
+    code: 'W{w}36', widthIn: 30, depthIn: 12, heightIn: 36, elevationIn: 54, widthOptions: BASE_WIDTHS, price: 340,
+    finishes: 'cabinet', blurb: 'Taller uppers for a 9′ ceiling with crown, or an 8′ ceiling with a short soffit.',
+  },
+  {
+    id: 'wall-42', kind: 'wall', variant: 'door', category: 'cabinets', brand: BASICS_BRAND, name: 'Wall Cabinet 42″ Tall',
+    code: 'W{w}42', widthIn: 30, depthIn: 12, heightIn: 42, elevationIn: 54, widthOptions: BASE_WIDTHS, price: 390,
+    finishes: 'cabinet', blurb: 'Uppers that run to an 8′ ceiling: no dust shelf on top.',
   },
   {
     id: 'wall-glass', kind: 'wall', variant: 'glass', category: 'cabinets', brand: BASICS_BRAND, name: 'Glass-Front Wall Cabinet',
@@ -328,6 +368,78 @@ const LIST: Product[] = [
     id: 'opening', kind: 'door', variant: 'opening', category: 'openings', brand: BASICS_BRAND, name: 'Cased Opening',
     code: 'CO{w}', widthIn: 48, depthIn: 6, heightIn: 84, elevationIn: 0, widthOptions: [36, 48, 60], price: 240,
     finishes: FRAME, blurb: 'A trimmed doorway with no door, open to the next room.',
+  },
+  {
+    id: 'walkway', kind: 'door', variant: 'opening', category: 'openings', brand: BASICS_BRAND, name: 'Open Walkway',
+    code: 'WW{w}', widthIn: 72, depthIn: 6, heightIn: 84, elevationIn: 0, widthOptions: [48, 60, 72, 84, 96, 120, 144], price: 480,
+    finishes: FRAME, blurb: 'A wide passage between rooms with no door: how most kitchens open onto a hall, dining room or living room.',
+  },
+
+  // ─── Bath ──────────────────────────────────────────────────────────────
+  {
+    id: 'vanity', kind: 'vanity', variant: 'single', category: 'bath', brand: BASICS_BRAND, name: 'Bathroom Vanity',
+    code: 'V{w}', widthIn: 36, depthIn: 21, heightIn: 34, elevationIn: 0, widthOptions: [24, 30, 36, 42, 48], price: 1180,
+    finishes: 'cabinet', blurb: 'Doors and drawers under a stone top with an undermount basin. 34″ comfort height.',
+  },
+  {
+    id: 'vanity-double', kind: 'vanity', variant: 'double', category: 'bath', brand: BASICS_BRAND, name: 'Double Vanity',
+    code: 'VD{w}', widthIn: 60, depthIn: 21, heightIn: 34, elevationIn: 0, widthOptions: [60, 72], price: 2150,
+    finishes: 'cabinet', blurb: 'Two basins and a bank of drawers between them, for a shared ensuite.',
+  },
+  {
+    id: 'vanity-floating', kind: 'vanity', variant: 'floating', category: 'bath', brand: BASICS_BRAND, name: 'Floating Vanity',
+    code: 'VF{w}', widthIn: 36, depthIn: 19, heightIn: 21, elevationIn: 12, widthOptions: [24, 30, 36, 48], price: 1290,
+    finishes: 'cabinet', blurb: 'Wall-hung, with the floor running underneath: a small bath looks bigger. Top at 33″.',
+  },
+  {
+    id: 'toilet', kind: 'toilet', variant: 'two-piece', category: 'bath', brand: BASICS_BRAND, name: 'Elongated Toilet',
+    code: 'WC-2', widthIn: 20, depthIn: 29, heightIn: 30, elevationIn: 0, price: 420,
+    finishes: PORCELAIN, blurb: 'Two-piece, elongated bowl, comfort height. Needs 15″ from its centre to a wall and 21″ clear in front.',
+  },
+  {
+    id: 'toilet-wall', kind: 'toilet', variant: 'wall-hung', category: 'bath', brand: BASICS_BRAND, name: 'Wall-Hung Toilet',
+    code: 'WC-W', widthIn: 15, depthIn: 22, heightIn: 16, elevationIn: 0, price: 980,
+    finishes: PORCELAIN, blurb: 'Tank hidden in the wall, flush plate above. Saves 7″ of floor.',
+  },
+  {
+    id: 'tub', kind: 'tub', variant: 'alcove', category: 'bath', brand: BASICS_BRAND, name: 'Alcove Tub',
+    code: 'BT{w}', widthIn: 60, depthIn: 30, heightIn: 20, elevationIn: 0, widthOptions: [54, 60, 66, 72], price: 690,
+    finishes: PORCELAIN, blurb: 'Set between three walls with a tiled surround. The standard 5′ tub.',
+  },
+  {
+    id: 'tub-free', kind: 'tub', variant: 'freestanding', category: 'bath', brand: BASICS_BRAND, name: 'Freestanding Tub',
+    code: 'FT{w}', widthIn: 66, depthIn: 32, heightIn: 23, elevationIn: 0, widthOptions: [59, 66, 71], price: 1890,
+    finishes: PORCELAIN, blurb: 'An oval soaker with a floor-mounted filler. Leave 6″ around it to clean.',
+  },
+  {
+    id: 'shower', kind: 'shower', variant: 'alcove', category: 'bath', brand: BASICS_BRAND, name: 'Alcove Shower',
+    code: 'SH{w}', widthIn: 60, depthIn: 32, heightIn: 78, elevationIn: 0, widthOptions: [48, 54, 60], price: 1450,
+    finishes: SHOWER_TRIM, blurb: 'Base, sliding glass door and a rain head, between three walls.',
+  },
+  {
+    id: 'shower-corner', kind: 'shower', variant: 'corner', category: 'bath', brand: BASICS_BRAND, name: 'Corner Shower',
+    code: 'SC{w}', widthIn: 36, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [32, 36, 42, 48], price: 1290,
+    finishes: SHOWER_TRIM, blurb: 'Two glass sides meeting a corner. 36″ × 36″ is the comfortable minimum.',
+  },
+  {
+    id: 'shower-walkin', kind: 'shower', variant: 'walk-in', category: 'bath', brand: BASICS_BRAND, name: 'Walk-In Shower',
+    code: 'SW{w}', widthIn: 60, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [48, 60, 72], price: 2390,
+    finishes: SHOWER_TRIM, blurb: 'A low curbless base behind one fixed glass panel: no door to swing.',
+  },
+  {
+    id: 'mirror', kind: 'mirror', variant: 'rect', category: 'bath', brand: BASICS_BRAND, name: 'Vanity Mirror',
+    code: 'MR{w}', widthIn: 30, depthIn: 1.5, heightIn: 36, elevationIn: 40, widthOptions: [24, 30, 36, 48, 60], price: 260,
+    finishes: MIRROR_FRAME, blurb: 'Hangs over the vanity, bottom edge at 40″.',
+  },
+  {
+    id: 'mirror-round', kind: 'mirror', variant: 'round', category: 'bath', brand: BASICS_BRAND, name: 'Round Mirror',
+    code: 'MRR{w}', widthIn: 28, depthIn: 1.5, heightIn: 28, elevationIn: 44, widthOptions: [24, 28, 32], price: 220,
+    finishes: MIRROR_FRAME, blurb: 'A round mirror over a single vanity.',
+  },
+  {
+    id: 'medicine-cabinet', kind: 'mirror', variant: 'cabinet', category: 'bath', brand: BASICS_BRAND, name: 'Medicine Cabinet',
+    code: 'MC{w}', widthIn: 24, depthIn: 5, heightIn: 30, elevationIn: 44, widthOptions: [16, 20, 24, 30], price: 340,
+    finishes: MIRROR_FRAME, blurb: 'A mirrored door over shelves, surface-mounted.',
   },
 
   // ─── Decor ─────────────────────────────────────────────────────────────

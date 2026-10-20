@@ -25,6 +25,8 @@ export interface SceneCtx {
   faucetMat: THREE.Material;
   ceiling: number;
   paintHex: string;
+  /** Crown moulding on wall and tall cabinets. */
+  crown: 'none' | 'flat' | 'cove';
 }
 
 type V3 = [number, number, number];

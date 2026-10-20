@@ -1,9 +1,10 @@
-import type { DesignDoc, EstimateExtra, PlacedItem, Product, Room, Rotation, Surfaces } from '../types';
+import type { DesignDoc, EdgeStyle, EstimateExtra, ExtraRoom, OutlinePt, PlacedItem, Product, Room, Rotation, Surfaces } from '../types';
 import { DEFAULT_KITCHEN_NAME, DEFAULT_ROOM, DEFAULT_SURFACES } from '../data/defaults';
 import { getProduct, isBuiltin, isProductIdShape, missingProduct } from '../data/catalog';
 import { useCatalog } from '../store/useCatalog';
 import { finishAt, finishList } from './finish';
 import { cleanBrandPrefs } from './generate/brands';
+import { isEdgeStyle, normalizeStyled, outlineProblem } from './outline';
 import { FIXTURE_ID_RE, fixturesForSave, registerFixtures } from './fixtures';
 
 /**
@@ -19,10 +20,63 @@ const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.i
 export function cleanRoom(raw: Partial<Room> | undefined): Room {
   const r = raw ?? {};
   return {
-    widthIn: clamp(Math.round(num(r.widthIn, DEFAULT_ROOM.widthIn)), 72, 480),
-    lengthIn: clamp(Math.round(num(r.lengthIn, DEFAULT_ROOM.lengthIn)), 72, 480),
+    widthIn: clamp(Math.round(num(r.widthIn, DEFAULT_ROOM.widthIn)), 72, 1200),
+    lengthIn: clamp(Math.round(num(r.lengthIn, DEFAULT_ROOM.lengthIn)), 72, 1200),
     ceilingIn: clamp(Math.round(num(r.ceilingIn, DEFAULT_ROOM.ceilingIn)), 90, 144),
+    ...cleanShape(r),
   };
+}
+
+/** Edge styles kept only when there is one per corner and every one is known; otherwise the defaults apply. */
+function cleanStyles(raw: unknown, n: number): EdgeStyle[] | undefined {
+  if (!Array.isArray(raw) || raw.length !== n || !raw.every(isEdgeStyle)) return undefined;
+  return raw as EdgeStyle[];
+}
+
+/** Drawn walls, edge styles, extra rooms and open areas, kept only when valid: a bad outline falls back to the plain rectangle. */
+function cleanShape(r: Partial<Room>): Pick<Room, 'outline' | 'styles' | 'extra'> {
+  const out: Pick<Room, 'outline' | 'styles' | 'extra'> = {};
+  const read = (raw: unknown, styles: unknown, fallback: EdgeStyle): { pts: OutlinePt[]; styles: EdgeStyle[] } | null => {
+    if (!Array.isArray(raw) || raw.length < 4 || raw.length > 64) return null;
+    const p: OutlinePt[] = [];
+    for (const q of raw) {
+      if (!Array.isArray(q) || !Number.isFinite(q[0]) || !Number.isFinite(q[1])) return null;
+      p.push([Math.round(q[0] * 4) / 4, Math.round(q[1] * 4) / 4]);
+    }
+    const n = normalizeStyled(p, cleanStyles(styles, p.length), fallback);
+    return outlineProblem(n.pts) ? null : { pts: n.pts, styles: n.styles };
+  };
+  const main = read(r.outline, r.styles, 'wall');
+  if (main) {
+    out.outline = main.pts;
+    if (main.styles.some((x) => x !== 'wall')) out.styles = main.styles;
+  } else if (!r.outline && cleanStyles(r.styles, 4)) {
+    // A plain rectangle can still have styled walls.
+    const st = cleanStyles(r.styles, 4)!;
+    if (st.some((x) => x !== 'wall')) out.styles = st;
+  }
+  if (Array.isArray(r.extra)) {
+    const extra = r.extra.flatMap((e): ExtraRoom[] => {
+      if (!e || typeof e !== 'object') return [];
+      const x = e as ExtraRoom;
+      const zone = x.kind === 'zone';
+      const o = read(x.outline, x.styles, zone ? 'open' : 'wall');
+      if (!o) return [];
+      const base = zone ? 'open' : 'wall';
+      return [
+        {
+          id: String(x.id ?? '').slice(0, 32).replace(/[^A-Za-z0-9_-]/g, '') || `r${Math.random().toString(36).slice(2, 8)}`,
+          name: String(x.name ?? 'Room').slice(0, 40),
+          outline: o.pts,
+          ...(zone ? { kind: 'zone' as const } : {}),
+          ...(o.styles.some((v) => v !== base) ? { styles: o.styles } : {}),
+          ...(Number.isFinite(x.ceilingIn) ? { ceilingIn: clamp(Math.round(x.ceilingIn as number), 90, 144) } : {}),
+        },
+      ];
+    });
+    if (extra.length) out.extra = extra.slice(0, 8);
+  }
+  return out;
 }
 
 const DOOR_STYLES = ['shaker', 'slab', 'fluted'];
@@ -36,6 +90,7 @@ function cleanSurfaces(raw: Partial<Surfaces> | undefined): Surfaces {
       if (k === 'doorStyle' && !DOOR_STYLES.includes(v)) continue;
       (out as Record<string, string>)[k] = v;
     }
+    if (raw.crown === 'flat' || raw.crown === 'cove') out.crown = raw.crown;
     // Optional: a retail faucet. Without one, every sink draws its own.
     if (typeof raw.faucetId === 'string' && FIXTURE_ID_RE.test(raw.faucetId)) out.faucetId = raw.faucetId;
   }
