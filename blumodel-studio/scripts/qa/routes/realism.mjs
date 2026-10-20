@@ -7,7 +7,6 @@
 
 const VARIANTS = {
   base: {},
-  // Under-cabinet LED lights on.
   ucl: { _surfaces: { underCabinet: 'led' } },
 };
 

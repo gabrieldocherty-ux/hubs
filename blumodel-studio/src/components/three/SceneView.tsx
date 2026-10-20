@@ -45,26 +45,27 @@ const ROOM_LIGHT = (() => {
   const base = {
     hemiSky: '#fbf9f6',
     hemiGround: '#a9a297',
-    // Less flat fill than before (was 0.6 / 0.14 and env panels 2.2 / 1.2 / 1.4 / 2.5): the sun and the
-    // ambient occlusion model the cabinets, and a light floor keeps its grain (the realism bench).
-    hemi: 0.4,
-    ambient: 0.06,
+    // Less flat fill and about three quarters of the old light (was hemi 0.6, ambient 0.14, sun 2.3,
+    // env panels 2.2 / 1.2 / 1.4 / 2.5): white cabinets stop clipping, the sun and the ambient
+    // occlusion model them, and a light oak floor reads as oak rather than peach (the realism bench).
+    hemi: 0.3,
+    ambient: 0.045,
     sun: '#fff8f0',
-    sunI: 2.3,
+    sunI: 1.75,
     fill: '#e8eef6',
-    fillI: 0.45,
+    fillI: 0.34,
     point: '#fff1e0',
-    pointI: 10,
+    pointI: 7.5,
     pendant: PENDANT_COLOR,
     envBg: '#b5b2ad',
     key: '#fffaf3',
     side: '#eff3fa',
     top: '#fffcf7',
     /** The environment's light panels (reflections and soft fill): key, side, far side, overhead. */
-    envKeyI: 1.7,
-    envSideI: 0.95,
-    envFarI: 1.05,
-    envTopI: 1.9,
+    envKeyI: 1.3,
+    envSideI: 0.7,
+    envFarI: 0.8,
+    envTopI: 1.4,
   };
   if (!QA) return base;
   try {
