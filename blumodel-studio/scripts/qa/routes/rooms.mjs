@@ -463,6 +463,17 @@ export default [
       await h.waitFor('canvas');
       await h.sleep(1800);
       await h.shot('3d');
+      // The wall elevations draw them: tile to the ceiling on the north wall, framed wainscoting on the west.
+      await viewTab(h, 'Walls');
+      await h.waitFor('.elev-bar');
+      for (const w of ['North', 'West']) {
+        await h.evaluate((name) => [...document.querySelectorAll('[role="tab"]')].find((b) => b.closest('.elev-bar') && b.textContent.trim().startsWith(name))?.click(), w);
+        await h.sleep(300);
+        const txt = await h.evaluate(() => document.querySelector('svg[aria-label$="elevation"]')?.textContent ?? '');
+        if (w === 'North' && !/TO THE CEILING/.test(txt)) throw new Error(`north elevation: ${txt.slice(0, 120)}`);
+        if (w === 'West' && !/WAINSCOTING/.test(txt)) throw new Error(`west elevation: ${txt.slice(0, 120)}`);
+        await h.shot(`elev-${w.toLowerCase()}`);
+      }
       // Undo takes the last change back.
       await h.evaluate(() => window.__blumodelQA.store.getState().undo());
       const after = await h.evaluate(() => window.__blumodelQA.store.getState().doc.room.wallFinishes);

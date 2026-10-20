@@ -9,6 +9,7 @@ import { EDGE_STYLES, wallSegs } from '../lib/outline';
 import { resolveFinish } from '../lib/finish';
 import { feetInches } from '../lib/format';
 import { PAINTS, byId, resolveBacksplash } from '../data/finishes';
+import { WALL_PANELS, finishFor, panelTop } from '../lib/wallFinish';
 import { patternDataUrl } from '../lib/textures';
 import { productCode } from '../data/catalog';
 import { drawArt, SteelGradient } from './ProductArt';
@@ -139,10 +140,17 @@ export function ElevationSvg({ seg, wallName, items: unsorted, all, room, surfac
   /** How tall this wall stands: the ceiling for a full wall or glass, 42″ for a half wall, 36″ for a railing. */
   const wallH = Math.min(H, EDGE_STYLES[seg.style].heightIn || H);
   const items = [...unsorted].sort((a, b) => (a.product.kind === 'window' || a.product.kind === 'door' ? -1 : 0) - (b.product.kind === 'window' || b.product.kind === 'door' ? -1 : 0) || a.z0 - b.z0);
-  const paint = byId(PAINTS, surfaces.paintId);
+  // A feature wall: its own colour, and tile, shiplap or panelling over it (lib/wallFinish.ts).
+  const feature = finishFor(room, seg);
+  const paint = byId(PAINTS, feature?.paintId ?? surfaces.paintId);
+  const panel = feature?.panel;
+  const panelH = feature && panel ? Math.min(wallH, panelTop(feature, H)) : 0;
+  const wallTile = panel === 'tile' ? resolveBacksplash(feature?.tileId ?? 'subway-white', surfaces.countertopId) : null;
+  const wallTileUrl = wallTile ? patternDataUrl(wallTile.pattern, 128, TILE_IN) : null;
   const splash = resolveBacksplash(surfaces.backsplashId, surfaces.countertopId);
   const splashUrl = patternDataUrl(splash.pattern, 128, TILE_IN);
-  const splashSegs = backsplashSegments(all, room).filter((sp) => sp.seg.id === seg.id);
+  // A wall tiled floor to ceiling is its own backsplash.
+  const splashSegs = panel === 'tile' ? [] : backsplashSegments(all, room).filter((sp) => sp.seg.id === seg.id);
   const Y = (fromFloor: number) => H - fromFloor;
   const edges = new Set<number>([0, len]);
   items.forEach((r) => {
@@ -164,12 +172,37 @@ export function ElevationSvg({ seg, wallName, items: unsorted, all, room, surfac
         <pattern id={splashId} patternUnits="userSpaceOnUse" width={TILE_IN} height={TILE_IN} x={0} y={Y(36)}>
           <image href={splashUrl} width={TILE_IN} height={TILE_IN} preserveAspectRatio="none" />
         </pattern>
+        {wallTileUrl && (
+          <pattern id={`${idPrefix}walltile`} patternUnits="userSpaceOnUse" width={TILE_IN} height={TILE_IN} x={0} y={Y(0)}>
+            <image href={wallTileUrl} width={TILE_IN} height={TILE_IN} preserveAspectRatio="none" />
+          </pattern>
+        )}
         <pattern id={hatchId} patternUnits="userSpaceOnUse" width={3} height={3} patternTransform="rotate(45)">
           <line x1={0} y1={0} x2={0} y2={3} stroke={ink.ink} strokeWidth={0.5} />
         </pattern>
       </defs>
       <rect x={-l} y={-t} width={len + l + pr} height={H + t + b} fill={ink.sheet} />
       <rect x={0} y={H - wallH} width={len} height={wallH} fill={seg.style === 'glass' ? '#cfe3ef' : paint.hex} opacity={seg.style === 'glass' ? 0.55 : 1} />
+      {panel === 'tile' && <rect x={0} y={Y(panelH)} width={len} height={panelH} fill={`url(#${idPrefix}walltile)`} />}
+      {panel === 'shiplap' &&
+        Array.from({ length: Math.floor(panelH / 6) }, (_, i) => <line key={`sl${i}`} x1={0} x2={len} y1={Y((i + 1) * 6)} y2={Y((i + 1) * 6)} stroke={ink.ink} strokeOpacity={0.35} strokeWidth={0.3} />)}
+      {(panel === 'wainscot' || panel === 'board-batten') && (
+        <g>
+          <rect x={0} y={Y(panelH)} width={len} height={panelH} fill="#f3efe6" stroke={ink.ink} strokeWidth={0.3} />
+          <rect x={0} y={Y(panelH + 0.75)} width={len} height={1.5} fill="#f3efe6" stroke={ink.ink} strokeWidth={0.4} />
+          {Array.from({ length: Math.max(1, Math.round(len / (panel === 'board-batten' ? 16 : 24))) + 1 }, (_, k) => {
+            const n = Math.max(1, Math.round(len / (panel === 'board-batten' ? 16 : 24)));
+            const x = Math.min(len - 1.5, Math.max(1.5, (len * k) / n));
+            return <rect key={`st${k}`} x={x - (panel === 'board-batten' ? 1.25 : 1.5)} y={Y(panelH - 0.75)} width={panel === 'board-batten' ? 2.5 : 3} height={panelH - 5.25} fill="none" stroke={ink.ink} strokeOpacity={0.45} strokeWidth={0.3} />;
+          })}
+        </g>
+      )}
+      {panel && panel !== 'tile' && panel !== 'shiplap' && <VDim x={len + 6} y1={Y(0)} y2={Y(panelH)} label={`${Math.round(panelH)}"`} ink={ink} />}
+      {panel && (
+        <text x={4} y={panelH >= wallH - 1 ? Y(panelH) + 5 : Y(panelH) - 2} fontSize={2.8} fill={ink.muted} fontFamily="JetBrains Mono, monospace">
+          {(panel === 'tile' && wallTile ? `${wallTile.name} to the ceiling` : WALL_PANELS.find((p) => p.id === panel)?.label ?? '').toUpperCase()}
+        </text>
+      )}
       <rect x={-5} y={H - wallH} width={5} height={wallH} fill={`url(#${hatchId})`} stroke={ink.ink} strokeWidth={0.6} />
       <rect x={len} y={H - wallH} width={5} height={wallH} fill={`url(#${hatchId})`} stroke={ink.ink} strokeWidth={0.6} />
       <rect x={-5} y={H - wallH - 5} width={len + 10} height={5} fill={`url(#${hatchId})`} stroke={ink.ink} strokeWidth={0.6} />
@@ -228,7 +261,8 @@ const ELEV_PAD = { l: 24, r: 10, t: 22, b: 30 };
 export function elevationsForPrint(all: Resolved[], room: Room, surfaces: Surfaces): { title: string; svg: string }[] {
   const { segs, labels, bySeg } = elevationWalls(all, room);
   return segs
-    .filter((sg) => (bySeg.get(sg.id)?.length ?? 0) > 0)
+    // Every wall with something on it, and every feature wall even if nothing stands against it.
+    .filter((sg) => (bySeg.get(sg.id)?.length ?? 0) > 0 || !!finishFor(room, sg))
     .map((sg, i) => {
       const title = labels.get(sg.id) ?? WALL_NAMES[sg.wall];
       const svg = renderToStaticMarkup(
@@ -328,7 +362,7 @@ export function ElevationsView() {
             setUI({ rightTab: 'details' });
           }}
         />
-        {items.length === 0 && <div className="elev-empty">Nothing is set against {room.outline || room.extra?.length ? `the ${wallName} wall` : `the ${wallName.toLowerCase()} wall`} yet.</div>}
+        {items.length === 0 && !finishFor(room, seg) && <div className="elev-empty">Nothing is set against {room.outline || room.extra?.length ? `the ${wallName} wall` : `the ${wallName.toLowerCase()} wall`} yet.</div>}
       </div>
     </div>
   );
