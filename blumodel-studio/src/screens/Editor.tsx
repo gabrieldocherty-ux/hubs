@@ -53,6 +53,7 @@ export interface WorkspaceProps {
 export function Workspace({ projectId, mode, showPrices = true, banner, hideExport = false }: WorkspaceProps) {
   const viewMode = useDesignStore((s) => s.ui.viewMode);
   const placing = usePlacement((s) => s.armedProductId !== null);
+  const empty = useDesignStore((s) => s.doc.items.length === 0);
   const compact = useCompact();
   const view = mode === 'view';
   const prices = !view || showPrices;
@@ -60,8 +61,13 @@ export function Workspace({ projectId, mode, showPrices = true, banner, hideExpo
   useAutosave(view ? null : projectId, !view);
   usePlacementTaps();
 
-  // A phone has room for one view at a time: Split shows the plan.
-  const shown: ViewMode = compact && viewMode === 'split' ? 'plan' : viewMode;
+  // A phone has room for one view at a time: Split shows the 3D, the main view.
+  const shown: ViewMode = compact && viewMode === 'split' ? '3d' : viewMode;
+
+  // A product picked to place can't be tapped onto a wall drawing: go to the 3D (or Split) to place it.
+  useEffect(() => {
+    if (placing && viewMode === 'walls') useDesignStore.getState().setUI({ viewMode: compact ? '3d' : 'split' });
+  }, [placing, viewMode, compact]);
 
   useEffect(() => {
     // The store's readOnly flag is what guards every mutating action; keep it in step with the mode.
@@ -101,6 +107,14 @@ export function Workspace({ projectId, mode, showPrices = true, banner, hideExpo
                 <SceneView />
               </Suspense>
             </section>
+          )}
+          {/* An empty room: a quiet hint at the bottom, never over the room (3D or plan). People place
+              their own pieces; ready-made layouts stay in Room & Finishes for anyone who wants one. */}
+          {empty && !placing && !view && shown !== 'walls' && (
+            <div className="plan-empty-hint" role="note">
+              <span className="plan-empty-hint--touch">Tap <b>Add</b>, pick a cabinet or appliance, then tap where it goes. It snaps to the walls.</span>
+              <span className="plan-empty-hint--mouse">Drag cabinets and appliances from the catalog onto the room. They snap to the walls and to each other.</span>
+            </div>
           )}
           <PlacementBanner compact={compact} />
         </main>

@@ -47,7 +47,7 @@ export const ProductThumb = memo(function ProductThumb({ product, surfaces, fini
   }, [able, product, surfaces, width]);
 
   return (
-    <span ref={ref} className="product-thumb">
+    <span ref={ref} className="product-3d">
       {url ? <img src={url} alt="" draggable={false} /> : <ProductArt product={product} surfaces={surfaces} finish={finish} width={width} />}
     </span>
   );

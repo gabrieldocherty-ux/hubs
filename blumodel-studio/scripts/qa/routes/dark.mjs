@@ -751,13 +751,13 @@ export default [
     waitFor: ['.share-bar'],
     check: darkCheck(),
   }),
-  ...both({ name: 'dark-local', path: '#/local', as: 'anon', waitFor: ['.topbar', '.plan-view canvas'], check: darkCheck() }),
+  ...both({ name: 'dark-local', path: '#/local', as: 'anon', waitFor: ['.topbar', '.plan-view canvas, .scene-view canvas'], check: darkCheck() }),
   one({
     // A device draft can't export: downloads are free, but it is saved to an account first (a toast says so).
     name: 'dark-local-export',
     path: '#/local',
     as: 'anon',
-    waitFor: ['.topbar', '.plan-view canvas'],
+    waitFor: ['.topbar', '.plan-view canvas, .scene-view canvas'],
     check: darkCheck(async (h) => {
       await exportItem(h, 'Project file');
       await h.waitForText('Downloads are free. Sign in and save this kitchen');
@@ -1057,7 +1057,7 @@ export default [
     // Saved somewhere else first: the conflict dialog.
     editor('dark-editor-conflict', async (h) => {
       await qaStore(h);
-      await h.waitFor('.plan-view canvas');
+      await h.waitFor('.plan-view canvas, .scene-view canvas');
       await h.sleep(800);
       h.api.sql('UPDATE projects SET revision = revision + 1 WHERE id = ?', h.data.projectId);
       await store(h, () => window.__blumodelQA.store.getState().nudge('qa-island', 2, 0));
@@ -1076,7 +1076,7 @@ export default [
     },
     waitFor: ['.topbar'],
     check: darkCheck(async (h) => {
-      await h.waitFor('.plan-view canvas');
+      await h.waitFor('.plan-view canvas, .scene-view canvas');
       await ui({ rightTab: 'estimate', viewMode: 'split' })(h);
       await exportMenu(h);
     }),
@@ -1127,8 +1127,8 @@ export default [
   { name: 'light-product', as: 'anon', colorScheme: 'light', setup: ({ api }) => demoProductPath(api), check: lightCheck() },
   { name: 'light-wizard-brands', path: '#/new', as: 'customer', colorScheme: 'light', check: lightCheck(wizardStep(3)) },
   { name: 'light-share', as: 'anon', colorScheme: 'light', setup: ({ api }) => sharedKitchen(api), waitFor: ['.share-bar'], check: lightCheck() },
-  { ...editor('light-editor-plan'), colorScheme: 'light', waitFor: ['.topbar', '.plan-view canvas'], check: lightCheck(ui({ viewMode: 'plan', planStyle: 'rendered' })) },
-  { ...editor('light-editor-drafting'), colorScheme: 'light', waitFor: ['.topbar', '.plan-view canvas'], check: lightCheck(ui({ viewMode: 'plan', planStyle: 'drafting' })) },
+  { ...editor('light-editor-plan'), colorScheme: 'light', waitFor: ['.topbar', '.plan-view canvas, .scene-view canvas'], check: lightCheck(ui({ viewMode: 'plan', planStyle: 'rendered' })) },
+  { ...editor('light-editor-drafting'), colorScheme: 'light', waitFor: ['.topbar', '.plan-view canvas, .scene-view canvas'], check: lightCheck(ui({ viewMode: 'plan', planStyle: 'drafting' })) },
   { ...editor('light-editor-walls'), colorScheme: 'light', check: lightCheck(ui({ viewMode: 'walls' })) },
   { ...editor('light-editor-phone'), colorScheme: 'light', viewport: 'phone', waitFor: ['.mbar'], check: lightCheck() },
 ];

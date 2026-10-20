@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { useEstimate } from '../store/derived';
 import { WallsIcon, CubeIcon, Download, Logo, Wordmark, PlanIcon, Redo, SplitIcon, Undo, Upload, Chevron, Lock } from './Icons';
-import { downloadDataUrl, downloadText, exportImage, slug } from '../lib/exporters';
+import { downloadDataUrl, downloadText, exportImage, slug, hasExporter } from '../lib/exporters';
 import type { DesignDoc, ViewMode } from '../types';
 import type { ExportKind } from '../types/platform';
 import { useSession, timeAgo } from '../store/useSession';
@@ -99,19 +99,24 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   }, [menu]);
 
   const views: [ViewMode, string, JSX.Element][] = [
-    ['plan', 'Plan', <PlanIcon key="p" />],
-    ['split', 'Split', <SplitIcon key="s" />],
     ['3d', '3D', <CubeIcon key="c" />],
+    ['split', 'Split', <SplitIcon key="s" />],
+    ['plan', 'Plan', <PlanIcon key="p" />],
     ['walls', 'Walls', <WallsIcon key="w" />],
   ];
 
   const exportPng = async (kind: 'plan' | 'scene') => {
-    const needs = kind === 'plan' ? viewMode === 'plan' || viewMode === 'split' : viewMode === '3d' || viewMode === 'split';
-    if (!needs) {
-      setUI({ viewMode: 'split' });
-      await new Promise((r) => setTimeout(r, 900));
+    // Whether that view is on screen (a phone's Split shows only the 3D): if not, show it for the
+    // capture and put the person's view back after.
+    const was = viewMode;
+    const showing = hasExporter(kind);
+    if (!showing) {
+      setUI({ viewMode: kind === 'plan' ? 'plan' : '3d' });
+      for (let t = 0; t < 40 && !hasExporter(kind); t++) await new Promise((r) => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 400));
     }
     const raw = await exportImage(kind);
+    if (!showing) setUI({ viewMode: was });
     if (!raw) return toast('Could not capture that view. Try again in a moment.', 'warn');
     // On a showroom the PNG carries the company's logo, name and contact details (lazy: not in the main chunk).
     const url = showroom ? await import('../features/showroom/downloads').then((m) => m.brandedPng(raw, showroom, name, location.host)).catch(() => raw) : raw;
@@ -129,7 +134,7 @@ export function TopBar({ mode = 'edit', showPrices = true, projectId = null, com
   // On a showroom: the product list as a printable page in the company's colours, with its contact details.
   const productList = async () => {
     if (!showroom) return;
-    const [{ productListHtml }, planShot] = await Promise.all([import('../features/showroom/downloads'), viewMode === 'plan' || viewMode === 'split' ? exportImage('plan') : Promise.resolve(null)]);
+    const [{ productListHtml }, planShot] = await Promise.all([import('../features/showroom/downloads'), hasExporter('plan') ? exportImage('plan') : Promise.resolve(null)]);
     const doc = useDesignStore.getState().doc;
     const logo = showroom.branding.logoUrl ? new URL(showroom.branding.logoUrl, location.origin).href : null;
     const html = productListHtml({

@@ -43,9 +43,9 @@ export function useShortcuts() {
         requestAnimationFrame(() => document.getElementById('catalog-search')?.focus());
         return;
       }
-      if (e.key === '1') return s.setUI({ viewMode: 'plan' });
+      if (e.key === '1') return s.setUI({ viewMode: '3d' });
       if (e.key === '2') return s.setUI({ viewMode: 'split' });
-      if (e.key === '3') return s.setUI({ viewMode: '3d' });
+      if (e.key === '3') return s.setUI({ viewMode: 'plan' });
       if (e.key === '4') return s.setUI({ viewMode: 'walls' });
       if (e.key === 'Escape') {
         // One thing at a time: a product waiting to be placed, then an open sheet, then the selection.

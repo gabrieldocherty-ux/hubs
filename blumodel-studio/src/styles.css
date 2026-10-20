@@ -1377,50 +1377,38 @@ kbd {
   border-radius: 7px;
 }
 
-.plan-empty {
+.plan-empty-hint {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(420px, 86%);
-  padding: 22px 24px;
+  /* Above the zoom buttons and the scale bar. */
+  bottom: 78px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(440px, calc(100% - 32px));
+  padding: 9px 14px;
   text-align: center;
-  background: rgba(var(--panel-rgb), 0.95);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: rgba(var(--panel-rgb), 0.92);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  z-index: 4;
 }
 
-.plan-empty h3 {
-  margin: 0 0 4px;
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 19px;
+.plan-empty-hint--touch {
+  display: none;
 }
 
-.plan-empty p {
-  margin: 0 0 14px;
-  color: var(--ink-2);
-}
-
-.plan-empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-
-.plan-empty-actions button {
-  padding: 7px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line-2);
-  background: var(--card);
-  font-weight: 600;
-}
-
-.plan-empty-actions button:hover {
-  border-color: var(--accent);
-  color: var(--accent-2);
+@media (pointer: coarse) {
+  .plan-empty-hint--touch {
+    display: inline;
+  }
+  .plan-empty-hint--mouse {
+    display: none;
+  }
 }
 
 /* ─── Right panel ───────────────────────────────────────── */
@@ -3515,13 +3503,13 @@ a.btn {
 }
 
 /* A catalog card's 3D picture (components/thumbs): fills the card's art box like the drawing it replaces. */
-.product-thumb {
+.product-3d {
   display: block;
   width: 100%;
   height: 100%;
 }
 
-.product-thumb img {
+.product-3d > img {
   display: block;
   width: 100%;
   height: 100%;

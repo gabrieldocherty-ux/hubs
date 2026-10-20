@@ -1,0 +1,1 @@
+import{n as a}from"./index-BcchSHJ7.js";let e=null;function o(n){e=n,a({name:"admin",tab:"users"})}function l(){const n=e;return e=null,n}let t=null;function r(){const n=t;return t=null,n}export{l as a,o,r as t};

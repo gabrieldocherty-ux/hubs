@@ -35,8 +35,8 @@ export function MobileBar({ view, readOnly = false }: { view: CompactView; readO
   const issues = report.checks.filter((c) => c.level === 'bad' || c.level === 'warn').length;
 
   const views: [CompactView, string, (p: SVGProps<SVGSVGElement>) => JSX.Element][] = [
-    ['plan', 'Plan', PlanIcon],
     ['3d', '3D', CubeIcon],
+    ['plan', 'Plan', PlanIcon],
     ['walls', 'Walls', WallsIcon],
   ];
   const sheets: [SheetId, string, JSX.Element, JSX.Element | null][] = readOnly

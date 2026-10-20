@@ -7,7 +7,7 @@
  * root, frameloop 'never'), one product at a time from a queue, each result cached as an image
  * URL keyed on the product, its width and the finishes that change how it looks. A card asks only
  * once it is on screen (ProductThumb). Products with their own GLB keep their picture or drawing
- * (a GLB would have to download first), and anything this can't draw (no WebGL, an opening, a
+ * (a GLB would have to download first); a product's own picture shows until its 3D one is ready, and anything this can't draw (no WebGL, an opening, a
  * model that throws) keeps the flat drawing: `thumbFor` resolves to null and is never retried.
  */
 import { useLayoutEffect } from 'react';
@@ -38,7 +38,9 @@ function surfacesKey(s: Surfaces): string {
 }
 
 export function canThumb(p: Product): boolean {
-  if (p.thumbnailUrl || p.source === 'missing' || isOpening(p) || SKIP.has(p.kind)) return false;
+  // A thumbnail doesn't stop it: the showroom seed and Quick setup draw flat pictures for products,
+  // and the model in 3D, in the kitchen's finishes, is the better card. The picture shows meanwhile.
+  if (p.source === 'missing' || isOpening(p) || SKIP.has(p.kind)) return false;
   return !(p.model?.url);
 }
 

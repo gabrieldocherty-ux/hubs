@@ -296,11 +296,15 @@ export default [
       if (JSON.stringify(doc.brandPrefs) !== JSON.stringify({ cabinets: [cabinet], lighting: [light] })) throw new Error(`the kitchen saved brandPrefs ${JSON.stringify(doc.brandPrefs)}`);
       h.note(`blank 15′4″ × 13′6″ room, ${cabinet} + ${light}, ${sq}`);
 
-      // The blank room's "L + Island" in the editor, once the retail products have loaded.
-      await h.waitFor('.plan-empty-actions button', 20_000);
+      // An empty room shows a quiet hint, not a layout picker over the plan.
+      await h.waitFor('.plan-empty-hint', 20_000);
+      if (await h.evaluate(() => document.querySelector('.plan-empty-hint button'))) throw new Error('the empty-room hint offers buttons');
+      // Room & Finishes > "L + Island", once the retail products have loaded.
       await h.waitUntil(() => document.querySelectorAll('.left-panel .product-card').length > 0, 20_000, 'the product list');
-      await h.evaluate(() => [...document.querySelectorAll('.plan-empty-actions button')].find((b) => b.textContent === 'L + Island').click());
-      await h.waitUntil(() => !document.querySelector('.plan-empty'), 10_000, 'the layout being applied');
+      await h.evaluate(() => [...document.querySelectorAll('.left-panel [role="tab"]')].find((b) => /Room/.test(b.textContent))?.click());
+      await h.waitFor('.template');
+      await h.evaluate(() => [...document.querySelectorAll('.template')].find((b) => b.querySelector('.template-name')?.textContent === 'L + Island').click());
+      await h.waitUntil(() => !document.querySelector('.plan-empty-hint'), 10_000, 'the layout being applied');
       // Autosave carries it to the server.
       let saved = null;
       for (let t = Date.now(); Date.now() - t < 15_000; await h.sleep(250)) {

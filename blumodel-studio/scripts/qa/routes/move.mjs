@@ -911,7 +911,8 @@ async function swipesStay(h) {
 
 // ─── routes ──────────────────────────────────────────────────────────────────
 
-const LOCAL = { path: '#/local', as: 'anon', waitFor: ['.topbar', '.plan-view canvas'] };
+// Any view's canvas: a phone opens on the 3D, a desktop on Split; each route's start() picks its own.
+const LOCAL = { path: '#/local', as: 'anon', waitFor: ['.topbar', '.stage canvas'] };
 
 export default [
   // ── Desktop, mouse ──────────────────────────────────────────────────────
@@ -1131,12 +1132,13 @@ export default [
       await h.key('Escape');
       await h.sleep(100);
       if ((await state(h)).selectedId !== null) throw new Error('Escape did not clear the selection');
-      await h.key('3');
-      await h.sleep(150);
-      if ((await state(h)).viewMode !== '3d') throw new Error('3 did not switch to the 3D view');
+      // 1–4 follow the view tabs: 3D, Split, Plan, Walls.
       await h.key('1');
+      await h.sleep(150);
+      if ((await state(h)).viewMode !== '3d') throw new Error('1 did not switch to the 3D view');
+      await h.key('3');
       await readyPlan(h);
-      if ((await state(h)).viewMode !== 'plan') throw new Error('1 did not switch back to the plan');
+      if ((await state(h)).viewMode !== 'plan') throw new Error('3 did not switch back to the plan');
       await h.key('/');
       // The shortcut focuses the search on the next animation frame (late on a slow renderer).
       await h.waitUntil(() => document.activeElement?.id === 'catalog-search', 3000, '/ focusing the catalog search');

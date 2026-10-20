@@ -187,7 +187,8 @@ export default [
     path: '#/local',
     as: 'anon',
     viewport: 'phone',
-    waitFor: ['.plan-view canvas'],
+    // Phones open on the 3D, the main view.
+    waitFor: ['.scene-view canvas'],
     check: async (h) => {
       await noSideScroll(h);
       await phoneShell(h);
@@ -303,7 +304,7 @@ export default [
     as: 'customer',
     viewport: 'phone',
     setup: async ({ me }) => newKitchen(me, 'QA Phone Kitchen'),
-    waitFor: ['.topbar', '.plan-view canvas'],
+    waitFor: ['.topbar', '.scene-view canvas'],
     check: async (h) => {
       await noSideScroll(h);
       await phoneShell(h);
@@ -330,7 +331,7 @@ export default [
     as: 'fresh',
     viewport: 'phone',
     setup: async ({ me }) => newKitchen(me, 'QA Phone Free Export'),
-    waitFor: ['.topbar', '.plan-view canvas'],
+    waitFor: ['.topbar', '.scene-view canvas'],
     check: async (h) => {
       await exportItem(h, 'Floor plan');
       await h.sleep(1500);

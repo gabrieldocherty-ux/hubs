@@ -79,7 +79,6 @@ export function PlanView() {
 
   const room = useDesignStore((s) => s.doc.room);
   const surfaces = useDesignStore((s) => s.doc.surfaces);
-  const items = useDesignStore((s) => s.doc.items);
   const selectedId = useDesignStore((s) => s.selectedId);
   const hoverId = useDesignStore((s) => s.hoverId);
   const dragging = useDesignStore((s) => s.dragging);
@@ -87,7 +86,6 @@ export function PlanView() {
   const select = useDesignStore((s) => s.select);
   const hover = useDesignStore((s) => s.hover);
   const setUI = useDesignStore((s) => s.setUI);
-  const applyTemplate = useDesignStore((s) => s.applyTemplate);
   const armedId = usePlacement((s) => s.armedProductId);
   const all = useResolvedItems();
   const catalogVersion = useCatalogVersion();
@@ -552,20 +550,6 @@ export function PlanView() {
         />
       )}
 
-      {items.length === 0 && !armed && !readOnly && (
-        <div className="plan-empty">
-          <h3>{drawn ? 'Your room is ready' : `A blank room, ${feetInches(W)} × ${feetInches(L)}`}</h3>
-          <p>{drawn ? 'Drag cabinets and appliances in from the catalog. They snap to your walls and to each other. Room & Finishes → Walls & rooms changes the shape.' : 'Start from a proven layout, or drag products in from the catalog.'}</p>
-          {!drawn && (
-          <div className="plan-empty-actions">
-            <button onClick={() => applyTemplate('l-island')}>L + Island</button>
-            <button onClick={() => applyTemplate('galley')}>Galley</button>
-            <button onClick={() => applyTemplate('u-shape')}>U-Shape</button>
-            <button onClick={() => applyTemplate('one-wall')}>One Wall</button>
-          </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

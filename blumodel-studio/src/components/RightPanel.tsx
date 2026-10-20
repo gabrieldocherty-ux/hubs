@@ -183,7 +183,7 @@ function Summary({ view, showPrices, compact }: { view: boolean; showPrices: boo
         <div className="tips">
           <span className="mini-label">Shortcuts</span>
           <dl className="shortcuts">
-            <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
+            <dt><kbd>1–4</kbd></dt><dd>3D · Split · Plan · Walls</dd>
           </dl>
         </div>
       ) : (
@@ -211,7 +211,7 @@ function Summary({ view, showPrices, compact }: { view: boolean; showPrices: boo
               <dt><kbd>←↑→↓</kbd></dt><dd>Nudge 1″ (Shift 6″)</dd>
               <dt><kbd>⌘D</kbd></dt><dd>Duplicate</dd>
               <dt><kbd>⌘Z</kbd></dt><dd>Undo</dd>
-              <dt><kbd>1–4</kbd></dt><dd>Plan · Split · 3D · Walls</dd>
+              <dt><kbd>1–4</kbd></dt><dd>3D · Split · Plan · Walls</dd>
             </dl>
           </>
         )}

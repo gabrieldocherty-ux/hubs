@@ -248,7 +248,7 @@ export default [
     name: 'shared-kitchen',
     as: 'anon',
     setup: async ({ api }) => kitchenWithLink(api.as('customer'), { label: 'For Sam', showPrices: true }),
-    waitFor: ['.share-bar', '.plan-view canvas'],
+    waitFor: ['.share-bar', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Shared by', 'View only', 'BluModel Studio is a visualizer', 'Maple Street Kitchen'],
     waitMs: 1500,
     check: async (h) => {
@@ -289,7 +289,7 @@ export default [
     name: 'shared-kitchen-no-prices',
     as: 'anon',
     setup: async ({ api }) => kitchenWithLink(api.as('customer'), { label: 'No prices', showPrices: false }),
-    waitFor: ['.share-bar', '.plan-view canvas'],
+    waitFor: ['.share-bar', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Shared by', 'View only'],
     waitMs: 1500,
     check: async (h) => {
@@ -309,7 +309,7 @@ export default [
       must(await pro.put('/api/pro/profile', { ...COMPANY, defaultMarkupPct: 35 }), 'Saving the contractor profile');
       return kitchenWithLink(pro, { name: 'Okafor Kitchen', client: 'J. Okafor', label: 'For the Okafors', showPrices: true });
     },
-    waitFor: ['.share-bar.share-bar--pro', '.plan-view canvas'],
+    waitFor: ['.share-bar.share-bar--pro', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Prepared by', 'Birch & Bevel Kitchens', 'Okafor Kitchen'],
     waitMs: 1500,
     check: async (h) => {
@@ -338,7 +338,7 @@ export default [
     name: 'shared-kitchen-duplicate',
     as: 'fresh',
     setup: async ({ api }) => kitchenWithLink(api.as('customer'), { name: 'Maple Street Kitchen', label: 'For a friend' }),
-    waitFor: ['.share-bar', '.plan-view canvas'],
+    waitFor: ['.share-bar', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Duplicate to my kitchens'],
     waitMs: 800,
     check: async (h) => {
@@ -356,7 +356,7 @@ export default [
     name: 'shared-kitchen-duplicate-signed-out',
     as: 'anon',
     setup: async ({ api }) => kitchenWithLink(api.as('customer'), { name: 'Elm Court Kitchen', label: 'For a neighbour' }),
-    waitFor: ['.share-bar', '.plan-view canvas'],
+    waitFor: ['.share-bar', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Sign in to duplicate'],
     waitMs: 800,
     check: async (h) => {

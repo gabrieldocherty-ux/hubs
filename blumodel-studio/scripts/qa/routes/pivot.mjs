@@ -167,7 +167,7 @@ export default [
       if (!row) throw new Error(`no seeded design "${d.name}"`);
       return { path: `/k/${row.id}` };
     },
-    waitFor: ['.plan-view canvas'],
+    waitFor: ['.plan-view canvas, .scene-view canvas'],
     expectText: ['Layout passes every design check'],
     waitMs: 1500,
   })),
@@ -180,7 +180,7 @@ export default [
       const row = api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = 'demo-visitor@blumodel.test' AND p.tenant_id = 't_demo' ORDER BY p.name LIMIT 1")[0];
       return { path: `/k/${row.id}` };
     },
-    waitFor: ['.plan-view canvas'],
+    waitFor: ['.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       if (isPhone(h)) {
         await h.evaluate(() => [...document.querySelectorAll('button')].find((b) => /^\s*Add\s*$/.test(b.textContent))?.click());
@@ -233,7 +233,7 @@ export default [
     viewport: 'phone',
     colorScheme: 'light',
     setup: async ({ api }) => ({ path: `/k/${api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE u.email = 'demo-visitor@blumodel.test' ORDER BY p.name LIMIT 1")[0].id}` }),
-    waitFor: ['.plan-view canvas'],
+    waitFor: ['.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       if (await h.evaluate(() => !!document.querySelector('.back-link'))) await tall(h, '.back-link');
     },

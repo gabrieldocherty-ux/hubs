@@ -1,7 +1,7 @@
 {
-  "source": "ac96eaab024e9c65b511efee820edc803c68feac",
-  "subject": "elevations(walls): the wall elevations draw feature walls - the wall's own colour, tile to the ceili",
-  "builtAt": "2026-10-20T13:21:36.797Z",
+  "source": "6e209c8ddf51c52ba5ad04f8042a6228cf833653",
+  "subject": "editor: 3D first - phones open on the 3D and the bar reads 3D, Plan, Walls; the desktop's view tabs ",
+  "builtAt": "2026-10-20T15:06:53.495Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

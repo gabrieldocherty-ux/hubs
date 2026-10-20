@@ -261,7 +261,7 @@ export default [
     host: 'demo',
     as: 'showroom-visitor',
     setup: async ({ api }) => ({ path: `#/k/${api.sql(VISITOR_PROJECT)[0].id}` }),
-    waitFor: ['.topbar .site-logo', '.plan-view canvas'],
+    waitFor: ['.topbar .site-logo', '.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       const r = await h.evaluate(() => ({
         store: !!document.querySelector('#catalog-store, .store-chip, .price--store'),
@@ -283,7 +283,7 @@ export default [
     host: 'demo',
     as: 'showroom-visitor',
     setup: async ({ api }) => ({ path: `#/k/${api.sql(VISITOR_PROJECT)[0].id}` }),
-    waitFor: ['.topbar .site-logo', '.plan-view canvas'],
+    waitFor: ['.topbar .site-logo', '.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       await h.click('.topbar .menu-wrap > .btn.primary');
       await h.waitFor('.topbar .menu[role="menu"]');
@@ -298,7 +298,7 @@ export default [
     host: 'demo',
     as: 'showroom-visitor',
     setup: async ({ api }) => ({ path: `#/k/${api.sql(VISITOR_PROJECT)[0].id}` }),
-    waitFor: ['.topbar .site-logo', '.plan-view canvas'],
+    waitFor: ['.topbar .site-logo', '.plan-view canvas, .scene-view canvas'],
     timeoutMs: 40_000,
     check: async (h) => {
       await catchDownloads(h);
@@ -324,7 +324,7 @@ export default [
     host: 'demo',
     as: 'showroom-visitor',
     setup: async ({ api }) => ({ path: `#/k/${api.sql(VISITOR_PROJECT)[0].id}` }),
-    waitFor: ['[data-testid="send-design"]', '.plan-view canvas'],
+    waitFor: ['[data-testid="send-design"]', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Happy with your design?'],
     timeoutMs: 40_000,
     check: async (h) => {
@@ -344,7 +344,7 @@ export default [
     host: 'demo',
     as: 'anon',
     setup: async ({ api }) => ({ path: `#/s/${api.sql(DEMO_SHARE)[0].token}` }),
-    waitFor: ['.share-bar .site-logo', '[data-testid="send-design"]', '.plan-view canvas'],
+    waitFor: ['.share-bar .site-logo', '[data-testid="send-design"]', '.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       await noSideScroll(h);
       await noUpsell(h);
@@ -357,7 +357,7 @@ export default [
     as: 'anon',
     viewport: 'phone',
     setup: async ({ api }) => ({ path: `#/s/${api.sql(DEMO_SHARE)[0].token}` }),
-    waitFor: ['[data-testid="send-design"]', '.plan-view canvas'],
+    waitFor: ['[data-testid="send-design"]', '.plan-view canvas, .scene-view canvas'],
     timeoutMs: 40_000,
     check: async (h) => {
       await h.tap('[data-testid="send-design"]');
@@ -372,7 +372,7 @@ export default [
     host: 'demo',
     as: 'showroom-staff',
     setup: async ({ api }) => ({ path: `#/s/${api.sql(DEMO_SHARE)[0].token}` }),
-    waitFor: ['.share-bar', '.plan-view canvas'],
+    waitFor: ['.share-bar', '.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       await h.sleep(500);
       if (await h.evaluate(() => !!document.querySelector('[data-testid="send-design"]'))) throw new Error('the company’s own staff are offered to send a lead to themselves');
@@ -464,7 +464,7 @@ export default [
       await clickText(h, '.wizard .btn.primary', 'Create kitchen');
       // Saved on the server under the lead, without an account.
       await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'the saved design opening');
-      await h.waitFor('.plan-view canvas');
+      await h.waitFor('.plan-view canvas, .scene-view canvas');
       const made = h.api.sql("SELECT id, user_id, visitor_id FROM projects WHERE lead_id = ? AND tenant_id = 't_demo'", lead.id)[0];
       if (!made || made.user_id || !made.visitor_id) throw new Error('the design was not saved under the visitor');
       await h.shot('saved-design');

@@ -297,7 +297,8 @@ export default [
     },
     waitFor: ['.topbar'],
     check: async (h) => {
-      if (await h.evaluate(() => !!document.querySelector('.views [role="tab"]'))) await viewTab(h, 'Plan');
+      // Phones open on the 3D; the plan's HUD is on Plan.
+      await h.evaluate(() => window.__blumodelQA.store.getState().setUI({ viewMode: 'plan' }));
       await h.waitFor('.plan-view canvas');
       await h.sleep(500);
       const r = await h.evaluate(() => {
@@ -354,10 +355,10 @@ export default [
     },
     waitFor: ['.topbar', '.product-card'],
     check: async (h) => {
-      await h.waitUntil(() => [...document.querySelectorAll('.product-card .product-thumb img[src^="data:"]')].filter((i) => i.complete && i.naturalWidth > 0).length >= 6, 20_000, 'six catalog cards drawn in 3D');
+      await h.waitUntil(() => [...document.querySelectorAll('.product-card .product-3d > img[src^="data:"]')].filter((i) => i.complete && i.naturalWidth > 0).length >= 6, 20_000, 'six catalog cards drawn in 3D');
       await h.sleep(800);
       const r = await h.evaluate(() => {
-        const imgs = [...document.querySelectorAll('.product-card .product-thumb img[src^="data:"]')];
+        const imgs = [...document.querySelectorAll('.product-card .product-3d > img[src^="data:"]')];
         return { n: imgs.length, cards: document.querySelectorAll('.product-card').length, bad: imgs.filter((i) => i.complete && i.naturalWidth < 100).map((i) => `${i.closest('.product-card').dataset.product} ${i.naturalWidth}x${i.naturalHeight} ${i.src.slice(0, 40)}`).join('; '), src: imgs[0]?.src.slice(0, 15) };
       });
       if (r.bad) throw new Error(`3D card pictures that didn't load: ${r.bad}`);
@@ -365,18 +366,18 @@ export default [
       await h.shot('cards');
       // A new cabinet finish redraws them in it.
       await h.evaluate(() => {
-        window.__qaThumbBefore = document.querySelector('.product-card .product-thumb img[src^="data:"]').src;
+        window.__qaThumbBefore = document.querySelector('.product-card .product-3d > img[src^="data:"]').src;
         window.__blumodelQA.store.getState().setSurfaces({ cabinetFinishId: 'navy' });
       });
       await h.waitUntil(() => {
-        const src = document.querySelector('.product-card .product-thumb img[src^="data:"]')?.src;
+        const src = document.querySelector('.product-card .product-3d > img[src^="data:"]')?.src;
         return !!src && src !== window.__qaThumbBefore;
       }, 15_000, 'the cards redrawn in the new finish');
       await h.sleep(600);
       await h.shot('navy');
       // The branded appliances.
       await h.evaluate(() => [...document.querySelectorAll('.catalog-panel button, .chip')].find((b) => b.textContent.trim() === 'Appliances')?.click());
-      await h.waitUntil(() => [...document.querySelectorAll('.product-card .product-thumb img[src^="data:"]')].filter((i) => i.complete && i.naturalWidth > 0).length >= 6, 20_000, 'appliance cards drawn in 3D');
+      await h.waitUntil(() => [...document.querySelectorAll('.product-card .product-3d > img[src^="data:"]')].filter((i) => i.complete && i.naturalWidth > 0).length >= 6, 20_000, 'appliance cards drawn in 3D');
       await h.sleep(1500);
       await h.shot('appliances');
     },
@@ -516,6 +517,33 @@ export default [
       await h.evaluate(() => window.__blumodelQA.store.getState().select('o1'));
       await h.sleep(1500);
       await h.shot('3d');
+    },
+  },
+  {
+    // An empty room on a phone: the plan is clear, with only a quiet hint at the bottom (no layout picker over it).
+    name: 'empty-room-phone',
+    as: 'studio',
+    viewport: 'phone',
+    setup: async ({ me }) => {
+      const d = { name: 'QA Empty', room: { widthIn: 212, lengthIn: 156, ceilingIn: 96 }, surfaces: {}, items: [], version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Empty', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    // Phones open on the 3D: the hint shows there too.
+    waitFor: ['.topbar', '.scene-view canvas', '.plan-empty-hint'],
+    check: async (h) => {
+      const r = await h.evaluate(() => {
+        const hint = document.querySelector('.plan-empty-hint');
+        const b = hint.getBoundingClientRect();
+        return { buttons: hint.querySelectorAll('button').length, text: hint.innerText.trim(), pe: getComputedStyle(hint).pointerEvents, h: Math.round(b.height), bottom: Math.round(b.bottom), vh: innerHeight };
+      });
+      if (r.buttons) throw new Error('the hint has buttons');
+      if (r.pe !== 'none') throw new Error('the hint catches taps meant for the plan');
+      if (!/Tap Add/.test(r.text)) throw new Error(`a phone should get the tap hint: ${r.text}`);
+      if (r.h > 90) throw new Error(`the hint is ${r.h}px tall`);
+      h.note(r.text);
+      await h.shot('plan');
     },
   },
   {
