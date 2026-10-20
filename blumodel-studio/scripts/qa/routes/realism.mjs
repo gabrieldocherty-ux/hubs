@@ -40,6 +40,7 @@ export default Object.entries(VARIANTS).map(([name, light]) => ({
       s.setUI({ viewMode: '3d' });
     });
     await h.waitUntil(() => !!document.querySelector('.scene-view canvas') && !document.querySelector('.scene-loading'), 25_000, 'the 3D scene');
+    await h.evaluate(() => window.__blumodelQA.store.getState().requestCamera('overview'));
     await h.sleep(2500);
     h.note(JSON.stringify(await h.evaluate(() => { const d = window.__blumodelQA.store.getState().doc; return { ucl: d.surfaces.underCabinet ?? null, walls: d.items.filter((i) => /^wall/.test(i.productId)).length }; })));
     await h.shot('overview');

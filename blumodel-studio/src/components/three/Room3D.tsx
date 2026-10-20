@@ -457,12 +457,33 @@ function WindowModel({ r, surfaces, bare = false }: { r: Resolved; surfaces: Sur
       {!bare && (
         // Just behind the wall and the size of the hole (the casing hides the margin). A sky 40 inches
         // back poked above the wall top from the raised overview camera.
-        <mesh position={[0, y0 + h / 2, -T - 0.5]} material={skyMaterial()}>
-          <planeGeometry args={[w + 2, h + 2]} />
-        </mesh>
+        <mesh position={[0, y0 + h / 2, -T - 0.5]} material={skyMaterial()} geometry={viewGeo(w + 2, h + 2, y0 + h / 2, r.item.x + r.item.y)} dispose={null} />
       )}
     </group>
   );
+}
+
+const viewGeos = new Map<string, THREE.PlaneGeometry>();
+
+/**
+ * The plane behind a window or a glass door, mapped so the garden (materials.skyMaterial: 480″ wide,
+ * 120″ tall, the lawn meeting the trees at 60″) sits at its real height whatever the window's size,
+ * and two windows on the same wall look out at different parts of it.
+ */
+function viewGeo(w: number, h: number, centerY: number, at: number): THREE.PlaneGeometry {
+  const key = `${w}:${h}:${centerY}:${Math.round(at)}`;
+  let g = viewGeos.get(key);
+  if (!g) {
+    g = new THREE.PlaneGeometry(w, h);
+    const pos = g.attributes.position;
+    const uv = g.attributes.uv;
+    for (let i = 0; i < pos.count; i++) {
+      uv.setXY(i, 0.5 + (pos.getX(i) + at) / 480, (centerY + pos.getY(i) - 0) / 120 - 0.16);
+    }
+    uv.needsUpdate = true;
+    viewGeos.set(key, g);
+  }
+  return g;
 }
 
 function DoorModel({ r, surfaces, ctx, bare = false }: { r: Resolved; surfaces: Surfaces; ctx: SceneCtx; bare?: boolean }) {
@@ -502,9 +523,7 @@ function DoorModel({ r, surfaces, ctx, bare = false }: { r: Resolved; surfaces: 
       <Box size={[w, 0.5, T]} pos={[0, 0.25, -T / 2]} mat={finishMaterial({ id: 'oak', name: 'oak', hex: '#b88e61', material: 'wood' })} />
       {leaves}
       {!bare && (
-        <mesh position={[0, h / 2, -T - 0.5]} material={beyond}>
-          <planeGeometry args={[w + 2, h + 2]} />
-        </mesh>
+        <mesh position={[0, h / 2, -T - 0.5]} material={beyond} geometry={viewGeo(w + 2, h + 2, h / 2, item.x + item.y)} dispose={null} />
       )}
     </group>
   );

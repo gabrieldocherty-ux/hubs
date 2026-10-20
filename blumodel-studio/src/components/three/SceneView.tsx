@@ -1,7 +1,7 @@
 import { planSize } from '../../lib/outline';
 import { memo, Suspense, useEffect, useMemo, useRef, useState, type DragEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, Lightformer, OrbitControls } from '@react-three/drei';
+import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import type { PlacedItem, Room, Surfaces } from '../../types';
@@ -363,6 +363,7 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
         })}
         <PendantLightPool items={items} catalogVersion={catalogVersion} />
       </group>
+      <FloorContact room={room} items={items} catalogVersion={catalogVersion} />
       <ShadowSync deps={[items, surfaces, room, catalogVersion]} />
       <CameraRig room={room} />
       <InteractDrag containerRef={containerRef} />
@@ -372,6 +373,38 @@ function Scene({ containerRef }: { containerRef: RefObject<HTMLDivElement> }) {
       <FrameGovernor busy={studioBusy} />
       {QA && <QaStats name="room" />}
     </>
+  );
+}
+
+/**
+ * Soft contact shadows where cabinets, the island, appliances, stools and walls meet the floor (High
+ * quality): one depth pass from just above the floor up to 3′, blurred, drawn once and again only
+ * when the room or what stands in it changes. What grounds a piece on the floor in a photograph.
+ */
+function FloorContact({ room, items, catalogVersion }: { room: Room; items: PlacedItem[]; catalogVersion: number }) {
+  const quality = useRoomQuality((s) => s.quality);
+  const degraded = useRoomQuality((s) => s.degraded);
+  const dragging = useDesignStore((s) => s.dragging);
+  const { W, L } = planSize(room);
+  const size = (Math.max(W, L) / 12) * 1.08;
+  // Redrawn when the kitchen changes, but not on every frame of a drag: once it's dropped.
+  const key = `${items.length}:${items.map((i) => `${i.x},${i.y},${i.rotation},${i.widthIn ?? ''}`).join(';')}:${W}x${L}:${catalogVersion}`;
+  const settled = useRef(key);
+  if (!dragging) settled.current = key;
+  if (quality !== 'high' || degraded >= 2) return null;
+  return (
+    <ContactShadows
+      // Drawn once (frames 1); a new key redraws it.
+      key={settled.current}
+      frames={1}
+      position={[W / 24, 0.004, L / 24]}
+      scale={size}
+      far={2.5}
+      blur={3.2}
+      opacity={0.6}
+      resolution={1024}
+      color="#251d15"
+    />
   );
 }
 

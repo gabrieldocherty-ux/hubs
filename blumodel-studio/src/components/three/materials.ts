@@ -301,29 +301,83 @@ export function rugMaterial(hex: string, variant: string, seed: string): THREE.M
 /** A soft daylight view for behind windows: sky, haze and a hedge line. */
 export function skyMaterial(): THREE.Material {
   return cached('sky', () => {
+    // A garden outside the window, bright as daylight is next to a room: sky with soft clouds, a far
+    // treeline in haze, nearer trees with sunlit tops, and lawn. Seen through glass, slightly soft.
+    const W = 1024;
+    const H = 512;
     const c = document.createElement('canvas');
-    c.width = 256;
-    c.height = 256;
+    c.width = W;
+    c.height = H;
     const ctx = c.getContext('2d')!;
-    const g = ctx.createLinearGradient(0, 0, 0, 256);
-    g.addColorStop(0, '#bcd5e6');
-    g.addColorStop(0.55, '#eef1ea');
-    g.addColorStop(1, '#f7efe0');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 256, 256);
     const rand = mulberry32(42);
-    for (let i = 0; i < 40; i++) {
-      const x = rand() * 256;
-      const r = 18 + rand() * 30;
-      const y = 200 + rand() * 20;
-      const grd = ctx.createRadialGradient(x, y, 0, x, y, r);
-      grd.addColorStop(0, 'rgba(110,138,96,0.85)');
-      grd.addColorStop(1, 'rgba(110,138,96,0)');
-      ctx.fillStyle = grd;
-      ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.62);
+    sky.addColorStop(0, '#9fc3e0');
+    sky.addColorStop(0.7, '#d6e6f0');
+    sky.addColorStop(1, '#eef2ee');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+    // Clouds: clusters of soft white puffs.
+    for (let k = 0; k < 7; k++) {
+      const cx = rand() * W;
+      const cy = 40 + rand() * 120;
+      for (let i = 0; i < 9; i++) {
+        const x = cx + (rand() - 0.5) * 160;
+        const y = cy + (rand() - 0.5) * 30;
+        const r = 20 + rand() * 40;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, 'rgba(255,255,255,0.75)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+    }
+    // Trees: crowns of many small leaf clusters, darker underneath and lit on top, drawn on their
+    // own layer and softened a touch (they're 30-60 feet away, through glass).
+    const layer = document.createElement('canvas');
+    layer.width = W;
+    layer.height = H;
+    const lc = layer.getContext('2d')!;
+    const treeline = (base: number, height: number, dark: string, mid: string, light: string, count: number, puff: number) => {
+      for (let i = 0; i < count; i++) {
+        const x = (i / count) * W + (rand() - 0.5) * (W / count);
+        const top = base - height * (0.5 + rand() * 0.5);
+        const half = 18 + rand() * 30;
+        for (let p = 0; p < 90; p++) {
+          const t = rand();
+          const py = top + t * (base - top);
+          const spread = half * Math.sin(Math.PI * Math.min(1, 0.15 + t * 1.1));
+          const px = x + (rand() - 0.5) * 2 * spread;
+          const r = puff * (0.5 + rand());
+          const col = t < 0.3 ? light : t < 0.7 ? mid : dark;
+          for (const ox of [0, W, -W]) {
+            lc.fillStyle = col;
+            lc.beginPath();
+            lc.arc(px + ox, py, r, 0, Math.PI * 2);
+            lc.fill();
+          }
+        }
+      }
+    };
+    treeline(H * 0.62, 120, '#6b8466', '#7a9472', '#93ab86', 34, 5);
+    lc.fillStyle = 'rgba(222,232,236,0.38)';
+    lc.fillRect(0, 0, W, H * 0.63);
+    treeline(H * 0.68, 190, '#3e573a', '#52703f', '#7c9c5e', 20, 7);
+    ctx.filter = 'blur(1px)';
+    ctx.drawImage(layer, 0, 0);
+    ctx.filter = 'none';
+    // Lawn with a little light and shade.
+    const lawn = ctx.createLinearGradient(0, H * 0.66, 0, H);
+    lawn.addColorStop(0, '#86a466');
+    lawn.addColorStop(1, '#6b8b4f');
+    ctx.fillStyle = lawn;
+    ctx.fillRect(0, H * 0.66, W, H * 0.34);
+    for (let i = 0; i < 260; i++) {
+      ctx.fillStyle = `rgba(${rand() > 0.5 ? '255,255,220' : '40,60,30'},0.08)`;
+      ctx.fillRect(rand() * W, H * 0.66 + rand() * H * 0.34, 6 + rand() * 30, 2 + rand() * 4);
     }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = THREE.RepeatWrapping;
     return new THREE.MeshBasicMaterial({ map: tex, toneMapped: false });
   });
 }
