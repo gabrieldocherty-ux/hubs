@@ -1,5 +1,5 @@
+import { ProductThumb } from '../../components/thumbs/ProductThumb';
 import { lazy, Suspense, useState } from 'react';
-import { ProductArt } from '../../components/ProductArt';
 import { DEFAULT_SURFACES } from '../../data/defaults';
 import { inches } from '../../lib/format';
 import { hrefFor } from '../../lib/router';
@@ -100,7 +100,7 @@ export function PublicBrandView({ brand, products, preview = false }: PublicBran
               {g.items.map((p) => (
                 <article key={p.id} className="bp-card">
                   <a className="bp-card-art" href={hrefFor({ name: 'product', id: p.id })} aria-label={`${p.name}: see it in 3D`}>
-                    {p.thumbnailUrl ? <img src={p.thumbnailUrl} alt="" loading="lazy" /> : <ProductArt product={p} surfaces={DEFAULT_SURFACES} />}
+                    <ProductThumb product={p} surfaces={DEFAULT_SURFACES} />
                     {p.model && <span className="bp-3d">3D</span>}
                   </a>
                   <div className="bp-card-body">

@@ -227,7 +227,7 @@ export default [
       if (!r) throw new Error('Riley has no design');
       return { path: `#/studio/leads/${r.id}/design/${r.design}` };
     },
-    waitFor: ['[data-testid="lead-design-view"]', '.plan-view canvas'],
+    waitFor: ['[data-testid="lead-design-view"]', '.plan-view canvas, .scene-view canvas'],
     expectText: ['Back to the lead', 'view only'],
     timeoutMs: 40_000,
     check: async (h) => {

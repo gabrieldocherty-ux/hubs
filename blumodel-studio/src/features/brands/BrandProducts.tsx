@@ -1,5 +1,5 @@
+import { ProductThumb } from '../../components/thumbs/ProductThumb';
 import { useEffect, useState } from 'react';
-import { ProductArt } from '../../components/ProductArt';
 import { Alert, Check } from '../../components/Icons';
 import { DEFAULT_SURFACES } from '../../data/defaults';
 import { ApiError } from '../../lib/api';
@@ -126,7 +126,7 @@ function ProductRow({ entry: e, pageStatus, readOnly, onChange }: { entry: Produ
   return (
     <article className={`brand-row${st.on ? ' is-on' : ''}`}>
       <a className="pro-product-art" href={hrefFor({ name: 'pro', rest: `catalog/${e.id}` })} aria-label={`Edit ${e.name}`}>
-        {e.thumbnailUrl ? <img src={e.thumbnailUrl} alt="" /> : <ProductArt product={e.product} surfaces={DEFAULT_SURFACES} />}
+        <ProductThumb product={e.product} surfaces={DEFAULT_SURFACES} />
       </a>
       <div className="brand-row-body">
         <a className="pro-product-name" href={hrefFor({ name: 'pro', rest: `catalog/${e.id}` })}>

@@ -13,25 +13,27 @@ interface Props {
   surfaces: Surfaces;
   finish?: Finish;
   width?: number;
+  className?: string;
 }
 
-export const ProductThumb = memo(function ProductThumb({ product, surfaces, finish, width }: Props) {
-  const able = canThumb(product) && !finish;
-  const [url, setUrl] = useState<string | null>(() => (able ? cachedThumb(product, surfaces, width) ?? null : null));
+export const ProductThumb = memo(function ProductThumb({ product, surfaces, finish, width, className }: Props) {
+  const able = canThumb(product);
+  const fid = finish?.id;
+  const [url, setUrl] = useState<string | null>(() => (able ? cachedThumb(product, surfaces, width, fid) ?? null : null));
   const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (!able) return setUrl(null);
-    const have = cachedThumb(product, surfaces, width);
+    const have = cachedThumb(product, surfaces, width, fid);
     if (have !== undefined) return setUrl(have);
     setUrl(null);
     const el = ref.current;
     let live = true;
     let asked = false;
     const ask = () => {
-      if (asked) return hurryThumb(product, surfaces, width);
+      if (asked) return hurryThumb(product, surfaces, width, fid);
       asked = true;
-      void thumbFor(product, surfaces, width).then((u) => live && setUrl(u));
+      void thumbFor(product, surfaces, width, fid).then((u) => live && setUrl(u));
     };
     if (!el || typeof IntersectionObserver === 'undefined') {
       ask();
@@ -42,12 +44,12 @@ export const ProductThumb = memo(function ProductThumb({ product, surfaces, fini
     return () => {
       live = false;
       io.disconnect();
-      if (asked && cachedThumb(product, surfaces, width) === undefined) forgetThumb(product, surfaces, width);
+      if (asked && cachedThumb(product, surfaces, width, fid) === undefined) forgetThumb(product, surfaces, width, fid);
     };
-  }, [able, product, surfaces, width]);
+  }, [able, product, surfaces, width, fid]);
 
   return (
-    <span ref={ref} className="product-3d">
+    <span ref={ref} className={`product-3d${className ? ` ${className}` : ''}`}>
       {url ? <img src={url} alt="" draggable={false} /> : <ProductArt product={product} surfaces={surfaces} finish={finish} width={width} />}
     </span>
   );

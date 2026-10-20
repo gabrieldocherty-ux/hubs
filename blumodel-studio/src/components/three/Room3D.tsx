@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Room, Surfaces } from '../../types';
 import { alongWall, backsplashSegments, flushSeg, type Resolved, type WallSeg } from '../../lib/geometry';
-import { BEAM_DROP_IN, EDGE_STYLES, floorOutlines, floorRects, floorSpaces, planSize, pointInOutline, wallSegs } from '../../lib/outline';
+import { BEAM_DROP_IN, EDGE_STYLES, floorOutlines, floorRects, floorSpaces, pointInOutline, wallSegs } from '../../lib/outline';
 import { isOpening } from '../../data/catalog';
 import { FLOORING, PAINTS, byId, resolveBacksplash } from '../../data/finishes';
 import { finishFor, panelTop } from '../../lib/wallFinish';
@@ -110,7 +110,6 @@ function facesCamera(seg: WallSeg, camX: number, camZ: number): boolean {
 }
 
 export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedId, problemIds, onSelect, onHover }: Props) {
-  const { W, L } = planSize(room);
   const H = room.ceilingIn;
   const floor = byId(FLOORING, surfaces.flooringId);
   const paint = byId(PAINTS, surfaces.paintId);
@@ -332,7 +331,10 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
 
   return (
     <group>
-      <mesh geometry={boxGeo(W + T * 2 + 36, 6, L + T * 2 + 36)} position={[W / 2, -3.5, L / 2]} material={M.plinth()} receiveShadow dispose={null} />
+      {/* The slab the room stands on, cut to the outside of its walls (an L stays an L), no ledge beyond. */}
+      {rects.map((r, i) => (
+        <mesh key={`slab${i}`} geometry={boxGeo(r.x1 - r.x0 + T * 2, 6, r.y1 - r.y0 + T * 2)} position={[(r.x0 + r.x1) / 2, -3.5, (r.y0 + r.y1) / 2]} material={M.plinth()} receiveShadow dispose={null} />
+      ))}
       {floorParts.map((p, i) => (
         <mesh key={i} geometry={p.geo} material={p.mat} receiveShadow />
       ))}

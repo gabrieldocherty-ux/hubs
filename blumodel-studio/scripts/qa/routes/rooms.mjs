@@ -547,6 +547,35 @@ export default [
     },
   },
   {
+    // The Item sheet on a phone: the selected piece in 3D, in its own finish, inside its picture box
+    // (not a flat drawing spilling over the name and price).
+    name: 'item-sheet-phone',
+    as: 'studio',
+    viewport: 'phone',
+    setup: async ({ me }) => {
+      const d = { name: 'QA Item', room: { widthIn: 168, lengthIn: 144, ceilingIn: 96 }, surfaces: {}, items: [{ id: 'w0', productId: 'wall', x: 30, y: 6, rotation: 0, finishIndex: 2, widthIn: 36 }, { id: 'b0', productId: 'base', x: 30, y: 12, rotation: 0, finishIndex: 0, widthIn: 36 }], version: 2 };
+      const r = await me.post('/api/projects', { name: 'QA Item', doc: d });
+      if (r.status !== 201) throw new Error(`creating the kitchen failed (${r.status})`);
+      return { path: `#/k/${r.body.project.id}` };
+    },
+    waitFor: ['.topbar', '.scene-view canvas'],
+    check: async (h) => {
+      await h.evaluate(() => window.__blumodelQA.store.getState().select('w0'));
+      await h.evaluate(() => [...document.querySelectorAll('.mbar button')].find((b) => /Item|Details/.test(b.textContent))?.click());
+      await h.waitUntil(() => !!document.querySelector('.insp-hero .product-3d img[src^="data:"]'), 15_000, 'the Item sheet’s 3D picture');
+      await h.sleep(500);
+      const r = await h.evaluate(() => {
+        const hero = document.querySelector('.insp-hero').getBoundingClientRect();
+        const img = document.querySelector('.insp-hero img').getBoundingClientRect();
+        const name = document.querySelector('.insp-head h3').getBoundingClientRect();
+        return { hero: [Math.round(hero.top), Math.round(hero.bottom)], img: [Math.round(img.top), Math.round(img.bottom)], nameTop: Math.round(name.top) };
+      });
+      if (r.img[0] < r.hero[0] - 1 || r.img[1] > r.hero[1] + 1) throw new Error(`the picture spills out of its box: ${JSON.stringify(r)}`);
+      if (r.nameTop < r.hero[1]) throw new Error(`the name sits under the picture: ${JSON.stringify(r)}`);
+      await h.shot('item');
+    },
+  },
+  {
     name: 'flooring-picker',
     as: 'studio',
     viewport: DESK,

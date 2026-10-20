@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { PlacedItem, Product, Surfaces } from '../../types';
 import type { Resolved } from '../../lib/geometry';
-import { defaultFinishIndex, finishAt, resolveFinish } from '../../lib/finish';
+import { defaultFinishIndex, finishAt, finishById, resolveFinish } from '../../lib/finish';
 import { isOpening } from '../../data/catalog';
 import { makeSceneCtx } from '../three/sceneCtx';
 import { proceduralModel } from '../three/models';
@@ -49,6 +49,8 @@ interface Job {
   product: Product;
   surfaces: Surfaces;
   widthIn?: number;
+  /** One of the product's finishes (a placed item's); absent: the one the kitchen's finishes pick. */
+  finishId?: string;
   resolve: (url: string | null) => void;
 }
 
@@ -63,23 +65,23 @@ let three: { gl: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.Perspect
 let envTarget: THREE.WebGLRenderTarget | null = null;
 
 /** A cached picture for this product in these finishes, if one was already drawn. */
-export function cachedThumb(product: Product, surfaces: Surfaces, widthIn?: number): string | null | undefined {
-  return done.get(keyOf(product, surfaces, widthIn));
+export function cachedThumb(product: Product, surfaces: Surfaces, widthIn?: number, finishId?: string): string | null | undefined {
+  return done.get(keyOf(product, surfaces, widthIn, finishId));
 }
 
-function keyOf(product: Product, surfaces: Surfaces, widthIn?: number) {
-  return `${product.id}@${product.widthIn}x${product.depthIn}x${product.heightIn}|${widthIn ?? ''}|${Array.isArray(product.finishes) ? product.finishes.map((f) => f.hex).join(',') : product.finishes}|${surfacesKey(surfaces)}`;
+function keyOf(product: Product, surfaces: Surfaces, widthIn?: number, finishId?: string) {
+  return `${finishId ?? ''}#${product.id}@${product.widthIn}x${product.depthIn}x${product.heightIn}|${widthIn ?? ''}|${Array.isArray(product.finishes) ? product.finishes.map((f) => f.hex).join(',') : product.finishes}|${surfacesKey(surfaces)}`;
 }
 
 /** The product drawn in 3D as an image URL, or null when it can't be. */
-export function thumbFor(product: Product, surfaces: Surfaces, widthIn?: number): Promise<string | null> {
+export function thumbFor(product: Product, surfaces: Surfaces, widthIn?: number, finishId?: string): Promise<string | null> {
   if (broken || !canThumb(product)) return Promise.resolve(null);
-  const key = keyOf(product, surfaces, widthIn);
+  const key = keyOf(product, surfaces, widthIn, finishId);
   if (done.has(key)) return Promise.resolve(done.get(key) ?? null);
   const p = pending.get(key);
   if (p) return p;
   const promise = new Promise<string | null>((resolve) => {
-    queue.push({ key, product, surfaces, widthIn, resolve });
+    queue.push({ key, product, surfaces, widthIn, finishId, resolve });
   });
   pending.set(key, promise);
   void pump();
@@ -87,15 +89,15 @@ export function thumbFor(product: Product, surfaces: Surfaces, widthIn?: number)
 }
 
 /** Puts a waiting request at the front (a card that just came on screen). */
-export function hurryThumb(product: Product, surfaces: Surfaces, widthIn?: number) {
-  const key = keyOf(product, surfaces, widthIn);
+export function hurryThumb(product: Product, surfaces: Surfaces, widthIn?: number, finishId?: string) {
+  const key = keyOf(product, surfaces, widthIn, finishId);
   const i = queue.findIndex((j) => j.key === key);
   if (i > 0) queue.unshift(...queue.splice(i, 1));
 }
 
 /** Drops waiting requests whose card has gone (the list was filtered or scrolled far away). */
-export function forgetThumb(product: Product, surfaces: Surfaces, widthIn?: number) {
-  const key = keyOf(product, surfaces, widthIn);
+export function forgetThumb(product: Product, surfaces: Surfaces, widthIn?: number, finishId?: string) {
+  const key = keyOf(product, surfaces, widthIn, finishId);
   const i = queue.findIndex((j) => j.key === key);
   if (i < 0) return;
   const [job] = queue.splice(i, 1);
@@ -114,10 +116,10 @@ function Capture() {
 }
 
 function ThumbScene({ job, onMounted }: { job: Job; onMounted: () => void }) {
-  const { product, surfaces, widthIn } = job;
+  const { product, surfaces, widthIn, finishId } = job;
   const w = widthIn ?? product.widthIn;
   const frame = stageFrame({ w, d: product.depthIn, h: product.heightIn, elevationIn: product.elevationIn, kind: product.kind });
-  const at = finishAt(product, defaultFinishIndex(product, surfaces));
+  const at = finishId ? finishById(product, finishId) : finishAt(product, defaultFinishIndex(product, surfaces));
   const item: PlacedItem = { id: 'thumb', productId: product.id, x: 0, y: 0, rotation: 0, ...at, widthIn: w };
   const r: Resolved = { item, product, w, d: product.depthIn, box: { minX: -w / 2, minY: -product.depthIn / 2, maxX: w / 2, maxY: product.depthIn / 2 }, z0: product.elevationIn, z1: product.elevationIn + product.heightIn };
   const finish = resolveFinish(item, product, surfaces);

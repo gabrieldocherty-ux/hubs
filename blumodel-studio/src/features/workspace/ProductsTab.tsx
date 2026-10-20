@@ -1,5 +1,5 @@
+import { ProductThumb } from '../../components/thumbs/ProductThumb';
 import { lazy, useEffect, useMemo, useState } from 'react';
-import { ProductArt } from '../../components/ProductArt';
 import { DEFAULT_SURFACES } from '../../data/defaults';
 import { CATEGORIES } from '../../data/catalog';
 import { ApiError } from '../../lib/api';
@@ -168,7 +168,7 @@ function Catalog() {
               return (
                 <article key={p.id} className={`ws-product${p.status === 'archived' ? ' is-hidden' : ''}`}>
                   <a className="ws-product-art" href={studio(`products/${p.id}`)} aria-label={`Edit ${p.name}`}>
-                    {p.thumbnailUrl ? <img src={p.thumbnailUrl} alt="" loading="lazy" /> : <ProductArt product={p} surfaces={DEFAULT_SURFACES} />}
+                    <ProductThumb product={p} surfaces={DEFAULT_SURFACES} />
                   </a>
                   <div className="ws-product-body">
                     <a className="ws-product-name" href={studio(`products/${p.id}`)}>

@@ -1,3 +1,4 @@
+import { ProductThumb } from './thumbs/ProductThumb';
 import { useEffect, type SVGProps } from 'react';
 import { useDesignStore } from '../store/useDesignStore';
 import { useReport } from '../store/derived';
@@ -7,7 +8,6 @@ import type { ViewMode } from '../types';
 import { CatalogPanel } from './CatalogPanel';
 import { RoomPanel } from './RoomPanel';
 import { RightPanel } from './RightPanel';
-import { ProductArt } from './ProductArt';
 import { Sheet } from './Sheet';
 import { CubeIcon, Info, PlanIcon, Plus, WallsIcon } from './Icons';
 import { isTap } from './MobileGeometry';
@@ -118,7 +118,7 @@ export function PlacementBanner({ compact }: { compact: boolean }) {
   return (
     <div className="place-banner" role="status" aria-live="polite">
       <span className="place-banner-art">
-        <ProductArt product={product} surfaces={surfaces} />
+        <ProductThumb product={product} surfaces={surfaces} />
       </span>
       <span className="place-banner-text">
         {/* Short on a phone, so the product's name isn't the part cut off. */}

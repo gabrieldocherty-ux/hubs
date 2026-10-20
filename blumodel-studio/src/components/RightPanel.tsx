@@ -1,3 +1,4 @@
+import { ProductThumb } from './thumbs/ProductThumb';
 import { useEffect, useMemo, useState } from 'react';
 import { useDesignStore, useSelected } from '../store/useDesignStore';
 import { useEstimate, useReport } from '../store/derived';
@@ -7,7 +8,6 @@ import { finishList, finishPosition, resolveFinish } from '../lib/finish';
 import { inches, money } from '../lib/format';
 import { flushWall } from '../lib/geometry';
 import type { CheckLevel } from '../lib/checks';
-import { ProductArt } from './ProductArt';
 import { Alert, Check, Close, Copy, Download, Flip, Info, Lock, Plus, RotateCcw, RotateCw, Stop, Trash } from './Icons';
 import { downloadText } from '../lib/exporters';
 import { PLACEHOLDER_PRICES_NOTE, VISUALIZER_DISCLAIMER } from '../lib/csv';
@@ -69,7 +69,8 @@ function Inspector() {
   return (
     <div className="inspector">
       <div className="insp-hero">
-        <ProductArt product={product} finish={finish} surfaces={surfaces} width={w} className="insp-art" />
+        {/* The piece itself in 3D, in its finish and width (a drawing only while that renders, or for a product 3D can't draw). */}
+        <ProductThumb product={product} finish={finish} surfaces={surfaces} width={w} className="insp-art" />
       </div>
       <div className="insp-head">
         <div>

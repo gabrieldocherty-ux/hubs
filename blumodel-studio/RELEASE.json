@@ -1,7 +1,7 @@
 {
-  "source": "6e209c8ddf51c52ba5ad04f8042a6228cf833653",
-  "subject": "editor: 3D first - phones open on the 3D and the bar reads 3D, Plan, Walls; the desktop's view tabs ",
-  "builtAt": "2026-10-20T15:06:53.495Z",
+  "source": "95683a0f3b31d27d5a29438d2d20f53c7fb773bd",
+  "subject": "3d(products): the Item sheet shows the selected piece in 3D, in its own finish and width, inside its",
+  "builtAt": "2026-10-20T15:54:50.881Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

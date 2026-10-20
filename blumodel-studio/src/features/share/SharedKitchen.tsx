@@ -1,7 +1,7 @@
+import { ProductThumb } from '../../components/thumbs/ProductThumb';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Workspace } from '../../screens/Editor';
 import { Dialog } from '../../components/Dialog';
-import { ProductArt } from '../../components/ProductArt';
 import { ApiError } from '../../lib/api';
 import { money } from '../../lib/format';
 import { navigate, navigateHash, signinHref } from '../../lib/router';
@@ -320,7 +320,7 @@ function ProductsDialog({ wire, onClose }: { wire: SharedWire; onClose: () => vo
             const buy = !pro && !showroom && (l.buyUrl ?? product?.buyUrl);
             return (
               <li key={l.key}>
-                <span className="share-plist-art">{product ? <ProductArt product={product} finish={finish} surfaces={doc.surfaces} width={item?.widthIn} /> : null}</span>
+                <span className="share-plist-art">{product ? <ProductThumb product={product} finish={finish} surfaces={doc.surfaces} width={item?.widthIn} /> : null}</span>
                 <span className="share-plist-main">
                   <b>{l.label}</b>
                   <span>

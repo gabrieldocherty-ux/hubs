@@ -1,5 +1,5 @@
+import { ProductThumb } from '../../components/thumbs/ProductThumb';
 import { useEffect, useMemo, useState } from 'react';
-import { ProductArt } from '../../components/ProductArt';
 import { DEFAULT_SURFACES } from '../../data/defaults';
 import { productCode } from '../../data/catalog';
 import { ApiError } from '../../lib/api';
@@ -108,7 +108,7 @@ export default function MyCatalog() {
               return (
                 <article key={p.id} className={`pro-product${p.status === 'archived' ? ' is-archived' : ''}`}>
                   <a className="pro-product-art" href={hrefFor({ name: 'pro', rest: `catalog/${p.id}` })} aria-label={`Edit ${p.name}`}>
-                    {p.thumbnailUrl ? <img src={p.thumbnailUrl} alt="" /> : <ProductArt product={p} surfaces={DEFAULT_SURFACES} />}
+                    <ProductThumb product={p} surfaces={DEFAULT_SURFACES} />
                   </a>
                   <div className="pro-product-body">
                     <a className="pro-product-name" href={hrefFor({ name: 'pro', rest: `catalog/${p.id}` })}>
