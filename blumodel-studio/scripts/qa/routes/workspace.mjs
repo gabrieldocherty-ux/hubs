@@ -292,8 +292,8 @@ export default [
     expectText: ['Your plan', 'Yearly license', 'Monthly plan', 'Receipts'],
     check: async (h) => {
       const text = await h.evaluate(() => document.body.innerText);
-      // Complimentary here, so $0 a month; the breakdown still names the two $25 halves of the $50 plan.
-      if ((text.match(/\$25 CAD/g) ?? []).length < 2) throw new Error('the monthly plan’s breakdown (hosting $25 + render credits $25) isn’t shown');
+      // The plan is hosting, running and the web address: no render credits promised (2026-10-20).
+      if (!/\$50\.00 CAD|\$50 CAD/.test(text) || /render credits/i.test(text)) throw new Error('the monthly plan should read $50 for hosting, with no render credits');
       if (!/complimentary/i.test(text)) throw new Error('the demo’s complimentary plan isn’t said');
       await page(h);
     },

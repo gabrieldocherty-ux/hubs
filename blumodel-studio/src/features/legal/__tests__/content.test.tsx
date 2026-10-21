@@ -62,9 +62,10 @@ test('the pages cover the showroom service: a B2B agreement, the company as cont
   assert.match(terms, /the setup and license fee set out in your order or invoice/);
   assert.doesNotMatch(terms, /1,995|1995|up to 50|\d+ products/);
   assert.match(terms, /\$50 CAD a month/);
-  assert.match(terms, /\$25 CAD for hosting and running your showroom, including its web address/);
-  assert.match(terms, /\$25 CAD of AI rendering credits/);
-  assert.match(terms, /roll over for 3 months/);
+  assert.match(terms, /\$50 CAD a month<?\/?b?>? ?for hosting and running your showroom|for hosting and running your showroom, including its web address/);
+  // No monthly rendering credits are promised (2026-10-20).
+  assert.doesNotMatch(terms, /\$25 CAD/);
+  assert.doesNotMatch(terms, /Each paid month adds/);
   assert.match(terms, /14 days/);
   assert.match(terms, /Leads are yours/);
   assert.match(terms, /you are the controller and we are your processor/);

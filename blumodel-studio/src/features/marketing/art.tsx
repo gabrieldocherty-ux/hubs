@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { PRICES } from './parts';
 
 /*
  * The sales site's illustrations, drawn in HTML and CSS: a company's showroom in a browser
@@ -119,21 +118,6 @@ export function LeadCard({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** The monthly plan as two equal halves: hosting with the web address, and render credits. */
-export function PriceSplit() {
-  return (
-    <div className="mk-split-bar" role="img" aria-label={`${PRICES.monthly} a month: ${PRICES.hosting} for hosting and your web address, and ${PRICES.credits} of AI rendering credits`}>
-      <div className="mk-split-half mk-split-half--host">
-        <b>{PRICES.hosting}</b>
-        <span>Hosting, running and your own web address</span>
-      </div>
-      <div className="mk-split-half mk-split-half--ai">
-        <b>{PRICES.credits}</b>
-        <span>AI rendering credits, rolled over for {PRICES.rolloverMonths} months</span>
-      </div>
-    </div>
-  );
-}
 
 function LockGlyph() {
   return (

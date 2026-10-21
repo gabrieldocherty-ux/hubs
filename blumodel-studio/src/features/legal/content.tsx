@@ -55,9 +55,6 @@ const PLANS = plansJson as unknown as PlanJson[];
 const MONTHLY = PLANS.find((p) => p.id === 'showroom_monthly');
 const cad = (cents: number) => `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 })} CAD`;
 const MONTHLY_PRICE = cad(MONTHLY?.priceCents ?? 5000);
-const HOSTING_PRICE = cad(MONTHLY?.breakdown?.find((b) => b.id === 'hosting')?.cents ?? 2500);
-const CREDIT_PRICE = cad(MONTHLY?.breakdown?.find((b) => b.id === 'render_credits')?.cents ?? 2500);
-const ROLLOVER = MONTHLY?.creditRolloverMonths ?? 3;
 /** Days a showroom stays live after a failed monthly payment (server/billing, GRACE_DAYS). */
 const GRACE_DAYS = 14;
 
@@ -207,8 +204,7 @@ export function termsDoc(w: LegalWords): LegalDoc {
         body: (
           <>
             <p>
-              The monthly plan is <b>{MONTHLY_PRICE} a month</b>: <b>{HOSTING_PRICE}</b> for hosting and running your showroom, including its web address, and{' '}
-              <b>{CREDIT_PRICE}</b> of AI rendering credits. It is paid by card through Stripe’s secure checkout, from a link we send you, and renews every month until it is
+              The monthly plan is <b>{MONTHLY_PRICE} a month</b> for hosting and running your showroom, including its web address, updates and backups. It is paid by card through Stripe’s secure checkout, from a link we send you, and renews every month until it is
               cancelled. We never see or store your card number.
               <PaymentsNote w={w} />
             </p>
@@ -225,8 +221,9 @@ export function termsDoc(w: LegalWords): LegalDoc {
         body: (
           <>
             <p>
-              Each paid month adds {CREDIT_PRICE} of rendering credits to your showroom. Credits you don’t use roll over for {ROLLOVER} months and then expire, oldest first. Your team
-              can see the balance, what each rendering costs before making one, and the history of every credit added, spent, refunded or expired.
+              Photoreal renderings, when your showroom offers them, are paid for with rendering credits. Credits aren’t a promised part of the monthly plan: any we add show in your
+              balance with when they expire. Your team can see the balance, what each rendering costs before making one, and the history of every credit added, spent, refunded or
+              expired.
             </p>
             <p>
               Credits are reserved when a rendering starts and given back if it fails. They have no cash value, can’t be transferred to another company, and aren’t refunded when
@@ -760,7 +757,7 @@ export function refundsDoc(w: LegalWords): LegalDoc {
               that has started.
             </p>
             <p>
-              If a renewal went through that you didn’t want, ask within 7 days: if none of that month’s rendering credits have been used, we refund it and end the plan. If we charged
+              If a renewal went through that you didn’t want, ask within 7 days: we refund it and end the plan. If we charged
               you twice or by mistake, we refund the mistake in full.
             </p>
           </>
@@ -771,7 +768,7 @@ export function refundsDoc(w: LegalWords): LegalDoc {
         heading: '2. Rendering credits',
         body: (
           <p>
-            Credits are part of the monthly plan and have no cash value, so they aren’t refunded on their own, when they expire, or when the plan ends. A rendering that fails gives its
+            Rendering credits have no cash value, so they aren’t refunded on their own, when they expire, or when the plan ends. A rendering that fails gives its
             credits back automatically. If a rendering was charged and came out unusable, tell us and we will return its credits.
           </p>
         ),

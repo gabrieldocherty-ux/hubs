@@ -118,12 +118,8 @@ export default function PlanTab() {
           </div>
           <ul className="ws-breakdown">
             <li>
-              <span>Hosting, updates and your web address</span>
-              <span>{money(plan.prices.monthly.hostingCents)}</span>
-            </li>
-            <li>
-              <span>Photoreal render credits (roll over 3 months)</span>
-              <span>{money(plan.prices.monthly.creditCents)}</span>
+              <span>Hosting, running, updates and your web address</span>
+              <span>{money(plan.prices.monthly.hostingCents + plan.prices.monthly.creditCents)}</span>
             </li>
           </ul>
           <p>{m.text}</p>

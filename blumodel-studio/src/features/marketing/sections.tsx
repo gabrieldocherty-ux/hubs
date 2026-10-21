@@ -1,8 +1,7 @@
 import type { MouseEvent, ReactNode } from 'react';
 import { useLegal } from '../../lib/config';
-import { PriceSplit } from './art';
 import { BookCallForm } from './BookCallForm';
-import { CheckIcon, CubeIcon, DemoLink, GlobeIcon, InboxIcon, PhoneIcon, PRICES, SectionHead, ServerIcon, SparkIcon, TeamIcon, scrollIfHere } from './parts';
+import { CheckIcon, CubeIcon, DemoLink, GlobeIcon, InboxIcon, PhoneIcon, PRICES, SectionHead, ServerIcon, TeamIcon, scrollIfHere } from './parts';
 
 /* The sections the landing page and the pricing page share. */
 
@@ -38,11 +37,6 @@ const INCLUDED: { title: string; body: ReactNode; icon: JSX.Element }[] = [
     body: 'Invite your designers and sales staff by email. Owners manage the showroom and the plan; staff work the leads and use the showroom with customers.',
     icon: <TeamIcon />,
   },
-  {
-    title: 'Photoreal AI renders',
-    body: `Turn any design into a photoreal rendering for the customer. ${PRICES.credits} of rendering credits every month, and unused credits roll over for ${PRICES.rolloverMonths} months.`,
-    icon: <SparkIcon />,
-  },
 ];
 
 export function Included() {
@@ -76,7 +70,6 @@ const MONTHLY_COVERS = [
   'Hosting and running your showroom, every day',
   'Your own web address, or your own domain connected',
   'Updates, fixes and daily backups',
-  `${PRICES.credits} of AI rendering credits each month`,
 ];
 
 export function PricingCards({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
@@ -109,7 +102,6 @@ export function PricingCards({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
         <p className="mk-price-amount">
           <b>{PRICES.monthly}</b> <span>CAD / month</span>
         </p>
-        <PriceSplit />
         <ul className="mk-ticks">
           {MONTHLY_COVERS.map((x) => (
             <li key={x}>
@@ -158,10 +150,6 @@ export const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: 'What do our customers pay?',
     a: 'Nothing. Designing, saving, sharing and downloading a design are free on your showroom. A customer’s design is your lead.',
-  },
-  {
-    q: 'What are the rendering credits for?',
-    a: `Photoreal AI renderings of a design, made from the 3D view. Each paid month adds ${PRICES.credits} of credits. Unused credits roll over for ${PRICES.rolloverMonths} months, then expire, oldest first, and you can see your balance and history at any time.`,
   },
   {
     q: 'I’m a homeowner. Can I design my kitchen here?',

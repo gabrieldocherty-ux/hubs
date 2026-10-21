@@ -18,7 +18,7 @@ export default function PricingScreen() {
           <span className="mk-eyebrow">Pricing</span>
           <h1 id="pricing-hero-title">{PRICES.monthly} a month, plus a setup quoted for your company.</h1>
           <p className="mk-lede">
-            The monthly plan pays for hosting your showroom at your own web address and for AI renderings. The setup and yearly license pay for your showroom, setting it up and
+            The monthly plan pays for hosting and running your showroom at your own web address, with updates and daily backups. The setup and yearly license pay for your showroom, setting it up and
             modelling your products; every company’s range is different, so we quote it on a call. No per-lead fees, and your customers never pay. All prices are in Canadian dollars.
           </p>
         </section>
@@ -44,8 +44,8 @@ const ROWS: { q: string; a: string }[] = [
     a: 'We send you a secure Stripe checkout link and you pay by card. Receipts and the card on file are in your showroom’s Plan page. We never see your card number.',
   },
   {
-    q: `What the ${PRICES.monthly} is made of`,
-    a: `${PRICES.hosting} for hosting and running your showroom, including its own web address, and ${PRICES.credits} of AI rendering credits. Unused credits roll over for ${PRICES.rolloverMonths} months.`,
+    q: `What the ${PRICES.monthly} covers`,
+    a: 'Hosting and running your showroom every day, its own web address (or your own domain connected), updates, fixes and daily backups.',
   },
   {
     q: 'If a payment fails',

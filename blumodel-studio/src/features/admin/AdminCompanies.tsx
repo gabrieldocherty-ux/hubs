@@ -891,7 +891,7 @@ function MonthlySection({ t, act, busy }: SectionProps) {
           </>
         )}
       </dl>
-      <p className="adm-note">{dollars(HOSTING_CENTS)} hosting with their web address + {dollars(CREDIT_CENTS)} of render credits a month, through Stripe. A failed payment gets 14 days of grace before the showroom lapses.</p>
+      <p className="adm-note">{dollars(HOSTING_CENTS + CREDIT_CENTS)} a month for hosting and running the showroom with its web address, through Stripe. Render credits aren’t promised; add them by hand under Render credits. A failed payment gets 14 days of grace before the showroom lapses.</p>
       <div className="adm-form">
         {latest && (
           <>

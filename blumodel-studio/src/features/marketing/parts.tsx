@@ -25,7 +25,6 @@ interface ShowroomPlanJson {
 
 const PLANS = plansJson as unknown as ShowroomPlanJson[];
 const MONTHLY = PLANS.find((p) => p.id === 'showroom_monthly');
-const part = (id: string) => MONTHLY?.breakdown?.find((b) => b.id === id)?.cents;
 
 /**
  * What the sales site quotes, all in CAD. The fallbacks are the prices of docs/SHOWROOM_PIVOT.md §2.
@@ -37,11 +36,6 @@ export const PRICES = Object.freeze({
   license: 'quoted for your company',
   /** "$50" a month. */
   monthly: amount(MONTHLY?.priceCents ?? 5000),
-  /** "$25" of it for hosting and running the showroom, its web address included. */
-  hosting: amount(part('hosting') ?? 2500),
-  /** "$25" of it in AI rendering credits. */
-  credits: amount(part('render_credits') ?? 2500),
-  rolloverMonths: MONTHLY?.creditRolloverMonths ?? 3,
 });
 
 // ── the demo showroom's address ─────────────────────────────────────────────

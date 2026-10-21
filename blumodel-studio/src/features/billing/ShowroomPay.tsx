@@ -99,7 +99,7 @@ export default function ShowroomPay({ checkoutRef }: { checkoutRef: string }) {
             <h1 id="show-pay-title">{name}</h1>
             <div className="demo-pay-amount">
               <b>{money(c.amountCents, c.currency)}</b>
-              <span>per month: hosting and your web address, plus render credits. Renews monthly until cancelled.</span>
+              <span>per month: hosting, running and your web address. Renews monthly until cancelled.</span>
             </div>
             {c.status === 'completed' ? (
               <>
