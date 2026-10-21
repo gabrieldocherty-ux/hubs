@@ -97,7 +97,7 @@ const STEPS: { who: string; title: string; body: string }[] = [
   {
     who: 'Us',
     title: 'We set up your showroom and model your products',
-    body: 'Send us your logo, your colours and your product range. We build the showroom under your name and model your cabinets and fixtures in 3D, at their true size, with your finishes.',
+    body: 'Send us your product line. We build the showroom under your name and model your cabinets and fixtures in 3D, at their true size, with your finishes.',
   },
   {
     who: 'Your customers',
