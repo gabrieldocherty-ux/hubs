@@ -84,7 +84,7 @@ export function VanityModel({ r, finish, ctx }: ModelProps) {
   );
 }
 
-/** Geometry for the toilet, cached by size (it's the same few shapes for every toilet in a plan). */
+/** Bathroom geometry (toilet, tub), cached by size: the same few shapes for every piece in a plan. */
 const toiletGeos = new Map<string, THREE.BufferGeometry>();
 function toiletGeo(key: string, make: () => THREE.BufferGeometry): THREE.BufferGeometry {
   let g = toiletGeos.get(key);
@@ -128,9 +128,11 @@ function bowlGeo(r: number, h: number): THREE.BufferGeometry {
   return toiletGeo(`bowl:${r}:${h}`, () => {
     const p = [
       [0, 0],
-      [r * 0.6, 0],
-      [r * 0.62, h * 0.12],
-      [r * 0.66, h * 0.3],
+      [r * 0.74, 0],
+      [r * 0.73, h * 0.03],
+      [r * 0.64, h * 0.12],
+      [r * 0.63, h * 0.22],
+      [r * 0.68, h * 0.36],
       [r * 0.76, h * 0.55],
       [r * 0.9, h * 0.78],
       [r * 0.98, h * 0.92],
@@ -209,54 +211,119 @@ export function ToiletModel({ r, finish }: ModelProps) {
   );
 }
 
+/** A lathe-turned basin (unit radius, `h` deep), opened at the top, for a tub's inside. */
+function basinGeo(h: number): THREE.BufferGeometry {
+  return toiletGeo(`basin:${h}`, () => {
+    const p = [
+      [0, 0],
+      [0.72, 0],
+      [0.86, 0.04],
+      [0.94, 0.16],
+      [0.98, 0.45],
+      [1, 1],
+    ].map(([x, y]) => new THREE.Vector2(x, y * h));
+    const g = new THREE.LatheGeometry(p, 48);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
+/** A freestanding tub's shell turned on a lathe (unit radius): a narrow foot, flaring walls, a rolled rim. */
+function freeShellGeo(h: number): THREE.BufferGeometry {
+  return toiletGeo(`freeshell:${h}`, () => {
+    const p = [
+      [0, 0],
+      [0.74, 0],
+      [0.78, 0.03],
+      [0.8, 0.12],
+      [0.88, 0.45],
+      [0.96, 0.8],
+      [1, 0.95],
+      [0.995, 1],
+      [0.95, 1.01],
+      [0.92, 0.97],
+      [0.9, 0.6],
+      [0.83, 0.2],
+      [0.6, 0.12],
+      [0, 0.12],
+    ].map(([x, y]) => new THREE.Vector2(x, y * h));
+    const g = new THREE.LatheGeometry(p, 56);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
+/** A flat frame with an oval opening (the alcove tub's deck), `t` thick, standing at y = 0..t. */
+function deckGeo(w: number, d: number, ow: number, od: number, t: number): THREE.BufferGeometry {
+  return toiletGeo(`deck:${w}:${d}:${ow}:${od}:${t}`, () => {
+    const s = new THREE.Shape();
+    s.moveTo(-w / 2, -d / 2);
+    s.lineTo(w / 2, -d / 2);
+    s.lineTo(w / 2, d / 2);
+    s.lineTo(-w / 2, d / 2);
+    s.lineTo(-w / 2, -d / 2);
+    const hole = new THREE.Path();
+    // A stadium: straight sides, round ends, the shape of a tub's opening.
+    const rr = od / 2;
+    const sx = ow / 2 - rr;
+    hole.moveTo(-sx, -rr);
+    hole.lineTo(sx, -rr);
+    hole.absarc(sx, 0, rr, -Math.PI / 2, Math.PI / 2, false);
+    hole.lineTo(-sx, rr);
+    hole.absarc(-sx, 0, rr, Math.PI / 2, (3 * Math.PI) / 2, false);
+    s.holes.push(hole);
+    const g = new THREE.ExtrudeGeometry(s, { depth: t, bevelEnabled: true, bevelThickness: 0.35, bevelSize: 0.35, bevelSegments: 2, curveSegments: 24 });
+    g.rotateX(-Math.PI / 2);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
 export function TubModel({ r, finish }: ModelProps) {
   const { w, d, product } = r;
   const h = product.heightIn;
   const mat = porcelain(finish.hex);
   const spout = M.chrome();
+  const inside = cached(`tubInside:${finish.hex}`, () => {
+    const m = (porcelain(finish.hex) as THREE.MeshPhysicalMaterial).clone();
+    m.side = THREE.DoubleSide;
+    return m;
+  });
   if (product.variant === 'freestanding') {
-    const side = cached(`tubside:${finish.hex}`, () => {
-      const m = (porcelain(finish.hex) as THREE.MeshPhysicalMaterial).clone();
-      m.side = THREE.DoubleSide;
-      return m;
-    });
     return (
       <group>
-        <group position={[0, h / 2 + 1.5, 0]} scale={[w / 2, 1, d / 2]}>
-          <mesh material={side} castShadow receiveShadow>
-            <cylinderGeometry args={[1, 0.82, h - 1.5, 40, 1, true]} />
-          </mesh>
-        </group>
-        <group position={[0, 3, 0]} scale={[w / 2 - 2, 1, d / 2 - 2]}>
-          <Cyl r={1} h={1} pos={[0, 0, 0]} mat={mat} seg={40} />
-        </group>
-        <group position={[0, h + 0.6, 0]} scale={[w / 2, 1, d / 2]} rotation={[Math.PI / 2, 0, 0]}>
-          <mesh material={mat}>
-            <torusGeometry args={[0.985, 0.03, 8, 48]} />
-          </mesh>
-        </group>
-        {/* floor-mounted filler at the foot */}
-        <Cyl r={0.8} h={36} pos={[w / 2 + 5, 18, 0]} mat={spout} seg={12} />
-        <Box size={[6, 0.8, 0.8]} pos={[w / 2 + 2.4, 35.5, 0]} mat={spout} />
+        <mesh geometry={freeShellGeo(h)} scale={[w / 2, 1, d / 2]} material={inside} castShadow receiveShadow dispose={null} />
+        {/* floor-mounted filler at the foot: a column, a gooseneck spout and the hand shower */}
+        <Cyl r={0.8} h={36} pos={[w / 2 + 6, 18, 0]} mat={spout} seg={16} />
+        <mesh geometry={toiletGeo('filler-arc', () => new THREE.TorusGeometry(4, 0.55, 10, 24, Math.PI))} position={[w / 2 + 2, 36, 0]} material={spout} dispose={null} />
+        <Cyl r={0.9} h={2.4} pos={[w / 2 - 2, 34.6, 0]} mat={spout} seg={16} />
+        <Box size={[1.2, 6, 1.2]} pos={[w / 2 + 7.5, 26, 1.2]} mat={spout} />
       </group>
     );
   }
-  // Alcove: an apron front, a rim on all sides, a basin floor. The tiled surround is the walls' (backsplashSegments), so it cuts away with them.
-  const t = 3;
+  // Alcove: an apron front, a deck with an oval opening, a sloped basin inside. The tiled surround
+  // is the walls' (backsplashSegments), so it cuts away with them.
+  const deckT = 1.6;
+  const ow = w - 10;
+  const od = d - 9;
   return (
     <group>
-      <Box size={[w, h, t]} pos={[0, h / 2, d / 2 - t / 2]} mat={mat} />
-      <Box size={[w, h, t]} pos={[0, h / 2, -d / 2 + t / 2]} mat={mat} />
-      <Box size={[t, h, d]} pos={[-w / 2 + t / 2, h / 2, 0]} mat={mat} />
-      <Box size={[t, h, d]} pos={[w / 2 - t / 2, h / 2, 0]} mat={mat} />
-      <Box size={[w - t * 2, 2, d - t * 2]} pos={[0, 3, 0]} mat={mat} />
-      {/* spout, valve and shower head on the end wall */}
-      <Box size={[4.5, 1.2, 1.2]} pos={[-w / 2 + 2.6, h + 5, 0]} mat={spout} />
-      <Cyl r={2.6} h={0.5} pos={[-w / 2 + 0.6, h + 16, 0]} rot={[0, 0, Math.PI / 2]} mat={spout} seg={20} />
-      <Box size={[6, 0.8, 0.8]} pos={[-w / 2 + 3, 74, 0]} mat={spout} />
-      <Cyl r={3} h={0.6} pos={[-w / 2 + 6, 73, 0]} mat={spout} seg={24} />
+      {/* the apron and the body under the deck */}
+      <mesh geometry={roundedSlab(w, d - 0.5, h - deckT, 0.8)} position={[0, 0, 0.25]} material={mat} castShadow receiveShadow dispose={null} />
+      <mesh geometry={deckGeo(w, d, ow, od, deckT)} position={[0, h - deckT, 0]} material={mat} receiveShadow dispose={null} />
+      <mesh geometry={basinGeo(h - 4)} position={[0, 2.2, 0.6]} scale={[ow / 2, 1, od / 2]} material={inside} receiveShadow dispose={null} />
+      {/* on the end wall: a curved spout, the valve with its lever, the shower arm and head */}
+      <group position={[-w / 2 + 0.6, h + 4.5, 0]}>
+        <Box size={[1.6, 2, 2]} pos={[0, 0, 0]} mat={spout} />
+        <Box size={[4.6, 1.4, 1.6]} pos={[2.6, -0.2, 0]} mat={spout} />
+        <Box size={[1.2, 1.2, 1.4]} pos={[4.8, -0.9, 0]} mat={spout} />
+      </group>
+      <Cyl r={2.8} h={0.5} pos={[-w / 2 + 0.3, h + 17, 0]} rot={[0, 0, Math.PI / 2]} mat={spout} seg={24} />
+      <Box size={[2.6, 0.7, 0.7]} pos={[-w / 2 + 1.8, h + 17, 0]} mat={spout} />
+      <Box size={[7, 0.8, 0.8]} pos={[-w / 2 + 3.5, 74, 0]} mat={spout} />
+      <Cyl r={3.2} h={0.7} pos={[-w / 2 + 7, 73.2, 0]} mat={spout} seg={28} />
       {/* curtain rod across the front */}
-      <Cyl r={0.5} h={w} pos={[0, 76, d / 2 - 2]} rot={[0, 0, Math.PI / 2]} mat={spout} seg={10} />
+      <Cyl r={0.5} h={w} pos={[0, 76, d / 2 - 2]} rot={[0, 0, Math.PI / 2]} mat={spout} seg={12} />
     </group>
   );
 }

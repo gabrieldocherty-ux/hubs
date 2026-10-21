@@ -577,12 +577,36 @@ function FridgeModel({ r, finish, ctx }: ModelProps) {
         </group>
       ) : (
         <group>
-          <Box size={[w / 2 - 0.25, h - split - 0.3, 1.8]} pos={[-w / 4, split + (h - split) / 2, dz + 0.9]} mat={bodyMat} />
-          <Box size={[w / 2 - 0.25, h - split - 0.3, 1.8]} pos={[w / 4, split + (h - split) / 2, dz + 0.9]} mat={bodyMat} />
-          <Box size={[w - 0.3, split - 1.4, 1.8]} pos={[0, 1 + (split - 1) / 2, dz + 0.9]} mat={bodyMat} />
-          <Pull spec={{ dir: 'v', x: -1.6, y: split + 16, len: 24 }} z={dz + 1.8} mat={handle} />
-          <Pull spec={{ dir: 'v', x: 1.6, y: split + 16, len: 24 }} z={dz + 1.8} mat={handle} />
-          <Pull spec={{ dir: 'h', x: 0, y: split - 3.5, len: w - 10 }} z={dz + 1.8} mat={handle} />
+          {/* the dark gasket line behind the seams, so the doors read as separate */}
+          <Box size={[w - 0.6, h - 2, 0.4]} pos={[0, 1 + (h - 1) / 2, dz + 0.1]} mat={M.toeKick()} cast={false} />
+          {/* two doors and the freezer drawer, softly rounded so their edges catch the light */}
+          <RoundedBox args={[w / 2 - 0.35, h - split - 0.4, 2]} radius={0.5} smoothness={3} position={[-w / 4 - 0.05, split + (h - split) / 2, dz + 1]} material={bodyMat} castShadow receiveShadow />
+          <RoundedBox args={[w / 2 - 0.35, h - split - 0.4, 2]} radius={0.5} smoothness={3} position={[w / 4 + 0.05, split + (h - split) / 2, dz + 1]} material={bodyMat} castShadow receiveShadow />
+          <RoundedBox args={[w - 0.4, split - 5, 2]} radius={0.5} smoothness={3} position={[0, 4.5 + (split - 5) / 2, dz + 1]} material={bodyMat} castShadow receiveShadow />
+          {/* the vent grille at the toe */}
+          <Box size={[w - 4, 2.6, 0.6]} pos={[0, 2.2, dz + 0.3]} mat={M.toeKick()} cast={false} />
+          {[-1, 1].map((sx) => (
+            <group key={sx}>
+              {/* a round bar handle on two stand-offs on each door, by the middle */}
+              <Cyl r={0.55} h={28} pos={[sx * 2.4, split + 26, dz + 4.6]} mat={handle} seg={16} />
+              {[split + 14, split + 38].map((y) => (
+                <Cyl key={y} r={0.4} h={2.6} pos={[sx * 2.4, y, dz + 3.3]} rot={[Math.PI / 2, 0, 0]} mat={handle} seg={12} />
+              ))}
+            </group>
+          ))}
+          {/* the drawer's handle across its top */}
+          <Cyl r={0.55} h={w - 12} pos={[0, split - 5, dz + 4.6]} rot={[0, 0, Math.PI / 2]} mat={handle} seg={16} />
+          {[-1, 1].map((sx) => (
+            <Cyl key={sx} r={0.4} h={2.6} pos={[sx * (w / 2 - 8), split - 5, dz + 3.3]} rot={[Math.PI / 2, 0, 0]} mat={handle} seg={12} />
+          ))}
+          {/* water and ice in the left door: a dark recess, its paddle and a drip tray */}
+          {w >= 33 && (
+            <group position={[-w / 4 - 1, split + (h - split) * 0.42, dz + 2.05]}>
+              <Box size={[8, 12, 0.3]} pos={[0, 0, 0]} mat={M.toeKick()} cast={false} />
+              <Box size={[3.6, 4, 0.4]} pos={[0, 2.4, 0.2]} mat={M.darkSteel()} cast={false} />
+              <Box size={[7.2, 0.6, 1.4]} pos={[0, -5.6, 0.5]} mat={M.darkSteel()} cast={false} />
+            </group>
+          )}
         </group>
       )}
     </group>
@@ -857,6 +881,45 @@ function RugModel({ r, finish }: ModelProps) {
   return <mesh geometry={boxGeo(w, 0.35, d)} position={[0, 0.18, 0]} material={rugMaterial(finish.hex, product.variant ?? 'runner', r.item.id)} receiveShadow dispose={null} />;
 }
 
+/** The olive tree's leaves: one instanced mesh of small narrow leaves, clustered at the branch tips. */
+function OliveCanopy({ seed, potTop, spread }: { seed: string; potTop: number; spread: number }) {
+  const mesh = useMemo(() => {
+    const rng = mulberry32(hashString(seed));
+    const leaf = new THREE.SphereGeometry(1, 6, 4);
+    leaf.scale(0.42, 0.1, 1.45);
+    const mat = cached('oliveLeaf', () => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.72, side: THREE.DoubleSide }));
+    const shades = ['#5f7352', '#6c7f5d', '#55684a', '#7a8c69', '#66785a', '#8a9a7a'].map((h) => new THREE.Color(h));
+    const n = 760;
+    const m = new THREE.InstancedMesh(leaf, mat, n);
+    const o = new THREE.Object3D();
+    const branches = 5;
+    for (let i = 0; i < n; i++) {
+      const b = i % branches;
+      const a = (b / branches) * Math.PI * 2 + 0.4;
+      const len = spread * (0.35 + (b % 2) * 0.15);
+      // Around the branch tip, a loose ball; a few along the branch itself.
+      const along = rng() < 0.2 ? rng() * 0.8 : 1;
+      const tip = new THREE.Vector3(Math.cos(a) * len * along, potTop + 30 + len * 0.75 * along, Math.sin(a) * len * along);
+      const rr = (along === 1 ? 10 : 3.5) * Math.cbrt(rng());
+      const u = rng() * Math.PI * 2;
+      const v = Math.acos(2 * rng() - 1);
+      o.position.set(tip.x + rr * Math.sin(v) * Math.cos(u), tip.y + rr * Math.cos(v) * 0.95, tip.z + rr * Math.sin(v) * Math.sin(u));
+      o.rotation.set(rng() * Math.PI, rng() * Math.PI * 2, rng() * Math.PI);
+      const s = 1 + rng() * 0.5;
+      o.scale.set(s, s, s);
+      o.updateMatrix();
+      m.setMatrixAt(i, o.matrix);
+      m.setColorAt(i, shades[Math.floor(rng() * shades.length)]);
+    }
+    m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+    m.castShadow = true;
+    return m;
+  }, [seed, potTop, spread]);
+  useEffect(() => () => mesh.geometry.dispose(), [mesh]);
+  return <primitive object={mesh} />;
+}
+
 function PlantModel({ r, finish }: ModelProps) {
   const { w, product } = r;
   const olive = product.variant === 'olive';
@@ -864,18 +927,11 @@ function PlantModel({ r, finish }: ModelProps) {
   const potMat = finishMaterial(finish);
   const potR = w * 0.3;
   const potH = olive ? 15 : 14;
-  const leafMat = olive
-    ? cached('olive', () => new THREE.MeshStandardMaterial({ color: '#8b9a74', roughness: 0.75, flatShading: true }))
-    : cached('fig', () => new THREE.MeshPhysicalMaterial({ color: '#335f2e', roughness: 0.35, clearcoat: 0.4 }));
+  const leafMat = cached('fig', () => new THREE.MeshPhysicalMaterial({ color: '#335f2e', roughness: 0.35, clearcoat: 0.4 }));
   const parts = useMemo(() => {
     const out: { p: [number, number, number]; s: [number, number, number]; rot: [number, number, number] }[] = [];
-    if (olive) {
-      for (let i = 0; i < 16; i++) {
-        const a = rng() * Math.PI * 2;
-        const rr = rng() * (w / 2 - 4);
-        out.push({ p: [Math.cos(a) * rr, 40 + rng() * 20, Math.sin(a) * rr], s: [4 + rng() * 3.5, 3 + rng() * 3, 4 + rng() * 3.5], rot: [rng(), rng(), rng()] });
-      }
-    } else {
+    // (The olive's leaves are OliveCanopy's.)
+    if (!olive) {
       for (let i = 0; i < 18; i++) {
         const a = i * 2.4;
         const y = 20 + (i / 18) * 30;
@@ -889,10 +945,29 @@ function PlantModel({ r, finish }: ModelProps) {
     <group>
       <Cyl r={potR} rb={potR * 0.78} h={potH} pos={[0, potH / 2, 0]} mat={potMat} seg={24} />
       <Cyl r={potR * 0.92} h={0.3} pos={[0, potH - 0.6, 0]} mat={M.soil()} seg={20} cast={false} />
-      <Cyl r={olive ? 0.9 : 0.6} rb={olive ? 1.3 : 0.8} h={olive ? 32 : 36} pos={[0, potH + (olive ? 16 : 18), 0]} mat={M.bark()} seg={8} />
-      {parts.map((pt, i) => (
+      {olive ? (
+        <>
+          {/* a pot rim, the trunk, five branches out to the leaf clusters */}
+          <Cyl r={potR + 0.6} h={1.6} pos={[0, potH - 0.8, 0]} mat={potMat} seg={24} />
+          <Cyl r={0.75} rb={1.4} h={32} pos={[0, potH + 16, 0]} mat={M.bark()} seg={10} />
+          {[0, 1, 2, 3, 4].map((b) => {
+            const a = (b / 5) * Math.PI * 2 + 0.4;
+            const len = (w / 2 - 3) * (0.35 + (b % 2) * 0.15);
+            const L = Math.hypot(len, len * 0.75);
+            return (
+              <group key={b} position={[0, potH + 30, 0]} rotation={[0, -a, 0]}>
+                <Cyl r={0.35} rb={0.6} h={L} pos={[len / 2, (len * 0.75) / 2, 0]} rot={[0, 0, -Math.atan2(len, len * 0.75)]} mat={M.bark()} seg={6} />
+              </group>
+            );
+          })}
+          <OliveCanopy seed={r.item.id} potTop={potH} spread={w / 2 - 3} />
+        </>
+      ) : (
+        <Cyl r={0.6} rb={0.8} h={36} pos={[0, potH + 18, 0]} mat={M.bark()} seg={8} />
+      )}
+      {!olive && parts.map((pt, i) => (
         <mesh key={i} position={pt.p} scale={pt.s} rotation={pt.rot} material={leafMat}>
-          {olive ? <icosahedronGeometry args={[1, 1]} /> : <sphereGeometry args={[1, 12, 8]} />}
+          <sphereGeometry args={[1, 12, 8]} />
         </mesh>
       ))}
     </group>
