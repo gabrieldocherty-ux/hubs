@@ -162,7 +162,8 @@ const RELIEF_SCALE = (() => {
 
 export function surfaceMaterial(key: string, spec: PatternSpec, gloss: number): { mat: THREE.Material; tileIn: number } {
   const { tex, tileIn } = texFor(spec);
-  const relief = (RELIEF[spec.type] ?? 0) * RELIEF_SCALE;
+  // Floors read a little more 3D: deeper seams and grout than the same pattern on a wall.
+  const relief = (RELIEF[spec.type] ?? 0) * RELIEF_SCALE * (key.startsWith('floor:') ? 1.8 : 1);
   const mat = cached(`surface:${key}:${JSON.stringify(spec)}`, () =>
     new THREE.MeshPhysicalMaterial({
       map: tex,

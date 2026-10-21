@@ -13,6 +13,7 @@ import { Box, Front, type SceneCtx } from './parts';
 import { M, cached, finishMaterial, skyMaterial, surfaceMaterial } from './materials';
 import { boxGeo, worldUVBox } from './geom3d';
 import { SelectionEdges } from './SelectionEdges';
+import { FloorPiece } from './FloorPiece';
 
 const T = 5;
 
@@ -113,7 +114,6 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   const H = room.ceilingIn;
   const floor = byId(FLOORING, surfaces.flooringId);
   const paint = byId(PAINTS, surfaces.paintId);
-  const floorMat = surfaceMaterial(`floor:${floor.id}`, floor.pattern, floor.gloss);
   const wallMat = surfaceMaterial(`paint:${paint.id}`, paint.pattern, 0.05);
   const trimHex = luminance(paint.hex) < 0.2 ? shade(paint.hex, 0.05) : '#f3efe6';
   const trimMat = cached(`trim3d:${trimHex}`, () => new THREE.MeshStandardMaterial({ color: trimHex, roughness: 0.45 }));
@@ -123,17 +123,16 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
   const rects = useMemo(() => outlines.flatMap((o) => floorRects(o)), [outlines]);
 
   // Each room on its own floor (an added bathroom on tile); the kitchen's floor where a room has none of its own.
+  // Each rectangle is a FloorPiece, which lays a new floor over the old one when it changes.
   const floorParts = useMemo(
     () =>
       floorSpaces(room).flatMap((sp) => {
         const f = sp.flooringId ? byId(FLOORING, sp.flooringId) : floor;
         const m = surfaceMaterial(`floor:${f.id}`, f.pattern, f.gloss);
-        return floorRects(sp.pts).map((r) => ({ mat: m.mat, geo: worldUVBox([r.x1 - r.x0, 0.5, r.y1 - r.y0], [(r.x0 + r.x1) / 2, -0.25, (r.y0 + r.y1) / 2], null, m.tileIn) }));
+        return floorRects(sp.pts).map((r, k) => ({ key: `${sp.id}:${k}`, rect: r, mat: m.mat, tileIn: m.tileIn }));
       }),
-    // floorMat follows the kitchen's floor, which rooms without their own use.
-    [room, floor, floorMat],
+    [room, floor],
   );
-  useEffect(() => () => floorParts.forEach((p) => p.geo.dispose()), [floorParts]);
 
   // Each opening belongs to the wall it is flush against; it also cuts any wall sharing that line
   // (the partition between two rooms is two coincident walls, one per room).
@@ -335,8 +334,8 @@ export const Room3D = memo(function Room3D({ room, all, surfaces, ctx, selectedI
       {rects.map((r, i) => (
         <mesh key={`slab${i}`} geometry={boxGeo(r.x1 - r.x0 + T * 2, 6, r.y1 - r.y0 + T * 2)} position={[(r.x0 + r.x1) / 2, -3.5, (r.y0 + r.y1) / 2]} material={M.plinth()} receiveShadow dispose={null} />
       ))}
-      {floorParts.map((p, i) => (
-        <mesh key={i} geometry={p.geo} material={p.mat} receiveShadow />
+      {floorParts.map((p) => (
+        <FloorPiece key={p.key} rect={p.rect} mat={p.mat} tileIn={p.tileIn} />
       ))}
       <group ref={ceiling} visible={false}>
         {rects.map((r, i) => (

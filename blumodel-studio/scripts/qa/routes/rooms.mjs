@@ -604,6 +604,12 @@ export default [
       }
       await viewTab(h, '3D');
       await h.waitFor('canvas');
+      // A new floor is laid over the old one, row by row: half way through, both show.
+      await h.sleep(800);
+      await h.evaluate(() => window.__blumodelQA.store.getState().setSurfaces({ flooringId: 'walnut-plank' }));
+      await h.sleep(450);
+      await h.shot('laying');
+      await h.sleep(1200);
       for (const id of ['chevron-oak', 'hex-encaustic', 'penny-white', 'wood-look-tile', 'porcelain-12x24', 'travertine']) {
         await h.evaluate((fid) => window.__blumodelQA.store.getState().setSurfaces({ flooringId: fid }), id);
         await h.sleep(900);
