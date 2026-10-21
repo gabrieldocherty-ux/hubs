@@ -739,20 +739,6 @@ function StoolModel({ r, finish }: ModelProps) {
   );
 }
 
-function ChairModel({ r, finish }: ModelProps) {
-  const { w, d } = r;
-  const mat = finishMaterial(finish);
-  return (
-    <group>
-      {[-1, 1].map((sx) => [-1, 1].map((sz) => <Cyl key={`${sx}${sz}`} r={0.7} h={17} pos={[sx * (w / 2 - 2), 8.5, sz * (d / 2 - 2.5)]} mat={mat} seg={10} />))}
-      <RoundedBox args={[w - 1, 1.6, d - 3]} radius={0.7} smoothness={3} position={[0, 17.6, 1]} material={mat} castShadow receiveShadow />
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Cyl key={i} r={0.35} h={13} pos={[-w / 2 + 3 + ((w - 6) / 4) * i, 24.8, -d / 2 + 1.6]} mat={mat} seg={8} />
-      ))}
-      <Box size={[w - 1, 2.4, 1.3]} pos={[0, 31.6, -d / 2 + 1.6]} mat={mat} />
-    </group>
-  );
-}
 
 function TableModel({ r, finish }: ModelProps) {
   const { w, d, product } = r;
@@ -761,19 +747,66 @@ function TableModel({ r, finish }: ModelProps) {
     return (
       <group>
         <Cyl r={w / 2} h={1.5} pos={[0, 29.25, 0]} mat={mat} seg={48} />
+        <Cyl r={w / 2 - 0.4} rb={w / 2 - 1.2} h={1} pos={[0, 28, 0]} mat={mat} seg={48} />
         <Cyl r={2.6} rb={3.4} h={26} pos={[0, 15.5, 0]} mat={mat} seg={20} />
         <Cyl r={9} rb={10} h={2.5} pos={[0, 1.25, 0]} mat={mat} seg={32} />
       </group>
     );
   }
+  // A farmhouse table: a top with softened edges, apron rails under it, square legs tapering to the floor.
+  const inset = 3;
   return (
     <group>
-      <Box size={[w, 1.6, d]} pos={[0, 29.2, 0]} mat={mat} />
-      <Box size={[w - 8, 3.5, d - 8]} pos={[0, 26.6, 0]} mat={mat} />
-      {[-1, 1].map((sx) => [-1, 1].map((sz) => <Cyl key={`${sx}${sz}`} r={1.4} rb={1} h={28.4} pos={[sx * (w / 2 - 4), 14.2, sz * (d / 2 - 4)]} mat={mat} seg={12} />))}
+      <RoundedBox args={[w, 1.7, d]} radius={0.55} smoothness={3} position={[0, 29.15, 0]} material={mat} castShadow receiveShadow />
+      {[-1, 1].map((sz) => (
+        <Box key={`a${sz}`} size={[w - inset * 2 - 2, 3.6, 0.9]} pos={[0, 26.5, sz * (d / 2 - inset - 0.2)]} mat={mat} />
+      ))}
+      {[-1, 1].map((sx) => (
+        <Box key={`b${sx}`} size={[0.9, 3.6, d - inset * 2 - 2]} pos={[sx * (w / 2 - inset - 0.2), 26.5, 0]} mat={mat} />
+      ))}
+      {[-1, 1].map((sx) =>
+        [-1, 1].map((sz) => <Cyl key={`${sx}${sz}`} r={2.5} rb={1.6} h={28.3} pos={[sx * (w / 2 - inset), 14.15, sz * (d / 2 - inset)]} rot={[0, Math.PI / 4, 0]} mat={mat} seg={4} />),
+      )}
     </group>
   );
 }
+function ChairModel({ r, finish }: ModelProps) {
+  const { w, d } = r;
+  const mat = finishMaterial(finish);
+  const seatY = 17.6;
+  const backTop = 33;
+  const rake = 0.09;
+  const backZ = -d / 2 + 1.8;
+  return (
+    <group>
+      {/* front legs: turned, tapering to the floor */}
+      {[-1, 1].map((sx) => (
+        <Cyl key={`f${sx}`} r={0.85} rb={0.62} h={seatY - 0.6} pos={[sx * (w / 2 - 2), (seatY - 0.6) / 2, d / 2 - 3]} mat={mat} seg={12} />
+      ))}
+      {/* rear legs run on up into the back posts, raked a little */}
+      {[-1, 1].map((sx) => (
+        <group key={`r${sx}`} position={[sx * (w / 2 - 2), 0, backZ]} rotation={[-rake, 0, 0]}>
+          <Cyl r={0.8} rb={0.62} h={backTop} pos={[0, backTop / 2, 0]} mat={mat} seg={12} />
+        </group>
+      ))}
+      {/* stretchers between the legs */}
+      {[-1, 1].map((sx) => (
+        <Cyl key={`s${sx}`} r={0.42} h={d - 5} pos={[sx * (w / 2 - 2), 6.5, (d / 2 - 3 + backZ) / 2]} rot={[Math.PI / 2, 0, 0]} mat={mat} seg={8} />
+      ))}
+      <Cyl r={0.42} h={w - 4} pos={[0, 8.5, d / 2 - 3]} rot={[0, 0, Math.PI / 2]} mat={mat} seg={8} />
+      {/* the seat, thick with rounded edges */}
+      <RoundedBox args={[w - 0.6, 1.9, d - 2.4]} radius={0.8} smoothness={4} position={[0, seatY, 0.6]} material={mat} castShadow receiveShadow />
+      {/* the back: spindles under a solid top rail */}
+      <group position={[0, 0, backZ]} rotation={[-rake, 0, 0]}>
+        {[-1, 0, 1].map((i) => (
+          <Cyl key={i} r={0.42} h={backTop - seatY - 4.5} pos={[i * ((w - 6) / 3), seatY + (backTop - seatY - 4.5) / 2 + 1, 0]} mat={mat} seg={10} />
+        ))}
+        <RoundedBox args={[w - 1.2, 3.4, 1.3]} radius={0.55} smoothness={3} position={[0, backTop - 1.8, 0]} material={mat} castShadow />
+      </group>
+    </group>
+  );
+}
+
 
 const stoolShell = new THREE.CylinderGeometry(8.5, 8.5, 9, 24, 1, true, Math.PI - 1, 2);
 const domeGeo = new THREE.SphereGeometry(1, 36, 14, 0, Math.PI * 2, 0, Math.PI / 2);
