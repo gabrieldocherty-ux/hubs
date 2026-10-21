@@ -2,6 +2,7 @@ import { useHashQuery } from '../../lib/router';
 import { LeadCard, ShowroomMock } from './art';
 import { DemoLink, MarketingFooter, MarketingHeader, PRICES, scrollIfHere, SectionHead, usePendingScroll, useTitle } from './parts';
 import { BookSection, Faq, FinalCta, Included, PricingCards } from './sections';
+import { MODELLED_BRANDS } from './brands';
 import './marketing.css';
 
 export const SALES_TITLE = 'BluModel Studio (blue model) | 3D Kitchen Design Showrooms for Kitchen & Bath Companies';
@@ -28,6 +29,7 @@ export default function LandingScreen() {
         <Hero />
         <WeRunIt />
         <HowItWorks />
+        <WeModel />
         <Leads />
         <Included />
         <WhoFor />
@@ -112,8 +114,8 @@ const STEPS: { who: string; title: string; body: string }[] = [
 function HowItWorks() {
   return (
     <section className="mk-section" id="how" aria-labelledby="how-title">
-      <SectionHead id="how-title" eyebrow="How it works" title="Three steps, and we do the first one" center>
-        You don’t hire a developer or learn 3D software. We do the building; you do the selling.
+      <SectionHead id="how-title" eyebrow="How it works" title="We built a design engine for your custom and professional work" center>
+        Let your customers interact, design and inspire themselves while getting familiar with your business.
       </SectionHead>
       <ol className="mk-steps">
         {STEPS.map((s, i) => (
@@ -127,6 +129,41 @@ function HowItWorks() {
           </li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+
+/** We model their own cabinetry and what they supply; and the brands already in the library. */
+function WeModel() {
+  const items: [string, string][] = [
+    ['Custom cabinetry', 'Your own lines and made-to-order work: boxes, door styles, finishes and hardware, at their true sizes.'],
+    ['What you supply', 'The appliances, sinks, faucets, vanities and fixtures you sell, from your suppliers, modelled to the spec sheet.'],
+    ['New products as you add them', 'A new line or a new supplier: send it over and we model it, quoted first.'],
+  ];
+  return (
+    <section className="mk-section mk-model" id="we-model" aria-labelledby="model-title">
+      <SectionHead id="model-title" eyebrow="Your products, in 3D" title="We model your custom cabinetry and everything you supply" center>
+        So what your customers design is exactly what you can build, order and install.
+      </SectionHead>
+      <ul className="mk-grid mk-grid--3">
+        {items.map(([t, b]) => (
+          <li key={t} className="mk-card">
+            <h3>{t}</h3>
+            <p>{b}</p>
+          </li>
+        ))}
+      </ul>
+      <div className="mk-brands">
+        <p className="mk-brands-title">Already modelled, ready for your showroom</p>
+        <ul className="mk-brand-list" aria-label="Brands already modelled">
+          {MODELLED_BRANDS.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+          <li className="mk-brand-more">and more</li>
+        </ul>
+        <p className="mk-brands-fine">Products from these brands are already in our library at their real sizes. Brand names belong to their owners; listing them doesn’t mean they endorse BluModel Studio.</p>
+      </div>
     </section>
   );
 }
@@ -156,17 +193,17 @@ function Leads() {
 }
 
 const WHO: { title: string; body: string }[] = [
-  { title: 'Cabinet showrooms', body: 'Let customers try your door styles and finishes in their own layout before they visit, and come in ready to buy.' },
-  { title: 'Kitchen & bath design-build firms', body: 'Show a believable first draft in the first meeting, then hand the details to your designer.' },
-  { title: 'Bath and plumbing showrooms', body: 'Vanities, tubs, showers and fixtures, placed in a real bathroom layout under your name.' },
-  { title: 'Renovation companies with a showroom', body: 'Turn website visitors into booked consultations, with the design already started.' },
+  { title: 'Contractors & renovators', body: 'Show clients the finished room before the first wall comes down, and win the job on the first visit.' },
+  { title: 'Cabinet makers & millwork', body: 'Your door styles, finishes and custom pieces, in your customer’s own layout, at true size.' },
+  { title: 'Showrooms & suppliers', body: 'Your showroom, open around the clock. Customers explore your products from home and come in knowing what they want.' },
+  { title: 'Kitchen & bath designers', body: 'Start every project from a design your customer helped create, and spend your time on the details that matter.' },
 ];
 
 function WhoFor() {
   return (
     <section className="mk-section mk-who" id="who" aria-labelledby="who-title">
-      <SectionHead id="who-title" eyebrow="Who it’s for" title="Built for companies that sell and install kitchens and bathrooms">
-        Contractors, installers and showrooms of any size that want what the big chains have, without building it themselves.
+      <SectionHead id="who-title" eyebrow="Who it’s for" title="For everyone who builds, installs or sells what goes into a home">
+        If your customers need to picture it before they buy it, let them see it: in their own space, with your products, under your name.
       </SectionHead>
       <ul className="mk-grid mk-grid--4">
         {WHO.map((w) => (
