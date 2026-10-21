@@ -16,7 +16,6 @@ const RAW = { autoCapitalize: 'none', autoCorrect: 'off', spellCheck: false } as
 export default function RenderServiceCard() {
   const [state, setState] = useState<RenderServiceState | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
-  const [url, setUrl] = useState('');
   const [key, setKey] = useState('');
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState<'save' | 'test' | 'remove' | null>(null);
@@ -29,7 +28,6 @@ export default function RenderServiceCard() {
       .renderService()
       .then((r) => {
         setState(r.renders);
-        setUrl(r.renders.url ?? '');
         setEditing(!r.renders.source);
       })
       .catch((e) => setLoadErr(errorText(e, 'Could not load the render service.')));
@@ -47,7 +45,7 @@ export default function RenderServiceCard() {
     setErr(null);
     setTest(null);
     try {
-      const r = await adminApi.setRenderService(url.trim(), key.trim() || undefined);
+      const r = await adminApi.setRenderService(key.trim() || undefined);
       setState(r.renders);
       setKey('');
       setEditing(false);
@@ -78,7 +76,6 @@ export default function RenderServiceCard() {
     try {
       const r = await adminApi.removeRenderService();
       setState(r.renders);
-      setUrl('');
       setKey('');
       setEditing(true);
       setConfirmRemove(false);
@@ -94,7 +91,7 @@ export default function RenderServiceCard() {
     <Section title="Render service" id="adm-render-service">
       <div className="adm-actions">
         {working ? <Pill tone="ok">Photoreal renders on</Pill> : state.provider === 'demo' ? <Pill tone="warn">Demo renders (stamped, no AI)</Pill> : <Pill tone="warn">Not set up</Pill>}
-        <span className="adm-sub">The AI that turns a design’s 3D view into a photoreal picture (“Make it photoreal”).</span>
+        <span className="adm-sub">MyArchitectAI turns a design’s 3D view into a photoreal picture (“Make it photoreal”). Paste your MyArchitectAI API key and save.</span>
       </div>
       {state.forced === 'off' && <Notice tone="warn">RENDER_PROVIDER=off in blumodel.env: renders stay off whatever is saved here.</Notice>}
       {state.forced === 'demo' && <Notice tone="warn">RENDER_PROVIDER=demo in blumodel.env: renders use the demo, not the service saved here.</Notice>}
@@ -106,8 +103,6 @@ export default function RenderServiceCard() {
 
       {state.source && !editing ? (
         <dl className="adm-kv rs-kv">
-          <dt>Address</dt>
-          <dd className="mono rs-wrap">{state.url}</dd>
           <dt>Key</dt>
           <dd className="mono">•••• {state.keyLast4}</dd>
           <dt>Set</dt>
@@ -120,12 +115,8 @@ export default function RenderServiceCard() {
       ) : editing ? (
         <form className="adm-form rs-form" onSubmit={(e) => void save(e)} noValidate>
           <label className="adm-field">
-            <span>Address</span>
-            <input type="url" inputMode="url" name="render-url" autoComplete="off" placeholder="https://…" value={url} onChange={(e) => setUrl(e.target.value)} aria-invalid={err?.field === 'url'} {...RAW} />
-          </label>
-          <label className="adm-field">
-            <span>Key{state.source && !state.keyUnreadable ? ' (leave empty to keep the saved one)' : ''}</span>
-            <input type="password" name="render-key" autoComplete="new-password" placeholder={state.keyLast4 && !state.keyUnreadable ? `•••• ${state.keyLast4}` : 'Paste the key'} value={key} onChange={(e) => setKey(e.target.value)} aria-invalid={err?.field === 'key'} {...RAW} />
+            <span>MyArchitectAI API key{state.source && !state.keyUnreadable ? ' (leave empty to keep the saved one)' : ''}</span>
+            <input type="password" name="render-key" autoComplete="new-password" placeholder={state.keyLast4 && !state.keyUnreadable ? `•••• ${state.keyLast4}` : 'Paste your MyArchitectAI API key'} value={key} onChange={(e) => setKey(e.target.value)} aria-invalid={err?.field === 'key'} {...RAW} />
           </label>
           <p className="adm-note">The key is stored encrypted on the server and is never shown again, only its last four characters. Saving asks for your password.</p>
           <div className="adm-actions rs-buttons">
@@ -139,7 +130,6 @@ export default function RenderServiceCard() {
                 disabled={!!busy}
                 onClick={() => {
                   setEditing(false);
-                  setUrl(state.url ?? '');
                   setKey('');
                   setErr(null);
                 }}

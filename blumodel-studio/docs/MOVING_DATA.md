@@ -319,7 +319,7 @@ off-site copy**, made daily into `BACKUP_OFFSITE_DIR` (a synced cloud folder or 
 | `--passphrase-file <file>` | the passphrase (its first line); else `BACKUP_PASSPHRASE`, the home's `blumodel.env`, or a prompt |
 | `--plain` | NOT encrypted: a `.tar`, for a copy that stays on this machine (never with `--include-secrets`) |
 | `--plain --folder` | NOT encrypted: a plain folder instead of a `.tar` |
-| `--include-secrets` | also `blumodel.env` and the tunnel's `<id>.json` (`--settings <file>`, `--tunnel-dir <folder>`); encrypted only |
+| `--include-secrets` | also `blumodel.env`, the tunnel's `<id>.json` (`--settings <file>`, `--tunnel-dir <folder>`) and `render-settings.key` (opens the render service key saved in Admin > System; put it next to `blumodel.db`); encrypted only |
 
 `node server/scripts/import-data.mjs <bundle.tar.enc, bundle.tar or folder> [options]` (an off-site copy, `blumodel-offsite-<time>.tar.enc`, too)
 

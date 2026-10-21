@@ -65,7 +65,7 @@ function RecentExports({ bump }: { bump: number }) {
     <section className="ws-card ws-exports" aria-label="Recent exports">
       <h2>Recent exports of this list</h2>
       {list.length === 0 ? (
-        <p className="fine">Nobody has exported the lead list yet. Every export is recorded here.</p>
+        <p className="fine">Nobody has exported this list yet. Every export is recorded here.</p>
       ) : (
         <ul>
           {list.map((e) => (
@@ -111,7 +111,7 @@ function Inbox() {
         setMore(r.leads.length === PAGE);
         setError(null);
       } catch (e) {
-        setError(e instanceof ApiError ? e.message : 'Could not load your leads.');
+        setError(e instanceof ApiError ? e.message : 'Could not load your potential customers.');
       }
     },
     [status, sent, query],
@@ -141,10 +141,10 @@ function Inbox() {
     <div className="ws-leads">
       <div className="ws-head">
         <div>
-          <span className="eyebrow">Leads</span>
-          <h1>Everyone who used your showroom</h1>
+          <span className="eyebrow">Potential customers</span>
+          <h1>Everyone who signed up to see your products</h1>
           <p>
-            Each person who started a design, with how to reach them, their designs and whether they sent you one. Only your team sees these.
+            Each person who signed up on your showroom to design with your products, with how to reach them, their designs and whether they sent you one. Only your team sees these.
             {counts ? ` ${counts.total} ${counts.total === 1 ? 'person' : 'people'}, ${counts.sent} sent a design.` : ''}
           </p>
         </div>
@@ -172,17 +172,17 @@ function Inbox() {
           <option value="yes">Sent a design</option>
           <option value="no">Hasn’t sent one</option>
         </select>
-        <input className="ws-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or notes" aria-label="Search leads" />
+        <input className="ws-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or notes" aria-label="Search potential customers" />
       </div>
       {error && <div className="ws-error">{error}</div>}
-      {!leads && !error && <div className="screen-msg">Loading your leads…</div>}
+      {!leads && !error && <div className="screen-msg">Loading your potential customers…</div>}
       {leads && leads.length === 0 && (
         <div className="ws-empty">
           {counts?.total || filtered ? (
-            <p>No leads match.</p>
+            <p>No one matches.</p>
           ) : (
             <>
-              <b>No leads yet</b>
+              <b>No potential customers yet</b>
               <p>When someone starts a design on your showroom, they give their name and an email or phone first, and they show up here. You hear about it by email when they send you a design.</p>
             </>
           )}
@@ -286,7 +286,7 @@ function LeadDetail({ id }: { id: string }) {
         setNotes(r.lead.staffNotes);
         refreshBadge();
       })
-      .catch((e) => setError(e instanceof ApiError ? e.message : 'Could not open this lead.'));
+      .catch((e) => setError(e instanceof ApiError ? e.message : 'Could not open this person.'));
   }, [id, refreshBadge]);
 
   const save = async (patch: { status?: LeadStatus; staffNotes?: string }, ok: string) => {
@@ -321,7 +321,7 @@ function LeadDetail({ id }: { id: string }) {
     setBusy(true);
     try {
       const r = await wsApi.deleteLead(id);
-      toast(`Deleted ${lead?.name ?? 'the lead'}${r.removed.designs ? ` and ${r.removed.designs} design${r.removed.designs === 1 ? '' : 's'}` : ''}.`, 'ok');
+      toast(`Deleted ${lead?.name ?? 'this person'}${r.removed.designs ? ` and ${r.removed.designs} design${r.removed.designs === 1 ? '' : 's'}` : ''}.`, 'ok');
       refreshBadge();
       navigate({ name: 'studio', rest: 'leads' }, true);
     } catch (e) {
@@ -336,11 +336,11 @@ function LeadDetail({ id }: { id: string }) {
       <div className="ws-empty">
         <p>{error}</p>
         <a className="btn" href={href('leads')}>
-          Back to leads
+          Back to potential customers
         </a>
       </div>
     );
-  if (!lead) return <div className="screen-msg">Opening the lead…</div>;
+  if (!lead) return <div className="screen-msg">Opening…</div>;
   const tel = lead.phone ? telOf(lead.phone) : null;
 
   return (
@@ -348,7 +348,7 @@ function LeadDetail({ id }: { id: string }) {
       <div className="ws-head">
         <div>
           <a className="ws-back" href={href('leads')}>
-            ← Leads
+            ← Potential customers
           </a>
           <h1>{lead.name}</h1>
           <p>
@@ -372,7 +372,7 @@ function LeadDetail({ id }: { id: string }) {
       {lead.duplicateOf && (
         <section className="ws-card ws-note ws-dup" aria-label="Possible duplicate">
           <p>
-            <b>Possible duplicate of <a href={href(`leads/${lead.duplicateOf.id}`)}>{lead.duplicateOf.name}</a>.</b> This person typed an email or phone that lead already has. Typing an address doesn’t prove it’s theirs, so the two are kept apart until you decide.
+            <b>Possible duplicate of <a href={href(`leads/${lead.duplicateOf.id}`)}>{lead.duplicateOf.name}</a>.</b> This person typed an email or phone that person already has. Typing an address doesn’t prove it’s theirs, so the two are kept apart until you decide.
           </p>
           <div className="ws-actions">
             <button type="button" className="btn" disabled={busy} onClick={() => void merge(false)}>
@@ -405,7 +405,7 @@ function LeadDetail({ id }: { id: string }) {
                 “{lead.consentText}”{lead.consentAt ? ` Agreed ${when(lead.consentAt)}.` : ''}
               </>
             ) : (
-              'No consent was recorded with this lead.'
+              'No consent was recorded with this person.'
             )}
           </p>
         </section>
@@ -511,11 +511,11 @@ function LeadDetail({ id }: { id: string }) {
         </ol>
       </section>
 
-      <section className="ws-card ws-danger" aria-label="Delete this lead">
-        <h2>Delete this lead</h2>
+      <section className="ws-card ws-danger" aria-label="Delete this person">
+        <h2>Delete this person</h2>
         <p>If {lead.name} asks you to forget them, delete their details, their designs and this history. It can’t be undone.</p>
         <button type="button" className="btn danger" onClick={() => setConfirm(true)} disabled={busy}>
-          Delete lead and designs
+          Delete their details and designs
         </button>
       </section>
       {confirm && (

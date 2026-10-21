@@ -1,1 +1,0 @@
-import{aT as l}from"./index-BnD20-hu.js";import{b as n}from"./api-C6YrQpRo.js";let r=null;const o=l()(a=>({summary:null,loading:!1,load:()=>r||(a({loading:!0}),r=n.summary().then(m=>a({summary:m.summary})).catch(()=>a({summary:null})).finally(()=>{r=null,a({loading:!1})}),r),setUnread:m=>a(u=>u.summary?{summary:{...u.summary,unread:m}}:u)}));export{o as u};

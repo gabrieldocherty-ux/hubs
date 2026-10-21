@@ -65,7 +65,7 @@ export default function TeamTab() {
           <span className="eyebrow">Team</span>
           <h1>Who can open the workspace</h1>
           <p>
-            Your team signs in at {new URL(tenant.url).host}. <b>Staff</b> manage products and leads and use the showroom in sales meetings. <b>Owners</b> can also change the showroom’s switches, the team and the card on file.
+            Your team signs in at {new URL(tenant.url).host}. <b>Staff</b> manage products and potential customers and use the showroom in sales meetings. <b>Owners</b> can also change the showroom’s switches, the team and the card on file.
           </p>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function TeamTab() {
       {owner && <ExportSwitch />}
       {removing && (
         <Dialog title={`Remove ${removing.name || removing.email}?`} onClose={() => setRemoving(null)}>
-          <p>They’re signed out of this workspace at once and can’t open it again. Their leads, notes and the designs they made stay with the showroom.</p>
+          <p>They’re signed out of this workspace at once and can’t open it again. The potential customers they worked with, their notes and the designs they made stay with the showroom.</p>
           <div className="modal-actions">
             <button type="button" className="btn" onClick={() => setRemoving(null)} data-autofocus>
               Keep them
@@ -240,7 +240,7 @@ function ExportSwitch() {
     try {
       const r = await wsApi.saveShowroom({ settings: { ...tenant.settings, staffLeadExport: next } });
       setTenant(r.tenant);
-      toast(next ? 'Staff can export the lead list now. Every export is recorded under Leads.' : 'Only owners can export the lead list now.', 'ok');
+      toast(next ? 'Staff can export the potential-customer list now. Every export is recorded under Potential customers.' : 'Only owners can export the potential-customer list now.', 'ok');
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'That didn’t change.', 'warn');
     } finally {
@@ -252,8 +252,8 @@ function ExportSwitch() {
       <label className="ws-switch">
         <input type="checkbox" checked={on} disabled={busy} onChange={(e) => void flip(e.target.checked)} />
         <span>
-          <b>Let staff export the lead list</b>
-          <em>Off: only owners can download every lead as a spreadsheet. Either way, each export is recorded with who made it and how many people it held (Leads, at the bottom).</em>
+          <b>Let staff export the potential-customer list</b>
+          <em>Off: only owners can download the whole list as a spreadsheet. Either way, each export is recorded with who made it and how many people it held (Potential customers, at the bottom).</em>
         </span>
       </label>
     </section>

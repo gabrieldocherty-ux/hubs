@@ -8,7 +8,7 @@ the QA package `renders` (`node scripts/qa.mjs --pkg renders --port 8920`).
 
 | Setting | Default | What it does |
 |---|---|---|
-| `ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY` | empty | Gabe's architecture AI. Both set = real renders. |
+| `ARCHITECT_AI_KEY` (`ARCHITECT_AI_URL`) | empty | MyArchitectAI. The key alone = real renders; the address defaults to `https://api.myarchitectai.com/v1/render/interior`. Or paste the key in Admin > System > Render service (no restart). |
 | `RENDER_CREDIT_CENTS` | `25` | What one render costs in credits. |
 | `FREE_RENDERS` | `3` | Free renders per account, once (`showroom_renders.free = 1`, no hold, `cost_cents` 0). They skip the visitor switch and daily cap; a failed one doesn't count; a free render can't be refunded. `0` turns them off. |
 | `RENDER_PROVIDER` | `auto` | `architect`, `demo` or `off` forces one (`architect` still needs both settings above). |
@@ -22,25 +22,27 @@ With no provider, `GET /api/renders/status` says `configured: false`, the editor
 
 ## 2. The AI contract (`server/renders/providers.mjs`)
 
-The API isn't settled, so the adapter speaks a small contract. Change the adapter, not the service:
+MyArchitectAI (spec: https://www.myarchitectai.com/openapi.json):
 
 ```
-POST <ARCHITECT_AI_URL>
-Authorization: Bearer <ARCHITECT_AI_KEY>
-{ requestId, prompt, scene, image: { mimeType, data: <base64> }, output: { format: 'png', widthPx, heightPx } }
--> 200 image/png|jpeg|webp bytes, or JSON with base64 / a data: URL in image, imageBase64, output or images[0]
+POST https://api.myarchitectai.com/v1/render/interior
+x-api-key: <key>
+{ image: "data:<mime>;base64,<the captured view>", outputFormat: "png", prompt: <the room description> }
+-> 200 { output: [<image URL>, ...], balance, cost, requestId }   success: the first URL is downloaded and stored
+-> 200 { error, code?, balance, cost, requestId }                 FAILURE (a 200 can still fail)
+   code CONTENT_POLICY_VIOLATION (charged on their side, not retried), SAFETY_CHECK_UNAVAILABLE (try later)
+-> 401/403 bad key, 402 out of balance, 413 over 10 MB, 429 busy (5 per second), 5xx down
 ```
 
-Any other answer counts as a failure: the credits go back and the team sees a plain message. The key
-is only sent in that header. It is never logged and never put in an error message.
-
-The answer is read as a stream with a 25 MB cap enforced while reading: past 25 MB (or a
-Content-Length over it) the stream is cancelled and the render fails, so a huge or endless answer
-never sits in memory. Only `image/png`, `image/jpeg`, `image/webp` or a JSON type is read at all, and
-the picture (sent as bytes or inside JSON) must start with PNG, JPEG or WebP magic bytes.
-`RENDER_TIMEOUT_MS` covers the whole answer, body included. In production `ARCHITECT_AI_URL` must be
-`https://` (plain `http://` only to `localhost` or `127.0.0.1`); the server refuses to start
-otherwise. Tests: `server/test/protect-architect-stream.test.mjs`.
+The result arrives on the same request (about 13 s); there is no polling. Every failure gives the
+credits back and shows the team a plain message, never the key or the service's body. The key is only
+sent in that header (never to the picture's address), never logged or put in an error. The JSON
+answer is capped at 256 KB and the picture at 25 MB, enforced while reading; only an `https://`
+picture address is followed, and the bytes must start with PNG, JPEG or WebP magic bytes.
+`RENDER_TIMEOUT_MS` covers both requests. A request body over 10 MB is refused before sending.
+In production `ARCHITECT_AI_URL`, when set, must be `https://` (plain `http://` only to `localhost`
+or `127.0.0.1`). Tests: `server/test/renders.test.mjs`, `server/test/protect-architect-stream.test.mjs`,
+`server/test/render-settings.test.mjs`.
 
 ## 3. Money
 

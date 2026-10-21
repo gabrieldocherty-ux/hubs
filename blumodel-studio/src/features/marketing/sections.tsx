@@ -28,13 +28,13 @@ const INCLUDED: { title: string; body: ReactNode; icon: JSX.Element }[] = [
     icon: <CubeIcon />,
   },
   {
-    title: 'A lead inbox',
+    title: 'A potential-customer inbox',
     body: 'Every design a customer sends comes in with the plan, the product list and their contact details. Track each one from new to won, add notes and export to CSV.',
     icon: <InboxIcon />,
   },
   {
     title: 'Team accounts',
-    body: 'Invite your designers and sales staff by email. Owners manage the showroom and the plan; staff work the leads and use the showroom with customers.',
+    body: 'Invite your designers and sales staff by email. Owners manage the showroom and the plan; staff follow up with potential customers and use the showroom in meetings.',
     icon: <TeamIcon />,
   },
 ];
@@ -43,7 +43,7 @@ export function Included() {
   return (
     <section className="mk-section" id="included" aria-labelledby="included-title">
       <SectionHead id="included-title" eyebrow="What’s included" title="Everything a showroom needs, run by us" center>
-        One monthly plan and a setup quoted for your company cover all of it. No per-lead fees, and nothing for your customers to pay.
+        One monthly plan and a setup quoted for your company cover all of it. No fees per customer, and nothing for your customers to pay.
       </SectionHead>
       <ul className="mk-grid mk-grid--3">
         {INCLUDED.map((x) => (
@@ -121,7 +121,7 @@ export function PricingCards({ headingLevel = 3 }: { headingLevel?: 2 | 3 }) {
 export const FAQ: { q: string; a: ReactNode }[] = [
   {
     q: 'What is BluModel Studio?',
-    a: 'BluModel Studio (BluModel, sometimes searched as Blue Model) is a 3D kitchen designer that kitchen and bath companies give their customers: an online kitchen planner and visualizer under your own name, with your cabinets, appliances and finishes. Customers draw their room, design it in 3D and send it to you as a lead. It is made by Digital Design Solutions in Guelph, Ontario.',
+    a: 'BluModel Studio (BluModel, sometimes searched as Blue Model) is a 3D kitchen designer that kitchen and bath companies give their customers: an online kitchen planner and visualizer under your own name, with your cabinets, appliances and finishes. Customers draw their room and see it in 3D before anything is installed, and everyone who signs up comes to you as a potential customer. It is made by Digital Design Solutions in Guelph, Ontario.',
   },
   {
     q: 'Do we need to install anything?',
@@ -140,8 +140,8 @@ export const FAQ: { q: string; a: ReactNode }[] = [
     a: 'No. It’s a sales tool: a fast, believable 3D draft of the customer’s kitchen or bathroom, with your products, that helps you win the job. Your designer still measures the space and does the final drawings.',
   },
   {
-    q: 'Who owns the leads?',
-    a: 'You do. Leads from your showroom go to your team only. We store them for you, we never sell or share them, and we never market to your customers. Export them as a spreadsheet any time.',
+    q: 'Who owns my potential customers’ details?',
+    a: 'You do. Everyone who signs up on your showroom goes to your team only. We store them for you, we never sell or share them, and we never market to your customers. Export them as a spreadsheet any time.',
   },
   {
     q: 'Can we cancel?',
@@ -149,7 +149,7 @@ export const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'What do our customers pay?',
-    a: 'Nothing. Designing, saving, sharing and downloading a design are free on your showroom. A customer’s design is your lead.',
+    a: 'Nothing. Designing, saving, sharing and downloading a design are free on your showroom. Everyone who signs up is your potential customer.',
   },
   {
     q: 'I’m a homeowner. Can I design my kitchen here?',

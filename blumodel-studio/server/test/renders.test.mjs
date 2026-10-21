@@ -15,6 +15,7 @@ import { imageFromJson } from '../renders/providers.mjs';
 const KEY = 'arch_FAKE_FOR_TESTS';
 const URL_ = 'https://architect.example/v1/render';
 const ARCH = { ARCHITECT_AI_URL: URL_, ARCHITECT_AI_KEY: KEY };
+const PIC = 'https://cdn.myarchitectai.example/out/abc.png';
 
 /** A 320×180 gradient PNG, base64: the "captured 3D view". */
 const view = (w = 320, h = 180) => makePng({ w, h, rgba: (x, y) => [(x * 255) / w, (y * 255) / h, 160, 255] }).toString('base64');
@@ -125,74 +126,89 @@ test('demo provider: reserve, then charge; the result is a stamped PNG of the ca
   }
 });
 
-test('architect adapter: the request it sends, the answer shapes it takes, and the key stays out of everything', async () => {
+test('architect adapter (MyArchitectAI): the request it sends, success, errors in a 200, and the key stays out of everything', async () => {
   const calls = [];
-  let answer = () => new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } });
+  const ok = (extra = {}) => new Response(JSON.stringify({ output: [PIC], balance: 9, cost: 1, requestId: 7, ...extra }), { headers: { 'Content-Type': 'application/json' } });
+  let render = () => ok();
+  let picture = () => new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } });
   const fetch = async (url, init) => {
     calls.push({ url: String(url), init });
-    return answer(init);
+    return String(url) === PIC ? picture() : render(init);
   };
-  const t = await startTestServer({ env: { ...ARCH, FREE_RENDERS: '0' }, fetch });
+  const t = await startTestServer({ env: { ARCHITECT_AI_KEY: KEY, FREE_RENDERS: '0' }, fetch });
   try {
     const w = await world(t);
     const r = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
     assert.equal(r.status, 202, r.text);
     await t.services.renders.settled();
-    assert.equal(calls.length, 1);
-    const c = calls[0];
-    assert.equal(c.url, URL_);
+    // The key alone is enough: it posts to MyArchitectAI, then downloads the first output URL.
+    assert.equal(calls.length, 2);
+    const [c, d] = calls;
+    assert.equal(c.url, 'https://api.myarchitectai.com/v1/render/interior');
     assert.equal(c.init.method, 'POST');
-    assert.equal(c.init.headers.Authorization, `Bearer ${KEY}`);
+    assert.equal(c.init.headers['x-api-key'], KEY);
+    assert.equal(c.init.headers.Authorization, undefined);
     const body = JSON.parse(c.init.body);
-    assert.equal(body.requestId, r.body.render.id);
-    assert.equal(body.image.mimeType, 'image/png');
-    assert.equal(body.image.data, view());
+    assert.deepEqual(Object.keys(body).sort(), ['image', 'outputFormat', 'prompt']);
+    assert.equal(body.image, `data:image/png;base64,${view()}`);
+    assert.equal(body.outputFormat, 'png');
     assert.match(body.prompt, /photorealistic/i);
     assert.match(body.prompt, /Navy/);
     assert.match(body.prompt, /3 × Lakeshore Shaker base/);
-    assert.equal(body.scene.room.widthIn, 200);
     assert.ok(!c.init.body.includes(KEY), 'the key is only in the header');
+    assert.equal(d.url, PIC);
+    assert.equal(d.init.headers['x-api-key'], undefined, 'the key is not sent to the picture’s address');
     const g = await w.staff.get(`/api/renders/${r.body.render.id}`);
     assert.equal(g.body.render.status, 'done');
     assert.equal(g.body.render.provider, 'architect');
     assert.equal(g.body.render.width, 400);
+    assert.equal(t.services.credits.balance(w.tn.id), 2500 - 25);
 
-    // JSON answers: base64 in image, a data: URL in output, images[0].b64_json.
-    const png = makePng({ w: 100, h: 100 }).toString('base64');
-    for (const json of [{ image: png }, { output: `data:image/png;base64,${png}` }, { images: [{ b64_json: png }] }]) {
-      answer = () => new Response(JSON.stringify(json), { headers: { 'Content-Type': 'application/json' } });
-      const x = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
-      assert.equal(x.status, 202, x.text);
-      await t.services.renders.settled();
-      assert.equal((await w.staff.get(`/api/renders/${x.body.render.id}`)).body.render.status, 'done', JSON.stringify(json).slice(0, 40));
-    }
-    assert.equal(t.services.credits.balance(w.tn.id), 2500 - 4 * 25);
-
-    // Failures: an error status, a non-image, an unreachable service. Credits go back each time,
-    // and nothing the team sees carries the key or the service's body.
+    // Failures: each gives the credits back, and nothing the team sees carries the key or the service's body.
     const fails = [
-      () => new Response(`internal error ${KEY}`, { status: 500 }),
-      () => new Response('<html>hello</html>', { headers: { 'Content-Type': 'text/html' } }),
-      () => new Response(JSON.stringify({ status: 'queued' }), { headers: { 'Content-Type': 'application/json' } }),
-      () => {
-        throw new TypeError('fetch failed');
-      },
+      [() => ok({ output: undefined, error: `Generation failed ${KEY}` }), /couldn’t make this render/],
+      [() => new Response(JSON.stringify({ error: 'nope', code: 'CONTENT_POLICY_VIOLATION', balance: 1, cost: 1, requestId: 1 }), { headers: { 'Content-Type': 'application/json' } }), /content rules/],
+      [() => new Response(JSON.stringify({ error: 'down', code: 'SAFETY_CHECK_UNAVAILABLE', balance: 1, cost: 0, requestId: 1 }), { headers: { 'Content-Type': 'application/json' } }), /safety check/],
+      [() => new Response(JSON.stringify({ error: `bad key ${KEY}` }), { status: 403, headers: { 'Content-Type': 'application/json' } }), /didn’t accept the key/],
+      [() => new Response('{}', { status: 402 }), /out of balance/],
+      [() => new Response('slow down', { status: 429 }), /busy/],
+      [() => new Response(`internal error ${KEY}`, { status: 500 }), /answered 500/],
+      [() => new Response('<html>hello</html>', { headers: { 'Content-Type': 'text/html' } }), /didn’t send an image/],
+      [() => new Response(JSON.stringify({ status: 'queued' }), { headers: { 'Content-Type': 'application/json' } }), /didn’t send an image/],
+      [() => new Response(JSON.stringify({ output: ['http://insecure.example/x.png'] }), { headers: { 'Content-Type': 'application/json' } }), /didn’t send an image/],
+      [
+        () => {
+          throw new TypeError('fetch failed');
+        },
+        /couldn’t be reached/,
+      ],
     ];
-    for (const f of fails) {
-      answer = f;
+    for (const [f, msg] of fails) {
+      render = f;
       const before = t.services.credits.balance(w.tn.id);
       const x = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
       assert.equal(x.status, 202);
       await t.services.renders.settled();
       const got = await w.staff.get(`/api/renders/${x.body.render.id}`);
-      assert.equal(got.body.render.status, 'failed');
+      assert.equal(got.body.render.status, 'failed', String(msg));
+      assert.match(got.body.render.error, msg);
       assert.match(got.body.render.error, /credits were returned/);
       assert.ok(!got.text.includes(KEY));
       assert.ok(!got.text.includes('internal error'));
       assert.equal(t.services.credits.balance(w.tn.id), before);
     }
+    // The picture itself can fail to download, or not be a picture.
+    render = () => ok();
+    for (const p of [() => new Response('gone', { status: 404 }), () => new Response('<html>no</html>', { headers: { 'Content-Type': 'image/png' } })]) {
+      picture = p;
+      const before = t.services.credits.balance(w.tn.id);
+      const x = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
+      await t.services.renders.settled();
+      assert.equal((await w.staff.get(`/api/renders/${x.body.render.id}`)).body.render.status, 'failed');
+      assert.equal(t.services.credits.balance(w.tn.id), before);
+    }
     const kinds = ledger(t, w.tn.id).map((e) => e.split(':')[0]);
-    assert.equal(kinds.filter((k) => k === 'release').length, 4);
+    assert.equal(kinds.filter((k) => k === 'release').length, fails.length + 2);
     // Every reserve is settled: as many reserves as charges + releases.
     assert.equal(kinds.filter((k) => k === 'reserve').length, kinds.filter((k) => k === 'charge' || k === 'release').length);
   } finally {
@@ -536,7 +552,12 @@ test('free renders: a visitor gets 3 with visitor renders off and no credits, fr
 
 test('free renders: the team uses its own free ones before the company’s credits; a failed free render doesn’t count; no refund for a free one', async () => {
   let fail = true;
-  const fetch = async () => (fail ? new Response('nope', { status: 500 }) : new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } }));
+  const fetch = async (url) =>
+    fail
+      ? new Response('nope', { status: 500 })
+      : String(url) === PIC
+        ? new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } })
+        : new Response(JSON.stringify({ output: [PIC], balance: 1, cost: 1, requestId: 1 }), { headers: { 'Content-Type': 'application/json' } });
   const t = await startTestServer({ env: { ...ARCH, FREE_RENDERS: '1' }, fetch });
   try {
     const w = await world(t, { slug: 'freet' });

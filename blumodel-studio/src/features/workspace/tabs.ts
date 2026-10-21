@@ -4,7 +4,7 @@ export type WorkspaceTab = 'showroom' | 'products' | 'leads' | 'renders' | 'team
 export const TABS: [WorkspaceTab, string][] = [
   ['showroom', 'Showroom'],
   ['products', 'Products'],
-  ['leads', 'Leads'],
+  ['leads', 'Potential customers'],
   ['renders', 'Renders'],
   ['team', 'Team'],
   ['plan', 'Plan'],

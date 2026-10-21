@@ -207,6 +207,8 @@ export interface RenderServiceState {
   updatedBy: string | null;
   provider: 'architect' | 'demo' | null;
   forced: 'off' | 'demo' | null;
+  /** MyArchitectAI's address, used when the address is left as it is. */
+  defaultUrl: string;
 }
 
 export interface SitesState {

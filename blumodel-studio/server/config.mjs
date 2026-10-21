@@ -142,8 +142,9 @@ export function loadConfig(env = process.env, argv = process.argv) {
   // AI over HTTP when ARCHITECT_AI_URL and ARCHITECT_AI_KEY are set; else the stamped demo provider
   // outside production (or with DEMO_RENDERS=1); else none ("Photoreal renders are being set up",
   // nothing charged). RENDER_PROVIDER=architect|demo|off forces one (architect still needs both).
-  const ARCHITECT_AI_URL = String(env.ARCHITECT_AI_URL || '').trim();
+  // The key alone is enough: the address defaults to MyArchitectAI's (renders/providers.mjs).
   const ARCHITECT_AI_KEY = String(env.ARCHITECT_AI_KEY || '').trim();
+  const ARCHITECT_AI_URL = String(env.ARCHITECT_AI_URL || '').trim() || (ARCHITECT_AI_KEY ? 'https://api.myarchitectai.com/v1/render/interior' : '');
   if (ARCHITECT_AI_URL && !/^https?:\/\/[^\s]+$/i.test(ARCHITECT_AI_URL)) throw new Error('ARCHITECT_AI_URL must be an http(s) URL.');
   // The key travels in a header: in production only over https, or plain http to this machine.
   if (PROD && ARCHITECT_AI_URL && /^http:/i.test(ARCHITECT_AI_URL)) {

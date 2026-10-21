@@ -33,7 +33,7 @@ export const adminApi = {
   updateNow: () => call<{ requested: true; alreadyPending: boolean; updates: UpdatesStatus }>('POST', '/api/admin/system/update-now'),
   /** The render service (address and key; the key is only ever sent, never received). */
   renderService: () => call<{ renders: RenderServiceState }>('GET', '/api/admin/system/renders'),
-  setRenderService: (url: string, key?: string) => call<{ renders: RenderServiceState }>('POST', '/api/admin/system/renders', key ? { url, key } : { url }),
+  setRenderService: (key?: string) => call<{ renders: RenderServiceState }>('POST', '/api/admin/system/renders', key ? { key } : {}),
   removeRenderService: () => call<{ renders: RenderServiceState }>('POST', '/api/admin/system/renders/remove'),
   testRenderService: () => call<{ ok: boolean; message: string; ms?: number; provider?: string }>('POST', '/api/admin/system/renders/test'),
   audit: (f: { actor?: string; action?: string; from?: string; to?: string; page?: number }) => call<AuditPage>('GET', `/api/admin/audit${qs(f)}`),

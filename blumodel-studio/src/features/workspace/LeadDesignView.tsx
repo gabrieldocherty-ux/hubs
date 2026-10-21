@@ -39,7 +39,7 @@ export default function LeadDesignView({ leadId, designId }: { leadId: string; d
       <div className="ws-empty">
         <p>{state.error}</p>
         <a className="btn" href={back}>
-          Back to the lead
+          Back to this customer
         </a>
       </div>
     );
@@ -52,7 +52,7 @@ export default function LeadDesignView({ leadId, designId }: { leadId: string; d
         banner={
           <div className="ws-design-bar">
             <a className="btn" href={back}>
-              ← Back to the lead
+              ← Back to this customer
             </a>
             <span className="ws-design-bar-text">
               <b>{name}</b> <span className="muted">· view only, the customer’s own design</span>

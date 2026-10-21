@@ -49,7 +49,7 @@ export function leadNoticeEmail({ showroom, inboxUrl }) {
     subject: `New design request on ${name}’s showroom`,
     text: `Hello,
 
-A visitor sent a design to ${name} from your online showroom. Open your leads inbox to see it:
+A potential customer sent a design to ${name} from your online showroom. Open Potential customers in your workspace to see it:
 
 ${inboxUrl}
 

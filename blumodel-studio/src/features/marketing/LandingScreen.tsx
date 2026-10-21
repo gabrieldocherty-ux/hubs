@@ -45,11 +45,11 @@ function Hero() {
   return (
     <section className="mk-hero" aria-labelledby="hero-title">
       <div className="mk-hero-copy">
-        <span className="mk-eyebrow">Virtual showrooms for kitchen &amp; bath companies</span>
-        <h1 id="hero-title">Your own virtual showroom, with your products, under your name.</h1>
+        <span className="mk-eyebrow">3D showrooms for contractors, installers and showrooms</span>
+        <h1 id="hero-title">Let your customers see it before it’s installed.</h1>
         <p className="mk-lede">
-          We build, host and run a 3D design website for your kitchen and bath company. Your customers design with your actual cabinets and fixtures, and every design comes to you
-          as a lead.
+          We build, host and run a 3D design website under your name, with your actual products. Your customers see exactly what they’re getting, in their own room, before
+          anything is ordered or installed, and everyone who signs up to see your products comes to you as a potential customer.
         </p>
         <div className="mk-ctas">
           <DemoLink />
@@ -99,13 +99,13 @@ const STEPS: { who: string; title: string; body: string }[] = [
   },
   {
     who: 'Your customers',
-    title: 'Customers design on your site, under your name',
-    body: 'Homeowners lay out their kitchen or bathroom with your products, in plan and in 3D, on a phone or a computer. Only your products, never a competitor’s or a big-box store’s.',
+    title: 'Customers see it on your site, before it’s installed',
+    body: 'Homeowners lay out their room with your products, in plan and in 3D, on a phone or a computer, and see the finished result before a single piece goes in. Only your products, never a competitor’s or a big-box store’s.',
   },
   {
     who: 'Your team',
-    title: 'You get leads, and your team sells with it',
-    body: 'Every design a customer sends lands in your inbox with the plan and the product list. Your staff open the same showroom in sales meetings and turn designs into photoreal renderings.',
+    title: 'You meet potential customers, and your team sells with it',
+    body: 'Everyone who signs up to see your products lands in your inbox, and every design they send comes with the plan and the product list. Your staff open the same showroom in sales meetings and turn designs into photoreal renderings.',
   },
 ];
 
@@ -136,8 +136,8 @@ function Leads() {
     <section className="mk-band" id="leads" aria-labelledby="leads-title">
       <div className="mk-band-inner">
         <div className="mk-band-copy">
-          <span className="mk-eyebrow mk-eyebrow--light">Leads</span>
-          <h2 id="leads-title">Every design is a lead, with the plan attached.</h2>
+          <span className="mk-eyebrow mk-eyebrow--light">Potential customers</span>
+          <h2 id="leads-title">Everyone who signs up is a potential customer, with their design attached.</h2>
           <p className="mk-band-lede">
             When a customer finishes a design, the last step is <b>Send this design to</b> your company. You get:
           </p>
@@ -147,7 +147,7 @@ function Leads() {
             <li>The design itself, to open in 3D, and its product list</li>
             <li>An inbox to track it: new, contacted, quoted, won or lost</li>
           </ul>
-          <p className="mk-band-fine">The leads are yours. We never sell them, share them or market to your customers.</p>
+          <p className="mk-band-fine">Your potential customers are yours. We never sell or share their details, and we never market to them.</p>
         </div>
         <LeadCard />
       </div>
@@ -165,8 +165,8 @@ const WHO: { title: string; body: string }[] = [
 function WhoFor() {
   return (
     <section className="mk-section mk-who" id="who" aria-labelledby="who-title">
-      <SectionHead id="who-title" eyebrow="Who it’s for" title="Built for companies that sell kitchens and bathrooms">
-        Small and mid-sized companies that want what the big chains have, without building it themselves.
+      <SectionHead id="who-title" eyebrow="Who it’s for" title="Built for companies that sell and install kitchens and bathrooms">
+        Contractors, installers and showrooms of any size that want what the big chains have, without building it themselves.
       </SectionHead>
       <ul className="mk-grid mk-grid--4">
         {WHO.map((w) => (

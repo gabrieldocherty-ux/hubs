@@ -18,11 +18,14 @@ const URL_ = 'https://architect.example/v1/render';
 const view = () => makePng({ w: 320, h: 180 }).toString('base64');
 const SCENE = { room: { kind: 'kitchen', widthIn: 200, lengthIn: 156, ceilingIn: 108 }, camera: { view: 'current', widthPx: 320, heightPx: 180 } };
 
+const PIC = 'https://cdn.myarchitectai.example/out/r.png';
+/** MyArchitectAI, mocked: `calls` are the renders asked for; the picture's download isn't one. */
 function recorder() {
   const calls = [];
   const fetch = async (url, init) => {
+    if (String(url) === PIC) return new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } });
     calls.push({ url: String(url), init });
-    return new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } });
+    return new Response(JSON.stringify({ output: [PIC], balance: 5, cost: 1, requestId: calls.length }), { headers: { 'Content-Type': 'application/json' } });
   };
   return { calls, fetch };
 }
@@ -50,11 +53,14 @@ test('an admin saves the address and key; renders use it at once; the key never 
     assert.equal(spaced.status, 400);
     assert.equal(spaced.body.errors[0].field, 'key');
 
-    const saved = await admin.post('/api/admin/system/renders', { url: URL_, key: `  ${KEY}\n` });
+    // The key alone is all it asks for: the address is MyArchitectAI's.
+    const saved = await admin.post('/api/admin/system/renders', { key: `  ${KEY}
+` });
     assert.equal(saved.status, 200, saved.text);
     assert.equal(saved.body.renders.source, 'admin');
     assert.equal(saved.body.renders.provider, 'architect');
     assert.equal(saved.body.renders.keyLast4, KEY.slice(-4));
+    assert.equal(saved.body.renders.url, 'https://api.myarchitectai.com/v1/render/interior');
     assert.ok(!saved.text.includes(KEY), 'the key is not in the answer');
     assert.ok(!(await admin.get('/api/admin/system/renders')).text.includes(KEY));
 
@@ -68,8 +74,8 @@ test('an admin saves the address and key; renders use it at once; the key never 
     assert.equal(r.status, 202, r.text);
     await t.services.renders.settled();
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].url, URL_);
-    assert.equal(calls[0].init.headers.Authorization, `Bearer ${KEY}`);
+    assert.equal(calls[0].url, 'https://api.myarchitectai.com/v1/render/interior');
+    assert.equal(calls[0].init.headers['x-api-key'], KEY);
     assert.equal((await staff.get(`/api/renders/${r.body.render.id}`)).body.render.status, 'done');
 
     // Test it: one small render through the service.
@@ -84,7 +90,7 @@ test('an admin saves the address and key; renders use it at once; the key never 
     assert.equal(moved.body.renders.keyLast4, KEY.slice(-4));
     await admin.post('/api/admin/system/renders/test', {});
     assert.equal(calls[2].url, 'https://architect.example/v2/render');
-    assert.equal(calls[2].init.headers.Authorization, `Bearer ${KEY}`);
+    assert.equal(calls[2].init.headers['x-api-key'], KEY);
 
     // Audited without the key; never logged.
     const audits = t.db.prepare("SELECT action, detail FROM admin_audit WHERE action LIKE 'render_service%'").all();

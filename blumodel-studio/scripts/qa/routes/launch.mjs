@@ -587,7 +587,7 @@ export default [
     timeoutMs: 30_000,
     check: async (h) => {
       const pages = [
-        ['#/', 'the landing page', 'Your own virtual showroom, with your products, under your name.'],
+        ['#/', 'the landing page', 'Let your customers see it before it’s installed.'],
         ['#/pricing', 'pricing', 'a month, plus a setup quoted for your company.'],
         ['#/signin', 'sign in', 'Welcome back'],
         ['#/signup', 'sign up', 'By creating an account you agree to the Terms and the Privacy policy'],
@@ -752,7 +752,7 @@ export default [
     name: 'path-to-hash',
     path: '#/welcome',
     as: 'anon',
-    expectText: ['Your own virtual showroom, with your products, under your name.'],
+    expectText: ['Let your customers see it before it’s installed.'],
     check: async (h) => {
       const where = () => h.evaluate(() => `${location.pathname}${location.search}${location.hash}`);
       await h.page.goto(`${h.base}/terms?qa=1`, 20_000);
@@ -776,7 +776,7 @@ export default [
       await h.shot('crashed');
       // Only the screen is replaced: moving to another screen clears it.
       await h.goto('#/welcome');
-      await h.waitForText('Your own virtual showroom, with your products, under your name.');
+      await h.waitForText('Let your customers see it before it’s installed.');
     },
   },
   {
@@ -821,7 +821,7 @@ export default [
     name: 'pwa-head-fonts',
     path: '#/',
     as: 'anon',
-    expectText: ['Your own virtual showroom, with your products, under your name.'],
+    expectText: ['Let your customers see it before it’s installed.'],
     check: async (h) => {
       const r = await h.evaluate(async () => {
         const meta = (sel, attr = 'content') => document.querySelector(sel)?.getAttribute(attr) ?? null;

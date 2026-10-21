@@ -554,12 +554,12 @@ export default [
     },
   }),
   // Admin > System > Render service: pasting the address and key (as from a phone), saving, the
-  // last four only coming back, Test it (to a .invalid address: nothing is ever reached), Remove.
+  // last four only coming back, Remove. The key is all it asks for.
   ...four({
     name: 'admin-render-service',
     path: '#/admin/system',
     as: 'admin',
-    expectText: ['Render service', 'The AI that turns a design', 'Saving asks for your password'],
+    expectText: ['Render service', 'MyArchitectAI turns a design', 'Saving asks for your password'],
     extra: async (h) => {
       const key = 'qa_render_KEY_7Hn2';
       await h.evaluate(() => document.getElementById('adm-render-service')?.scrollIntoView({ block: 'start' }));
@@ -568,15 +568,13 @@ export default [
         if (cap !== 'none' || cor !== 'off' || spell !== 'false') throw new Error(`a phone could change what's pasted: ${JSON.stringify(attrs)}`);
         if (h.viewport === 'phone' && parseFloat(size) < 16) throw new Error(`fields under 16px make iOS zoom in (${size})`);
       }
-      await fill(h, '.rs-form input[name="render-url"]', 'https://render.qa.invalid/v1/render');
       await fill(h, '.rs-form input[name="render-key"]', key);
       await press(h, 'Save');
       await h.waitForText(['Photoreal renders on', '•••• 7Hn2', 'Test it', 'Change', 'Remove']);
       const shown = await h.evaluate(() => document.body.innerText);
       if (shown.includes(key)) throw new Error('the page shows the key');
       await h.shot('saved');
-      await press(h, 'Test it');
-      await h.waitForText('couldn’t be reached', 20_000);
+      // (Test it would call the real service with a fake key: server/test/render-settings.test.mjs mocks it.)
       await press(h, 'Remove');
       await press(h, 'Yes, remove it');
       await h.waitForText(['Saving asks for your password']);

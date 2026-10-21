@@ -28,6 +28,8 @@
 //   blumodel-data-<time>/uploads/<aa>/<sha256>.<ext>
 //   blumodel-data-<time>/secrets/blumodel.env             only with includeSecrets
 //   blumodel-data-<time>/secrets/cloudflared/<id>.json    only with includeSecrets
+//   blumodel-data-<time>/secrets/render-settings.key      only with includeSecrets, when there is one
+//                 (opens the render service key saved in Admin > System; renders/settings.mjs)
 //
 // Every path inside is relative, with '/' separators, and nothing in a bundle names the machine it
 // came from: no absolute path, user name or drive letter (the database holds none either: uploads
@@ -36,6 +38,7 @@
 // home (the 'blumodel' service account), as the server must be able to write it.
 
 import crypto from 'node:crypto';
+import { KEY_FILE, keyFileFor } from '../renders/settings.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -721,6 +724,13 @@ export function exportData({ config, out, folder = false, passphrase = null, kin
         secrets.push(`secrets/cloudflared/${n}`);
       }
       if (!creds.length) warnings.push(`No tunnel credentials (<tunnel id>.json) in ${tunnel} (name the folder with --tunnel-dir <dir>).`);
+      // The render service key saved in Admin > System is sealed with this file: without it a
+      // restore elsewhere has to paste that key again. Kept out of plain bundles on purpose.
+      const renderKey = keyFileFor(config.DB_PATH);
+      if (renderKey && fs.existsSync(renderKey)) {
+        add(`secrets/${KEY_FILE}`, renderKey);
+        secrets.push(`secrets/${KEY_FILE}`);
+      }
     }
 
     const uploadFiles = files.filter((f) => f.path.startsWith('uploads/'));

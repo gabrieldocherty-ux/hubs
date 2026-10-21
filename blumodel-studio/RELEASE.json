@@ -1,7 +1,7 @@
 {
-  "source": "d684d8cd81f2cb6ae1901a636232572732c97226",
-  "subject": "admin: the render service's address and key can be pasted in Admin > System > Render service (works ",
-  "builtAt": "2026-10-21T03:34:38.247Z",
+  "source": "f2834a9aa32fc8791dc06f7c701cad8b6f14ee35",
+  "subject": "renders: MyArchitectAI - the adapter speaks its API (POST https://api.myarchitectai.com/v1/render/in",
+  "builtAt": "2026-10-21T03:59:17.690Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

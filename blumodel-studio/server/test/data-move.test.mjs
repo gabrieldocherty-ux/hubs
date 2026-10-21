@@ -298,9 +298,12 @@ test('secrets: left out unless asked for; with --include-secrets (encrypted only
     fs.writeFileSync(path.join(tunnel, `${TUNNEL_ID}.json`), '{"AccountTag":"FAKE","TunnelSecret":"FAKE_FOR_TESTS"}');
     fs.writeFileSync(path.join(tunnel, 'cert.pem'), 'FAKE CERT FOR TESTS');
     fs.writeFileSync(path.join(tunnel, 'config.yml'), 'tunnel: x');
+    // The render service key file (renders/settings.mjs), next to the database.
+    fs.writeFileSync(path.join(path.dirname(config.DB_PATH), 'render-settings.key'), Buffer.alloc(32, 9));
 
     const plain = exportData({ config, out: path.join(dir, 'a'), settingsFile: settings, tunnelDir: tunnel });
     assert.deepEqual(plain.manifest.secrets, []);
+    assert.ok(!plain.manifest.files.some((f) => /render-settings\.key/.test(f.path)), 'the render key file stays out of a plain bundle');
     assert.equal(fs.readFileSync(plain.bundle).includes(Buffer.from('sk_test_FAKE_FOR_TESTS')), false, 'no key without --include-secrets');
 
     const cli = runScript('export-data.mjs', ['--db', config.DB_PATH, '--out', path.join(dir, 'b'), '--include-secrets', '--settings', settings, '--tunnel-dir', tunnel], { BACKUP_PASSPHRASE: FAKE_PASSPHRASE });
@@ -315,7 +318,7 @@ test('secrets: left out unless asked for; with --include-secrets (encrypted only
     const opened = path.join(dir, 'opened.tar');
     decryptToFile(path.join(dir, 'b', tar), opened, FAKE_PASSPHRASE);
     const m = JSON.parse(openBundle(opened).manifestText);
-    assert.deepEqual(m.secrets, ['secrets/blumodel.env', `secrets/cloudflared/${TUNNEL_ID}.json`]);
+    assert.deepEqual(m.secrets, ['secrets/blumodel.env', `secrets/cloudflared/${TUNNEL_ID}.json`, 'secrets/render-settings.key']);
     assert.ok(!m.files.some((f) => /cert\.pem|config\.yml/.test(f.path)));
 
     // Importing such a bundle never installs them: it says how to copy them by hand.

@@ -83,7 +83,7 @@ export default function DemoPitch({ tenant }: { tenant: PublicTenant }) {
                 </svg>
               </span>
               <span>
-                <b>Every design arrives as a lead with the plan and product list</b>
+                <b>Everyone who signs up arrives as a potential customer, with their plan and product list</b>
                 Name, phone, budget and timeline, and the design itself, ready to quote.
               </span>
             </li>

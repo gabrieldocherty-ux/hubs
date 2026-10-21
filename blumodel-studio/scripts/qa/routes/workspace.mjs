@@ -77,7 +77,7 @@ export default [
     check: async (h) => {
       const t = await h.evaluate(() => ({ tab: document.querySelector('.ws-tabs a[aria-current="page"]')?.textContent, tabs: [...document.querySelectorAll('.ws-tabs a')].map((a) => a.textContent.replace(/\d+$/, '').trim()) }));
       if (t.tab !== 'Showroom') throw new Error(`#/studio opens the "${t.tab}" tab`);
-      const want = ['Showroom', 'Products', 'Leads', 'Renders', 'Team', 'Plan'];
+      const want = ['Showroom', 'Products', 'Potential customers', 'Renders', 'Team', 'Plan'];
       if (t.tabs.join() !== want.join()) throw new Error(`the tabs are ${t.tabs.join(', ')}`);
       const unread = await h.evaluate(() => document.querySelector('.ws-tabs .badge')?.textContent ?? '');
       if (!/^\d+$/.test(unread)) throw new Error('the Leads tab has no unread badge for the seeded leads');
@@ -157,7 +157,7 @@ export default [
     path: '#/studio/leads',
     as: 'showroom-owner',
     waitFor: ['.ws-lead-table tbody tr', '.ws-filters'],
-    expectText: ['Everyone who used your showroom', 'Riley Okafor', 'Morgan Lee', 'Sam Patel', 'Export CSV', 'Recent exports of this list'],
+    expectText: ['Everyone who signed up to see your products', 'Riley Okafor', 'Morgan Lee', 'Sam Patel', 'Export CSV', 'Recent exports of this list'],
     check: async (h) => {
       const t = await h.evaluate(() => ({
         head: [...document.querySelectorAll('.ws-lead-table th')].map((th) => th.textContent.trim()),
@@ -185,7 +185,7 @@ export default [
       return { path: `#/studio/leads/${id}` };
     },
     waitFor: ['.ws-lead-detail', '.ws-kv', '.ws-design-products li', '.ws-timeline li'],
-    expectText: ['Riley Okafor', 'Contact', 'Consent', 'Your follow-up', 'Designs', 'Open in 3D', 'Activity', 'Sent a design to you', 'Contacted', 'Delete lead and designs'],
+    expectText: ['Riley Okafor', 'Contact', 'Consent', 'Your follow-up', 'Designs', 'Open in 3D', 'Activity', 'Sent a design to you', 'Contacted', 'Delete their details and designs'],
     timeoutMs: 30_000,
     check: async (h) => {
       const links = await h.evaluate(() => ({ mail: !!document.querySelector('.ws-lead-detail a[href^="mailto:"]'), tel: !!document.querySelector('.ws-lead-detail a[href^="tel:"]'), open: [...document.querySelectorAll('a[href]')].some((a) => /#\/studio\/leads\/[^/]+\/design\//.test(a.getAttribute('href') ?? '')) }));
@@ -205,7 +205,7 @@ export default [
     path: '#/studio/leads',
     as: 'showroom-staff',
     waitFor: ['.ws-lead-table tbody tr'],
-    expectText: ['Everyone who used your showroom', 'Only an owner can export this list.'],
+    expectText: ['Everyone who signed up to see your products', 'Only an owner can export this list.'],
     check: async (h) => {
       const has = await h.evaluate(() => [...document.querySelectorAll('button')].some((b) => b.textContent.includes('Export CSV')));
       if (has) throw new Error('staff are offered Export CSV');
@@ -228,7 +228,7 @@ export default [
       return { path: `#/studio/leads/${r.id}/design/${r.design}` };
     },
     waitFor: ['[data-testid="lead-design-view"]', '.plan-view canvas, .scene-view canvas'],
-    expectText: ['Back to the lead', 'view only'],
+    expectText: ['Back to this customer', 'view only'],
     timeoutMs: 40_000,
     check: async (h) => {
       const r = await h.evaluate(() => ({ ro: window.__blumodel?.store?.getState?.().readOnly, send: !!document.querySelector('[data-testid="send-design"]'), save: !!document.querySelector('.save-chip.saved, .save-chip.unsaved') }));

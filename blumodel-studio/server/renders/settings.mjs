@@ -16,7 +16,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createArchitectProvider, createDemoProvider } from './providers.mjs';
+import { MYARCHITECTAI_URL, createArchitectProvider, createDemoProvider } from './providers.mjs';
 
 export const KEY_FILE = 'render-settings.key';
 const KEY_MIN = 8;
@@ -128,13 +128,16 @@ export function createRenderSettings({ db, config, now, keyFile = keyFileFor(con
         keyUnreadable: !envReady && !!r && !readable,
         updatedAt: envReady ? null : r?.updated_at ?? null,
         updatedBy: envReady ? null : r?.updated_by ?? null,
+        defaultUrl: MYARCHITECTAI_URL,
         provider: p?.id ?? null,
         forced: config.RENDER_PROVIDER === 'off' || config.RENDER_PROVIDER === 'demo' ? config.RENDER_PROVIDER : null,
       };
     },
 
     /** Saves the address and key (the key may be left out to keep the saved one). Throws { field, message }. */
-    save({ url, key, by }) {
+    save({ url: given, key, by }) {
+      // Left empty: MyArchitectAI's own address.
+      const url = typeof given === 'string' && given.trim() ? given : MYARCHITECTAI_URL;
       if (envReady) throw Object.assign(new Error('The render service is set in blumodel.env on the server. Change it there.'), { field: 'url' });
       const up = urlProblem(url, { prod: config.PROD });
       if (up) throw Object.assign(new Error(up), { field: 'url' });

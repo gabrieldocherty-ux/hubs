@@ -9,7 +9,7 @@
 // Run: node scripts/qa.mjs --pkg sales --port 8925
 
 const SALES_TITLE = 'BluModel Studio (blue model) | 3D Kitchen Design Showrooms for Kitchen & Bath Companies';
-const HERO = 'Your own virtual showroom, with your products, under your name.';
+const HERO = 'Let your customers see it before it’s installed.';
 
 const views = [
   // Light is said outright: without it the browser follows this machine's own setting.
@@ -132,9 +132,9 @@ export default [
       if (fine !== '$50/month in CAD plus a one-time setup quoted for your company. Nothing to install. No developer, no Blender.') throw new Error(`the line under the hero buttons says: ${fine}`);
       const text = await h.evaluate(() => document.body.innerText);
       if (/\$25|rendering credits/i.test(await h.evaluate(() => document.body.innerText))) throw new Error('the landing page still promises render credits');
-      for (const s of ['$50', 'quoted', 'How it works', 'Who it’s for', 'What’s included', 'Your own web address', 'Hosting and updates', 'A lead inbox', 'Team accounts'])
+      for (const s of ['$50', 'quoted', 'How it works', 'Who it’s for', 'What’s included', 'Your own web address', 'Hosting and updates', 'A potential-customer inbox', 'Team accounts'])
         if (!text.toLowerCase().includes(s.toLowerCase())) throw new Error(`the landing page doesn’t say "${s}"`);
-      for (const q of ['Do we need to install anything?', 'Can we use our own domain?', 'What if we add products?', 'Is it a CAD tool?', 'Who owns the leads?', 'Can we cancel?'])
+      for (const q of ['Do we need to install anything?', 'Can we use our own domain?', 'What if we add products?', 'Is it a CAD tool?', 'Who owns my potential customers’ details?', 'Can we cancel?'])
         if (!text.includes(q)) throw new Error(`the FAQ is missing "${q}"`);
       const signIn = await h.evaluate(() => !!document.querySelector('.mk-bar a[href="#/signin"]'));
       if (!signIn) throw new Error('Sign in is gone from the header');
@@ -151,7 +151,7 @@ export default [
     waitFor: ['.mk-hero h1'],
     check: async (h) => {
       const m = await h.evaluate(() => Object.fromEntries([...document.head.querySelectorAll('meta[name], meta[property]')].map((x) => [x.getAttribute('name') ?? x.getAttribute('property'), x.getAttribute('content')])));
-      const want = "BluModel Studio builds, hosts and runs a 3D kitchen and bath design website under your company's name: an online kitchen planner with your products, where every customer design arrives as a lead. From Guelph, Ontario.";
+      const want = "BluModel Studio builds, hosts and runs a 3D kitchen and bath design website under your company's name: an online kitchen planner with your products, where customers see it before it's installed and everyone who signs up comes to you as a potential customer. From Guelph, Ontario.";
       for (const k of ['description', 'og:description', 'twitter:description']) if (m[k] !== want) throw new Error(`${k} is "${m[k]}"`);
       for (const k of ['og:title', 'twitter:title']) if (m[k] !== SALES_TITLE) throw new Error(`${k} is "${m[k]}"`);
       if (m['og:image'] !== 'https://blumodel.studio/marketing/og.png') throw new Error(`og:image is ${m['og:image']}`);

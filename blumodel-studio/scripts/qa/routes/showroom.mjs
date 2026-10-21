@@ -799,7 +799,7 @@ async function pitchChecks(h) {
   });
   if (!r.after) throw new Error('the demo pitch is not after the featured lines');
   if (r.title !== 'What Northline Kitchen & Bath gets from this showroom') throw new Error(`the pitch title is "${r.title}"`);
-  const want = ['Your products, your brand, your web address', 'Every design arrives as a lead with the plan and product list', 'Your team uses it in sales meetings, with photoreal AI renders'];
+  const want = ['Your products, your brand, your web address', 'Everyone who signs up arrives as a potential customer, with their plan and product list', 'Your team uses it in sales meetings, with photoreal AI renders'];
   if (JSON.stringify(r.points) !== JSON.stringify(want)) throw new Error(`the pitch points are ${JSON.stringify(r.points)}`);
   if (!/^http:\/\/localhost:\d+\/#\/book$/.test(r.cta ?? '')) throw new Error(`the pitch button goes to ${r.cta}`);
   if (!/^#\/s\/[A-Za-z0-9_-]{16,}$/.test(r.open ?? '')) throw new Error(`"Open the design in 3D" goes to ${r.open}`);

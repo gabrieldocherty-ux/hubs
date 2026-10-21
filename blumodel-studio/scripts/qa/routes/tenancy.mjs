@@ -108,7 +108,7 @@ export default [
     setup: async ({ api }) => ({ path: `#/k/${api.sql("SELECT p.id FROM projects p JOIN users u ON u.id = p.user_id WHERE p.tenant_id = 't_demo' AND u.email = 'demo-visitor@blumodel.test' ORDER BY p.name LIMIT 1")[0].id}` }),
     viewport: v.viewport,
     ...(v.colorScheme ? { colorScheme: v.colorScheme } : {}),
-    waitFor: ['.topbar', '.plan-view canvas'],
+    waitFor: ['.topbar', '.plan-view canvas, .scene-view canvas'],
     check: async (h) => {
       await demoCatalog(h);
       await noSideScroll(h);

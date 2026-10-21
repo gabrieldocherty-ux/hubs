@@ -19,7 +19,7 @@ export default function PricingScreen() {
           <h1 id="pricing-hero-title">{PRICES.monthly} a month, plus a setup quoted for your company.</h1>
           <p className="mk-lede">
             The monthly plan pays for hosting and running your showroom at your own web address, with updates and daily backups. The setup and yearly license pay for your showroom, setting it up and
-            modelling your products; every company’s range is different, so we quote it on a call. No per-lead fees, and your customers never pay. All prices are in Canadian dollars.
+            modelling your products; every company’s range is different, so we quote it on a call. No fees per customer, and your customers never pay. All prices are in Canadian dollars.
           </p>
         </section>
         <section className="mk-section mk-section--tight" aria-label="Plans">
