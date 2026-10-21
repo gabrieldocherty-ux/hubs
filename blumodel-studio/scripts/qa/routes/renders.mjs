@@ -66,6 +66,23 @@ function visitorDesign(api) {
   return api.sql('SELECT id FROM projects WHERE user_id = ? AND tenant_id = ? ORDER BY created_at LIMIT 1', d.visitor, d.tenantId)[0].id;
 }
 
+/**
+ * Sets how many of an account's free renders (config FREE_RENDERS, 3) are used: n = 3 uses them all,
+ * so a route tests the paid path (credits, the visitor switch); n = 0 gives them all back.
+ */
+function freeUsed(api, who, n) {
+  const d = demo(api);
+  const userId = d[who];
+  api.sql("DELETE FROM showroom_renders WHERE user_id = ? AND free = 1 AND id LIKE 'rn_qafree%'", userId);
+  // Real free renders made by an earlier route count too: give those back as well.
+  api.sql("UPDATE showroom_renders SET free = 0 WHERE user_id = ? AND free = 1", userId);
+  for (let i = 0; i < n; i++)
+    api.sql(
+      "INSERT INTO showroom_renders (id, tenant_id, user_id, by_role, design_name, status, provider, cost_cents, free, hidden_at, created_at) VALUES (?, ?, ?, ?, 'QA free', 'done', 'demo', 0, 1, ?, ?)",
+      `rn_qafree${who.slice(0, 2)}${i}${'x'.repeat(8)}`, d.tenantId, userId, who === 'staff' ? 'staff' : 'visitor', Date.now(), Date.now(),
+    );
+}
+
 function visitorRenders(api, on, cap = 50) {
   api.sql("UPDATE tenants SET settings = json_set(settings, '$.visitorRenders', json(?), '$.dailyRenderCap', ?) WHERE slug = 'demo'", on ? 'true' : 'false', on ? cap : 0);
 }
@@ -113,7 +130,11 @@ export default [
     host: 'demo',
     as: 'showroom-staff',
     ...at(v),
-    setup: async ({ api }) => ({ path: `#/k/${staffDesign(api)}` }),
+    setup: async ({ api }) => {
+      // The paid path: this account's free renders are used up.
+      freeUsed(api, 'staff', 3);
+      return { path: `#/k/${staffDesign(api)}` };
+    },
     waitFor: ['.topbar'],
     timeoutMs: 90_000,
     check: async (h) => {
@@ -153,12 +174,40 @@ export default [
     as: 'showroom-visitor',
     setup: async ({ api }) => {
       visitorRenders(api, false);
+      // With their free renders used up, the company's switch decides.
+      freeUsed(api, 'visitor', 3);
       return { path: `#/k/${visitorDesign(api)}` };
     },
     waitFor: ['.topbar .save-chip, .topbar .actions'],
     check: async (h) => {
       await h.sleep(1500);
       if (await h.evaluate(() => !!document.querySelector('.photoreal-btn'))) throw new Error('a visitor sees Make it photoreal while visitor renders are off');
+    },
+  },
+  {
+    // Every account's 3 free renders: shown even with visitor renders off, and free of credits.
+    name: 'photoreal-visitor-free',
+    host: 'demo',
+    as: 'showroom-visitor',
+    setup: async ({ api }) => {
+      visitorRenders(api, false);
+      freeUsed(api, 'visitor', 0);
+      return { path: `#/k/${visitorDesign(api)}` };
+    },
+    waitFor: ['.topbar'],
+    timeoutMs: 90_000,
+    check: async (h) => {
+      await h.waitFor('.topbar .photoreal-btn');
+      await press(h, '.topbar .photoreal-btn');
+      await h.waitForText('Free: 3 of 3 free photoreal renders left on your account');
+      await h.waitUntil(() => !document.querySelector('.photoreal-actions .btn.primary')?.disabled, 10_000, 'the render button to be ready');
+      const before = h.api.sql("SELECT COALESCE(SUM(remaining), 0) AS n FROM tenant_credit_lots WHERE tenant_id = 't_demo'")[0].n;
+      await press(h, '.photoreal-actions .btn.primary');
+      await h.waitFor('.photoreal-stage[data-phase="done"]', 60_000);
+      await h.waitForText('Free: 2 of 3 free photoreal renders left on your account');
+      const after = h.api.sql("SELECT COALESCE(SUM(remaining), 0) AS n FROM tenant_credit_lots WHERE tenant_id = 't_demo'")[0].n;
+      if (after !== before) throw new Error(`a free render took ${before - after} cents of the company's credits`);
+      await h.shot('free');
     },
   },
   ...[views[0], views[3]].map((v) => ({
@@ -168,6 +217,7 @@ export default [
     ...at(v),
     setup: async ({ api }) => {
       visitorRenders(api, true, 50);
+      freeUsed(api, 'visitor', 3);
       return { path: `#/k/${visitorDesign(api)}` };
     },
     waitFor: ['.topbar'],

@@ -161,6 +161,7 @@ it readable only by your Windows account (`icacls`); keep it that way.
 | `ANTHROPIC_API_KEY`, `BLUMODEL_LLM_MODEL` | optional, legacy | the retired *Start from a photo* read photos with Claude when both were set |
 | `ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY` | optional: the render service's address and key | "Make it photoreal" on the showrooms. Without both, the button says renders are being set up and nothing is charged |
 | `RENDER_CREDIT_CENTS` | empty (= 25) | the credits one render costs a company, in cents |
+| `FREE_RENDERS` | empty (= 3) | photoreal renders every account gets free, once: no credits used, and visitors don't need the company's visitor-renders switch for them; `0` turns them off. A failed render doesn't use one up |
 | `BACKUP_OFFSITE_DIR` | a folder your cloud drive syncs, or a USB drive (it must exist) | where the encrypted off-site copy goes once a day (*Off-site backups*). Empty: none |
 | `BACKUP_PASSPHRASE` | a long random passphrase, also kept in your password manager and on paper | makes the off-site copies' and export bundles' key (12+ characters). Lose it and they can never be opened |
 | `BACKUP_OFFSITE_KEEP` | empty (= 30) | how many daily off-site copies are kept (at most 30; none older than 35 days either way) |

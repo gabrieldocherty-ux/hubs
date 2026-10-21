@@ -42,7 +42,7 @@ async function world(t, { slug = 'acme', credits = true, settings } = {}) {
 const ledger = (t, tenantId) => t.db.prepare('SELECT kind, cents FROM tenant_credit_entries WHERE tenant_id = ? ORDER BY id').all(tenantId).map((r) => `${r.kind}:${r.cents}`);
 
 test('not set up: the status says so, a render answers 503 and nothing is charged or stored', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'off' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'off' } });
   try {
     const w = await world(t);
     const st = await w.staff.get('/api/renders/status');
@@ -71,7 +71,7 @@ test('not set up: the status says so, a render answers 503 and nothing is charge
 });
 
 test('demo provider: reserve, then charge; the result is a stamped PNG of the captured view', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo' } });
   try {
     const w = await world(t);
     const st = await w.staff.get('/api/renders/status');
@@ -132,7 +132,7 @@ test('architect adapter: the request it sends, the answer shapes it takes, and t
     calls.push({ url: String(url), init });
     return answer(init);
   };
-  const t = await startTestServer({ env: ARCH, fetch });
+  const t = await startTestServer({ env: { ...ARCH, FREE_RENDERS: '0' }, fetch });
   try {
     const w = await world(t);
     const r = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
@@ -205,7 +205,7 @@ test('a render that takes too long fails, and its credits go back', async () => 
     new Promise((_, reject) => {
       init.signal.addEventListener('abort', () => reject(Object.assign(new Error('aborted'), { name: 'TimeoutError' })));
     });
-  const t = await startTestServer({ env: { ...ARCH, RENDER_TIMEOUT_MS: '1000' }, fetch });
+  const t = await startTestServer({ env: { ...ARCH, FREE_RENDERS: '0', RENDER_TIMEOUT_MS: '1000' }, fetch });
   try {
     const w = await world(t);
     const r = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
@@ -225,7 +225,7 @@ test('a render that takes too long fails, and its credits go back', async () => 
 });
 
 test('a render left pending by a restart is failed and released the next time renders are read', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo' } });
   try {
     const w = await world(t);
     const hold = t.services.credits.reserve(w.tn.id, 25, { purpose: 'render', ref: 'rn_stalestalestale1' });
@@ -244,7 +244,7 @@ test('a render left pending by a restart is failed and released the next time re
 });
 
 test('credits: with too few, the render is refused (402) before anything is stored', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo' } });
   try {
     const w = await world(t, { credits: false });
     const st = await w.staff.get('/api/renders/status');
@@ -261,7 +261,7 @@ test('credits: with too few, the render is refused (402) before anything is stor
 });
 
 test('visitors: off by default, then on with a daily cap across the showroom; their own designs only', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo' } });
   try {
     const w = await world(t);
     const st = await w.visitor.get('/api/renders/status');
@@ -318,7 +318,7 @@ test('visitors: off by default, then on with a daily cap across the showroom; th
 });
 
 test('upload limits and bad pictures are refused before anything is charged', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo', RENDER_MAX_IMAGE_MB: '1' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo', RENDER_MAX_IMAGE_MB: '1' } });
   try {
     const w = await world(t);
     const post = (image, extra = {}) => w.staff.post('/api/renders', { projectId: w.staffProject, image, scene: SCENE, ...extra });
@@ -342,7 +342,7 @@ test('upload limits and bad pictures are refused before anything is charged', as
 });
 
 test('isolation: another showroom sees nothing, and the sales site has no render routes', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo' } });
   try {
     const a = await world(t, { slug: 'alpha' });
     const b = await world(t, { slug: 'bravo' });
@@ -370,7 +370,7 @@ test('isolation: another showroom sees nothing, and the sales site has no render
 });
 
 test('the gallery: taking a render out of it, and an admin refund (audited, once)', async () => {
-  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  const t = await startTestServer({ env: { FREE_RENDERS: '0', RENDER_PROVIDER: 'demo' } });
   try {
     const w = await world(t);
     const r = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
@@ -499,6 +499,82 @@ test('the visitor estimate is the company’s setting: off by default, on from S
     assert.equal((await w.visitor.get('/api/config')).body.tenant.features.visitorEstimate, true);
     // A visitor can't change it.
     assert.notEqual((await w.visitor.patch('/api/workspace/showroom', { settings: { visitorEstimate: false } })).status, 200);
+  } finally {
+    await t.close();
+  }
+});
+
+// ── Free renders: config FREE_RENDERS (3) per account, once ─────────────────────────────────
+
+test('free renders: a visitor gets 3 with visitor renders off and no credits, free of charge; the 4th follows the company’s rules', async () => {
+  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo' } });
+  try {
+    const w = await world(t, { slug: 'freev', credits: false });
+    const st = (await w.visitor.get('/api/renders/status')).body;
+    assert.deepEqual(st.free, { total: 3, left: 3 });
+    assert.equal(st.canRender, true, JSON.stringify(st));
+    assert.equal(st.reason, null);
+    for (let i = 0; i < 3; i++) {
+      const r = await w.visitor.post('/api/renders', { projectId: w.visitorProject, image: view(), scene: SCENE });
+      assert.equal(r.status, 202, r.text);
+      assert.equal(r.body.render.free, true);
+      assert.equal(r.body.render.costCents, 0);
+      await t.services.renders.settled();
+      assert.equal((await w.visitor.get(`/api/renders/${r.body.render.id}`)).body.render.status, 'done');
+    }
+    assert.equal(t.db.prepare('SELECT COUNT(*) AS n FROM tenant_credit_holds WHERE tenant_id = ?').get(w.tn.id).n, 0, 'no credits were held or charged');
+    const after = (await w.visitor.get('/api/renders/status')).body;
+    assert.deepEqual(after.free, { total: 3, left: 0 });
+    assert.equal(after.reason, 'visitor_off');
+    const fourth = await w.visitor.post('/api/renders', { projectId: w.visitorProject, image: view(), scene: SCENE });
+    assert.equal(fourth.status, 403);
+    assert.equal(fourth.body.code, 'visitor_renders_off');
+  } finally {
+    await t.close();
+  }
+});
+
+test('free renders: the team uses its own free ones before the company’s credits; a failed free render doesn’t count; no refund for a free one', async () => {
+  let fail = true;
+  const fetch = async () => (fail ? new Response('nope', { status: 500 }) : new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } }));
+  const t = await startTestServer({ env: { ...ARCH, FREE_RENDERS: '1' }, fetch });
+  try {
+    const w = await world(t, { slug: 'freet' });
+    const bal = t.services.credits.balance(w.tn.id);
+    // Fails: the free one comes back.
+    const a = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
+    assert.equal(a.body.render.free, true);
+    await t.services.renders.settled();
+    assert.equal((await w.staff.get('/api/renders/status')).body.free.left, 1);
+    // Works: free, the balance untouched.
+    fail = false;
+    const b = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
+    assert.equal(b.body.render.free, true);
+    await t.services.renders.settled();
+    assert.equal(t.services.credits.balance(w.tn.id), bal);
+    assert.equal((await w.staff.get('/api/renders/status')).body.free.left, 0);
+    // Then the company's credits.
+    const c = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
+    assert.equal(c.body.render.free, false);
+    await t.services.renders.settled();
+    assert.equal(t.services.credits.balance(w.tn.id), bal - t.config.RENDER_CREDIT_CENTS);
+    // An admin can't refund a free render.
+    const admin = await t.user({ role: 'admin' });
+    const rf = await admin.post(`/api/admin/tenants/${w.tn.id}/renders/${b.body.render.id}/refund`, { note: 'x' });
+    assert.equal(rf.status, 409);
+    assert.equal(rf.body.code, 'render_free');
+  } finally {
+    await t.close();
+  }
+});
+
+test('free renders: FREE_RENDERS=0 switches them off', async () => {
+  const t = await startTestServer({ env: { RENDER_PROVIDER: 'demo', FREE_RENDERS: '0' } });
+  try {
+    const w = await world(t, { slug: 'freeoff', credits: false });
+    const st = (await w.visitor.get('/api/renders/status')).body;
+    assert.deepEqual(st.free, { total: 0, left: 0 });
+    assert.equal(st.reason, 'visitor_off');
   } finally {
     await t.close();
   }

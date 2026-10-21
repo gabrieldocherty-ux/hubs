@@ -14,6 +14,11 @@
 //      plain message. A render left 'pending' by a restart is failed and released the next time
 //      anything here is read (sweep).
 //   4. An admin can refund a done render (the hold is REFUNDED, the row 'refunded'; audited).
+//
+// Free renders: every account gets config.FREE_RENDERS (3) once. While it has some left, a render is
+// free: no credits are held or charged, and it doesn't need the company's visitor setting or wait on
+// its daily cap (both are about spending the company's credits). A free render that fails doesn't
+// count. After that, the rules above.
 
 import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
@@ -42,6 +47,11 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
   /** Renders in flight in this process: id -> promise. A pending row not in here is stale. */
   const inflight = new Map();
   const costCents = () => config.RENDER_CREDIT_CENTS;
+  const freeTotal = () => config.FREE_RENDERS ?? 0;
+  /** Free renders this account has used (any showroom; a failed one gives it back). */
+  const freeUsed = (userId) =>
+    userId ? Number(db.prepare("SELECT COUNT(*) AS n FROM showroom_renders WHERE user_id = ? AND free = 1 AND status IN ('pending', 'done', 'refunded')").get(userId).n) : 0;
+  const freeLeft = (userId) => Math.max(0, freeTotal() - freeUsed(userId));
 
   const row = (id) => (typeof id === 'string' && RENDER_ID.test(id) ? (db.prepare('SELECT * FROM showroom_renders WHERE id = ?').get(id) ?? null) : null);
 
@@ -75,6 +85,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
       provider: r.provider,
       demo: r.provider === 'demo',
       costCents: r.cost_cents,
+      free: !!r.free,
       byRole: r.by_role,
       byName: by ? by.name || by.email : null,
       mine: !!userId && r.user_id === userId,
@@ -172,7 +183,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
         const r = row(id);
         if (!r || r.status !== 'pending') return; // swept meanwhile: the credits already went back
         const file = files.saveBuffer(out, { kind: 'image', visibility: 'private', ownerUserId: r.user_id, tenantId: r.tenant_id, originalName: `render-${id}.${info.ext}` });
-        credits.charge(r.hold_id);
+        if (r.hold_id) credits.charge(r.hold_id);
         db.prepare("UPDATE showroom_renders SET status = 'done', output_file_id = ?, finished_at = ? WHERE id = ?").run(file.id, now(), id);
       });
     } catch (err) {
@@ -208,9 +219,11 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
       const team = role === 'owner' || role === 'staff';
       const visitor = visitorAllowance(tenant);
       const balance = credits.balance(tenant.id);
+      const free = rc.user ? freeLeft(rc.user.id) : freeTotal();
       let reason = null;
       if (!configured) reason = 'not_configured';
       else if (!rc.user) reason = 'sign_in';
+      else if (free > 0) reason = null;
       else if (!team && !visitor.enabled) reason = 'visitor_off';
       else if (!team && visitor.left <= 0) reason = 'daily_cap';
       else if (balance < costCents()) reason = team ? 'no_credits' : 'unavailable';
@@ -225,6 +238,8 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
         // The team sees the balance; a visitor only whether they can render.
         balanceCents: team ? balance : null,
         visitor: team ? visitor : { enabled: visitor.enabled, left: visitor.left },
+        // This account's free renders: the next render is free while left > 0.
+        free: { total: freeTotal(), left: free },
         maxImageMb: config.RENDER_MAX_IMAGE_MB,
       };
     },
@@ -237,7 +252,9 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
       const role = roleOf(rc);
       const team = role !== 'visitor';
       sweep(tenant.id);
-      if (!team) {
+      // One of this account's free renders, while it has any: no credits, no visitor rules.
+      const free = freeLeft(rc.user.id) > 0;
+      if (!team && !free) {
         const v = visitorAllowance(tenant);
         if (!v.enabled) throw new HttpError(403, `${tenant.name} hasn’t switched on photoreal renders for visitors.`, { code: 'visitor_renders_off' });
         if (v.left <= 0) throw new HttpError(429, 'Today’s photoreal renders are used up. Try again tomorrow.', { code: 'daily_cap_reached' });
@@ -251,14 +268,17 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
       if (!scene.camera.heightPx) scene.camera.heightPx = img.height;
       const id = newId();
       tx(() => {
+        // Free again inside the transaction, so two requests can't both take the last free one.
+        const isFree = free && freeLeft(rc.user.id) > 0;
+        if (free && !isFree) throw new HttpError(409, 'Your free photoreal renders were just used. Try again.', { code: 'free_used' });
         // The cap again inside the transaction, so two visitors can't both take the last one.
-        if (!team && visitorAllowance(tenant).left <= 0) throw new HttpError(429, 'Today’s photoreal renders are used up. Try again tomorrow.', { code: 'daily_cap_reached' });
-        const hold = credits.reserve(tenant.id, costCents(), { purpose: 'render', ref: id, by: rc.user.id });
+        if (!isFree && !team && visitorAllowance(tenant).left <= 0) throw new HttpError(429, 'Today’s photoreal renders are used up. Try again tomorrow.', { code: 'daily_cap_reached' });
+        const hold = isFree ? null : credits.reserve(tenant.id, costCents(), { purpose: 'render', ref: id, by: rc.user.id });
         const input = files.saveBuffer(img.buf, { kind: 'image', visibility: 'private', ownerUserId: rc.user.id, tenantId: tenant.id, originalName: `view-${id}.${img.mime.split('/')[1]}` });
         db.prepare(
-          `INSERT INTO showroom_renders (id, tenant_id, user_id, by_role, project_id, design_name, status, provider, cost_cents, hold_id, input_file_id, scene, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
-        ).run(id, tenant.id, rc.user.id, role, design.projectId, design.name.slice(0, 120), provider.id, costCents(), hold.id, input.id, JSON.stringify(scene), now());
+          `INSERT INTO showroom_renders (id, tenant_id, user_id, by_role, project_id, design_name, status, provider, cost_cents, hold_id, free, input_file_id, scene, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?)`,
+        ).run(id, tenant.id, rc.user.id, role, design.projectId, design.name.slice(0, 120), provider.id, isFree ? 0 : costCents(), hold?.id ?? null, isFree ? 1 : 0, input.id, JSON.stringify(scene), now());
       });
       // Registered before it runs, so its own `finally` always finds the entry to remove.
       inflight.set(id, Promise.resolve().then(() => run(id, { image: img.buf, mime: img.mime, scene })));
@@ -354,6 +374,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
         const r = row(id);
         if (!r || r.tenant_id !== tenantId) throw new HttpError(404, 'That render doesn’t exist.');
         if (r.status !== 'done') throw new HttpError(409, 'Only a finished render can be refunded.', { code: 'render_not_done' });
+        if (!r.hold_id) throw new HttpError(409, 'That was a free render: there are no credits to give back.', { code: 'render_free' });
         credits.refund(r.hold_id, { note: note || 'Render refunded', by });
         db.prepare("UPDATE showroom_renders SET status = 'refunded' WHERE id = ?").run(id);
         return wire(row(id), { team: true });

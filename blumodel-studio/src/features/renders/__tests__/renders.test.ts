@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MONTHLY_CREDIT_CENTS, SETTING_UP, buildScene, captureSize, cents, entryLabel, plural, reasonCopy, rendersLeft, showButton, showroomRole } from '../model';
+import { MONTHLY_CREDIT_CENTS, SETTING_UP, buildScene, captureSize, cents, entryLabel, plural, reasonCopy, rendersLeft, showButton, showroomRole, freeLine } from '../model';
 import { qaSetupWanted } from '../qa';
 import { getProduct } from '../../../data/catalog';
 import type { DesignDoc } from '../../../types';
@@ -36,6 +36,11 @@ test('the button: showroom, signed in, a design, and the team or visitor renders
   assert.equal(showButton({ ...base, hasDesign: false }), false, 'a local draft has nothing to render');
   assert.equal(showButton({ ...base, team: false }), false, 'visitors: off by default');
   assert.equal(showButton({ ...base, team: false, visitorRenders: true }), true);
+  assert.equal(showButton({ ...base, team: false, freeLeft: 2 }), true, 'a visitor with free renders left');
+  assert.equal(showButton({ ...base, team: false, freeLeft: 0 }), false);
+  assert.equal(freeLine({ total: 3, left: 2 }), 'Free: 2 of 3 free photoreal renders left on your account. No credits are used.');
+  assert.equal(freeLine({ total: 3, left: 0 }), null);
+  assert.equal(freeLine(undefined), null);
   assert.equal(showroomRole({ showroom: { tenantId: 't', role: 'staff' } }), 'staff');
   assert.equal(showroomRole({ showroom: { tenantId: 't', role: null } }), null);
   assert.equal(showroomRole({ showroom: null }), null);

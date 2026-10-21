@@ -17,6 +17,8 @@ export interface RenderWire {
   provider: string;
   demo: boolean;
   costCents: number;
+  /** One of the account's free renders: no credits were used. */
+  free?: boolean;
   byRole: RenderRole;
   byName: string | null;
   mine: boolean;
@@ -39,6 +41,8 @@ export interface RendersStatus {
   reason: RenderReason | null;
   balanceCents: number | null;
   visitor: { enabled: boolean; left: number; dailyCap?: number; usedToday?: number };
+  /** This account's free renders (config FREE_RENDERS, 3): the next render is free while left > 0. */
+  free?: { total: number; left: number };
   maxImageMb: number;
 }
 

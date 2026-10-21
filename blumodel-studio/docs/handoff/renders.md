@@ -10,6 +10,7 @@ the QA package `renders` (`node scripts/qa.mjs --pkg renders --port 8920`).
 |---|---|---|
 | `ARCHITECT_AI_URL`, `ARCHITECT_AI_KEY` | empty | Gabe's architecture AI. Both set = real renders. |
 | `RENDER_CREDIT_CENTS` | `25` | What one render costs in credits. |
+| `FREE_RENDERS` | `3` | Free renders per account, once (`showroom_renders.free = 1`, no hold, `cost_cents` 0). They skip the visitor switch and daily cap; a failed one doesn't count; a free render can't be refunded. `0` turns them off. |
 | `RENDER_PROVIDER` | `auto` | `architect`, `demo` or `off` forces one (`architect` still needs both settings above). |
 | `DEMO_RENDERS` | off | Allows the stamped demo renderer in production. Outside production `auto` uses it when the AI isn't set. |
 | `RENDER_MAX_IMAGE_MB` | `6` | Largest captured view accepted (PNG, JPEG or WebP, at least 64 px). |

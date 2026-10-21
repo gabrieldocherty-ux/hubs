@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, type SVGProps } from 'react';
+import { lazy, Suspense, useEffect, useState, type SVGProps } from 'react';
 import { create } from 'zustand';
 import { useCompact, useMedia } from '../../components/MobileState';
 import { useRoute } from '../../lib/router';
@@ -6,6 +6,7 @@ import { useDesignStore } from '../../store/useDesignStore';
 import { useSession } from '../../store/useSession';
 import { useShowroom } from '../showroom';
 import { showButton, showroomRole } from './model';
+import { rendersApi } from './api';
 
 export { showroomRole };
 
@@ -35,6 +36,31 @@ function SparkleIcon(p: SVGProps<SVGSVGElement>) {
   );
 }
 
+/** Free renders left on this account (one status call per signed-in account and page; 0 until known). */
+const freeCache = new Map<string, Promise<number>>();
+function useFreeLeft(userId: string | null): number {
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!userId) return setLeft(0);
+    let live = true;
+    let p = freeCache.get(userId);
+    if (!p) {
+      p = rendersApi
+        .status()
+        .then((s) => s.free?.left ?? 0)
+        .catch(() => 0);
+      freeCache.set(userId, p);
+    }
+    void p.then((n) => live && setLeft(n));
+    return () => {
+      live = false;
+    };
+  }, [userId]);
+  return left;
+}
+/** After a render, the next status call is fresh (the free count may have changed). */
+export const forgetFreeLeft = () => freeCache.clear();
+
 export function PhotorealButton(): JSX.Element | null {
   const tenant = useShowroom();
   const user = useSession((s) => s.user);
@@ -49,7 +75,10 @@ export function PhotorealButton(): JSX.Element | null {
   const team = !!showroomRole(user);
   const shareToken = readOnly && route.name === 'share' ? route.token : null;
   const hasDesign = readOnly ? team && !!shareToken : !!projectId;
-  if (!showButton({ onShowroom: !!tenant, signedIn: !!user, team, visitorRenders: !!tenant?.features.visitorRenders, hasDesign })) return null;
+  // A visitor on a showroom without visitor renders: ask once whether their account has free ones left.
+  const ask = !!tenant && !!user && !team && hasDesign && !tenant.features.visitorRenders;
+  const freeLeft = useFreeLeft(ask ? (user?.id ?? null) : null);
+  if (!showButton({ onShowroom: !!tenant, signedIn: !!user, team, visitorRenders: !!tenant?.features.visitorRenders, hasDesign, freeLeft })) return null;
 
   return (
     <>

@@ -20,7 +20,7 @@ import { useDesignStore } from '../../store/useDesignStore';
 import { rendersApi, type RenderWire, type RendersStatus } from './api';
 import { captureView } from './capture';
 import { closePhotoreal } from './PhotorealButton';
-import { SETTING_UP, cents, plural, reasonCopy, rendersLeft, when } from './model';
+import { SETTING_UP, cents, freeLine, plural, reasonCopy, rendersLeft, when } from './model';
 import { qaOverrideStatus } from './qa';
 import './renders.css';
 
@@ -153,6 +153,9 @@ export default function PhotorealDialog({ projectId, shareToken, team }: { proje
 
   const costLine = (() => {
     if (!status || notConfigured) return null;
+    // While the account has free renders, the next one is free whoever asks.
+    const free = freeLine(status.free);
+    if (free) return free;
     if (status.balanceCents != null) {
       const left = rendersLeft(status.balanceCents, status.costCents);
       return `One render uses ${cents(status.costCents)} of credits · ${cents(status.balanceCents)} left (${plural(left, 'render')}).`;

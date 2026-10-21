@@ -6,6 +6,8 @@
 //                (input_file_id) and the result (output_file_id) are private files of the
 //                showroom; the credits it cost are a hold in tenant_credit_holds (hold_id),
 //                charged when the render worked and released when it didn't.
+//   renders-002  showroom_renders.free: one of the account's free renders (config FREE_RENDERS):
+//                no credits held or charged (hold_id NULL, cost_cents 0). A failed one doesn't count.
 
 /** @type {{ id: string, up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
@@ -38,6 +40,15 @@ export const steps = [
         CREATE INDEX showroom_renders_tenant ON showroom_renders(tenant_id, created_at DESC);
         CREATE INDEX showroom_renders_project ON showroom_renders(project_id, created_at DESC);
         CREATE INDEX showroom_renders_user ON showroom_renders(user_id, created_at DESC);
+      `);
+    },
+  },
+  {
+    id: 'renders-002-free',
+    up(db) {
+      db.exec(`
+        ALTER TABLE showroom_renders ADD COLUMN free INTEGER NOT NULL DEFAULT 0;
+        CREATE INDEX showroom_renders_free ON showroom_renders(user_id, free);
       `);
     },
   },

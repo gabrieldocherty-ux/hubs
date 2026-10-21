@@ -41,7 +41,7 @@ export function reasonCopy(reason: RenderReason | null, s: Pick<RendersStatus, '
     case 'daily_cap':
       return 'Today’s photoreal renders are used up. Try again tomorrow.';
     case 'no_credits':
-      return `There aren’t enough render credits left${s?.balanceCents != null ? ` (${cents(s.balanceCents)}; one render is ${cents(s.costCents)})` : ''}. Each month’s plan adds more.`;
+      return `There aren’t enough render credits left${s?.balanceCents != null ? ` (${cents(s.balanceCents)}; one render is ${cents(s.costCents)})` : ''}. Ask BluModel to add more.`;
     case 'unavailable':
       return 'Photoreal renders aren’t available right now.';
     default:
@@ -51,10 +51,16 @@ export function reasonCopy(reason: RenderReason | null, s: Pick<RendersStatus, '
 
 /**
  * Whether the editor shows the button at all: on a showroom, signed in, for the team always and
- * for visitors only when the company switched visitor renders on.
+ * for a visitor when the company switched visitor renders on or their account has free renders left.
  */
-export function showButton({ onShowroom, signedIn, team, visitorRenders, hasDesign }: { onShowroom: boolean; signedIn: boolean; team: boolean; visitorRenders: boolean; hasDesign: boolean }): boolean {
-  return onShowroom && signedIn && hasDesign && (team || visitorRenders);
+export function showButton({ onShowroom, signedIn, team, visitorRenders, hasDesign, freeLeft = 0 }: { onShowroom: boolean; signedIn: boolean; team: boolean; visitorRenders: boolean; hasDesign: boolean; freeLeft?: number }): boolean {
+  return onShowroom && signedIn && hasDesign && (team || visitorRenders || freeLeft > 0);
+}
+
+/** "Free: 2 of 3 free photoreal renders left on your account." (null when none are left). */
+export function freeLine(free: { total: number; left: number } | undefined): string | null {
+  if (!free || free.left <= 0) return null;
+  return `Free: ${free.left} of ${free.total} free photoreal ${free.total === 1 ? 'render' : 'renders'} left on your account. No credits are used.`;
 }
 
 /** The team role the server sends on a showroom (`user.showroom.role`), or null. */
