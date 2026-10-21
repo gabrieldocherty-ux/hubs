@@ -20,6 +20,8 @@ export interface ClientConfig {
   llm: boolean;
   /** Which site this host is (docs/handoff/tenancy.md §2): our sales site or a company's showroom. */
   site: SiteKind;
+  /** The kitchen designer on the sales site; off on the live one (marketing only). Showrooms always design. */
+  salesDesigner: boolean;
   /** The showroom's company (null on the sales site). */
   tenant: PublicTenant | null;
   /** The server's BASE_DOMAIN: `blumodel.studio` in production, `localhost` in dev and QA. */
@@ -50,10 +52,10 @@ export function normalizeConfig(raw: Partial<AppConfig> | null | undefined): Cli
   const r = raw ?? {};
   const payments: PaymentsMode = r.payments === 'stripe' ? 'stripe' : r.payments === 'demo' && r.demoPayments !== false ? 'demo' : 'none';
   const url = typeof r.publicUrl === 'string' && /^https?:\/\/[^\s]+$/.test(r.publicUrl) ? r.publicUrl.replace(/\/+$/, '') : PUBLIC_URL;
-  const x = r as { site?: unknown; tenant?: unknown; baseDomain?: unknown };
+  const x = r as { site?: unknown; tenant?: unknown; baseDomain?: unknown; salesDesigner?: unknown };
   const tenant = x.site === 'showroom' ? normalizeTenant(x.tenant) : null;
   const baseDomain = typeof x.baseDomain === 'string' && /^[a-z0-9.-]{1,253}$/i.test(x.baseDomain) ? x.baseDomain.toLowerCase() : 'blumodel.studio';
-  return { payments, publicUrl: url, legal: normalizeLegal(r.legal), llm: r.llm === true, site: tenant ? 'showroom' : 'sales', tenant, baseDomain };
+  return { payments, publicUrl: url, legal: normalizeLegal(r.legal), llm: r.llm === true, site: tenant ? 'showroom' : 'sales', tenant, baseDomain, salesDesigner: x.salesDesigner !== false };
 }
 
 // ── QA-only override ─────────────────────────────────────────────────────────

@@ -30,6 +30,8 @@ export default function routes(ctx) {
         version: config.version,
         /** Credits one AI render costs, in cents (docs/SHOWROOM_PIVOT.md §7). */
         renderCreditCents: config.RENDER_CREDIT_CENTS,
+        /** The sales site's kitchen designer (#/new, the editor, My kitchens): off in production. */
+        salesDesigner: config.SALES_DESIGNER,
       }),
     },
   ];

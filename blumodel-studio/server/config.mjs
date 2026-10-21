@@ -120,6 +120,10 @@ export function loadConfig(env = process.env, argv = process.argv) {
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(BASE_DOMAIN)) throw new Error(`BASE_DOMAIN must be a domain name like blumodel.studio (got "${BASE_DOMAIN}").`);
   // Credits one AI render costs (docs/SHOWROOM_PIVOT.md §7), in cents. 25 until Gabe sets it.
   const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 25, 1, 100_000);
+  // The kitchen designer on the sales site (blumodel.studio): off in production, where the sales
+  // site is marketing only and designing happens on the companies' showrooms. QA and development
+  // keep it on (SALES_DESIGNER=on|off).
+  const SALES_DESIGNER = String(env.SALES_DESIGNER || (PROD ? 'off' : 'on')).trim().toLowerCase() === 'on';
   // Photoreal renders every account gets free, once (not charged to the company's credits and not
   // held back by its visitor setting or daily cap). 0 switches the free renders off.
   const FREE_RENDERS = int(env.FREE_RENDERS, 3, 0, 50);
@@ -223,6 +227,7 @@ export function loadConfig(env = process.env, argv = process.argv) {
     SHUTDOWN_FILE,
     BASE_DOMAIN,
     RENDER_CREDIT_CENTS,
+    SALES_DESIGNER,
     FREE_RENDERS,
     TRIAL_DAYS,
     TRIAL_CREDIT_CENTS,

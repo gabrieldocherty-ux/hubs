@@ -1,5 +1,6 @@
 import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { Logo, Wordmark } from '../../components/Icons';
+import { useConfig } from '../../lib/config';
 import { call } from '../../lib/api';
 import { LegalLinks } from '../legal/LegalLinks';
 import { useSession } from '../../store/useSession';
@@ -117,6 +118,9 @@ export type MarketingPage = 'home' | 'pricing' | 'book';
 /** The sales site's top bar: the logo, four links, Sign in (for staff and admins) and Book a call. */
 export function MarketingHeader({ active }: { active?: MarketingPage }) {
   const signedIn = useSession((s) => s.status === 'signedIn');
+  const isAdmin = useSession((s) => s.user?.role === 'admin');
+  // The live sales site has no designer: signed in, the link goes to Admin or the account page.
+  const designer = useConfig((s) => s.config?.salesDesigner ?? true);
   const onLanding = active === 'home';
   const demoUrl = useDemoUrl();
   return (
@@ -144,8 +148,8 @@ export function MarketingHeader({ active }: { active?: MarketingPage }) {
             Live demo
           </a>
           {signedIn ? (
-            <a className="mk-nav-quiet" href="#/">
-              My account
+            <a className="mk-nav-quiet" href={designer ? '#/' : isAdmin ? '#/admin/overview' : '#/account'}>
+              {!designer && isAdmin ? 'Admin' : 'My account'}
             </a>
           ) : (
             <a className="mk-nav-quiet mk-signin" href="#/signin">

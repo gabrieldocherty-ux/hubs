@@ -165,3 +165,9 @@ test('the data download keeps the server’s filename, made safe to save', () =>
   assert.equal(attachmentName(null, 'f.json'), 'f.json');
   assert.equal(attachmentName('inline', 'f.json'), 'f.json');
 });
+
+test('the sales site designer: off only when the server says so (the live sales site is marketing only)', () => {
+  assert.equal(normalizeConfig({ payments: 'none', demoPayments: false, llm: false, salesDesigner: false } as never).salesDesigner, false);
+  assert.equal(normalizeConfig({ payments: 'none', demoPayments: false, llm: false, salesDesigner: true } as never).salesDesigner, true);
+  assert.equal(normalizeConfig({ payments: 'none', demoPayments: false, llm: false } as never).salesDesigner, true, 'an older server: on');
+});

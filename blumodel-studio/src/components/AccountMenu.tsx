@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from '../store/useSession';
 import { navigate } from '../lib/router';
+import { useConfig } from '../lib/config';
 
 interface ShowroomMembership {
   tenantId: string;
@@ -21,6 +22,8 @@ export function AccountMenu() {
   // On a showroom the server adds `showroom: { tenantId, role }` (docs/handoff/tenancy.md §2).
   const showroom = (user as (typeof user & { showroom?: ShowroomMembership | null }) | null)?.showroom ?? null;
   const signOut = useSession((s) => s.signOut);
+  // No "My kitchens" on the live sales site (marketing only); a showroom always has them.
+  const designer = useConfig((s) => !(s.config?.site === 'sales' && s.config?.salesDesigner === false));
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -51,9 +54,11 @@ export function AccountMenu() {
             <span>{user.email}</span>
           </div>
           <div className="menu-sep" />
-          <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'home' }))}>
-            <b>My kitchens</b>
-          </button>
+          {designer && (
+            <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'home' }))}>
+              <b>My kitchens</b>
+            </button>
+          )}
           {/* On a showroom: its team opens the company workspace; nobody there has a plan to bill. */}
           {showroom?.role && (
             <button role="menuitem" onClick={() => (setOpen(false), navigate({ name: 'studio', rest: '' }))}>

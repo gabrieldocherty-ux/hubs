@@ -1,7 +1,7 @@
 {
-  "source": "f2834a9aa32fc8791dc06f7c701cad8b6f14ee35",
-  "subject": "renders: MyArchitectAI - the adapter speaks its API (POST https://api.myarchitectai.com/v1/render/in",
-  "builtAt": "2026-10-21T03:59:17.690Z",
+  "source": "46a5b73205b65ba184f23b4f6908b7a58ff8990b",
+  "subject": "sales site: marketing only - no designer on blumodel.studio in production (SALES_DESIGNER, off in pr",
+  "builtAt": "2026-10-21T04:08:07.457Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

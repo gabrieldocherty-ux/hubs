@@ -174,3 +174,9 @@ test('address and key rules', () => {
   assert.match(keyProblem('short'), /8 to/);
   assert.match(keyProblem('has\nbreak123'), /line break/);
 });
+
+test('the sales site designer is off in production and on elsewhere (SALES_DESIGNER overrides)', () => {
+  assert.equal(loadConfig({ DB_PATH: ':memory:' }, ['--prod']).SALES_DESIGNER, false);
+  assert.equal(loadConfig({ DB_PATH: ':memory:' }, []).SALES_DESIGNER, true);
+  assert.equal(loadConfig({ DB_PATH: ':memory:', SALES_DESIGNER: 'on' }, ['--prod']).SALES_DESIGNER, true);
+});

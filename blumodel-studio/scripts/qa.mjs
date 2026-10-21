@@ -521,6 +521,7 @@ function serverEnv(extra) {
     'ADMIN_SESSION_HOURS',
     'PAYMENTS',
     'DEMO_PAYMENTS',
+    'SALES_DESIGNER',
     'BLUMODEL_EMAIL_DNS_CHECK',
     'SHOW_DEMO_BRANDS',
     'BASE_DOMAIN',
@@ -971,6 +972,8 @@ export async function main(argv = process.argv.slice(2)) {
     UPLOAD_DIR: path.join(tmp, 'uploads'),
     PAYMENTS: 'demo',
     DEMO_PAYMENTS: '1',
+    // The routes exercise the designer on the sales site too (off on the live sales site).
+    SALES_DESIGNER: 'on',
     // The routes sign people up with made-up addresses (@ridgeline-qa.test): no mail-server lookup.
     BLUMODEL_EMAIL_DNS_CHECK: 'off',
     // The routes use the seeded "(Demo)" brands, which a production server hides without this.

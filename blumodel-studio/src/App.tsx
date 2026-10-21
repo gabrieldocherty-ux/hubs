@@ -29,6 +29,9 @@ const BookCallScreen = lazy(() => import('./features/marketing/BookCallScreen'))
 const KitchenEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.KitchenEditor })));
 const LocalEditor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.LocalEditor })));
 
+/** The designer's own routes: on the live sales site (config salesDesigner off) they go to the home page. */
+const DESIGN_ROUTES: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'local']);
+
 /** Routes that need an account; signed-out visitors are sent to sign in (and brought back after). */
 const NEEDS_ACCOUNT: ReadonlySet<Route['name']> = new Set(['new', 'kitchen', 'brand', 'orders', 'payDemo', 'admin', 'billing', 'account', 'pro', 'payDemoPlan', 'studio']);
 
@@ -45,6 +48,9 @@ export default function App() {
   const site = useSiteKind();
   const configStatus = useConfig((s) => s.status);
   const tenant = useConfig((s) => s.config?.tenant ?? null);
+  // The sales site is marketing only in production: no designing there (it's on the showrooms).
+  const designer = useConfig((s) => s.config?.salesDesigner ?? true);
+  const noDesign = site === 'sales' && !designer;
   useEffect(() => applyShowroomBranding(tenant), [tenant]);
 
   useEffect(() => {
@@ -68,7 +74,7 @@ export default function App() {
 
   // On a showroom a visitor designs signed out: "Before you start" (features/showroom/LeadGate)
   // asks for their details instead, and their designs save under them (docs/handoff/leads.md).
-  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(site === 'showroom' && (NOT_ON_SHOWROOM.has(route.name) || route.name === 'new' || route.name === 'kitchen'));
+  const needsAccount = NEEDS_ACCOUNT.has(route.name) && !(noDesign && DESIGN_ROUTES.has(route.name)) && !(site === 'showroom' && (NOT_ON_SHOWROOM.has(route.name) || route.name === 'new' || route.name === 'kitchen'));
   // A password-reset link (`#/signin?reset=`) opens even when this browser is signed in: setting
   // the new password signs the browser in as the account it belongs to.
   const resetPage = route.name === 'signin' && splitHash(location.hash).query.has('reset');
@@ -81,6 +87,10 @@ export default function App() {
     if (status !== 'signedIn' && needsAccount && site !== 'unknown') navigateHash(signinHref(), true);
     if (status === 'signedIn' && authPage) navigateHash(safeNext(splitHash(location.hash).query), true);
   }, [status, needsAccount, authPage, site, route.name]);
+
+  useEffect(() => {
+    if (noDesign && DESIGN_ROUTES.has(route.name)) navigateHash('#/', true);
+  }, [noDesign, route.name]);
 
   // A crash on one screen shows "Something went wrong" in its place; moving to another screen clears it.
   const boundaryKey = splitHash(location.hash).path || 'home';
@@ -99,7 +109,7 @@ export default function App() {
     );
   // Device-only mode works with no server at all, so it never waits on the session. A showroom's
   // #/local (a signed-out visitor's design) is drawn by its own screens: it needs the session.
-  if (route.name === 'local' && site === 'sales')
+  if (route.name === 'local' && site === 'sales' && !noDesign)
     return (
       <>
         <ErrorBoundary inline key={boundaryKey}>
@@ -144,7 +154,7 @@ export default function App() {
     <>
       <ErrorBoundary inline key={boundaryKey}>
         <QaCrash where="route" />
-        <Suspense fallback={loading}>{screenFor(route, signedIn, site === 'showroom')}</Suspense>
+        <Suspense fallback={loading}>{noDesign && (route.name === 'home' || DESIGN_ROUTES.has(route.name)) ? <LandingScreen /> : screenFor(route, signedIn, site === 'showroom')}</Suspense>
         <BillingHost />
       </ErrorBoundary>
       <ConnectionBanner />
