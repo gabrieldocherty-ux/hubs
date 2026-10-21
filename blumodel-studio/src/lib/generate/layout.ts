@@ -65,6 +65,8 @@ export interface RunOptions {
   hood?: 'auto' | 'none';
   /** Along-wall spans kept free of wall cabinets: windows and overhead appliances. */
   clearUpper?: [number, number][];
+  /** Wall cabinets over corner base cabinets too, so the uppers wrap around the corner (off by default). */
+  cornerUppers?: boolean;
 }
 
 export interface RunSpec {
@@ -406,7 +408,7 @@ export function layRun(run: RunSpec, room: Room, surfaces: Surfaces, notes: stri
         const bridge = swap ? swap(asPick(basicBridge, p.width)).product : basicBridge;
         const pos = placeOnWall(wall, p.along, insetFor(bridge, basicBridge, 12), room);
         out.push(placed(bridge, pos.x, pos.y, rotation, surfaces, p.width));
-      } else if (['base', 'sink', 'dishwasher', 'wine'].includes(p.product.kind) && !blocked) {
+      } else if ((['base', 'sink', 'dishwasher', 'wine'].includes(p.product.kind) || (opts.cornerUppers && p.product.kind === 'corner')) && !blocked) {
         const glass = opts.glassUppers ? getProduct('wall-glass') : undefined;
         const basicUpper = glass?.widthOptions?.includes(p.width) ? glass : getProduct('wall');
         if (!basicUpper) continue;

@@ -498,7 +498,7 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
   const shaker = cabs.find((l) => doorStyleOf(l) === 'shaker') ?? cabs[0];
   const slab = cabs.find((l) => doorStyleOf(l) === 'slab') ?? cabs[cabs.length - 1];
   const deep = (l: ShowroomLine) => l.products.flatMap((p) => finishList(p)).filter((f) => f.material === 'paint' && luminance(f.hex) > 0.02).sort((x, y) => luminance(x.hex) - luminance(y.hex))[0]?.id;
-  const plans: { title: string; line: ShowroomLine; finish?: string; island?: string; surfaces: Surfaces; room: Room; spec: (r: Room) => LayoutSpec; shape: (d: Draft) => Draft; view: (d: DesignDoc) => CameraView; angle: (d: DesignDoc) => CameraView }[] = [
+  const plans: { title: string; line: ShowroomLine; finish?: string; island?: string; surfaces: Surfaces; room: Room; spec: (r: Room) => LayoutSpec; shape: (d: Draft) => Draft; view: (d: DesignDoc) => CameraView; angle: (d: DesignDoc) => CameraView; salesOnly?: boolean }[] = [
     {
       title: 'The Entertainer’s Kitchen',
       line: shaker,
@@ -523,9 +523,7 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
       },
       // Framed on the kitchen itself (the bay makes the plan deeper than the kitchen).
       view: (d) => ({ pos: [ft(d.room.widthIn) - 1.1, 5.3, ft(d.room.lengthIn) - 0.9], target: [ft(d.room.widthIn) * 0.4, 3.3, 2.5], fov: 54 }),
-      // The sales page's second angle: the first one mirrored, from the sink side's corner across the
-      // island to the range and the glass uppers.
-      angle: (d) => ({ pos: [4.6, 5.5, ft(d.room.lengthIn) - 0.8], target: [ft(d.room.widthIn) * 0.68, 3.3, 1.6], fov: 58 }),
+      angle: (d) => ({ pos: [ft(d.room.widthIn) - 1.1, 5.3, ft(d.room.lengthIn) - 0.9], target: [ft(d.room.widthIn) * 0.4, 3.3, 2.5], fov: 54 }),
     },
     {
       // A different kitchen altogether: a U wrapped round the cook, no island, dark slab doors and
@@ -537,7 +535,7 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
       room: { widthIn: 156, lengthIn: 168, ceilingIn: 108 },
       spec: (r) => ({
         runs: [
-          { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'corner' }, 'flex', { role: 'sink', variant: 'undermount' }, { role: 'dishwasher' }, 'flex', { role: 'corner' }], opts: { window: true, uppers: true } },
+          { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'corner' }, 'flex', { role: 'sink', variant: 'undermount' }, { role: 'dishwasher' }, 'flex', { role: 'corner' }], opts: { window: true, uppers: true, cornerUppers: true } },
           { wall: 'west', start: 36, end: r.lengthIn - 30, slots: ['flex', { role: 'range', widthIn: rw }, 'flex'], opts: { uppers: true, hood: 'auto' } },
           { wall: 'east', start: 36, end: r.lengthIn - 30, slots: [{ role: 'fridge', variant: 'french' }, 'flex', { role: 'pantry', optional: true }], opts: { uppers: true } },
         ],
@@ -553,6 +551,28 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
       view: (d) => ({ pos: [3.0, 5.7, ft(d.room.lengthIn) - 0.3], target: [ft(d.room.widthIn) - 2.2, 3.0, 2.2], fov: 66 }),
       angle: (d) => ({ pos: [ft(d.room.widthIn) - 3.0, 5.7, ft(d.room.lengthIn) - 0.3], target: [2.2, 3.0, 2.2], fov: 66 }),
     },
+    {
+      // The sales page's wood kitchen (not on the demo): an L with an island, in natural white oak.
+      title: 'The Oak Kitchen',
+      line: shaker,
+      finish: shaker.products.flatMap((pr) => finishList(pr)).find((f) => f.material === 'wood')?.id,
+      island: shaker.products.flatMap((pr) => finishList(pr)).find((f) => f.material === 'wood')?.id,
+      surfaces: { cabinetFinishId: 'white-oak', doorStyle: 'shaker', hardwareId: 'black', countertopId: 'carrara', backsplashId: 'subway-white', flooringId: 'porcelain-12x24', paintId: 'bone', crown: 'cove', underCabinet: 'led' },
+      room: { widthIn: 216, lengthIn: 180, ceilingIn: 108 },
+      spec: (r) => ({
+        runs: [
+          { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'pantry' }, { gap: 24 }, { role: 'range', widthIn: rw }, { gap: 12 }, { role: 'fridge', variant: 'french' }, 'flex'], opts: { uppers: true, hood: 'auto' } },
+          // The sink close to the corner keeps the work triangle tight.
+          { wall: 'west', start: 24, end: r.lengthIn - 48, slots: [{ gap: 18 }, { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex'], opts: { window: true, uppers: false } },
+        ],
+        island: { x: r.widthIn / 2 + 20, y: 24 + 48 + 21, widthIn: 96, seats: 3, seatSide: 'south', pendants: 2 },
+      }),
+      shape: (d) => d,
+      // A three-quarter hero shot from the open corner: the L and the island together.
+      view: (d) => ({ pos: [ft(d.room.widthIn) - 1.2, 5.4, ft(d.room.lengthIn) - 1.0], target: [ft(d.room.widthIn) * 0.35, 3.3, 2.2], fov: 56 }),
+      angle: (d) => ({ pos: [ft(d.room.widthIn) - 1.2, 5.4, ft(d.room.lengthIn) - 1.0], target: [ft(d.room.widthIn) * 0.35, 3.3, 2.2], fov: 56 }),
+      salesOnly: true,
+    },
   ];
   return plans.map((p, i) => {
     const doc0 = makeDoc(p.title, p.room, p.spec(p.room), matched(p.surfaces, p.line, p.finish), kitchenPrefs(lines, p.line), keepBasics, lines, 'counter');
@@ -562,16 +582,14 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     // Pot lights over the whole room, as the editor lays them (they are BluModel Basics, so only
     // for a company that fills the gaps with them).
     const doc = keepBasics ? { ...dressed, items: withFinishIds(layoutPotLights({ room: dressed.room, items: dressed.items }).items) } : dressed;
+    // The sales page's slideshow (scripts/make-showroom-images.mjs puts these in public/marketing/,
+    // not on the demo): the white kitchen (1), the oak kitchen (2), the dark kitchen toward its range (4).
+    if (p.salesOnly) return { id: 'promo:oak', label: p.title, doc, problems: layoutProblems(doc), shots: [{ slot: 'promo' as const, index: 2, title: p.title, ...PROMO_SIZE, view: p.view({ ...doc, room: p.room }) }] };
     return { id: `dream:${i + 1}`, label: p.title, doc, problems: layoutProblems(doc), shots: [
         { slot: 'dream' as const, index: i + 1, title: p.title, ...DREAM_SIZE, view: p.view({ ...doc, room: p.room }) },
-        // The sales page's slideshow: two angles of the white kitchen, one of the dark one
-        // (scripts/make-showroom-images.mjs puts them in public/marketing/, not on the demo).
-        ...(i === 0
-          ? [
-              { slot: 'promo' as const, index: 1, title: p.title, ...PROMO_SIZE, view: p.view({ ...doc, room: p.room }) },
-              { slot: 'promo' as const, index: 2, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) },
-            ]
-          : [{ slot: 'promo' as const, index: 4, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) }]),
+        i === 0
+          ? { slot: 'promo' as const, index: 1, title: p.title, ...PROMO_SIZE, view: p.view({ ...doc, room: p.room }) }
+          : { slot: 'promo' as const, index: 4, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) },
       ] };
   });
 }

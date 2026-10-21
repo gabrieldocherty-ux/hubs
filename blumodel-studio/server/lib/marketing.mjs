@@ -9,10 +9,10 @@ const REAL = 'Ultra-realistic professional interior photograph, as if taken by a
 export const MARKETING_PROMPTS = Object.freeze({
   'kitchen-1':
     'Photorealistic interior photograph of a bright luxury kitchen: white shaker cabinets with brass hardware, a long marble waterfall island with four oak stools, brass dome pendants, zellige tile backsplash, herringbone oak floor, soft natural daylight. Keep the exact layout, cabinets and camera angle.',
-  'kitchen-2': `A bright luxury kitchen: white shaker cabinets with brass hardware, a long marble waterfall island with oak stools, brass dome pendants, a farmhouse sink under the window, zellige tile backsplash, herringbone oak floor. ${REAL}`,
-  // The photoreal version made 2026-10-21 is the approved one: this prompt is what made it.
+  'kitchen-2': `A warm L-shaped kitchen with an island: natural white oak shaker cabinets with matte black hardware, white Carrara marble countertops, a white subway tile backsplash, a farmhouse sink under the window, a stainless range and French-door fridge, large porcelain floor tiles. ${REAL}`,
+  // The approved look (2026-10-21), now with the uppers wrapping around the corners.
   'kitchen-4':
-    'Photorealistic interior photograph of a modern U-shaped kitchen: matte charcoal slab cabinets with brass bar pulls, dark stone countertops, a stainless chimney hood over a professional range, white tile backsplash, a window over the undermount sink, large white porcelain floor tiles, warm daylight. Keep the exact layout and camera angle.',
+    'Photorealistic interior photograph of a modern U-shaped kitchen: matte charcoal slab cabinets with brass bar pulls, a continuous row of upper cabinets wrapping around the corners, dark stone countertops, a stainless chimney hood over a professional range, white tile backsplash, a window over the undermount sink, large white porcelain floor tiles, warm daylight. Keep the exact layout and camera angle.',
 });
 
 export const MARKETING_NAMES = Object.freeze(Object.keys(MARKETING_PROMPTS));
