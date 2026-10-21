@@ -403,6 +403,11 @@ const LIST: Product[] = [
     finishes: FRAME, blurb: 'Wide fixed pane with slim divided lites.',
   },
   {
+    id: 'window-floor', kind: 'window', variant: 'floor', category: 'openings', brand: BASICS_BRAND, name: 'Floor-to-Ceiling Window',
+    code: 'FW{w}', widthIn: 60, depthIn: 6, heightIn: 90, elevationIn: 1, widthOptions: [36, 48, 60, 72, 96], price: 2290,
+    finishes: FRAME, blurb: 'Glass from the floor nearly to the ceiling, one slim mullion. No sill.',
+  },
+  {
     id: 'door', kind: 'door', variant: 'single', category: 'openings', brand: BASICS_BRAND, name: 'Interior Door',
     code: 'D{w}', widthIn: 32, depthIn: 6, heightIn: 80, elevationIn: 0, widthOptions: [28, 30, 32, 36], price: 390,
     finishes: FRAME, blurb: 'Swings into the room. Flip to change the hinge side.',
@@ -463,6 +468,11 @@ const LIST: Product[] = [
     id: 'shower', kind: 'shower', variant: 'alcove', category: 'bath', brand: BASICS_BRAND, name: 'Alcove Shower',
     code: 'SH{w}', widthIn: 60, depthIn: 32, heightIn: 78, elevationIn: 0, widthOptions: [48, 54, 60], price: 1450,
     finishes: SHOWER_TRIM, blurb: 'Base, sliding glass door and a rain head, between three walls.',
+  },
+  {
+    id: 'shower-glass', kind: 'shower', variant: 'glass-door', category: 'bath', brand: BASICS_BRAND, name: 'Glass-Door Shower',
+    code: 'SG{w}', widthIn: 60, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [48, 60, 72], price: 2190,
+    finishes: SHOWER_TRIM, blurb: 'Between three walls behind a frameless glass door and a fixed panel. 36″ deep, the comfortable size.',
   },
   {
     id: 'shower-corner', kind: 'shower', variant: 'corner', category: 'bath', brand: BASICS_BRAND, name: 'Corner Shower',

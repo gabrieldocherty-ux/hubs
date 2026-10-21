@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { FrontSpec } from '../../lib/fronts';
-import { Basin, Box, Counter, Cyl, Faucet, Front } from './parts';
+import { Basin, Box, Counter, Cyl, Faucet, Front, cylGeo } from './parts';
 import { M, cached, finishMaterial, sinkMaterial } from './materials';
 import type { ModelProps } from './models';
 
@@ -84,44 +84,127 @@ export function VanityModel({ r, finish, ctx }: ModelProps) {
   );
 }
 
+/** Geometry for the toilet, cached by size (it's the same few shapes for every toilet in a plan). */
+const toiletGeos = new Map<string, THREE.BufferGeometry>();
+function toiletGeo(key: string, make: () => THREE.BufferGeometry): THREE.BufferGeometry {
+  let g = toiletGeos.get(key);
+  if (!g) {
+    g = make();
+    toiletGeos.set(key, g);
+  }
+  return g;
+}
+
+/** A rounded-rectangle slab (the tank, its lid), `r` the corner radius, extruded `h` tall with a soft edge. */
+function roundedSlab(w: number, d: number, h: number, r: number): THREE.BufferGeometry {
+  return toiletGeo(`slab:${w}:${d}:${h}:${r}`, () => {
+    const s = new THREE.Shape();
+    const x = w / 2;
+    const z = d / 2;
+    s.moveTo(-x + r, -z);
+    s.lineTo(x - r, -z);
+    s.quadraticCurveTo(x, -z, x, -z + r);
+    s.lineTo(x, z - r);
+    s.quadraticCurveTo(x, z, x - r, z);
+    s.lineTo(-x + r, z);
+    s.quadraticCurveTo(-x, z, -x, z - r);
+    s.lineTo(-x, -z + r);
+    s.quadraticCurveTo(-x, -z, -x + r, -z);
+    const bevel = Math.min(0.6, h / 4);
+    const g = new THREE.ExtrudeGeometry(s, { depth: h - bevel * 2, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments: 10 });
+    // Extruded along +z: stand it up (y), centred.
+    g.rotateX(-Math.PI / 2);
+    g.translate(0, bevel, 0);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
+/**
+ * The bowl turned on a lathe: a narrow foot flaring into a full, rolled rim, the way a porcelain bowl
+ * is cast. Stretched front to back afterwards for an elongated bowl.
+ */
+function bowlGeo(r: number, h: number): THREE.BufferGeometry {
+  return toiletGeo(`bowl:${r}:${h}`, () => {
+    const p = [
+      [0, 0],
+      [r * 0.6, 0],
+      [r * 0.62, h * 0.12],
+      [r * 0.66, h * 0.3],
+      [r * 0.76, h * 0.55],
+      [r * 0.9, h * 0.78],
+      [r * 0.98, h * 0.92],
+      [r, h * 0.98],
+      [r * 0.97, h],
+      [r * 0.82, h],
+      [r * 0.7, h * 0.86],
+      [0, h * 0.7],
+    ].map(([x, y]) => new THREE.Vector2(x, y));
+    const g = new THREE.LatheGeometry(p, 40);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
+/** The seat ring: a flattened torus, stretched like the bowl. */
+function seatGeo(r: number): THREE.BufferGeometry {
+  return toiletGeo(`seat:${r}`, () => {
+    const g = new THREE.TorusGeometry(r - 1.2, 1.2, 10, 40);
+    g.rotateX(Math.PI / 2);
+    g.scale(1, 0.55, 1);
+    return g;
+  });
+}
+
+/**
+ * A toilet in the style of the classic American two-piece (American Standard's elongated, comfort
+ * height): a soft-cornered tank with an overhanging lid and a chrome lever, a turned elongated bowl
+ * on a skirted foot that runs back into the tank, a seat and a closed lid on chrome hinges. The
+ * wall-hung kind: the bowl alone on the wall, its flush plate above.
+ */
 export function ToiletModel({ r, finish }: ModelProps) {
   const { w, d, product } = r;
   const mat = porcelain(finish.hex);
   const wallHung = product.variant === 'wall-hung';
-  // An elongated bowl: a tapered cylinder stretched front to back.
-  const bowlR = Math.min(7.6, w / 2 - 1);
+  const bowlR = Math.min(7.4, w / 2 - 1.2);
   const bowlLen = 18.5;
   const stretch = bowlLen / (bowlR * 2);
   const bowlZ = d / 2 - bowlLen / 2;
   const rim = wallHung ? 15.5 : 16.5;
+  const seat = cached(`toiletSeat:${finish.hex}`, () => new THREE.MeshPhysicalMaterial({ color: finish.hex, roughness: 0.28, clearcoat: 0.6, clearcoatRoughness: 0.2 }));
+  const bowlBottom = wallHung ? rim - 11 : 0;
+  const bowlH = rim - bowlBottom;
+  const tankW = Math.min(19.5, w - 0.5);
+  const tankD = 8;
+  const tankZ = -d / 2 + tankD / 2 + 0.4;
   return (
     <group>
+      {/* The bowl, and (floor-standing) the skirt from its back into the tank. */}
+      <mesh geometry={bowlGeo(bowlR, bowlH)} position={[0, bowlBottom, bowlZ]} scale={[1, 1, stretch]} material={mat} castShadow receiveShadow dispose={null} />
       {wallHung ? (
         <>
-          <Box size={[10, 9, d - bowlLen + 2]} pos={[0, rim - 6, -d / 2 + (d - bowlLen + 2) / 2]} mat={mat} />
-          <group position={[0, rim - 5, bowlZ]} scale={[1, 1, stretch]}>
-            <Cyl r={bowlR} rb={bowlR * 0.72} h={10} pos={[0, 0, 0]} mat={mat} seg={28} />
-          </group>
-          {/* The flush plate on the wall above */}
+          <mesh geometry={roundedSlab(bowlR * 1.5, d - bowlLen + 3, bowlH * 0.8, 2)} position={[0, bowlBottom + bowlH * 0.15, -d / 2 + (d - bowlLen + 3) / 2]} material={mat} dispose={null} />
           <Box size={[9.5, 6.5, 0.5]} pos={[0, 40, -d / 2 + 0.25]} mat={M.chrome()} />
         </>
       ) : (
         <>
-          {/* tank */}
-          <Box size={[Math.min(19, w - 1), 14.5, 7.5]} pos={[0, 22.75, -d / 2 + 4.5]} mat={mat} />
-          <Box size={[Math.min(19.6, w - 0.4), 1.2, 8.3]} pos={[0, 30.4, -d / 2 + 4.5]} mat={mat} />
-          <Box size={[2.6, 0.6, 1.2]} pos={[-w / 2 + 3.5, 26, -d / 2 + 8.6]} mat={M.chrome()} />
-          {/* pedestal and bowl */}
-          <Box size={[8, 9, 14]} pos={[0, 4.5, bowlZ - 2]} mat={mat} />
-          <group position={[0, rim - 7, bowlZ]} scale={[1, 1, stretch]}>
-            <Cyl r={bowlR} rb={bowlR * 0.6} h={14} pos={[0, 0, 0]} mat={mat} seg={28} />
-          </group>
+          <mesh geometry={roundedSlab(bowlR * 1.25, bowlZ - tankZ + 2, rim - 1.5, 2.6)} position={[0, 0, (tankZ + bowlZ) / 2 - 1]} material={mat} castShadow receiveShadow dispose={null} />
+          {/* tank, then its lid a little proud on every side */}
+          <mesh geometry={roundedSlab(tankW, tankD, 14.2, 1.6)} position={[0, rim + 0.8, tankZ]} material={mat} castShadow receiveShadow dispose={null} />
+          <mesh geometry={roundedSlab(tankW + 0.8, tankD + 0.9, 1.3, 1.9)} position={[0, rim + 15, tankZ]} material={mat} castShadow dispose={null} />
+          {/* trip lever on the front left */}
+          <Box size={[3.2, 0.7, 0.7]} pos={[-tankW / 2 + 3.2, rim + 12.4, tankZ + tankD / 2 + 0.5]} mat={M.chrome()} />
+          <Cyl r={0.9} h={0.6} pos={[-tankW / 2 + 1.6, rim + 12.4, tankZ + tankD / 2 + 0.3]} rot={[Math.PI / 2, 0, 0]} mat={M.chrome()} seg={16} />
         </>
       )}
-      {/* seat and lid */}
-      <group position={[0, rim + 0.6, bowlZ]} scale={[1, 1, stretch]}>
-        <Cyl r={bowlR + 0.2} h={1.1} pos={[0, 0, 0]} mat={mat} seg={28} />
+      {/* seat, the closed lid over it, and the hinges */}
+      <mesh geometry={seatGeo(bowlR + 0.3)} position={[0, rim + 0.7, bowlZ]} scale={[1, 1, stretch]} material={seat} dispose={null} />
+      <group position={[0, rim + 1.7, bowlZ + 0.3]} scale={[1, 1, stretch]}>
+        <mesh geometry={cylGeo(bowlR + 0.1, bowlR + 0.3, 0.9, 40)} material={seat} castShadow dispose={null} />
       </group>
+      {[-1, 1].map((s) => (
+        <Cyl key={s} r={0.55} h={1.6} pos={[s * 4, rim + 1.4, bowlZ - bowlLen / 2 + 0.8]} rot={[0, 0, Math.PI / 2]} mat={M.chrome()} seg={12} />
+      ))}
     </group>
   );
 }
@@ -201,6 +284,20 @@ export function ShowerModel({ r, finish }: ModelProps) {
           {pane(w / 2 + 2, [-w / 4 + 1, glassY, d / 2 - 1.4], true)}
           {pane(w / 2 + 2, [w / 4 - 1, glassY, d / 2 - 0.6], true)}
           <Box size={[1.2, 10, 1.2]} pos={[-1.5, 44, d / 2 + 0.3]} mat={trim} />
+        </>
+      )}
+      {v === 'glass-door' && (
+        <>
+          {/* a fixed panel, and the frameless door beside it on two pivot hinges, with a long pull */}
+          {pane(w * 0.42, [-w / 2 + (w * 0.42) / 2 + 0.4, glassY, d / 2 - 0.6], true)}
+          <Box size={[w * 0.56, h - curb - 2, 0.38]} pos={[w / 2 - (w * 0.56) / 2 - 0.4, glassY, d / 2 - 0.6]} mat={glass()} cast={false} />
+          {[curb + 8, h - 10].map((y) => (
+            <Box key={y} size={[2.2, 1.6, 0.9]} pos={[w / 2 - 1.4, y, d / 2 - 0.6]} mat={trim} />
+          ))}
+          <Box size={[0.7, 18, 0.7]} pos={[-w / 2 + w * 0.42 + 3.2, 44, d / 2 + 0.6]} mat={trim} />
+          {[35, 53].map((y) => (
+            <Box key={y} size={[0.5, 0.5, 1.2]} pos={[-w / 2 + w * 0.42 + 3.2, y, d / 2 + 0.1]} mat={trim} />
+          ))}
         </>
       )}
       {v === 'corner' && (

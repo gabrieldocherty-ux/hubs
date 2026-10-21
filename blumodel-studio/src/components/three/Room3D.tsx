@@ -437,16 +437,20 @@ function WindowModel({ r, surfaces, bare = false }: { r: Resolved; surfaces: Sur
   const bar = 1.75;
   const zc = -T / 2;
   const muntins: [number, number, number, number][] = [];
+  const floor = product.variant === 'floor';
   if (product.variant === 'casement') muntins.push([0, y0 + h / 2, 1.2, h - bar * 2]);
-  else {
+  else if (floor) {
+    // One slim mullion on a wide one; nothing across, so the view runs floor to ceiling.
+    if (w > 48) muntins.push([0, y0 + h / 2, 1.2, h - bar * 2]);
+  } else {
     for (const fx of [-1 / 6, 1 / 6]) muntins.push([fx * (w - bar * 2), y0 + h / 2, 0.7, h - bar * 2]);
     muntins.push([0, y0 + h * 0.62, w - bar * 2, 0.7]);
   }
   return (
     <group>
       <Casing w={w} h={h} y0={y0} mat={frame} />
-      <Box size={[w + 9, 1.1, 3.8]} pos={[0, y0 - 0.55, 1.1]} mat={sill} />
-      <Box size={[w + 5, 3, 0.75]} pos={[0, y0 - 2.6, 0.375]} mat={frame} />
+      {!floor && <Box size={[w + 9, 1.1, 3.8]} pos={[0, y0 - 0.55, 1.1]} mat={sill} />}
+      {!floor && <Box size={[w + 5, 3, 0.75]} pos={[0, y0 - 2.6, 0.375]} mat={frame} />}
       <Box size={[w, bar, 1.5]} pos={[0, y0 + bar / 2 + 0.75, zc]} mat={frame} />
       <Box size={[w, bar, 1.5]} pos={[0, y0 + h - bar / 2 - 0.75, zc]} mat={frame} />
       <Box size={[bar, h, 1.5]} pos={[-w / 2 + bar / 2 + 0.75, y0 + h / 2, zc]} mat={frame} />
