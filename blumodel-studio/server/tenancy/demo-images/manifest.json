@@ -1,5 +1,5 @@
 {
- "madeAt": 1792599924903,
+ "madeAt": 1792600706300,
  "by": "scripts/make-showroom-images.mjs",
  "images": [
   {
@@ -9,7 +9,7 @@
    "file": "hero.webp",
    "w": 2400,
    "h": 1350,
-   "bytes": 143448
+   "bytes": 143226
   },
   {
    "slot": "heroTall",
@@ -17,7 +17,7 @@
    "file": "hero-tall.webp",
    "w": 1080,
    "h": 1440,
-   "bytes": 73792
+   "bytes": 73576
   },
   {
    "slot": "line",
@@ -26,7 +26,7 @@
    "file": "line-lakeshore-shaker.webp",
    "w": 1200,
    "h": 900,
-   "bytes": 43582
+   "bytes": 43408
   },
   {
    "slot": "line",
@@ -35,7 +35,7 @@
    "file": "line-harbourfront-slab.webp",
    "w": 1200,
    "h": 900,
-   "bytes": 51874
+   "bytes": 53848
   },
   {
    "slot": "line",
@@ -80,7 +80,7 @@
    "file": "line-counter-seating.webp",
    "w": 1200,
    "h": 900,
-   "bytes": 50466
+   "bytes": 50530
   },
   {
    "slot": "gallery",
@@ -102,7 +102,7 @@
    "file": "gallery-2.webp",
    "w": 1600,
    "h": 1000,
-   "bytes": 68478
+   "bytes": 68376
   },
   {
    "slot": "gallery",
@@ -113,7 +113,7 @@
    "file": "gallery-3.webp",
    "w": 1600,
    "h": 1000,
-   "bytes": 80686
+   "bytes": 80678
   },
   {
    "slot": "dream",
@@ -124,7 +124,7 @@
    "file": "dream-1.webp",
    "w": 1600,
    "h": 1000,
-   "bytes": 92672
+   "bytes": 92732
   },
   {
    "slot": "dream",
@@ -160,7 +160,7 @@
     },
     "items": [
      {
-      "id": "it-mvibpeij-t-xa",
+      "id": "it-mvic64lp-t-6j",
       "productId": "sku:NL-LS-P{w}84",
       "x": 12,
       "y": 12,
@@ -169,7 +169,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-u-rc",
+      "id": "it-mvic64lp-u-bn",
       "productId": "sku:NL-AP-F36",
       "x": 42,
       "y": 15,
@@ -178,7 +178,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeij-v-a8",
+      "id": "it-mvic64lp-v-rf",
       "productId": "sku:NL-LS-DB{w}",
       "x": 75,
       "y": 12,
@@ -187,7 +187,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-w-af",
+      "id": "it-mvic64lp-w-62",
       "productId": "sku:NL-AP-R36",
       "x": 108,
       "y": 14,
@@ -196,7 +196,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeij-x-v0",
+      "id": "it-mvic64lp-x-ow",
       "productId": "sku:NL-LS-DB{w}",
       "x": 144,
       "y": 12,
@@ -206,7 +206,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-y-t4",
+      "id": "it-mvic64lp-y-j0",
       "productId": "sku:NL-LS-B{w}",
       "x": 175.5,
       "y": 12,
@@ -216,7 +216,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-z-l",
+      "id": "it-mvic64lp-z-38",
       "productId": "sku:NL-LS-B{w}",
       "x": 196.5,
       "y": 12,
@@ -226,7 +226,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-10-51",
+      "id": "it-mvic64lp-10-li",
       "productId": "sku:NL-LS-P{w}84",
       "x": 216,
       "y": 12,
@@ -235,7 +235,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-11-at",
+      "id": "it-mvic64lp-11-8q",
       "productId": "sku:NL-LS-WB{w}15",
       "x": 42,
       "y": 12,
@@ -244,7 +244,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-12-j8",
+      "id": "it-mvic64lp-12-uo",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 75,
       "y": 6,
@@ -253,7 +253,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-13-jb",
+      "id": "it-mvic64lp-13-ko",
       "productId": "sku:NL-AP-H{w}",
       "x": 108,
       "y": 10,
@@ -262,7 +262,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeij-14-mm",
+      "id": "it-mvic64lp-14-2w",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 144,
       "y": 6,
@@ -272,7 +272,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-15-y1",
+      "id": "it-mvic64lp-15-d8",
       "productId": "sku:NL-LS-W{w}30",
       "x": 175.5,
       "y": 6,
@@ -282,7 +282,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-16-sf",
+      "id": "it-mvic64lp-16-8c",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 196.5,
       "y": 6,
@@ -292,7 +292,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-17-nf",
+      "id": "it-mvic64lp-17-lx",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 36,
@@ -301,7 +301,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-18-8f",
+      "id": "it-mvic64lp-18-rj",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 55.5,
@@ -311,7 +311,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-19-ei",
+      "id": "it-mvic64lp-19-l9",
       "productId": "sku:NL-SK-FS{w}",
       "x": 12,
       "y": 81,
@@ -320,7 +320,7 @@
       "finishId": "fireclay"
      },
      {
-      "id": "it-mvibpeij-1a-z2",
+      "id": "it-mvic64lp-1a-xy",
       "productId": "sku:NL-AP-DW24",
       "x": 12,
       "y": 111,
@@ -329,7 +329,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeij-1b-bd",
+      "id": "it-mvic64lp-1b-dd",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 130.5,
@@ -339,7 +339,7 @@
       "finishId": "sage"
      },
      {
-      "id": "it-mvibpeij-1c-e5",
+      "id": "it-mvic64lp-1c-2g",
       "productId": "window",
       "x": 0,
       "y": 81,
@@ -348,7 +348,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpeij-1d-dv",
+      "id": "it-mvic64lp-1d-9k",
       "productId": "sku:NL-LS-I{w}",
       "x": 130,
       "y": 93,
@@ -358,7 +358,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeij-1e-gc",
+      "id": "it-mvic64lp-1e-14",
       "productId": "sku:NL-ST-26B",
       "x": 98,
       "y": 116,
@@ -367,7 +367,7 @@
       "finishId": "cognac"
      },
      {
-      "id": "it-mvibpeij-1f-7z",
+      "id": "it-mvic64lp-1f-gz",
       "productId": "sku:NL-ST-26B",
       "x": 130,
       "y": 116,
@@ -376,7 +376,7 @@
       "finishId": "cognac"
      },
      {
-      "id": "it-mvibpeij-1g-26",
+      "id": "it-mvic64lp-1g-so",
       "productId": "sku:NL-ST-26B",
       "x": 162,
       "y": 116,
@@ -385,7 +385,7 @@
       "finishId": "cognac"
      },
      {
-      "id": "it-mvibpeij-1h-wv",
+      "id": "it-mvic64lp-1h-ea",
       "productId": "sku:NL-LT-D14",
       "x": 98,
       "y": 93,
@@ -394,7 +394,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeij-1i-ji",
+      "id": "it-mvic64lp-1i-8p",
       "productId": "sku:NL-LT-D14",
       "x": 130,
       "y": 93,
@@ -403,7 +403,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeij-1j-vz",
+      "id": "it-mvic64lp-1j-k6",
       "productId": "sku:NL-LT-D14",
       "x": 162,
       "y": 93,
@@ -412,7 +412,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeij-1k-70",
+      "id": "it-mvic64lp-1k-av",
       "productId": "opening",
       "x": 228,
       "y": 156,
@@ -460,7 +460,7 @@
     },
     "items": [
      {
-      "id": "it-mvibpeiu-79-82",
+      "id": "it-mvic64m0-79-bs",
       "productId": "sku:NL-HS-P{w}84",
       "x": 12,
       "y": 12,
@@ -469,7 +469,7 @@
       "finishId": "walnut"
      },
      {
-      "id": "it-mvibpeiu-7a-b",
+      "id": "it-mvic64m0-7a-55",
       "productId": "sku:NL-AP-F36",
       "x": 42,
       "y": 15,
@@ -478,7 +478,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiu-7b-yz",
+      "id": "it-mvic64m0-7b-cz",
       "productId": "sku:NL-HS-B{w}",
       "x": 72,
       "y": 12,
@@ -487,7 +487,7 @@
       "finishId": "walnut"
      },
      {
-      "id": "it-mvibpeiu-7c-ur",
+      "id": "it-mvic64m0-7c-o",
       "productId": "sku:NL-SK-UM{w}",
       "x": 100.5,
       "y": 12,
@@ -496,7 +496,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiu-7d-ku",
+      "id": "it-mvic64m0-7d-k5",
       "productId": "sku:NL-AP-DW24",
       "x": 129,
       "y": 12,
@@ -505,7 +505,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiu-7e-tt",
+      "id": "it-mvic64m0-7e-j1",
       "productId": "sku:NL-HS-B{w}",
       "x": 154.5,
       "y": 12,
@@ -515,7 +515,7 @@
       "finishId": "walnut"
      },
      {
-      "id": "it-mvibpeiu-7f-aa",
+      "id": "it-mvic64m0-7f-mr",
       "productId": "sku:NL-HS-P{w}84",
       "x": 180,
       "y": 12,
@@ -524,7 +524,7 @@
       "finishId": "walnut"
      },
      {
-      "id": "it-mvibpeiu-7g-ee",
+      "id": "it-mvic64m0-7g-cv",
       "productId": "window",
       "x": 100.5,
       "y": 0,
@@ -533,7 +533,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpeiu-7h-o8",
+      "id": "it-mvic64m0-7h-y0",
       "productId": "sku:NL-HS-WB{w}",
       "x": 42,
       "y": 12,
@@ -542,7 +542,7 @@
       "finishId": "walnut"
      },
      {
-      "id": "it-mvibpeiu-7i-ao",
+      "id": "it-mvic64m0-7i-6l",
       "productId": "sku:NL-HS-W{w}",
       "x": 154.5,
       "y": 6,
@@ -552,7 +552,7 @@
       "finishId": "walnut"
      },
      {
-      "id": "it-mvibpeiu-7j-yi",
+      "id": "it-mvic64m0-7j-xf",
       "productId": "sku:NL-HS-I{w}",
       "x": 96,
       "y": 95,
@@ -561,7 +561,7 @@
       "finishId": "rift-oak"
      },
      {
-      "id": "it-mvibpeiu-7k-uo",
+      "id": "it-mvic64m0-7k-cy",
       "productId": "sku:NL-ST-26",
       "x": 64,
       "y": 118,
@@ -570,7 +570,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeiu-7l-9s",
+      "id": "it-mvic64m0-7l-1d",
       "productId": "sku:NL-ST-26",
       "x": 96,
       "y": 118,
@@ -579,7 +579,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeiu-7m-d4",
+      "id": "it-mvic64m0-7m-3i",
       "productId": "sku:NL-ST-26",
       "x": 128,
       "y": 118,
@@ -588,7 +588,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeiu-7n-x6",
+      "id": "it-mvic64m0-7n-zg",
       "productId": "sku:NL-LT-D14",
       "x": 72,
       "y": 95,
@@ -597,7 +597,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeiu-7o-36",
+      "id": "it-mvic64m0-7o-26",
       "productId": "sku:NL-LT-D14",
       "x": 120,
       "y": 95,
@@ -606,7 +606,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeiu-7p-9e",
+      "id": "it-mvic64m0-7p-4t",
       "productId": "door-french",
       "x": 0,
       "y": 126,
@@ -653,7 +653,7 @@
     },
     "items": [
      {
-      "id": "it-mvibpeiu-87-x0",
+      "id": "it-mvic64m1-87-tr",
       "productId": "sku:NL-LS-CB36",
       "x": 18,
       "y": 18,
@@ -662,7 +662,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiu-88-14",
+      "id": "it-mvic64m1-88-pn",
       "productId": "sku:NL-SK-FS{w}",
       "x": 54,
       "y": 12,
@@ -671,7 +671,7 @@
       "finishId": "fireclay"
      },
      {
-      "id": "it-mvibpeiu-89-xu",
+      "id": "it-mvic64m2-89-ip",
       "productId": "sku:NL-AP-DW24",
       "x": 84,
       "y": 12,
@@ -680,7 +680,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiu-8a-7m",
+      "id": "it-mvic64m2-8a-mf",
       "productId": "sku:NL-LS-B{w}",
       "x": 102,
       "y": 12,
@@ -690,7 +690,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiu-8b-9c",
+      "id": "it-mvic64m2-8b-4s",
       "productId": "sku:NL-LS-CB36",
       "x": 126,
       "y": 18,
@@ -699,7 +699,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiu-8c-ga",
+      "id": "it-mvic64m2-8c-cy",
       "productId": "window",
       "x": 54,
       "y": 0,
@@ -708,7 +708,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpeiu-8d-83",
+      "id": "it-mvic64m2-8d-i7",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 84,
       "y": 6,
@@ -718,7 +718,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiu-8e-g9",
+      "id": "it-mvic64m2-8e-8x",
       "productId": "sku:NL-LS-W{w}30",
       "x": 102,
       "y": 6,
@@ -728,7 +728,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiu-8f-ky",
+      "id": "it-mvic64m2-8f-i9",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 49.5,
@@ -738,7 +738,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiu-8g-34",
+      "id": "it-mvic64m2-8g-pu",
       "productId": "sku:NL-AP-R36",
       "x": 14,
       "y": 81,
@@ -747,7 +747,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiu-8h-46",
+      "id": "it-mvic64m2-8h-mi",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 112.5,
@@ -757,7 +757,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8i-51",
+      "id": "it-mvic64m2-8i-ad",
       "productId": "sku:NL-LS-W{w}30",
       "x": 6,
       "y": 49.5,
@@ -767,7 +767,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8j-q",
+      "id": "it-mvic64m2-8j-mz",
       "productId": "sku:NL-AP-H{w}",
       "x": 10,
       "y": 81,
@@ -776,7 +776,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiv-8k-cw",
+      "id": "it-mvic64m2-8k-ge",
       "productId": "sku:NL-LS-W{w}30",
       "x": 6,
       "y": 112.5,
@@ -786,7 +786,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8l-x2",
+      "id": "it-mvic64m2-8l-yw",
       "productId": "sku:NL-AP-F36",
       "x": 129,
       "y": 54,
@@ -795,7 +795,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiv-8m-1m",
+      "id": "it-mvic64m2-8m-97",
       "productId": "sku:NL-LS-B{w}",
       "x": 132,
       "y": 90,
@@ -805,7 +805,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8n-oe",
+      "id": "it-mvic64m2-8n-b5",
       "productId": "sku:NL-LS-B{w}",
       "x": 132,
       "y": 117,
@@ -815,7 +815,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8o-ts",
+      "id": "it-mvic64m2-8o-xu",
       "productId": "sku:NL-LS-WB{w}15",
       "x": 132,
       "y": 54,
@@ -824,7 +824,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8p-ht",
+      "id": "it-mvic64m2-8p-sn",
       "productId": "sku:NL-LS-W{w}30",
       "x": 138,
       "y": 90,
@@ -834,7 +834,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiv-8q-kx",
+      "id": "it-mvic64m2-8q-uv",
       "productId": "sku:NL-LS-W{w}30",
       "x": 138,
       "y": 117,
@@ -882,7 +882,7 @@
     },
     "items": [
      {
-      "id": "it-mvibpeiw-9b-gm",
+      "id": "it-mvic64m3-9b-uy",
       "productId": "sku:NL-LS-CB36",
       "x": 18,
       "y": 18,
@@ -891,7 +891,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9c-so",
+      "id": "it-mvic64m3-9c-i2",
       "productId": "sku:NL-LS-B{w}",
       "x": 48,
       "y": 12,
@@ -900,7 +900,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9d-xr",
+      "id": "it-mvic64m3-9d-eo",
       "productId": "sku:NL-SK-FS{w}",
       "x": 78,
       "y": 12,
@@ -909,7 +909,7 @@
       "finishId": "fireclay"
      },
      {
-      "id": "it-mvibpeiw-9e-y3",
+      "id": "it-mvic64m3-9e-fy",
       "productId": "sku:NL-AP-DW24",
       "x": 108,
       "y": 12,
@@ -918,7 +918,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiw-9f-ah",
+      "id": "it-mvic64m3-9f-cj",
       "productId": "sku:NL-LS-B{w}",
       "x": 138,
       "y": 12,
@@ -928,7 +928,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9g-21",
+      "id": "it-mvic64m3-9g-st",
       "productId": "sku:NL-LS-B{w}",
       "x": 174,
       "y": 12,
@@ -938,7 +938,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9h-sr",
+      "id": "it-mvic64m3-9h-x6",
       "productId": "sku:NL-LS-P{w}84",
       "x": 204,
       "y": 12,
@@ -947,7 +947,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9i-5l",
+      "id": "it-mvic64m3-9i-px",
       "productId": "window",
       "x": 78,
       "y": 0,
@@ -956,7 +956,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpeiw-9j-oq",
+      "id": "it-mvic64m3-9j-qb",
       "productId": "sku:NL-LS-W{w}30",
       "x": 48,
       "y": 6,
@@ -966,7 +966,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9k-mr",
+      "id": "it-mvic64m3-9k-wg",
       "productId": "sku:NL-LS-W{w}30",
       "x": 108,
       "y": 6,
@@ -976,7 +976,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9l-d4",
+      "id": "it-mvic64m3-9l-x1",
       "productId": "sku:NL-LS-W{w}30",
       "x": 138,
       "y": 6,
@@ -986,7 +986,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9m-6k",
+      "id": "it-mvic64m3-9m-rq",
       "productId": "sku:NL-LS-W{w}30",
       "x": 174,
       "y": 6,
@@ -996,7 +996,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9n-k0",
+      "id": "it-mvic64m3-9n-r2",
       "productId": "sku:NL-AP-F36",
       "x": 15,
       "y": 54,
@@ -1005,7 +1005,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiw-9o-q2",
+      "id": "it-mvic64m3-9o-hw",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 78,
@@ -1015,7 +1015,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9p-9h",
+      "id": "it-mvic64m3-9p-oi",
       "productId": "sku:NL-AP-R36",
       "x": 14,
       "y": 102,
@@ -1024,7 +1024,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiw-9q-qi",
+      "id": "it-mvic64m3-9q-fh",
       "productId": "sku:NL-LS-DB{w}",
       "x": 12,
       "y": 135,
@@ -1033,7 +1033,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9r-8x",
+      "id": "it-mvic64m3-9r-t4",
       "productId": "sku:NL-LS-WB{w}15",
       "x": 12,
       "y": 54,
@@ -1042,7 +1042,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9s-9g",
+      "id": "it-mvic64m3-9s-8c",
       "productId": "sku:NL-LS-W{w}30",
       "x": 6,
       "y": 78,
@@ -1052,7 +1052,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9t-n9",
+      "id": "it-mvic64m3-9t-8q",
       "productId": "sku:NL-AP-H{w}",
       "x": 10,
       "y": 102,
@@ -1061,7 +1061,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeiw-9u-kg",
+      "id": "it-mvic64m3-9u-m2",
       "productId": "sku:NL-LS-W{w}30",
       "x": 6,
       "y": 135,
@@ -1070,7 +1070,7 @@
       "finishId": "harbour"
      },
      {
-      "id": "it-mvibpeiw-9v-t5",
+      "id": "it-mvic64m3-9v-5b",
       "productId": "sku:NL-LS-I{w}",
       "x": 126,
       "y": 91,
@@ -1079,7 +1079,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeiw-9w-e",
+      "id": "it-mvic64m3-9w-xs",
       "productId": "sku:NL-ST-26",
       "x": 98,
       "y": 114,
@@ -1088,7 +1088,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeiw-9x-ej",
+      "id": "it-mvic64m3-9x-ig",
       "productId": "sku:NL-ST-26",
       "x": 126,
       "y": 114,
@@ -1097,7 +1097,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeiw-9y-lp",
+      "id": "it-mvic64m3-9y-ax",
       "productId": "sku:NL-ST-26",
       "x": 154,
       "y": 114,
@@ -1106,7 +1106,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeiw-9z-kp",
+      "id": "it-mvic64m3-9z-u1",
       "productId": "sku:NL-LT-D14",
       "x": 105,
       "y": 91,
@@ -1115,7 +1115,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeiw-a0-t3",
+      "id": "it-mvic64m3-a0-za",
       "productId": "sku:NL-LT-D14",
       "x": 147,
       "y": 91,
@@ -1186,7 +1186,7 @@
      ],
      "extra": [
       {
-       "id": "it-mvibpeiz-cb-2",
+       "id": "it-mvic64m7-cb-pq",
        "name": "Dining room",
        "outline": [
         [
@@ -1222,7 +1222,7 @@
     },
     "items": [
      {
-      "id": "it-mvibpeix-ar-6i",
+      "id": "it-mvic64m5-ar-hb",
       "productId": "sku:NL-LS-P{w}84",
       "x": 12,
       "y": 12,
@@ -1231,7 +1231,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-as-qj",
+      "id": "it-mvic64m5-as-cl",
       "productId": "sku:NL-AP-F36",
       "x": 42,
       "y": 15,
@@ -1240,7 +1240,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeix-at-z4",
+      "id": "it-mvic64m5-at-1s",
       "productId": "sku:NL-LS-DB{w}",
       "x": 78,
       "y": 12,
@@ -1250,7 +1250,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-au-nn",
+      "id": "it-mvic64m5-au-rz",
       "productId": "sku:NL-AP-R36",
       "x": 114,
       "y": 14,
@@ -1259,7 +1259,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeix-av-wo",
+      "id": "it-mvic64m5-av-c7",
       "productId": "sku:NL-LS-DB{w}",
       "x": 150,
       "y": 12,
@@ -1269,7 +1269,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-aw-pj",
+      "id": "it-mvic64m5-aw-9f",
       "productId": "sku:NL-LS-B{w}",
       "x": 186,
       "y": 12,
@@ -1279,7 +1279,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-ax-yw",
+      "id": "it-mvic64m5-ax-ld",
       "productId": "sku:NL-LS-B{w}",
       "x": 222,
       "y": 12,
@@ -1289,7 +1289,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-ay-i2",
+      "id": "it-mvic64m5-ay-30",
       "productId": "sku:NL-LS-P{w}84",
       "x": 252,
       "y": 12,
@@ -1298,7 +1298,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-az-ik",
+      "id": "it-mvic64m5-az-g5",
       "productId": "sku:NL-LS-WB{w}15",
       "x": 42,
       "y": 12,
@@ -1307,7 +1307,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b0-is",
+      "id": "it-mvic64m5-b0-t0",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 78,
       "y": 6,
@@ -1317,7 +1317,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b1-jc",
+      "id": "it-mvic64m5-b1-id",
       "productId": "sku:NL-AP-H{w}",
       "x": 114,
       "y": 10,
@@ -1326,7 +1326,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeix-b2-6a",
+      "id": "it-mvic64m5-b2-ym",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 150,
       "y": 6,
@@ -1336,7 +1336,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b3-da",
+      "id": "it-mvic64m5-b3-9p",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 186,
       "y": 6,
@@ -1346,7 +1346,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b4-fs",
+      "id": "it-mvic64m5-b4-ft",
       "productId": "sku:NL-LS-WG{w}30",
       "x": 222,
       "y": 6,
@@ -1356,7 +1356,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b5-gd",
+      "id": "it-mvic64m5-b5-of",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 36,
@@ -1365,7 +1365,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b6-5a",
+      "id": "it-mvic64m5-b6-l2",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 55.5,
@@ -1375,7 +1375,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-b7-hx",
+      "id": "it-mvic64m5-b7-p0",
       "productId": "sku:NL-SK-FS{w}",
       "x": 12,
       "y": 81,
@@ -1384,7 +1384,7 @@
       "finishId": "fireclay"
      },
      {
-      "id": "it-mvibpeix-b8-3p",
+      "id": "it-mvic64m5-b8-u1",
       "productId": "sku:NL-AP-DW24",
       "x": 12,
       "y": 111,
@@ -1393,7 +1393,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpeix-b9-4r",
+      "id": "it-mvic64m5-b9-5s",
       "productId": "sku:NL-LS-B{w}",
       "x": 12,
       "y": 136.5,
@@ -1403,7 +1403,7 @@
       "finishId": "chalk"
      },
      {
-      "id": "it-mvibpeix-ba-y5",
+      "id": "it-mvic64m5-ba-hq",
       "productId": "window",
       "x": 0,
       "y": 81,
@@ -1412,7 +1412,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpeix-bb-86",
+      "id": "it-mvic64m5-bb-vb",
       "productId": "island",
       "x": 150,
       "y": 99,
@@ -1422,7 +1422,7 @@
       "finishId": "warm-white"
      },
      {
-      "id": "it-mvibpeix-bc-gm",
+      "id": "it-mvic64m5-bc-x6",
       "productId": "sku:NL-ST-26",
       "x": 105,
       "y": 122,
@@ -1431,7 +1431,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeix-bd-6b",
+      "id": "it-mvic64m5-bd-qa",
       "productId": "sku:NL-ST-26",
       "x": 135,
       "y": 122,
@@ -1440,7 +1440,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeix-be-ns",
+      "id": "it-mvic64m5-be-9g",
       "productId": "sku:NL-ST-26",
       "x": 165,
       "y": 122,
@@ -1449,7 +1449,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeix-bf-i5",
+      "id": "it-mvic64m5-bf-1x",
       "productId": "sku:NL-ST-26",
       "x": 195,
       "y": 122,
@@ -1458,7 +1458,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpeix-bg-xz",
+      "id": "it-mvic64m5-bg-e4",
       "productId": "sku:NL-LT-D14",
       "x": 110,
       "y": 99,
@@ -1467,7 +1467,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeix-bh-xq",
+      "id": "it-mvic64m5-bh-h4",
       "productId": "sku:NL-LT-D14",
       "x": 150,
       "y": 99,
@@ -1476,7 +1476,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeix-bi-20",
+      "id": "it-mvic64m5-bi-yk",
       "productId": "sku:NL-LT-D14",
       "x": 190,
       "y": 99,
@@ -1485,7 +1485,7 @@
       "finishId": "brass"
      },
      {
-      "id": "it-mvibpeiz-cc-hz",
+      "id": "it-mvic64m8-cc-1b",
       "productId": "walkway",
       "x": 264,
       "y": 132,
@@ -1558,7 +1558,7 @@
       "finishId": "oak"
      },
      {
-      "id": "it-mvibpej0-cd-q0",
+      "id": "it-mvic64m8-cd-2w",
       "productId": "pot-light",
       "x": 26,
       "y": 29,
@@ -1567,7 +1567,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-ce-6j",
+      "id": "it-mvic64m9-ce-nh",
       "productId": "pot-light",
       "x": 79,
       "y": 29,
@@ -1576,7 +1576,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cf-b7",
+      "id": "it-mvic64m9-cf-iu",
       "productId": "pot-light",
       "x": 132,
       "y": 29,
@@ -1585,7 +1585,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cg-pe",
+      "id": "it-mvic64m9-cg-yd",
       "productId": "pot-light",
       "x": 185,
       "y": 29,
@@ -1594,7 +1594,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-ch-yh",
+      "id": "it-mvic64m9-ch-yb",
       "productId": "pot-light",
       "x": 238,
       "y": 29,
@@ -1603,7 +1603,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-ci-qi",
+      "id": "it-mvic64m9-ci-3l",
       "productId": "pot-light",
       "x": 26,
       "y": 88,
@@ -1612,7 +1612,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cj-u0",
+      "id": "it-mvic64m9-cj-3g",
       "productId": "pot-light",
       "x": 79,
       "y": 88,
@@ -1621,7 +1621,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-ck-c0",
+      "id": "it-mvic64m9-ck-cv",
       "productId": "pot-light",
       "x": 132,
       "y": 88,
@@ -1630,7 +1630,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cl-hf",
+      "id": "it-mvic64m9-cl-sl",
       "productId": "pot-light",
       "x": 185,
       "y": 88,
@@ -1639,7 +1639,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cm-am",
+      "id": "it-mvic64m9-cm-i9",
       "productId": "pot-light",
       "x": 238,
       "y": 88,
@@ -1648,7 +1648,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cn-bx",
+      "id": "it-mvic64m9-cn-87",
       "productId": "pot-light",
       "x": 26,
       "y": 146,
@@ -1657,7 +1657,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-co-tn",
+      "id": "it-mvic64m9-co-ei",
       "productId": "pot-light",
       "x": 79,
       "y": 146,
@@ -1666,7 +1666,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cp-lr",
+      "id": "it-mvic64m9-cp-1l",
       "productId": "pot-light",
       "x": 132,
       "y": 146,
@@ -1675,7 +1675,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cq-ll",
+      "id": "it-mvic64m9-cq-6y",
       "productId": "pot-light",
       "x": 185,
       "y": 146,
@@ -1684,7 +1684,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cr-h6",
+      "id": "it-mvic64m9-cr-fi",
       "productId": "pot-light",
       "x": 238,
       "y": 146,
@@ -1693,7 +1693,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cs-7m",
+      "id": "it-mvic64m9-cs-w",
       "productId": "pot-light",
       "x": 132,
       "y": 205,
@@ -1702,7 +1702,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-ct-l",
+      "id": "it-mvic64m9-ct-i2",
       "productId": "pot-light",
       "x": 290,
       "y": 84,
@@ -1711,7 +1711,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cu-1q",
+      "id": "it-mvic64m9-cu-ss",
       "productId": "pot-light",
       "x": 342,
       "y": 84,
@@ -1720,7 +1720,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cv-4p",
+      "id": "it-mvic64m9-cv-w0",
       "productId": "pot-light",
       "x": 394,
       "y": 84,
@@ -1729,7 +1729,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cw-qa",
+      "id": "it-mvic64m9-cw-nu",
       "productId": "pot-light",
       "x": 290,
       "y": 132,
@@ -1738,7 +1738,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cx-zf",
+      "id": "it-mvic64m9-cx-ts",
       "productId": "pot-light",
       "x": 342,
       "y": 132,
@@ -1747,7 +1747,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cy-q3",
+      "id": "it-mvic64m9-cy-w5",
       "productId": "pot-light",
       "x": 394,
       "y": 132,
@@ -1756,7 +1756,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-cz-c5",
+      "id": "it-mvic64m9-cz-yr",
       "productId": "pot-light",
       "x": 290,
       "y": 180,
@@ -1765,7 +1765,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-d0-39",
+      "id": "it-mvic64m9-d0-gn",
       "productId": "pot-light",
       "x": 342,
       "y": 180,
@@ -1774,7 +1774,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej0-d1-xl",
+      "id": "it-mvic64m9-d1-w0",
       "productId": "pot-light",
       "x": 394,
       "y": 180,
@@ -1811,7 +1811,7 @@
      "ceilingIn": 108,
      "extra": [
       {
-       "id": "it-mvibpej3-ec-a",
+       "id": "it-mvic64mb-ec-29",
        "name": "Living room",
        "outline": [
         [
@@ -1846,7 +1846,7 @@
     },
     "items": [
      {
-      "id": "it-mvibpej2-d2-pa",
+      "id": "it-mvic64ma-d2-l7",
       "productId": "sku:NL-HS-CB36",
       "x": 18,
       "y": 18,
@@ -1855,7 +1855,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-d3-2u",
+      "id": "it-mvic64ma-d3-7x",
       "productId": "sku:NL-HS-B{w}",
       "x": 42,
       "y": 12,
@@ -1865,7 +1865,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-d4-91",
+      "id": "it-mvic64ma-d4-6y",
       "productId": "sku:NL-SK-UM{w}",
       "x": 64.5,
       "y": 12,
@@ -1874,7 +1874,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpej2-d5-f4",
+      "id": "it-mvic64ma-d5-kj",
       "productId": "sku:NL-AP-DW24",
       "x": 93,
       "y": 12,
@@ -1883,7 +1883,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpej2-d6-1w",
+      "id": "it-mvic64ma-d6-xx",
       "productId": "sku:NL-HS-B{w}",
       "x": 112.5,
       "y": 12,
@@ -1893,7 +1893,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-d7-zx",
+      "id": "it-mvic64ma-d7-wk",
       "productId": "sku:NL-HS-CB36",
       "x": 138,
       "y": 18,
@@ -1902,7 +1902,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-d8-49",
+      "id": "it-mvic64ma-d8-se",
       "productId": "window",
       "x": 64.5,
       "y": 0,
@@ -1911,7 +1911,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej2-d9-me",
+      "id": "it-mvic64ma-d9-f",
       "productId": "sku:NL-HS-W{w}",
       "x": 18,
       "y": 6,
@@ -1921,7 +1921,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-da-r6",
+      "id": "it-mvic64ma-da-1s",
       "productId": "sku:NL-HS-W{w}",
       "x": 112.5,
       "y": 6,
@@ -1931,7 +1931,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-db-8o",
+      "id": "it-mvic64ma-db-mq",
       "productId": "sku:NL-HS-W{w}",
       "x": 138,
       "y": 6,
@@ -1941,7 +1941,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dc-2e",
+      "id": "it-mvic64ma-dc-s0",
       "productId": "sku:NL-HS-B{w}",
       "x": 12,
       "y": 52.5,
@@ -1951,7 +1951,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dd-96",
+      "id": "it-mvic64ma-dd-cw",
       "productId": "sku:NL-AP-R36",
       "x": 14,
       "y": 87,
@@ -1960,7 +1960,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpej2-de-te",
+      "id": "it-mvic64ma-de-j6",
       "productId": "sku:NL-HS-B{w}",
       "x": 12,
       "y": 121.5,
@@ -1970,7 +1970,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-df-g5",
+      "id": "it-mvic64ma-df-qy",
       "productId": "sku:NL-HS-W{w}",
       "x": 6,
       "y": 52.5,
@@ -1980,7 +1980,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dg-i1",
+      "id": "it-mvic64ma-dg-gb",
       "productId": "sku:NL-AP-H{w}",
       "x": 10,
       "y": 87,
@@ -1989,7 +1989,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpej2-dh-f9",
+      "id": "it-mvic64ma-dh-oc",
       "productId": "sku:NL-HS-W{w}",
       "x": 6,
       "y": 121.5,
@@ -1999,7 +1999,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-di-xa",
+      "id": "it-mvic64ma-di-zl",
       "productId": "sku:NL-AP-F36",
       "x": 141,
       "y": 54,
@@ -2008,7 +2008,7 @@
       "finishId": "steel"
      },
      {
-      "id": "it-mvibpej2-dj-ly",
+      "id": "it-mvic64ma-dj-8w",
       "productId": "sku:NL-HS-B{w}",
       "x": 144,
       "y": 85.5,
@@ -2018,7 +2018,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dk-6q",
+      "id": "it-mvic64ma-dk-iy",
       "productId": "sku:NL-HS-B{w}",
       "x": 144,
       "y": 106.5,
@@ -2028,7 +2028,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dl-81",
+      "id": "it-mvic64ma-dl-4v",
       "productId": "sku:NL-HS-P{w}84",
       "x": 144,
       "y": 126,
@@ -2037,7 +2037,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dm-ib",
+      "id": "it-mvic64ma-dm-qf",
       "productId": "sku:NL-HS-WB{w}",
       "x": 144,
       "y": 54,
@@ -2046,7 +2046,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-dn-hs",
+      "id": "it-mvic64ma-dn-w8",
       "productId": "sku:NL-HS-W{w}",
       "x": 150,
       "y": 85.5,
@@ -2056,7 +2056,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej2-do-23",
+      "id": "it-mvic64ma-do-q5",
       "productId": "sku:NL-HS-W{w}",
       "x": 150,
       "y": 106.5,
@@ -2066,7 +2066,7 @@
       "finishId": "matte-black"
      },
      {
-      "id": "it-mvibpej3-ed-3f",
+      "id": "it-mvic64mb-ed-ce",
       "productId": "walkway",
       "x": 78,
       "y": 168,
@@ -2076,7 +2076,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ee-3j",
+      "id": "it-mvic64mb-ee-8t",
       "productId": "pot-light",
       "x": 26,
       "y": 28,
@@ -2085,7 +2085,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ef-zn",
+      "id": "it-mvic64mb-ef-nz",
       "productId": "pot-light",
       "x": 78,
       "y": 28,
@@ -2094,7 +2094,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-eg-1d",
+      "id": "it-mvic64mb-eg-eh",
       "productId": "pot-light",
       "x": 130,
       "y": 28,
@@ -2103,7 +2103,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-eh-1c",
+      "id": "it-mvic64mb-eh-us",
       "productId": "pot-light",
       "x": 26,
       "y": 84,
@@ -2112,7 +2112,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ei-y",
+      "id": "it-mvic64mb-ei-th",
       "productId": "pot-light",
       "x": 78,
       "y": 84,
@@ -2121,7 +2121,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ej-bh",
+      "id": "it-mvic64mb-ej-ue",
       "productId": "pot-light",
       "x": 130,
       "y": 84,
@@ -2130,7 +2130,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ek-yz",
+      "id": "it-mvic64mb-ek-9g",
       "productId": "pot-light",
       "x": 26,
       "y": 140,
@@ -2139,7 +2139,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-el-f2",
+      "id": "it-mvic64mb-el-sm",
       "productId": "pot-light",
       "x": 78,
       "y": 140,
@@ -2148,7 +2148,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-em-hm",
+      "id": "it-mvic64mb-em-qk",
       "productId": "pot-light",
       "x": 130,
       "y": 140,
@@ -2157,7 +2157,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-en-nr",
+      "id": "it-mvic64mb-en-pg",
       "productId": "pot-light",
       "x": 28,
       "y": 198,
@@ -2166,7 +2166,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-eo-d3",
+      "id": "it-mvic64mb-eo-zz",
       "productId": "pot-light",
       "x": 83,
       "y": 198,
@@ -2175,7 +2175,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ep-am",
+      "id": "it-mvic64mb-ep-eg",
       "productId": "pot-light",
       "x": 138,
       "y": 198,
@@ -2184,7 +2184,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-eq-d",
+      "id": "it-mvic64mb-eq-zm",
       "productId": "pot-light",
       "x": 193,
       "y": 198,
@@ -2193,7 +2193,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-er-3q",
+      "id": "it-mvic64mb-er-kz",
       "productId": "pot-light",
       "x": 248,
       "y": 198,
@@ -2202,7 +2202,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-es-sq",
+      "id": "it-mvic64mb-es-z8",
       "productId": "pot-light",
       "x": 28,
       "y": 258,
@@ -2211,7 +2211,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-et-6y",
+      "id": "it-mvic64mb-et-ra",
       "productId": "pot-light",
       "x": 83,
       "y": 258,
@@ -2220,7 +2220,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-eu-6h",
+      "id": "it-mvic64mb-eu-i6",
       "productId": "pot-light",
       "x": 138,
       "y": 258,
@@ -2229,7 +2229,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ev-kw",
+      "id": "it-mvic64mb-ev-3",
       "productId": "pot-light",
       "x": 193,
       "y": 258,
@@ -2238,7 +2238,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ew-h8",
+      "id": "it-mvic64mb-ew-h2",
       "productId": "pot-light",
       "x": 248,
       "y": 258,
@@ -2247,7 +2247,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ex-s0",
+      "id": "it-mvic64mb-ex-ao",
       "productId": "pot-light",
       "x": 28,
       "y": 318,
@@ -2256,7 +2256,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ey-oo",
+      "id": "it-mvic64mb-ey-dj",
       "productId": "pot-light",
       "x": 83,
       "y": 318,
@@ -2265,7 +2265,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-ez-6t",
+      "id": "it-mvic64mb-ez-9u",
       "productId": "pot-light",
       "x": 138,
       "y": 318,
@@ -2274,7 +2274,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-f0-5u",
+      "id": "it-mvic64mb-f0-6y",
       "productId": "pot-light",
       "x": 193,
       "y": 318,
@@ -2283,7 +2283,7 @@
       "finishId": "white"
      },
      {
-      "id": "it-mvibpej3-f1-dm",
+      "id": "it-mvic64mb-f1-wb",
       "productId": "pot-light",
       "x": 248,
       "y": 318,

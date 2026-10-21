@@ -431,7 +431,18 @@ function galleryScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     const p = { ...p0, title: fname ? `${fname} ${p0.title}` : `${p0.line.name} ${p0.title}` };
     const doc0 = makeDoc(p.title, p.room, p.spec(p.room), matched(stagingFor(doorStyleOf(p.line), p.mood), p.line, p.finish), kitchenPrefs(lines, p.line), keepBasics, lines, p.stool);
     const doc = { ...doc0, items: dress(doc0.items, p.line, p.finish, p.island) };
-    out.push({ id: `gallery:${i + 1}`, label: p.title, doc, problems: layoutProblems(doc), shots: [{ slot: 'gallery', index: i + 1, title: p.title, ...GALLERY_SIZE, view: p.view(doc) }] });
+    const promo = i === 0 ? 5 : i === 2 ? 6 : 0;
+    out.push({
+      id: `gallery:${i + 1}`,
+      label: p.title,
+      doc,
+      problems: layoutProblems(doc),
+      shots: [
+        { slot: 'gallery', index: i + 1, title: p.title, ...GALLERY_SIZE, view: p.view(doc) },
+        // The sales page's slideshow takes the walnut galley and the navy L too.
+        ...(promo ? [{ slot: 'promo' as const, index: promo, title: p.title, ...PROMO_SIZE, view: p.view(doc) }] : []),
+      ],
+    });
   });
   void aspect;
   return out;
@@ -460,6 +471,8 @@ export function showroomScenes(lines: ShowroomLine[], featured: ShowroomLine[], 
   out.push(...dreamScenes(lines, keepBasics));
   const bath = bathPromo(lines, keepBasics);
   if (bath) out.push(bath);
+  const tubBath = tubPromo(lines, keepBasics);
+  if (tubBath) out.push(tubBath);
   return out;
 }
 
@@ -627,4 +640,37 @@ function bathPromo(lines: ShowroomLine[], keepBasics: boolean): Scene | null {
   // and the shower alcove at the end of the room.
   const view: CameraView = { pos: [0.9, 5.3, ft(room.lengthIn) - 0.8], target: [ft(room.widthIn) * 0.9, 3.5, ft(room.lengthIn) * 0.38], fov: 64 };
   return { id: 'promo:bath', label: 'Shower ensuite', doc, problems: layoutProblems(doc), shots: [{ slot: 'promo', index: 2, title: 'Shower ensuite', ...PROMO_SIZE, view }] };
+}
+
+/**
+ * The sales page's primary bathroom (slide 7, not on the demo): a freestanding soaking tub under a
+ * picture window at the far end, the company's double vanity along one wall, a plant by the tub.
+ * The tub, window and plant are BluModel Basics or decor; without "fill the gaps" it's the vanity.
+ */
+function tubPromo(lines: ShowroomLine[], keepBasics: boolean): Scene | null {
+  const line = lines.find(isBathLine);
+  if (!line) return null;
+  const room: Room = { widthIn: 168, lengthIn: 132, ceilingIn: 102 };
+  const W = room.widthIn;
+  const L = room.lengthIn;
+  const double = line.products.find((p) => p.kind === 'sink' && p.variant === 'double');
+  const tower = line.products.find((p) => p.kind === 'tall');
+  let items: PlacedItem[] = [
+    { id: 'pb-window', productId: 'window-picture', x: W, y: L / 2, rotation: 90, finishIndex: 0, widthIn: 60 },
+    { id: 'pb-tub', productId: 'tub-free', x: W - 26, y: L / 2, rotation: 90, finishIndex: 0 },
+    { id: 'pb-plant', productId: 'fig', x: W - 14, y: L - 16, rotation: 0, finishIndex: 0 },
+    { id: 'pb-mirror', productId: 'mirror', x: 54, y: 0.75, rotation: 0, finishIndex: 0, widthIn: 48 },
+  ];
+  if (double) items.push({ id: 'pb-vanity', productId: double.id, x: 54, y: double.depthIn / 2, rotation: 0, finishIndex: 0, widthIn: 72 });
+  if (tower) items.push({ id: 'pb-tower', productId: tower.id, x: 108, y: tower.depthIn / 2, rotation: 0, finishIndex: 0 });
+  if (!keepBasics) items = items.filter((it) => {
+    const p = getProduct(it.productId);
+    return !!p && (p.source === 'tenant' || isOpening(p) || p.category === 'decor');
+  });
+  const woody = line.products.flatMap((p) => (p.kind === 'sink' ? [] : finishList(p))).find((f) => f.material === 'wood') ?? line.products.flatMap((p) => finishList(p))[0];
+  const surfaces: Surfaces = { cabinetFinishId: nearestCabinetFinish(woody?.hex, 'white-oak'), doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'carrara', backsplashId: 'zellige-white', flooringId: 'marble-floor', paintId: 'bone' };
+  const doc: DesignDoc = { name: 'Primary bathroom', room, surfaces, items: withFinishIds(dress(items, line, woody?.id)), version: 2 };
+  // From the near corner: the tub under its window ahead, the vanity along the left at an angle.
+  const view: CameraView = { pos: [1.2, 5.2, ft(L) - 1.0], target: [ft(W), 3.0, ft(L) * 0.45], fov: 62 };
+  return { id: 'promo:tub', label: 'Primary bathroom', doc, problems: layoutProblems(doc), shots: [{ slot: 'promo', index: 7, title: 'Primary bathroom', ...PROMO_SIZE, view }] };
 }

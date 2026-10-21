@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
  */
 
 /**
- * The slideshow's slides: a white kitchen, an ensuite bathroom and a charcoal kitchen, each on a different made-up company's
+ * The slideshow's slides: kitchens and bathrooms in different styles, each on a different made-up company's
  * showroom. The 3D picture is in the app (public/marketing/, scripts/make-showroom-images.mjs); a
  * photoreal version, when the server has made one (server/scripts/render-marketing.mjs), replaces it.
  */
@@ -15,6 +15,9 @@ const SLIDES: { name: string; title: string; co: { name: string; initials: strin
   { name: 'kitchen-1', title: 'White shaker kitchen with a waterfall island', co: { name: 'Cedar & Stone Kitchens', initials: 'CS', slug: 'cedarstone', color: '#2f4a3a', accent: '#c9b99a' } },
   { name: 'kitchen-2', title: 'Shower ensuite with a double vanity', co: { name: 'Harbourline Cabinetry', initials: 'HC', slug: 'harbourline', color: '#233a5e', accent: '#9fb6cf' } },
   { name: 'kitchen-4', title: 'Charcoal kitchen with a professional range', co: { name: 'Northfield Design-Build', initials: 'ND', slug: 'northfield', color: '#5a3427', accent: '#d8b48f' } },
+  { name: 'kitchen-5', title: 'Smoked walnut galley with an island', co: { name: 'Ridgeway Millwork', initials: 'RM', slug: 'ridgeway', color: '#3b2a20', accent: '#d9b48a' } },
+  { name: 'kitchen-6', title: 'Navy shaker kitchen with an island', co: { name: 'Bluewater Kitchen Co.', initials: 'BK', slug: 'bluewater', color: '#1f3350', accent: '#e2c68f' } },
+  { name: 'kitchen-7', title: 'Primary bathroom with a soaking tub', co: { name: 'Stillwater Bath & Tile', initials: 'SB', slug: 'stillwater', color: '#3d4a45', accent: '#c8d6cf' } },
 ];
 
 /** The photoreal versions the server has (name -> address), once asked. */

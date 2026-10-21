@@ -25,7 +25,7 @@ export const GALLERY_MAX = 3;
 /** Dream kitchens: the showroom's advert, each one a design a visitor can start from. */
 export const DREAM_MAX = 2;
 /** Promo pictures: the generator's extra angles for BluModel's own sales page (never shown on a showroom). */
-export const PROMO_MAX = 4;
+export const PROMO_MAX = 8;
 const MIN_SIDE = 320;
 const MAX_SIDE = 4096;
 const TICKET_TTL_MS = 2 * 3_600_000;

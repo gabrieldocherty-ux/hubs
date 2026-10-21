@@ -13,6 +13,9 @@ export const MARKETING_PROMPTS = Object.freeze({
   // The approved look (2026-10-21), now with the uppers wrapping around the corners.
   'kitchen-4':
     'Photorealistic interior photograph of a modern U-shaped kitchen: matte charcoal slab cabinets with brass bar pulls, a continuous row of upper cabinets wrapping around the corners, dark stone countertops, a stainless chimney hood over a professional range, white tile backsplash, a window over the undermount sink, large white porcelain floor tiles, warm daylight. Keep the exact layout and camera angle.',
+  'kitchen-5': `A warm galley kitchen with an island: smoked walnut cabinets, a light stone countertop, brass hardware, pendants over the island, a range and hood, wood floors. ${REAL}`,
+  'kitchen-6': `A classic L-shaped kitchen with an island: deep navy blue shaker cabinets with brass hardware, white marble countertops, a white tile backsplash, a farmhouse sink under a window, pendants over the island, oak floors. ${REAL}`,
+  'kitchen-7': `A calm primary bathroom: a white freestanding soaking tub with a floor-mounted filler under a large picture window, a warm wood double vanity with brass taps and a mirror, a tall wood linen cabinet, a fig plant, marble floor tiles, soft warm walls. ${REAL}`,
 });
 
 export const MARKETING_NAMES = Object.freeze(Object.keys(MARKETING_PROMPTS));
