@@ -31,7 +31,7 @@ export interface CameraView {
 
 /** One image to make: where it goes and its size. */
 export interface Shot {
-  slot: 'hero' | 'heroTall' | 'line' | 'gallery' | 'dream';
+  slot: 'hero' | 'heroTall' | 'line' | 'gallery' | 'dream' | 'promo';
   width: number;
   height: number;
   view: CameraView;
@@ -55,6 +55,8 @@ export const HERO_TALL_SIZE = { width: 1080, height: 1440 } as const;
 export const LINE_SIZE = { width: 1200, height: 900 } as const;
 export const GALLERY_SIZE = { width: 1600, height: 1000 } as const;
 export const DREAM_SIZE = { width: 1600, height: 1000 } as const;
+/** The sales page's slideshow (its stage is 3:2). */
+export const PROMO_SIZE = { width: 1500, height: 1000 } as const;
 
 const ROOM_KITCHEN: Room = { widthIn: 228, lengthIn: 192, ceilingIn: 108 };
 
@@ -496,7 +498,7 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
   const shaker = cabs.find((l) => doorStyleOf(l) === 'shaker') ?? cabs[0];
   const slab = cabs.find((l) => doorStyleOf(l) === 'slab') ?? cabs[cabs.length - 1];
   const deep = (l: ShowroomLine) => l.products.flatMap((p) => finishList(p)).filter((f) => f.material === 'paint' && luminance(f.hex) > 0.02).sort((x, y) => luminance(x.hex) - luminance(y.hex))[0]?.id;
-  const plans: { title: string; line: ShowroomLine; finish?: string; island?: string; surfaces: Surfaces; room: Room; spec: (r: Room) => LayoutSpec; shape: (d: Draft) => Draft; view: (d: DesignDoc) => CameraView }[] = [
+  const plans: { title: string; line: ShowroomLine; finish?: string; island?: string; surfaces: Surfaces; room: Room; spec: (r: Room) => LayoutSpec; shape: (d: Draft) => Draft; view: (d: DesignDoc) => CameraView; angle: (d: DesignDoc) => CameraView }[] = [
     {
       title: 'The Entertainer’s Kitchen',
       line: shaker,
@@ -521,6 +523,9 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
       },
       // Framed on the kitchen itself (the bay makes the plan deeper than the kitchen).
       view: (d) => ({ pos: [ft(d.room.widthIn) - 1.1, 5.3, ft(d.room.lengthIn) - 0.9], target: [ft(d.room.widthIn) * 0.4, 3.3, 2.5], fov: 54 }),
+      // The sales page's second angle: straight on from the breakfast bay, the island and its stools
+      // in front of the range and hood.
+      angle: (d) => ({ pos: [ft(d.room.widthIn) * 0.5, 5.6, ft(d.room.lengthIn) + 1.6], target: [ft(d.room.widthIn) * 0.5, 3.4, 0.5], fov: 64 }),
     },
     {
       // A different kitchen altogether: a U wrapped round the cook, no island, dark slab doors and
@@ -543,8 +548,10 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
         const L = d.room.lengthIn;
         return side(d, [[0, L], [W + 120, L], [W + 120, L + 180], [0, L + 180]], 'Living room', 'walkway', 108);
       },
-      // From the living room, looking north through the walkway into the U.
-      view: (d) => ({ pos: [ft(d.room.widthIn) / 2 + 0.6, 5.2, ft(d.room.lengthIn) + 9], target: [ft(d.room.widthIn) / 2, 3.3, 1.5], fov: 56 }),
+      // Hero shots from inside the U: a step in from each side of the walkway, a little above eye
+      // level, diagonally across the whole kitchen (the aisle is 9', so nothing tall is in the way).
+      view: (d) => ({ pos: [3.0, 5.7, ft(d.room.lengthIn) - 0.3], target: [ft(d.room.widthIn) - 2.2, 3.0, 2.2], fov: 66 }),
+      angle: (d) => ({ pos: [ft(d.room.widthIn) - 3.0, 5.7, ft(d.room.lengthIn) - 0.3], target: [2.2, 3.0, 2.2], fov: 66 }),
     },
   ];
   return plans.map((p, i) => {
@@ -555,7 +562,13 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     // Pot lights over the whole room, as the editor lays them (they are BluModel Basics, so only
     // for a company that fills the gaps with them).
     const doc = keepBasics ? { ...dressed, items: withFinishIds(layoutPotLights({ room: dressed.room, items: dressed.items }).items) } : dressed;
-    return { id: `dream:${i + 1}`, label: p.title, doc, problems: layoutProblems(doc), shots: [{ slot: 'dream' as const, index: i + 1, title: p.title, ...DREAM_SIZE, view: p.view({ ...doc, room: p.room }) }] };
+    return { id: `dream:${i + 1}`, label: p.title, doc, problems: layoutProblems(doc), shots: [
+        { slot: 'dream' as const, index: i + 1, title: p.title, ...DREAM_SIZE, view: p.view({ ...doc, room: p.room }) },
+        // Two angles of each for the sales page's slideshow (scripts/make-showroom-images.mjs puts
+        // them in public/marketing/, not on the demo).
+        { slot: 'promo' as const, index: i * 2 + 1, title: p.title, ...PROMO_SIZE, view: p.view({ ...doc, room: p.room }) },
+        { slot: 'promo' as const, index: i * 2 + 2, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) },
+      ] };
   });
 }
 

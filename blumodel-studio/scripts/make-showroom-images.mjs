@@ -131,6 +131,14 @@ try {
   for (const v of Object.values(render.lines ?? {})) put({ slot: 'line', source: 'render', line: v.line }, v, `line-${slug(v.line)}`);
   (render.gallery ?? []).forEach((g, i) => g && put({ slot: 'gallery', source: 'render', index: i + 1, title: g.title, design: `gallery-${i + 1}` }, g, `gallery-${i + 1}`));
   (render.dreams ?? []).forEach((g, i) => g && put({ slot: 'dream', source: 'render', index: i + 1, title: g.title, design: `dream-${i + 1}` }, g, `dream-${i + 1}`));
+  // The sales page's slideshow: two angles of each dream kitchen, in public/marketing/ (not the demo's
+  // manifest). The live server makes photoreal versions of them (server/scripts/render-marketing.mjs).
+  const PROMO_OUT = path.join(ROOT, 'public', 'marketing');
+  (render.promos ?? []).forEach((g, i) => {
+    if (!g) return;
+    const f = fileOf(g.fileId);
+    fs.writeFileSync(path.join(PROMO_OUT, `kitchen-${i + 1}.${f.ext}`), blob(f));
+  });
 
   // The plans behind the hero and the gallery, with SKUs instead of this database's product ids.
   const designs = scenes

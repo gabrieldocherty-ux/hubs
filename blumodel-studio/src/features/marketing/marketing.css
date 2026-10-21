@@ -1753,3 +1753,96 @@
   font-size: 12.5px;
   color: var(--ink-2);
 }
+
+/* ─── The showroom slideshow (art.tsx ShowroomMock) ──────── */
+
+.mk-window-nav,
+.mk-window-logo {
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+.mk-slides {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mk-slides::-webkit-scrollbar {
+  display: none;
+}
+
+.mk-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.mk-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+
+.mk-slide-btn {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #1d1a16;
+  font-size: 26px;
+  line-height: 1;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+
+.mk-slide-prev {
+  left: 10px;
+}
+
+.mk-slide-next {
+  right: 10px;
+}
+
+.mk-slide-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  display: flex;
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(20, 18, 16, 0.42);
+}
+
+.mk-slide-dots i {
+  width: 8px;
+  height: 8px;
+  margin: 4px 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: background-color 0.2s ease;
+}
+
+.mk-slide-dots i.on {
+  background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mk-window-nav,
+  .mk-window-logo {
+    transition: none;
+  }
+}

@@ -17,13 +17,15 @@ import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { sniffImage } from '../lib/validators.mjs';
 
-export const IMAGE_SLOTS = Object.freeze(['hero', 'heroTall', 'line', 'gallery', 'dream']);
+export const IMAGE_SLOTS = Object.freeze(['hero', 'heroTall', 'line', 'gallery', 'dream', 'promo']);
 export const IMAGE_SOURCES = Object.freeze(['render', 'photo']);
 /** Slots a company may upload its own photo for. */
 export const PHOTO_SLOTS = Object.freeze(['hero', 'line']);
 export const GALLERY_MAX = 3;
 /** Dream kitchens: the showroom's advert, each one a design a visitor can start from. */
 export const DREAM_MAX = 2;
+/** Promo pictures: the generator's extra angles for BluModel's own sales page (never shown on a showroom). */
+export const PROMO_MAX = 4;
 const MIN_SIDE = 320;
 const MAX_SIDE = 4096;
 const TICKET_TTL_MS = 2 * 3_600_000;
@@ -58,6 +60,12 @@ export function cleanTarget(input = {}) {
     out.index = i;
     out.title = String(input.title ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
   }
+  if (slot === 'promo') {
+    const i = Number(input.index);
+    if (!Number.isInteger(i) || i < 1 || i > PROMO_MAX) throw bad('index', `Promo pictures are numbered 1 to ${PROMO_MAX}.`);
+    out.index = i;
+    out.title = String(input.title ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  }
   if (slot === 'dream') {
     const i = Number(input.index);
     if (!Number.isInteger(i) || i < 1 || i > DREAM_MAX) throw bad('index', `Dream kitchens are numbered 1 to ${DREAM_MAX}.`);
@@ -89,6 +97,11 @@ export function withImage(images, target, img) {
     while (g.length < target.index - 1) g.push(null);
     g[target.index - 1] = { ...img, title: target.title ?? '' };
     set.gallery = g;
+  } else if (target.slot === 'promo') {
+    const g = Array.isArray(set.promos) ? set.promos.slice(0, PROMO_MAX) : [];
+    while (g.length < target.index - 1) g.push(null);
+    g[target.index - 1] = { ...img, title: target.title ?? '' };
+    set.promos = g;
   } else if (target.slot === 'dream') {
     const g = Array.isArray(set.dreams) ? set.dreams.slice(0, DREAM_MAX) : [];
     while (g.length < target.index - 1) g.push(null);
@@ -108,6 +121,7 @@ export function withoutImage(images, target) {
   else if (target.slot === 'line' && set.lines) delete set.lines[lineKey(target.line)];
   else if (target.slot === 'gallery' && Array.isArray(set.gallery)) set.gallery[target.index - 1] = null;
   else if (target.slot === 'dream' && Array.isArray(set.dreams)) set.dreams[target.index - 1] = null;
+  else if (target.slot === 'promo' && Array.isArray(set.promos)) set.promos[target.index - 1] = null;
   return out;
 }
 
@@ -121,6 +135,7 @@ export function imageFileIds(images) {
     for (const v of Object.values(s.lines ?? {})) if (v?.fileId) ids.push(v.fileId);
     for (const v of s.gallery ?? []) if (v?.fileId) ids.push(v.fileId);
     for (const v of s.dreams ?? []) if (v?.fileId) ids.push(v.fileId);
+    for (const v of s.promos ?? []) if (v?.fileId) ids.push(v.fileId);
   }
   return ids;
 }

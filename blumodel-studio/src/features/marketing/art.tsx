@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 /*
  * The sales site's illustrations, drawn in HTML and CSS: a company's showroom in a browser
@@ -6,11 +6,61 @@ import { useState } from 'react';
  * company, person and product in them is made up (the footer says so).
  */
 
-/** A showroom under the company's own name and web address, with the 3D render of a kitchen. */
+/**
+ * The slideshow's slides: two angles of each of two kitchens, each on a different made-up company's
+ * showroom. The 3D picture is in the app (public/marketing/, scripts/make-showroom-images.mjs); a
+ * photoreal version, when the server has made one (server/scripts/render-marketing.mjs), replaces it.
+ */
+const SLIDES: { name: string; title: string; co: { name: string; initials: string; slug: string; color: string; accent: string } }[] = [
+  { name: 'kitchen-1', title: 'White shaker kitchen with a waterfall island', co: { name: 'Cedar & Stone Kitchens', initials: 'CS', slug: 'cedarstone', color: '#2f4a3a', accent: '#c9b99a' } },
+  { name: 'kitchen-2', title: 'The same kitchen, from the breakfast bay', co: { name: 'Harbourline Cabinetry', initials: 'HC', slug: 'harbourline', color: '#233a5e', accent: '#9fb6cf' } },
+  { name: 'kitchen-3', title: 'Charcoal U-shaped kitchen', co: { name: 'Northfield Design-Build', initials: 'ND', slug: 'northfield', color: '#5a3427', accent: '#d8b48f' } },
+  { name: 'kitchen-4', title: 'The same kitchen, toward the range', co: { name: 'Maple & Main Renovations', initials: 'MM', slug: 'maplemain', color: '#3f3a5e', accent: '#c4b6e0' } },
+];
+
+/** The photoreal versions the server has (name -> address), once asked. */
+function usePhotoreal(): Record<string, string> {
+  const [images, setImages] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    fetch('/api/marketing/photoreal')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b) => {
+        if (live && b && typeof b.images === 'object' && b.images) setImages(b.images as Record<string, string>);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  return images;
+}
+
+/** A showroom under a company's own name and web address: a swipeable slideshow of kitchens. */
 export function ShowroomMock() {
-  const [render, setRender] = useState(true);
+  const [at, setAt] = useState(0);
+  const track = useRef<HTMLDivElement>(null);
+  const photo = usePhotoreal();
+  const slide = SLIDES[at];
+  const go = (i: number) => {
+    const t = track.current;
+    const n = (i + SLIDES.length) % SLIDES.length;
+    if (t) t.scrollTo({ left: n * t.clientWidth, behavior: 'smooth' });
+    setAt(n);
+  };
+  const onScroll = () => {
+    const t = track.current;
+    if (!t || !t.clientWidth) return;
+    const n = Math.round(t.scrollLeft / t.clientWidth);
+    if (n !== at && n >= 0 && n < SLIDES.length) setAt(n);
+  };
   return (
-    <figure className="mk-window" aria-label="Illustration: a company’s own showroom website at yourcompany.blumodel.studio">
+    <figure
+      className="mk-window"
+      style={{ '--mk-co': slide.co.color, '--mk-co-2': slide.co.accent } as CSSProperties}
+      aria-roledescription="carousel"
+      aria-label="Sample showrooms: kitchens designed in BluModel, on made-up companies’ websites"
+    >
       <div className="mk-window-bar" aria-hidden>
         <span className="mk-window-dots">
           <i />
@@ -18,13 +68,13 @@ export function ShowroomMock() {
           <i />
         </span>
         <span className="mk-window-url">
-          <LockGlyph /> <b>yourcompany</b>.blumodel.studio
+          <LockGlyph /> <b>{slide.co.slug}</b>.blumodel.studio
         </span>
       </div>
-      <div className="mk-window-site" aria-hidden>
-        <div className="mk-window-nav">
-          <span className="mk-window-logo">YC</span>
-          <span className="mk-window-name">Your Company Kitchen &amp; Bath</span>
+      <div className="mk-window-site">
+        <div className="mk-window-nav" aria-hidden>
+          <span className="mk-window-logo">{slide.co.initials}</span>
+          <span className="mk-window-name">{slide.co.name}</span>
           <span className="mk-window-links">
             <i>Kitchens</i>
             <i>Bathrooms</i>
@@ -32,23 +82,40 @@ export function ShowroomMock() {
           </span>
         </div>
         <div className="mk-window-stage">
-          {render && (
-            <img
-              src="/marketing/hero.webp"
-              width={1200}
-              height={800}
-              alt=""
-              onError={() => setRender(false)}
-            />
-          )}
-          <div className="mk-window-welcome">
+          <div className="mk-slides" ref={track} onScroll={onScroll} data-testid="mk-slides">
+            {SLIDES.map((s, i) => (
+              <div key={s.name} className="mk-slide" role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${SLIDES.length}: ${s.title}`}>
+                <img
+                  src={photo[s.name] ?? `/marketing/${s.name}.webp`}
+                  width={1500}
+                  height={1000}
+                  alt={s.title}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  draggable={false}
+                  data-photoreal={photo[s.name] ? '1' : '0'}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mk-window-welcome" aria-hidden>
             <b>Design your new kitchen</b>
             <span>With our cabinets, counters and fixtures</span>
           </div>
-          <span className="mk-window-send">Send this design to Your Company</span>
+          <button type="button" className="mk-slide-btn mk-slide-prev" onClick={() => go(at - 1)} aria-label="Previous kitchen">
+            ‹
+          </button>
+          <button type="button" className="mk-slide-btn mk-slide-next" onClick={() => go(at + 1)} aria-label="Next kitchen">
+            ›
+          </button>
+          {/* Where you are; swipe or the arrows move (dots are too small to tap on a phone). */}
+          <div className="mk-slide-dots" aria-hidden>
+            {SLIDES.map((s, i) => (
+              <i key={s.name} className={i === at ? 'on' : ''} />
+            ))}
+          </div>
         </div>
       </div>
-      <figcaption>Your showroom, at your own web address, with your name, colours and products.</figcaption>
+      <figcaption>Your showroom, at your own web address, with your name, colours and products. (Sample companies, made up for illustration.)</figcaption>
     </figure>
   );
 }
