@@ -193,7 +193,8 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
       const msg = err instanceof RenderFailure ? err.message : err instanceof HttpError ? `${err.message} Your credits were returned.` : 'The render didn’t work. Your credits were returned.';
       if (!(err instanceof RenderFailure)) log?.warn?.(`renders: ${id} failed: ${err?.message ?? err}`);
       try {
-        fail(id, msg);
+        // No credits were held (free, or renders included): nothing to say came back.
+        fail(id, row(id)?.hold_id ? msg : msg.replace(/\s*Your credits were returned\.?/, '').trim() || 'The render didn’t work.');
       } catch (e) {
         log?.error?.(`renders: could not mark ${id} failed: ${e?.message ?? e}`);
       }
@@ -230,7 +231,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
       else if (free > 0) reason = null;
       else if (!team && !visitor.enabled) reason = 'visitor_off';
       else if (!team && visitor.left <= 0) reason = 'daily_cap';
-      else if (balance < costCents()) reason = team ? 'no_credits' : 'unavailable';
+      else if (costCents() > 0 && balance < costCents()) reason = team ? 'no_credits' : 'unavailable';
       return {
         configured,
         provider: provider?.id ?? null,
@@ -278,7 +279,8 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
         if (free && !isFree) throw new HttpError(409, 'Your free photoreal renders were just used. Try again.', { code: 'free_used' });
         // The cap again inside the transaction, so two visitors can't both take the last one.
         if (!isFree && !team && visitorAllowance(tenant).left <= 0) throw new HttpError(429, 'Today’s photoreal renders are used up. Try again tomorrow.', { code: 'daily_cap_reached' });
-        const hold = isFree ? null : credits.reserve(tenant.id, costCents(), { purpose: 'render', ref: id, by: rc.user.id });
+        // Nothing held for a free render, or when renders are included (RENDER_CREDIT_CENTS 0).
+        const hold = isFree || costCents() === 0 ? null : credits.reserve(tenant.id, costCents(), { purpose: 'render', ref: id, by: rc.user.id });
         const input = files.saveBuffer(img.buf, { kind: 'image', visibility: 'private', ownerUserId: rc.user.id, tenantId: tenant.id, originalName: `view-${id}.${img.mime.split('/')[1]}` });
         db.prepare(
           `INSERT INTO showroom_renders (id, tenant_id, user_id, by_role, project_id, design_name, status, provider, cost_cents, hold_id, free, input_file_id, scene, created_at)

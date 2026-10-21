@@ -1,7 +1,7 @@
 {
-  "source": "931e36cad3031cfa136cc8c9d23fb226d0d7d462",
-  "subject": "sales copy: step 1 is just \"Send us your product line\" (we gather the rest ourselves)",
-  "builtAt": "2026-10-21T04:16:19.074Z",
+  "source": "5318a29b805e606f79a3b3a008925b7d4f9a7eb3",
+  "subject": "renders: included in the plan - BluModel pays MyArchitectAI (about 3 cents a render), so by default ",
+  "builtAt": "2026-10-21T04:25:23.388Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

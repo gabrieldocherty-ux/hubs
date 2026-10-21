@@ -119,7 +119,12 @@ export function loadConfig(env = process.env, argv = process.argv) {
     .replace(/^\.+|\.+$/g, '');
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(BASE_DOMAIN)) throw new Error(`BASE_DOMAIN must be a domain name like blumodel.studio (got "${BASE_DOMAIN}").`);
   // Credits one AI render costs (docs/SHOWROOM_PIVOT.md §7), in cents. 25 until Gabe sets it.
-  const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 25, 1, 100_000);
+  // What one render costs a company in credits. 0 (the default): renders are included in the plan,
+  // paid for by BluModel (about 3 cents each at MyArchitectAI), and no credits are held or charged.
+  const RENDER_CREDIT_CENTS = int(env.RENDER_CREDIT_CENTS, 0, 0, 100_000);
+  // Whether a paid month adds its render credits (SHOWROOM_MONTHLY.creditCents): off by default,
+  // since renders are included and the plan no longer promises credits.
+  const RENDER_MONTHLY_CREDITS = String(env.RENDER_MONTHLY_CREDITS || 'off').trim().toLowerCase() === 'on';
   // The kitchen designer on the sales site (blumodel.studio): off in production, where the sales
   // site is marketing only and designing happens on the companies' showrooms. QA and development
   // keep it on (SALES_DESIGNER=on|off).
@@ -227,6 +232,7 @@ export function loadConfig(env = process.env, argv = process.argv) {
     SHUTDOWN_FILE,
     BASE_DOMAIN,
     RENDER_CREDIT_CENTS,
+    RENDER_MONTHLY_CREDITS,
     SALES_DESIGNER,
     FREE_RENDERS,
     TRIAL_DAYS,

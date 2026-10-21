@@ -100,7 +100,7 @@ export default function PhotorealDialog({ projectId, shareToken, team }: { proje
       if (r.status === 'pending') continue;
       setCurrent(r);
       setPhase(r.status === 'failed' ? 'failed' : 'done');
-      if (r.status === 'failed') setError(r.error ?? 'The render didn’t work. Your credits were returned.');
+      if (r.status === 'failed') setError(r.error ?? 'The render didn’t work.');
       qaRenders({ finished: { id: r.id, status: r.status, width: r.width, height: r.height, demo: r.demo } });
       void loadGallery();
       void loadStatus();
@@ -156,6 +156,8 @@ export default function PhotorealDialog({ projectId, shareToken, team }: { proje
     // While the account has free renders, the next one is free whoever asks.
     const free = freeLine(status.free);
     if (free) return free;
+    // Renders included in the plan: nothing to count for the team.
+    if (status.costCents === 0) return status.balanceCents != null ? 'Photoreal renders are included in your plan.' : status.visitor.enabled ? `${plural(status.visitor.left, 'photoreal render')} left today on this showroom.` : null;
     if (status.balanceCents != null) {
       const left = rendersLeft(status.balanceCents, status.costCents);
       return `One render uses ${cents(status.costCents)} of credits · ${cents(status.balanceCents)} left (${plural(left, 'render')}).`;

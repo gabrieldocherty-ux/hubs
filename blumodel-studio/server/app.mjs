@@ -85,7 +85,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
   showroomBilling.onChange((tenantId) => tenants.refresh(tenantId));
   // Each paid month adds its render credits, once per invoice.
   const credits = createCredits({ db, now });
-  showroomBilling.onMonthPaid((tenantId, { invoiceRef, at }) => credits.grantMonth(tenantId, invoiceRef, { at }));
+  // (Only with RENDER_MONTHLY_CREDITS=on: renders are included in the plan by default.)
+  showroomBilling.onMonthPaid((tenantId, { invoiceRef, at }) => config.RENDER_MONTHLY_CREDITS && credits.grantMonth(tenantId, invoiceRef, { at }));
   // ...and a refunded or disputed month takes back what is left of them.
   showroomBilling.onReversal((tenantId, { lotId, cents, note }) => credits.revokeLot(tenantId, lotId, cents, { note }));
   const leads = createLeadService({ db, now });

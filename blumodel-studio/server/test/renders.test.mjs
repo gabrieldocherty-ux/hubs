@@ -11,6 +11,7 @@ import { makeJpeg, makePng } from '../lib/synth.mjs';
 import { decodePng, encodePng } from '../renders/png.mjs';
 import { cleanScene, scenePrompt } from '../renders/scene.mjs';
 import { imageFromJson } from '../renders/providers.mjs';
+import { loadConfig } from '../config.mjs';
 
 const KEY = 'arch_FAKE_FOR_TESTS';
 const URL_ = 'https://architect.example/v1/render';
@@ -596,6 +597,42 @@ test('free renders: FREE_RENDERS=0 switches them off', async () => {
     const st = (await w.visitor.get('/api/renders/status')).body;
     assert.deepEqual(st.free, { total: 0, left: 0 });
     assert.equal(st.reason, 'visitor_off');
+  } finally {
+    await t.close();
+  }
+});
+
+test('renders included (the default): no credits needed, held or charged; no monthly credits; failures don’t mention credits', async () => {
+  // The defaults, not the helper's credit-machinery settings.
+  const cfg = loadConfig({ DB_PATH: ':memory:' }, []);
+  assert.equal(cfg.RENDER_CREDIT_CENTS, 0);
+  assert.equal(cfg.RENDER_MONTHLY_CREDITS, false);
+  let ok = true;
+  const PIC2 = 'https://cdn.myarchitectai.example/out/included.png';
+  const fetch = async (url) =>
+    !ok
+      ? new Response('down', { status: 500 })
+      : String(url) === PIC2
+        ? new Response(makePng({ w: 400, h: 225 }), { headers: { 'Content-Type': 'image/png' } })
+        : new Response(JSON.stringify({ output: [PIC2], balance: 1, cost: 0.03, requestId: 1 }), { headers: { 'Content-Type': 'application/json' } });
+  const t = await startTestServer({ env: { ARCHITECT_AI_KEY: KEY, RENDER_CREDIT_CENTS: '0', RENDER_MONTHLY_CREDITS: 'off', FREE_RENDERS: '0' }, fetch });
+  try {
+    const w = await world(t, { slug: 'incl', credits: false });
+    assert.equal(t.services.credits.balance(w.tn.id), 0);
+    const st = await w.staff.get('/api/renders/status');
+    assert.equal(st.body.canRender, true, JSON.stringify(st.body));
+    assert.equal(st.body.costCents, 0);
+    const r = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
+    assert.equal(r.status, 202, r.text);
+    await t.services.renders.settled();
+    assert.equal((await w.staff.get(`/api/renders/${r.body.render.id}`)).body.render.status, 'done');
+    ok = false;
+    const f = await w.staff.post('/api/renders', { projectId: w.staffProject, image: view(), scene: SCENE });
+    await t.services.renders.settled();
+    const got = (await w.staff.get(`/api/renders/${f.body.render.id}`)).body.render;
+    assert.equal(got.status, 'failed');
+    assert.doesNotMatch(got.error, /credit/i);
+    assert.deepEqual(ledger(t, w.tn.id), [], 'no credit entries at all');
   } finally {
     await t.close();
   }

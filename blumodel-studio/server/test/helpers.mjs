@@ -258,6 +258,10 @@ export async function startTestServer({ env = {}, fetch: fetchImpl, rateLimits =
       PORT: '0',
       HOST: '127.0.0.1',
       RATE_LIMITS: rateLimits || prod ? 'on' : 'off',
+      // The credit machinery's tests: renders cost 25 cents and paid months add credits (both off by
+      // default now that renders are included); a test about the defaults sets them back.
+      RENDER_CREDIT_CENTS: '25',
+      RENDER_MONTHLY_CREDITS: 'on',
       ...env,
     },
     prod ? ['--prod'] : [],
