@@ -601,8 +601,28 @@ function bathPromo(lines: ShowroomLine[], keepBasics: boolean): Scene | null {
   });
   const woody = line.products.flatMap((p) => (p.kind === 'sink' ? [] : finishList(p))).find((f) => f.material === 'wood') ?? line.products.flatMap((p) => finishList(p))[0];
   const surfaces: Surfaces = { cabinetFinishId: nearestCabinetFinish(woody?.hex, 'white-oak'), doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'carrara', backsplashId: 'zellige-white', flooringId: 'hex-white', paintId: 'fog' };
-  const doc: DesignDoc = { name: 'Shower ensuite', room, surfaces, items: withFinishIds(dress(items, line, woody?.id)), version: 2 };
-  // From the door's corner, across the room to the vanity, the toilet and the shower.
-  const view: CameraView = { pos: [1.0, 5.3, ft(room.lengthIn) - 0.7], target: [ft(room.widthIn) * 0.6, 3.4, 1.0], fov: 66 };
+  // The shower recessed into the end wall: an alcove built out of it, the shower set back into it
+  // (walls on three sides, its glass facing the room), centred on the room.
+  const shower = items.find((it) => getProduct(it.productId)?.kind === 'shower');
+  let plan: Draft = { room, items };
+  if (shower) {
+    const sw = shower.widthIn ?? getProduct(shower.productId)?.widthIn ?? 60;
+    // Exactly the shower's size, so it tiles all three walls and sits flush with the room's wall.
+    const from = Math.round((room.lengthIn - sw) / 2);
+    const to = from + sw;
+    const deep = getProduct(shower.productId)?.depthIn ?? 36;
+    const bumped = bay(plan, 'east', from, to, deep);
+    if (bumped !== plan) plan = { room: bumped.room, items: items.map((it) => (it === shower ? { ...it, x: room.widthIn + deep - 18, y: (from + to) / 2 } : it)) };
+  }
+  // Lived in, like a house: a window in the long wall and the company's linen tower beside it.
+  const tower = line.products.find((p) => p.kind === 'tall');
+  const extras: PlacedItem[] = [{ id: 'bath-window', productId: 'window', x: room.widthIn * 0.48, y: room.lengthIn, rotation: 180, finishIndex: 0, widthIn: 36 }];
+  // The tower in the far corner, beside the shower alcove (clear of the camera at the near end).
+  if (tower) extras.push({ id: 'bath-tower', productId: tower.id, x: room.widthIn - tower.widthIn / 2 - 2, y: room.lengthIn - tower.depthIn / 2, rotation: 180, finishIndex: 0 });
+  plan = { room: plan.room, items: [...plan.items, ...extras] };
+  const doc: DesignDoc = { name: 'Shower ensuite', room: plan.room, surfaces, items: withFinishIds(dress(plan.items, line, woody?.id)), version: 2 };
+  // From the doorway's corner: the vanity and its mirror at an angle (never head on), the toilet,
+  // and the shower alcove at the end of the room.
+  const view: CameraView = { pos: [0.9, 5.3, ft(room.lengthIn) - 0.8], target: [ft(room.widthIn) * 0.9, 3.5, ft(room.lengthIn) * 0.38], fov: 64 };
   return { id: 'promo:bath', label: 'Shower ensuite', doc, problems: layoutProblems(doc), shots: [{ slot: 'promo', index: 2, title: 'Shower ensuite', ...PROMO_SIZE, view }] };
 }
