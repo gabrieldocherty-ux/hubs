@@ -166,6 +166,25 @@ function WallCabModel({ r, finish, ctx, ends }: ModelProps) {
       fronts.push({ x: -w / 2 + dw * (i + 0.5), y: y0, w: dw, h, glass, pull: { dir: 'v', x: pullX, y: bridge ? y0 + 3.5 : y0 + 4.5, len: bridge ? 4 : 5 } });
     }
   const rng = mulberry32(hashString(r.item.id));
+  if (product.variant === 'corner') {
+    // The lazy Susan upper: an L of two 12″-deep legs into the corner, the back wall's along z and the
+    // side wall's along x (mirrored for the other corner), and the two pie-cut doors meeting at the
+    // inside corner, hinged together, with one pull.
+    const sx = r.item.mirrored ? -1 : 1;
+    const leg = 12;
+    return (
+      <group>
+        <Box size={[w, h, leg]} pos={[0, y0 + h / 2, -d / 2 + leg / 2]} mat={body} />
+        <Box size={[leg, h, d - leg]} pos={[sx * (-w / 2 + leg / 2), y0 + h / 2, (d - leg) / 2 - d / 2 + leg]} mat={body} />
+        <Front f={{ x: sx * (leg / 2), y: y0, w: w - leg, h, pull: { dir: 'v', x: sx * (w / 2 - 2.2), y: y0 + 4.5, len: 5 } }} z={-d / 2 + leg} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+        <group position={[sx * (-w / 2 + leg), 0, -d / 2 + leg + (d - leg) / 2]} rotation={[0, sx * (Math.PI / 2), 0]}>
+          <Front f={{ x: 0, y: y0, w: d - leg, h, pull: null }} z={0} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+        </group>
+        {ctx.underCabinet && <UnderCabinetLight w={w} d={leg} y0={y0} />}
+        <Crown w={w} d={leg} top={y0 + h} finish={finish} ctx={ctx} ends={ends} />
+      </group>
+    );
+  }
   return (
     <group>
       {glass ? (

@@ -593,8 +593,8 @@ function bathPromo(lines: ShowroomLine[], keepBasics: boolean): Scene | null {
   let items = bathLayoutItems('shower-ensuite', room).filter((it) => it.productId !== 'door').map((it) => {
     if (it.productId === 'vanity-double' && double) return { ...it, productId: double.id, widthIn: 60 };
     if (it.productId === 'vanity' && single) return { ...it, productId: single.id };
-    // A glass-door shower (frameless door, 36″ deep) suits the recess better than an open walk-in.
-    if (it.productId === 'shower-walkin') return { ...it, productId: 'shower-glass', widthIn: 60 };
+    // The walk-in, curbless, behind one fixed glass panel from floor to ceiling.
+    if (it.productId === 'shower-walkin') return { ...it, productId: 'shower-wetroom', widthIn: 60 };
     return it;
   });
   if (!keepBasics) items = items.filter((it) => {
@@ -616,9 +616,9 @@ function bathPromo(lines: ShowroomLine[], keepBasics: boolean): Scene | null {
     const bumped = bay(plan, 'east', from, to, deep);
     if (bumped !== plan) plan = { room: bumped.room, items: items.map((it) => (it === shower ? { ...it, x: room.widthIn + deep - 18, y: (from + to) / 2 } : it)) };
   }
-  // Lived in, like a house: a floor-to-ceiling window in the long wall, the company's linen tower beside it.
+  // Lived in, like a house: a window in the long wall and the company's linen tower beside it.
   const tower = line.products.find((p) => p.kind === 'tall');
-  const extras: PlacedItem[] = [{ id: 'bath-window', productId: 'window-floor', x: room.widthIn * 0.46, y: room.lengthIn, rotation: 180, finishIndex: 0, widthIn: 60 }];
+  const extras: PlacedItem[] = [{ id: 'bath-window', productId: 'window', x: room.widthIn * 0.46, y: room.lengthIn, rotation: 180, finishIndex: 0, widthIn: 36 }];
   // The tower in the far corner, beside the shower alcove (clear of the camera at the near end).
   if (tower) extras.push({ id: 'bath-tower', productId: tower.id, x: room.widthIn - tower.widthIn / 2 - 2, y: room.lengthIn - tower.depthIn / 2, rotation: 180, finishIndex: 0 });
   plan = { room: plan.room, items: [...plan.items, ...extras] };

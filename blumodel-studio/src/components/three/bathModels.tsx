@@ -328,55 +328,211 @@ export function TubModel({ r, finish }: ModelProps) {
   );
 }
 
-export function ShowerModel({ r, finish }: ModelProps) {
+/** A flat base (curb `t` tall) of any outline, given as [x, z] points in the model's frame. */
+function baseGeo(key: string, pts: [number, number][], t: number): THREE.BufferGeometry {
+  return toiletGeo(`showerBase:${key}:${t}`, () => {
+    // Drawn in the x/y plane with y = -z, so that turning it to stand up maps it back onto x/z.
+    const s = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const g = new THREE.ExtrudeGeometry(s, { depth: t, bevelEnabled: false, curveSegments: 24 });
+    g.rotateX(-Math.PI / 2);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
+/**
+ * Showers, ten kinds (variant): `alcove` (sliding doors between three walls), `glass-door` (a
+ * frameless door and a fixed panel), `corner` (two glass sides), `walk-in` (one fixed panel, no
+ * door), `neo-angle` (a corner shower with an angled door), `quadrant` (a curved corner),
+ * `wet-room` (curbless, a floor-to-ceiling fixed panel, a linear drain, a ceiling rain head),
+ * `steam` (glass to the ceiling, a door with a transom over it, a bench and the steam head),
+ * `inline` (fixed panel, door, fixed panel across the front) and `pony-wall` (a tiled half wall
+ * topped with glass).
+ */
+export function ShowerModel({ r, finish, ctx }: ModelProps) {
   const { w, d, product, item } = r;
-  const h = product.heightIn;
-  const trim = trimFor(finish.hex, finish.material);
   const v = product.variant;
-  const curb = v === 'walk-in' ? 0.8 : 3;
+  const ceiling = ctx?.ceiling ?? 96;
+  const tall = v === 'wet-room' || v === 'steam';
+  const h = tall ? ceiling : product.heightIn;
+  const trim = trimFor(finish.hex, finish.material);
+  const curb = v === 'walk-in' ? 0.8 : v === 'wet-room' ? 0.35 : 3;
   const sx = item.mirrored ? -1 : 1;
-  const pane = (len: number, pos: [number, number, number], alongX: boolean) => (
+  const gH = (tall ? ceiling - 0.4 : h - 2) - curb;
+  const glassY = curb + gH / 2;
+  /** A glass panel `len` long, along x or z, centred at pos (x, z); `ht` tall from the curb. */
+  const pane = (len: number, x: number, z: number, alongX: boolean, ht = gH, rail = !tall) => (
     <group>
-      <Box size={alongX ? [len, h - curb - 2, 0.38] : [0.38, h - curb - 2, len]} pos={pos} mat={glass()} cast={false} />
-      <Box size={alongX ? [len, 0.8, 0.8] : [0.8, 0.8, len]} pos={[pos[0], h - 0.6, pos[2]]} mat={trim} />
+      <Box size={alongX ? [len, ht, 0.38] : [0.38, ht, len]} pos={[x, curb + ht / 2, z]} mat={glass()} cast={false} />
+      {rail && <Box size={alongX ? [len, 0.8, 0.8] : [0.8, 0.8, len]} pos={[x, curb + ht + 0.4, z]} mat={trim} />}
+      {/* a slim channel where the glass meets the curb */}
+      <Box size={alongX ? [len, 0.6, 0.7] : [0.7, 0.6, len]} pos={[x, curb + 0.3, z]} mat={trim} cast={false} />
     </group>
   );
-  const glassY = curb + (h - curb - 2) / 2 + 1;
+  /** Pivot hinges and a long pull on a door whose free edge is at x (along the front, z). */
+  const doorHardware = (hingeX: number, pullX: number, z: number) => (
+    <>
+      {[curb + 8, curb + Math.min(gH, 76) - 8].map((y) => (
+        <Box key={y} size={[2.2, 1.6, 0.9]} pos={[hingeX, y, z]} mat={trim} />
+      ))}
+      <Box size={[0.7, 18, 0.7]} pos={[pullX, 44, z + 1.2]} mat={trim} />
+      {[35, 53].map((y) => (
+        <Box key={y} size={[0.5, 0.5, 1.2]} pos={[pullX, y, z + 0.6]} mat={trim} />
+      ))}
+    </>
+  );
+  const front = d / 2 - 0.6;
+  const baseMat = porcelain('#f2f1ed');
+
+  // The base: square for most, cut for a neo-angle, curved for a quadrant, a tiled tray for a wet room.
+  const cut = Math.min(w, d) * 0.42;
+  const base =
+    v === 'neo-angle' ? (
+      <mesh geometry={baseGeo(`neo:${w}:${d}:${cut}:${sx}`, [[-sx * w / 2, -d / 2], [sx * w / 2, -d / 2], [sx * w / 2, -d / 2 + cut], [-sx * w / 2 + cut * sx, d / 2], [-sx * w / 2, d / 2]], curb)} material={baseMat} receiveShadow dispose={null} />
+    ) : v === 'quadrant' ? (
+      <mesh
+        geometry={toiletGeo(`quadBase:${w}:${curb}:${sx}`, () => {
+          const s = new THREE.Shape();
+          const R = w;
+          const cx = -sx * w / 2;
+          const cz = -d / 2;
+          s.moveTo(cx, -cz);
+          s.lineTo(cx + sx * R, -cz);
+          for (let i = 1; i <= 24; i++) {
+            const a = (i / 24) * (Math.PI / 2);
+            s.lineTo(cx + sx * R * Math.cos(a), -(cz + R * Math.sin(a)));
+          }
+          s.lineTo(cx, -cz);
+          const g = new THREE.ExtrudeGeometry(s, { depth: curb, bevelEnabled: false });
+          g.rotateX(-Math.PI / 2);
+          g.computeVertexNormals();
+          return g;
+        })}
+        material={baseMat}
+        receiveShadow
+        dispose={null}
+      />
+    ) : (
+      <Box size={[w, curb, d]} pos={[0, curb / 2, 0]} mat={v === 'wet-room' ? cached('wetTray', () => new THREE.MeshStandardMaterial({ color: '#d9d6cf', roughness: 0.55 })) : baseMat} />
+    );
+
   return (
     <group>
-      <Box size={[w, curb, d]} pos={[0, curb / 2, 0]} mat={porcelain('#f2f1ed')} />
-      <Cyl r={1.4} h={0.2} pos={[0, curb + 0.05, 0]} mat={trim} seg={16} cast={false} />
+      {base}
+      {v === 'wet-room' ? (
+        // a linear drain along the back wall
+        <Box size={[w - 8, 0.15, 2]} pos={[0, curb + 0.08, -d / 2 + 4]} mat={trim} cast={false} />
+      ) : v === 'quadrant' ? (
+        <Cyl r={1.4} h={0.2} pos={[-sx * w * 0.15, curb + 0.05, -d * 0.15]} mat={trim} seg={16} cast={false} />
+      ) : (
+        <Cyl r={1.4} h={0.2} pos={[0, curb + 0.05, 0]} mat={trim} seg={16} cast={false} />
+      )}
+
       {v === 'alcove' && (
         <>
-          {pane(w / 2 + 2, [-w / 4 + 1, glassY, d / 2 - 1.4], true)}
-          {pane(w / 2 + 2, [w / 4 - 1, glassY, d / 2 - 0.6], true)}
+          {pane(w / 2 + 2, -w / 4 + 1, d / 2 - 1.4, true)}
+          {pane(w / 2 + 2, w / 4 - 1, d / 2 - 0.6, true)}
           <Box size={[1.2, 10, 1.2]} pos={[-1.5, 44, d / 2 + 0.3]} mat={trim} />
         </>
       )}
       {v === 'glass-door' && (
         <>
-          {/* a fixed panel, and the frameless door beside it on two pivot hinges, with a long pull */}
-          {pane(w * 0.42, [-w / 2 + (w * 0.42) / 2 + 0.4, glassY, d / 2 - 0.6], true)}
-          <Box size={[w * 0.56, h - curb - 2, 0.38]} pos={[w / 2 - (w * 0.56) / 2 - 0.4, glassY, d / 2 - 0.6]} mat={glass()} cast={false} />
-          {[curb + 8, h - 10].map((y) => (
-            <Box key={y} size={[2.2, 1.6, 0.9]} pos={[w / 2 - 1.4, y, d / 2 - 0.6]} mat={trim} />
-          ))}
-          <Box size={[0.7, 18, 0.7]} pos={[-w / 2 + w * 0.42 + 3.2, 44, d / 2 + 0.6]} mat={trim} />
-          {[35, 53].map((y) => (
-            <Box key={y} size={[0.5, 0.5, 1.2]} pos={[-w / 2 + w * 0.42 + 3.2, y, d / 2 + 0.1]} mat={trim} />
-          ))}
+          {pane(w * 0.42, -w / 2 + (w * 0.42) / 2 + 0.4, front, true)}
+          <Box size={[w * 0.56, gH, 0.38]} pos={[w / 2 - (w * 0.56) / 2 - 0.4, glassY, front]} mat={glass()} cast={false} />
+          {doorHardware(w / 2 - 1.4, -w / 2 + w * 0.42 + 3.2, front)}
         </>
       )}
       {v === 'corner' && (
         <>
-          {pane(w - 1, [0, glassY, d / 2 - 0.6], true)}
-          {pane(d - 1, [sx * (w / 2 - 0.6), glassY, 0], false)}
+          {pane(w - 1, 0, front, true)}
+          {pane(d - 1, sx * (w / 2 - 0.6), 0, false)}
         </>
       )}
-      {v === 'walk-in' && pane(w * 0.6, [-w / 2 + (w * 0.6) / 2 + 0.5, glassY, d / 2 - 0.6], true)}
-      {/* rain head on an arm from the back wall, and the valve */}
-      <Box size={[0.8, 0.8, 9]} pos={[0, h - 4, -d / 2 + 4.5]} mat={trim} />
-      <Cyl r={4.5} h={0.4} pos={[0, h - 4.8, -d / 2 + 9]} mat={trim} seg={28} />
+      {v === 'walk-in' && pane(w * 0.6, -w / 2 + (w * 0.6) / 2 + 0.5, front, true)}
+      {v === 'wet-room' && (
+        <>
+          {/* one fixed panel, floor to ceiling, with a channel at both ends; the end left open */}
+          {pane(w * 0.66, -w / 2 + (w * 0.66) / 2 + 0.4, front, true)}
+          <Box size={[w * 0.66, 0.6, 0.7]} pos={[-w / 2 + (w * 0.66) / 2 + 0.4, ceiling - 0.4, front]} mat={trim} cast={false} />
+        </>
+      )}
+      {v === 'steam' && (
+        <>
+          {/* glass to the ceiling: a fixed panel, the door, and a transom over the door */}
+          <Box size={[w * 0.45, gH, 0.38]} pos={[-w / 2 + (w * 0.45) / 2 + 0.4, glassY, front]} mat={glass()} cast={false} />
+          <Box size={[w * 0.53, 76 - curb, 0.38]} pos={[w / 2 - (w * 0.53) / 2 - 0.4, curb + (76 - curb) / 2, front]} mat={glass()} cast={false} />
+          <Box size={[w * 0.53, ceiling - 77.5, 0.38]} pos={[w / 2 - (w * 0.53) / 2 - 0.4, 77 + (ceiling - 77.5) / 2, front]} mat={glass()} cast={false} />
+          <Box size={[w - 0.8, 0.8, 0.9]} pos={[0, 76.6, front]} mat={trim} />
+          <Box size={[w - 0.8, 0.6, 0.8]} pos={[0, ceiling - 0.3, front]} mat={trim} cast={false} />
+          {doorHardware(w / 2 - 1.4, -w / 2 + w * 0.47 + 3, front)}
+          {/* a tiled bench along the back and the steam head low on the side wall */}
+          <Box size={[w - 2, 17, 14]} pos={[0, curb + 8.5, -d / 2 + 7]} mat={baseMat} />
+          <Cyl r={1.6} h={1.2} pos={[sx * (w / 2 - 0.6), 14, d * 0.1]} rot={[0, 0, Math.PI / 2]} mat={trim} seg={16} />
+        </>
+      )}
+      {v === 'inline' && (
+        <>
+          {/* fixed panel, a door in the middle, fixed panel */}
+          {pane((w - 26) / 2, -w / 2 + (w - 26) / 4 + 0.3, front, true)}
+          {pane((w - 26) / 2, w / 2 - (w - 26) / 4 - 0.3, front, true)}
+          <Box size={[25, gH - 1, 0.38]} pos={[0, glassY - 0.5, front + 0.6]} mat={glass()} cast={false} />
+          {doorHardware(-12, 10.5, front + 0.6)}
+        </>
+      )}
+      {v === 'pony-wall' && (
+        <>
+          {/* a tiled half wall 42″ tall along the front, topped with glass; the end left open */}
+          <Box size={[w * 0.62, 42 - curb, 4]} pos={[-w / 2 + (w * 0.62) / 2, curb + (42 - curb) / 2, d / 2 - 2]} mat={baseMat} />
+          <Box size={[w * 0.62 + 0.6, 0.8, 5]} pos={[-w / 2 + (w * 0.62) / 2, 42.4, d / 2 - 2]} mat={cached('ponyCap', () => new THREE.MeshPhysicalMaterial({ color: '#efece6', roughness: 0.2, clearcoat: 0.6 }))} />
+          <Box size={[w * 0.62, gH - 40, 0.38]} pos={[-w / 2 + (w * 0.62) / 2, 42.8 + (gH - 40) / 2, d / 2 - 2]} mat={glass()} cast={false} />
+          <Box size={[0.8, gH - 40, 0.8]} pos={[-w / 2 + w * 0.62, 42.8 + (gH - 40) / 2, d / 2 - 2]} mat={trim} />
+        </>
+      )}
+      {v === 'neo-angle' && (
+        <>
+          {/* two short returns and the angled door between them */}
+          {pane(cut, sx * (w / 2 - 0.4), -d / 2 + cut / 2, false)}
+          {pane(cut, -sx * w / 2 + sx * cut / 2, d / 2 - 0.4, true)}
+          <group position={[sx * (w / 2 - (w - cut) / 2) - sx * 0.2, 0, -d / 2 + cut + (d - cut) / 2 - 0.2]} rotation={[0, sx * (Math.PI / 4), 0]}>
+            <Box size={[Math.hypot(w - cut, d - cut) - 1, gH, 0.38]} pos={[0, glassY, 0]} mat={glass()} cast={false} />
+            <Box size={[Math.hypot(w - cut, d - cut) - 1, 0.8, 0.8]} pos={[0, curb + gH + 0.4, 0]} mat={trim} />
+            <Box size={[0.7, 18, 0.7]} pos={[(Math.hypot(w - cut, d - cut) / 2 - 3) * -1, 44, 1.2]} mat={trim} />
+          </group>
+        </>
+      )}
+      {v === 'quadrant' && (
+        <group position={[-sx * w / 2, 0, -d / 2]}>
+          {/* curved glass on the arc, its sliding doors' handles at the middle, curved rails */}
+          {/* the arc runs from the back wall round to the side wall: +x and +z from the corner (x mirrored) */}
+          <group scale={[sx, 1, 1]}>
+            <mesh position={[0, curb + gH / 2, 0]} material={glass()} dispose={null}>
+              <cylinderGeometry args={[w - 0.6, w - 0.6, gH, 32, 1, true, 0, Math.PI / 2]} />
+            </mesh>
+            {[curb + gH + 0.4, curb + 0.4].map((y) => (
+              <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]} material={trim} dispose={null}>
+                <torusGeometry args={[w - 0.6, 0.45, 8, 32, Math.PI / 2]} />
+              </mesh>
+            ))}
+          </group>
+          {[-0.08, 0.08].map((da) => {
+            const a = Math.PI / 4 + da;
+            return <Box key={da} size={[0.7, 14, 0.7]} pos={[sx * (w + 0.4) * Math.cos(a), 44, (w + 0.4) * Math.sin(a)]} mat={trim} />;
+          })}
+        </group>
+      )}
+
+      {/* the head: a ceiling rain head in a wet room or a steam shower, an arm from the wall otherwise; the valve */}
+      {tall ? (
+        <>
+          <Cyl r={0.5} h={3} pos={[0, ceiling - 1.5, -d / 2 + 14]} mat={trim} seg={10} />
+          <Box size={[11, 0.4, 11]} pos={[0, ceiling - 3.2, -d / 2 + 14]} mat={trim} />
+        </>
+      ) : (
+        <>
+          <Box size={[0.8, 0.8, 9]} pos={[0, h - 4, -d / 2 + 4.5]} mat={trim} />
+          <Cyl r={4.5} h={0.4} pos={[0, h - 4.8, -d / 2 + 9]} mat={trim} seg={28} />
+        </>
+      )}
       <Cyl r={2.8} h={0.5} pos={[0, 44, -d / 2 + 0.6]} rot={[Math.PI / 2, 0, 0]} mat={trim} seg={20} />
     </group>
   );

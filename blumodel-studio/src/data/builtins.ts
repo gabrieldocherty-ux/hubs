@@ -87,6 +87,11 @@ const LIST: Product[] = [
     finishes: 'cabinet', blurb: 'Hung 18″ above the counter, standard 30″ tall.',
   },
   {
+    id: 'wall-corner', kind: 'wall', variant: 'corner', category: 'cabinets', brand: BASICS_BRAND, name: 'Lazy Susan Corner Wall Cabinet',
+    code: 'WLS2430', widthIn: 24, depthIn: 24, heightIn: 30, elevationIn: 54, price: 420,
+    finishes: 'cabinet', blurb: 'The upper for the corner: two pie-cut doors fold open onto revolving shelves, so nothing is lost in the back.',
+  },
+  {
     id: 'base-filler', kind: 'base', variant: 'filler', category: 'cabinets', brand: BASICS_BRAND, name: 'Base Filler',
     code: 'BF{w}', widthIn: 3, depthIn: 24, heightIn: 36, elevationIn: 0, widthOptions: [1.5, 3, 4.5, 6], price: 45,
     finishes: 'cabinet', blurb: 'A flat strip that closes a gap in a run, or keeps a door or drawer clear of a wall.',
@@ -473,6 +478,36 @@ const LIST: Product[] = [
     id: 'shower-glass', kind: 'shower', variant: 'glass-door', category: 'bath', brand: BASICS_BRAND, name: 'Glass-Door Shower',
     code: 'SG{w}', widthIn: 60, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [48, 60, 72], price: 2190,
     finishes: SHOWER_TRIM, blurb: 'Between three walls behind a frameless glass door and a fixed panel. 36″ deep, the comfortable size.',
+  },
+  {
+    id: 'shower-neo', kind: 'shower', variant: 'neo-angle', category: 'bath', brand: BASICS_BRAND, name: 'Neo-Angle Shower',
+    code: 'SN{w}', widthIn: 38, depthIn: 38, heightIn: 78, elevationIn: 0, widthOptions: [36, 38, 42], price: 1590,
+    finishes: SHOWER_TRIM, blurb: 'A corner shower with its door on the angle between two short glass returns: more room to step in.',
+  },
+  {
+    id: 'shower-quadrant', kind: 'shower', variant: 'quadrant', category: 'bath', brand: BASICS_BRAND, name: 'Quadrant Shower',
+    code: 'SQ{w}', widthIn: 36, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [32, 36, 40], price: 1490,
+    finishes: SHOWER_TRIM, blurb: 'A rounded corner: curved sliding glass doors on a quarter-circle base.',
+  },
+  {
+    id: 'shower-wetroom', kind: 'shower', variant: 'wet-room', category: 'bath', brand: BASICS_BRAND, name: 'Curbless Wet-Room Shower',
+    code: 'SW-WR{w}', widthIn: 60, depthIn: 36, heightIn: 96, elevationIn: 0, widthOptions: [48, 60, 72], price: 3290,
+    finishes: SHOWER_TRIM, blurb: 'No curb, no door: one fixed glass panel floor to ceiling, a linear drain and a ceiling rain head.',
+  },
+  {
+    id: 'shower-steam', kind: 'shower', variant: 'steam', category: 'bath', brand: BASICS_BRAND, name: 'Steam Shower',
+    code: 'SS{w}', widthIn: 60, depthIn: 36, heightIn: 96, elevationIn: 0, widthOptions: [60, 72], price: 5890,
+    finishes: SHOWER_TRIM, blurb: 'Glass to the ceiling with a transom over the door, a tiled bench and a steam head.',
+  },
+  {
+    id: 'shower-inline', kind: 'shower', variant: 'inline', category: 'bath', brand: BASICS_BRAND, name: 'Inline Door Shower',
+    code: 'SI{w}', widthIn: 60, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [48, 60, 72], price: 2390,
+    finishes: SHOWER_TRIM, blurb: 'A fixed panel, a door and a fixed panel across the front of an alcove.',
+  },
+  {
+    id: 'shower-pony', kind: 'shower', variant: 'pony-wall', category: 'bath', brand: BASICS_BRAND, name: 'Pony-Wall Shower',
+    code: 'SP{w}', widthIn: 60, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [60, 72], price: 2690,
+    finishes: SHOWER_TRIM, blurb: 'A tiled half wall topped with glass, the end left open to walk in.',
   },
   {
     id: 'shower-corner', kind: 'shower', variant: 'corner', category: 'bath', brand: BASICS_BRAND, name: 'Corner Shower',
