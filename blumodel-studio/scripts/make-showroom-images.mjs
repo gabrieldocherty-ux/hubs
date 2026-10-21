@@ -130,10 +130,11 @@ try {
   if (render.heroTall) put({ slot: 'heroTall', source: 'render' }, render.heroTall, 'hero-tall');
   for (const v of Object.values(render.lines ?? {})) put({ slot: 'line', source: 'render', line: v.line }, v, `line-${slug(v.line)}`);
   (render.gallery ?? []).forEach((g, i) => g && put({ slot: 'gallery', source: 'render', index: i + 1, title: g.title, design: `gallery-${i + 1}` }, g, `gallery-${i + 1}`));
+  (render.dreams ?? []).forEach((g, i) => g && put({ slot: 'dream', source: 'render', index: i + 1, title: g.title, design: `dream-${i + 1}` }, g, `dream-${i + 1}`));
 
   // The plans behind the hero and the gallery, with SKUs instead of this database's product ids.
   const designs = scenes
-    .filter((s) => s.id === 'hero' || s.id.startsWith('gallery:'))
+    .filter((s) => s.id === 'hero' || s.id.startsWith('gallery:') || s.id.startsWith('dream:'))
     .map((s) => ({
       key: s.id === 'hero' ? 'hero' : s.id.replace(':', '-'),
       title: s.id === 'hero' ? 'Northline showroom kitchen' : s.shots[0]?.title ?? s.label,
@@ -150,5 +151,10 @@ try {
   if (browser) await browser.close().catch(() => killTree(browser.pid));
   if (server) killTree(server.pid);
   await sleep(300);
-  fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  // A browser still letting go of its profile can't be removed yet; that mustn't hide the real error.
+  try {
+    fs.rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch (e) {
+    console.warn(`Left ${tmp} behind (${e.code}).`);
+  }
 }

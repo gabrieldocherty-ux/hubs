@@ -2,7 +2,7 @@ import { ApiError } from '../../../lib/api';
 
 /** Where a picture goes (server/tenancy/images.mjs `cleanTarget`). */
 export interface ImageTarget {
-  slot: 'hero' | 'heroTall' | 'line' | 'gallery';
+  slot: 'hero' | 'heroTall' | 'line' | 'gallery' | 'dream';
   source: 'render' | 'photo';
   line?: string;
   index?: number;

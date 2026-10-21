@@ -1,1 +1,0 @@
-import{r as e,n as a,j as t}from"./index-CU0KU7YL.js";import{p as s}from"./logic-C0E9vA5G.js";function p({rest:r}){return e.useEffect(()=>{a({name:"pro",rest:s(r)},!0)},[r]),t.jsx("div",{className:"screen-msg",children:"Opening your brand page…"})}export{p as default};

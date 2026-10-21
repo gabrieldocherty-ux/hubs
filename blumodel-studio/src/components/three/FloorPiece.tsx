@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { worldUVBox } from './geom3d';
+import { floorLayCued } from '../../lib/floorLay';
 
 export interface FloorRect {
   x0: number;
@@ -66,7 +67,8 @@ export function FloorPiece({ rect, mat, tileIn }: { rect: FloorRect; mat: THREE.
   useEffect(() => {
     const prev = shown.current;
     shown.current = { mat, tileIn };
-    if (!prev || prev.mat === mat || reduced()) return;
+    // Only a floor someone just picked is laid; a design loading or a scene switching just shows its floor.
+    if (!prev || prev.mat === mat || reduced() || !floorLayCued()) return;
     setLaying({ old: prev, t0: performance.now() });
     invalidate();
   }, [mat, tileIn, invalidate]);

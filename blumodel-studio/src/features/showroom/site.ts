@@ -46,11 +46,13 @@ export interface ShowroomImages {
   lines: Record<string, ShowroomPic & { line: string }>;
   /** `design`: a view-only link token to open that kitchen in 3D (#/s/token), when there is one. */
   gallery: (ShowroomPic & { title: string; design: string | null })[];
+  /** Dream kitchens (the advert): a finished design to look around (#/s/token) or start from (#/new?from=token). */
+  dreams: (ShowroomPic & { title: string; design: string | null })[];
   /** When the renders were last made (ms), or null. */
   renderedAt?: number | null;
 }
 
-export const NO_IMAGES: ShowroomImages = Object.freeze({ hero: null, heroTall: null, lines: {}, gallery: [] }) as ShowroomImages;
+export const NO_IMAGES: ShowroomImages = Object.freeze({ hero: null, heroTall: null, lines: {}, gallery: [], dreams: [] }) as ShowroomImages;
 
 function pic(v: unknown): ShowroomPic | null {
   const o = (v ?? null) as Record<string, unknown> | null;
@@ -73,17 +75,18 @@ export function normalizeImages(raw: unknown): ShowroomImages {
       if (p) lines[k] = { ...p, line: str((v as Record<string, unknown>).line, 80) || k };
     }
   }
-  const gallery = Array.isArray(o.gallery)
-    ? o.gallery
-        .slice(0, 6)
-        .map((g) => {
-          const p = pic(g);
-          const d = (g as Record<string, unknown>).design;
-          return p ? { ...p, title: str((g as Record<string, unknown>).title, 100), design: typeof d === 'string' && /^[A-Za-z0-9_-]{16,80}$/.test(d) ? d : null } : null;
-        })
-        .filter((g): g is ShowroomPic & { title: string; design: string | null } => !!g)
-    : [];
-  return { hero: pic(o.hero), heroTall: pic(o.heroTall), lines, gallery, renderedAt: typeof o.renderedAt === 'number' ? o.renderedAt : null };
+  const titled = (list: unknown, max: number) =>
+    Array.isArray(list)
+      ? list
+          .slice(0, max)
+          .map((g) => {
+            const p = pic(g);
+            const d = (g as Record<string, unknown>).design;
+            return p ? { ...p, title: str((g as Record<string, unknown>).title, 100), design: typeof d === 'string' && /^[A-Za-z0-9_-]{16,80}$/.test(d) ? d : null } : null;
+          })
+          .filter((g): g is ShowroomPic & { title: string; design: string | null } => !!g)
+      : [];
+  return { hero: pic(o.hero), heroTall: pic(o.heroTall), lines, gallery: titled(o.gallery, 6), dreams: titled(o.dreams, 2), renderedAt: typeof o.renderedAt === 'number' ? o.renderedAt : null };
 }
 
 export interface PublicTenant {

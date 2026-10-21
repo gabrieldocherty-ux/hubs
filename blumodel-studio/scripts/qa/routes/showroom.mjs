@@ -62,8 +62,9 @@ const each = (r) =>
 
 export default [
   // ── the landing page ─────────────────────────────────────────────────────
-  // Desktop: the whole page in one picture. Phone: a picture per section (a 390 px page at 3x is
-  // taller than a screenshot can be), then the top again for the route's own picture.
+  // A picture per section, then the top again for the route's own picture: a 390 px page at 3x is
+  // taller than a screenshot can be, and headless Edge's whole-page capture crashes on this page at
+  // 1440 px (2026-10-20: with the dream kitchens' pictures in it; a real browser shows them fine).
   ...views.map((v) => ({
     name: `landing${v.suffix}`,
     host: 'demo',
@@ -71,7 +72,6 @@ export default [
     as: 'anon',
     viewport: v.viewport,
     colorScheme: v.colorScheme,
-    fullPage: v.viewport === 'desktop',
     timeoutMs: 40000,
     waitFor: ['.sr-hero h1', '.sr-hero-pic img', '.sr-line img'],
     expectText: ['Design your kitchen', 'Design your bathroom', 'Lakeshore Shaker', 'Harbourfront Slab', 'Kitchens designed in our showroom', 'Talk to Northline'],
@@ -88,8 +88,9 @@ export default [
       await noUpsell(h);
       await touchTargets(h);
       await pitchChecks(h);
-      if (isPhone(h)) {
-        for (const [sel, name] of [['.sr-hero', 'hero'], ['#sr-lines', 'lines'], ['.sr-line:nth-child(2)', 'line-card'], ['.sr-pitch', 'pitch'], ['.sr-lead', 'lead'], ['#sr-gallery', 'gallery'], ['.sr-steps', 'steps'], ['#sr-contact', 'contact']]) {
+      h.note(`page ${await h.evaluate(() => `${document.documentElement.scrollHeight}px tall at ${devicePixelRatio}x`)}`);
+      {
+        for (const [sel, name] of [['.sr-hero', 'hero'], ['#sr-dreams', 'dreams'], ['#sr-lines', 'lines'], ['.sr-line:nth-child(2)', 'line-card'], ['.sr-pitch', 'pitch'], ['.sr-lead', 'lead'], ['#sr-gallery', 'gallery'], ['.sr-steps', 'steps'], ['#sr-contact', 'contact']]) {
           await h.evaluate((s) => document.querySelector(s)?.scrollIntoView({ block: 'start' }), sel);
           await h.sleep(250);
           await h.shot(name);
@@ -424,6 +425,51 @@ export default [
       await noSideScroll(h);
     },
   }),
+
+  // ── dream kitchens: the advert, and starting a design from one ─────────
+  ...each({
+    name: 'dream-kitchens',
+    host: 'demo',
+    path: '#/',
+    as: 'anon',
+    waitFor: ['[data-testid="dream-2"] img'],
+    expectText: ['Dream kitchens', 'Start from a finished kitchen', 'The Entertainer’s Kitchen', 'The Modern Retreat', 'Version 1', 'Version 2', 'Start with this kitchen'],
+    check: async (h) => {
+      await noSideScroll(h);
+      await touchTargets(h);
+      await h.evaluate(() => document.getElementById('sr-dreams').scrollIntoView());
+      await h.waitUntil(() => [...document.querySelectorAll('.sr-dream img')].every((i) => i.complete && i.naturalWidth > 0), 20_000, 'both dream kitchens loading');
+      const links = await h.evaluate(() => [...document.querySelectorAll('.sr-dream a')].map((a) => a.getAttribute('href')));
+      if (links.filter((l) => /^#\/new\?from=/.test(l)).length !== 2 || links.filter((l) => /^#\/s\//.test(l)).length !== 2) throw new Error(`the dream kitchens link to ${JSON.stringify(links)}`);
+      await h.shot('dreams');
+    },
+  }),
+  {
+    name: 'start-from-dream',
+    host: 'demo',
+    path: '#/',
+    as: 'anon',
+    waitFor: ['[data-testid="dream-1"] a.sr-cta'],
+    timeoutMs: 45_000,
+    check: async (h) => {
+      const email = `qa-dream-${Date.now()}@example.test`;
+      await h.evaluate(() => document.querySelector('[data-testid="dream-1"] a.sr-cta').click());
+      // Signed out: asked who they are first, then straight into a copy of the kitchen.
+      await h.waitFor('[data-testid="lead-gate"] input[autocomplete="name"]', 20_000);
+      await fill(h, '[data-testid="lead-gate"] input[autocomplete="name"]', 'Dana Dream');
+      await fill(h, '[data-testid="lead-gate"] input[autocomplete="email"]', email);
+      await h.click('.sr-gate .sr-send-consent input');
+      await clickText(h, '[data-testid="lead-gate"] button[type="submit"]', 'Start designing');
+      await h.waitUntil(() => /^#\/k\//.test(location.hash), 20_000, 'the copied kitchen opening');
+      await h.waitFor('.plan-view canvas, .scene-view canvas');
+      const lead = h.api.sql("SELECT id FROM tenant_leads WHERE tenant_id = 't_demo' AND email = ?", email)[0];
+      const made = lead && h.api.sql("SELECT name, doc FROM projects WHERE lead_id = ? AND tenant_id = 't_demo'", lead.id);
+      if (made?.length !== 1) throw new Error(`the visitor has ${made?.length ?? 0} designs, not one copy of the dream kitchen`);
+      const doc = JSON.parse(made[0].doc);
+      if (made[0].name !== 'The Entertainer’s Kitchen' || doc.items.length < 20 || !doc.room.extra?.length) throw new Error(`the copy is "${made[0].name}" with ${doc.items.length} items and ${doc.room.extra?.length ?? 0} other rooms`);
+      await h.shot('copied');
+    },
+  },
 
   // ── the whole visitor journey: landing to a lead in the inbox ───────────
   ...[

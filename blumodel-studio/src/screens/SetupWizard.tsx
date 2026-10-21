@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { BrandCategory, BrandPrefs, Room } from '../types';
+import type { BrandCategory, BrandPrefs, DesignDoc, Room } from '../types';
 import { api, ApiError } from '../lib/api';
 import { navigate, useHashQuery } from '../lib/router';
 import { TEMPLATES, type TemplateId } from '../data/templates';
 import { composeNewKitchen } from '../data/compose';
 import { DEFAULT_ROOM } from '../data/defaults';
-import { prepareDocForSave } from '../lib/doc';
+import { prepareDocForSave, sanitizeDoc } from '../lib/doc';
+import { shareApi } from '../features/share/api';
 import { MiniPlan } from '../components/MiniPlan';
 import { FeetInchesInput } from '../components/FeetInchesInput';
 import { AccountMenu } from '../components/AccountMenu';
@@ -58,7 +59,58 @@ function initialLines(lines: ShowroomLine[], raw: string | null): BrandPrefs {
   return out;
 }
 
+/**
+ * `#/new?from=<share token>`: start from a finished kitchen (a showroom's dream kitchen). The visitor
+ * gave their details on the way in (LeadGate), so their own copy saves under them; then the editor.
+ */
 export function SetupWizard() {
+  const from = useHashQuery().get('from');
+  if (from && /^[A-Za-z0-9_-]{16,80}$/.test(from)) return <StartFrom token={from} />;
+  return <NewKitchenWizard />;
+}
+
+let startedFrom: string | null = null;
+function StartFrom({ token }: { token: string }) {
+  const showroom = useShowroom();
+  const signedIn = useSession((st) => st.status === 'signedIn');
+  const visitor = useVisitor();
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    // Once per token (a second render while it's still saving must not make two copies).
+    if (startedFrom === token) return;
+    startedFrom = token;
+    void (async () => {
+      try {
+        const wire = await shareApi.read(token);
+        const doc = sanitizeDoc({ ...(wire.kitchen.doc as DesignDoc), name: wire.kitchen.name });
+        // Signed out and not known on a showroom (only possible offline): the design stays on this device.
+        if (showroom && !signedIn && !visitor) {
+          saveLocalDraft(prepareDocForSave(doc));
+          navigate({ name: 'local' }, true);
+          return;
+        }
+        const { project } = await api.createProject(wire.kitchen.name, '', prepareDocForSave(doc));
+        navigate({ name: 'kitchen', id: project.id }, true);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : 'Could not open that kitchen. Try again.');
+      } finally {
+        startedFrom = null;
+      }
+    })();
+  }, [token, showroom, signedIn, visitor]);
+  return (
+    <div className="screen-msg" role="status">
+      {error ?? 'Setting up your kitchen…'}
+      {error && (
+        <p>
+          <a href="#/new">Start a new kitchen instead</a>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function NewKitchenWizard() {
   // On a company's showroom: its mark, its product lines in place of brands, and a bathroom when
   // the company offers them (`#/new?room=bathroom`); `?line=` starts on one of its lines.
   const showroom = useShowroom();

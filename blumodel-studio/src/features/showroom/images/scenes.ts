@@ -9,6 +9,8 @@ import { runChecks } from '../../../lib/checks';
 import { luminance } from '../../../lib/color';
 import { CABINET_FINISHES } from '../../../data/finishes';
 import type { ShowroomLine } from '../lines';
+import { addRoom, bumpWall, connectNewRoom, isError, layoutPotLights, type Draft } from '../../../lib/roomEdit';
+import { wallSegs } from '../../../lib/outline';
 
 /**
  * The showroom's pictures as scenes (docs/handoff/showroom-images.md): finished kitchens built by
@@ -29,7 +31,7 @@ export interface CameraView {
 
 /** One image to make: where it goes and its size. */
 export interface Shot {
-  slot: 'hero' | 'heroTall' | 'line' | 'gallery';
+  slot: 'hero' | 'heroTall' | 'line' | 'gallery' | 'dream';
   width: number;
   height: number;
   view: CameraView;
@@ -52,6 +54,7 @@ export const HERO_SIZE = { width: 2400, height: 1350 } as const;
 export const HERO_TALL_SIZE = { width: 1080, height: 1440 } as const;
 export const LINE_SIZE = { width: 1200, height: 900 } as const;
 export const GALLERY_SIZE = { width: 1600, height: 1000 } as const;
+export const DREAM_SIZE = { width: 1600, height: 1000 } as const;
 
 const ROOM_KITCHEN: Room = { widthIn: 228, lengthIn: 192, ceilingIn: 108 };
 
@@ -451,7 +454,109 @@ export function showroomScenes(lines: ShowroomLine[], featured: ShowroomLine[], 
     if (s) out.push(s);
   }
   out.push(...galleryScenes(lines, keepBasics));
+  out.push(...dreamScenes(lines, keepBasics));
   return out;
+}
+
+/** A bump-out (a bay) `depth` inches out of the main room's `wall`, from `from` to `to` along it. Unchanged if it can't. */
+function bay(d: Draft, wall: 'north' | 'south' | 'east' | 'west', from: number, to: number, depth: number): Draft {
+  const seg = wallSegs(d.room).find((q) => q.room === 0 && q.wall === wall);
+  if (!seg) return d;
+  const out = bumpWall(d, seg.id, from, to, depth);
+  return isError(out) ? d : out;
+}
+
+/** Another room beside the kitchen (corners in plan inches), joined to it through the wall they share. */
+function side(d: Draft, pts: [number, number][], name: string, link: 'walkway' | 'opening' | 'door', widthIn: number): Draft {
+  const out = addRoom(d, pts, name);
+  if (isError(out) || !out.id) return d;
+  return connectNewRoom(out, out.id, link, widthIn);
+}
+
+/** A dining table with six chairs round it, centred at (x, y). */
+function furnish(d: Draft, x: number, y: number): Draft {
+  const items = [...d.items, { id: 'dream-table', productId: 'table-rect', x, y, rotation: 90 as const, finishIndex: 0 }];
+  const seats: [number, number, 0 | 90 | 180 | 270][] = [
+    [x - 30, y - 22, 90], [x - 30, y + 22, 90], [x + 30, y - 22, 270], [x + 30, y + 22, 270], [x, y - 50, 0], [x, y + 50, 180],
+  ];
+  seats.forEach(([cx, cy, r], i) => items.push({ id: `dream-chair-${i}`, productId: 'chair', x: cx, y: cy, rotation: r, finishIndex: 0 }));
+  return { ...d, items };
+}
+
+/**
+ * Two dream kitchens, the showroom's advert: everything the designer does at its best (a big island
+ * with seating, tall pantries, glass uppers, crown, under-cabinet lights, pot lights, a laid floor),
+ * in two moods: a warm classic in the company's painted shaker and a calm modern in its slab line.
+ * A visitor can look around either one, or start their own design from it.
+ */
+function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
+  const cabs = lines.filter(isCabinetLine);
+  if (!cabs.length) return [];
+  const rw = rangeWidth(lines);
+  const shaker = cabs.find((l) => doorStyleOf(l) === 'shaker') ?? cabs[0];
+  const slab = cabs.find((l) => doorStyleOf(l) === 'slab') ?? cabs[cabs.length - 1];
+  const deep = (l: ShowroomLine) => l.products.flatMap((p) => finishList(p)).filter((f) => f.material === 'paint' && luminance(f.hex) > 0.02).sort((x, y) => luminance(x.hex) - luminance(y.hex))[0]?.id;
+  const plans: { title: string; line: ShowroomLine; finish?: string; island?: string; surfaces: Surfaces; room: Room; spec: (r: Room) => LayoutSpec; shape: (d: Draft) => Draft; view: (d: DesignDoc) => CameraView }[] = [
+    {
+      title: 'The Entertainer’s Kitchen',
+      line: shaker,
+      finish: whiteFinish(shaker),
+      island: deep(shaker) ?? signatureFinish(shaker),
+      surfaces: { cabinetFinishId: 'warm-white', doorStyle: 'shaker', hardwareId: 'brass', countertopId: 'calacatta', backsplashId: 'zellige-white', flooringId: 'chevron-oak', paintId: 'chalk', crown: 'cove', underCabinet: 'led' },
+      room: { widthIn: 264, lengthIn: 204, ceilingIn: 108 },
+      spec: (r) => ({
+        runs: [
+          { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'pantry' }, { role: 'fridge', variant: 'french' }, { gap: 36 }, { role: 'range', widthIn: rw }, 'flex', { role: 'pantry', optional: true }], opts: { uppers: true, hood: 'auto', glassUppers: true } },
+          { wall: 'west', start: 24, end: r.lengthIn - 54, slots: [{ gap: 39 }, { role: 'sink', variant: 'farmhouse' }, { role: 'dishwasher' }, 'flex'], opts: { window: true, uppers: false } },
+        ],
+        island: { x: r.widthIn / 2 + 18, y: 24 + 54 + 21, widthIn: 120, seats: 4, seatSide: 'south', pendants: 3 },
+      }),
+      // A breakfast bay out of the south wall, and a dining room through a wide walkway to the east.
+      shape: (d) => {
+        const W = d.room.widthIn;
+        const L = d.room.lengthIn;
+        let out = bay(d, 'south', W * 0.3, W * 0.62, 30);
+        out = side(out, [[W, 60], [W + 156, 60], [W + 156, L], [W, L]], 'Dining room', 'walkway', 84);
+        return keepBasics ? furnish(out, W + 78, (60 + L) / 2) : out;
+      },
+      // Framed on the kitchen itself (the bay makes the plan deeper than the kitchen).
+      view: (d) => ({ pos: [ft(d.room.widthIn) - 1.1, 5.3, ft(d.room.lengthIn) - 0.9], target: [ft(d.room.widthIn) * 0.4, 3.3, 2.5], fov: 54 }),
+    },
+    {
+      // A different kitchen altogether: a U wrapped round the cook, no island, dark slab doors and
+      // black stone against a bright large-format tile floor.
+      title: 'The Modern Retreat',
+      line: slab,
+      finish: deep(slab) ?? signatureFinish(slab),
+      surfaces: { cabinetFinishId: 'charcoal', doorStyle: 'slab', hardwareId: 'brass', countertopId: 'nero', backsplashId: 'zellige-white', flooringId: 'porcelain-white-24', paintId: 'fog', underCabinet: 'led' },
+      room: { widthIn: 156, lengthIn: 168, ceilingIn: 108 },
+      spec: (r) => ({
+        runs: [
+          { wall: 'north', start: 0, end: r.widthIn, slots: [{ role: 'corner' }, 'flex', { role: 'sink', variant: 'undermount' }, { role: 'dishwasher' }, 'flex', { role: 'corner' }], opts: { window: true, uppers: true } },
+          { wall: 'west', start: 36, end: r.lengthIn - 30, slots: ['flex', { role: 'range', widthIn: rw }, 'flex'], opts: { uppers: true, hood: 'auto' } },
+          { wall: 'east', start: 36, end: r.lengthIn - 30, slots: [{ role: 'fridge', variant: 'french' }, 'flex', { role: 'pantry', optional: true }], opts: { uppers: true } },
+        ],
+      }),
+      // The U opens into a living room to the south, wider than the kitchen: the whole plan is an L.
+      shape: (d) => {
+        const W = d.room.widthIn;
+        const L = d.room.lengthIn;
+        return side(d, [[0, L], [W + 120, L], [W + 120, L + 180], [0, L + 180]], 'Living room', 'walkway', 108);
+      },
+      // From the living room, looking north through the walkway into the U.
+      view: (d) => ({ pos: [ft(d.room.widthIn) / 2 + 0.6, 5.2, ft(d.room.lengthIn) + 9], target: [ft(d.room.widthIn) / 2, 3.3, 1.5], fov: 56 }),
+    },
+  ];
+  return plans.map((p, i) => {
+    const doc0 = makeDoc(p.title, p.room, p.spec(p.room), matched(p.surfaces, p.line, p.finish), kitchenPrefs(lines, p.line), keepBasics, lines, 'counter');
+    const dressed0 = { ...doc0, items: dress(doc0.items, p.line, p.finish, p.island) };
+    const shaped = p.shape({ room: dressed0.room, items: dressed0.items });
+    const dressed = { ...dressed0, room: shaped.room, items: withFinishIds(shaped.items) };
+    // Pot lights over the whole room, as the editor lays them (they are BluModel Basics, so only
+    // for a company that fills the gaps with them).
+    const doc = keepBasics ? { ...dressed, items: withFinishIds(layoutPotLights({ room: dressed.room, items: dressed.items }).items) } : dressed;
+    return { id: `dream:${i + 1}`, label: p.title, doc, problems: layoutProblems(doc), shots: [{ slot: 'dream' as const, index: i + 1, title: p.title, ...DREAM_SIZE, view: p.view({ ...doc, room: p.room }) }] };
+  });
 }
 
 /** A product's display name in a scene (for the generator's list). */

@@ -8,6 +8,7 @@ import { useCatalog } from '../../../../store/useCatalog';
 import { getProduct } from '../../../../data/catalog';
 import { featuredLines, showroomLines } from '../../lines';
 import { layoutProblems, showroomScenes } from '../scenes';
+import { pointInRoom } from '../../../../lib/outline';
 
 // The demo showroom's real catalog (server/tenancy/demo.mjs), as the showroom's client sees it.
 type DemoProduct = Omit<Product, 'id' | 'code' | 'brand' | 'source'> & { sku: string; line: string };
@@ -30,13 +31,18 @@ test('every showroom scene is a clean layout made of the company’s own product
     const sold = s.doc.items.filter((i) => !['openings', 'decor'].includes(getProduct(i.productId)?.category ?? '')).length;
     assert.equal(own, sold, `${s.label}: only the company's products (no BluModel Basics without "fill the gaps")`);
     for (const shot of s.shots) {
-      const [W, L] = [s.doc.room.widthIn / 12, s.doc.room.lengthIn / 12];
+      // Inside one of the plan's rooms (a picture may look in from the room next door).
       const [x, y, z] = shot.view.pos;
-      assert.ok(x > 0 && x < W && z > 0 && z < L && y < s.doc.room.ceilingIn / 12, `${s.label}: the camera stands inside the room`);
+      assert.ok(pointInRoom(s.doc.room, x * 12, z * 12) && y < s.doc.room.ceilingIn / 12, `${s.label}: the camera stands inside the room`);
     }
   }
   // The gallery is three different kitchens.
   assert.equal(new Set(scenes.filter((s) => s.id.startsWith('gallery:')).map((s) => s.shots[0].title)).size, 3);
+});
+
+test('with "fill the gaps" on (how the demo pictures are made), every scene is still a clean layout', () => {
+  const lines = showroomLines(products);
+  for (const s of showroomScenes(lines, featuredLines(lines, FEATURED), { keepBasics: true })) assert.deepEqual(s.problems, [], `${s.label}: ${s.problems.join('; ')}`);
 });
 
 test('the committed demo kitchens (server/tenancy/demo-images/manifest.json) pass the editor’s design checks', () => {

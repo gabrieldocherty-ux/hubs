@@ -437,5 +437,6 @@ function currentRender(images, target) {
   if (target.slot === 'hero' || target.slot === 'heroTall') return r[target.slot] ?? null;
   if (target.slot === 'line') return r.lines?.[lineKey(target.line)] ?? null;
   if (target.slot === 'gallery') return r.gallery?.[target.index - 1] ?? null;
+  if (target.slot === 'dream') return r.dreams?.[target.index - 1] ?? null;
   return null;
 }

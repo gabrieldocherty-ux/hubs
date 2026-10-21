@@ -17,11 +17,13 @@ import crypto from 'node:crypto';
 import { HttpError } from '../http/respond.mjs';
 import { sniffImage } from '../lib/validators.mjs';
 
-export const IMAGE_SLOTS = Object.freeze(['hero', 'heroTall', 'line', 'gallery']);
+export const IMAGE_SLOTS = Object.freeze(['hero', 'heroTall', 'line', 'gallery', 'dream']);
 export const IMAGE_SOURCES = Object.freeze(['render', 'photo']);
 /** Slots a company may upload its own photo for. */
 export const PHOTO_SLOTS = Object.freeze(['hero', 'line']);
 export const GALLERY_MAX = 3;
+/** Dream kitchens: the showroom's advert, each one a design a visitor can start from. */
+export const DREAM_MAX = 2;
 const MIN_SIDE = 320;
 const MAX_SIDE = 4096;
 const TICKET_TTL_MS = 2 * 3_600_000;
@@ -56,6 +58,12 @@ export function cleanTarget(input = {}) {
     out.index = i;
     out.title = String(input.title ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
   }
+  if (slot === 'dream') {
+    const i = Number(input.index);
+    if (!Number.isInteger(i) || i < 1 || i > DREAM_MAX) throw bad('index', `Dream kitchens are numbered 1 to ${DREAM_MAX}.`);
+    out.index = i;
+    out.title = String(input.title ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  }
   return out;
 }
 
@@ -81,6 +89,11 @@ export function withImage(images, target, img) {
     while (g.length < target.index - 1) g.push(null);
     g[target.index - 1] = { ...img, title: target.title ?? '' };
     set.gallery = g;
+  } else if (target.slot === 'dream') {
+    const g = Array.isArray(set.dreams) ? set.dreams.slice(0, DREAM_MAX) : [];
+    while (g.length < target.index - 1) g.push(null);
+    g[target.index - 1] = { ...img, title: target.title ?? '' };
+    set.dreams = g;
   }
   if (target.source === 'render') out.renderedAt = img.at;
   return out;
@@ -94,6 +107,7 @@ export function withoutImage(images, target) {
   if (target.slot === 'hero' || target.slot === 'heroTall') delete set[target.slot];
   else if (target.slot === 'line' && set.lines) delete set.lines[lineKey(target.line)];
   else if (target.slot === 'gallery' && Array.isArray(set.gallery)) set.gallery[target.index - 1] = null;
+  else if (target.slot === 'dream' && Array.isArray(set.dreams)) set.dreams[target.index - 1] = null;
   return out;
 }
 
@@ -106,6 +120,7 @@ export function imageFileIds(images) {
     for (const k of ['hero', 'heroTall']) if (s[k]?.fileId) ids.push(s[k].fileId);
     for (const v of Object.values(s.lines ?? {})) if (v?.fileId) ids.push(v.fileId);
     for (const v of s.gallery ?? []) if (v?.fileId) ids.push(v.fileId);
+    for (const v of s.dreams ?? []) if (v?.fileId) ids.push(v.fileId);
   }
   return ids;
 }
@@ -139,7 +154,9 @@ export function publicImages(images, files) {
   }
   // A gallery kitchen may come with a view-only link to open it in 3D (the demo's, from its seed).
   const gallery = (r.gallery ?? []).map((g) => (g ? { ...pic(g, 'render'), title: g.title ?? '', design: typeof g.shareToken === 'string' ? g.shareToken : null } : null)).filter((g) => g?.url);
-  return { hero, heroTall, lines, gallery, renderedAt: images?.renderedAt ?? null };
+  // The dream kitchens: the advert, each with a link to look around it and to start from it.
+  const dreams = (r.dreams ?? []).map((g) => (g ? { ...pic(g, 'render'), title: g.title ?? '', design: typeof g.shareToken === 'string' ? g.shareToken : null } : null)).filter((g) => g?.url);
+  return { hero, heroTall, lines, gallery, dreams, renderedAt: images?.renderedAt ?? null };
 }
 
 /**

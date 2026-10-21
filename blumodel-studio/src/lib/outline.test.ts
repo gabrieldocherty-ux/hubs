@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { boxInRoom, flushSeg, resolve, snapItem } from './geometry';
-import { cleanOutline, normalizeOutline, outlineProblem, pointInRoom, rectOutline, segsOf, snapDrawPoint, withOutline, type Pt } from './outline';
+import { cleanOutline, normalizeOutline, outlineProblem, pointInOutline, pointInRoom, rectOutline, segsOf, snapDrawPoint, withOutline, type Pt } from './outline';
 import { cleanRoom } from './doc';
 import type { PlacedItem, Room } from '../types';
 
@@ -9,6 +9,14 @@ const L: Pt[] = [[0, 0], [240, 0], [240, 96], [144, 96], [144, 168], [0, 168]];
 const room: Room = withOutline({ widthIn: 240, lengthIn: 168, ceilingIn: 108 }, L);
 
 describe('outline', () => {
+  test('a point beside a bump-out is outside, even though a ray from it crosses the bump-out’s walls', () => {
+    // A room with a bay out of its south wall (x 80..160): (67, 217) is left of the bay, below the room.
+    const bay: Pt[] = [[0, 0], [264, 0], [264, 204], [160, 204], [160, 234], [80, 234], [80, 204], [0, 204]];
+    assert.equal(pointInOutline(bay, 67, 217), false);
+    assert.equal(pointInOutline(bay, 100, 217), true);
+    assert.equal(pointInOutline(bay, 200, 217), false);
+    assert.equal(pointInOutline(bay, 10, 10), true);
+  });
   test('a rectangle gives the four classic walls in north, east, south, west order', () => {
     const s = segsOf(rectOutline(200, 156));
     assert.deepEqual(s.map((x) => [x.wall, x.at, x.a0, x.a1]), [['north', 0, 0, 200], ['east', 200, 0, 156], ['south', 156, 0, 200], ['west', 0, 0, 156]]);

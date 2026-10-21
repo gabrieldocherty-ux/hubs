@@ -85,6 +85,11 @@ export default function ShowroomLanding() {
           <SiteMark />
         </a>
         <nav className="sr-bar-nav" aria-label="Showroom">
+          {im.dreams.length > 0 && !comingSoon && (
+            <a className="sr-bar-link" href="#/welcome" onClick={jump('sr-dreams')}>
+              Dream kitchens
+            </a>
+          )}
           {lines.length > 0 && (
             <a className="sr-bar-link" href="#/welcome" onClick={jump('sr-lines')}>
               Our products
@@ -153,6 +158,43 @@ export default function ShowroomLanding() {
           </div>
           {im.hero?.source === 'render' && <p className="sr-hero-note">Rendered in 3D with {name}’s own products</p>}
         </section>
+
+        {im.dreams.length > 0 && !comingSoon && (
+          <section className="sr-dreams sr-section" id="sr-dreams" aria-labelledby="sr-dreams-title">
+            <div className="sr-section-head">
+              <div>
+                <p className="sr-eyebrow">Dream kitchens</p>
+                <h2 id="sr-dreams-title" className="sr-h2">
+                  Start from a finished kitchen
+                </h2>
+              </div>
+              <p>Designed and rendered with {name}’s own products. Look around it in 3D, or start with it and make it yours: change the size, the colours, anything.</p>
+            </div>
+            <div className={`sr-dream-grid sr-dream-grid--${im.dreams.length}`}>
+              {im.dreams.map((d, i) => (
+                <figure key={d.url} className="sr-dream" data-testid={`dream-${i + 1}`}>
+                  <div className="sr-dream-pic">
+                    <Pic pic={d} alt={`${d.title}, rendered in 3D`} sizes={im.dreams.length > 1 ? '(max-width: 760px) 100vw, 620px' : '(max-width: 1240px) 100vw, 1200px'} />
+                    <span className="sr-dream-tag">Version {i + 1}</span>
+                  </div>
+                  <figcaption>
+                    <b>{d.title}</b>
+                    {d.design && (
+                      <span className="sr-dream-actions">
+                        <a className="sr-cta" href={`#/new?from=${encodeURIComponent(d.design)}`}>
+                          Start with this kitchen
+                        </a>
+                        <a className="sr-shot-go" href={`#/s/${d.design}`}>
+                          Look around in 3D <span aria-hidden>→</span>
+                        </a>
+                      </span>
+                    )}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )}
 
         {shown.length > 0 && (
           <section className="sr-lines sr-section" id="sr-lines" aria-labelledby="sr-lines-title">

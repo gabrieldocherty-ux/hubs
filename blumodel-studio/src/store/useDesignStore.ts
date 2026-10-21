@@ -28,6 +28,7 @@ import {
 } from '../lib/geometry';
 import * as edit from '../lib/roomEdit';
 import { carryWallFinishes, setWallFinish } from '../lib/wallFinish';
+import { cueFloorLay } from '../lib/floorLay';
 import { planBounds, wallSegs, type Pt } from '../lib/outline';
 import { defaultFinishIndex, finishAt, finishById, itemHasFinish } from '../lib/finish';
 import { makeId } from '../lib/id';
@@ -360,6 +361,7 @@ export const useDesignStore = create<State>()(
         setWallFinish: (key, finish) => commit((doc) => ({ ...doc, room: setWallFinish(doc.room, key, finish) })),
 
         setRoomFloor: (id, flooringId) => {
+          cueFloorLay();
           if (id === 'main') {
             if (flooringId) get().setSurfaces({ flooringId });
             return null;
@@ -374,6 +376,7 @@ export const useDesignStore = create<State>()(
 
         setSurfaces: (patch) =>
           commit((doc) => {
+            if (patch.flooringId && patch.flooringId !== doc.surfaces.flooringId) cueFloorLay();
             const surfaces = { ...doc.surfaces, ...patch };
             let items = doc.items;
             if (patch.cabinetFinishId && patch.cabinetFinishId !== doc.surfaces.cabinetFinishId) {

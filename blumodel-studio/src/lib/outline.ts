@@ -288,7 +288,7 @@ export function pointInOutline(p: Pt[], x: number, y: number): boolean {
   for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
     const [xi, yi] = p[i];
     const [xj, yj] = p[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = true;
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;
 }
