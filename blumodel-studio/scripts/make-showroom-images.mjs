@@ -135,6 +135,7 @@ try {
   // manifest). The live server makes photoreal versions of them (server/scripts/render-marketing.mjs).
   const PROMO_OUT = path.join(ROOT, 'public', 'marketing');
   (render.promos ?? []).forEach((g, i) => {
+    // (A gap, like promo 3 now, is skipped: its picture stays as it is.)
     if (!g) return;
     const f = fileOf(g.fileId);
     fs.writeFileSync(path.join(PROMO_OUT, `kitchen-${i + 1}.${f.ext}`), blob(f));

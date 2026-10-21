@@ -523,9 +523,9 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
       },
       // Framed on the kitchen itself (the bay makes the plan deeper than the kitchen).
       view: (d) => ({ pos: [ft(d.room.widthIn) - 1.1, 5.3, ft(d.room.lengthIn) - 0.9], target: [ft(d.room.widthIn) * 0.4, 3.3, 2.5], fov: 54 }),
-      // The sales page's second angle: straight on from the breakfast bay, the island and its stools
-      // in front of the range and hood.
-      angle: (d) => ({ pos: [ft(d.room.widthIn) * 0.5, 5.6, ft(d.room.lengthIn) + 1.6], target: [ft(d.room.widthIn) * 0.5, 3.4, 0.5], fov: 64 }),
+      // The sales page's second angle: the first one mirrored, from the sink side's corner across the
+      // island to the range and the glass uppers.
+      angle: (d) => ({ pos: [4.6, 5.5, ft(d.room.lengthIn) - 0.8], target: [ft(d.room.widthIn) * 0.68, 3.3, 1.6], fov: 58 }),
     },
     {
       // A different kitchen altogether: a U wrapped round the cook, no island, dark slab doors and
@@ -564,10 +564,14 @@ function dreamScenes(lines: ShowroomLine[], keepBasics: boolean): Scene[] {
     const doc = keepBasics ? { ...dressed, items: withFinishIds(layoutPotLights({ room: dressed.room, items: dressed.items }).items) } : dressed;
     return { id: `dream:${i + 1}`, label: p.title, doc, problems: layoutProblems(doc), shots: [
         { slot: 'dream' as const, index: i + 1, title: p.title, ...DREAM_SIZE, view: p.view({ ...doc, room: p.room }) },
-        // Two angles of each for the sales page's slideshow (scripts/make-showroom-images.mjs puts
-        // them in public/marketing/, not on the demo).
-        { slot: 'promo' as const, index: i * 2 + 1, title: p.title, ...PROMO_SIZE, view: p.view({ ...doc, room: p.room }) },
-        { slot: 'promo' as const, index: i * 2 + 2, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) },
+        // The sales page's slideshow: two angles of the white kitchen, one of the dark one
+        // (scripts/make-showroom-images.mjs puts them in public/marketing/, not on the demo).
+        ...(i === 0
+          ? [
+              { slot: 'promo' as const, index: 1, title: p.title, ...PROMO_SIZE, view: p.view({ ...doc, room: p.room }) },
+              { slot: 'promo' as const, index: 2, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) },
+            ]
+          : [{ slot: 'promo' as const, index: 4, title: p.title, ...PROMO_SIZE, view: p.angle({ ...doc, room: p.room }) }]),
       ] };
   });
 }

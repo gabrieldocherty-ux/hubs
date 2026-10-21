@@ -7,15 +7,14 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
  */
 
 /**
- * The slideshow's slides: two angles of each of two kitchens, each on a different made-up company's
+ * The slideshow's slides: two angles of the white kitchen and one of the dark one, each on a different made-up company's
  * showroom. The 3D picture is in the app (public/marketing/, scripts/make-showroom-images.mjs); a
  * photoreal version, when the server has made one (server/scripts/render-marketing.mjs), replaces it.
  */
 const SLIDES: { name: string; title: string; co: { name: string; initials: string; slug: string; color: string; accent: string } }[] = [
   { name: 'kitchen-1', title: 'White shaker kitchen with a waterfall island', co: { name: 'Cedar & Stone Kitchens', initials: 'CS', slug: 'cedarstone', color: '#2f4a3a', accent: '#c9b99a' } },
-  { name: 'kitchen-2', title: 'The same kitchen, from the breakfast bay', co: { name: 'Harbourline Cabinetry', initials: 'HC', slug: 'harbourline', color: '#233a5e', accent: '#9fb6cf' } },
-  { name: 'kitchen-3', title: 'Charcoal U-shaped kitchen', co: { name: 'Northfield Design-Build', initials: 'ND', slug: 'northfield', color: '#5a3427', accent: '#d8b48f' } },
-  { name: 'kitchen-4', title: 'The same kitchen, toward the range', co: { name: 'Maple & Main Renovations', initials: 'MM', slug: 'maplemain', color: '#3f3a5e', accent: '#c4b6e0' } },
+  { name: 'kitchen-2', title: 'The same kitchen, across the island', co: { name: 'Harbourline Cabinetry', initials: 'HC', slug: 'harbourline', color: '#233a5e', accent: '#9fb6cf' } },
+  { name: 'kitchen-4', title: 'Charcoal kitchen with a professional range', co: { name: 'Northfield Design-Build', initials: 'ND', slug: 'northfield', color: '#5a3427', accent: '#d8b48f' } },
 ];
 
 /** The photoreal versions the server has (name -> address), once asked. */

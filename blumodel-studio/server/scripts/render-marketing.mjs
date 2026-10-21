@@ -7,7 +7,7 @@
 //
 //   node server/scripts/render-marketing.mjs             the ones not made yet
 //   node server/scripts/render-marketing.mjs --force     all of them again (each costs one render)
-//   node server/scripts/render-marketing.mjs --only kitchen-2
+//   node server/scripts/render-marketing.mjs --only kitchen-2,kitchen-3 --force
 //
 // The key: blumodel.env (read like the server reads it), or one saved in Admin > System. Which
 // database and data folder: the same way seed-demo-tenant.mjs finds them. Prints no key.
@@ -55,11 +55,11 @@ if (provider?.id !== 'architect') {
 
 const out = marketingDir(config.DB_PATH);
 fs.mkdirSync(out, { recursive: true });
-const only = flag('--only');
+const only = flag('--only')?.split(',').map((x) => x.trim()).filter(Boolean);
 let made = 0;
 let failed = 0;
 for (const [name, prompt] of Object.entries(MARKETING_PROMPTS)) {
-  if (only && only !== name) continue;
+  if (only && !only.includes(name)) continue;
   const src = path.join(config.DIST_DIR, 'marketing', `${name}.webp`);
   const dest = path.join(out, `${name}.png`);
   if (!fs.existsSync(src)) {

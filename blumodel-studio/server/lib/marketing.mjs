@@ -3,14 +3,14 @@
 
 import path from 'node:path';
 
+const REAL = 'Ultra-realistic professional interior photograph, as if taken by a real-estate photographer with a 24mm lens: natural window light, soft realistic shadows, true-to-life materials with subtle texture and reflections. Keep the exact layout, cabinets, appliances and camera angle.';
+
 /** What each 3D picture shows, for the render service. Keys are the picture names (kitchen-<n>). */
 export const MARKETING_PROMPTS = Object.freeze({
   'kitchen-1':
     'Photorealistic interior photograph of a bright luxury kitchen: white shaker cabinets with brass hardware, a long marble waterfall island with four oak stools, brass dome pendants, zellige tile backsplash, herringbone oak floor, soft natural daylight. Keep the exact layout, cabinets and camera angle.',
-  'kitchen-2':
-    'Photorealistic interior photograph of a bright luxury kitchen seen from a breakfast bay: white shaker cabinets, a long marble waterfall island with oak stools, brass pendants, an open dining room with an oak table and chairs beyond, herringbone oak floor, soft natural daylight. Keep the exact layout and camera angle.',
-  'kitchen-3':
-    'Photorealistic interior photograph of a modern U-shaped kitchen: matte charcoal slab cabinets with brass bar pulls, dark stone countertops, white tile backsplash, stainless steel French-door fridge and range, large white porcelain floor tiles, a window over the sink, warm daylight. Keep the exact layout and camera angle.',
+  'kitchen-2': `A bright luxury kitchen: white shaker cabinets with brass hardware, a long marble waterfall island with oak stools, brass dome pendants, a farmhouse sink under the window, zellige tile backsplash, herringbone oak floor. ${REAL}`,
+  // The photoreal version made 2026-10-21 is the approved one: this prompt is what made it.
   'kitchen-4':
     'Photorealistic interior photograph of a modern U-shaped kitchen: matte charcoal slab cabinets with brass bar pulls, dark stone countertops, a stainless chimney hood over a professional range, white tile backsplash, a window over the undermount sink, large white porcelain floor tiles, warm daylight. Keep the exact layout and camera angle.',
 });
