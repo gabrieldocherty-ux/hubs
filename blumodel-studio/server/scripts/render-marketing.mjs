@@ -9,13 +9,13 @@
 //   node server/scripts/render-marketing.mjs --force     all of them again (each costs one render)
 //   node server/scripts/render-marketing.mjs --only kitchen-2
 //
-// Which database (for a key saved in Admin > System) and data folder: the same way
-// seed-demo-tenant.mjs finds them. Prints no key.
+// The key: blumodel.env (read like the server reads it), or one saved in Admin > System. Which
+// database and data folder: the same way seed-demo-tenant.mjs finds them. Prints no key.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadConfig } from '../config.mjs';
-import { scriptDbPath } from '../lib/envFile.mjs';
+import { loadEnvFile, scriptDbPath } from '../lib/envFile.mjs';
 import { openDb } from '../db/index.mjs';
 import { migrate } from '../db/migrate.mjs';
 import { createRenderSettings } from '../renders/settings.mjs';
@@ -30,6 +30,13 @@ if (args.includes('--help') || args.includes('-h')) {
 }
 
 const env = { ...process.env };
+// The settings file the server reads (blumodel.env: ARCHITECT_AI_KEY among them), the same way.
+try {
+  loadEnvFile(env);
+} catch (err) {
+  console.error(err.message);
+  process.exit(1);
+}
 const { dbPath, source } = scriptDbPath({ env, dbFlag: flag('--db') });
 if (dbPath) env.DB_PATH = dbPath;
 const argv = source === 'home' && !process.argv.includes('--prod') ? [...process.argv, '--prod'] : process.argv;

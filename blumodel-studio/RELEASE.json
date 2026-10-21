@@ -1,7 +1,7 @@
 {
-  "source": "1aba9f22ebe957a0daf6a7443b75f3b4d0863484",
-  "subject": "sales page: the showroom picture is a swipeable slideshow - two hero angles of each dream kitchen (T",
-  "builtAt": "2026-10-21T04:35:21.284Z",
+  "source": "fc9a30dee8f980515c86442880a4cd91d8aa4b01",
+  "subject": "render-marketing: reads blumodel.env like the server does, so ARCHITECT_AI_KEY there is enough (no k",
+  "builtAt": "2026-10-21T04:42:55.361Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }
