@@ -602,9 +602,12 @@ function FridgeModel({ r, finish, ctx }: ModelProps) {
           {/* water and ice in the left door: a dark recess, its paddle and a drip tray */}
           {w >= 33 && (
             <group position={[-w / 4 - 1, split + (h - split) * 0.42, dz + 2.05]}>
-              <Box size={[8, 12, 0.3]} pos={[0, 0, 0]} mat={M.toeKick()} cast={false} />
-              <Box size={[3.6, 4, 0.4]} pos={[0, 2.4, 0.2]} mat={M.darkSteel()} cast={false} />
-              <Box size={[7.2, 0.6, 1.4]} pos={[0, -5.6, 0.5]} mat={M.darkSteel()} cast={false} />
+              {/* glossy dark glass, the nook recessed in it, the paddle at the back, a slim drip tray */}
+              <RoundedBox args={[7.4, 11.5, 0.35]} radius={0.15} smoothness={2} position={[0, 0, 0]} material={cached('dispenserGlass', () => new THREE.MeshPhysicalMaterial({ color: '#1b1d20', roughness: 0.12, metalness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 }))} />
+              <Box size={[5.6, 7.4, 0.2]} pos={[0, -1.2, 0.12]} mat={M.darkSteel()} cast={false} />
+              <Box size={[2.8, 3, 0.5]} pos={[0, 0.6, 0.3]} mat={M.toeKick()} cast={false} />
+              <Box size={[1.6, 0.35, 0.2]} pos={[0, 4.6, 0.25]} mat={cached('dispenserLed', () => new THREE.MeshBasicMaterial({ color: '#cfe6ff' }))} cast={false} />
+              <Box size={[6, 0.5, 1.2]} pos={[0, -5.3, 0.55]} mat={M.steel()} cast={false} />
             </group>
           )}
         </group>
@@ -635,14 +638,38 @@ function HoodModel({ r, finish, ctx }: ModelProps) {
     );
   }
   const top = y0 + h;
+  const flue = ctx.ceiling - top;
+  const nBaffles = Math.max(2, Math.round((w - 6) / 14));
+  const bw = (w - 6) / nBaffles;
   return (
     <group>
-      <Box size={[w, 2.5, d]} pos={[0, y0 + 1.25, 0]} mat={mat} />
-      <mesh geometry={geo} position={[0, y0 + 2.5, 0]} material={mat} castShadow receiveShadow />
-      {ctx.ceiling > top && <Box size={[11, ctx.ceiling - top, 9]} pos={[0, (top + ctx.ceiling) / 2, -d / 2 + 4.5]} mat={mat} />}
+      {/* the front band, softly rounded, and the crease where the canopy meets it */}
+      <RoundedBox args={[w, 2.6, d]} radius={0.35} smoothness={3} position={[0, y0 + 1.3, 0]} material={mat} castShadow receiveShadow />
+      <Box size={[w - 0.4, 0.12, 0.1]} pos={[0, y0 + 2.62, d / 2 - 0.05]} mat={M.darkSteel()} cast={false} />
+      <mesh geometry={geo} position={[0, y0 + 2.6, 0]} material={mat} castShadow receiveShadow />
+      {/* controls on the band: four buttons and a light */}
+      {[0, 1, 2, 3].map((i) => (
+        <Cyl key={i} r={0.42} h={0.25} pos={[w / 2 - 9 + i * 1.6, y0 + 1.3, d / 2 + 0.05]} rot={[Math.PI / 2, 0, 0]} mat={M.darkSteel()} seg={14} cast={false} />
+      ))}
+      <Box size={[0.6, 0.2, 0.1]} pos={[w / 2 - 10.6, y0 + 1.3, d / 2 + 0.05]} mat={cached('hoodLed', () => new THREE.MeshBasicMaterial({ color: '#9fd0ff' }))} cast={false} />
+      {/* the chimney, telescoping, with its joint */}
+      {flue > 0 && (
+        <>
+          <Box size={[11, flue, 9]} pos={[0, (top + ctx.ceiling) / 2, -d / 2 + 4.5]} mat={mat} />
+          {flue > 10 && <Box size={[11.25, 0.15, 9.25]} pos={[0, top + flue * 0.45, -d / 2 + 4.5]} mat={M.darkSteel()} cast={false} />}
+        </>
+      )}
+      {/* underneath: baffle filters in a frame, and two lights */}
       <Box size={[w - 3, 0.2, d - 3]} pos={[0, y0 + 0.1, 0]} mat={M.darkSteel()} />
-      <Cyl r={1.2} h={0.2} pos={[-w / 4, y0 - 0.05, 0]} mat={M.bulb()} cast={false} />
-      <Cyl r={1.2} h={0.2} pos={[w / 4, y0 - 0.05, 0]} mat={M.bulb()} cast={false} />
+      {Array.from({ length: nBaffles }).map((_, i) => (
+        <group key={i} position={[-w / 2 + 3 + bw * (i + 0.5), y0 + 0.02, 0]}>
+          {Array.from({ length: 6 }).map((__, k) => (
+            <Box key={k} size={[0.35, 0.18, d - 7]} pos={[-bw / 2 + 1 + k * ((bw - 2) / 5), 0, 0]} mat={M.steel()} cast={false} />
+          ))}
+        </group>
+      ))}
+      <Cyl r={1.2} h={0.2} pos={[-w / 4, y0 - 0.05, d / 2 - 2.5]} mat={M.bulb()} cast={false} />
+      <Cyl r={1.2} h={0.2} pos={[w / 4, y0 - 0.05, d / 2 - 2.5]} mat={M.bulb()} cast={false} />
     </group>
   );
 }
