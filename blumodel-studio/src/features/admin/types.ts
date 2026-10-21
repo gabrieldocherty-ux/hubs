@@ -197,6 +197,18 @@ export interface OffsiteStatus {
   stale: boolean;
 }
 
+/** Admin > System > Render service (server/renders/settings.mjs view()): never the key itself. */
+export interface RenderServiceState {
+  source: 'env' | 'admin' | null;
+  url: string | null;
+  keyLast4: string | null;
+  keyUnreadable: boolean;
+  updatedAt: number | null;
+  updatedBy: string | null;
+  provider: 'architect' | 'demo' | null;
+  forced: 'off' | 'demo' | null;
+}
+
 export interface SitesState {
   on: boolean;
   since: number | null;

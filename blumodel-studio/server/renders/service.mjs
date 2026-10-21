@@ -41,9 +41,12 @@ const monthStart = (t) => {
 
 /**
  * @param {{ db: import('node:sqlite').DatabaseSync, config: any, now: () => number, tx: (fn: () => any) => any,
- *   credits: any, files: any, provider: { id: string, render: Function } | null, log?: any }} deps
+ *   credits: any, files: any, provider: { id: string, render: Function } | null | (() => ({ id: string, render: Function } | null)), log?: any }} deps
+ * `provider` may be a function (renders/settings.mjs current()): asked again on every render, so a
+ * service set in Admin > System takes effect without a restart.
  */
-export function createRenderService({ db, config, now, tx, credits, files, provider, log }) {
+export function createRenderService({ db, config, now, tx, credits, files, provider: providerOf, log }) {
+  const current = typeof providerOf === 'function' ? providerOf : () => providerOf;
   /** Renders in flight in this process: id -> promise. A pending row not in here is stale. */
   const inflight = new Map();
   const costCents = () => config.RENDER_CREDIT_CENTS;
@@ -170,7 +173,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
     return { buf, mime: info.mime, width: info.meta.width, height: info.meta.height };
   }
 
-  async function run(id, { image, mime, scene }) {
+  async function run(id, { image, mime, scene, provider }) {
     const prompt = scenePrompt(scene);
     try {
       if (!provider) throw new RenderFailure('Photoreal renders are being set up. Your credits were returned.');
@@ -202,7 +205,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
   const svc = {
     /** Who makes the renders here: 'architect' | 'demo' | null (not set up). */
     get providerId() {
-      return provider?.id ?? null;
+      return current()?.id ?? null;
     },
 
     costCents,
@@ -214,6 +217,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
     status(rc) {
       const tenant = rc.tenant;
       sweep(tenant.id);
+      const provider = current();
       const configured = !!provider;
       const role = rc.user ? roleOf(rc) : null;
       const team = role === 'owner' || role === 'staff';
@@ -247,6 +251,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
     /** Steps 1–2 above. Returns the pending render's wire. */
     start(rc, body) {
       const b = body && typeof body === 'object' ? body : {};
+      const provider = current();
       if (!provider) throw new HttpError(503, 'Photoreal renders are being set up. Nothing was charged.', { code: 'renders_not_configured' });
       const tenant = rc.tenant;
       const role = roleOf(rc);
@@ -281,7 +286,7 @@ export function createRenderService({ db, config, now, tx, credits, files, provi
         ).run(id, tenant.id, rc.user.id, role, design.projectId, design.name.slice(0, 120), provider.id, isFree ? 0 : costCents(), hold?.id ?? null, isFree ? 1 : 0, input.id, JSON.stringify(scene), now());
       });
       // Registered before it runs, so its own `finally` always finds the entry to remove.
-      inflight.set(id, Promise.resolve().then(() => run(id, { image: img.buf, mime: img.mime, scene })));
+      inflight.set(id, Promise.resolve().then(() => run(id, { image: img.buf, mime: img.mime, scene, provider })));
       return wire(row(id), { team, userId: rc.user.id });
     },
 

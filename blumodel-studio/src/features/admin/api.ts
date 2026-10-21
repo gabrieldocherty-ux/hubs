@@ -1,6 +1,6 @@
 /** The owner's admin panel API (server/routes/adminPanel.mjs). Writes go through `call` (CSRF header). */
 import { call } from '../../lib/api';
-import type { AuditPage, ContractorRow, Dashboard, PanelUser, SitesState, SystemStatus, UpdatesStatus, UserDetail } from './types';
+import type { AuditPage, ContractorRow, Dashboard, PanelUser, RenderServiceState, SitesState, SystemStatus, UpdatesStatus, UserDetail } from './types';
 
 const enc = encodeURIComponent;
 const qs = (o: Record<string, string | number | undefined>) => {
@@ -31,5 +31,10 @@ export const adminApi = {
   setSites: (on: boolean) => call<{ sites: SitesState; changed: boolean }>('POST', '/api/admin/system/sites', { on }),
   /** Leaves the Update now trigger for the automatic update (audited). */
   updateNow: () => call<{ requested: true; alreadyPending: boolean; updates: UpdatesStatus }>('POST', '/api/admin/system/update-now'),
+  /** The render service (address and key; the key is only ever sent, never received). */
+  renderService: () => call<{ renders: RenderServiceState }>('GET', '/api/admin/system/renders'),
+  setRenderService: (url: string, key?: string) => call<{ renders: RenderServiceState }>('POST', '/api/admin/system/renders', key ? { url, key } : { url }),
+  removeRenderService: () => call<{ renders: RenderServiceState }>('POST', '/api/admin/system/renders/remove'),
+  testRenderService: () => call<{ ok: boolean; message: string; ms?: number; provider?: string }>('POST', '/api/admin/system/renders/test'),
   audit: (f: { actor?: string; action?: string; from?: string; to?: string; page?: number }) => call<AuditPage>('GET', `/api/admin/audit${qs(f)}`),
 };

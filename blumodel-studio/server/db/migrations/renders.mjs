@@ -8,6 +8,9 @@
 //                charged when the render worked and released when it didn't.
 //   renders-002  showroom_renders.free: one of the account's free renders (config FREE_RENDERS):
 //                no credits held or charged (hold_id NULL, cost_cents 0). A failed one doesn't count.
+//   renders-003  render_settings: the render service set in Admin > System (renders/settings.mjs).
+//                One row. The key is sealed (AES-256-GCM, its key in render-settings.key next to the
+//                database); key_last4 is all the panel ever shows of it.
 
 /** @type {{ id: string, up: (db: import('node:sqlite').DatabaseSync) => void }[]} */
 export const steps = [
@@ -49,6 +52,20 @@ export const steps = [
       db.exec(`
         ALTER TABLE showroom_renders ADD COLUMN free INTEGER NOT NULL DEFAULT 0;
         CREATE INDEX showroom_renders_free ON showroom_renders(user_id, free);
+      `);
+    },
+  },
+  {
+    id: 'renders-003-settings',
+    up(db) {
+      db.exec(`
+        CREATE TABLE render_settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          url TEXT NOT NULL,
+          key_sealed TEXT NOT NULL,
+          key_last4 TEXT NOT NULL,
+          updated_at INTEGER NOT NULL,
+          updated_by TEXT);
       `);
     },
   },

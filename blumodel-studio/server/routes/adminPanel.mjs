@@ -24,6 +24,7 @@
 
 import { HttpError } from '../http/respond.mjs';
 import { audit, pseudonymOf } from '../lib/audit.mjs';
+import { makePng } from '../lib/synth.mjs';
 import { SUBSCRIPTION_PLANS } from '../lib/plans.mjs';
 import { createBillingService } from '../billing/service.mjs';
 import { createAllowance } from '../payments/allowance.mjs';
@@ -47,6 +48,14 @@ export const PANEL_ROLES = Object.freeze(['customer', 'studio']);
 
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const bad = (field, message) => new HttpError(400, message, { errors: [{ field, message }] });
+/** The host of an address, for the audit log (never the path or query, which could carry a token). */
+const hostOf = (u) => {
+  try {
+    return new URL(String(u)).host;
+  } catch {
+    return '';
+  }
+};
 
 /** 'YYYY-MM-DD' (a real calendar day) → ms at the START of that UTC day, or null. */
 export function dayStart(s) {
@@ -346,6 +355,84 @@ export default function routes(ctx) {
         audit(db, { admin: rc.user, action: 'update_now', detail: { alreadyPending: r.already }, at: ctx.now() });
         log.info?.(`admin: ${rc.user.email} asked for an update now`);
         return { requested: true, alreadyPending: r.already, updates: systemStatus({ db, config, now: ctx.now, startedAt: ctx.startedAt, health: ctx.health, home }).updates };
+      },
+    },
+    // ── Render service (renders/settings.mjs): the address and key for photoreal renders ──
+    {
+      method: 'GET',
+      path: '/api/admin/system/renders',
+      auth: 'admin',
+      rateLimit: READ,
+      handler: () => ({ renders: services.renderSettings.view() }),
+    },
+    {
+      // Saving a key: the password (and 2FA) again, like money or access. Audited without the key.
+      method: 'POST',
+      path: '/api/admin/system/renders',
+      auth: 'admin',
+      reauth: true,
+      rateLimit: { name: 'admin-render-settings', max: 20, windowMs: HOUR, by: 'user' },
+      maxBytes: 4_096,
+      handler: (rc) => {
+        const s = services.renderSettings;
+        let r;
+        try {
+          r = s.save({ url: rc.body.url, key: rc.body.key, by: rc.user.email });
+        } catch (err) {
+          if (err?.field) throw bad(err.field, err.message);
+          throw err;
+        }
+        audit(db, { admin: rc.user, action: 'render_service_set', detail: { host: hostOf(rc.body.url), keyChanged: r.keyChanged }, at: ctx.now() });
+        return { renders: s.view() };
+      },
+    },
+    {
+      method: 'POST',
+      path: '/api/admin/system/renders/remove',
+      auth: 'admin',
+      reauth: true,
+      rateLimit: { name: 'admin-render-settings', max: 20, windowMs: HOUR, by: 'user' },
+      maxBytes: 256,
+      handler: (rc) => {
+        const s = services.renderSettings;
+        let removed;
+        try {
+          removed = s.clear({ by: rc.user.email });
+        } catch (err) {
+          if (err?.field) throw bad(err.field, err.message);
+          throw err;
+        }
+        if (removed) audit(db, { admin: rc.user, action: 'render_service_removed', detail: {}, at: ctx.now() });
+        return { renders: s.view() };
+      },
+    },
+    {
+      // One small render through the service in use, to see the address and key work. It may cost
+      // one render on the service's side; nothing here is charged.
+      method: 'POST',
+      path: '/api/admin/system/renders/test',
+      auth: 'admin',
+      rateLimit: { name: 'admin-render-test', max: 6, windowMs: HOUR, by: 'user' },
+      maxBytes: 256,
+      handler: async () => {
+        const p = services.renderSettings.current();
+        if (!p) return { ok: false, message: 'No render service is set up yet.' };
+        const started = ctx.now();
+        try {
+          const res = await p.render({
+            image: makePng({ w: 320, h: 200, rgba: (x, y) => [200 - (y / 4), 190 - (y / 5), 175, 255] }),
+            mime: 'image/png',
+            scene: { room: { kind: 'kitchen' }, camera: { view: 'test', widthPx: 320, heightPx: 200 } },
+            prompt: 'Connection test from BluModel Studio: a photorealistic empty kitchen corner.',
+            requestId: `test_${started}`,
+          });
+          const ok = Buffer.isBuffer(res?.image) && res.image.length > 0;
+          return { ok, provider: p.id, ms: ctx.now() - started, message: ok ? 'The render service answered with an image.' : 'The render service answered, but with no image.' };
+        } catch (err) {
+          // RenderFailure messages are safe to show (no key, no body); drop the credits sentence.
+          const msg = typeof err?.message === 'string' && err.code ? err.message.replace(/\s*Your credits were returned\.?/, '') : 'The test render failed.';
+          return { ok: false, provider: p.id, ms: ctx.now() - started, message: msg };
+        }
       },
     },
     {

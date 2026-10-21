@@ -753,3 +753,34 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Admin > System > Render service. */
+.rs-wrap {
+  overflow-wrap: anywhere;
+}
+
+.rs-form {
+  max-width: 560px;
+}
+
+/* Phones: full-width fields and buttons, and 16px text in fields so iOS doesn't zoom in on focus. */
+@media (max-width: 720px), (pointer: coarse) {
+  .adm-field input,
+  .adm-field select,
+  .adm-field textarea,
+  .adm-inline input,
+  .adm-inline select {
+    height: 44px;
+    font-size: 16px;
+  }
+  .adm-field textarea {
+    height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .rs-buttons .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+}

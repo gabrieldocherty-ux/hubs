@@ -29,6 +29,7 @@ import { createImageTickets } from './tenancy/images.mjs';
 import { createSiteResolver } from './tenancy/hosts.mjs';
 import { showroomIndexHtml, unavailablePage, unknownHostPage } from './tenancy/pages.mjs';
 import { requestOrigin } from './tenancy/hosts.mjs';
+import { createRenderSettings } from './renders/settings.mjs';
 import { createSitesSwitch, maintenanceGate, maintenancePage, switchFileFor } from './ops/sitesSwitch.mjs';
 
 /**
@@ -179,6 +180,8 @@ export function createApp({ config, db, fetch = globalThis.fetch, now = Date.now
       }
     },
   };
+  // The render service's address and key, from blumodel.env or Admin > System (renders/settings.mjs).
+  ctx.services.renderSettings = createRenderSettings({ db, config, now, fetch: (...a) => ctx.fetch(...a), log });
 
   const modules = routeModules ?? ROUTE_MODULES.map((fn, i) => ({ name: ROUTE_MODULE_NAMES[i], fn, hosts: moduleHosts(ROUTE_MODULE_NAMES[i]) }));
   const routes = compileRoutes(ctx, modules);

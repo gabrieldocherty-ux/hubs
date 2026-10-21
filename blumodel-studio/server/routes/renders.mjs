@@ -26,7 +26,6 @@ import { HttpError } from '../http/respond.mjs';
 import { serveFile } from '../http/static.mjs';
 import { mimeFor } from '../files/meta.mjs';
 import { audit } from '../lib/audit.mjs';
-import { pickProvider } from '../renders/providers.mjs';
 import { RENDER_ID, createRenderService } from '../renders/service.mjs';
 
 const ID_PARAM = /^[A-Za-z0-9_-]{1,64}$/;
@@ -35,10 +34,15 @@ const PROJECT = /^[A-Za-z0-9_-]{1,64}$/;
 /** @param {any} ctx */
 export default function routes(ctx) {
   const { db, config, services, log } = ctx;
-  const provider = pickProvider({ config, fetch: (...a) => ctx.fetch(...a), log });
+  // The provider is asked for on every render: one set in Admin > System works without a restart.
+  const settings = services.renderSettings;
+  const provider = () => settings.current();
   const renders = createRenderService({ db, config, now: ctx.now, tx: ctx.tx, credits: services.credits, files: services.files, provider, log });
   services.renders = renders;
-  log.info?.(`renders: ${provider ? `provider ${provider.id}, ${config.RENDER_CREDIT_CENTS} cents of credits each` : 'not set up (ARCHITECT_AI_URL / ARCHITECT_AI_KEY): the button says so and nothing is charged'}`);
+  const p = provider();
+  log.info?.(
+    `renders: ${p ? `provider ${p.id}${p.id === 'architect' && !settings.fromEnv ? ' (set in Admin > System)' : ''}, ${config.RENDER_CREDIT_CENTS} cents of credits each` : 'not set up (Admin > System > Render service, or ARCHITECT_AI_URL / ARCHITECT_AI_KEY): the button says so and nothing is charged'}`,
+  );
 
   services.tenants.addAdminExtra((t) => ({ renders: renders.usage(t.id) }));
 

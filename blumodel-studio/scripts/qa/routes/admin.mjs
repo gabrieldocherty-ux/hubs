@@ -553,6 +553,38 @@ export default [
       await h.evaluate(() => document.getElementById('adm-updates')?.scrollIntoView({ block: 'start' }));
     },
   }),
+  // Admin > System > Render service: pasting the address and key (as from a phone), saving, the
+  // last four only coming back, Test it (to a .invalid address: nothing is ever reached), Remove.
+  ...four({
+    name: 'admin-render-service',
+    path: '#/admin/system',
+    as: 'admin',
+    expectText: ['Render service', 'The AI that turns a design', 'Saving asks for your password'],
+    extra: async (h) => {
+      const key = 'qa_render_KEY_7Hn2';
+      await h.evaluate(() => document.getElementById('adm-render-service')?.scrollIntoView({ block: 'start' }));
+      const attrs = await h.evaluate(() => [...document.querySelectorAll('.rs-form input')].map((i) => [i.getAttribute('autocapitalize'), i.getAttribute('autocorrect'), i.getAttribute('spellcheck'), getComputedStyle(i).fontSize]));
+      for (const [cap, cor, spell, size] of attrs) {
+        if (cap !== 'none' || cor !== 'off' || spell !== 'false') throw new Error(`a phone could change what's pasted: ${JSON.stringify(attrs)}`);
+        if (h.viewport === 'phone' && parseFloat(size) < 16) throw new Error(`fields under 16px make iOS zoom in (${size})`);
+      }
+      await fill(h, '.rs-form input[name="render-url"]', 'https://render.qa.invalid/v1/render');
+      await fill(h, '.rs-form input[name="render-key"]', key);
+      await press(h, 'Save');
+      await h.waitForText(['Photoreal renders on', '•••• 7Hn2', 'Test it', 'Change', 'Remove']);
+      const shown = await h.evaluate(() => document.body.innerText);
+      if (shown.includes(key)) throw new Error('the page shows the key');
+      await h.shot('saved');
+      await press(h, 'Test it');
+      await h.waitForText('couldn’t be reached', 20_000);
+      await press(h, 'Remove');
+      await press(h, 'Yes, remove it');
+      await h.waitForText(['Saving asks for your password']);
+      const audit = h.api.sql("SELECT detail FROM admin_audit WHERE action = 'render_service_set' ORDER BY at DESC LIMIT 1")[0];
+      if (!audit || String(audit.detail).includes(key)) throw new Error('the change was not audited, or the audit holds the key');
+      await h.evaluate(() => document.getElementById('adm-render-service')?.scrollIntoView({ block: 'start' }));
+    },
+  }),
   // Admin > System > All websites: OFF (through its confirm) puts every site in maintenance - the
   // health check says so - while this admin keeps the page; then ON again (the run goes on after).
   // (What a visitor gets while it's off is server/test/sites-switch.test.mjs: a 503 here would fail QA.)

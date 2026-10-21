@@ -1,7 +1,8 @@
 /**
  * Admin > System: how the server is doing and how it is set up (GET /api/admin/system). Keys and
  * secrets are only ever "set" or "not set" here; the server never sends a value. They live in
- * blumodel.env on the server and are changed there by hand, then the server is restarted.
+ * blumodel.env on the server and are changed there by hand, then the server is restarted, except the
+ * render service's, which can be pasted in here (RenderServiceCard; only its last four come back).
  */
 import { timeAgo } from '../../store/useSession';
 import { adminApi } from './api';
@@ -9,6 +10,7 @@ import type { SystemStatus } from './types';
 import { Notice, Pill, Section, bytes, dateTime, duration, useLoad, yesNo } from './ui';
 import UpdatesCard from './UpdatesCard';
 import SitesCard from './SitesCard';
+import RenderServiceCard from './RenderServiceCard';
 
 const FAILURE_LABEL: Record<string, string> = {
   not_enabled: 'Stripe not on here (503)',
@@ -62,8 +64,9 @@ export default function AdminSystem() {
         </div>
       </div>
       <SitesCard sites={s.sites} onChange={(sites) => setData({ ...s, sites })} />
+      <RenderServiceCard />
       <Notice>
-        Keys and secrets are shown only as set or not set: this page never receives their values. They live in <code>blumodel.env</code> on the server and are edited there by hand, then the server is restarted.
+        Other keys and secrets are shown only as set or not set: this page never receives their values. They live in <code>blumodel.env</code> on the server and are edited there by hand, then the server is restarted.
       </Notice>
 
       <div className="adm-cols">
