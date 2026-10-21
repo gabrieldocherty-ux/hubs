@@ -7,13 +7,13 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
  */
 
 /**
- * The slideshow's slides: three kitchens (white, oak, charcoal), each on a different made-up company's
+ * The slideshow's slides: a white kitchen, an ensuite bathroom and a charcoal kitchen, each on a different made-up company's
  * showroom. The 3D picture is in the app (public/marketing/, scripts/make-showroom-images.mjs); a
  * photoreal version, when the server has made one (server/scripts/render-marketing.mjs), replaces it.
  */
 const SLIDES: { name: string; title: string; co: { name: string; initials: string; slug: string; color: string; accent: string } }[] = [
   { name: 'kitchen-1', title: 'White shaker kitchen with a waterfall island', co: { name: 'Cedar & Stone Kitchens', initials: 'CS', slug: 'cedarstone', color: '#2f4a3a', accent: '#c9b99a' } },
-  { name: 'kitchen-2', title: 'Natural oak kitchen with an island', co: { name: 'Harbourline Cabinetry', initials: 'HC', slug: 'harbourline', color: '#233a5e', accent: '#9fb6cf' } },
+  { name: 'kitchen-2', title: 'Shower ensuite with a double vanity', co: { name: 'Harbourline Cabinetry', initials: 'HC', slug: 'harbourline', color: '#233a5e', accent: '#9fb6cf' } },
   { name: 'kitchen-4', title: 'Charcoal kitchen with a professional range', co: { name: 'Northfield Design-Build', initials: 'ND', slug: 'northfield', color: '#5a3427', accent: '#d8b48f' } },
 ];
 
