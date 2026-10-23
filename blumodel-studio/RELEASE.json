@@ -1,7 +1,7 @@
 {
-  "source": "92993646e90942c26268a2930c875aa158f51b87",
-  "subject": "eight new models: a One-Piece Skirted Toilet (smooth skirt, low tank, bidet seat with its side panel",
-  "builtAt": "2026-10-23T15:44:34.062Z",
+  "source": "46931372a01fc308bc9ccfb835ada84ef6a7f85f",
+  "subject": "deploy-local (Windows): the server is never left a child of the shell that ran the deploy - it start",
+  "builtAt": "2026-10-23T15:49:28.052Z",
   "node": "v24.14.1",
   "branch": "blumodel-studio"
 }

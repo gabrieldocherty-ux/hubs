@@ -44,8 +44,8 @@
 // Linux: systemctl stop (SIGTERM, the same graceful shutdown).
 //
 // Starting it again. Windows: unless a "stopped" file says it was stopped on purpose; through the
-// BluModelStudioServer task when register-tasks --at-startup registered it (so it outlives your
-// sign-out), else with wscript. Linux: when blumodel-studio.service is enabled.
+// BluModelStudioServer task when it exists (so it outlives your sign-out and the shell that ran the
+// deploy), else through WMI so it still isn't this shell's child. Linux: when blumodel-studio.service is enabled.
 // Then it waits for http://127.0.0.1:<port>/api/health. Exit codes: 0 healthy; 1 refused or failed
 // before anything changed (the old app runs as before); 3 the new app is in place but unhealthy
 // (scripts/host/update.mjs then runs --rollback).
@@ -287,17 +287,45 @@ function startServer() {
     console.log('The server is stopped on purpose (a "stopped" file is in the folder). Run start-server.cmd to start it.');
     return false;
   }
-  if (readStartupTasks(HOME).has(SERVER_TASK)) {
-    // Registered to run at startup: start it through Task Scheduler so it doesn't end with this sign-in session.
+  // Registered with Task Scheduler (the home's startup-tasks list says so, or Task Scheduler has it):
+  // start it through the task, so the server never belongs to the shell that ran this deploy.
+  // (2026-10-22: a server started from a Claude app's shell died with it on an app update, and the
+  // sites were down 33 hours; the task existed, the home's list didn't name it.)
+  if (readStartupTasks(HOME).has(SERVER_TASK) || taskExists(SERVER_TASK)) {
     try {
       execFileSync(sys32('schtasks.exe'), ['/Run', '/TN', SERVER_TASK], { stdio: 'ignore', windowsHide: true });
       return true;
     } catch {
-      console.warn(`schtasks /Run /TN ${SERVER_TASK} failed; starting the supervisor directly (it ends when you sign out).`);
+      console.warn(`schtasks /Run /TN ${SERVER_TASK} failed; starting the supervisor outside this shell instead.`);
     }
   }
+  // No task: have Windows start the supervisor (WMI), so it isn't in this shell's job and outlives it.
+  // A plain detached child stays in the job and ends when the shell is closed or killed.
+  if (startOutsideShell(`${sys32('wscript.exe')} "${L.startHidden}"`)) return true;
+  console.warn('Could not start the supervisor outside this shell; it will end when this shell does. Run start-server.cmd from a normal window, or register-tasks --at-startup.');
   spawn(sys32('wscript.exe'), [L.startHidden], { detached: true, stdio: 'ignore', windowsHide: true }).unref();
   return true;
+}
+
+/** Whether Task Scheduler has a task by this name (Windows). */
+function taskExists(name) {
+  try {
+    execFileSync(sys32('schtasks.exe'), ['/Query', '/TN', name], { stdio: 'ignore', windowsHide: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Starts a command through WMI (Win32_Process.Create): its parent is the WMI service, not this shell. */
+function startOutsideShell(commandLine) {
+  try {
+    const ps = `$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '${commandLine.replace(/'/g, "''")}' }; exit [int]$r.ReturnValue`;
+    execFileSync(sys32(path.join('WindowsPowerShell', 'v1.0', 'powershell.exe')), ['-NoProfile', '-NonInteractive', '-Command', ps], { stdio: 'ignore', windowsHide: true, timeout: 30_000 });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Waits for /api/health and prints the outcome. */
