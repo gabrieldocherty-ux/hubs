@@ -274,8 +274,19 @@ function OvenTowerModel({ r, finish, ctx, ends }: ModelProps) {
       <Toe w={w} d={d} />
       <Box size={[w, 80, d - 0.1]} pos={[0, 44, 0]} mat={finishMaterial(cab)} />
       <Front f={{ x: 0, y: 4, w, h: 14, pull: { dir: 'h', x: 0, y: 15, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
-      <OvenFront w={w - 1.5} y0={18.2} y1={43.8} z={d / 2} mat={steel} trim={trim} />
-      <OvenFront w={w - 1.5} y0={44.2} y1={69.8} z={d / 2} mat={steel} trim={trim} />
+      {r.product.variant === 'single' ? (
+        <>
+          {/* the wall oven at a comfortable height, the shorter speed oven above it */}
+          <OvenFront w={w - 1.5} y0={30.2} y1={57.8} z={d / 2} mat={steel} trim={trim} />
+          <OvenFront w={w - 1.5} y0={58.2} y1={69.8} z={d / 2} mat={steel} trim={trim} />
+          <Front f={{ x: 0, y: 18, w, h: 12, pull: { dir: 'h', x: 0, y: 26, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+        </>
+      ) : (
+        <>
+          <OvenFront w={w - 1.5} y0={18.2} y1={43.8} z={d / 2} mat={steel} trim={trim} />
+          <OvenFront w={w - 1.5} y0={44.2} y1={69.8} z={d / 2} mat={steel} trim={trim} />
+        </>
+      )}
       <Front f={{ x: 0, y: 70, w, h: 14, pull: { dir: 'h', x: 0, y: 73, len: 10 } }} z={d / 2} finish={cab} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
       <Crown w={w} d={d} top={84} finish={cab} ctx={ctx} ends={ends} />
     </group>
@@ -433,6 +444,28 @@ function WineModel({ r, finish, ctx }: ModelProps) {
   const cans = ['#c9442f', '#e8d8b0', '#2f6d8c', '#e0b33a', '#3c7a4d', '#f1efe9'];
   const cols = Math.max(2, Math.floor((w - 4) / 3.4));
   const inW = w - 3;
+  if (product.variant === 'drawers') {
+    // Two stainless drawers under the counter, each with a full-width bar handle and a gasket line.
+    const dark = luminance(finish.hex) < 0.1;
+    const bar = dark ? M.darkSteel() : M.steel();
+    return (
+      <group>
+        <Toe w={w} d={d} />
+        <Box size={[w, 30.5, d - 1]} pos={[0, 19.25, -0.5]} mat={frame} />
+        <Box size={[w - 0.4, 30, 0.3]} pos={[0, 19.25, d / 2 - 0.9]} mat={M.toeKick()} cast={false} />
+        {[4.2, 19.6].map((y0) => (
+          <group key={y0}>
+            <RoundedBox args={[w - 0.4, 15, 1.6]} radius={0.35} smoothness={3} position={[0, y0 + 7.5, d / 2 - 0.2]} material={frame} castShadow receiveShadow />
+            <Cyl r={0.5} h={w - 6} pos={[0, y0 + 12.2, d / 2 + 2.2]} rot={[0, 0, Math.PI / 2]} mat={bar} seg={14} />
+            {[-1, 1].map((s) => (
+              <Cyl key={s} r={0.35} h={1.8} pos={[s * (w / 2 - 4), y0 + 12.2, d / 2 + 1.2]} rot={[Math.PI / 2, 0, 0]} mat={bar} seg={10} />
+            ))}
+          </group>
+        ))}
+        <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 1.5} />
+      </group>
+    );
+  }
   return (
     <group>
       <Toe w={w} d={d} />
@@ -658,6 +691,21 @@ function HoodModel({ r, finish, ctx }: ModelProps) {
   }
   const top = y0 + h;
   const flue = ctx.ceiling - top;
+  if (product.variant === 'island') {
+    // Free over an island: the canopy rises on all four sides to a square duct cover up to the ceiling.
+    return (
+      <group>
+        <RoundedBox args={[w, 2.6, d]} radius={0.35} smoothness={3} position={[0, y0 + 1.3, 0]} material={mat} castShadow receiveShadow />
+        <mesh geometry={islandCanopy(w, d, 12, 12, h - 2.6)} position={[0, y0 + 2.6, 0]} material={mat} castShadow receiveShadow dispose={null} />
+        {flue > 0 && <Box size={[12, flue, 12]} pos={[0, (top + ctx.ceiling) / 2, 0]} mat={mat} />}
+        {[0, 1, 2, 3].map((i) => (
+          <Cyl key={i} r={0.42} h={0.25} pos={[w / 2 - 9 + i * 1.6, y0 + 1.3, d / 2 + 0.05]} rot={[Math.PI / 2, 0, 0]} mat={M.darkSteel()} seg={14} cast={false} />
+        ))}
+        <Box size={[w - 3, 0.2, d - 3]} pos={[0, y0 + 0.1, 0]} mat={M.darkSteel()} />
+        {[-1, 1].map((s) => [-1, 1].map((t) => <Cyl key={`${s}${t}`} r={1.1} h={0.2} pos={[s * w / 4, y0 - 0.05, t * d / 4]} mat={M.bulb()} cast={false} />))}
+      </group>
+    );
+  }
   const nBaffles = Math.max(2, Math.round((w - 6) / 14));
   const bw = (w - 6) / nBaffles;
   return (
@@ -904,6 +952,39 @@ function PendantModel({ r, finish, ctx }: ModelProps) {
     );
   }
 
+  if (v === 'chandelier') {
+    // A stem from the ceiling to a central column, six curved arms, a candle sleeve and flame bulb on each.
+    const arms = 6;
+    const R = w / 2 - 1.5;
+    const hub = y0 + 5;
+    return (
+      <group>
+        <Cyl r={2.4} h={0.7} pos={[0, ctx.ceiling - 0.35, 0]} mat={shadeMat} seg={20} />
+        <Cyl r={0.35} h={Math.max(0, ctx.ceiling - (y0 + h))} pos={[0, (ctx.ceiling + y0 + h) / 2, 0]} mat={shadeMat} seg={10} cast={false} />
+        <Cyl r={1.1} rb={1.6} h={h - 2} pos={[0, y0 + (h - 2) / 2 + 2, 0]} mat={shadeMat} seg={16} />
+        <mesh position={[0, y0 + 1.4, 0]} material={shadeMat}>
+          <sphereGeometry args={[1.8, 16, 12]} />
+        </mesh>
+        {Array.from({ length: arms }).map((_, i) => {
+          const a = (i / arms) * Math.PI * 2;
+          return (
+            <group key={i} rotation={[0, -a, 0]}>
+              {/* a U-shaped arm, down from the hub and back up, then the cup, the candle sleeve and the flame */}
+              <mesh position={[R / 2, hub, 0]} rotation={[0, 0, Math.PI]} material={shadeMat}>
+                <torusGeometry args={[R / 2, 0.32, 8, 20, Math.PI]} />
+              </mesh>
+              <Cyl r={1.2} rb={0.6} h={1} pos={[R, hub + 0.5, 0]} mat={shadeMat} seg={14} />
+              <Cyl r={0.55} h={3.2} pos={[R, hub + 2.6, 0]} mat={cached('candle', () => new THREE.MeshStandardMaterial({ color: '#f4efe4', roughness: 0.5 }))} seg={12} />
+              <mesh position={[R, hub + 5, 0]} scale={[0.55, 1, 0.55]} material={M.bulb()}>
+                <sphereGeometry args={[1, 12, 10]} />
+              </mesh>
+            </group>
+          );
+        })}
+      </group>
+    );
+  }
+
   if (v === 'linear') {
     return (
       <group>
@@ -958,6 +1039,23 @@ function PendantModel({ r, finish, ctx }: ModelProps) {
 function RugModel({ r, finish }: ModelProps) {
   const { w, d, product } = r;
   return <mesh geometry={boxGeo(w, 0.35, d)} position={[0, 0.18, 0]} material={rugMaterial(finish.hex, product.variant ?? 'runner', r.item.id)} receiveShadow dispose={null} />;
+}
+
+/** An island hood's canopy: a frustum from the w × d band up to the duct, centred (open on every side). */
+const islandCanopies = new Map<string, THREE.BufferGeometry>();
+function islandCanopy(wb: number, db: number, wt: number, dt: number, h: number): THREE.BufferGeometry {
+  const key = `${wb}:${db}:${wt}:${dt}:${h}`;
+  let g = islandCanopies.get(key);
+  if (!g) {
+    g = canopy(wb, db, wt, dt, h);
+    // canopy() is wall-backed (its top sits against the back); shift the top to the middle.
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) if (pos.getY(i) > h - 0.01) pos.setZ(i, pos.getZ(i) + (db - dt) / 2);
+    pos.needsUpdate = true;
+    g.computeVertexNormals();
+    islandCanopies.set(key, g);
+  }
+  return g;
 }
 
 /** The olive tree's leaves: one instanced mesh of small narrow leaves, clustered at the branch tips. */

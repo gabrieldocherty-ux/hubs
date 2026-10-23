@@ -93,5 +93,5 @@ export const hasCountertop = (p: Product) =>
   (p.kind === 'base' || p.kind === 'corner' || p.kind === 'island' || p.kind === 'sink' || p.kind === 'dishwasher' || p.kind === 'wine');
 /** Items that make sense flush against a wall and should snap to it. */
 export const snapsToWall = (p: Product) =>
-  !['island', 'stool', 'pendant', 'table', 'chair', 'rug', 'plant'].includes(p.kind);
+  !['island', 'stool', 'pendant', 'table', 'chair', 'rug', 'plant'].includes(p.kind) && !(p.kind === 'hood' && p.variant === 'island');
 export const isOverhead = (p: Product) => p.elevationIn >= 48;

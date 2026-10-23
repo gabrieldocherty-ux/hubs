@@ -49,10 +49,121 @@ function vanityFronts(w: number, y0: number, h: number, double: boolean): FrontS
   return fronts;
 }
 
+/**
+ * The furniture-style vanity (on turned legs: a drawer bank, an open shelf near the floor) and the
+ * vessel vanity (a bowl on the top, the cabinet lower to suit, a tall faucet).
+ */
+function FurnitureVanity({ r, finish, ctx }: ModelProps) {
+  const { w, d, product } = r;
+  const vessel = product.variant === 'vessel';
+  const top = product.elevationIn + product.heightIn;
+  const body = finishMaterial(finish);
+  const legH = vessel ? 4 : 9;
+  const shelfY = vessel ? 0 : 3;
+  const boxY0 = vessel ? 4 : 13;
+  const boxH = top - 1.5 - boxY0;
+  const basinMat = sinkMaterial({ id: 'white', name: 'White', hex: '#f4f3ef', material: 'ceramic' });
+  const fronts: FrontSpec[] = vessel
+    ? [
+        { x: -w / 4, y: boxY0, w: w / 2, h: boxH, pull: { dir: 'v', x: -2, y: boxY0 + boxH - 6, len: 5 } },
+        { x: w / 4, y: boxY0, w: w / 2, h: boxH, pull: { dir: 'v', x: 2, y: boxY0 + boxH - 6, len: 5 } },
+      ]
+    : [
+        { x: 0, y: boxY0 + boxH * 0.5, w, h: boxH * 0.5, pull: { dir: 'h', x: 0, y: boxY0 + boxH * 0.75, len: Math.min(12, w / 3) } },
+        { x: -w / 4, y: boxY0, w: w / 2, h: boxH * 0.5, pull: { dir: 'h', x: -w / 4, y: boxY0 + boxH * 0.25, len: Math.min(6, w / 6) } },
+        { x: w / 4, y: boxY0, w: w / 2, h: boxH * 0.5, pull: { dir: 'h', x: w / 4, y: boxY0 + boxH * 0.25, len: Math.min(6, w / 6) } },
+      ];
+  const legs = [-1, 1].flatMap((sx) => [-1, 1].map((sz) => [sx * (w / 2 - 1.4), sz * (d / 2 - 1.4)] as const));
+  const cx = 0;
+  const cz = -d / 2 + 2 + 7.5;
+  return (
+    <group>
+      {/* turned legs from the floor up through the box corners */}
+      {legs.map(([x, z]) => (
+        <Cyl key={`${x}${z}`} r={1.2} rb={0.8} h={boxY0 + 0.5} pos={[x, (boxY0 + 0.5) / 2, z]} mat={body} seg={14} />
+      ))}
+      {!vessel && <Box size={[w - 3, 0.9, d - 3]} pos={[0, shelfY + legH * 0 + 3, 0]} mat={body} />}
+      <Box size={[w, boxH, d - 0.1]} pos={[0, boxY0 + boxH / 2, 0]} mat={body} />
+      {fronts.map((f, i) => (
+        <Front key={i} f={f} z={d / 2} finish={finish} style={ctx.doorStyle} hw={ctx.hwMat} look={ctx.pull} />
+      ))}
+      {vessel ? (
+        <>
+          <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 0.75} yTop={top} />
+          {/* the bowl sits on the top; a tall single-lever faucet behind it */}
+          <mesh geometry={vesselGeo()} position={[cx, top, cz + 1]} material={cached('vesselPorcelain', () => { const m = porcelain('#f4f3ef').clone(); m.side = THREE.DoubleSide; return m; })} castShadow receiveShadow dispose={null} />
+          <Cyl r={0.6} h={12} pos={[cx, top + 6, -d / 2 + 2]} mat={ctx.faucetMat} seg={14} />
+          <Box size={[0.9, 0.9, 6]} pos={[cx, top + 11.5, -d / 2 + 4.6]} mat={ctx.faucetMat} />
+          <Box size={[0.5, 3, 0.5]} pos={[cx + 1.4, top + 9, -d / 2 + 2]} mat={ctx.faucetMat} />
+        </>
+      ) : (
+        <>
+          <Counter r={r} ctx={ctx} x0={-w / 2} x1={w / 2} z0={-d / 2} z1={d / 2 + 0.75} yTop={top} cutouts={[{ x0: cx - 8.5, x1: cx + 8.5, z0: cz - 6.25, z1: cz + 6.25 }]} />
+          <Basin cx={cx} cz={cz} w={17} d={12.5} depth={6} top={top - 1.5} mat={basinMat} cornerR={4} />
+          <group position={[cx, 0, 0]}>
+            <Faucet z={-d / 2 + 2.2} y={top} mat={ctx.faucetMat} fixture={ctx.faucet} />
+          </group>
+        </>
+      )}
+    </group>
+  );
+}
+
+/** A vanity light bar: a slim backplate, a bar, and three frosted glass shades hanging down on stems. */
+function VanityLight({ r, finish }: ModelProps) {
+  const { w, product } = r;
+  const y0 = product.elevationIn;
+  const metal = cached(`vlMetal:${finish.hex}`, () => new THREE.MeshStandardMaterial({ color: finish.hex, metalness: 0.85, roughness: 0.32 }));
+  const frost = cached('frostGlass', () => new THREE.MeshPhysicalMaterial({ color: '#fffaf0', roughness: 0.45, transmission: 0, emissive: new THREE.Color('#fff1d6'), emissiveIntensity: 0.55 }));
+  const n = w >= 36 ? 4 : 3;
+  const xs = Array.from({ length: n }, (_, i) => -w / 2 + 3 + ((w - 6) / (n - 1)) * i);
+  return (
+    <group>
+      <Box size={[w - 2, 4.6, 0.6]} pos={[0, y0 + 3.4, -r.d / 2 + 0.3]} mat={metal} />
+      <Box size={[w, 0.8, 1.2]} pos={[0, y0 + 3.4, -r.d / 2 + 1]} mat={metal} />
+      {xs.map((x) => (
+        <group key={x}>
+          <Box size={[0.5, 0.5, 2.6]} pos={[x, y0 + 3.4, -r.d / 2 + 2.2]} mat={metal} />
+          <Cyl r={0.7} h={1.2} pos={[x, y0 + 2.8, -r.d / 2 + 3.3]} mat={metal} seg={12} />
+          <mesh position={[x, y0 + 1.1, -r.d / 2 + 3.3]} material={frost}>
+            <cylinderGeometry args={[1.3, 2.3, 3.2, 20, 1, false]} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/** A round vessel bowl turned on a lathe: 16″ across, 5½″ tall, a thin rolled lip. */
+function vesselGeo(): THREE.BufferGeometry {
+  return toiletGeo('vessel', () => {
+    const p = [
+      [0, 0],
+      [3.2, 0],
+      [3.4, 0.2],
+      [6.4, 1.6],
+      [7.7, 3.6],
+      [8, 5.4],
+      [7.8, 5.5],
+      [7.5, 5.3],
+      [7.2, 3.6],
+      [5.8, 1.9],
+      [3, 0.9],
+      [0, 0.8],
+    ].map(([x, y]) => new THREE.Vector2(x, y));
+    const g = new THREE.LatheGeometry(p, 48);
+    g.computeVertexNormals();
+    return g;
+  });
+}
+
 export function VanityModel({ r, finish, ctx }: ModelProps) {
   const { w, d, product } = r;
   const floating = product.variant === 'floating';
   const double = product.variant === 'double';
+  const furniture = product.variant === 'furniture';
+  const vessel = product.variant === 'vessel';
+  if (furniture || vessel) return <FurnitureVanity r={r} finish={finish} ctx={ctx} />;
   const top = product.elevationIn + product.heightIn;
   const bodyY0 = floating ? product.elevationIn : 4;
   const bodyH = top - 1.5 - bodyY0;
@@ -179,6 +290,28 @@ export function ToiletModel({ r, finish }: ModelProps) {
   const tankW = Math.min(19.5, w - 0.5);
   const tankD = 8;
   const tankZ = -d / 2 + tankD / 2 + 0.4;
+  if (product.variant === 'one-piece') {
+    // One smooth piece: a skirt from the floor to the rim (no trapway showing), a low tank flowing
+    // out of it, and a bidet seat with its control panel on the right.
+    const skirtW = Math.min(15, w - 1);
+    return (
+      <group>
+        <group position={[0, 0, bowlZ]} scale={[skirtW / (bowlR * 2), 1, stretch]}>
+          <mesh geometry={toiletGeo(`skirt:${bowlR}:${rim}`, () => new THREE.CylinderGeometry(bowlR, bowlR * 0.92, rim, 40))} position={[0, rim / 2, 0]} material={mat} castShadow receiveShadow dispose={null} />
+        </group>
+        <mesh geometry={roundedSlab(skirtW, bowlZ - tankZ + 3, rim, 3)} position={[0, 0, (tankZ + bowlZ) / 2 - 1]} material={mat} castShadow receiveShadow dispose={null} />
+        <mesh geometry={roundedSlab(Math.min(17, w), tankD + 1, 9, 2.4)} position={[0, rim, tankZ]} material={mat} castShadow receiveShadow dispose={null} />
+        <mesh geometry={seatGeo(bowlR + 0.3)} position={[0, rim + 0.7, bowlZ]} scale={[1, 1, stretch]} material={seat} dispose={null} />
+        <group position={[0, rim + 1.7, bowlZ + 0.3]} scale={[1, 1, stretch]}>
+          <mesh geometry={cylGeo(bowlR + 0.1, bowlR + 0.3, 0.9, 40)} material={seat} castShadow dispose={null} />
+        </group>
+        {/* the bidet seat's base and its side panel */}
+        <mesh geometry={roundedSlab(skirtW + 1, 4, 2.4, 1.2)} position={[0, rim, bowlZ - bowlLen / 2 + 1.5]} material={seat} dispose={null} />
+        <mesh geometry={roundedSlab(1.2, 6, 3.2, 0.5)} position={[skirtW / 2 + 1, rim - 0.6, bowlZ - bowlLen / 2 + 5]} material={seat} dispose={null} />
+        <Cyl r={0.35} h={0.3} pos={[skirtW / 2 + 1.65, rim + 1.6, bowlZ - bowlLen / 2 + 5]} rot={[0, 0, Math.PI / 2]} mat={M.chrome()} seg={10} />
+      </group>
+    );
+  }
   return (
     <group>
       {/* The bowl, and (floor-standing) the skirt from its back into the tank. */}
@@ -538,7 +671,8 @@ export function ShowerModel({ r, finish, ctx }: ModelProps) {
   );
 }
 
-export function MirrorModel({ r, finish }: ModelProps) {
+export function MirrorModel({ r, finish, ctx }: ModelProps) {
+  if (r.product.variant === 'light-bar') return <VanityLight r={r} finish={finish} ctx={ctx} />;
   const { w, d, product } = r;
   const y0 = product.elevationIn;
   const h = product.heightIn;

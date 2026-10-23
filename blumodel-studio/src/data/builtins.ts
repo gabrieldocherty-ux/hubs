@@ -202,6 +202,16 @@ const LIST: Product[] = [
     finishes: ENAMEL, blurb: 'Rounded 1950s silhouette, chrome handle.',
   },
   {
+    id: 'oven-tower-single', kind: 'oven-tower', variant: 'single', category: 'appliances', brand: BASICS_BRAND, name: 'Wall Oven & Speed Oven Tower',
+    code: 'OS{w}84', widthIn: 30, depthIn: 24, heightIn: 84, elevationIn: 0, widthOptions: [30, 33], price: 3490,
+    finishes: [STAINLESS, BLACK_STEEL], blurb: 'A convection wall oven with a speed oven (microwave and convection) above it, in a tall cabinet.',
+  },
+  {
+    id: 'hood-island', kind: 'hood', variant: 'island', category: 'appliances', brand: BASICS_BRAND, name: 'Island Hood',
+    code: 'IH{w}', widthIn: 36, depthIn: 27, heightIn: 18, elevationIn: 66, widthOptions: [36, 42, 48], price: 1490,
+    finishes: [STAINLESS, BLACK_STEEL], blurb: 'Hung from the ceiling over an island cooktop: a canopy open on all four sides and a duct cover up.',
+  },
+  {
     id: 'oven-tower', kind: 'oven-tower', category: 'appliances', brand: BASICS_BRAND, name: 'Double Wall Oven Tower',
     code: 'OV{w}84', widthIn: 30, depthIn: 24, heightIn: 84, elevationIn: 0, widthOptions: [30, 33], price: 3890,
     finishes: [STAINLESS, BLACK_STEEL], blurb: 'Two convection ovens stacked in a tall cabinet.',
@@ -220,6 +230,11 @@ const LIST: Product[] = [
     id: 'wine-24', kind: 'wine', variant: 'wine', category: 'appliances', brand: BASICS_BRAND, name: 'Wine Column 24″',
     code: 'WC24', widthIn: 24, depthIn: 24, heightIn: 36, elevationIn: 0, price: 1499,
     finishes: [STAINLESS, BLACK_STEEL], blurb: 'Dual-zone, 46 bottles, under the counter.',
+  },
+  {
+    id: 'fridge-drawers', kind: 'wine', variant: 'drawers', category: 'appliances', brand: BASICS_BRAND, name: 'Refrigerator Drawers 24″',
+    code: 'RD24', widthIn: 24, depthIn: 24, heightIn: 36, elevationIn: 0, widthOptions: [24, 30, 36], price: 2690,
+    finishes: [STAINLESS, BLACK_STEEL], blurb: 'Two refrigerated drawers under the counter: produce, drinks or a snack drawer for the kids.',
   },
   {
     id: 'bev-15', kind: 'wine', variant: 'beverage', category: 'appliances', brand: BASICS_BRAND, name: 'Beverage Center 15″',
@@ -308,6 +323,15 @@ const LIST: Product[] = [
     id: 'dimmer-switch', kind: 'outlet', variant: 'dimmer', category: 'lighting', brand: BASICS_BRAND, name: 'Dimmer Switch',
     code: 'EL-DIM', widthIn: 2.75, depthIn: 0.6, heightIn: 4.5, elevationIn: 46, price: 160,
     finishes: DEVICE_FINISH, blurb: 'A rocker with a slide dimmer, for pot lights or pendants.',
+  },
+  {
+    id: 'chandelier', kind: 'pendant', variant: 'chandelier', category: 'lighting', brand: BASICS_BRAND, name: 'Arm Chandelier',
+    code: 'LC-6', widthIn: 28, depthIn: 28, heightIn: 16, elevationIn: 62, widthOptions: [24, 28, 34], price: 690,
+    finishes: [
+      { id: 'brass', name: 'Aged Brass', hex: '#b08a4f', material: 'metal' },
+      { id: 'black', name: 'Matte Black', hex: '#222222', material: 'metal' },
+    ],
+    blurb: 'Six arms with candle-style bulbs on a central stem: over a dining table, 30–34″ above it.',
   },
   {
     id: 'pendant-dome', kind: 'pendant', variant: 'dome', category: 'lighting', brand: BASICS_BRAND, name: 'Dome Pendant',
@@ -435,6 +459,16 @@ const LIST: Product[] = [
 
   // ─── Bath ──────────────────────────────────────────────────────────────
   {
+    id: 'vanity-furniture', kind: 'vanity', variant: 'furniture', category: 'bath', brand: BASICS_BRAND, name: 'Furniture-Style Vanity',
+    code: 'VF{w}', widthIn: 36, depthIn: 21, heightIn: 34, elevationIn: 0, widthOptions: [30, 36, 48, 60], price: 1490,
+    finishes: 'cabinet', blurb: 'On turned legs like a piece of furniture, with a drawer bank and an open shelf below.',
+  },
+  {
+    id: 'vanity-vessel', kind: 'vanity', variant: 'vessel', category: 'bath', brand: BASICS_BRAND, name: 'Vessel-Sink Vanity',
+    code: 'VV{w}', widthIn: 30, depthIn: 21, heightIn: 30, elevationIn: 0, widthOptions: [24, 30, 36], price: 1290,
+    finishes: 'cabinet', blurb: 'A round bowl sitting on the top (the cabinet is lower to suit), with a tall faucet.',
+  },
+  {
     id: 'vanity', kind: 'vanity', variant: 'single', category: 'bath', brand: BASICS_BRAND, name: 'Bathroom Vanity',
     code: 'V{w}', widthIn: 36, depthIn: 21, heightIn: 34, elevationIn: 0, widthOptions: [24, 30, 36, 42, 48], price: 1180,
     finishes: 'cabinet', blurb: 'Doors and drawers under a stone top with an undermount basin. 34″ comfort height.',
@@ -453,6 +487,11 @@ const LIST: Product[] = [
     id: 'toilet', kind: 'toilet', variant: 'two-piece', category: 'bath', brand: BASICS_BRAND, name: 'Elongated Toilet',
     code: 'WC-2', widthIn: 20, depthIn: 29, heightIn: 30, elevationIn: 0, price: 420,
     finishes: PORCELAIN, blurb: 'Two-piece, elongated bowl, comfort height. Needs 15″ from its centre to a wall and 21″ clear in front.',
+  },
+  {
+    id: 'toilet-skirted', kind: 'toilet', variant: 'one-piece', category: 'bath', brand: BASICS_BRAND, name: 'One-Piece Skirted Toilet',
+    code: 'WC-1S', widthIn: 16, depthIn: 28, heightIn: 28, elevationIn: 0, price: 890,
+    finishes: PORCELAIN, blurb: 'Smooth skirted sides (nothing to clean around), a low tank in one piece, and a bidet seat.',
   },
   {
     id: 'toilet-wall', kind: 'toilet', variant: 'wall-hung', category: 'bath', brand: BASICS_BRAND, name: 'Wall-Hung Toilet',
@@ -518,6 +557,16 @@ const LIST: Product[] = [
     id: 'shower-walkin', kind: 'shower', variant: 'walk-in', category: 'bath', brand: BASICS_BRAND, name: 'Walk-In Shower',
     code: 'SW{w}', widthIn: 60, depthIn: 36, heightIn: 78, elevationIn: 0, widthOptions: [48, 60, 72], price: 2390,
     finishes: SHOWER_TRIM, blurb: 'A low curbless base behind one fixed glass panel: no door to swing.',
+  },
+  {
+    id: 'vanity-light', kind: 'mirror', variant: 'light-bar', category: 'lighting', brand: BASICS_BRAND, name: 'Vanity Light Bar',
+    code: 'VL{w}', widthIn: 30, depthIn: 5, heightIn: 6, elevationIn: 78, widthOptions: [24, 30, 36, 48], price: 240,
+    finishes: [
+      { id: 'brass', name: 'Brushed Brass', hex: '#b39058', material: 'metal' },
+      { id: 'black', name: 'Matte Black', hex: '#222222', material: 'metal' },
+      { id: 'nickel', name: 'Brushed Nickel', hex: '#b8b7b2', material: 'metal' },
+    ],
+    blurb: 'Over the mirror: three frosted glass shades on a slim bar, light on the face without shadows.',
   },
   {
     id: 'mirror', kind: 'mirror', variant: 'rect', category: 'bath', brand: BASICS_BRAND, name: 'Vanity Mirror',

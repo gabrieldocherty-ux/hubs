@@ -13,6 +13,7 @@ const IDS = [
   'vanity', 'vanity-double', 'vanity-floating', 'toilet', 'toilet-wall', 'tub', 'tub-free',
   'shower', 'shower-glass', 'shower-corner', 'shower-walkin', 'shower-neo', 'shower-quadrant', 'shower-wetroom', 'shower-steam', 'shower-inline', 'shower-pony', 'mirror', 'medicine-cabinet',
   'rug-area', 'olive-tree', 'fig',
+  'toilet-skirted', 'vanity-furniture', 'vanity-vessel', 'vanity-light', 'hood-island', 'oven-tower-single', 'fridge-drawers', 'chandelier',
 ];
 
 export default IDS.map((id) => ({
